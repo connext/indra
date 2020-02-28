@@ -157,11 +157,13 @@ export default class ListenerService implements OnModuleInit {
         }
         // update transfer
         transfer.preImage = (newState as SimpleLinkedTransferAppState).preImage;
+        console.log("pre-redeemed transfer: ", transfer);
         if (transfer.status !== LinkedTransferStatus.RECLAIMED) {
           transfer = await this.linkedTransferRepository.markAsRedeemed(
             transfer,
             await this.channelRepository.findByUserPublicIdentifier(data.from),
           );
+          console.log(`MARKED AS REDEEMED`);
           this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
         } else {
           this.log.warn(`Transfer status was reclaimed, this should not happen!`);

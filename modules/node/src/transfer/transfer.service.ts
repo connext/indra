@@ -418,6 +418,9 @@ export class TransferService {
 
     // mark as reclaimed so the listener doesnt try to reclaim again
     await this.linkedTransferRepository.markAsReclaimed(transfer);
+    console.log("MARKED AS RECLAIMED");
+    const reclaimed = await this.transferRepositiory.findByPaymentId(transfer.paymentId);
+    console.log("post reclaimed transfer: ", reclaimed);
     await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
     await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
   }

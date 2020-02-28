@@ -145,7 +145,7 @@ describe("Async transfer offline tests", () => {
    *
    * Recipient should be able to claim payment regardless.
    */
-  it("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
+  it.skip("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       forbiddenSubjects: [`transfer.send-async.`],
@@ -247,7 +247,7 @@ describe("Async transfer offline tests", () => {
    * Ideally, the node takes action +  uninstalls these apps on `connect`,
    * and money is returned to the hubs channel (redeemed payment)
    */
-  it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later", async () => {
+  it.only("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     receiverClient = await createClientWithMessagingLimits();
@@ -296,6 +296,7 @@ describe("Async transfer offline tests", () => {
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
     expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
     // make sure the transfer is properly reclaimed
+    await delay(5000);
     await verifyTransfer(reconnected, { ...expected, status: "RECLAIMED" });
   });
 
