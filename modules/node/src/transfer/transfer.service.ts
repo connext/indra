@@ -369,9 +369,12 @@ export class TransferService {
     return res.appInstanceId;
   }
 
-  async reclaimLinkedTransferCollateralByAppInstanceId(appInstanceId: string): Promise<void> {
+  // TODO: why don't these functions throw errors, this breaks the patterns we normally use
+  async reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
+    appInstanceId: string,
+  ): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(appInstanceId);
-    if (!transfer) {
+    if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
       this.log.debug(`Did not find transfer`);
       return;
     }
@@ -381,7 +384,7 @@ export class TransferService {
 
   async reclaimLinkedTransferCollateralByPaymentId(paymentId: string): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
-    if (!transfer) {
+    if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
       this.log.debug(`Did not find transfer`);
       return;
     }
@@ -396,34 +399,32 @@ export class TransferService {
       );
     }
 
-    const uninstall = async (): Promise<void> => {
-      this.log.debug(`Action taken, uninstalling app. ${Date.now()}`);
-      await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-      await this.linkedTransferRepository.markAsReclaimed(transfer);
-      console.log(`Emitting message!`);
-      await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
-    };
-
+    const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
     // if action has been taken on the app, then there will be a preimage
     // in the latest state, and you just have to uninstall
-    const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
-    if ((app.latestState as SimpleLinkedTransferAppState).preImage === transfer.preImage) {
-      // just uninstall
+    if ((app.latestState as SimpleLinkedTransferAppState).preImage !== transfer.preImage) {
+      this.log.info(`Reclaiming linked transfer ${transfer.paymentId}`);
       this.log.debug(
-        `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
+        `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
       );
-      await uninstall();
-      return;
+      await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
+        preImage: transfer.preImage,
+      });
     }
-
-    this.log.info(`Reclaiming linked transfer ${transfer.paymentId}`);
     this.log.debug(
-      `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
+      `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
     );
-    await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
-      preImage: transfer.preImage,
-    });
-    await uninstall();
+    this.log.debug(`Action taken, uninstalling app. ${Date.now()}`);
+
+    // mark as reclaimed so the listener doesnt try to reclaim again
+    await this.linkedTransferRepository.markAsReclaimed(transfer);
+    try {
+      await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
+      await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
+    } catch (e) {
+      await this.linkedTransferRepository.markAsRedeemed(transfer, transfer.receiverChannel);
+      throw e;
+    }
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
