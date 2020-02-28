@@ -22,11 +22,12 @@ contract LightningHTLCTransferApp is CounterfactualApp {
     * only one can be redeemed with the preimage.
     *
     */
-
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
         bytes32 lockHash;
         bytes32 preimage;
+        uint256 turnNum; // odd is receiver?
+        bool finalized;
     }
 
     struct Action {
@@ -44,8 +45,13 @@ contract LightningHTLCTransferApp is CounterfactualApp {
         AppState memory state = abi.decode(encodedState, (AppState));
         Action memory action = abi.decode(encodedAction, (Action));
 
-        // TODO: do we need a turntaker here?
+        require(!state.finalized, "Cannot take action on finalized state");
+        // TODO how doess the turnNum get to 1?
+        require(state.turnNum % 2 == 1, "Payment must be unlocked by receiver");
+
         state.preimage = action.preimage;
+        state.finalized = true;
+        state.turnNum += 1;
 
         return abi.encode(state);
     }
@@ -61,9 +67,9 @@ contract LightningHTLCTransferApp is CounterfactualApp {
         bytes32 generatedHash = sha256(state.preimage);
 
         LibOutcome.CoinTransfer[2] memory transfers;
-        if (generatedHash == state.lockHash) {
+        if (generatedHash == state.lockHash && state.finalized) {
             /**
-             * If the hash is correct, finalize the state with provided transfers.
+             * If the hash is correct, set outcome to provided transfers.
              */
             transfers = LibOutcome.CoinTransfer[2]([
                 LibOutcome.CoinTransfer(
@@ -79,7 +85,7 @@ contract LightningHTLCTransferApp is CounterfactualApp {
             ]);
         } else {
             /**
-             * If the hash is not correct, finalize the state with reverted transfers.
+             * If the hash is not correct, set outcome to reverted transfers.
              */
             transfers = LibOutcome.CoinTransfer[2]([
                 LibOutcome.CoinTransfer(
@@ -93,5 +99,27 @@ contract LightningHTLCTransferApp is CounterfactualApp {
             ]);
         }
         return abi.encode(transfers);
+    }
+
+    function getTurnTaker(
+        bytes calldata encodedState,
+        address[] calldata participants // length == 2!
+    )
+        external
+        pure
+        returns (address)
+    {
+        return participants[
+            abi.decode(encodedState, (AppState)).turnNum % 2
+        ];
+    }
+
+    function isStateTerminal(bytes calldata encodedState)
+        external
+        pure
+        returns (bool)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+        return state.finalized;
     }
 }
