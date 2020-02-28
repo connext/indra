@@ -228,6 +228,8 @@ describe("LightningHTLCTransferApp", () => {
         ret = await computeOutcome(modifiedPostState);
         validateOutcome(ret, modifiedPostState);
       })
+
+      // TODO how can we test that only the receiver can unlock the payment?
     });
   });
   
