@@ -134,9 +134,12 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UNINSTALL_EVENT, data);
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
-        await this.transferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
-          data.data.appInstanceId,
-        );
+        // TODO: i think there are race conditions here that are causing errors
+        // let's reenable this when we figure it out better. for now, the node will
+        // reclaim on client check-in
+        // await this.transferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
+        //   data.data.appInstanceId,
+        // );
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         this.logEvent(UNINSTALL_VIRTUAL_EVENT, data);
@@ -154,11 +157,15 @@ export default class ListenerService implements OnModuleInit {
         }
         // update transfer
         transfer.preImage = (newState as SimpleLinkedTransferAppState).preImage;
-        transfer = await this.linkedTransferRepository.markAsRedeemed(
-          transfer,
-          await this.channelRepository.findByUserPublicIdentifier(data.from),
-        );
-        this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+        if (transfer.status !== LinkedTransferStatus.RECLAIMED) {
+          transfer = await this.linkedTransferRepository.markAsRedeemed(
+            transfer,
+            await this.channelRepository.findByUserPublicIdentifier(data.from),
+          );
+          this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+        } else {
+          this.log.warn(`Transfer status was reclaimed, this should not happen!`);
+        }
       },
       WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
         this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);

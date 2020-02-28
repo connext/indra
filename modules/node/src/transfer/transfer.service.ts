@@ -418,13 +418,8 @@ export class TransferService {
 
     // mark as reclaimed so the listener doesnt try to reclaim again
     await this.linkedTransferRepository.markAsReclaimed(transfer);
-    try {
-      await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-      await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
-    } catch (e) {
-      await this.linkedTransferRepository.markAsRedeemed(transfer, transfer.receiverChannel);
-      throw e;
-    }
+    await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
+    await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
