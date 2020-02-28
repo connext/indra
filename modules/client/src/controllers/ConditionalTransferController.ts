@@ -31,11 +31,15 @@ import {
 import { AbstractController } from "./AbstractController";
 
 type ConditionalExecutors = {
-  [index in TransferCondition]: (params: ConditionalTransferParameters) => Promise<ConditionalTransferResponse>;
+  [index in TransferCondition]: (
+    params: ConditionalTransferParameters,
+  ) => Promise<ConditionalTransferResponse>;
 };
 
 export class ConditionalTransferController extends AbstractController {
-  public conditionalTransfer = async (params: ConditionalTransferParameters): Promise<ConditionalTransferResponse> => {
+  public conditionalTransfer = async (
+    params: ConditionalTransferParameters,
+  ): Promise<ConditionalTransferResponse> => {
     this.log.info(
       `Generating conditional transfer of ${formatEther(params.amount)} ${
         params.assetId === AddressZero ? "ETH" : "Tokens"
@@ -53,10 +57,15 @@ export class ConditionalTransferController extends AbstractController {
   private handleLinkedTransferToRecipient = async (
     params: LinkedTransferToRecipientParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
-    const { amount, assetId, paymentId, preImage, recipient, meta } = convert.LinkedTransferToRecipient(
-      `bignumber`,
-      params,
-    );
+    params.meta = params.meta && typeof params.meta === "object" ? params.meta : {};
+    const {
+      amount,
+      assetId,
+      paymentId,
+      preImage,
+      recipient,
+      meta,
+    } = convert.LinkedTransferToRecipient(`bignumber`, params);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -69,21 +78,22 @@ export class ConditionalTransferController extends AbstractController {
       invalidXpub(recipient),
     );
 
-    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+    // set recipient and encrypted pre-image on linked transfer
+    // TODO: use app path instead?
+    const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
+    const encryptedPreImage = await encryptWithPublicKey(
+      recipientPublicKey.replace(/^0x/, ``),
+      preImage,
+    );
+
+    // add encrypted preImage to meta so node can store it in the DB
+    params.meta["encryptedPreImage"] = encryptedPreImage;
 
     // wait for linked transfer
     const ret = await this.handleLinkedTransfers({
       ...params,
       conditionType: LINKED_TRANSFER,
     });
-
-    // set recipient and encrypted pre-image on linked transfer
-    // TODO: use app path instead?
-    const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
-    const encryptedPreImage = await encryptWithPublicKey(recipientPublicKey.replace(/^0x/, ``), preImage);
-    // TODO: if this fails for ANY REASON, uninstall the app to make sure that
-    // the sender doesnt lose any money
-    await this.connext.setRecipientAndEncryptedPreImageForLinkedTransfer(recipient, encryptedPreImage, linkedHash);
 
     // publish encrypted secret
     // TODO: should we move this to its own file?
@@ -106,9 +116,14 @@ export class ConditionalTransferController extends AbstractController {
     return { ...ret, recipient };
   };
 
-  private handleLinkedTransfers = async (params: LinkedTransferParameters): Promise<LinkedTransferResponse> => {
+  private handleLinkedTransfers = async (
+    params: LinkedTransferParameters,
+  ): Promise<LinkedTransferResponse> => {
     // convert params + validate
-    const { amount, assetId, paymentId, preImage, meta } = convert.LinkedTransfer(`bignumber`, params);
+    const { amount, assetId, paymentId, preImage, meta } = convert.LinkedTransfer(
+      `bignumber`,
+      params,
+    );
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -143,7 +158,13 @@ export class ConditionalTransferController extends AbstractController {
       preImage: HashZero,
     };
 
-    const appId = await this.conditionalTransferAppInstalled(amount, assetId, initialState, appInfo, meta);
+    const appId = await this.conditionalTransferAppInstalled(
+      amount,
+      assetId,
+      initialState,
+      appInfo,
+      meta,
+    );
 
     if (!appId) {
       throw new Error(`App was not installed`);
@@ -165,7 +186,12 @@ export class ConditionalTransferController extends AbstractController {
     appInfo: DefaultApp,
     meta?: object,
   ): Promise<string | undefined> => {
-    const { appDefinitionAddress: appDefinition, outcomeType, stateEncoding, actionEncoding } = appInfo;
+    const {
+      appDefinitionAddress: appDefinition,
+      outcomeType,
+      stateEncoding,
+      actionEncoding,
+    } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,

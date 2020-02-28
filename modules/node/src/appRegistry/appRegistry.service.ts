@@ -107,6 +107,7 @@ export class AppRegistryService implements OnModuleInit {
     switch (registryAppInfo.name) {
       case SimpleLinkedTransferApp:
         this.log.debug(`Saving linked transfer`);
+        // eslint-disable-next-line max-len
         const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
         const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
@@ -127,6 +128,7 @@ export class AppRegistryService implements OnModuleInit {
           initialState.linkedHash,
           initialState.paymentId,
           proposeInstallParams.meta,
+          proposeInstallParams.meta["encryptedPreImage"],
         );
         this.log.debug(`Linked transfer saved!`);
         break;
@@ -532,9 +534,7 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    this.log.debug(
-      `App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`,
-    );
+    this.log.debug(`App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`);
 
     await this.commonAppProposalValidation(proposeInstallParams, initiatorIdentifier);
 
