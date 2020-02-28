@@ -106,7 +106,8 @@ describe("Async transfer offline tests", () => {
    * Avoid `transfer.set-recipient.${this.userPublicIdentifier}` endpoint
    * with the hub. The hub should clean these up during disputes
    */
-  it("sender successfully installs transfer, goes offline before sending paymentId or preimage, then comes online and has the pending installed transfer", async () => {
+  // TODO: this doesn't work bc `transfer.set-recipient` isn't used anymore
+  it.skip("sender successfully installs transfer, goes offline before sending paymentId or preimage, then comes online and has the pending installed transfer", async () => {
     // create the sender client and receiver clients
     senderClient = await createClientWithMessagingLimits({
       forbiddenSubjects: [`transfer.set-recipient`],
