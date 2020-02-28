@@ -26,7 +26,7 @@ contract LightningHTLCTransferApp is CounterfactualApp {
         LibOutcome.CoinTransfer[2] coinTransfers;
         bytes32 lockHash;
         bytes32 preimage;
-        uint256 turnNum; // odd is receiver?
+        uint256 turnNum; // even is receiver?
         bool finalized;
     }
 
@@ -46,8 +46,8 @@ contract LightningHTLCTransferApp is CounterfactualApp {
         Action memory action = abi.decode(encodedAction, (Action));
 
         require(!state.finalized, "Cannot take action on finalized state");
-        // TODO how doess the turnNum get to 1?
-        require(state.turnNum % 2 == 1, "Payment must be unlocked by receiver");
+        // TODO feels weird that the initial state and first turn have same turnNum
+        require(state.turnNum % 2 == 0, "Payment must be unlocked by receiver");
 
         state.preimage = action.preimage;
         state.finalized = true;

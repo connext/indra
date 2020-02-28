@@ -5,7 +5,7 @@ import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, solidityKeccak256, soliditySha256 } from "ethers/utils";
 
 import LightningHTLCTransferApp from "../../build/LightningHTLCTransferApp.json";
 
@@ -73,3 +73,97 @@ const encodeAppState = (
 function encodeAppAction(state: SolidityValueType): string {
     return defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
 }
+
+function createLockHash(
+    preImage: string,
+  ): string {
+    return soliditySha256(
+      ["bytes32"],
+      [preImage],
+    );
+}
+
+describe("LightningHTLCTransferApp", () => {
+    let lightningHTLCTransferApp: Contract;
+    let provider = buidler.provider;
+  
+    async function computeOutcome(state: LightningHTLCTransferAppState): Promise<string> {
+      return await lightningHTLCTransferApp.functions.computeOutcome(encodeAppState(state));
+    }
+  
+    async function applyAction(state: any, action: SolidityValueType): Promise<string> {
+      return await lightningHTLCTransferApp.functions.applyAction(
+        encodeAppState(state),
+        encodeAppAction(action),
+      );
+    }
+  
+    before(async () => {
+      const wallet = (await provider.getWallets())[0];
+      lightningHTLCTransferApp = await waffle.deployContract(wallet, LightningHTLCTransferApp);
+    });
+  
+    describe("update state", () => {
+      it("can redeem a payment with correct hash", async () => {
+        const senderAddr = mkAddress("0xa");
+        const receiverAddr = mkAddress("0xB");
+        const transferAmount = new BigNumber(10000);
+        const preImage = mkHash("0xb");
+  
+        const lockHash = createLockHash(preImage);
+  
+        const preState: LightningHTLCTransferAppState = {
+          coinTransfers: [
+            {
+              amount: transferAmount,
+              to: senderAddr,
+            },
+            {
+              amount: Zero,
+              to: receiverAddr,
+            },
+          ],
+          lockHash,
+          preImage: mkHash("0x0"),
+          turnNum: 0,
+          finalized: false
+        };
+  
+        const action: LightningHTLCTransferAppAction = {
+          preImage,
+        };
+  
+        let ret = await applyAction(preState, action);
+        const afterActionState = decodeAppState(ret);
+  
+        const postState: LightningHTLCTransferAppState = {
+          coinTransfers: [
+            {
+              amount: Zero,
+              to: senderAddr,
+            },
+            {
+              amount: transferAmount,
+              to: receiverAddr,
+            },
+          ],
+          lockHash,
+          preImage,
+          turnNum: 1,
+          finalized: true
+        };
+
+        expect(afterActionState).eq(postState);
+  
+        ret = await computeOutcome(afterActionState);
+        const decoded = decodeTransfers(ret);
+  
+        expect(ret).to.eq(encodeAppState(postState, true));
+        expect(decoded[0].to).eq(postState.coinTransfers[0].to);
+        expect(decoded[0].amount.toString()).eq(postState.coinTransfers[0].amount.toString());
+        expect(decoded[1].to).eq(postState.coinTransfers[1].to);
+        expect(decoded[1].amount.toString()).eq(postState.coinTransfers[1].amount.toString());
+      });
+    });
+  });
+  
