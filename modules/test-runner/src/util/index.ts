@@ -17,4 +17,5 @@ export * from "./env";
 export * from "./ethprovider";
 export * from "./messaging";
 export * from "./misc";
+export * from "./nats";
 export * from "./types";
