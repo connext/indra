@@ -198,6 +198,36 @@ describe("LightningHTLCTransferApp", () => {
         ret = await computeOutcome(afterActionState);
         validateOutcome(ret, afterActionState);
       })
+
+      it("will revert a payment that is not finalized", async () => {
+        const action: LightningHTLCTransferAppAction = {
+          preimage,
+        };
+  
+        let ret = await applyAction(preState, action);
+        const afterActionState = decodeAppState(ret);
+        expect(afterActionState.finalized).to.be.true;
+  
+        const modifiedPostState: LightningHTLCTransferAppState = {
+          coinTransfers: [
+            {
+              amount: transferAmount,
+              to: senderAddr,
+            },
+            {
+              amount: Zero,
+              to: receiverAddr,
+            },
+          ],
+          lockHash,
+          preimage: mkHash("0xc"),
+          turnNum: 1,
+          finalized: false
+        };
+  
+        ret = await computeOutcome(modifiedPostState);
+        validateOutcome(ret, modifiedPostState);
+      })
     });
   });
   
