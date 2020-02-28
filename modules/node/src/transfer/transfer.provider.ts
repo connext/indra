@@ -45,7 +45,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash);
   }
 
-  // TODO: types
+  // DEPRECATED
   async setRecipientOnLinkedTransfer(
     pubId: string,
     data: {
