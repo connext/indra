@@ -237,7 +237,10 @@ describe("Async Transfers", () => {
     ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
   });
 
-  it("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {
+  // TODO: this actually works now since the preimage storage was changed. there's really no
+  // reason this shouldn't work, since you can deterministically get an xpub for someone without
+  // them having a channel
+  it.skip("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     await expect(
