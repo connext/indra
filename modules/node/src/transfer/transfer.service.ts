@@ -93,6 +93,7 @@ export class TransferService {
     paymentId: string,
     meta?: object,
     encryptedPreImage?: string,
+    recipientPublicIdentifier?: string,
   ): Promise<LinkedTransfer> {
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     if (!senderChannel) {
@@ -109,6 +110,7 @@ export class TransferService {
     transfer.status = LinkedTransferStatus.PENDING;
     transfer.encryptedPreImage = encryptedPreImage;
     transfer.meta = meta;
+    transfer.recipientPublicIdentifier = recipientPublicIdentifier;
 
     return await this.linkedTransferRepository.save(transfer);
   }

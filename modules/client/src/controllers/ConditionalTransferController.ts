@@ -88,6 +88,7 @@ export class ConditionalTransferController extends AbstractController {
 
     // add encrypted preImage to meta so node can store it in the DB
     params.meta["encryptedPreImage"] = encryptedPreImage;
+    params.meta["recipient"] = recipient;
 
     // wait for linked transfer
     const ret = await this.handleLinkedTransfers({
