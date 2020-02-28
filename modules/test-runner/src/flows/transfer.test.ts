@@ -11,7 +11,8 @@ import {
   TOKEN_AMOUNT_SM,
 } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
-import { connectNats } from "../util/nats";
+import { connectNats, closeNats } from "../util/nats";
+import { after } from "mocha";
 
 describe("Full Flow: Transfer", () => {
   let clientA: IConnextClient;
@@ -38,6 +39,10 @@ describe("Full Flow: Transfer", () => {
     await clientB.messaging.disconnect();
     await clientC.messaging.disconnect();
     await clientD.messaging.disconnect();
+  });
+
+  after(() => {
+    closeNats();
   });
 
   it("User transfers ETH to multiple clients", async () => {

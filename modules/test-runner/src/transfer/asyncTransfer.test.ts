@@ -21,7 +21,7 @@ import {
   requestCollateral,
   delay,
 } from "../util";
-import { connectNats } from "../util/nats";
+import { connectNats, closeNats } from "../util/nats";
 import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
