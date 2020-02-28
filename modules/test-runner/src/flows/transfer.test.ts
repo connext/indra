@@ -1,4 +1,4 @@
-/* global before after */
+/* global before */
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { Client } from "ts-nats";
@@ -38,10 +38,6 @@ describe("Full Flow: Transfer", () => {
     await clientB.messaging.disconnect();
     await clientC.messaging.disconnect();
     await clientD.messaging.disconnect();
-  });
-
-  after(() => {
-    nats.close();
   });
 
   it("User transfers ETH to multiple clients", async () => {

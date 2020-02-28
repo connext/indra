@@ -48,7 +48,7 @@ describe("Async Transfers", () => {
   });
 
   after(() => {
-    nats.close();
+    closeNats();
   });
 
   it("happy case: client A transfers eth to client B through node", async () => {

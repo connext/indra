@@ -2,7 +2,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
-import { after, before, describe } from "mocha";
+import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
 import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
@@ -30,10 +30,6 @@ describe("Reclaim", () => {
   afterEach(async () => {
     await clientA.messaging.disconnect();
     await clientB.messaging.disconnect();
-  });
-
-  after(() => {
-    nats.close();
   });
 
   it("happy case: node should reclaim ETH with async transfer", async () => {

@@ -30,7 +30,7 @@ import {
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 import { connectNats } from "../util/nats";
-import { before, after } from "mocha";
+import { before } from "mocha";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,
@@ -92,10 +92,6 @@ describe("Async transfer offline tests", () => {
     clock && clock.reset && clock.reset();
     await senderClient.messaging.disconnect();
     await receiverClient.messaging.disconnect();
-  });
-
-  after(() => {
-    nats.close();
   });
 
   /**
