@@ -11,7 +11,8 @@ import {
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
 } from "@connext/types";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -19,6 +20,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
+import { MessagingClientProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
@@ -47,6 +49,7 @@ export class TransferService {
     private readonly log: LoggerService,
     private readonly p2pTransferRepository: PeerToPeerTransferRepository,
     private readonly transferRepositiory: TransferRepository,
+    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("TransferService");
   }
@@ -89,6 +92,7 @@ export class TransferService {
     linkedHash: string,
     paymentId: string,
     meta?: object,
+    encryptedPreImage?: string,
   ): Promise<LinkedTransfer> {
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     if (!senderChannel) {
@@ -103,6 +107,7 @@ export class TransferService {
     transfer.paymentId = paymentId;
     transfer.senderChannel = senderChannel;
     transfer.status = LinkedTransferStatus.PENDING;
+    transfer.encryptedPreImage = encryptedPreImage;
     transfer.meta = meta;
 
     return await this.linkedTransferRepository.save(transfer);
@@ -121,14 +126,15 @@ export class TransferService {
     return await this.linkedTransferRepository.findAll();
   }
 
+  // DEPRECATED
   async setRecipientAndEncryptedPreImageOnLinkedTransfer(
     senderPublicIdentifier: string,
     recipientPublicIdentifier: string,
     encryptedPreImage: string,
     linkedHash: string,
   ): Promise<LinkedTransfer> {
-    this.log.debug(
-      `setRecipientAndEncryptedPreImageOnLinkedTransfer(${senderPublicIdentifier}, ${recipientPublicIdentifier}, ${encryptedPreImage}, ${linkedHash}`,
+    this.log.warn(
+      `setRecipientAndEncryptedPreImageOnLinkedTransfer is DEPRECATED, client needs to be updated`,
     );
 
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
@@ -306,7 +312,6 @@ export class TransferService {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    // add preimage to database to allow unlock from a listener
     transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
     transfer.paymentId = paymentId;
     transfer.recipientPublicIdentifier = userPubId;
@@ -315,11 +320,7 @@ export class TransferService {
 
     return {
       appId: receiverAppInstallRes.appInstanceId,
-      freeBalance: await this.cfCoreService.getFreeBalance(
-        userPubId,
-        channel.multisigAddress,
-        assetId,
-      ),
+      sender: transfer.senderChannel.userPublicIdentifier,
       meta: transfer.meta,
       paymentId,
     };
@@ -397,6 +398,8 @@ export class TransferService {
       this.log.debug(`Action taken, uninstalling app. ${Date.now()}`);
       await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
       await this.linkedTransferRepository.markAsReclaimed(transfer);
+      console.log(`Emitting message!`);
+      await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
     };
 
     // if action has been taken on the app, then there will be a preimage
