@@ -1,12 +1,6 @@
 import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
-import {
-  AppState,
-  CoinBalanceRefundAppState,
-  CoinTransfer,
-  SimpleLinkedTransferAppState,
-} from "./app";
 import { AssetAmount, RebalanceProfile } from "./channel";
 import {
   DepositParameters,
@@ -16,6 +10,7 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
+import { CoinTransfer, CoinBalanceRefundAppState } from "./app";
 
 /////////////////////////////////////////////
 ///////// CONVERSION FNS
@@ -223,45 +218,15 @@ function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   return convertAssetAmountWithId(to, obj);
 }
 
-function convertAppState<To extends NumericTypeName>(
-  to: To,
-  obj: AppState<any>,
-): AppState<NumericTypes[To]> {
-  return {
-    ...obj,
-    coinTransfers: [
-      convertAmountField(to, obj.coinTransfers[0]),
-      convertAmountField(to, obj.coinTransfers[1]),
-    ],
-  };
-}
-
-function convertLinkedTransferAppState<To extends NumericTypeName>(
-  to: To,
-  obj: AppState<any>,
-): SimpleLinkedTransferAppState<NumericTypes[To]> {
-  return {
-    ...convertAmountField(to, obj),
-    coinTransfers: [
-      convertAmountField(to, obj.coinTransfers[0]),
-      convertAmountField(to, obj.coinTransfers[1]),
-    ],
-  };
-}
-
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert = {
-  AppState: convertAppState,
   Asset: convertAssetAmount,
   CoinBalanceRefundApp: convertCoinBalanceRefund,
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
-  LinkedTransferAppState: convertLinkedTransferAppState,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
   RebalanceProfile: convertRebalanceProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,
-  SimpleTransferAppState: convertAppState,
-  SwapAppState: convertAppState,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,

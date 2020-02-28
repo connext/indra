@@ -40,8 +40,6 @@ import { AppRegistryRepository } from "./appRegistry.repository";
 
 const logger = new CLogger(`AppRegistryService`);
 
-const ALLOWED_DISCREPANCY_PCT = 5;
-
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
   constructor(
@@ -69,6 +67,10 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(
         `App does not exist in registry for definition ${proposeInstallParams.appDefinition}`,
       );
+    }
+
+    if (!registryAppInfo.allowNodeInstall) {
+      throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);

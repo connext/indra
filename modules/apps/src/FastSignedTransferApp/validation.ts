@@ -12,11 +12,8 @@ import { Zero } from "ethers/constants";
 
 export const validateFastSignedTransferApp = (
   params: CFCoreTypes.ProposeInstallParams,
-  appRegistryInfo: AppRegistryInfo,
   initiatorFreeBalanceAddress: string,
-  initiatorFreeBalance: string,
   responderFreeBalanceAddress: string,
-  responderFreeBalance: string,
   supportedTokenAddresses: string[],
 ) => {
   const {
