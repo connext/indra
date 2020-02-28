@@ -28,6 +28,9 @@ import {
   TOKEN_AMOUNT_SM,
 } from "../util";
 import { BigNumber } from "ethers/utils";
+import { Client } from "ts-nats";
+import { connectNats } from "../util/nats";
+import { before, after } from "mocha";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,
@@ -71,6 +74,11 @@ describe("Async transfer offline tests", () => {
   let clock: any;
   let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
+  let nats: Client;
+
+  before(async () => {
+    nats = await connectNats();
+  });
 
   beforeEach(async () => {
     clock = lolex.install({
@@ -84,6 +92,10 @@ describe("Async transfer offline tests", () => {
     clock && clock.reset && clock.reset();
     await senderClient.messaging.disconnect();
     await receiverClient.messaging.disconnect();
+  });
+
+  after(() => {
+    nats.close();
   });
 
   /**
@@ -109,7 +121,7 @@ describe("Async transfer offline tests", () => {
       clock.tick(89_000);
     });
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
     // make sure that the app is installed with the hub/sender
     const senderLinkedApp = await getLinkedApp(senderClient);
@@ -147,7 +159,7 @@ describe("Async transfer offline tests", () => {
       clock.tick(89_000);
     });
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
     // make sure that the app is installed with the hub/sender
     const senderLinkedApp = await getLinkedApp(senderClient);
@@ -198,7 +210,7 @@ describe("Async transfer offline tests", () => {
     );
     // make the transfer call, should timeout in propose protocol
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(`Failed to send message: Request timed out`);
   });
 
@@ -223,7 +235,7 @@ describe("Async transfer offline tests", () => {
       },
     );
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG("takeAction"));
   });
 
