@@ -147,27 +147,45 @@ export default class ListenerService implements OnModuleInit {
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
         // if this is for a recipient of a transfer
         this.logEvent(UPDATE_STATE_EVENT, data);
-        const { newState } = data.data;
+        const { newState, appInstanceId } = data.data;
         let transfer = await this.linkedTransferRepository.findByLinkedHash(
           (newState as SimpleLinkedTransferAppState).linkedHash,
         );
         if (!transfer) {
-          this.log.debug(`Could not find transfer for update state event`);
+          this.log.debug(
+            `Could not find transfer for update state event for app: ${appInstanceId}`,
+          );
+          return;
+        }
+        if (appInstanceId !== transfer.receiverAppInstanceId) {
+          this.log.debug(
+            `Not updating transfer preimage or marking as redeemed for sender update state events`,
+          );
           return;
         }
         // update transfer
         transfer.preImage = (newState as SimpleLinkedTransferAppState).preImage;
-        console.log("pre-redeemed transfer: ", transfer);
-        if (transfer.status !== LinkedTransferStatus.RECLAIMED) {
-          transfer = await this.linkedTransferRepository.markAsRedeemed(
-            transfer,
-            await this.channelRepository.findByUserPublicIdentifier(data.from),
+
+        if (
+          transfer.status === LinkedTransferStatus.RECLAIMED ||
+          transfer.status === LinkedTransferStatus.REDEEMED
+        ) {
+          this.log.warn(
+            `Got update state event for a receiver's transfer app (transfer.id: ${transfer.id}) with unexpected status: ${transfer.status}`,
           );
-          console.log(`MARKED AS REDEEMED`);
-          this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
-        } else {
-          this.log.warn(`Transfer status was reclaimed, this should not happen!`);
+          return;
         }
+
+        // transfers are set to `PENDING` when created. They are set to
+        // `FAILED` when the receiver rejects an install event. If a transfer
+        // makes it to the `UPDATE_STATE_EVENT` portion, it means the transfer
+        // was successfully installed. There is no reason to not redeem it in
+        // that case.
+        transfer = await this.linkedTransferRepository.markAsRedeemed(
+          transfer,
+          await this.channelRepository.findByUserPublicIdentifier(data.from),
+        );
+        this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
       },
       WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
         this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
