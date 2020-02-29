@@ -369,14 +369,14 @@ export class TransferService {
     return res.appInstanceId;
   }
 
-  // TODO: why don't these functions throw errors, this breaks the patterns we normally use
   async reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
     appInstanceId: string,
   ): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(appInstanceId);
     if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
-      this.log.debug(`Did not find transfer`);
-      return;
+      throw new Error(
+        `Could not find transfer with REDEEMED status for receiver app id: ${appInstanceId}`,
+      );
     }
     this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
     await this.reclaimLinkedTransferCollateral(transfer);
@@ -385,8 +385,7 @@ export class TransferService {
   async reclaimLinkedTransferCollateralByPaymentId(paymentId: string): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
     if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
-      this.log.debug(`Did not find transfer`);
-      return;
+      throw new Error(`Could not find transfer with REDEEMED status for paymentId: ${paymentId}`);
     }
     this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
     await this.reclaimLinkedTransferCollateral(transfer);
@@ -418,9 +417,6 @@ export class TransferService {
 
     // mark as reclaimed so the listener doesnt try to reclaim again
     await this.linkedTransferRepository.markAsReclaimed(transfer);
-    console.log("MARKED AS RECLAIMED");
-    const reclaimed = await this.transferRepositiory.findByPaymentId(transfer.paymentId);
-    console.log("post reclaimed transfer: ", reclaimed);
     await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
     await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
   }
