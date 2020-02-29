@@ -99,53 +99,11 @@ describe("Async transfer offline tests", () => {
   });
 
   /**
-   * In this case, node will not know the recipient or encrypted preimage,
-   * the transfer to recipient is essentially installed as an unclaimable
-   * (i.e. preImage lost) linked transfer without a specified recipient.
-   *
-   * Avoid `transfer.set-recipient.${this.userPublicIdentifier}` endpoint
-   * with the hub. The hub should clean these up during disputes
-   */
-  // TODO: this doesn't work bc `transfer.set-recipient` isn't used anymore
-  it.skip("sender successfully installs transfer, goes offline before sending paymentId or preimage, then comes online and has the pending installed transfer", async () => {
-    // create the sender client and receiver clients
-    senderClient = await createClientWithMessagingLimits({
-      forbiddenSubjects: [`transfer.set-recipient`],
-    });
-    receiverClient = await createClientWithMessagingLimits();
-    const tokenAddress = senderClient.config.contractAddresses.Token;
-    // fund the channels
-    await fundForTransfers(receiverClient, senderClient);
-    // make the transfer call, should fail when sending info to node, but
-    // will retry. fast forward through NATS_TIMEOUT
-    (senderClient.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
-      clock.tick(89_000);
-    });
-    await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
-    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
-    // make sure that the app is installed with the hub/sender
-    const senderLinkedApp = await getLinkedApp(senderClient);
-    const { paymentId } = senderLinkedApp.latestState as any;
-    // verify the saved transfer information
-    await verifyTransfer(senderClient, {
-      amount: TOKEN_AMOUNT_SM.toString(),
-      receiverPublicIdentifier: null,
-      paymentId,
-      senderPublicIdentifier: senderClient.publicIdentifier,
-      status: "PENDING",
-      type: "LINKED",
-    });
-    const receiverLinkedApp = await getLinkedApp(receiverClient, false);
-    expect(receiverLinkedApp.length).to.equal(0);
-  });
-
-  /**
    * Will have a transfer saved on the hub, but nothing sent to recipient.
    *
    * Recipient should be able to claim payment regardless.
    */
-  it.skip("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
+  it("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       forbiddenSubjects: [`transfer.send-async.`],
