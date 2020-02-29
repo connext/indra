@@ -128,50 +128,6 @@ export class TransferService {
     return await this.linkedTransferRepository.findAll();
   }
 
-  // DEPRECATED
-  async setRecipientAndEncryptedPreImageOnLinkedTransfer(
-    senderPublicIdentifier: string,
-    recipientPublicIdentifier: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<LinkedTransfer> {
-    this.log.warn(
-      `setRecipientAndEncryptedPreImageOnLinkedTransfer is DEPRECATED, client needs to be updated`,
-    );
-
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
-      senderPublicIdentifier,
-    );
-    if (!senderChannel) {
-      throw new Error(`No channel exists for senderPublicIdentifier ${senderPublicIdentifier}`);
-    }
-
-    const recipientChannel = await this.channelRepository.findByUserPublicIdentifier(
-      recipientPublicIdentifier,
-    );
-    if (!recipientChannel) {
-      throw new Error(
-        `No channel exists for recipientPublicIdentifier ${recipientPublicIdentifier}`,
-      );
-    }
-
-    // check that we have recorded this transfer in our db
-    const transfer = await this.linkedTransferRepository.findByLinkedHash(linkedHash);
-    if (!transfer) {
-      throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
-    }
-
-    if (senderPublicIdentifier !== transfer.senderChannel.userPublicIdentifier) {
-      throw new Error(`Can only modify transfer that you sent`);
-    }
-
-    return await this.linkedTransferRepository.addRecipientPublicIdentifierAndEncryptedPreImage(
-      transfer,
-      recipientChannel,
-      encryptedPreImage,
-    );
-  }
-
   async resolveLinkedTransfer(
     userPubId: string,
     paymentId: string,

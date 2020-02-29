@@ -45,29 +45,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
     return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash);
   }
 
-  // DEPRECATED
-  async setRecipientOnLinkedTransfer(
-    pubId: string,
-    data: {
-      recipientPublicIdentifier: string;
-      linkedHash: string;
-      encryptedPreImage: string;
-    },
-  ): Promise<{ linkedHash: string }> {
-    const { recipientPublicIdentifier, linkedHash, encryptedPreImage } = data;
-    if (!recipientPublicIdentifier) {
-      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
-    }
-
-    const transfer = await this.transferService.setRecipientAndEncryptedPreImageOnLinkedTransfer(
-      pubId,
-      recipientPublicIdentifier,
-      encryptedPreImage,
-      linkedHash,
-    );
-    return { linkedHash: transfer.linkedHash };
-  }
-
   /**
    * Check in endpoint for client to call when it comes online to handle pending tasks
    * @param pubId
@@ -100,10 +77,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "transfer.resolve-linked.>",
       this.authService.useUnverifiedPublicIdentifier(this.resolveLinkedTransfer.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "transfer.set-recipient.>",
-      this.authService.useUnverifiedPublicIdentifier(this.setRecipientOnLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
       "transfer.get-pending.>",
