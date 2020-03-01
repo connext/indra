@@ -18,22 +18,22 @@ class LockMessaging extends AbstractMessagingProvider {
     super(log, messaging);
   }
 
-  async acquireLock(multisig: string, data: { lockTTL: number }): Promise<string> {
-    return await this.lockService.acquireLock(multisig, data.lockTTL);
+  async acquireLock(lockName: string, data: { lockTTL: number }): Promise<string> {
+    return await this.lockService.acquireLock(lockName, data.lockTTL);
   }
 
-  async releaseLock(multisig: string, data: { lockValue: string }): Promise<void> {
-    return await this.lockService.releaseLock(multisig, data.lockValue);
+  async releaseLock(lockName: string, data: { lockValue: string }): Promise<void> {
+    return await this.lockService.releaseLock(lockName, data.lockValue);
   }
 
   async setupSubscriptions(): Promise<void> {
     super.connectRequestReponse(
-      "*.lock.acquire",
-      this.authService.parseMultisig(this.acquireLock.bind(this)),
+      "*.lock.acquire.>",
+      this.authService.parseLock(this.acquireLock.bind(this)),
     );
     super.connectRequestReponse(
-      "*.lock.release",
-      this.authService.parseMultisig(this.releaseLock.bind(this)),
+      "*.lock.release.>",
+      this.authService.parseLock(this.releaseLock.bind(this)),
     );
   }
 }

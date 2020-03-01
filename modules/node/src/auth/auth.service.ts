@@ -17,10 +17,6 @@ export function getAuthAddressFromXpub(xpub: string): string {
   return fromExtendedKey(xpub).derivePath("0").address;
 }
 
-export function getMultisigAddressFromXpub(xpub: string): string {
-  return "TODO"
-}
-
 @Injectable()
 export class AuthService {
   private nonces: { [key: string]: { nonce: string; expiry: number } } = {};
@@ -46,8 +42,6 @@ export class AuthService {
     const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
     logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
-    const multisigAddress = getMultisigAddressFromXpub(userPublicIdentifier);
-
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
     const addr = verifyMessage(arrayify(nonce), signedNonce);
     if (addr !== xpubAddress) {
@@ -59,11 +53,11 @@ export class AuthService {
 
     const permissions = {
       publish: {
-        allow: [`${userPublicIdentifier}.>`, `${multisigAddress}`],
+        allow: [`${userPublicIdentifier}.>`],
         // deny: [],
       },
       subscribe: {
-        allow: [`${userPublicIdentifier}.>`, `${multisigAddress}`, `app-registry.>`, ``],
+        allow: [`${userPublicIdentifier}.>`, `app-registry.>`, ``],
         // deny: [],
       },
       // response: {
@@ -112,7 +106,7 @@ export class AuthService {
   }
 
   parseXpub(callback: any): any {
-    return async (subject: string, data: { token: string }): Promise<string> => {
+    return async (subject: string, data: any): Promise<string> => {
       // Get & validate xpub from subject
       const xpub = subject.split(".")[0]; // first item of subscription is xpub
       if (!xpub || !isXpub(xpub)) {
@@ -122,13 +116,13 @@ export class AuthService {
     };
   }
 
-  parseMultisig(callback: any): any {
-    return async (subject: string, data: { token: string }): Promise<string> => {
-      const multisig = subject.split(".")[0]; // first item of subject is multisig
-      if (!multisig || !isEthAddress(multisig)) {
+  parseLock(callback: any): any {
+    return async (subject: string, data: any): Promise<string> => {
+      const lockName = subject.split(".").pop(); // last item of subject is lockName
+      if (!lockName) { // TODO what other validation do we need here?
         return this.badSubject(`Subject's first item isn't a valid multisig address: ${subject}`);
       }
-      return callback(multisig, data);
+      return callback(lockName, data);
     };
   }
 }
