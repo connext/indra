@@ -133,13 +133,11 @@ describe("Async transfer offline tests", () => {
       type: "LINKED",
     };
     await verifyTransfer(senderClient, expectedTransfer);
-    console.log(`**** verified sender transfer`);
     const receiverLinkedApp = await getLinkedApp(receiverClient, false);
     expect(receiverLinkedApp.length).to.equal(0);
     // make sure recipient can still redeem payment
     await receiverClient.reclaimPendingAsyncTransfers();
     await verifyTransfer(receiverClient, { ...expectedTransfer, status: "REDEEMED" });
-    console.log(`**** verified receiver transfer`);
   });
 
   /**
