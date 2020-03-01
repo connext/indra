@@ -1,33 +1,42 @@
-import { CFCoreTypes } from "@connext/types";
+import {
+  CFCoreTypes,
+  ILoggerService,
+  IMessagingService,
+  MessagingConfig,
+  nullLogger,
+} from "@connext/types";
 import * as natsutil from "ts-natsutil";
-
-import { Logger } from "./logger";
-import { IMessagingService, MessagingConfig } from "./types";
 
 export class MessagingService implements IMessagingService {
   private service: natsutil.INatsService | undefined;
-  private log: Logger;
+  private log: ILoggerService;
+  private bearerToken: string | null;
 
   constructor(
     private readonly config: MessagingConfig,
     private readonly messagingServiceKey: string,
-    private readonly bearerToken?: string,
+    private readonly clientAuthCallback: () => Promise<string>,
   ) {
-    this.log = new Logger(`MessagingService`, config.logLevel);
-    this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
+    this.log = config.logger || nullLogger;
+    this.log.debug(`Created NatsMessagingService with config: ${JSON.stringify(config, null, 2)}`);
+    this.bearerToken = config.bearerToken;
   }
 
   async connect(): Promise<void> {
     const messagingUrl = this.config.messagingUrl;
+    if(!this.bearerToken) {
+      this.bearerToken = await this.clientAuthCallback();
+    }
     const service = natsutil.natsServiceFactory({
       ...this.config,
       ...this.config.options,
       bearerToken: this.bearerToken,
       natsServers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl, // FIXME-- rename to servers instead of natsServers
     });
-    service.connect().then(() => {
+    service.connect().then((natsConnection) => {
       this.service = service;
       this.log.debug(`Connected!`);
+      // TODO ARJUN -- Check natsConnection type and then listen for disconnect. On disconnect, reset bearerToken and call connect() again.
     });
   }
 
