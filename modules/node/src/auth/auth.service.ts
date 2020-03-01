@@ -52,13 +52,14 @@ export class AuthService {
       throw new Error(`verification failed... nonce expired for xpub: ${userPublicIdentifier}`);
     }
 
+    // TODO -- ARJUN: Change client to subscribe to app-registry/config. Try to get latest published OR move everything under xpub route.
     const permissions = {
       publish: {
         allow: [`${userPublicIdentifier}.>`],
         // deny: [],
       },
       subscribe: {
-        allow: [`${userPublicIdentifier}.>`, `app-registry.>`, `swap-rate.>`],
+        allow: [`${userPublicIdentifier}.>`, `app-registry.>`, `swap-rate.>`, `config.>`],
         // deny: [],
       },
       // response: {
@@ -66,7 +67,7 @@ export class AuthService {
       // },
     };
 
-    // TODO... fixup this admin stuff
+    // TODO -- ARJUN: Use admin XPUB from env vars
     // if (isAdmin) {
     //   do permissions stuff...
     // }
