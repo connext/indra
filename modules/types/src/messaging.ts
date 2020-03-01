@@ -44,12 +44,11 @@ export interface IRpcNodeProvider {
 export interface MessagingConfig {
   clusterId?: string;
   logger?: ILoggerService;
-  messagingUrl: string | string[];
+  messagingUrl: string | string [];
   options?: any;
   privateKey?: string;
   publicKey?: string;
-  token?: string;
-  websocketUrl?: string | string[];
+  bearerToken?: string;
 }
 
 export interface CFMessagingService {
