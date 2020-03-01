@@ -6,7 +6,6 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
 import { isValidHex, isXpub, isEthAddress } from "../util";
 import { MessagingAuthService } from "@connext/messaging";
-import { CLogger, isValidHex, isXpub, isEthAddress } from "../util";
 
 // TODO: integrate JWT token
 
@@ -35,11 +34,13 @@ export class AuthService {
     const expiry = Date.now() + nonceTTL;
     // FIXME-- store nonce in redis instead of here...
     this.nonces[userPublicIdentifier] = { expiry, nonce };
-    logger.debug(`getNonce: Gave xpub ${userPublicIdentifier} a nonce that expires at ${expiry}: ${nonce}`);
+    logger.debug(
+      `getNonce: Gave xpub ${userPublicIdentifier} a nonce that expires at ${expiry}: ${nonce}`,
+    );
     return nonce;
   }
 
-  async verifyAndVend(signedNonce: string, userPublicIdentifier: string): string {
+  async verifyAndVend(signedNonce: string, userPublicIdentifier: string): Promise<string> {
     const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
     logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
@@ -84,9 +85,7 @@ export class AuthService {
           `Subject's last item isn't a valid eth address: ${subject}`,
         );
         if (authRes) {
-          this.log.error(
-            `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
-          );
+          this.log.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
           return callback(multisig, data);
         }
       }
@@ -101,9 +100,7 @@ export class AuthService {
       this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes) {
-        this.log.error(
-          `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
-        );
+        this.log.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
       }
       return callback(multisig, data);
     };

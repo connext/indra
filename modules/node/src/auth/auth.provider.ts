@@ -25,8 +25,14 @@ class AuthMessaging extends AbstractMessagingProvider {
     return this.authService.getNonce(data.address);
   }
 
+  async verifyNonce(subject: string, data: { sig: string }): Promise<string> {
+    const xpub = subject.split(".")[0];
+    return this.authService.verifyAndVend(data.sig, xpub);
+  }
+
   async setupSubscriptions(): Promise<void> {
     super.connectRequestReponse(`auth.getNonce`, this.getNonce.bind(this));
+    super.connectRequestReponse(`*.auth.verifyNonce`, this.verifyNonce.bind(this));
   }
 }
 
