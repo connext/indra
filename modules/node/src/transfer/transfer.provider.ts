@@ -6,7 +6,7 @@ import { RpcException } from "@nestjs/microservices";
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
-import { AbstractMessagingProvider, replaceBN } from "../util";
+import { AbstractMessagingProvider, replaceBN, stringify } from "../util";
 
 import { LinkedTransfer } from "./transfer.entity";
 import { TransferService } from "./transfer.service";
@@ -53,7 +53,11 @@ export class TransferMessaging extends AbstractMessagingProvider {
     // reclaim collateral from redeemed transfers
     const reclaimableTransfers = await this.transferService.getLinkedTransfersForReclaim(pubId);
     for (const transfer of reclaimableTransfers) {
-      await this.transferService.reclaimLinkedTransferCollateralByPaymentId(transfer.paymentId);
+      try {
+        await this.transferService.reclaimLinkedTransferCollateralByPaymentId(transfer.paymentId);
+      } catch (e) {
+        this.log.error(`Error reclaiming transfer: ${stringify(e.stack || e.message)}`);
+      }
     }
   }
 

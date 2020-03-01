@@ -134,9 +134,16 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UNINSTALL_EVENT, data);
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
-        await this.transferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
-          data.data.appInstanceId,
-        );
+        try {
+          await this.transferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
+            data.data.appInstanceId,
+          );
+        } catch (e) {
+          if (e.message.includes(`Could not find transfer`)) {
+            return;
+          }
+          throw e;
+        }
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         this.logEvent(UNINSTALL_VIRTUAL_EVENT, data);
