@@ -17,6 +17,10 @@ export function getAuthAddressFromXpub(xpub: string): string {
   return fromExtendedKey(xpub).derivePath("0").address;
 }
 
+export function getMultisigAddressFromXpub(xpub: string): string {
+  return "TODO"
+}
+
 @Injectable()
 export class AuthService {
   private nonces: { [key: string]: { nonce: string; expiry: number } } = {};
@@ -42,6 +46,8 @@ export class AuthService {
     const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
     logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
+    const multisigAddress = getMultisigAddressFromXpub(userPublicIdentifier);
+
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
     const addr = verifyMessage(arrayify(nonce), signedNonce);
     if (addr !== xpubAddress) {
@@ -53,11 +59,11 @@ export class AuthService {
 
     const permissions = {
       publish: {
-        allow: [`${userPublicIdentifier}.>`],
+        allow: [`${userPublicIdentifier}.>`, `${multisigAddress}`],
         // deny: [],
       },
       subscribe: {
-        allow: [`${userPublicIdentifier}.>`, `app-registry.>`, ``],
+        allow: [`${userPublicIdentifier}.>`, `${multisigAddress}`, `app-registry.>`, ``],
         // deny: [],
       },
       // response: {
@@ -73,56 +79,6 @@ export class AuthService {
     const jwt = this.messagingAuthSerivice.vend(userPublicIdentifier, nonceTTL, permissions);
     logger.debug(``);
     return jwt;
-  }
-
-  useVerifiedMultisig(callback: any): any {
-    return async (subject: string, data: { token: string }): Promise<string> => {
-      const multisig = subject.split(".").pop(); // last item of subject is lock name
-      if (!isEthAddress(multisig)) {
-        const authRes = this.badSubject(
-          `Subject's last item isn't a valid eth address: ${subject}`,
-        );
-        if (authRes) {
-          this.log.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
-          return callback(multisig, data);
-        }
-      }
-      const channel = await this.channelRepo.findByMultisigAddress(multisig);
-      this.log.info(`Got channel ${multisig}: ${JSON.stringify(channel)}`);
-      if (!channel) {
-        this.log.error(`Acquiring a lock for a multisig w/out a channel: ${subject}`);
-        return callback(multisig, data);
-      }
-      const { userPublicIdentifier } = channel;
-      const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
-      this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
-      const authRes = this.verifySig(xpubAddress, data);
-      if (authRes) {
-        this.log.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
-      }
-      return callback(multisig, data);
-    };
-  }
-
-  useUnverifiedMultisig(callback: any): any {
-    return async (subject: string, data: { token: string }): Promise<string> => {
-      const multisig = subject.split(".").pop(); // last item of subject is lock name
-      if (!isEthAddress(multisig)) {
-        return this.badSubject(`Subject's last item isn't a valid eth address: ${subject}`);
-      }
-      return callback(multisig, data);
-    };
-  }
-
-  // TODO: deprecate
-  useUnverifiedHexString(callback: any): any {
-    return async (subject: string, data: { token: string }): Promise<string> => {
-      const lockName = subject.split(".").pop(); // last item of subject is lock name
-      if (!isHexString(lockName)) {
-        return this.badSubject(`Subject's last item isn't a valid hex string: ${subject}`);
-      }
-      return callback(lockName, data);
-    };
   }
 
   useAdminToken(callback: any): any {
@@ -155,7 +111,7 @@ export class AuthService {
     };
   }
 
-  parseSubject(callback: any): any {
+  parseXpub(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       // Get & validate xpub from subject
       const xpub = subject.split(".")[0]; // first item of subscription is xpub
@@ -163,6 +119,16 @@ export class AuthService {
         return this.badSubject(`Subject's first item isn't a valid xpub: ${subject}`);
       }
       return callback(xpub, data);
+    };
+  }
+
+  parseMultisig(callback: any): any {
+    return async (subject: string, data: { token: string }): Promise<string> => {
+      const multisig = subject.split(".")[0]; // first item of subject is multisig
+      if (!multisig || !isEthAddress(multisig)) {
+        return this.badSubject(`Subject's first item isn't a valid multisig address: ${subject}`);
+      }
+      return callback(multisig, data);
     };
   }
 }

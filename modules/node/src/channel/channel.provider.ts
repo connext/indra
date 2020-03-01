@@ -139,19 +139,19 @@ class ChannelMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.channel.get",
-      this.authService.parseSubject(this.getChannel.bind(this)),
+      this.authService.parseXpub(this.getChannel.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.create",
-      this.authService.parseSubject(this.createChannel.bind(this)),
+      this.authService.parseXpub(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.withdraw",
-      this.authService.parseSubject(this.withdraw.bind(this)),
+      this.authService.parseXpub(this.withdraw.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.request-collateral",
-      this.authService.parseSubject(this.requestCollateral.bind(this)),
+      this.authService.parseXpub(this.requestCollateral.bind(this)),
     );
     // TODO what do we do about admin token?
     await super.connectRequestReponse(
@@ -160,19 +160,19 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "*.channel.get-profile",
-      this.authService.parseSubject(this.getRebalanceProfile.bind(this)),
+      this.authService.parseXpub(this.getRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.verify-app-sequence",
-      this.authService.parseSubject(this.verifyAppSequenceNumber.bind(this)),
+      this.authService.parseXpub(this.verifyAppSequenceNumber.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.restore-states",
-      this.authService.parseSubject(this.getStatesForRestore.bind(this)),
+      this.authService.parseXpub(this.getStatesForRestore.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.latestWithdrawal",
-      this.authService.parseSubject(this.getLatestWithdrawal.bind(this)),
+      this.authService.parseXpub(this.getLatestWithdrawal.bind(this)),
     );
   }
 }
