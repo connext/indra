@@ -94,28 +94,28 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "transfer.fetch-linked.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
+      "*.transfer.fetch-linked",
+      this.authService.parseXpub(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
-      "transfer.resolve-linked.>",
-      this.authService.useUnverifiedPublicIdentifier(this.resolveLinkedTransfer.bind(this)),
+      "*.transfer.resolve-linked",
+      this.authService.parseXpub(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
-      "transfer.set-recipient.>",
-      this.authService.useUnverifiedPublicIdentifier(this.setRecipientOnLinkedTransfer.bind(this)),
+      "*.transfer.set-recipient",
+      this.authService.parseXpub(this.setRecipientOnLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
-      "transfer.get-pending.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getPendingTransfers.bind(this)),
+      "*.transfer.get-pending",
+      this.authService.parseXpub(this.getPendingTransfers.bind(this)),
     );
     await super.connectRequestReponse(
-      "transfer.get-history.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getTransferHistory.bind(this)),
+      "*.transfer.get-history",
+      this.authService.parseXpub(this.getTransferHistory.bind(this)),
     );
     await super.connectRequestReponse(
-      "client.check-in.>",
-      this.authService.useUnverifiedPublicIdentifier(this.clientCheckIn.bind(this)),
+      "*.client.check-in",
+      this.authService.parseXpub(this.clientCheckIn.bind(this)),
     );
   }
 }

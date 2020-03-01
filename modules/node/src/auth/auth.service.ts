@@ -57,7 +57,7 @@ export class AuthService {
         // deny: [],
       },
       subscribe: {
-        allow: [`${userPublicIdentifier}.>`, `app-registry.>`, ``],
+        allow: [`${userPublicIdentifier}.>`, `app-registry.>`, `swap-rate.>`],
         // deny: [],
       },
       // response: {
@@ -120,7 +120,7 @@ export class AuthService {
     return async (subject: string, data: any): Promise<string> => {
       const lockName = subject.split(".").pop(); // last item of subject is lockName
       if (!lockName) { // TODO what other validation do we need here?
-        return this.badSubject(`Subject's first item isn't a valid multisig address: ${subject}`);
+        return this.badSubject(`Subject's last item isn't a valid lockName: ${subject}`);
       }
       return callback(lockName, data);
     };
