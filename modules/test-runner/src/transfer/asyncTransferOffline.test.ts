@@ -65,7 +65,7 @@ const verifyTransfer = async (
   expected: any, //Partial<Transfer> type uses `null` not `undefined`
 ): Promise<void> => {
   expect(expected.paymentId).to.be.ok;
-  const transfer = await client.getLinkedTransfer(expected.paymentId!);
+  const transfer = await client.getLinkedTransfer(expected.paymentId);
   // verify the saved transfer information
   expect(transfer).to.containSubset(expected);
 };
@@ -103,7 +103,7 @@ describe("Async transfer offline tests", () => {
    *
    * Recipient should be able to claim payment regardless.
    */
-  it("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
+  it.only("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       forbiddenSubjects: [`transfer.send-async.`],
@@ -133,11 +133,13 @@ describe("Async transfer offline tests", () => {
       type: "LINKED",
     };
     await verifyTransfer(senderClient, expectedTransfer);
+    console.log(`**** verified sender transfer`);
     const receiverLinkedApp = await getLinkedApp(receiverClient, false);
     expect(receiverLinkedApp.length).to.equal(0);
     // make sure recipient can still redeem payment
     await receiverClient.reclaimPendingAsyncTransfers();
     await verifyTransfer(receiverClient, { ...expectedTransfer, status: "REDEEMED" });
+    console.log(`**** verified receiver transfer`);
   });
 
   /**
