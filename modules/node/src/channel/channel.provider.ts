@@ -138,40 +138,41 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "channel.get.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getChannel.bind(this)),
+      "*.channel.get",
+      this.authService.parseSubject(this.getChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.create.>",
-      this.authService.useUnverifiedPublicIdentifier(this.createChannel.bind(this)),
+      "*.channel.create",
+      this.authService.parseSubject(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.withdraw.>",
-      this.authService.useUnverifiedPublicIdentifier(this.withdraw.bind(this)),
+      "*.channel.withdraw",
+      this.authService.parseSubject(this.withdraw.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.request-collateral.>",
-      this.authService.useUnverifiedPublicIdentifier(this.requestCollateral.bind(this)),
+      "*.channel.request-collateral",
+      this.authService.parseSubject(this.requestCollateral.bind(this)),
     );
+    // TODO what do we do about admin token?
     await super.connectRequestReponse(
-      "channel.add-profile.>",
+      "*.channel.add-profile",
       this.authService.useAdminTokenWithPublicIdentifier(this.addRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.get-profile.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getRebalanceProfile.bind(this)),
+      "*.channel.get-profile",
+      this.authService.parseSubject(this.getRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.verify-app-sequence.>",
-      this.authService.useUnverifiedPublicIdentifier(this.verifyAppSequenceNumber.bind(this)),
+      "*.channel.verify-app-sequence",
+      this.authService.parseSubject(this.verifyAppSequenceNumber.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.restore-states.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getStatesForRestore.bind(this)),
+      "*.channel.restore-states",
+      this.authService.parseSubject(this.getStatesForRestore.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.latestWithdrawal.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getLatestWithdrawal.bind(this)),
+      "*.channel.latestWithdrawal",
+      this.authService.parseSubject(this.getLatestWithdrawal.bind(this)),
     );
   }
 }

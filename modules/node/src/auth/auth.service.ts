@@ -57,7 +57,7 @@ export class AuthService {
         // deny: [],
       },
       subscribe: {
-        allow: [`${userPublicIdentifier}.>`],
+        allow: [`${userPublicIdentifier}.>`, `app-registry.>`, ``],
         // deny: [],
       },
       // response: {
@@ -155,12 +155,12 @@ export class AuthService {
     };
   }
 
-  useUnverifiedPublicIdentifier(callback: any): any {
+  parseSubject(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       // Get & validate xpub from subject
-      const xpub = subject.split(".").pop(); // last item of subscription is xpub
+      const xpub = subject.split(".")[0]; // first item of subscription is xpub
       if (!xpub || !isXpub(xpub)) {
-        return this.badSubject(`Subject's last item isn't a valid xpub: ${subject}`);
+        return this.badSubject(`Subject's first item isn't a valid xpub: ${subject}`);
       }
       return callback(xpub, data);
     };
