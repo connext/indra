@@ -23,17 +23,12 @@ import {
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";
-import { chan_nodeAuth } from "@connext/types";
 
-// Include our access token when interacting with these subjects
-const guardedSubjects = [];
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
 // Given 1 unit of `from`, how many units `to` are received.
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
-
-// TODO: integrate JWT token
 
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
@@ -43,7 +38,6 @@ export class NodeApiClient implements INodeApiClient {
   private _userPublicIdentifier: string | undefined;
   private _nodePublicIdentifier: string | undefined;
   private _channelProvider: IChannelProvider | undefined;
-  private _authToken: any;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -87,7 +81,7 @@ export class NodeApiClient implements INodeApiClient {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
+    const lockValue = await this.send(`${this.userPublicIdentifier}.lock.acquire.${lockName}`, { lockTTL: timeout });
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
@@ -95,7 +89,7 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       this.log.error(`Failed to execute callback while lock is held: ${e.stack || e.message}`);
     } finally {
-      await this.send(`lock.release.${lockName}`, { lockValue });
+      await this.send(`${this.userPublicIdentifier}.lock.release.${lockName}`, { lockValue });
       this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
@@ -117,15 +111,15 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async createChannel(): Promise<CreateChannelResponse> {
-    return await this.send(`channel.create.${this.userPublicIdentifier}`);
+    return await this.send(`${this.userPublicIdentifier}.channel.create`);
   }
 
   public async getChannel(): Promise<GetChannelResponse> {
-    return await this.send(`channel.get.${this.userPublicIdentifier}`);
+    return await this.send(`${this.userPublicIdentifier}.channel.get`);
   }
 
   public async getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]> {
-    return (await this.send(`transfer.get-pending.${this.userPublicIdentifier}`)) || [];
+    return (await this.send(`${this.userPublicIdentifier}.transfer.get-pending`)) || [];
   }
 
   // TODO: do we want this? thought this would be a blocking operation...
@@ -134,14 +128,14 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getTransferHistory(): Promise<Transfer[]> {
-    return (await this.send(`transfer.get-history.${this.userPublicIdentifier}`)) || [];
+    return (await this.send(`${this.userPublicIdentifier}.transfer.get-history`)) || [];
   }
 
   // TODO: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
   public async requestCollateral(assetId: string): Promise<RequestCollateralResponse | void> {
     try {
-      return await this.send(`channel.request-collateral.${this.userPublicIdentifier}`, {
+      return await this.send(`${this.userPublicIdentifier}.channel.request-collateral`, {
         assetId,
       });
     } catch (e) {
@@ -155,13 +149,13 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse> {
-    return await this.send(`channel.withdraw.${this.userPublicIdentifier}`, {
+    return await this.send(`${this.userPublicIdentifier}.channel.withdraw`, {
       tx,
     });
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return await this.send(`transfer.fetch-linked.${this.userPublicIdentifier}`, {
+    return await this.send(`${this.userPublicIdentifier}.transfer.fetch-linked`, {
       paymentId,
     });
   }
@@ -171,7 +165,7 @@ export class NodeApiClient implements INodeApiClient {
     linkedHash: string,
     meta: object = {},
   ): Promise<ResolveLinkedTransferResponse> {
-    return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
+    return await this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
       linkedHash,
       meta,
       paymentId,
@@ -179,7 +173,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
-    return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
+    return await this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
       assetId: makeChecksumOrEthAddress(assetId),
     });
   }
@@ -189,7 +183,7 @@ export class NodeApiClient implements INodeApiClient {
     encryptedPreImage: string,
     linkedHash: string,
   ): Promise<{ linkedHash: string }> {
-    return await this.send(`transfer.set-recipient.${this.userPublicIdentifier}`, {
+    return await this.send(`${this.userPublicIdentifier}.transfer.set-recipient`, {
       encryptedPreImage,
       linkedHash,
       recipientPublicIdentifier,
@@ -197,12 +191,13 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences> {
-    return await this.send(`channel.verify-app-sequence.${this.userPublicIdentifier}`, {
+    return await this.send(`${this.userPublicIdentifier}.channel.verify-app-sequence`, {
       userAppSequenceNumber: appSequenceNumber,
     });
   }
 
   // NOTE: maybe move since its not directly to the node just through messaging?
+  // TODO -- What needs to happen here for JWT auth refactor?
   public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
     try {
       return await this.send(`online.${recipientPublicIdentifier}`);
@@ -239,46 +234,20 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   // TODO: type
-  public async restoreState(publicIdentifier: string): Promise<any> {
-    return this.send(`channel.restore-states.${publicIdentifier}`);
+  public async restoreState(): Promise<any> {
+    return this.send(`${this.userPublicIdentifier}.channel.restore-states`);
   }
 
   public async getLatestWithdrawal(): Promise<Transaction> {
-    return await this.send(`channel.latestWithdrawal.${this.userPublicIdentifier}`);
+    return await this.send(`${this.userPublicIdentifier}.channel.latestWithdrawal`);
   }
 
   public async clientCheckIn(): Promise<void> {
-    return await this.send(`client.check-in.${this.userPublicIdentifier}`);
+    return await this.send(`${this.userPublicIdentifier}.client.check-in`);
   }
 
   ////////////////////////////////////////
   // PRIVATE
-
-  private async getAuthToken(): Promise<string> {
-    if (!this.channelProvider) {
-      throw new Error(
-        "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
-      );
-    }
-    let token;
-    // If we have a cached token, use it. Otherwise, get a new one.
-    if (this._authToken && this._authToken.expiry < Date.now()) {
-      token = this._authToken;
-    } else {
-      const unsignedToken = await this.send("auth.getNonce", {
-        address: this.channelProvider.signerAddress,
-      });
-      if (unsignedToken.expiry < Date.now()) {
-        throw new Error("Got expired authentication nonce from hub - this shouldnt happen!");
-      }
-      const sig = await this.channelProvider.send(chan_nodeAuth, { message: unsignedToken.nonce });
-      this._authToken = token = {
-        expiry: unsignedToken.expiry,
-        value: `${unsignedToken.nonce}:${sig}`,
-      };
-    }
-    return token.value;
-  }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
     let error;
@@ -314,10 +283,6 @@ export class NodeApiClient implements INodeApiClient {
       ...data,
       id: uuid.v4(),
     };
-    if (guardedSubjects.includes(subject.split(".")[0])) {
-      throw new Error("We are not doing auth right now, this should not ever happen!");
-      payload.token = await this.getAuthToken();
-    }
     let msg: any;
     try {
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
@@ -325,12 +290,6 @@ export class NodeApiClient implements INodeApiClient {
       throw new Error(`${sendFailed}: ${e.message}`);
     }
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
-    if (error && error.startsWith("Invalid token")) {
-      this.log.info("Auth error, token might have expired. Let's get a fresh token & try again.");
-      payload.token = await this.getAuthToken();
-      msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
-      error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
-    }
     if (!msg.data) {
       this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
       return undefined;
