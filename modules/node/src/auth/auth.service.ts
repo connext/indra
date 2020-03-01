@@ -19,18 +19,18 @@ export class AuthService {
   private signerCache: { [key: string]: string } = {};
   constructor(
     private readonly channelRepo: ChannelRepository,
-    private readonly logger: LoggerService,
+    private readonly log: LoggerService,
   ) {
-    this.logger.setContext("AuthService");
+    this.log.setContext("AuthService");
   }
 
   badToken(warning: string): any {
-    this.logger.warn(warning);
+    this.log.warn(warning);
     return { err: `Invalid token` } as any;
   }
 
   badSubject(warning: string): any {
-    this.logger.warn(warning);
+    this.log.warn(warning);
     return { err: `Invalid subject` } as any;
   }
 
@@ -41,7 +41,7 @@ export class AuthService {
     const nonce = hexlify(randomBytes(nonceLen));
     const expiry = Date.now() + nonceTTL;
     this.nonces[nonce] = { address, expiry };
-    this.logger.debug(
+    this.log.debug(
       `getNonce: Gave address ${address} a nonce that expires at ${expiry}: ${nonce}`,
     );
     return nonce;
@@ -55,24 +55,24 @@ export class AuthService {
           `Subject's last item isn't a valid eth address: ${subject}`,
         );
         if (authRes) {
-          this.logger.error(
+          this.log.error(
             `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
           );
           return callback(multisig, data);
         }
       }
       const channel = await this.channelRepo.findByMultisigAddress(multisig);
-      this.logger.log(`Got channel ${multisig}: ${JSON.stringify(channel)}`);
+      this.log.info(`Got channel ${multisig}: ${JSON.stringify(channel)}`);
       if (!channel) {
-        this.logger.error(`Acquiring a lock for a multisig w/out a channel: ${subject}`);
+        this.log.error(`Acquiring a lock for a multisig w/out a channel: ${subject}`);
         return callback(multisig, data);
       }
       const { userPublicIdentifier } = channel;
       const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
-      this.logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
+      this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes) {
-        this.logger.error(
+        this.log.error(
           `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
         );
       }
@@ -110,7 +110,7 @@ export class AuthService {
       const xpubAddress = getAuthAddressFromXpub(xpub);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes && subject.startsWith("channel.restore-states")) {
-        this.logger.error(
+        this.log.error(
           `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
         );
         return callback(xpub, data);
@@ -192,7 +192,7 @@ export class AuthService {
     // Cache sig recovery calculation
     if (!this.signerCache[token]) {
       this.signerCache[token] = verifyMessage(arrayify(nonce), sig);
-      this.logger.debug(`Recovered signer ${this.signerCache[token]} from token ${token}`);
+      this.log.debug(`Recovered signer ${this.signerCache[token]} from token ${token}`);
     }
     const signer = this.signerCache[token];
     if (signer !== address) {

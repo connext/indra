@@ -12,9 +12,9 @@ export class CollateralService {
   constructor(
     private readonly anonymizedOnchainTransactionRepository: AnonymizedOnchainTransactionRepository,
     private readonly anonymizedTransferRepository: AnonymizedTransferRepository,
-    private readonly logger: LoggerService,
+    private readonly log: LoggerService,
   ) {
-    this.logger.setContext("CollateralService");
+    this.log.setContext("CollateralService");
   }
 
   async getAnonymizedCollateralData(

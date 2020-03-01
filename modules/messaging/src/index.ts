@@ -1,3 +1,3 @@
+export { IMessagingService, MessagingConfig } from "@connext/types";
 export { MessagingServiceFactory } from "./factory";
-export { IMessagingService, MessagingConfig } from "./types";
 export { NatsMessagingService } from "./nats";

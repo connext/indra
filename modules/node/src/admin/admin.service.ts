@@ -27,10 +27,10 @@ export class AdminService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
-    private readonly logger: LoggerService,
+    private readonly log: LoggerService,
     private readonly transferService: TransferService,
   ) {
-    this.logger.setContext("AdminService");
+    this.log.setContext("AdminService");
   }
 
   /////////////////////////////////////////
@@ -146,7 +146,7 @@ export class AdminService {
       )
     ).map(state => state.data);
     const output: RepairCriticalAddressesResponse = { fixed: [], broken: [] };
-    this.logger.log(`Scanning ${states.length} channels to see if any need to be repaired..`);
+    this.log.info(`Scanning ${states.length} channels to see if any need to be repaired..`);
     // First loop: Identify all channels that need to be repaired
     for (const state of states) {
       if (
@@ -164,37 +164,37 @@ export class AdminService {
       }
     }
     if (output.broken.length === 0) {
-      this.logger.log("No channels need to be repaired, great!");
+      this.log.info("No channels need to be repaired, great!");
       return output;
     }
-    this.logger.log(`Preparing to repair ${output.broken.length} channels`);
+    this.log.info(`Preparing to repair ${output.broken.length} channels`);
     // Make a copy of broken multisigs so we can edit the output while looping through it
     const brokenMultisigs = JSON.parse(JSON.stringify(output.broken));
     // Second loop: attempt to repair broken channels
     for (const brokenMultisig of brokenMultisigs) {
       const { data: state } = await this.cfCoreService.getStateChannel(brokenMultisig);
-      this.logger.log(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
+      this.log.info(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
       const criticalAddresses = await scanForCriticalAddresses(
         state.userNeuteredExtendedKeys,
         state.multisigAddress,
         this.configService.getEthProvider(),
       );
       if (!criticalAddresses) {
-        this.logger.warn(
+        this.log.warn(
           `Could not find critical addresses that would fix channel ${state.multisigAddress}`,
         );
         continue;
       }
       if (criticalAddresses.toxicBytecode) {
-        this.logger.warn(
+        this.log.warn(
           `Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`,
         );
       } else if (criticalAddresses.legacyKeygen) {
-        this.logger.warn(
+        this.log.warn(
           `Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`,
         );
       }
-      this.logger.log(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
+      this.log.info(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
       const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${brokenMultisig}`;
       const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
       cfCoreRecord["addresses"] = {
@@ -212,7 +212,7 @@ export class AdminService {
       output.broken = output.broken.filter(multisig => multisig === brokenMultisig);
     }
     if (output.broken.length > 0) {
-      this.logger.warn(`${output.broken.length} channels could not be repaired`);
+      this.log.warn(`${output.broken.length} channels could not be repaired`);
     }
     return output;
   }

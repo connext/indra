@@ -12,10 +12,10 @@ class LockMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     private readonly lockService: LockService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ) {
-    super(logger, messaging);
+    super(log, messaging);
   }
 
   async acquireLock(multisig: string, data: { lockTTL: number }): Promise<string> {
@@ -44,10 +44,10 @@ export const lockProviderFactory: FactoryProvider<Promise<void>> = {
   useFactory: async (
     authService: AuthService,
     lockService: LockService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ): Promise<void> => {
-    const lock = new LockMessaging(authService, lockService, logger, messaging);
+    const lock = new LockMessaging(authService, lockService, log, messaging);
     await lock.setupSubscriptions();
   },
 };

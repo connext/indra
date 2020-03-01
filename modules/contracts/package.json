@@ -19,7 +19,7 @@
     "solidity"
   ],
   "scripts": {
-    "build": "npm run compile && npm run transpile",
+    "build": "rm -rf ./dist/* && npm run compile && npm run transpile",
     "compile": "waffle waffle.json",
     "compile-native": "waffle waffle.native.json",
     "lint": "npm run lint-ts && npm run lint-sol",
@@ -29,7 +29,7 @@
     "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@connext/types": "4.2.0",
+    "@connext/types": "4.3.0",
     "ethers": "4.0.45",
     "@openzeppelin/contracts": "2.5.0",
     "ganache-cli": "6.8.2",

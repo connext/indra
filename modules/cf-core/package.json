@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "4.2.0",
+  "version": "4.3.0",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
@@ -11,7 +11,7 @@
     "src"
   ],
   "scripts": {
-    "build": "node_modules/.bin/tsc -b . && rollup -c",
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -b . && rollup -c",
     "build:ts": "node_modules/.bin/tsc -b .",
     "build:rollup": "rollup -c",
     "build:watch": "node_modules/.bin/tsc -b . && rollup -c -w",
@@ -21,11 +21,10 @@
   },
   "dependencies": {
     "@connext/contracts": "1.0.4",
-    "@connext/types": "4.2.0",
+    "@connext/types": "4.3.0",
     "ethers": "4.0.45",
     "@openzeppelin/contracts": "2.5.0",
     "eventemitter3": "4.0.0",
-    "loglevel": "1.6.7",
     "memoizee": "0.4.14",
     "p-queue": "5.0.0",
     "rpc-server": "0.0.1",

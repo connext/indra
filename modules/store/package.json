@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "4.2.0",
+  "version": "4.3.0",
   "description": "Store module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -9,14 +9,14 @@
     "types"
   ],
   "scripts": {
-    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "@connext/types": "4.2.0",
+    "@connext/types": "4.3.0",
     "ethers": "4.0.45",
     "pisa-client": "0.1.4-connext-beta.1",
     "uuid": "3.4.0"

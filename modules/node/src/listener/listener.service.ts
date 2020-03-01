@@ -60,15 +60,15 @@ export default class ListenerService implements OnModuleInit {
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
-    private readonly logger: LoggerService,
+    private readonly log: LoggerService,
     private readonly transferService: TransferService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
-    this.logger.setContext("ListenerService");
+    this.log.setContext("ListenerService");
   }
 
   logEvent(event: CFCoreTypes.EventName, res: CFCoreTypes.NodeMessage & { data: any }): void {
-    this.logger.debug(
+    this.log.debug(
       `${event} event fired from ${res && res.from ? res.from : null}, data: ${
         res ? JSON.stringify(res.data) : `event did not have a result`
       }`,
@@ -104,7 +104,7 @@ export default class ListenerService implements OnModuleInit {
       },
       PROPOSE_INSTALL_EVENT: (data: ProposeMessage): void => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
-          this.logger.debug(`Received proposal from our own node. Doing nothing.`);
+          this.log.debug(`Received proposal from our own node. Doing nothing.`);
           return;
         }
         this.logEvent(PROPOSE_INSTALL_EVENT, data);
@@ -124,7 +124,7 @@ export default class ListenerService implements OnModuleInit {
           data.data.appInstanceId,
         );
         if (!transfer) {
-          this.logger.debug(`Transfer not found`);
+          this.log.debug(`Transfer not found`);
           return;
         }
         transfer.status = LinkedTransferStatus.FAILED;
@@ -149,7 +149,7 @@ export default class ListenerService implements OnModuleInit {
           (newState as SimpleLinkedTransferAppState).linkedHash,
         );
         if (!transfer) {
-          this.logger.debug(`Could not find transfer for update state event`);
+          this.log.debug(`Could not find transfer for update state event`);
           return;
         }
         // update transfer
@@ -158,7 +158,7 @@ export default class ListenerService implements OnModuleInit {
           transfer,
           await this.channelRepository.findByUserPublicIdentifier(data.from),
         );
-        this.logger.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+        this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
       },
       WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
         this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
@@ -181,7 +181,7 @@ export default class ListenerService implements OnModuleInit {
 
     this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_install as any, (data: any) => {
       const appInstance = data.result.result.appInstance;
-      this.logger.debug(
+      this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.INSTALL event at subject indra.node.${
           this.cfCoreService.cfCore.publicIdentifier
         }.install.${appInstance.identityHash}: ${JSON.stringify(appInstance)}`,
@@ -195,7 +195,7 @@ export default class ListenerService implements OnModuleInit {
     });
 
     this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_uninstall as any, (data: any) => {
-      this.logger.debug(
+      this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(
           data.result.result,
         )} at subject indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${
