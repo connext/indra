@@ -127,8 +127,9 @@ export class AppRegistryService implements OnModuleInit {
           appInstanceId,
           initialState.linkedHash,
           initialState.paymentId,
-          proposeInstallParams.meta,
           proposeInstallParams.meta["encryptedPreImage"],
+          proposeInstallParams.meta["recipient"],
+          proposeInstallParams.meta,
         );
         this.log.debug(`Linked transfer saved!`);
         break;

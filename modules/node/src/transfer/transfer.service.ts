@@ -91,13 +91,19 @@ export class TransferService {
     appInstanceId: string,
     linkedHash: string,
     paymentId: string,
-    meta?: object,
-    encryptedPreImage?: string,
+    encryptedPreImage: string,
     recipientPublicIdentifier?: string,
+    meta?: object,
   ): Promise<LinkedTransfer> {
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     if (!senderChannel) {
       throw new Error(`Sender channel does not exist for ${senderPubId}`);
+    }
+    let receiverChannel;
+    if (recipientPublicIdentifier) {
+      receiverChannel = await this.channelRepository.findByUserPublicIdentifier(
+        recipientPublicIdentifier,
+      );
     }
 
     const transfer = new LinkedTransfer();
@@ -109,8 +115,9 @@ export class TransferService {
     transfer.senderChannel = senderChannel;
     transfer.status = LinkedTransferStatus.PENDING;
     transfer.encryptedPreImage = encryptedPreImage;
-    transfer.meta = meta;
     transfer.recipientPublicIdentifier = recipientPublicIdentifier;
+    transfer.meta = meta;
+    transfer.receiverChannel = receiverChannel;
 
     return await this.linkedTransferRepository.save(transfer);
   }
