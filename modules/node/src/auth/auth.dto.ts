@@ -1,4 +1,3 @@
-export class VerifyNonceDto {
-    sig: string;
-    xpub: string;
-}
+import { VerifyNonceDtoType } from "@connext/types"
+
+export class VerifyNonceDto implements VerifyNonceDtoType {}

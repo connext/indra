@@ -68,6 +68,11 @@ export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
 ////////////////////////////////////
 ///////// NODE API CLIENT
 
+export interface VerifyNonceDtoType {
+  sig: string;
+  xpub: string;
+}
+
 export interface PendingAsyncTransfer {
   assetId: string;
   amount: string;

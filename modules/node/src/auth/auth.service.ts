@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { arrayify, hexlify, randomBytes, verifyMessage, isHexString } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -9,9 +9,9 @@ import { MessagingAuthService } from "@connext/messaging";
 
 // TODO: integrate JWT token
 
-const logger = new CLogger("AuthService");
+const logger = new Logger("AuthService");
 const nonceLen = 16;
-const nonceTTL = 2 * 60 * 60 * 1000;
+const nonceTTL = 24 * 60 * 60 * 1000; // 1 day
 
 export function getAuthAddressFromXpub(xpub: string): string {
   return fromExtendedKey(xpub).derivePath("0").address;
@@ -20,14 +20,12 @@ export function getAuthAddressFromXpub(xpub: string): string {
 @Injectable()
 export class AuthService {
   private nonces: { [key: string]: { nonce: string; expiry: number } } = {};
-  private signerCache: { [key: string]: string } = {};
   constructor(
     private readonly channelRepo: ChannelRepository,
     private readonly messagingAuthSerivice: MessagingAuthService,
   ) {}
 
   // FIXME-- fix this client api contract error...
-  // TODO-- rearch subjects for <xpub>.fully.qualified.subject.with.id
   // TODO-- get ops/start_prod.sh placeholders filled out
   async getNonce(userPublicIdentifier: string): Promise<string> {
     const nonce = hexlify(randomBytes(nonceLen));
