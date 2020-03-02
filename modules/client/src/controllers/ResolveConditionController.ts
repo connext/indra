@@ -5,6 +5,7 @@ import {
   RECIEVE_TRANSFER_FAILED_EVENT,
   RECIEVE_TRANSFER_FINISHED_EVENT,
   RECIEVE_TRANSFER_STARTED_EVENT,
+  ReceiveTransferFinishedEventData,
 } from "@connext/types";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
@@ -202,7 +203,7 @@ export class ResolveConditionController extends AbstractController {
       meta,
       paymentId,
       sender,
-    });
+    } as ReceiveTransferFinishedEventData);
 
     // TODO: remove when deprecated
     this.connext.emit(RECIEVE_TRANSFER_FINISHED_EVENT, {
