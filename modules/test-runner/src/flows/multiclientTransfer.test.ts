@@ -1,4 +1,4 @@
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, ReceiveTransferFinishedEventData } from "@connext/types";
 import { Client } from "ts-nats";
 import { before, after } from "mocha";
 import { AddressZero } from "ethers/constants";
@@ -44,7 +44,47 @@ describe("Full Flow: Transfer", () => {
     closeNats();
   });
 
-  it("Clients transfer assets between themselves", async () => {
+  it.only("Clients transfer assets between themselves", async function(done) {
+    this.timeout(300_000);
     await fundChannel(gateway, parseEther("100"));
+    gateway.on(
+      "RECEIVE_TRANSFER_FINISHED_EVENT",
+      async (data: ReceiveTransferFinishedEventData) => {
+        const freeBalance = await gateway.getFreeBalance();
+        if (freeBalance[gateway.freeBalanceAddress]) {
+          done();
+        }
+        console.log("gateway received transfer: ", data);
+        await gateway.transfer({
+          amount: data.amount,
+          recipient: data.sender,
+        });
+      },
+    );
+
+    indexerA.on(
+      "RECEIVE_TRANSFER_FINISHED_EVENT",
+      async (data: ReceiveTransferFinishedEventData) => {
+        console.log("indexerA received transfer: ", data);
+        await indexerA.transfer({
+          amount: data.amount,
+          recipient: data.sender,
+        });
+      },
+    );
+
+    indexerB.on(
+      "RECEIVE_TRANSFER_FINISHED_EVENT",
+      async (data: ReceiveTransferFinishedEventData) => {
+        console.log("indexerB received transfer: ", data);
+        await indexerB.transfer({
+          amount: data.amount,
+          recipient: data.sender,
+        });
+      },
+    );
+
+    await gateway.transfer({ amount: "1", recipient: indexerA.publicIdentifier });
+    await gateway.transfer({ amount: "1", recipient: indexerB.publicIdentifier });
   });
 });
