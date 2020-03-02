@@ -134,9 +134,16 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UNINSTALL_EVENT, data);
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
-        this.transferService.reclaimLinkedTransferCollateralByAppInstanceId(
-          data.data.appInstanceId,
-        );
+        try {
+          await this.transferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
+            data.data.appInstanceId,
+          );
+        } catch (e) {
+          if (e.message.includes(`Could not find transfer`)) {
+            return;
+          }
+          throw e;
+        }
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         this.logEvent(UNINSTALL_VIRTUAL_EVENT, data);
@@ -144,16 +151,40 @@ export default class ListenerService implements OnModuleInit {
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
         // if this is for a recipient of a transfer
         this.logEvent(UPDATE_STATE_EVENT, data);
-        const { newState } = data.data;
+        const { newState, appInstanceId } = data.data;
         let transfer = await this.linkedTransferRepository.findByLinkedHash(
           (newState as SimpleLinkedTransferAppState).linkedHash,
         );
         if (!transfer) {
-          this.log.debug(`Could not find transfer for update state event`);
+          this.log.debug(
+            `Could not find transfer for update state event for app: ${appInstanceId}`,
+          );
+          return;
+        }
+        if (appInstanceId !== transfer.receiverAppInstanceId) {
+          this.log.debug(
+            `Not updating transfer preimage or marking as redeemed for sender update state events`,
+          );
           return;
         }
         // update transfer
         transfer.preImage = (newState as SimpleLinkedTransferAppState).preImage;
+
+        if (
+          transfer.status === LinkedTransferStatus.RECLAIMED ||
+          transfer.status === LinkedTransferStatus.REDEEMED
+        ) {
+          this.log.warn(
+            `Got update state event for a receiver's transfer app (transfer.id: ${transfer.id}) with unexpected status: ${transfer.status}`,
+          );
+          return;
+        }
+
+        // transfers are set to `PENDING` when created. They are set to
+        // `FAILED` when the receiver rejects an install event. If a transfer
+        // makes it to the `UPDATE_STATE_EVENT` portion, it means the transfer
+        // was successfully installed. There is no reason to not redeem it in
+        // that case.
         transfer = await this.linkedTransferRepository.markAsRedeemed(
           transfer,
           await this.channelRepository.findByUserPublicIdentifier(data.from),
@@ -178,21 +209,6 @@ export default class ListenerService implements OnModuleInit {
         this.cfCoreService.registerCfCoreListener(event, callback);
       },
     );
-
-    this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_install as any, (data: any) => {
-      const appInstance = data.result.result.appInstance;
-      this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.INSTALL event at subject indra.node.${
-          this.cfCoreService.cfCore.publicIdentifier
-        }.install.${appInstance.identityHash}: ${JSON.stringify(appInstance)}`,
-      );
-      this.messagingClient
-        .emit(
-          `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
-          appInstance,
-        )
-        .toPromise();
-    });
 
     this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_uninstall as any, (data: any) => {
       this.log.debug(

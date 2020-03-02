@@ -19,7 +19,7 @@ export const getMnemonic = (xpub: string): string => {
 
 export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
   const store = opts.store || new ConnextStore(new MemoryStorage());
-  const mnemonic = Wallet.createRandom().mnemonic;
+  const mnemonic = opts.mnemonic || Wallet.createRandom().mnemonic;
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     loggerService: new Logger("TestRunner", env.logLevel),

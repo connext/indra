@@ -5,6 +5,7 @@ import {
   RECIEVE_TRANSFER_FAILED_EVENT,
   RECIEVE_TRANSFER_FINISHED_EVENT,
   RECIEVE_TRANSFER_STARTED_EVENT,
+  ReceiveTransferFinishedEventData,
 } from "@connext/types";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
@@ -67,7 +68,7 @@ export class ResolveConditionController extends AbstractController {
     // convert and validate
     // get assetId and amount from node so that this doesnt have to be sent
     // to the user or used in the API
-    const { assetId, amount, meta } = await this.node.fetchLinkedTransfer(params.paymentId);
+    const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);
     validate(
       notNegative(amount),
       invalidAddress(assetId),
@@ -78,7 +79,7 @@ export class ResolveConditionController extends AbstractController {
 
     // handle collateral issues by pinging the node to see if the app can be
     // properly installed.
-    const { appId } = await this.node.resolveLinkedTransfer(
+    const { appId, meta, sender } = await this.node.resolveLinkedTransfer(
       paymentId,
       createLinkedHash(amountBN, assetId, paymentId, preImage),
     );
@@ -101,7 +102,7 @@ export class ResolveConditionController extends AbstractController {
 
     return {
       appId,
-      freeBalance: await this.connext.getFreeBalance(assetId),
+      sender,
       meta,
       paymentId,
     };
@@ -120,9 +121,11 @@ export class ResolveConditionController extends AbstractController {
       invalid32ByteHexString(paymentId),
       invalid32ByteHexString(preImage),
     );
-    this.log.info(`Resolving link transfer of ${formatEther(params.amount)} ${
-      params.assetId === AddressZero ? "ETH" : "Tokens"
-    } with id ${params.paymentId}`);
+    this.log.info(
+      `Resolving link transfer of ${formatEther(params.amount)} ${
+        params.assetId === AddressZero ? "ETH" : "Tokens"
+      } with id ${params.paymentId}`,
+    );
 
     this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
       paymentId,
@@ -149,6 +152,7 @@ export class ResolveConditionController extends AbstractController {
     // properly installed.
     let appId: string;
     let meta: object;
+    let sender: string;
     try {
       const res = await this.node.resolveLinkedTransfer(
         paymentId,
@@ -156,6 +160,7 @@ export class ResolveConditionController extends AbstractController {
       );
       appId = res.appId;
       meta = res.meta;
+      sender = res.sender;
     } catch (e) {
       this.handleResolveErr(paymentId, e);
     }
@@ -197,7 +202,8 @@ export class ResolveConditionController extends AbstractController {
       assetId,
       meta,
       paymentId,
-    });
+      sender,
+    } as ReceiveTransferFinishedEventData);
 
     // TODO: remove when deprecated
     this.connext.emit(RECIEVE_TRANSFER_FINISHED_EVENT, {
@@ -207,8 +213,9 @@ export class ResolveConditionController extends AbstractController {
 
     return {
       appId,
-      freeBalance: await this.connext.getFreeBalance(assetId),
+      sender,
       paymentId,
+      meta,
     };
   };
 

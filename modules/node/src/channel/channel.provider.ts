@@ -197,13 +197,7 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     log: LoggerService,
     messaging: MessagingService,
   ): Promise<void> => {
-    const channel = new ChannelMessaging(
-      authService,
-      channelRepo,
-      channelService,
-      log,
-      messaging,
-    );
+    const channel = new ChannelMessaging(authService, channelRepo, channelService, log, messaging);
     await channel.setupSubscriptions();
     const config = new ConfigMessaging(cfCore, configService, log, messaging);
     await config.setupSubscriptions();

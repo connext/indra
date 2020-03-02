@@ -295,7 +295,7 @@ export class NodeApiClient implements INodeApiClient {
     }
     const { err, response } = msg.data;
     if (err || error || msg.data.err) {
-      throw new Error(`Error sending request. Message: ${stringify(msg)}`);
+      throw new Error(`Error sending request to subject ${subject}. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     logTime(

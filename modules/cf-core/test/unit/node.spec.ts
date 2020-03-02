@@ -6,7 +6,7 @@ import { Node } from "../../src/node";
 import { MemoryStoreService } from "../services/memory-store-service";
 import mockMessagingService from "../services/mock-messaging-service";
 
-describe.only("Node", () => {
+describe("Node", () => {
   it("is defined", () => {
     expect(Node).toBeDefined();
   });
