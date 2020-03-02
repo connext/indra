@@ -122,7 +122,6 @@ else
     entrypoint: npm start
     environment:
       NODE_ENV: development
-      GENERATE_SOURCEMAP: "false"
     networks:
       - $project
     volumes:
