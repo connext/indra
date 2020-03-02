@@ -107,7 +107,7 @@ export type ResolveConditionParameters<T = string> =
 
 export type ResolveLinkedTransferResponse = {
   appId: string;
-  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
+  sender: string;
   paymentId: string;
   meta?: object;
 };

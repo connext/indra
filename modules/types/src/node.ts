@@ -30,6 +30,7 @@ export type Transfer<T = string> = {
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier: string;
+  meta: any;
 };
 export type TransferBigNumber = Transfer<BigNumber>;
 
