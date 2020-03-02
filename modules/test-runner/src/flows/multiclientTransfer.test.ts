@@ -1,17 +1,7 @@
 import { IConnextClient, ReceiveTransferFinishedEventData } from "@connext/types";
 import { Client } from "ts-nats";
 import { before, after } from "mocha";
-import { AddressZero } from "ethers/constants";
-import {
-  createClient,
-  fundChannel,
-  ETH_AMOUNT_SM,
-  requestCollateral,
-  asyncTransferAsset,
-  TOKEN_AMOUNT_SM,
-  connectNats,
-  closeNats,
-} from "../util";
+import { createClient, fundChannel, connectNats, closeNats } from "../util";
 import { parseEther } from "ethers/utils";
 
 describe("Full Flow: Transfer", () => {
