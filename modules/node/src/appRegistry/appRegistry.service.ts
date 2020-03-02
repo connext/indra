@@ -64,10 +64,11 @@ export class AppRegistryService implements OnModuleInit {
     from: string,
   ): Promise<void> {
     let registryAppInfo: AppRegistry;
+    let appInstance: AppInstanceJson;
     try {
       registryAppInfo = await this.verifyAppProposal(proposeInstallParams, from);
       if (registryAppInfo.name !== CoinBalanceRefundApp) {
-        await this.cfCoreService.installApp(appInstanceId);
+        ({ appInstance } = await this.cfCoreService.installApp(appInstanceId));
       } else {
         this.log.debug(`Not installing coin balance refund app, returning registry information`);
       }
@@ -96,6 +97,17 @@ export class AppRegistryService implements OnModuleInit {
       }
     }
     await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
+    this.log.debug(
+      `Emitting CFCoreTypes.RpcMethodName.INSTALL event at subject indra.node.${
+        this.cfCoreService.cfCore.publicIdentifier
+      }.install.${appInstance.identityHash}: ${JSON.stringify(appInstance)}`,
+    );
+    this.messagingClient
+      .emit(
+        `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
+        appInstance,
+      )
+      .toPromise();
   }
 
   private async runPostInstallTasks(
