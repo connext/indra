@@ -210,21 +210,6 @@ export default class ListenerService implements OnModuleInit {
       },
     );
 
-    this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_install as any, (data: any) => {
-      const appInstance = data.result.result.appInstance;
-      this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.INSTALL event at subject indra.node.${
-          this.cfCoreService.cfCore.publicIdentifier
-        }.install.${appInstance.identityHash}: ${JSON.stringify(appInstance)}`,
-      );
-      this.messagingClient
-        .emit(
-          `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
-          appInstance,
-        )
-        .toPromise();
-    });
-
     this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_uninstall as any, (data: any) => {
       this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(
