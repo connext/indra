@@ -2,8 +2,8 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { MessagingService } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, ILoggerService, StateSchemaVersion, IMessagingService, MessagingConfig, VerifyNonceDtoType } from "@connext/types";
-import { Contract, providers } from "ethers";
+import { CF_PATH, CREATE_CHANNEL_EVENT, ILoggerService, StateSchemaVersion, MessagingService, MessagingConfig, VerifyNonceDtoType } from "@connext/types";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
@@ -32,14 +32,15 @@ import {
 
 const axios = require('axios').default;
 
+
 //TODO --ARJUN : Keep nodeUrl and messagingUrl separate
-const createMessagingService = async (logger: ILoggerService, nodeUrl: string, xpub: string, getSignature: (nonce: string) => Promise<string>): Promise<IMessagingService> => {
+const createMessagingService = async (logger: ILoggerService, messagingUrl: string, xpub: string, getSignature: (nonce: string) => Promise<string>): Promise<MessagingService> => {
   const config: MessagingConfig = {
-    messagingUrl: nodeUrl,
+    messagingUrl,
     logger
   }
   // create a messaging service client
-  const messaging = new MessagingService(config, "indra", await getBearerToken(logger, config.messagingUrl, xpub, getSignature));
+  const messaging = new MessagingService(config, "indra", () => getBearerToken(logger, config.messagingUrl, xpub, getSignature));
   await messaging.connect();
   return messaging;
 };
@@ -140,7 +141,7 @@ export const connect = async (
 
     log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(channelProvider.config.nodeUrl);
+      messaging = await createMessagingService(log, channelProvider.config.nodeUrl, channelProvider.config.userPublicIdentifier, async (nonce)=> {return '';});
     } else {
       await messaging.connect();
     }
@@ -174,10 +175,14 @@ export const connect = async (
       log.debug(`Creating channelProvider with xpub: ${xpub}`);
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
+    const getSignature = async (nonce) => {
+      const wallet = new Wallet(await keyGen('0'))
+      return wallet.signMessage(nonce);
+    }
 
     log.debug(`Creating messaging service client ${nodeUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(nodeUrl);
+      messaging = await createMessagingService(log, nodeUrl, xpub, getSignature);
     } else {
       await messaging.connect();
     }
