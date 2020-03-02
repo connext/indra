@@ -17,8 +17,9 @@
   },
   "dependencies": {
     "@connext/types": "4.3.0",
-    "jsonwebtoken": "^8.5.1",
-    "ts-natsutil": "^0.1.12",
+    "jsonwebtoken": "8.5.1",
+    "node-window-polyfill": "1.0.0",
+    "ts-natsutil": "0.1.13",
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {

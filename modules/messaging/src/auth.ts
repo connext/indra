@@ -1,9 +1,9 @@
-import * as natsutil from "ts-natsutil";
+import { AuthService } from "ts-natsutil";
 import { MessagingConfig, nullLogger, ILoggerService } from "@connext/types";
 
 export class MessagingAuthService {
   private log: ILoggerService;
-  private auth: natsutil.AuthService;
+  private auth: AuthService;
   private defaultJWTAudience: string;
 
   constructor(private readonly config: MessagingConfig) {
@@ -17,7 +17,7 @@ export class MessagingAuthService {
     );
 
     this.defaultJWTAudience = this.config.messagingUrl as string;
-    this.auth = new natsutil.AuthService(
+    this.auth = new AuthService(
       this.defaultJWTAudience,
       this.config.privateKey,
       this.config.publicKey,
