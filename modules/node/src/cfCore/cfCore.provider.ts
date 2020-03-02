@@ -1,5 +1,5 @@
-import { MessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, ConnextNodeStorePrefix, ILoggerService } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
+import { CF_PATH, ConnextNodeStorePrefix, IMessagingService } from "@connext/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { fromMnemonic } from "ethers/utils/hdnode";
@@ -32,7 +32,7 @@ export const cfCoreProviderFactory: Provider = {
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
     const cfCore = await CFCore.create(
-      messaging as any, // TODO: FIX
+      messaging as IMessagingService, // TODO: FIX
       store,
       await config.getContractAddresses(),
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
@@ -63,6 +63,7 @@ export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>
   useFactory: async (config: ConfigService, auth: AuthService, log: LoggerService): Promise<MessagingService> => {
     const getBearerToken = async (): Promise<string> => {
       const nonce = await auth.getNonce(config.publicIdentifier);
+      log.info(`Got nonce from authService: ${nonce}`)
       const signedNonce = await config.getEthWallet().signMessage(nonce)
       return auth.verifyAndVend(signedNonce, config.publicIdentifier);
     }

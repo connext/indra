@@ -17,6 +17,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     private readonly adminService: AdminService,
     private readonly authService: AuthService,
     public readonly log: LoggerService,
+    messaging: MessagingService,
   ) {
     super(log, messaging);
   }

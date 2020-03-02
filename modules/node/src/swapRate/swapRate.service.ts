@@ -17,7 +17,7 @@ export class SwapRateService implements OnModuleInit {
   constructor(
     private readonly config: ConfigService,
     private readonly log: LoggerService,
-    @Inject(MessagingProviderId) private readonly messaging: IMessagingService,
+    @Inject(MessagingProviderId) private readonly messaging: MessagingService,
   ) {
     this.log.setContext("SwapRateService");
   }

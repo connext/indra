@@ -1,4 +1,3 @@
-import { MessagingConfig } from "@connext/messaging";
 import {
   ContractAddresses,
   DefaultApp,
@@ -9,6 +8,7 @@ import {
   CoinBalanceRefundApp,
   SwapRate,
   CF_PATH,
+  MessagingConfig,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";

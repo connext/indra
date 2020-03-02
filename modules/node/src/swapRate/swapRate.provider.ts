@@ -13,7 +13,7 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly config: ConfigService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     private readonly swapRateService: SwapRateService,
   ) {
     super(log, messaging);
@@ -31,15 +31,15 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 }
 
-export const swapRateProviderFactory: FactoryProvider<Promise<IMessagingService>> = {
+export const swapRateProviderFactory: FactoryProvider<Promise<MessagingService>> = {
   inject: [ConfigService, LoggerService, MessagingProviderId, SwapRateService],
   provide: SwapRateProviderId,
   useFactory: async (
     config: ConfigService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     swapRateService: SwapRateService,
-  ): Promise<IMessagingService> => {
+  ): Promise<MessagingService> => {
     const swapRate = new SwapRateMessaging(config, log, messaging, swapRateService);
     await swapRate.setupSubscriptions();
     return messaging;

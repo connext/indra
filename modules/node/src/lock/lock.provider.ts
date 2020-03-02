@@ -45,7 +45,7 @@ export const lockProviderFactory: FactoryProvider<Promise<void>> = {
     authService: AuthService,
     lockService: LockService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
   ): Promise<void> => {
     const lock = new LockMessaging(authService, lockService, log, messaging);
     await lock.setupSubscriptions();

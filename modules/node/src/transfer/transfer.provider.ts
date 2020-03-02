@@ -15,7 +15,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     private readonly transferService: TransferService,
   ) {
     super(log, messaging);
@@ -126,7 +126,7 @@ export const transferProviderFactory: FactoryProvider<Promise<void>> = {
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     transferService: TransferService,
   ): Promise<void> => {
     const transfer = new TransferMessaging(authService, logging, messaging, transferService);
