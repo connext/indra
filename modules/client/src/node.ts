@@ -1,5 +1,4 @@
-import { MessagingService } from "@connext/messaging";
-import { ILoggerService } from "@connext/types";
+import { ILoggerService, IMessagingService } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";

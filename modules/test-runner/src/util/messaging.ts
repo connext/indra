@@ -1,8 +1,12 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ConnextEventEmitter, CFCoreTypes, MessagingConfig } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
+import { ConnextEventEmitter, CFCoreTypes, MessagingConfig, IMessagingService, VerifyNonceDtoType, CF_PATH } from "@connext/types";
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
+import { Wallet } from "ethers";
+import { fromMnemonic } from "ethers/utils/hdnode";
+
+const axios = require('axios').default;
 
 // TYPES
 export type MessageCounter = {
@@ -110,7 +114,7 @@ const defaultOpts = (): TestMessagingConfig => {
 };
 
 export class TestMessagingService extends ConnextEventEmitter implements IMessagingService {
-  private connection: IMessagingService;
+  private connection: MessagingService;
   private protocolDefaults: {
     [protocol: string]: DetailedMessageCounter;
   };
@@ -129,14 +133,33 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       forbiddenSubjects: opts.forbiddenSubjects || defaults.forbiddenSubjects,
     };
 
+    const hdNode = fromMnemonic(Wallet.createRandom().mnemonic).derivePath(CF_PATH);
+    const xpub = hdNode.neuter().extendedKey;
+    const getSignature = (nonce: string): Promise<string> =>
+      Promise.resolve(new Wallet(hdNode.derivePath('0').privateKey).signMessage(nonce));
+
+    const getBearerToken = async (xpub: string, getSignature: (nonce: string) => Promise<string>): Promise<string> => {
+      const messagingUrl = this.options.messagingConfig.messagingUrl as string;
+      try {
+        let url = messagingUrl.split("//")[1]
+        const nonce = await axios.get(`https://${url}/getNonce`, {
+          params: {
+            userPublicIdentifier: xpub
+          }
+        })
+        const sig = await getSignature(nonce);
+        const bearerToken: string = await axios.post(`https://${url}/verifyNonce`, {
+          sig,
+          xpub
+        } as VerifyNonceDtoType)
+        return bearerToken;
+      } catch(e) {
+        return e;
+      }
+    }
+
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
-    this.connection = new MessagingServiceFactory({
-      messagingUrl: this.options.messagingConfig.messagingUrl,
-      options: {
-        maxPingOut: 1_000_000_000,
-        pingInterval: 120_000_000,
-      },
-    }).createService("messaging");
+    this.connection = new MessagingService(this.options.messagingConfig, "indra", () => getBearerToken(xpub, getSignature))
     this.protocolDefaults = this.options.protocolDefaults;
     this.countInternal = this.options.count;
     this.forbiddenSubjects = this.options.forbiddenSubjects;
@@ -334,7 +357,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
     this.emit(REQUEST, { data, subject } as MesssagingEventData);
     this.subjectForbidden(subject, "request");
-    return await this.connection.request(subject, timeout, data, callback);
+    return await this.connection.request(subject, timeout, data);
   }
 
   async subscribe(

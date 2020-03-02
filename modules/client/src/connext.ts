@@ -1,4 +1,3 @@
-import { MessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
   IChannelProvider,
@@ -8,6 +7,7 @@ import {
   chan_storeGet,
   chan_storeSet,
   chan_restoreState,
+  IMessagingService,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";

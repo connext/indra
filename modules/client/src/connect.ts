@@ -2,7 +2,7 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { MessagingService } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, ILoggerService, StateSchemaVersion, MessagingService, MessagingConfig, VerifyNonceDtoType } from "@connext/types";
+import { CF_PATH, CREATE_CHANNEL_EVENT, ILoggerService, StateSchemaVersion, MessagingConfig, VerifyNonceDtoType } from "@connext/types";
 import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -40,20 +40,21 @@ const createMessagingService = async (logger: ILoggerService, messagingUrl: stri
     logger
   }
   // create a messaging service client
-  const messaging = new MessagingService(config, "indra", () => getBearerToken(logger, config.messagingUrl, xpub, getSignature));
+  const messaging = new MessagingService(config, "indra", () => getBearerToken(logger, messagingUrl, xpub, getSignature));
   await messaging.connect();
   return messaging;
 };
 
-const getBearerToken = async (log: ILoggerService, nodeUrl: string, xpub: string, getSignature: (nonce: string) => Promise<string>): Promise<string> => {
+const getBearerToken = async (log: ILoggerService, messagingUrl: string, xpub: string, getSignature: (nonce: string) => Promise<string>): Promise<string> => {
   try {
-    const nonce = await axios.get(`${nodeUrl}/getNonce`, {
+    let url = messagingUrl.split("//")[1]
+    const nonce = await axios.get(`https://${url}/getNonce`, {
       params: {
         userPublicIdentifier: xpub
       }
     })
     const sig = await getSignature(nonce);
-    const bearerToken: string = await axios.post(`${nodeUrl}/verifyNonce`, {
+    const bearerToken: string = await axios.post(`https://${url}/verifyNonce`, {
       sig,
       xpub
     } as VerifyNonceDtoType)
@@ -141,6 +142,7 @@ export const connect = async (
 
     log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
     if (!messaging) {
+      // TODO nonce generation needs to be added to rpc methods for channelProvider to work
       messaging = await createMessagingService(log, channelProvider.config.nodeUrl, channelProvider.config.userPublicIdentifier, async (nonce)=> {return '';});
     } else {
       await messaging.connect();
@@ -182,7 +184,7 @@ export const connect = async (
 
     log.debug(`Creating messaging service client ${nodeUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(log, nodeUrl, xpub, getSignature);
+      messaging = await createMessagingService(log,  nodeUrl, xpub, getSignature);
     } else {
       await messaging.connect();
     }
