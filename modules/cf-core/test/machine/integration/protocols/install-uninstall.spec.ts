@@ -76,7 +76,7 @@ describe("Install-then-uninstall in a direct channel", () => {
   }
 });
 
-describe("Install-then-uninstall of a virtual app", () => {
+describe.skip("Install-then-uninstall of a virtual app", () => {
   for (const outcomeType of [
     OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
