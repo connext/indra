@@ -1,15 +1,15 @@
-import { CFCoreTypes, IChannelProvider, REJECT_INSTALL_EVENT } from "@connext/types";
+import { CFCoreTypes, IChannelProvider, ILoggerService, REJECT_INSTALL_EVENT } from "@connext/types";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
-import { CF_METHOD_TIMEOUT, delayAndThrow, Logger, stringify } from "../lib";
+import { CF_METHOD_TIMEOUT, delayAndThrow, stringify } from "../lib";
 import { ConnextListener } from "../listener";
 import { INodeApiClient } from "../types";
 
 export abstract class AbstractController {
   public name: string;
   public connext: ConnextClient;
-  public log: Logger;
+  public log: ILoggerService;
   public node: INodeApiClient;
   public channelProvider: IChannelProvider;
   public listener: ConnextListener;
@@ -21,7 +21,7 @@ export abstract class AbstractController {
     this.node = connext.node;
     this.channelProvider = connext.channelProvider;
     this.listener = connext.listener;
-    this.log = new Logger(name, connext.log.logLevel);
+    this.log = connext.log.newContext(name);
     this.ethProvider = connext.ethProvider;
   }
 
@@ -60,7 +60,7 @@ export abstract class AbstractController {
         }),
       ]);
 
-      this.log.info(`Installed app ${appInstanceId}`);
+      this.log.info(`Installed app with id: ${appInstanceId}`);
       this.log.debug(`Installed app details: ${stringify(res as object)}`);
       return appInstanceId;
     } catch (e) {
@@ -119,7 +119,7 @@ export abstract class AbstractController {
           },
         ),
       ]);
-      this.log.info(`App was proposed successfully!: ${appId}`);
+      this.log.info(`Successfully proposed app with id ${appId}`);
       return appId;
     } catch (e) {
       this.log.error(`Error proposing app: ${e.stack || e.message}`);

@@ -1,8 +1,9 @@
 import { IMessagingService } from "@connext/messaging";
+import { ILoggerService } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
-import { Logger, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
+import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
   CFCoreTypes,
@@ -35,7 +36,7 @@ const sendFailed = "Failed to send message";
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
   public latestSwapRates: { [key: string]: string } = {};
-  public log: Logger;
+  public log: ILoggerService;
 
   private _userPublicIdentifier: string | undefined;
   private _nodePublicIdentifier: string | undefined;
@@ -44,7 +45,7 @@ export class NodeApiClient implements INodeApiClient {
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
-    this.log = new Logger("NodeApiClient", opts.logLevel);
+    this.log = opts.logger.newContext("NodeApiClient");
     this._userPublicIdentifier = opts.userPublicIdentifier;
     this._nodePublicIdentifier = opts.nodePublicIdentifier;
     this._channelProvider = opts.channelProvider;
@@ -303,6 +304,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
+    const start = Date.now();
     this.log.debug(
       `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
     );
@@ -333,9 +335,14 @@ export class NodeApiClient implements INodeApiClient {
     }
     const { err, response } = msg.data;
     if (err || error || msg.data.err) {
-      throw new Error(`Error sending request. Message: ${stringify(msg)}`);
+      throw new Error(`Error sending request to subject ${subject}. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
+    logTime(
+      this.log,
+      start,
+      `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
+    );
     return !response || isEmptyObj ? undefined : response;
   }
 }

@@ -11,7 +11,8 @@ import {
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
 } from "@connext/types";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -19,7 +20,9 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { CLogger, xpubToAddress } from "../util";
+import { MessagingClientProviderId } from "../constants";
+import { LoggerService } from "../logger/logger.service";
+import { xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
 
 import {
@@ -35,19 +38,21 @@ import {
   TransferRepository,
 } from "./transfer.repository";
 
-const logger = new CLogger(`TransferService`);
-
 @Injectable()
 export class TransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
+    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
-    private readonly channelRepository: ChannelRepository,
-    private readonly p2pTransferRepository: PeerToPeerTransferRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly log: LoggerService,
+    private readonly p2pTransferRepository: PeerToPeerTransferRepository,
     private readonly transferRepositiory: TransferRepository,
-  ) {}
+    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
+  ) {
+    this.log.setContext("TransferService");
+  }
 
   async savePeerToPeerTransfer(
     senderPubId: string,
@@ -86,11 +91,19 @@ export class TransferService {
     appInstanceId: string,
     linkedHash: string,
     paymentId: string,
+    encryptedPreImage: string,
+    recipientPublicIdentifier?: string,
     meta?: object,
   ): Promise<LinkedTransfer> {
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     if (!senderChannel) {
       throw new Error(`Sender channel does not exist for ${senderPubId}`);
+    }
+    let receiverChannel;
+    if (recipientPublicIdentifier) {
+      receiverChannel = await this.channelRepository.findByUserPublicIdentifier(
+        recipientPublicIdentifier,
+      );
     }
 
     const transfer = new LinkedTransfer();
@@ -101,7 +114,10 @@ export class TransferService {
     transfer.paymentId = paymentId;
     transfer.senderChannel = senderChannel;
     transfer.status = LinkedTransferStatus.PENDING;
+    transfer.encryptedPreImage = encryptedPreImage;
+    transfer.recipientPublicIdentifier = recipientPublicIdentifier;
     transfer.meta = meta;
+    transfer.receiverChannel = receiverChannel;
 
     return await this.linkedTransferRepository.save(transfer);
   }
@@ -119,55 +135,12 @@ export class TransferService {
     return await this.linkedTransferRepository.findAll();
   }
 
-  async setRecipientAndEncryptedPreImageOnLinkedTransfer(
-    senderPublicIdentifier: string,
-    recipientPublicIdentifier: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<LinkedTransfer> {
-    logger.debug(
-      `setRecipientAndEncryptedPreImageOnLinkedTransfer(${senderPublicIdentifier}, ${recipientPublicIdentifier}, ${encryptedPreImage}, ${linkedHash}`,
-    );
-
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
-      senderPublicIdentifier,
-    );
-    if (!senderChannel) {
-      throw new Error(`No channel exists for senderPublicIdentifier ${senderPublicIdentifier}`);
-    }
-
-    const recipientChannel = await this.channelRepository.findByUserPublicIdentifier(
-      recipientPublicIdentifier,
-    );
-    if (!recipientChannel) {
-      throw new Error(
-        `No channel exists for recipientPublicIdentifier ${recipientPublicIdentifier}`,
-      );
-    }
-
-    // check that we have recorded this transfer in our db
-    const transfer = await this.linkedTransferRepository.findByLinkedHash(linkedHash);
-    if (!transfer) {
-      throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
-    }
-
-    if (senderPublicIdentifier !== transfer.senderChannel.userPublicIdentifier) {
-      throw new Error(`Can only modify transfer that you sent`);
-    }
-
-    return await this.linkedTransferRepository.addRecipientPublicIdentifierAndEncryptedPreImage(
-      transfer,
-      recipientChannel,
-      encryptedPreImage,
-    );
-  }
-
   async resolveLinkedTransfer(
     userPubId: string,
     paymentId: string,
     linkedHash: string,
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
+    this.log.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
@@ -192,7 +165,7 @@ export class TransferService {
       );
     }
 
-    logger.debug(`Found linked transfer in our database, attempting to install...`);
+    this.log.debug(`Found linked transfer in our database, attempting to install...`);
 
     // check that linked transfer app has been installed from sender
     const defaultApp = (await this.configService.getDefaultApps()).find(
@@ -226,7 +199,7 @@ export class TransferService {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
               // emitted for another user depositing into their channel
-              logger.debug(
+              this.log.debug(
                 `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
               );
               return;
@@ -234,7 +207,7 @@ export class TransferService {
             if (msg.data.multisigAddress !== channel.multisigAddress) {
               // do not reject promise here, since theres a chance the event is
               // emitted for node collateralizing another users' channel
-              logger.debug(
+              this.log.debug(
                 `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
               );
               return;
@@ -304,7 +277,6 @@ export class TransferService {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    // add preimage to database to allow unlock from a listener
     transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
     transfer.paymentId = paymentId;
     transfer.recipientPublicIdentifier = userPubId;
@@ -313,11 +285,7 @@ export class TransferService {
 
     return {
       appId: receiverAppInstallRes.appInstanceId,
-      freeBalance: await this.cfCoreService.getFreeBalance(
-        userPubId,
-        channel.multisigAddress,
-        assetId,
-      ),
+      sender: transfer.senderChannel.userPublicIdentifier,
       meta: transfer.meta,
       paymentId,
     };
@@ -328,7 +296,7 @@ export class TransferService {
     amount: BigNumber,
     assetId: string,
   ): Promise<string> {
-    logger.debug(`sendTransferToClient(${userPubId}, ${amount}, ${assetId}`);
+    this.log.debug(`sendTransferToClient(${userPubId}, ${amount}, ${assetId}`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
@@ -364,23 +332,25 @@ export class TransferService {
     return res.appInstanceId;
   }
 
-  async reclaimLinkedTransferCollateralByAppInstanceId(appInstanceId: string): Promise<void> {
+  async reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
+    appInstanceId: string,
+  ): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(appInstanceId);
-    if (!transfer) {
-      logger.debug(`Did not find transfer`);
-      return;
+    if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
+      throw new Error(
+        `Could not find transfer with REDEEMED status for receiver app id: ${appInstanceId}`,
+      );
     }
-    logger.debug(`Found transfer: ${JSON.stringify(transfer)}`);
+    this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
     await this.reclaimLinkedTransferCollateral(transfer);
   }
 
   async reclaimLinkedTransferCollateralByPaymentId(paymentId: string): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
-    if (!transfer) {
-      logger.debug(`Did not find transfer`);
-      return;
+    if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
+      throw new Error(`Could not find transfer with REDEEMED status for paymentId: ${paymentId}`);
     }
-    logger.debug(`Found transfer: ${JSON.stringify(transfer)}`);
+    this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
     await this.reclaimLinkedTransferCollateral(transfer);
   }
 
@@ -391,31 +361,27 @@ export class TransferService {
       );
     }
 
-    const uninstall = async (): Promise<void> => {
-      logger.debug(`Action taken, uninstalling app. ${Date.now()}`);
-      await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-      await this.linkedTransferRepository.markAsReclaimed(transfer);
-    };
-
+    const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
     // if action has been taken on the app, then there will be a preimage
     // in the latest state, and you just have to uninstall
-    const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
-    if ((app.latestState as SimpleLinkedTransferAppState).preImage === transfer.preImage) {
-      // just uninstall
-      logger.debug(
-        `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
+    if ((app.latestState as SimpleLinkedTransferAppState).preImage !== transfer.preImage) {
+      this.log.info(`Reclaiming linked transfer ${transfer.paymentId}`);
+      this.log.debug(
+        `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
       );
-      await uninstall();
-      return;
+      await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
+        preImage: transfer.preImage,
+      });
     }
-
-    logger.log(
-      `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
+    this.log.debug(
+      `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
     );
-    await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
-      preImage: transfer.preImage,
-    });
-    await uninstall();
+    this.log.debug(`Action taken, uninstalling app. ${Date.now()}`);
+
+    // mark as reclaimed so the listener doesnt try to reclaim again
+    await this.linkedTransferRepository.markAsReclaimed(transfer);
+    await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
+    await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {

@@ -56,6 +56,14 @@ export const ConnextEvents = {
   [RECIEVE_TRANSFER_STARTED_EVENT]: RECIEVE_TRANSFER_STARTED_EVENT,
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
+export type ReceiveTransferFinishedEventData = {
+  amount: string;
+  appId: string;
+  assetId: string;
+  meta: any;
+  paymentId: string;
+  sender: string;
+};
 
 export class ConnextEventEmitter extends EventEmitter<
   string | ConnextEvent | CFCoreTypes.RpcMethodName

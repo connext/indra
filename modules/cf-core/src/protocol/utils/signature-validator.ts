@@ -15,6 +15,7 @@ export function assertIsValidSignature(
     throw Error("assertIsValidSignature received an undefined signature");
   }
 
+  // recoverAddress: 83 ms, hashToSign: 7 ms
   const signer = recoverAddress(commitment.hashToSign(), signature);
 
   if (getAddress(expectedSigner) !== signer) {

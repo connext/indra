@@ -1,8 +1,7 @@
 import { ConnextStore } from "@connext/store";
 import { Store } from "@connext/types";
-import { ethers } from "ethers";
+import { Wallet } from "ethers";
 
-import { Logger } from "./logger";
 import { ClientOptions } from "../types";
 
 // constants
@@ -32,25 +31,7 @@ export function shouldGenerateMnemonic(network: string, opts?: Partial<ClientOpt
   return !isMainnet(network) && !isWalletProvided(opts);
 }
 
-export function generateMnemonic(): string {
-  const entropy = ethers.utils.randomBytes(16);
-  const mnemonic = ethers.utils.HDNode.entropyToMnemonic(entropy);
-  return mnemonic;
-}
-
 // getters
-
-export async function getDefaultMnemonic(store: Store, log: Logger): Promise<string> {
-  log.warn("Using mnemonic stored insecurely - DO NOT USE IN PRODUCTION!");
-
-  let mnemonic = await store.get(MNEMONIC_KEY);
-
-  if (!mnemonic) {
-    mnemonic = generateMnemonic();
-    await store.set([{ path: MNEMONIC_KEY, value: mnemonic }]);
-  }
-  return mnemonic;
-}
 
 export function getOptionIfAvailable(option: string, opts?: Partial<ClientOptions>) {
   return opts && opts[option] ? opts[option] : undefined;
@@ -66,16 +47,11 @@ export async function getDefaultOptions(
   network: string,
   overrideOptions?: Partial<ClientOptions>,
 ): Promise<ClientOptions> {
-  const logLevel = overrideOptions ? overrideOptions.logLevel : undefined;
-  const log = new Logger("ConnextConnect", logLevel);
-
   const baseUrl = isMainnet(network)
     ? "indra.connext.network/api"
     : isRinkeby(network)
     ? "rinkeby.indra.connext.network/api"
     : null;
-
-  log.debug(`Using default baseUrl: ${baseUrl}`);
 
   if (!baseUrl) {
     throw new Error(`Provided network (${network.toLowerCase()}) is not supported`);
@@ -86,17 +62,11 @@ export async function getDefaultOptions(
     nodeUrl: `wss://${baseUrl}/messaging`,
   };
 
-  log.debug(`Using default urlOptions: ${JSON.stringify(urlOptions, null, 2)}`);
-
   const store = getOptionIfAvailable("store", overrideOptions) || getDefaultStore(overrideOptions);
 
   const mnemonic = shouldGenerateMnemonic(network, overrideOptions)
-    ? await getDefaultMnemonic(store, log)
+    ? Wallet.createRandom().mnemonic
     : undefined;
-
-  log.debug(`Using default store: ${JSON.stringify(store, null, 2)}`);
-
-  log.debug(`Using default mnemonic: ${mnemonic}`);
 
   const opts = {
     mnemonic,
@@ -104,8 +74,6 @@ export async function getDefaultOptions(
     ...urlOptions,
     ...overrideOptions,
   };
-
-  log.debug(`Using default opts: ${JSON.stringify(opts, null, 2)}`);
 
   return opts;
 }

@@ -21,7 +21,6 @@ export default class TakeActionController extends NodeController {
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
-    // @ts-ignore
     requestHandler: RequestHandler,
     params: CFCoreTypes.TakeActionParams,
   ): Promise<string[]> {

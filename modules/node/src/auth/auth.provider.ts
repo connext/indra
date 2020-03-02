@@ -1,6 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
+import { LoggerService } from "../logger/logger.service";
 import { AuthProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 
@@ -9,8 +10,12 @@ import { RpcException } from "@nestjs/microservices";
 import { stringify } from "querystring";
 
 class AuthMessaging extends AbstractMessagingProvider {
-  constructor(messaging: IMessagingService, private readonly authService: AuthService) {
-    super(messaging);
+  constructor(
+    private readonly authService: AuthService,
+    log: LoggerService,
+    messaging: IMessagingService,
+  ) {
+    super(log, messaging);
   }
 
   async getNonce(subject: string, data: { address: string }): Promise<string> {
@@ -26,10 +31,14 @@ class AuthMessaging extends AbstractMessagingProvider {
 }
 
 export const authProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [MessagingProviderId, AuthService],
+  inject: [AuthService, LoggerService, MessagingProviderId],
   provide: AuthProviderId,
-  useFactory: async (messaging: IMessagingService, authService: AuthService): Promise<void> => {
-    const auth = new AuthMessaging(messaging, authService);
+  useFactory: async (
+    authService: AuthService,
+    log: LoggerService,
+    messaging: IMessagingService,
+  ): Promise<void> => {
+    const auth = new AuthMessaging(authService, log, messaging);
     await auth.setupSubscriptions();
   },
 };

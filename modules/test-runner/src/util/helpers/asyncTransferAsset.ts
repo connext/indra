@@ -3,9 +3,9 @@ import { IConnextClient, RECEIVE_TRANSFER_FINISHED_EVENT, UNINSTALL_EVENT } from
 import { BigNumber } from "ethers/utils";
 
 import { expect } from "../";
-import { delay } from "../misc";
 import { ExistingBalancesAsyncTransfer } from "../types";
 import { RECEIVE_TRANSFER_FAILED_EVENT } from "@connext/types";
+import { Client } from "ts-nats";
 
 // NOTE: will fail if not collateralized by transfer amount exactly
 // when pretransfer balances are not supplied.
@@ -14,6 +14,7 @@ export async function asyncTransferAsset(
   clientB: IConnextClient,
   transferAmount: BigNumber,
   assetId: string,
+  nats: Client,
 ): Promise<ExistingBalancesAsyncTransfer> {
   const nodeFreeBalanceAddress = xkeyKthAddress(clientA.nodePublicIdentifier);
   const {
@@ -30,7 +31,11 @@ export async function asyncTransferAsset(
   const transferFinished = Promise.all([
     Promise.race([
       new Promise((resolve: Function): void => {
-        clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, () => {
+        clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+          expect(data).to.deep.include({
+            amount: transferAmount.toString(),
+            sender: clientA.publicIdentifier,
+          });
           resolve();
         });
       }),
@@ -76,21 +81,28 @@ export async function asyncTransferAsset(
     expect(postTransferFreeBalanceNodeB).equal(preTransferFreeBalanceNodeB.sub(transferAmount));
   }
 
-  // TODO: explicitly await for status redeemed -> reclaimed
-  await delay(1000);
+  await new Promise(async res => {
+    await nats.subscribe(`transfer.${paymentId}.reclaimed`, (err, msg) => {
+      res();
+    });
+  });
 
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);
   expect(paymentA).to.deep.include({
     amount: transferAmount.toString(),
     assetId,
-    meta: { hello: "world" },
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,
     senderPublicIdentifier: clientA.publicIdentifier,
     status: "RECLAIMED",
     type: "LINKED",
   });
+  expect(paymentA.meta).to.deep.include({
+    hello: "world",
+  });
+  expect(paymentA.meta.encryptedPreImage).to.be.ok;
+
   expect(paymentA).to.deep.include(paymentB);
 
   const postTransfer: ExistingBalancesAsyncTransfer = {

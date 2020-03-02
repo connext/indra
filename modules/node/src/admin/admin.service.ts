@@ -11,10 +11,9 @@ import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { LinkedTransfer } from "../transfer/transfer.entity";
+import { LoggerService } from "../logger/logger.service";
 import { TransferService } from "../transfer/transfer.service";
-import { CLogger, getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
-
-const logger = new CLogger("AdminService");
+import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -24,12 +23,15 @@ export interface RepairCriticalAddressesResponse {
 @Injectable()
 export class AdminService {
   constructor(
+    private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
+    private readonly log: LoggerService,
     private readonly transferService: TransferService,
-    private readonly cfCoreRepository: CFCoreRecordRepository,
-  ) {}
+  ) {
+    this.log.setContext("AdminService");
+  }
 
   /////////////////////////////////////////
   ///// GENERAL PURPOSE ADMIN FNS
@@ -144,7 +146,7 @@ export class AdminService {
       )
     ).map(state => state.data);
     const output: RepairCriticalAddressesResponse = { fixed: [], broken: [] };
-    logger.log(`Scanning ${states.length} channels to see if any need to be repaired..`);
+    this.log.info(`Scanning ${states.length} channels to see if any need to be repaired..`);
     // First loop: Identify all channels that need to be repaired
     for (const state of states) {
       if (
@@ -162,37 +164,37 @@ export class AdminService {
       }
     }
     if (output.broken.length === 0) {
-      logger.log("No channels need to be repaired, great!");
+      this.log.info("No channels need to be repaired, great!");
       return output;
     }
-    logger.log(`Preparing to repair ${output.broken.length} channels`);
+    this.log.info(`Preparing to repair ${output.broken.length} channels`);
     // Make a copy of broken multisigs so we can edit the output while looping through it
     const brokenMultisigs = JSON.parse(JSON.stringify(output.broken));
     // Second loop: attempt to repair broken channels
     for (const brokenMultisig of brokenMultisigs) {
       const { data: state } = await this.cfCoreService.getStateChannel(brokenMultisig);
-      logger.log(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
+      this.log.info(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
       const criticalAddresses = await scanForCriticalAddresses(
         state.userNeuteredExtendedKeys,
         state.multisigAddress,
         this.configService.getEthProvider(),
       );
       if (!criticalAddresses) {
-        logger.warn(
+        this.log.warn(
           `Could not find critical addresses that would fix channel ${state.multisigAddress}`,
         );
         continue;
       }
       if (criticalAddresses.toxicBytecode) {
-        logger.warn(
+        this.log.warn(
           `Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`,
         );
       } else if (criticalAddresses.legacyKeygen) {
-        logger.warn(
+        this.log.warn(
           `Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`,
         );
       }
-      logger.log(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
+      this.log.info(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
       const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${brokenMultisig}`;
       const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
       cfCoreRecord["addresses"] = {
@@ -210,7 +212,7 @@ export class AdminService {
       output.broken = output.broken.filter(multisig => multisig === brokenMultisig);
     }
     if (output.broken.length > 0) {
-      logger.warn(`${output.broken.length} channels could not be repaired`);
+      this.log.warn(`${output.broken.length} channels could not be repaired`);
     }
     return output;
   }
