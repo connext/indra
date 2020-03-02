@@ -48,7 +48,7 @@ export interface MessagingConfig {
   options?: any;
   privateKey?: string;
   publicKey?: string;
-  bearerToken?: string;
+  token?: string;
 }
 
 export interface CFMessagingService {

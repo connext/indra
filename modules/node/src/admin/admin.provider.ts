@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { StateChannelJSON } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -16,8 +16,7 @@ class AdminMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly adminService: AdminService,
     private readonly authService: AuthService,
-    log: LoggerService,
-    messaging: IMessagingService,
+    public readonly log: LoggerService,
   ) {
     super(log, messaging);
   }
@@ -87,42 +86,42 @@ class AdminMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
-      this.authService.useAdminToken(this.getNoFreeBalance.bind(this)),
+      this.authService.parseXpub(this.getNoFreeBalance.bind(this)),
     );
 
     await super.connectRequestReponse(
       "admin.get-state-channel-by-xpub",
-      this.authService.useAdminToken(this.getStateChannelByUserPublicIdentifier.bind(this)),
+      this.authService.parseXpub(this.getStateChannelByUserPublicIdentifier.bind(this)),
     );
 
     await super.connectRequestReponse(
       "admin.get-state-channel-by-multisig",
-      this.authService.useAdminToken(this.getStateChannelByMultisig.bind(this)),
+      this.authService.parseXpub(this.getStateChannelByMultisig.bind(this)),
     );
 
     await super.connectRequestReponse(
       "admin.get-all-channels",
-      this.authService.useAdminToken(this.getAllChannels.bind(this)),
+      this.authService.parseXpub(this.getAllChannels.bind(this)),
     );
 
     await super.connectRequestReponse(
       "admin.get-all-linked-transfers",
-      this.authService.useAdminToken(this.getAllLinkedTransfers.bind(this)),
+      this.authService.parseXpub(this.getAllLinkedTransfers.bind(this)),
     );
 
     await super.connectRequestReponse(
       "admin.get-linked-transfer-by-payment-id",
-      this.authService.useAdminToken(this.getLinkedTransferByPaymentId.bind(this)),
+      this.authService.parseXpub(this.getLinkedTransferByPaymentId.bind(this)),
     );
 
     await super.connectRequestReponse(
       "admin.get-channels-for-merging",
-      this.authService.useAdminToken(this.getChannelsForMerging.bind(this)),
+      this.authService.parseXpub(this.getChannelsForMerging.bind(this)),
     );
 
     await super.connectRequestReponse(
       "admin.repair-critical-addresses",
-      this.authService.useAdminToken(this.repairCriticalStateChannelAddresses.bind(this)),
+      this.authService.parseXpub(this.repairCriticalStateChannelAddresses.bind(this)),
     );
   }
 }
@@ -134,7 +133,7 @@ export const adminProviderFactory: FactoryProvider<Promise<void>> = {
     adminService: AdminService,
     authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
   ): Promise<void> => {
     const admin = new AdminMessaging(adminService, authService, log, messaging);
     await admin.setupSubscriptions();

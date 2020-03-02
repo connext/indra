@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import {
   ChannelAppSequences,
   GetChannelResponse,
@@ -28,7 +28,7 @@ class ConfigMessaging extends AbstractMessagingProvider {
     private readonly cfCore: CFCore,
     private readonly configService: ConfigService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
   ) {
     super(log, messaging);
   }
@@ -53,7 +53,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
   ) {
     super(log, messaging);
   }
@@ -156,7 +156,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     // TODO what do we do about admin token?
     await super.connectRequestReponse(
       "*.channel.add-profile",
-      this.authService.useAdminTokenWithPublicIdentifier(this.addRebalanceProfile.bind(this)),
+      this.authService.parseXpub(this.addRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.get-profile",
@@ -195,7 +195,7 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     channelService: ChannelService,
     configService: ConfigService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
   ): Promise<void> => {
     const channel = new ChannelMessaging(
       authService,

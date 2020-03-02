@@ -5,12 +5,11 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
-import { authProviderFactory } from "./auth.provider";
 import { AuthService } from "./auth.service";
 
 @Module({
-  exports: [AuthService, authProviderFactory],
+  exports: [AuthService],
   imports: [MessagingModule, LoggerModule, TypeOrmModule.forFeature([ChannelRepository])],
-  providers: [AuthService, authProviderFactory],
+  providers: [AuthService],
 })
 export class AuthModule {}

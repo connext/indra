@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { RpcException } from "@nestjs/microservices";
 
 import { LoggerService } from "../logger/logger.service";
@@ -11,7 +11,7 @@ export interface IMessagingProvider {
 export abstract class AbstractMessagingProvider implements IMessagingProvider {
   constructor(
     public readonly log: LoggerService,
-    protected readonly messaging: IMessagingService,
+    protected readonly messaging: MessagingService,
   ) {
     this.log.setContext("MessagingInterface");
   }

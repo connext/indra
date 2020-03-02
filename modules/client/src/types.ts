@@ -5,7 +5,7 @@ import {
   GetConfigResponse,
   IChannelProvider,
   ILoggerService,
-  IMessagingService,
+  MessagingService,
   INodeApiClient,
   KeyGen,
   Network,

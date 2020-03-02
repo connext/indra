@@ -15,17 +15,17 @@ export class MessagingService implements IMessagingService {
   constructor(
     private readonly config: MessagingConfig,
     private readonly messagingServiceKey: string,
-    private readonly clientAuthCallback: () => Promise<string>,
+    private readonly getBearerToken: () => Promise<string>,
   ) {
     this.log = config.logger || nullLogger;
     this.log.debug(`Created NatsMessagingService with config: ${JSON.stringify(config, null, 2)}`);
-    this.bearerToken = config.bearerToken;
+    this.bearerToken = null;
   }
 
   async connect(): Promise<void> {
     const messagingUrl = this.config.messagingUrl;
     if(!this.bearerToken) {
-      this.bearerToken = await this.clientAuthCallback();
+      this.bearerToken = await this.getBearerToken();
     }
     const service = natsutil.natsServiceFactory({
       ...this.config,
@@ -36,7 +36,17 @@ export class MessagingService implements IMessagingService {
     service.connect().then((natsConnection) => {
       this.service = service;
       this.log.debug(`Connected!`);
-      // TODO ARJUN -- Check natsConnection type and then listen for disconnect. On disconnect, reset bearerToken and call connect() again.
+      if (typeof natsConnection.addEventListener !== undefined) {
+        natsConnection.addEventListener('close', async () => {
+          this.bearerToken == null;
+          await this.connect();
+        })
+      } else {
+        natsConnection.on('close', async ()=> {
+          this.bearerToken == null;
+          await this.connect();
+        })
+      }
     });
   }
 

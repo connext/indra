@@ -8,15 +8,17 @@ import {
   SimpleLinkedTransferApp,
   CoinBalanceRefundApp,
   SwapRate,
+  CF_PATH,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
+import { getAddress, Network as EthNetwork, parseEther, HDNode } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { OutcomeType } from "../util/cfCore";
+import { fromMnemonic } from "ethers/utils/hdnode";
 
 type PostgresConfig = {
   database: string;
@@ -42,6 +44,7 @@ export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
   private readonly ethProvider: JsonRpcProvider;
   private wallet: Wallet;
+  public publicIdentifier: string;
 
   constructor() {
     this.envConfig = process.env;
@@ -280,5 +283,7 @@ export class ConfigService implements OnModuleInit {
   onModuleInit(): void {
     const wallet = Wallet.fromMnemonic(this.getMnemonic());
     this.wallet = wallet.connect(this.getEthProvider());
+    const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
+    this.publicIdentifier = hdNode.neuter().extendedKey;
   }
 }

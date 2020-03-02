@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
@@ -13,7 +13,7 @@ class LockMessaging extends AbstractMessagingProvider {
     private readonly authService: AuthService,
     private readonly lockService: LockService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
   ) {
     super(log, messaging);
   }
