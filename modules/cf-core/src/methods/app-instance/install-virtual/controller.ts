@@ -14,6 +14,7 @@ export default class InstallVirtualController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.InstallVirtualParams,
   ) {
+    throw Error(`Virtual app protocols not supported.`);
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
@@ -71,6 +72,7 @@ export default class InstallVirtualController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.InstallVirtualParams,
   ) {
+    throw Error(`Virtual app protocols not supported.`);
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { intermediaryIdentifier } = params;
 
@@ -104,6 +106,7 @@ export default class InstallVirtualController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.InstallVirtualParams,
   ): Promise<CFCoreTypes.InstallVirtualResult> {
+    throw Error(`Virtual app protocols not supported.`);
     const { store, protocolRunner } = requestHandler;
 
     const { appInstanceId } = params;

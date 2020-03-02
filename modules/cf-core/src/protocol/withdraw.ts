@@ -8,7 +8,7 @@ import {
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
 } from "../ethereum";
-import { ProtocolExecutionFlow } from "../machine";
+import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { AppInstance, StateChannel } from "../models";
 import {
@@ -67,8 +67,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const preInstallRefundAppStateChannel = stateChannelsMap.get(multisigAddress)!;
 
-    const responderAddress = preInstallRefundAppStateChannel.getFreeBalanceAddrOf(responderXpub);
-
     const postInstallRefundAppStateChannel = addRefundAppToStateChannel(
       preInstallRefundAppStateChannel,
       params as WithdrawProtocolParams,
@@ -82,6 +80,13 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel,
     );
 
+    const responderFreeBalanceAddress = preInstallRefundAppStateChannel.getFreeBalanceAddrOf(
+      responderXpub,
+    );
+
+    const responderEphemeralKey = xkeyKthAddress(responderXpub, refundApp.appSeqNo);
+
+    // free balance address signs conditional transaction data
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
     const {
@@ -103,8 +108,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
+    // free balance address signs conditional transaction data
     assertIsValidSignature(
-      responderAddress,
+      responderFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
     );
@@ -134,8 +140,10 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel.freeBalance.timeout,
     );
 
+    // always use free balance address to sign free balance app
+    // updates
     assertIsValidSignature(
-      responderAddress,
+      responderFreeBalanceAddress,
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
@@ -154,6 +162,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
+    // free balance address signs withdrawal transaction data
     const withdrawCommitment = constructWithdrawalCommitment(
       postInstallRefundAppStateChannel,
       recipient,
@@ -161,6 +170,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       tokenAddress,
     );
 
+    // free balance address signs withdrawal transaction data
     const mySignatureOnWithdrawalCommitment = yield [OP_SIGN, withdrawCommitment];
 
     const {
@@ -182,8 +192,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
+    // free balance address signs withdrawal transaction data
     assertIsValidSignature(
-      responderAddress,
+      responderFreeBalanceAddress,
       withdrawCommitment,
       counterpartySignatureOnWithdrawalCommitment,
     );
@@ -206,15 +217,21 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postUninstallRefundAppStateChannel.freeBalance.timeout,
     );
 
+    // ephemeral key signs refund app
     assertIsValidSignature(
-      responderAddress,
+      responderEphemeralKey,
       uninstallRefundAppCommitment,
       counterpartySignatureOnUninstallCommitment,
     );
 
-    const mySignatureOnUninstallCommitment = yield [OP_SIGN, uninstallRefundAppCommitment];
+    // ephemeral key signs refund app
+    const mySignatureOnUninstallCommitment = yield [
+      OP_SIGN,
+      uninstallRefundAppCommitment,
+      refundApp.appSeqNo,
+    ];
 
-    yield <[Opcode, ProtocolMessage]>[
+    yield [
       IO_SEND_AND_WAIT,
       {
         protocol: Withdraw,
@@ -282,8 +299,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const preInstallRefundAppStateChannel = stateChannelsMap.get(multisigAddress)!;
 
-    const initiatorAddress = preInstallRefundAppStateChannel.getFreeBalanceAddrOf(initiatorXpub);
-
     const postInstallRefundAppStateChannel = addRefundAppToStateChannel(
       preInstallRefundAppStateChannel,
       params as WithdrawProtocolParams,
@@ -297,12 +312,20 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel,
     );
 
+    const initiatorFreeBalanceAddress = preInstallRefundAppStateChannel.getFreeBalanceAddrOf(
+      initiatorXpub,
+    );
+
+    const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, refundApp.appSeqNo);
+
+    // free balance address signs conditional transaction data
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
     );
 
+    // free balance address signs conditional transaction data
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
     const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
@@ -330,6 +353,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel.freeBalance.timeout,
     );
 
+    // always use fb address to sign free balance updates
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
     const {
@@ -351,8 +375,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
+    // always use fb address to sign free balance updates
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorFreeBalanceAddress,
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
@@ -376,12 +401,14 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       tokenAddress,
     );
 
+    // free balance address signs withdraw commitment
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorFreeBalanceAddress,
       withdrawCommitment,
       counterpartySignatureOnWithdrawalCommitment,
     );
 
+    // free balance address signs withdraw commitment
     const mySignatureOnWithdrawalCommitment = yield [OP_SIGN, withdrawCommitment];
 
     const signedWithdrawalCommitment = withdrawCommitment.getSignedTransaction([
@@ -409,7 +436,11 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postUninstallRefundAppStateChannel.freeBalance.timeout,
     );
 
-    const mySignatureOnUninstallCommitment = yield [OP_SIGN, uninstallRefundAppCommitment];
+    const mySignatureOnUninstallCommitment = yield [
+      OP_SIGN,
+      uninstallRefundAppCommitment,
+      refundApp.appSeqNo,
+    ];
 
     const {
       customData: { signature: counterpartySignatureOnUninstallCommitment },
@@ -428,7 +459,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorEphemeralKey,
       uninstallRefundAppCommitment,
       counterpartySignatureOnUninstallCommitment,
     );

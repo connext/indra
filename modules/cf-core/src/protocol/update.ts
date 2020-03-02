@@ -34,6 +34,8 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
+    const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
+
     const setStateCommitment = new SetStateCommitment(
       network,
       appInstance.identity,
@@ -60,11 +62,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    assertIsValidSignature(
-      xkeyKthAddress(responderXpub, appInstance.appSeqNo),
-      setStateCommitment,
-      responderSignature,
-    );
+    assertIsValidSignature(responderEphemeralKey, setStateCommitment, responderSignature);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -96,6 +94,8 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
+    const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
+
     const setStateCommitment = new SetStateCommitment(
       network,
       appInstance.identity,
@@ -104,11 +104,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       appInstance.timeout,
     );
 
-    assertIsValidSignature(
-      xkeyKthAddress(initiatorXpub, appInstance.appSeqNo),
-      setStateCommitment,
-      initiatorSignature,
-    );
+    assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);
 
     const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 

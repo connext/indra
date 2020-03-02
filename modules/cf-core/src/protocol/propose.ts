@@ -86,7 +86,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout.toNumber(),
     );
 
-    const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitment];
+    const initiatorSignatureOnInitialState = yield [
+      OP_SIGN,
+      setStateCommitment,
+      appInstanceProposal.appSeqNo,
+    ];
 
     const m1 = {
       protocol,
@@ -105,9 +109,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: responderSignatureOnInitialState },
     } = m2! as ProtocolMessage;
 
-    const responderAddress = xkeyKthAddress(responderXpub, 0);
-
-    assertIsValidSignature(responderAddress, setStateCommitment, responderSignatureOnInitialState);
+    assertIsValidSignature(
+      xkeyKthAddress(responderXpub, appInstanceProposal.appSeqNo),
+      setStateCommitment,
+      responderSignatureOnInitialState,
+    );
 
     context.stateChannelsMap.set(
       postProtocolStateChannel.multisigAddress,
@@ -187,15 +193,21 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout.toNumber(),
     );
 
-    const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
-
-    assertIsValidSignature(initiatorAddress, setStateCommitment, initiatorSignatureOnInitialState);
-
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
+
+    assertIsValidSignature(
+      xkeyKthAddress(initiatorXpub, appInstanceProposal.appSeqNo),
+      setStateCommitment,
+      initiatorSignatureOnInitialState,
+    );
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
-    const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment];
+    const responderSignatureOnInitialState = yield [
+      OP_SIGN,
+      setStateCommitment,
+      appInstanceProposal.appSeqNo,
+    ];
 
     yield [
       IO_SEND,
