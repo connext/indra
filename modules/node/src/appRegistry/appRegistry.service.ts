@@ -65,44 +65,62 @@ export class AppRegistryService implements OnModuleInit {
   ): Promise<void> {
     let registryAppInfo: AppRegistry;
     let appInstance: AppInstanceJson;
+    const installerChannel = await this.channelRepository.findByUserPublicIdentifier(from);
+    if (!installerChannel) {
+      throw new Error(`Channel for ${from} not found`);
+    }
+
+    // try install
     try {
       registryAppInfo = await this.verifyAppProposal(proposeInstallParams, from);
-      if (registryAppInfo.name !== CoinBalanceRefundApp) {
-        ({ appInstance } = await this.cfCoreService.installApp(appInstanceId));
-      } else {
-        this.log.debug(`Not installing coin balance refund app, returning registry information`);
-      }
-    } catch (e) {
-      if (!e.message.includes(`Node has insufficient balance`)) {
-        this.log.warn(`App install failed, . Error: ${e.stack || e.message}`);
-        await this.cfCoreService.rejectInstallApp(appInstanceId);
+
+      // dont install coin balance refund
+      if (registryAppInfo.name === CoinBalanceRefundApp) {
+        this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
+        await this.messagingClient
+          .emit(
+            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${installerChannel.multisigAddress}`,
+            proposeInstallParams,
+          )
+          .toPromise();
         return;
       }
-      // try to collateralize, and re-install
-      const tx = await this.channelService.rebalance(
+
+      // check if we need to collateralize
+      const preInstallFreeBalance = await this.cfCoreService.getFreeBalance(
         from,
+        installerChannel.multisigAddress,
         proposeInstallParams.responderDepositTokenAddress,
-        RebalanceType.COLLATERALIZE,
-        bigNumberify(proposeInstallParams.responderDeposit),
       );
-      if (tx) {
-        await tx.wait();
+      if (
+        preInstallFreeBalance[this.cfCoreService.cfCore.freeBalanceAddress].lt(
+          bigNumberify(proposeInstallParams.responderDeposit),
+        )
+      ) {
+        this.log.info(`Collateralizing channel before rebalancing...`);
+        // collateralize and wait for tx
+        const tx = await this.channelService.rebalance(
+          from,
+          proposeInstallParams.responderDepositTokenAddress,
+          RebalanceType.COLLATERALIZE,
+          bigNumberify(proposeInstallParams.responderDeposit),
+        );
+        if (tx) {
+          await tx.wait();
+        }
       }
-      try {
-        await this.cfCoreService.installApp(appInstanceId);
-      } catch (e) {
-        this.log.warn(`App install failed, . Error: ${e.stack || e.message}`);
-        await this.cfCoreService.rejectInstallApp(appInstanceId);
-        return;
-      }
+      ({ appInstance } = await this.cfCoreService.installApp(appInstanceId));
+    } catch (e) {
+      // reject if error
+      this.log.warn(`App install failed, . Error: ${e.stack || e.message}`);
+      await this.cfCoreService.rejectInstallApp(appInstanceId);
+      return;
     }
+
+    // any tasks that need to happen after install, i.e. DB writes
     await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
-    this.log.debug(
-      `Emitting CFCoreTypes.RpcMethodName.INSTALL event at subject indra.node.${
-        this.cfCoreService.cfCore.publicIdentifier
-      }.install.${appInstance.identityHash}: ${JSON.stringify(appInstance)}`,
-    );
-    this.messagingClient
+
+    await this.messagingClient
       .emit(
         `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
         appInstance,
@@ -146,21 +164,6 @@ export class AppRegistryService implements OnModuleInit {
         this.log.debug(`Linked transfer saved!`);
         break;
       // TODO: add something for swap app? maybe for history preserving reasons.
-      case CoinBalanceRefundApp:
-        const channel = await this.channelRepository.findByUserPublicIdentifier(from);
-        if (!channel) {
-          throw new Error(`Channel does not exist for ${from}`);
-        }
-        this.log.debug(
-          `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-        );
-        await this.messagingClient
-          .emit(
-            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-            proposeInstallParams,
-          )
-          .toPromise();
-        break;
       default:
         this.log.debug(`No post-install actions configured.`);
     }
@@ -253,7 +256,7 @@ export class AppRegistryService implements OnModuleInit {
       responderDepositTokenAddress: string;
     } = normalizeEthAddresses(bigNumberifyObj(params));
 
-    const supportedAddresses = await this.configService.getSupportedTokenAddresses();
+    const supportedAddresses = this.configService.getSupportedTokenAddresses();
     if (!supportedAddresses.includes(initiatorDepositTokenAddress)) {
       throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
     }
@@ -511,17 +514,7 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    // make sure that the node has sufficient balance for requested deposit
-    // NOTE: the following will need to be adjusted for virtual applications
-    const freeBalanceResponderAsset = await this.cfCoreService.getFreeBalance(
-      initiatorIdentifier,
-      initiatorChannel.multisigAddress,
-      responderDepositTokenAddress,
-    );
-    const balAvailable = freeBalanceResponderAsset[xpubToAddress(proposedToIdentifier)];
-    if (balAvailable.lt(responderDeposit)) {
-      throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);
-    }
+    // don't need to check node's balance here because it will be collateralized if needed
   }
 
   // should perform validation on everything all generic app conditions that

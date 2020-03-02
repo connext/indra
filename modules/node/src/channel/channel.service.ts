@@ -265,7 +265,7 @@ export class ChannelService {
       throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
     }
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
-      // if minimum amount is supplier, override upper bound
+      // if minimum amount is larger, override upper bound
       const collateralNeeded: BigNumber = maxBN([
         upperBoundCollateralize,
         minimumRequiredCollateral,
