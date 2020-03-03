@@ -296,7 +296,7 @@ client: cf-core contracts types crypto messaging store channel-provider $(shell 
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
+cf-core: node-modules types contracts store $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
