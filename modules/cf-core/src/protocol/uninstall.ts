@@ -24,6 +24,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { message, provider, stateChannelsMap, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
+    let substart;
     log.debug(`Initiation started`);
 
     const { params, processID } = message;
@@ -50,6 +51,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const signature = yield [OP_SIGN, uninstallCommitment, appToUninstall.appSeqNo];
 
+    substart = Date.now();
     const {
       customData: { signature: responderSignature },
     } = yield [
@@ -63,8 +65,11 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
       } as ProtocolMessage,
     ];
+    logTime(log, substart, `Received responder's sig`);
 
+    substart = Date.now();
     assertIsValidSignature(responderEphemeralKey, uninstallCommitment, responderSignature);
+    logTime(log, substart, `Verified responder's sig`);
 
     const finalCommitment = uninstallCommitment.getSignedTransaction([
       signature,
@@ -86,6 +91,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { message, provider, stateChannelsMap, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
+    let substart;
     log.debug(`Response started`);
 
     const { params, processID } = message;
@@ -112,7 +118,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorSignature = context.message.customData.signature;
 
+    substart = Date.now();
     assertIsValidSignature(initiatorEphemeralKey, uninstallCommitment, initiatorSignature);
+    logTime(log, substart, `Verified initiator's sig`);
 
     const responderSignature = yield [OP_SIGN, uninstallCommitment, appToUninstall.appSeqNo];
 

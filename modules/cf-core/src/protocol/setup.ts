@@ -21,6 +21,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const { message, network } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
+    let substart;
     log.debug(`Initiation started`);
 
     const { processID, params } = message;
@@ -48,6 +49,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const initiatorSignature = yield [OP_SIGN, setupCommitment];
 
     // 201 ms (waits for responder to respond)
+    substart = Date.now();
     const {
       customData: { signature: responderSignature },
     } = yield [
@@ -63,11 +65,14 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
+    logTime(log, substart, `Received responder's sig`);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 34 ms
+    substart = Date.now();
     assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
+    logTime(log, substart, `Verified responder's sig`);
 
     // 33 ms
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
@@ -80,6 +85,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const { message, network } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
+    let substart;
     log.debug(`Responce started`);
 
     const {
@@ -108,7 +114,9 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
+    substart = Date.now();
     assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);
+    logTime(log, substart, `Verified initator's sig`);
 
     // 49 ms
     const responderSignature = yield [OP_SIGN, setupCommitment];

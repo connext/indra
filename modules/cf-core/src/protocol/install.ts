@@ -51,6 +51,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
+    let substart;
     log.debug(`Initiation started`);
 
     const {
@@ -96,6 +97,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // free balance addr signs conditional transactions
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
+    substart = Date.now();
     const {
       customData: {
         signature: counterpartySignatureOnConditionalTransaction,
@@ -114,13 +116,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
       } as ProtocolMessage,
     ];
+    logTime(log, substart, `Received responder's sigs on conditional tx & balance update`);
 
     // free balance addr signs conditional transactions
+    substart = Date.now();
     assertIsValidSignature(
       responderFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
     );
+    logTime(log, substart, `Validated responder's sig on conditional tx`);
 
     const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
       mySignatureOnConditionalTransaction,
@@ -143,11 +148,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // always use free balance key to sign free balance update
+    substart = Date.now();
     assertIsValidSignature(
       responderFreeBalanceAddress,
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
+    logTime(log, substart, `Validated responder's sig on free balance update`);
 
     // always use free balance key to sign free balance update
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
@@ -166,6 +173,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
+    substart = Date.now();
     yield [
       IO_SEND_AND_WAIT,
       {
@@ -178,6 +186,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessage,
     ];
+    logTime(log, substart, `Received responder's confirmation that they received our sig`);
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -202,6 +211,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
+    let substart;
     log.debug(`Response started`);
 
     // Aliasing `signature` to this variable name for code clarity
@@ -248,11 +258,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // multisig owner always signs conditional tx
+    substart = Date.now();
     assertIsValidSignature(
       initiatorFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
     );
+    logTime(log, substart, `Validated initiator's sig on conditional tx data`);
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
@@ -278,6 +290,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
+    substart = Date.now();
     const {
       customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
     } = yield [
@@ -293,13 +306,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessage,
     ];
+    logTime(log, substart, `Received initiator's sig on free balance update`);
 
     // always use freeBalanceAddress to sign updates
+    substart = Date.now();
     assertIsValidSignature(
       initiatorFreeBalanceAddress,
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
+    logTime(log, substart, `Validated initiator's sig on free balance update`);
 
     const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
       mySignatureOnFreeBalanceStateUpdate,

@@ -19,6 +19,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { message, network, stateChannelsMap } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
+    let substart;
     log.debug(`Initiation started`);
 
     const { processID, params } = message;
@@ -107,17 +108,21 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
+    substart = Date.now();
     const m2 = yield [IO_SEND_AND_WAIT, m1];
+    logTime(log, substart, `Received responder's m2`);
 
     const {
       customData: { signature: responderSignatureOnInitialState },
     } = m2! as ProtocolMessage;
 
+    substart = Date.now();
     assertIsValidSignature(
       xkeyKthAddress(responderXpub, appInstanceProposal.appSeqNo),
       setStateCommitment,
       responderSignatureOnInitialState,
     );
+    logTime(log, substart, `Validated responder's sig on initial state`);
 
     context.stateChannelsMap.set(
       postProtocolStateChannel.multisigAddress,
@@ -130,6 +135,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { message, network, stateChannelsMap } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
+    let substart;
     log.debug(`Response started`);
 
     const { params, processID } = message;
@@ -203,11 +209,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
+    substart = Date.now();
     assertIsValidSignature(
       xkeyKthAddress(initiatorXpub, appInstanceProposal.appSeqNo),
       setStateCommitment,
       initiatorSignatureOnInitialState,
     );
+    logTime(log, substart, `Validated initiator's sig on initial state`);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
