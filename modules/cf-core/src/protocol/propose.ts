@@ -6,6 +6,7 @@ import { appIdentityToHash, ProtocolExecutionFlow, xkeyKthAddress } from "../mac
 import { Opcode, Protocol } from "../machine/enums";
 import { Context, ProposeInstallProtocolParams, ProtocolMessage } from "../types";
 import { AppInstanceProposal, StateChannel } from "../models";
+import { logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -16,6 +17,9 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { message, network, stateChannelsMap } = context;
+    const log = context.log.newContext("CF-ProposeProtocol");
+    const start = Date.now();
+    log.debug(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -119,10 +123,14 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { message, network, stateChannelsMap } = context;
+    const log = context.log.newContext("CF-ProposeProtocol");
+    const start = Date.now();
+    log.debug(`Response started`);
 
     const { params, processID } = message;
 
@@ -226,5 +234,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished responding`);
   },
 };

@@ -20,6 +20,7 @@ import {
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   WithdrawProtocolParams,
 } from "../types";
+import { logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -56,6 +57,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       message: { params, processID },
       network,
     } = context;
+    const log = context.log.newContext("CF-WithdrawProtocol");
+    const start = Date.now();
+    log.debug(`Initiation started`);
 
     const {
       responderXpub,
@@ -264,6 +268,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [PERSIST_STATE_CHANNEL, [postUninstallRefundAppStateChannel]];
+    logTime(log, start, `Finished Initiating`);
   },
 
   /**
@@ -285,6 +290,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       message: { params, processID, customData },
       network,
     } = context;
+    const log = context.log.newContext("CF-WithdrawProtocol");
+    const start = Date.now();
+    log.debug(`Response started`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = customData.signature;
@@ -490,6 +498,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessage,
     ];
+    logTime(log, start, `Finished responding`);
   },
 };
 
@@ -547,9 +556,9 @@ function addRefundAppToStateChannel(
  * Computes the ConditionalTransaction unsigned transaction pertaining to the
  * installation of the ETHBalanceRefundApp.
  *
- * Note that this app is hard-coded to the MultiAssetMultiPartyCoinTransferInterpreter. You can see this
- * by reviewing the `ETHBalanceRefundApp.sol` file which has an outcome structure
- * of LibOutcome.CoinTrasfer[].
+ * Note that this app is hard-coded to the MultiAssetMultiPartyCoinTransferInterpreter.
+ * You can see this by reviewing the `ETHBalanceRefundApp.sol` file
+ * which has an outcome structure of LibOutcome.CoinTrasfer[].
  *
  * @param {NetworkContext} network - Metadata on the current blockchain
  * @param {StateChannel} stateChannel - The post-refund-app-installed StateChannel

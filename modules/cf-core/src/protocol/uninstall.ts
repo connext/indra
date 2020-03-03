@@ -5,6 +5,7 @@ import { xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { StateChannel } from "../models";
 import { Context, ProtocolExecutionFlow, ProtocolMessage, UninstallProtocolParams } from "../types";
+import { logTime } from "../utils";
 
 import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
@@ -21,6 +22,10 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITM
 export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { message, provider, stateChannelsMap, network } = context;
+    const log = context.log.newContext("CF-UninstallProtocol");
+    const start = Date.now();
+    log.debug(`Initiation started`);
+
     const { params, processID } = message;
     const { responderXpub, appIdentityHash, multisigAddress } = params as UninstallProtocolParams;
 
@@ -74,10 +79,15 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { message, provider, stateChannelsMap, network } = context;
+    const log = context.log.newContext("CF-UninstallProtocol");
+    const start = Date.now();
+    log.debug(`Response started`);
+
     const { params, processID } = message;
     const { initiatorXpub, appIdentityHash, multisigAddress } = params as UninstallProtocolParams;
 
@@ -132,6 +142,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished responding`);
   },
 };
 

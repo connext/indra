@@ -21,6 +21,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const { message, network } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
+    log.debug(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -79,6 +80,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const { message, network } = context;
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
+    log.debug(`Responce started`);
 
     const {
       processID,
@@ -102,10 +104,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.multisigOwners,
       stateChannel.freeBalance.identity,
     );
-
-    // setup installs the free balance app, and on creation the state channel
-    // will have nonce 1, so use hardcoded 0th key
-    assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key

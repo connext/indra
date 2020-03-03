@@ -2,6 +2,7 @@ import { SetStateCommitment } from "../ethereum";
 import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { Context, ProtocolMessage, UpdateProtocolParams } from "../types";
+import { logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -18,6 +19,9 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Intiating */: async function*(context: Context) {
     const { stateChannelsMap, message, network } = context;
+    const log = context.log.newContext("CF-UpdateProtocol");
+    const start = Date.now();
+    log.debug(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -70,10 +74,14 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { stateChannelsMap, message, network } = context;
+    const log = context.log.newContext("CF-UpdateProtocol");
+    const start = Date.now();
+    log.debug(`Response started`);
 
     const {
       processID,
@@ -127,5 +135,6 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished responding`);
   },
 };

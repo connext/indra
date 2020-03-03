@@ -2,6 +2,7 @@ import { SetStateCommitment } from "../ethereum";
 import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { Context, ProtocolMessage, TakeActionProtocolParams } from "../types";
+import { logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -12,12 +13,15 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 /**
  * @description This exchange is described at the following URL:
  *
- * TODO:
+ * TODO: write a todo message here
  *
  */
 export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { stateChannelsMap, provider, message, network } = context;
+    const log = context.log.newContext("CF-TakeActionProtocol");
+    const start = Date.now();
+    log.debug(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -75,10 +79,14 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { stateChannelsMap, provider, message, network } = context;
+    const log = context.log.newContext("CF-TakeActionProtocol");
+    const start = Date.now();
+    log.debug(`Response started`);
 
     const {
       processID,
@@ -137,5 +145,6 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished responding`);
   },
 };

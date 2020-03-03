@@ -18,10 +18,10 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
+import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
-import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
 const { Update, Install } = Protocol;
@@ -49,6 +49,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       message: { params, processID },
       network,
     } = context;
+    const log = context.log.newContext("CF-InstallProtocol");
+    const start = Date.now();
+    log.debug(`Initiation started`);
 
     const {
       responderXpub,
@@ -175,6 +178,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessage,
     ];
+    logTime(log, start, `Finished Initiating`);
   },
 
   /**
@@ -196,6 +200,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       },
       network,
     } = context;
+    const log = context.log.newContext("CF-InstallProtocol");
+    const start = Date.now();
+    log.debug(`Response started`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = signature;
@@ -319,6 +326,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } as ProtocolMessage;
 
     yield [IO_SEND, m4];
+    logTime(log, start, `Finished responding`);
   },
 };
 
