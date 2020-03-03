@@ -1,4 +1,5 @@
-import { LINKED_TRANSFER, SimpleLinkedTransferApp } from "@connext/types";
+import { SimpleLinkedTransferApp, SimpleLinkedTransferAppStateBigNumber } from "@connext/apps";
+import { LINKED_TRANSFER } from "@connext/types";
 import { encryptWithPublicKey } from "@connext/crypto";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -8,15 +9,12 @@ import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import {
   BigNumber,
   CFCoreTypes,
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
   convert,
   DefaultApp,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
-  SimpleLinkedTransferAppStateBigNumber,
   TransferCondition,
 } from "../types";
 import {
@@ -32,14 +30,14 @@ import { AbstractController } from "./AbstractController";
 
 type ConditionalExecutors = {
   [index in TransferCondition]: (
-    params: ConditionalTransferParameters,
-  ) => Promise<ConditionalTransferResponse>;
+    params: LinkedTransferParameters | LinkedTransferToRecipientParameters,
+  ) => Promise<LinkedTransferResponse | LinkedTransferToRecipientParameters>;
 };
 
 export class ConditionalTransferController extends AbstractController {
   public conditionalTransfer = async (
-    params: ConditionalTransferParameters,
-  ): Promise<ConditionalTransferResponse> => {
+    params: LinkedTransferParameters | LinkedTransferToRecipientParameters,
+  ): Promise<LinkedTransferResponse | LinkedTransferToRecipientResponse> => {
     this.log.info(
       `Generating conditional transfer of ${formatEther(params.amount)} ${
         params.assetId === AddressZero ? "ETH" : "Tokens"
@@ -173,7 +171,6 @@ export class ConditionalTransferController extends AbstractController {
     }
 
     return {
-      freeBalance: await this.connext.getFreeBalance(assetId),
       paymentId,
       preImage,
     };

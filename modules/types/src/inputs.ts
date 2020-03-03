@@ -136,7 +136,6 @@ export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumb
 export type LinkedTransferResponse = {
   paymentId: string;
   preImage: string;
-  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
   meta?: object;
 };
 

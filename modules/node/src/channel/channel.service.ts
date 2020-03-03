@@ -5,6 +5,7 @@ import {
   maxBN,
   RebalanceProfileBigNumber,
   stringify,
+  GetConfigResponse,
 } from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -55,6 +56,16 @@ export class ChannelService {
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ChannelService");
+  }
+
+  async getConfig(): Promise<GetConfigResponse> {
+    return {
+      contractAddresses: await this.configService.getContractAddresses(),
+      ethNetwork: await this.configService.getEthNetwork(),
+      messaging: this.configService.getMessagingConfig(),
+      nodePublicIdentifier: this.cfCoreService.cfCore.publicIdentifier,
+      supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
+    };
   }
 
   /**

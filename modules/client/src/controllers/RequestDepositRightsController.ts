@@ -1,3 +1,4 @@
+import { CoinBalanceRefundApp } from "@connext/apps";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -15,7 +16,6 @@ import {
 import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { CoinBalanceRefundApp } from "@connext/types";
 
 export class RequestDepositRightsController extends AbstractController {
   public requestDepositRights = async (

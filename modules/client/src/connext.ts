@@ -1,3 +1,4 @@
+import { SupportedApplication, AppActionBigNumber, AppStateBigNumber } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
@@ -8,6 +9,9 @@ import {
   chan_storeGet,
   chan_storeSet,
   chan_restoreState,
+  LinkedTransferParameters,
+  LinkedTransferResponse,
+  LinkedTransferToRecipientResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -28,18 +32,14 @@ import { stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import {
   Address,
-  AppActionBigNumber,
   AppInstanceJson,
   AppRegistry,
-  AppStateBigNumber,
   CFCoreChannel,
   CFCoreTypes,
   ChannelProviderConfig,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
   ConnextClientStorePrefix,
   ConnextEvent,
   CreateChannelResponse,
@@ -62,7 +62,6 @@ import {
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
   Store,
-  SupportedApplication,
   SwapParameters,
   Transfer,
   TransferParameters,
@@ -343,8 +342,10 @@ export class ConnextClient implements IConnextClient {
    * Transfer currently uses the conditionalTransfer LINKED_TRANSFER_TO_RECIPIENT so that
    * async payments are the default transfer.
    */
-  public transfer = async (params: TransferParameters): Promise<ConditionalTransferResponse> => {
-    const res = await this.conditionalTransferController.conditionalTransfer({
+  public transfer = async (
+    params: TransferParameters,
+  ): Promise<LinkedTransferToRecipientResponse> => {
+    return this.conditionalTransferController.conditionalTransfer({
       amount: params.amount,
       assetId: params.assetId,
       conditionType: LINKED_TRANSFER_TO_RECIPIENT,
@@ -352,8 +353,7 @@ export class ConnextClient implements IConnextClient {
       paymentId: hexlify(randomBytes(32)),
       preImage: hexlify(randomBytes(32)),
       recipient: params.recipient,
-    } as LinkedTransferToRecipientParameters);
-    return res;
+    }) as Promise<LinkedTransferToRecipientResponse>;
   };
 
   public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
@@ -368,10 +368,9 @@ export class ConnextClient implements IConnextClient {
   };
 
   public conditionalTransfer = async (
-    params: ConditionalTransferParameters,
-  ): Promise<ConditionalTransferResponse> => {
-    const res = await this.conditionalTransferController.conditionalTransfer(params);
-    return res;
+    params: LinkedTransferParameters | LinkedTransferToRecipientParameters,
+  ): Promise<LinkedTransferResponse | LinkedTransferToRecipientResponse> => {
+    return this.conditionalTransferController.conditionalTransfer(params);
   };
 
   public getLatestNodeSubmittedWithdrawal = async (): Promise<

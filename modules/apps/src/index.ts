@@ -4,9 +4,13 @@ import {
   FastSignedTransferAppRegistryInfo,
   FastSignedTransferApp,
   FastSignedTransferAppAction,
+  FastSignedTransferAppState,
 } from "./FastSignedTransferApp";
 import { AppRegistry as AppRegistryType } from "./shared";
-import { SimpleLinkedTransferAppAction } from "./SimpleLinkedTransferApp";
+import {
+  SimpleLinkedTransferAppAction,
+  SimpleLinkedTransferAppState,
+} from "./SimpleLinkedTransferApp";
 import { SimpleSwapAppState } from "./SimpleTwoPartySwapApp";
 
 export * from "./shared";
@@ -36,3 +40,6 @@ export type AppAction<T> =
   | SimpleLinkedTransferAppAction
   | SimpleSwapAppState;
 export type AppActionBigNumber = AppAction<BigNumber>;
+
+export type AppState<T> = FastSignedTransferAppState<T> | SimpleLinkedTransferAppState<T>;
+export type AppStateBigNumber = AppState<BigNumber>;

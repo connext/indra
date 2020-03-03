@@ -1,3 +1,4 @@
+import { SimpleLinkedTransferAppState } from "@connext/apps";
 import {
   RECEIVE_TRANSFER_FAILED_EVENT,
   RECEIVE_TRANSFER_FINISHED_EVENT,
@@ -17,7 +18,6 @@ import {
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
   ResolveLinkedTransferToRecipientParameters,
-  SimpleLinkedTransferAppState,
   TransferCondition,
 } from "../types";
 import { invalid32ByteHexString, invalidAddress, notNegative, validate } from "../validation";

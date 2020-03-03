@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { CFCoreTypes, stringify, bigNumberifyObj, CoinTransferBigNumber } from "@connext/types";
 
 import { CoinBalanceRefundApp } from "..";

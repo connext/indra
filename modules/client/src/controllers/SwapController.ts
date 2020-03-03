@@ -1,3 +1,4 @@
+import { SimpleSwapAppStateBigNumber } from "@connext/apps";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
@@ -9,7 +10,6 @@ import {
   CFCoreTypes,
   convert,
   DefaultApp,
-  SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "../types";
 import {

@@ -1,3 +1,4 @@
+import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
 import { ILoggerService } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
@@ -19,7 +20,6 @@ import {
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
-  SupportedApplication,
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";

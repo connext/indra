@@ -1,3 +1,4 @@
+import { CoinBalanceRefundApp, commonAppProposalValidation } from "@connext/apps";
 import { ILoggerService } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
@@ -14,7 +15,6 @@ import {
   IChannelProvider,
   InstallMessage,
   InstallVirtualMessage,
-  MatchAppInstanceResponse,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
@@ -25,7 +25,6 @@ import {
   WithdrawFailedMessage,
   WithdrawStartedMessage,
 } from "./types";
-import { appProposalValidation } from "./validation/appProposals";
 import {
   ProtocolTypes,
   CREATE_CHANNEL_EVENT,
@@ -43,8 +42,6 @@ import {
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
-  CoinBalanceRefundApp,
-  SimpleTwoPartySwapApp,
 } from "@connext/types";
 
 // TODO: index of connext events only?
@@ -103,18 +100,18 @@ export class ConnextListener extends ConnextEventEmitter {
         return;
       }
       // matched app, take appropriate default actions
-      const { matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(msg, matchedApp);
       // only publish for coin balance refund app
       const coinBalanceDef = this.connext.appRegistry.filter(
         (app: DefaultApp) => app.name === CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        this.log.info(
-          `Proposed app isn't a coinbalance refund app, not sending propose message ${time()}`,
-        );
-        return;
+        throw new Error(`Clients do not allow apps to be installed.`);
       }
+      commonAppProposalValidation(
+        params,
+        coinBalanceDef,
+        this.connext.config.supportedTokenAddresses,
+      );
       this.log.debug(
         `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
       );
@@ -229,9 +226,7 @@ export class ConnextListener extends ConnextEventEmitter {
     this.emit(event, data);
   };
 
-  private matchAppInstance = async (
-    msg: ProposeMessage,
-  ): Promise<MatchAppInstanceResponse | undefined> => {
+  private matchAppInstance = async (msg: ProposeMessage): Promise<any> => {
     const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === msg.data.params.appDefinition;
     });
@@ -263,58 +258,6 @@ export class ConnextListener extends ConnextEventEmitter {
         responderDeposit: bigNumberify(responderDeposit),
       },
     };
-  };
-
-  private verifyAndInstallKnownApp = async (
-    msg: ProposeMessage,
-    matchedApp: DefaultApp,
-  ): Promise<void> => {
-    const {
-      data: { params, appInstanceId },
-      from,
-    } = msg;
-    const invalidProposal = await appProposalValidation[matchedApp.name](
-      params,
-      from,
-      matchedApp,
-      this.connext,
-    );
-
-    if (invalidProposal) {
-      // reject app installation
-      this.log.error(`Proposed app is invalid. ${invalidProposal}`);
-      await this.connext.rejectInstallApp(appInstanceId);
-      return;
-    }
-
-    // proposal is valid, automatically install known app, but
-    // do not ever automatically install swap app since theres no
-    // way to validate the exchange in app against the rate input
-    // to controller
-    // this means the hub can only install apps, and cannot propose a swap
-    // and there cant easily be an automatic install swap app between users
-    if (matchedApp.name === SimpleTwoPartySwapApp) {
-      return;
-    }
-
-    // dont automatically install coin balance refund app
-    if (matchedApp.name === CoinBalanceRefundApp) {
-      return;
-    }
-
-    this.log.debug("Proposal for app install successful, attempting install now...");
-    let res: CFCoreTypes.InstallResult;
-
-    // TODO: determine virtual app in a more resilient way
-    // for now only simple transfer apps are virtual apps
-    const virtualAppDefs = [this.connext.config.contractAddresses["SimpleTransferApp"]];
-    if (virtualAppDefs.includes(params.appDefinition)) {
-      res = await this.connext.installVirtualApp(appInstanceId);
-    } else {
-      res = await this.connext.installApp(appInstanceId);
-    }
-    this.log.debug(`App installed, res: ${stringify(res)}`);
-    return;
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {

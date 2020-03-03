@@ -53,6 +53,7 @@ export type GetConfigResponse = {
   contractAddresses: ContractAddresses;
   nodePublicIdentifier: string;
   messaging: MessagingConfig;
+  supportedTokenAddresses: string[];
 };
 
 export type GetChannelResponse = CFCoreChannel;

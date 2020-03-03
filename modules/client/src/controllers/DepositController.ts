@@ -1,3 +1,4 @@
+import { CoinBalanceRefundApp } from "@connext/apps";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
@@ -15,7 +16,6 @@ import {
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { CoinBalanceRefundApp } from "@connext/types";
 
 // TODO: refactor to use unrolled version
 export class DepositController extends AbstractController {
