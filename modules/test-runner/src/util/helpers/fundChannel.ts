@@ -3,16 +3,18 @@ import { IConnextClient, DEPOSIT_CONFIRMED_EVENT, DEPOSIT_FAILED_EVENT } from "@
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { expect } from "../";
+import { env, expect, Logger } from "../";
 
 export const fundChannel = async (
   client: IConnextClient,
   amount: BigNumber,
   assetId: string = AddressZero,
 ): Promise<void> => {
+  const log = new Logger("FundChannel", env.logLevel);
   const prevFreeBalance = await client.getFreeBalance(assetId);
   await new Promise(async (resolve, reject) => {
     client.once(DEPOSIT_CONFIRMED_EVENT, async () => {
+      log.info(`Got deposit confirmed event`);
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
       const expected = prevFreeBalance[client.freeBalanceAddress].add(amount);
@@ -25,6 +27,7 @@ export const fundChannel = async (
 
     try {
       await client.deposit({ amount: amount.toString(), assetId });
+      log.info(`Deposit function has returned`);
     } catch (e) {
       return reject(new Error(e.stack || e.message));
     }

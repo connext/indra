@@ -10,6 +10,7 @@ import {
   AssetOptions,
   asyncTransferAsset,
   createClient,
+  env,
   ETH_AMOUNT_LG,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
@@ -19,13 +20,17 @@ import {
   FUNDED_MNEMONICS,
   TOKEN_AMOUNT,
   requestCollateral,
+  Logger,
   delay,
+  withdrawFromChannel,
   ZERO_ZERO_TWO_ETH,
+  ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { connectNats, closeNats } from "../util/nats";
 import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
+const log = new Logger("AsyncTransfers", env.logLevel);
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -52,21 +57,11 @@ describe("Async Transfers", () => {
     closeNats();
   });
 
-  it.only("happy case: client A transfers eth to client B through node", async () => {
+  it("happy case: client A transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    await fundChannel(clientA, ZERO_ZERO_TWO_ETH, transfer.assetId);
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
-    console.log(`${new Date().toISOString()} [TestRunner] start transfers`);
-    let start = Date.now();
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
-    console.log(
-      `${new Date().toISOString()} [TestRunner] Transfer #1 finished in ${Date.now() - start} ms`,
-    );
-    start = Date.now();
-    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
-    console.log(
-      `${new Date().toISOString()} [TestRunner] Transfer #2 finished in ${Date.now() - start} ms`,
-    );
   });
 
   it("happy case: client A transfers tokens to client B through node", async () => {
@@ -76,7 +71,34 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it.skip("latency test: client A transfers eth to client B through node", function() {
+  it.only("latency test: deposit, collateralize, transfer, transfer, withdraw", async () => {
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+
+    let start = Date.now();
+    log.info(`Depositing into channel`);
+    await fundChannel(clientA, ETH_AMOUNT_MD, transfer.assetId);
+
+    log.info(`Requesting collateral after ${Date.now() - start}ms`);
+    start = Date.now();
+    await requestCollateral(clientB, transfer.assetId);
+
+    log.info(`${new Date().toISOString()} [TestRunner] start transfers`);
+
+    log.info(`Starting first transfer after ${Date.now() - start}ms`);
+    start = Date.now();
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+
+    log.info(`Starting second transfer after ${Date.now() - start}ms`);
+    start = Date.now();
+
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+
+    log.info(`Starting withdrawal after ${Date.now() - start}ms`);
+    start = Date.now();
+
+    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero, true);
+
+    /*
     return new Promise(async res => {
       // @ts-ignore
       this.timeout(1200000);
@@ -86,12 +108,10 @@ describe("Async Transfers", () => {
       let startTime: number[] = [];
       let y = 0;
       clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", data => {
-        // console.log(data)
+        // log.info(data)
         const duration = Date.now() - startTime[data.meta.index];
-        console.log(
-          "Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000,
-        );
-        console.log("===========================");
+        log.info("Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000);
+        log.info("===========================");
         y++;
         if (y === 5) {
           res();
@@ -107,9 +127,10 @@ describe("Async Transfers", () => {
           recipient: clientB.publicIdentifier,
         });
         delay(30000);
-        console.log("i: " + i);
+        log.info("i: " + i);
       }
     });
+    */
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {
