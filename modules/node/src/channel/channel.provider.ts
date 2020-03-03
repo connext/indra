@@ -34,7 +34,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getConfig(): Promise<GetConfigResponse> {
-    return this.channelService.getConfig();
+    return await this.channelService.getConfig();
   }
 
   async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse> {
@@ -159,22 +159,12 @@ class ChannelMessaging extends AbstractMessagingProvider {
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    AuthService,
-    CFCoreProviderId,
-    ChannelRepository,
-    ChannelService,
-    ConfigService,
-    LoggerService,
-    MessagingProviderId,
-  ],
+  inject: [AuthService, ChannelRepository, ChannelService, LoggerService, MessagingProviderId],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,
-    cfCore: CFCore,
     channelRepo: ChannelRepository,
     channelService: ChannelService,
-    configService: ConfigService,
     log: LoggerService,
     messaging: IMessagingService,
   ): Promise<void> => {

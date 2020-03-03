@@ -24,6 +24,7 @@ export * from "./shared";
 export * from "./FastSignedTransferApp";
 export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleTwoPartySwapApp";
+export * from "./CoinBalanceRefundApp";
 
 export const SupportedApplications = {
   [CoinBalanceRefundApp]: CoinBalanceRefundApp,

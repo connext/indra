@@ -1,4 +1,8 @@
-import { CoinBalanceRefundApp, commonAppProposalValidation } from "@connext/apps";
+import {
+  CoinBalanceRefundApp,
+  commonAppProposalValidation,
+  SupportedApplication,
+} from "@connext/apps";
 import { ILoggerService } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
@@ -109,7 +113,8 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       commonAppProposalValidation(
         params,
-        coinBalanceDef,
+        // types weirdness
+        { ...coinBalanceDef, name: coinBalanceDef.name as SupportedApplication },
         this.connext.config.supportedTokenAddresses,
       );
       this.log.debug(
