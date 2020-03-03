@@ -2,7 +2,7 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, ILoggerService, StateSchemaVersion } from "@connext/types";
+import { CF_PATH, CREATE_CHANNEL_EVENT, StateSchemaVersion } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -36,39 +36,6 @@ const createMessagingService = async (messagingUrl: string): Promise<IMessagingS
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
   return messaging;
-};
-
-const setupMultisigAddress = async (
-  node: INodeApiClient,
-  channelProvider: IChannelProvider,
-  log: ILoggerService,
-): Promise<IChannelProvider> => {
-  const myChannel = await node.getChannel();
-
-  let multisigAddress: string;
-  if (!myChannel) {
-    log.debug("no channel detected, creating channel..");
-    const creationEventData = await Promise.race([
-      delayAndThrow(30_000, "Create channel event not fired within 30s"),
-      new Promise(
-        async (res: any): Promise<any> => {
-          channelProvider.once(CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
-            res(data.data);
-          });
-
-          const creationData = await node.createChannel();
-          log.debug(`created channel, transaction: ${stringify(creationData)}`);
-        },
-      ),
-    ]);
-    multisigAddress = (creationEventData as CFCoreTypes.CreateChannelResult).multisigAddress;
-  } else {
-    multisigAddress = myChannel.multisigAddress;
-  }
-  log.debug(`multisigAddress: ${multisigAddress}`);
-
-  channelProvider.multisigAddress = multisigAddress;
-  return channelProvider;
 };
 
 export const connect = async (
@@ -125,7 +92,6 @@ export const connect = async (
     // create a new node api instance
     node = new NodeApiClient({ channelProvider, logger: log, messaging });
     config = await node.config();
-    log.debug(`Node provided config: ${stringify(config)}`);
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
@@ -162,7 +128,6 @@ export const connect = async (
     // create a new node api instance
     node = new NodeApiClient({ logger: log, messaging });
     config = await node.config();
-    log.debug(`Node provided config: ${stringify(config)}`);
 
     // ensure that node and user xpub are different
     if (config.nodePublicIdentifier === xpub) {
@@ -195,7 +160,33 @@ export const connect = async (
   }
 
   // setup multisigAddress + assign to channelProvider
-  await setupMultisigAddress(node, channelProvider, log);
+  const myChannel = await node.getChannel();
+
+  let multisigAddress: string;
+  if (!myChannel) {
+    log.debug("no channel detected, creating channel..");
+    const creationEventData = await Promise.race([
+      delayAndThrow(30_000, "Create channel event not fired within 30s"),
+      new Promise(
+        async (res: any): Promise<any> => {
+          channelProvider.once(CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
+            log.debug(`Received CREATE_CHANNEL_EVENT`);
+            res(data.data);
+          });
+
+          // FYI This continues async in the background after CREATE_CHANNEL_EVENT is recieved
+          const creationData = await node.createChannel();
+          log.debug(`created channel, transaction: ${stringify(creationData)}`);
+        },
+      ),
+    ]);
+    multisigAddress = (creationEventData as CFCoreTypes.CreateChannelResult).multisigAddress;
+  } else {
+    multisigAddress = myChannel.multisigAddress;
+  }
+  log.debug(`multisigAddress: ${multisigAddress}`);
+
+  channelProvider.multisigAddress = multisigAddress;
 
   // create a token contract based on the provided token
   const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
@@ -219,6 +210,8 @@ export const connect = async (
     xpub,
   });
 
+  log.debug(`Done creating connext client`);
+
   // return before any cleanup using the assumption that all injected clients
   // have an online client that it can access that has don the cleanup
   if (isInjected) {
@@ -240,6 +233,8 @@ export const connect = async (
       resolve();
     },
   );
+
+  log.debug(`Channel is available`);
 
   try {
     await client.getFreeBalance();

@@ -39,11 +39,13 @@ export class Logger implements ILoggerService {
   private context = "UnknownContext";
   private level = 3;
   private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
+  private id = "?";
 
-  public constructor(context?: string, level?: number, color?: boolean) {
+  public constructor(context?: string, level?: number, color?: boolean, id?: string) {
     this.context = typeof context !== "undefined" ? context : this.context;
     this.level = typeof level !== "undefined" ? parseInt(level.toString(), 10) : this.level;
     this.color = color || false;
+    this.id = id || "?";
     if (!this.color) {
       this.colors = { context: "", debug: "", error: "", info: "", warn: "", reset: "" };
     }
@@ -54,7 +56,7 @@ export class Logger implements ILoggerService {
   }
 
   public newContext(context: string): Logger {
-    return new Logger(context, this.level, this.color);
+    return new Logger(context, this.level, this.color, this.id);
   }
 
   public error(msg: string): void {
@@ -77,7 +79,9 @@ export class Logger implements ILoggerService {
     if (this.levels[level] > this.level) return;
     const now = new Date().toISOString();
     console[level](
-      `${this.colors.reset}${now} ${this.colors.context}[${this.context}]${this.colors.reset} ${this.colors[level]}${msg}${this.colors.reset}`,
+      `${now} ${this.colors[level]}${level.substring(0, 1).toUpperCase()} ` +
+        `${this.colors.context}[${this.id}][${this.context}] ` +
+        `${this.colors[level]}${msg}${this.colors.reset}`,
     );
   }
 }

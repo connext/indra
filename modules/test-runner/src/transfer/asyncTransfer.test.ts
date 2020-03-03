@@ -30,7 +30,6 @@ import { connectNats, closeNats } from "../util/nats";
 import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
-const log = new Logger("AsyncTransfers", env.logLevel);
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -43,8 +42,8 @@ describe("Async Transfers", () => {
   });
 
   beforeEach(async () => {
-    clientA = await createClient();
-    clientB = await createClient();
+    clientA = await createClient({ id: "A" });
+    clientB = await createClient({ id: "B" });
     tokenAddress = clientA.config.contractAddresses.Token;
   });
 
@@ -73,31 +72,11 @@ describe("Async Transfers", () => {
 
   it.only("latency test: deposit, collateralize, transfer, transfer, withdraw", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-
-    let start = Date.now();
-    log.info(`Depositing into channel`);
     await fundChannel(clientA, ETH_AMOUNT_MD, transfer.assetId);
-
-    log.info(`Requesting collateral after ${Date.now() - start}ms`);
-    start = Date.now();
     await requestCollateral(clientB, transfer.assetId);
-
-    log.info(`${new Date().toISOString()} [TestRunner] start transfers`);
-
-    log.info(`Starting first transfer after ${Date.now() - start}ms`);
-    start = Date.now();
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
-
-    log.info(`Starting second transfer after ${Date.now() - start}ms`);
-    start = Date.now();
-
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
-
-    log.info(`Starting withdrawal after ${Date.now() - start}ms`);
-    start = Date.now();
-
     await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero, true);
-
     /*
     return new Promise(async res => {
       // @ts-ignore
@@ -117,7 +96,6 @@ describe("Async Transfers", () => {
           res();
         }
       });
-
       for (let i = 0; i < 5; i++) {
         startTime[i] = Date.now();
         await clientA.transfer({
@@ -131,6 +109,7 @@ describe("Async Transfers", () => {
       }
     });
     */
+
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {

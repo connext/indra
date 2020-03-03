@@ -213,7 +213,7 @@ export class ConnextListener extends ConnextEventEmitter {
 
     this.channelProvider.on(ProtocolTypes.chan_uninstall, (data: any): any => {
       const result = data.result.result;
-      this.log.debug(`Emitting ProtocolTypes.chan_uninstall event: ${stringify(result)}`);
+      this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
       this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
         stringify(result),
@@ -225,7 +225,6 @@ export class ConnextListener extends ConnextEventEmitter {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
-    this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
@@ -313,7 +312,6 @@ export class ConnextListener extends ConnextEventEmitter {
     } else {
       res = await this.connext.installApp(appInstanceId);
     }
-    this.log.debug(`App installed, res: ${stringify(res)}`);
     return;
   };
 
@@ -341,7 +339,6 @@ export class ConnextListener extends ConnextEventEmitter {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (msg: any) => {
       this.log.debug(`Received message for ${subject} subscription`);
-      this.log.debug(`Message data: ${stringify(JSON.parse(msg.data))}`);
       if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }

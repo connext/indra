@@ -63,7 +63,7 @@ export abstract class AbstractController {
       ]);
 
       this.log.info(`Installed app with id: ${appInstanceId}`);
-      this.log.debug(`Installed app details: ${stringify(res as object)}`);
+      // this.log.debug(`Installed app details: ${stringify(res as object)}`);
       return appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);

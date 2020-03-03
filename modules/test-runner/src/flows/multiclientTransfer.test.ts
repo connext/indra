@@ -1,10 +1,12 @@
 import { IConnextClient, ReceiveTransferFinishedEventData } from "@connext/types";
 import { Client } from "ts-nats";
 import { before, after } from "mocha";
-import { createClient, fundChannel, connectNats, closeNats } from "../util";
 import { parseEther, bigNumberify } from "ethers/utils";
 
-describe("Full Flow: Transfer", () => {
+import { env, Logger, createClient, fundChannel, connectNats, closeNats } from "../util";
+
+describe("Full Flow: Multi-client transfer", () => {
+  let log = new Logger("MultiClientTransfer", env.logLevel);
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
@@ -44,7 +46,7 @@ describe("Full Flow: Transfer", () => {
           if (freeBalance[gateway.freeBalanceAddress].isZero()) {
             res();
           }
-          console.log("gateway received transfer: ", data);
+          log.info(`gateway received transfer: ${JSON.stringify(data)}`);
           await gateway.transfer({
             amount: data.amount,
             recipient: data.sender,
@@ -55,7 +57,7 @@ describe("Full Flow: Transfer", () => {
       indexerA.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
         async (data: ReceiveTransferFinishedEventData) => {
-          console.log("indexerA received transfer: ", data);
+          log.info(`indexerA received transfer: ${JSON.stringify(data)}`);
           await indexerA.transfer({
             amount: data.amount,
             recipient: data.sender,
@@ -66,7 +68,7 @@ describe("Full Flow: Transfer", () => {
       indexerB.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
         async (data: ReceiveTransferFinishedEventData) => {
-          console.log("indexerB received transfer: ", data);
+          log.info(`indexerB received transfer: ${JSON.stringify(data)}`);
           await indexerB.transfer({
             amount: data.amount,
             recipient: data.sender,

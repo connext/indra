@@ -3,6 +3,9 @@ import { ConnextEventEmitter, CFCoreTypes, MessagingConfig } from "@connext/type
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
+import { Logger } from "./logger";
+
+const log = new Logger("Messaging", env.logLevel);
 
 // TYPES
 export type MessageCounter = {
@@ -202,12 +205,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         this.hasCeiling({ type: "received" }) &&
         this.count.ceiling!.received! <= this.count.received
       ) {
-        env.logLevel > 2 &&
-          console.log(
-            `Reached ceiling (${
-              this.count.ceiling!.received
-            }), refusing to process any more messages. Received ${this.count.received} messages`,
-          );
+        log.warn(
+          `Reached ceiling (${
+            this.count.ceiling!.received
+          }), refusing to process any more messages. Received ${this.count.received} messages`,
+        );
         return;
       }
       // handle overall protocol count
@@ -231,7 +233,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${
           this.protocolDefaults[protocol].received
         } received, ceiling: ${this.protocolDefaults[protocol].ceiling!.received!}`;
-        env.logLevel > 2 && console.log(msg);
+        log.warn(msg);
         return;
       }
       this.protocolDefaults[protocol].received += 1;
@@ -248,11 +250,10 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // wait out delay
     await this.awaitDelay(true);
     if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
-      env.logLevel > 2 &&
-        console.log(
-          `Reached ceiling (${this.count.ceiling!
-            .sent!}), refusing to send any more messages. Sent ${this.count.sent} messages`,
-        );
+      log.warn(
+        `Reached ceiling (${this.count.ceiling!
+          .sent!}), refusing to send any more messages. Sent ${this.count.sent} messages`,
+      );
       return;
     }
 
@@ -272,7 +273,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${
         this.protocolDefaults[protocol].sent
       } sent, ceiling: ${this.protocolDefaults[protocol].ceiling!.sent!}`;
-      env.logLevel > 2 && console.log(msg);
+      log.warn(msg);
       return;
     }
     // handle counts
