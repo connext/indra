@@ -1,4 +1,3 @@
-import { SimpleLinkedTransferAppState } from "./app";
 import { Address, BigNumber } from "./basic";
 import { AssetAmount } from "./channel";
 import { ProtocolTypes } from "./protocol";
@@ -154,18 +153,3 @@ export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecip
 export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
   recipient: string;
 };
-
-export type ConditionalTransferParameters<T = string> =
-  | LinkedTransferParameters<T>
-  | LinkedTransferToRecipientParameters<T>;
-export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
-
-export type ConditionalTransferResponse =
-  | LinkedTransferResponse
-  | LinkedTransferToRecipientResponse;
-
-// condition initial states
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferInitialState<T = string> = SimpleLinkedTransferAppState<T>;
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;

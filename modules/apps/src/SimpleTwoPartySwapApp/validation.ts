@@ -12,7 +12,6 @@ const ALLOWED_DISCREPANCY_PCT = 5;
 
 export const validateSimpleSwapApp = (
   params: CFCoreTypes.ProposeInstallParams,
-  supportedTokenAddresses: string[],
   allowedSwaps: SwapRate[],
   ourRate: string,
 ) => {
@@ -22,14 +21,6 @@ export const validateSimpleSwapApp = (
     initiatorDepositTokenAddress,
     responderDepositTokenAddress,
   } = bigNumberifyObj(params);
-
-  if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
-    throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
-  }
-
-  if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
-  }
 
   if (
     !allowedSwaps.find(

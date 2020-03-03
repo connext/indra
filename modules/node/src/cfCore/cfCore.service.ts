@@ -1,6 +1,6 @@
+import { AppActionBigNumber } from "@connext/apps";
 import { NatsMessagingService } from "@connext/messaging";
 import {
-  AppActionBigNumber,
   ConnextNodeStorePrefix,
   StateChannelJSON,
   REJECT_INSTALL_EVENT,
@@ -197,9 +197,7 @@ export class CFCoreService {
         tokenAddress: assetId,
       } as CFCoreTypes.WithdrawCommitmentParams,
     });
-    this.log.debug(
-      `withdrawCommitment called with result ${stringify(withdrawRes.result.result)}`,
-    );
+    this.log.debug(`withdrawCommitment called with result ${stringify(withdrawRes.result.result)}`);
     return withdrawRes.result.result as CFCoreTypes.WithdrawCommitmentResult;
   }
 
@@ -214,9 +212,7 @@ export class CFCoreService {
       methodName: ProtocolTypes.chan_proposeInstall,
       parameters: params,
     });
-    this.log.debug(
-      `proposeInstallApp called with result ${stringify(proposeRes.result.result)}`,
-    );
+    this.log.debug(`proposeInstallApp called with result ${stringify(proposeRes.result.result)}`);
     return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
   }
 

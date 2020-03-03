@@ -1,61 +1,44 @@
-import {
-  CFCoreTypes,
-  bigNumberifyObj,
-  stringify,
-  SwapRate,
-  AllowedSwap,
-  calculateExchange,
-} from "@connext/types";
-import { bigNumberify } from "ethers/utils";
+import { xkeyKthAddress } from "@connext/cf-core";
+import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj, stringify } from "@connext/types";
 
-const ALLOWED_DISCREPANCY_PCT = 5;
+import { SimpleLinkedTransferAppStateBigNumber } from "./types";
+import { unidirectionalCoinTransferValidation } from "../shared";
 
-export const validateSimpleSwapApp = (
+export const validateSimpleLinkedTransferApp = (
   params: CFCoreTypes.ProposeInstallParams,
-  supportedTokenAddresses: string[],
-  allowedSwaps: SwapRate[],
-  ourRate: string,
+  initiatorPublicIdentifier: string,
+  responderPublicIdentifier: string,
 ) => {
-  const {
-    responderDeposit,
+  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
+    params,
+  );
+
+  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
+  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+
+  const initialState = bigNumberifyObj(
+    initialStateBadType,
+  ) as SimpleLinkedTransferAppStateBigNumber;
+
+  initialState.coinTransfers = initialState.coinTransfers.map((transfer: CoinTransferBigNumber) =>
+    bigNumberifyObj(transfer),
+  ) as any;
+
+  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+    return transfer.to === initiatorFreeBalanceAddress;
+  })[0];
+  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+    return transfer.to === responderFreeBalanceAddress;
+  })[0];
+
+  unidirectionalCoinTransferValidation(
     initiatorDeposit,
-    initiatorDepositTokenAddress,
-    responderDepositTokenAddress,
-  } = bigNumberifyObj(params);
+    responderDeposit,
+    initiatorTransfer,
+    responderTransfer,
+  );
 
-  if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
-    throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
-  }
-
-  if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
-  }
-
-  if (
-    !allowedSwaps.find(
-      (swap: AllowedSwap) =>
-        swap.from === initiatorDepositTokenAddress && swap.to === responderDepositTokenAddress,
-    )
-  ) {
-    throw new Error(
-      `Swap from ${initiatorDepositTokenAddress} to ${responderDepositTokenAddress} is not valid. Valid swaps: ${stringify(
-        allowedSwaps,
-      )}`,
-    );
-  }
-
-  const calculated = calculateExchange(initiatorDeposit, ourRate);
-
-  // make sure calculated within allowed amount
-  const calculatedToActualDiscrepancy = calculated.sub(responderDeposit).abs();
-  // i.e. (x * (100 - 5)) / 100 = 0.95 * x
-  const allowedDiscrepancy = calculated
-    .mul(bigNumberify(100).sub(ALLOWED_DISCREPANCY_PCT))
-    .div(100);
-
-  if (calculatedToActualDiscrepancy.gt(allowedDiscrepancy)) {
-    throw new Error(
-      `Responder deposit (${responderDeposit.toString()}) is greater than our expected deposit (${calculated.toString()}) based on our swap rate ${ourRate} by more than ${ALLOWED_DISCREPANCY_PCT}% (discrepancy: ${calculatedToActualDiscrepancy.toString()})`,
-    );
+  if (!initialState.amount.eq(initiatorDeposit)) {
+    throw new Error(`Payment amount bust be the same as initiator deposit ${stringify(params)}`);
   }
 };

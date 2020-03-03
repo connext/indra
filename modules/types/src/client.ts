@@ -1,7 +1,7 @@
 import { providers } from "ethers";
 
 import { AppInstanceJson } from "./app";
-import { AppActionBigNumber, AppRegistry, AppState, DefaultApp } from "./app";
+import { AppRegistry, DefaultApp } from "./app";
 import { BigNumber } from "./basic";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
@@ -9,8 +9,6 @@ import { ConnextEvent } from "./events";
 import {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
   DepositParameters,
   RequestDepositRightsParameters,
   RescindDepositRightsParameters,
@@ -89,10 +87,10 @@ export interface IConnextClient {
   // CORE CHANNEL METHODS
   deposit(params: DepositParameters): Promise<ChannelState>;
   swap(params: SwapParameters): Promise<CFCoreChannel>;
-  transfer(params: TransferParameters): Promise<ConditionalTransferResponse>;
+  transfer(params: TransferParameters): Promise<any>;
   withdraw(params: WithdrawParameters): Promise<ChannelState>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
-  conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
+  conditionalTransfer(params: any): Promise<any>;
   restoreState(): Promise<void>;
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   requestDepositRights(
@@ -159,14 +157,8 @@ export interface IConnextClient {
   installVirtualApp(appInstanceId: string): Promise<ProtocolTypes.InstallVirtualResult>;
   installApp(appInstanceId: string): Promise<ProtocolTypes.InstallResult>;
   rejectInstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
-  takeAction(
-    appInstanceId: string,
-    action: AppActionBigNumber,
-  ): Promise<ProtocolTypes.TakeActionResult>;
-  updateState(
-    appInstanceId: string,
-    newState: AppState | any,
-  ): Promise<ProtocolTypes.UpdateStateResult>;
+  takeAction(appInstanceId: string, action: any): Promise<ProtocolTypes.TakeActionResult>;
+  updateState(appInstanceId: string, newState: any): Promise<ProtocolTypes.UpdateStateResult>;
   uninstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
   uninstallVirtualApp(appInstanceId: string): Promise<ProtocolTypes.UninstallVirtualResult>;
 }

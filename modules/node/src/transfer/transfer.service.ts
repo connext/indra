@@ -1,12 +1,13 @@
-import { SimpleLinkedTransferApp, SimpleTransferApp } from "@connext/apps";
+import {
+  SimpleLinkedTransferApp,
+  SimpleLinkedTransferAppState,
+  SimpleLinkedTransferAppStateBigNumber,
+} from "@connext/apps";
 
 import {
   DefaultApp,
   DepositConfirmationMessage,
   ResolveLinkedTransferResponse,
-  SimpleLinkedTransferAppStateBigNumber,
-  SimpleTransferAppStateBigNumber,
-  SimpleLinkedTransferAppState,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
@@ -289,47 +290,6 @@ export class TransferService {
       meta: transfer.meta,
       paymentId,
     };
-  }
-
-  async sendTransferToClient(
-    userPubId: string,
-    amount: BigNumber,
-    assetId: string,
-  ): Promise<string> {
-    this.log.debug(`sendTransferToClient(${userPubId}, ${amount}, ${assetId}`);
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
-    if (!channel) {
-      throw new Error(`No channel exists for userPubId ${userPubId}`);
-    }
-
-    const initialState: SimpleTransferAppStateBigNumber = {
-      coinTransfers: [
-        {
-          amount,
-          to: this.cfCoreService.cfCore.freeBalanceAddress,
-        },
-        {
-          amount: Zero,
-          to: xpubToAddress(userPubId),
-        },
-      ],
-    };
-
-    const res = await this.cfCoreService.proposeAndWaitForInstallApp(
-      userPubId,
-      initialState,
-      amount,
-      assetId,
-      Zero,
-      assetId,
-      SimpleTransferApp,
-    );
-
-    if (!res || !res.appInstanceId) {
-      throw new Error(`App was not successfully installed.`);
-    }
-
-    return res.appInstanceId;
   }
 
   async reclaimLinkedTransferCollateralByAppInstanceIdIfExists(

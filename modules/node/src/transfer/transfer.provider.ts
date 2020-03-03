@@ -1,5 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
-import { ResolveLinkedTransferResponse, Transfer, replaceBN } from "@connext/types";
+import { ResolveLinkedTransferResponse, Transfer, replaceBN, stringify } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 

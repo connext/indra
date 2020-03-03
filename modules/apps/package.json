@@ -15,7 +15,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@connext/types": "4.1.0",
+    "@connext/cf-core": "5.0.2",
+    "@connext/types": "5.0.2",
     "ethers": "4.0.45",
     "rollup": "1.31.1",
     "rollup-plugin-typescript2": "0.26.0",

@@ -1,5 +1,5 @@
+import { SimpleLinkedTransferAppState } from "@connext/apps";
 import {
-  SimpleLinkedTransferAppState,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,

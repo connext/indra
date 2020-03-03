@@ -1,37 +1,19 @@
-import {
-  CFCoreTypes,
-  bigNumberifyObj,
-  CoinTransfer,
-  CoinTransferBigNumber,
-  stringify,
-} from "@connext/types";
-import { AppRegistryInfo } from "../shared";
+import { CFCoreTypes, bigNumberifyObj, CoinTransfer, CoinTransferBigNumber } from "@connext/types";
+import { xkeyKthAddress } from "@connext/cf-core";
+import { BigNumber } from "ethers/utils";
+
+import { unidirectionalCoinTransferValidation } from "../shared";
+
 import { FastSignedTransferAppState } from "./types";
-import { BigNumber, bigNumberify } from "ethers/utils";
-import { Zero } from "ethers/constants";
 
 export const validateFastSignedTransferApp = (
   params: CFCoreTypes.ProposeInstallParams,
-  initiatorFreeBalanceAddress: string,
-  responderFreeBalanceAddress: string,
-  supportedTokenAddresses: string[],
+  initiatorPublicIdentifier: string,
+  responderPublicIdentifier: string,
 ) => {
-  const {
-    responderDeposit,
-    initiatorDeposit,
-    initiatorDepositTokenAddress,
-    responderDepositTokenAddress,
-    initialState: initialStateBadType,
-  } = bigNumberifyObj(params);
-
-  if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
-    throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
-  }
-
-  if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
-  }
-
+  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
+    params,
+  );
   const initialState = bigNumberifyObj(initialStateBadType) as FastSignedTransferAppState<
     BigNumber
   >;
@@ -40,8 +22,11 @@ export const validateFastSignedTransferApp = (
     bigNumberifyObj(transfer),
   ) as any;
 
+  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
+  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+
   // initiator is sender
-  const intiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
     return transfer.to === initiatorFreeBalanceAddress;
   })[0];
 
@@ -50,31 +35,10 @@ export const validateFastSignedTransferApp = (
     return transfer.to === responderFreeBalanceAddress;
   })[0];
 
-  if (!responderDeposit.eq(Zero)) {
-    throw new Error(
-      `Will not accept transfer install where responder deposit is != 0 ${stringify(params)}`,
-    );
-  }
-
-  if (initiatorDeposit.lte(Zero)) {
-    throw new Error(
-      `Will not accept transfer install where initiator deposit is <=0 ${stringify(params)}`,
-    );
-  }
-
-  if (intiatorTransfer.amount.lte(Zero)) {
-    throw new Error(
-      `Cannot install a transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
-        intiatorTransfer.amount,
-      ).toString()}`,
-    );
-  }
-
-  if (!responderTransfer.amount.eq(Zero)) {
-    throw new Error(
-      `Cannot install a transfer app with a redeemer transfer of != 0. Transfer amount: ${bigNumberify(
-        responderTransfer.amount,
-      ).toString()}`,
-    );
-  }
+  unidirectionalCoinTransferValidation(
+    initiatorDeposit,
+    responderDeposit,
+    initiatorTransfer,
+    responderTransfer,
+  );
 };
