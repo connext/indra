@@ -68,7 +68,7 @@ export class AppRegistryService implements OnModuleInit {
 
     // if error, reject install
     try {
-      const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
 
