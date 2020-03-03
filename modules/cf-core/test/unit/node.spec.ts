@@ -1,7 +1,7 @@
+import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../src/node";
-import { MemoryStoreService } from "../services/memory-store-service";
 import mockMessagingService from "../services/mock-messaging-service";
 
 describe("Node", () => {

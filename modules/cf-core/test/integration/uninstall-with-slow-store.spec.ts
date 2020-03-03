@@ -3,7 +3,7 @@ import { UninstallMessage } from "../../src/types";
 import { timeout } from "../../src/utils";
 import { NetworkContextForTestSuite } from "../contracts";
 
-import { SetupContext, setupWithMemoryMessagingAndSlowStore } from "./setup";
+import { SetupContext, setupWithMemoryMessagingAndStore } from "./setup";
 import {
   constructUninstallRpc,
   createChannel,
@@ -18,7 +18,7 @@ describe("Node method follows spec - uninstall", () => {
   let nodeB: Node;
 
   beforeAll(async () => {
-    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(global);
+    const context: SetupContext = await setupWithMemoryMessagingAndStore(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
   });

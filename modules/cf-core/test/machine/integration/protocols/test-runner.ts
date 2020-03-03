@@ -1,3 +1,4 @@
+import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { OutcomeType } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
@@ -14,7 +15,6 @@ import { connectToGanache } from "../connect-ganache";
 import { MessageRouter } from "../message-router";
 import { MiniNode } from "../mininode";
 import { Store } from "../../../../src/store";
-import { MemoryStoreService } from "../../../services/memory-store-service";
 
 expect.extend({ toBeEq });
 

@@ -1,3 +1,4 @@
+import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
 import {
   getAddress,
@@ -18,7 +19,6 @@ import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { getRandomExtendedPubKey, getRandomHDNodes } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";
-import { MemoryStoreService } from "../../../services/memory-store-service";
 import { Store } from "../../../../src/store";
 
 describe("ConditionalTransactionCommitment", () => {

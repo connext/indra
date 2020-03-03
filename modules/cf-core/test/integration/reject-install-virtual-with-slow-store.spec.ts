@@ -4,7 +4,7 @@ import { Node } from "../../src";
 import { ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
-import { SetupContext, setupWithMemoryMessagingAndSlowStore } from "./setup";
+import { SetupContext, setupWithMemoryMessagingAndStore } from "./setup";
 import {
   confirmProposedAppInstance,
   constructRejectInstallRpc,
@@ -22,7 +22,7 @@ describe.skip(`Node method follows spec - rejectInstallVirtual`, () => {
   let nodeC: Node;
 
   beforeAll(async () => {
-    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(global, true);
+    const context: SetupContext = await setupWithMemoryMessagingAndStore(global, true);
     nodeA = context[`A`].node;
     nodeB = context[`B`].node;
     nodeC = context[`C`].node;

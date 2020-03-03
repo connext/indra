@@ -1,3 +1,4 @@
+import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT, NetworkContext } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -16,7 +17,6 @@ import { install } from "../../src/methods/app-instance/install/operation";
 import { StateChannel } from "../../src/models";
 import { Store } from "../../src/store";
 import { getRandomExtendedPubKeys } from "../machine/integration/random-signing-keys";
-import { MemoryStoreService } from "../services/memory-store-service";
 
 import { createAppInstanceProposalForTest } from "./utils";
 
