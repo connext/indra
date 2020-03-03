@@ -14,7 +14,6 @@ import {
   AppInstanceJson,
   CoinTransfer,
   CoinTransferBigNumber,
-  DefaultApp,
   stringify,
   bigNumberifyObj,
 } from "@connext/types";
@@ -296,13 +295,15 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     // check that linked transfer app has been installed from sender
-    const defaultApp = (await this.configService.getDefaultApps()).find(
-      (app: DefaultApp) => app.name === SimpleLinkedTransferApp,
+    const ethNetwork = await this.configService.getEthNetwork();
+    const simpleLinkedTransferApp = await this.appRegistryRepository.findByNameAndNetwork(
+      SimpleLinkedTransferApp,
+      ethNetwork.chainId,
     );
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
-        app.appInterface.addr === defaultApp!.appDefinitionAddress &&
+        app.appInterface.addr === simpleLinkedTransferApp.appDefinitionAddress &&
         (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash ===
           initialState.linkedHash,
     );
@@ -313,27 +314,6 @@ export class AppRegistryService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    for (const app of await this.configService.getDefaultApps()) {
-      let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
-        app.name,
-        app.chainId,
-      );
-      if (!appRegistry) {
-        appRegistry = new AppRegistry();
-      }
-      this.log.info(
-        `Creating ${app.name} app on chain ${app.chainId}: ${app.appDefinitionAddress}`,
-      );
-      appRegistry.actionEncoding = app.actionEncoding;
-      appRegistry.appDefinitionAddress = app.appDefinitionAddress;
-      appRegistry.name = app.name;
-      appRegistry.chainId = app.chainId;
-      appRegistry.outcomeType = app.outcomeType;
-      appRegistry.stateEncoding = app.stateEncoding;
-      appRegistry.allowNodeInstall = app.allowNodeInstall;
-      await this.appRegistryRepository.save(appRegistry);
-    }
-
     const ethNetwork = await this.configService.getEthNetwork();
     const addressBook = await this.configService.getContractAddresses();
     for (const app of RegistryOfApps) {
@@ -346,7 +326,7 @@ export class AppRegistryService implements OnModuleInit {
       }
       const appDefinitionAddress = addressBook[app.name];
       this.log.log(
-        `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${app.appDefinitionAddress}`,
+        `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
       );
       appRegistry.actionEncoding = app.actionEncoding;
       appRegistry.appDefinitionAddress = appDefinitionAddress;

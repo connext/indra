@@ -6,13 +6,13 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
-/// @title Fast Generic Signed Transfer App
+/// @title Fast Signed Transfer App
 /// @notice This contract allows the user to send transfers
 ///         using takeAction which are resolves with a sig
 ///         from a predefined signer
 
 
-contract FastGenericSignedTransferApp is CounterfactualApp {
+contract FastSignedTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
     using ECDSA for bytes32;

@@ -128,22 +128,3 @@ export type CoinTransfer<T = string> = {
   to: Address; // NOTE: must be the xpub!!!
 };
 export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
-
-////////////////////////////////////
-// Simple Transfer Apps
-
-export type SimpleTransferAppState<T = string> = {
-  coinTransfers: CoinTransfer<T>[];
-};
-export type SimpleTransferAppStateBigNumber = SimpleTransferAppState<BigNumber>;
-
-////////////////////////////////////
-// CoinBalanceRefund
-
-export type CoinBalanceRefundAppState<T = string> = {
-  multisig: string;
-  recipient: string;
-  threshold: T;
-  tokenAddress: string;
-};
-export type CoinBalanceRefundAppStateBigNumber = CoinBalanceRefundAppState<BigNumber>;

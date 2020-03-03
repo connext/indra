@@ -17,6 +17,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
@@ -43,11 +44,12 @@ import {
 export class TransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
-    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly log: LoggerService,
+    private readonly appRegistryRepository: AppRegistryRepository,
+    private readonly channelRepository: ChannelRepository,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly p2pTransferRepository: PeerToPeerTransferRepository,
     private readonly transferRepositiory: TransferRepository,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
@@ -168,14 +170,15 @@ export class TransferService {
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
 
-    // check that linked transfer app has been installed from sender
-    const defaultApp = (await this.configService.getDefaultApps()).find(
-      (app: DefaultApp) => app.name === SimpleLinkedTransferApp,
+    const ethNetwork = await this.configService.getEthNetwork();
+    const simpleLinkedTransferApp = await this.appRegistryRepository.findByNameAndNetwork(
+      SimpleLinkedTransferApp,
+      ethNetwork.chainId,
     );
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
-        app.appInterface.addr === defaultApp!.appDefinitionAddress &&
+        app.appInterface.addr === simpleLinkedTransferApp.appDefinitionAddress &&
         (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash === linkedHash,
     );
 

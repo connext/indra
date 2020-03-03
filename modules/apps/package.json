@@ -4,7 +4,7 @@
   "description": "Connext Counterfactual Apps",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/src/index.d.ts",
   "iife": "dist/index-iife.js",
   "files": ["dist", "src"],
   "scripts": {

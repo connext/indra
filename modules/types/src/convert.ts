@@ -10,7 +10,7 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
-import { CoinTransfer, CoinBalanceRefundAppState } from "./app";
+import { CoinTransfer } from "./app";
 
 /////////////////////////////////////////////
 ///////// CONVERSION FNS
@@ -156,14 +156,6 @@ function convertRebalanceProfile<To extends NumericTypeName>(
   );
 }
 
-function convertCoinBalanceRefund<To extends NumericTypeName>(
-  to: To,
-  obj: CoinBalanceRefundAppState<any>,
-): CoinBalanceRefundAppState<NumericTypes[To]> {
-  const fromType = getType(obj.threshold);
-  return convertFields(fromType, to, ["threshold"], obj);
-}
-
 /////////////////////////////////////////////
 ////// INPUT PARAMETER CONVERSIONS
 /**
@@ -221,7 +213,6 @@ function convertWithdrawParametersToAsset<To extends NumericTypeName>(
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert = {
   Asset: convertAssetAmount,
-  CoinBalanceRefundApp: convertCoinBalanceRefund,
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,

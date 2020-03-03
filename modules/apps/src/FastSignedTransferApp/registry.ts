@@ -1,8 +1,9 @@
 import { OutcomeType } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
-import { FastSignedTransferApp } from "..";
 import { singleAssetTwoPartyCoinTransferEncoding } from "../shared";
+
+export const FastSignedTransferApp = "FastSignedTransferApp";
 
 const paymentsEncoding = `
   tuple(

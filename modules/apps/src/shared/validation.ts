@@ -1,10 +1,9 @@
 import { CFCoreTypes, stringify, bigNumberifyObj, CoinTransferBigNumber } from "@connext/types";
 
-import { CoinBalanceRefundApp } from "..";
-
 import { AppRegistryInfo } from "./registry";
 import { BigNumber } from "ethers/utils";
 import { Zero } from "ethers/constants";
+import { CoinBalanceRefundApp } from "../CoinBalanceRefundApp";
 
 const appProposalMatchesRegistry = (
   proposal: CFCoreTypes.ProposeInstallParams,

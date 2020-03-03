@@ -1,18 +1,11 @@
-import { CoinBalanceRefundApp } from "@connext/apps";
+import { CoinBalanceRefundApp, CoinBalanceRefundAppStateBigNumber } from "@connext/apps";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { stringify } from "../lib";
-import {
-  BigNumber,
-  CFCoreTypes,
-  ChannelState,
-  CoinBalanceRefundAppStateBigNumber,
-  convert,
-  DepositParameters,
-} from "../types";
+import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";

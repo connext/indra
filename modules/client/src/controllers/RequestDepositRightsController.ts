@@ -1,4 +1,4 @@
-import { CoinBalanceRefundApp } from "@connext/apps";
+import { CoinBalanceRefundApp, CoinBalanceRefundAppStateBigNumber } from "@connext/apps";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -9,7 +9,6 @@ import {
   BigNumber,
   CFCoreTypes,
   ProtocolTypes,
-  CoinBalanceRefundAppStateBigNumber,
   RequestDepositRightsParameters,
   RequestDepositRightsResponse,
 } from "../types";

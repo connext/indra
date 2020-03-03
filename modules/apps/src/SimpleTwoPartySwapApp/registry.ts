@@ -1,7 +1,8 @@
 import { OutcomeType } from "@connext/types";
 
 import { AppRegistryInfo, multiAssetMultiPartyCoinTransferEncoding } from "../shared";
-import { SimpleTwoPartySwapApp } from "..";
+
+export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
 
 const stateEncoding = `
   tuple(${multiAssetMultiPartyCoinTransferEncoding} coinTransfers)

@@ -1,5 +1,4 @@
 import { NumericTypes, convertAmountField, NumericTypeName } from "@connext/types";
-
 import { SimpleSwapAppState } from "./types";
 
 export function convertSimpleSwapAppState<To extends NumericTypeName>(
