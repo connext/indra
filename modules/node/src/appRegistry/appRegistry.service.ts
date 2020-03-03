@@ -32,115 +32,98 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { TransferService } from "../transfer/transfer.service";
-import { CLogger, isEthAddress, normalizeEthAddresses, xpubToAddress } from "../util";
+import { isEthAddress, normalizeEthAddresses } from "../util";
 import { CFCoreTypes } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-
-const logger = new CLogger(`AppRegistryService`);
+import { LoggerService } from "../logger/logger.service";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
   constructor(
-    private readonly cfCoreService: CFCoreService,
-    private readonly swapRateService: SwapRateService,
-    private readonly channelService: ChannelService,
-    private readonly transferService: TransferService,
-    private readonly configService: ConfigService,
     private readonly appRegistryRepository: AppRegistryRepository,
+    private readonly cfCoreService: CFCoreService,
     private readonly channelRepository: ChannelRepository,
+    private readonly channelService: ChannelService,
+    private readonly configService: ConfigService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly log: LoggerService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
-  ) {}
+    private readonly swapRateService: SwapRateService,
+    private readonly transferService: TransferService,
+  ) {
+    this.log.setContext("AppRegistryService");
+  }
 
   async validateAndInstallOrReject(
     appInstanceId: string,
     proposeInstallParams: CFCoreTypes.ProposeInstallParams,
     from: string,
   ): Promise<void> {
-    let registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      proposeInstallParams.appDefinition,
-    );
-
-    if (!registryAppInfo) {
-      throw new Error(
-        `App does not exist in registry for definition ${proposeInstallParams.appDefinition}`,
-      );
+    let registryAppInfo: AppRegistry;
+    let appInstance: AppInstanceJson;
+    const installerChannel = await this.channelRepository.findByUserPublicIdentifier(from);
+    if (!installerChannel) {
+      throw new Error(`Channel for ${from} not found`);
     }
 
-    if (!registryAppInfo.allowNodeInstall) {
-      throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
-    }
-
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
-    const userFreeBalanceAddress = xkeyKthAddress(from);
-
-    const initiatorFreeBalanceRes = await this.cfCoreService.getFreeBalance(
-      from,
-      channel.multisigAddress,
-      proposeInstallParams.initiatorDepositTokenAddress,
-    );
-    const userFreeBalance = initiatorFreeBalanceRes[userFreeBalanceAddress];
-    let nodeFreeBalance = initiatorFreeBalanceRes[this.cfCoreService.cfCore.freeBalanceAddress];
-    if (
-      proposeInstallParams.initiatorDepositTokenAddress !==
-      proposeInstallParams.responderDepositTokenAddress
-    ) {
-      const responderFreeBalanceRes = await this.cfCoreService.getFreeBalance(
-        from,
-        channel.multisigAddress,
-        proposeInstallParams.initiatorDepositTokenAddress,
-      );
-      nodeFreeBalance = responderFreeBalanceRes[this.cfCoreService.cfCore.freeBalanceAddress];
-    }
-    const supportedTokenAddresses = this.configService.getSupportedTokenAddresses();
+    // try install
     try {
-      if (registryAppInfo.name === FastSignedTransferApp) {
-        // NEW APP VALIDATION, MAKE EVERYTHING USE THIS
-        validateApp(
-          proposeInstallParams,
-          registryAppInfo,
-          channel.userPublicIdentifier,
-          userFreeBalanceAddress,
-          userFreeBalance,
-          this.cfCoreService.cfCore.freeBalanceAddress,
-          nodeFreeBalance,
-          supportedTokenAddresses,
-        );
-      } else {
-        registryAppInfo = await this.verifyAppProposal(proposeInstallParams, from);
-      }
-      if (registryAppInfo.name !== CoinBalanceRefundApp) {
-        await this.cfCoreService.installApp(appInstanceId);
-      } else {
-        logger.log(`Not installing coin balance refund app, returning registry information`);
-      }
-    } catch (e) {
-      if (!e.message.includes(`Node has insufficient balance`)) {
-        logger.warn(`App install failed, . Error: ${e.stack || e.message}`);
-        await this.cfCoreService.rejectInstallApp(appInstanceId);
+      registryAppInfo = await this.verifyAppProposal(proposeInstallParams, from);
+
+      // dont install coin balance refund
+      if (registryAppInfo.name === CoinBalanceRefundApp) {
+        this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
+        await this.messagingClient
+          .emit(
+            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${installerChannel.multisigAddress}`,
+            proposeInstallParams,
+          )
+          .toPromise();
         return;
       }
-      // try to collateralize, and re-install
-      const tx = await this.channelService.rebalance(
+
+      // check if we need to collateralize
+      const preInstallFreeBalance = await this.cfCoreService.getFreeBalance(
         from,
+        installerChannel.multisigAddress,
         proposeInstallParams.responderDepositTokenAddress,
-        RebalanceType.COLLATERALIZE,
-        bigNumberify(proposeInstallParams.responderDeposit),
       );
-      if (tx) {
-        await tx.wait();
+      if (
+        preInstallFreeBalance[this.cfCoreService.cfCore.freeBalanceAddress].lt(
+          bigNumberify(proposeInstallParams.responderDeposit),
+        )
+      ) {
+        this.log.info(`Collateralizing channel before rebalancing...`);
+        // collateralize and wait for tx
+        const tx = await this.channelService.rebalance(
+          from,
+          proposeInstallParams.responderDepositTokenAddress,
+          RebalanceType.COLLATERALIZE,
+          bigNumberify(proposeInstallParams.responderDeposit),
+        );
+        if (tx) {
+          await tx.wait();
+        }
       }
-      try {
-        await this.cfCoreService.installApp(appInstanceId);
-      } catch (e) {
-        logger.warn(`App install failed, . Error: ${e.stack || e.message}`);
-        await this.cfCoreService.rejectInstallApp(appInstanceId);
-        return;
-      }
+      ({ appInstance } = await this.cfCoreService.installApp(appInstanceId));
+    } catch (e) {
+      // reject if error
+      this.log.warn(`App install failed, . Error: ${e.stack || e.message}`);
+      await this.cfCoreService.rejectInstallApp(appInstanceId);
+      return;
     }
+
+    // any tasks that need to happen after install, i.e. DB writes
     await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
+
+    await this.messagingClient
+      .emit(
+        `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
+        appInstance,
+      )
+      .toPromise();
   }
 
   private async runPostInstallTasks(
@@ -151,7 +134,7 @@ export class AppRegistryService implements OnModuleInit {
   ) {
     switch (registryAppInfo.name) {
       case SimpleLinkedTransferApp:
-        logger.debug(`Saving linked transfer`);
+        this.log.debug(`Saving linked transfer`);
         // eslint-disable-next-line max-len
         const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
@@ -162,7 +145,7 @@ export class AppRegistryService implements OnModuleInit {
           );
           transfer.receiverAppInstanceId = appInstanceId;
           await this.linkedTransferRepository.save(transfer);
-          logger.debug(`Updated transfer with receiver appId!`);
+          this.log.debug(`Updated transfer with receiver appId!`);
           return;
         }
         await this.transferService.saveLinkedTransfer(
@@ -172,28 +155,15 @@ export class AppRegistryService implements OnModuleInit {
           appInstanceId,
           initialState.linkedHash,
           initialState.paymentId,
+          proposeInstallParams.meta["encryptedPreImage"],
+          proposeInstallParams.meta["recipient"],
           proposeInstallParams.meta,
         );
-        logger.debug(`Linked transfer saved!`);
+        this.log.debug(`Linked transfer saved!`);
         break;
       // TODO: add something for swap app? maybe for history preserving reasons.
-      case CoinBalanceRefundApp:
-        const channel = await this.channelRepository.findByUserPublicIdentifier(from);
-        if (!channel) {
-          throw new Error(`Channel does not exist for ${from}`);
-        }
-        logger.debug(
-          `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-        );
-        await this.messagingClient
-          .emit(
-            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-            proposeInstallParams,
-          )
-          .toPromise();
-        break;
       default:
-        logger.debug(`No post-install actions configured.`);
+        this.log.debug(`No post-install actions configured.`);
     }
     // rebalance at the end without blocking
     this.channelService.rebalance(
@@ -272,11 +242,11 @@ export class AppRegistryService implements OnModuleInit {
       initiatorDepositTokenAddress,
       responderDepositTokenAddress,
     );
-    logger.log(
+    this.log.debug(
       `Our ${initiatorDepositTokenAddress} -> ${responderDepositTokenAddress} Swap Rate: ${ourRate}`,
     );
     const calculated = calculateExchange(initiatorDeposit, ourRate);
-    logger.log(
+    this.log.debug(
       `initiatorDeposit=${initiatorDeposit} -> ${calculated} vs responderDeposit=${responderDeposit}`,
     );
 
@@ -293,7 +263,9 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    logger.log(`Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate}`);
+    this.log.debug(
+      `Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate}`,
+    );
   }
 
   private async validateSimpleLinkedTransfer(
@@ -500,17 +472,7 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    // make sure that the node has sufficient balance for requested deposit
-    // NOTE: the following will need to be adjusted for virtual applications
-    const freeBalanceResponderAsset = await this.cfCoreService.getFreeBalance(
-      initiatorIdentifier,
-      initiatorChannel.multisigAddress,
-      responderDepositTokenAddress,
-    );
-    const balAvailable = freeBalanceResponderAsset[xpubToAddress(proposedToIdentifier)];
-    if (balAvailable.lt(responderDeposit)) {
-      throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);
-    }
+    // don't need to check node's balance here because it will be collateralized if needed
   }
 
   // should perform validation on everything all generic app conditions that
@@ -536,7 +498,7 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    logger.log(`App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`);
+    this.log.debug(`App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`);
 
     await this.commonAppProposalValidation(proposeInstallParams, initiatorIdentifier);
 
@@ -551,7 +513,7 @@ export class AppRegistryService implements OnModuleInit {
       default:
         break;
     }
-    logger.log(`Validation completed for app ${registryAppInfo.name}`);
+    this.log.info(`Validation succeeded for app ${registryAppInfo.name}`);
     return registryAppInfo;
   }
 
@@ -564,7 +526,9 @@ export class AppRegistryService implements OnModuleInit {
       if (!appRegistry) {
         appRegistry = new AppRegistry();
       }
-      logger.log(`Creating ${app.name} app on chain ${app.chainId}: ${app.appDefinitionAddress}`);
+      this.log.info(
+        `Creating ${app.name} app on chain ${app.chainId}: ${app.appDefinitionAddress}`,
+      );
       appRegistry.actionEncoding = app.actionEncoding;
       appRegistry.appDefinitionAddress = app.appDefinitionAddress;
       appRegistry.name = app.name;

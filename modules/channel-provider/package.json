@@ -1,6 +1,6 @@
 {
   "name": "@connext/channel-provider",
-  "version": "4.1.0",
+  "version": "5.0.2",
   "description": "Channel Provider module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -9,14 +9,14 @@
     "types"
   ],
   "scripts": {
-    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "test": "./node_modules/.bin/ts-mocha --watch"
   },
   "dependencies": {
-    "@connext/types": "4.1.0",
+    "@connext/types": "5.0.2",
     "eventemitter3": "4.0.0"
   },
   "devDependencies": {

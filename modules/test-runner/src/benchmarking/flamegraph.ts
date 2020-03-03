@@ -2,6 +2,7 @@ import { asyncTransferAsset, AssetOptions, ETH_AMOUNT_SM } from "../util";
 import { AddressZero } from "ethers/constants";
 import { connect } from "@connext/client";
 import { ConnextStore, FileStorage } from "@connext/store";
+import { connectNats } from "../util/nats";
 
 export default async () => {
   const clientA = await connect({
@@ -19,7 +20,8 @@ export default async () => {
     store: new ConnextStore(new FileStorage()),
   });
   const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+  const nats = await connectNats();
   console.log("transferring asset");
-  await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
+  await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   console.log("done");
 };

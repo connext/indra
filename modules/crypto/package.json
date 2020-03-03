@@ -1,6 +1,6 @@
 {
   "name": "@connext/crypto",
-  "version": "4.1.0",
+  "version": "5.0.2",
   "description": "Crypto module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -9,14 +9,13 @@
     "types"
   ],
   "scripts": {
-    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
-    "prepare": "npm run build",
     "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/types": "4.1.0",
+    "@connext/types": "5.0.2",
     "eccrypto-js": "4.3.5"
   },
   "devDependencies": {

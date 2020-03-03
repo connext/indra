@@ -7,27 +7,25 @@ import {
   ProtocolTypes,
   stringify,
 } from "@connext/types";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import {
   AppInstanceJson,
   AppInstanceProposal,
   CFCore,
   CFCoreTypes,
-  CLogger,
   InstallMessage,
   RejectProposalMessage,
   xpubToAddress,
 } from "../util";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-
-const logger = new CLogger(`CFCoreService`);
 
 Injectable();
 export class CFCoreService {
@@ -37,8 +35,10 @@ export class CFCoreService {
     @Inject(MessagingProviderId) private readonly messagingProvider: NatsMessagingService,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
+    private readonly log: LoggerService,
   ) {
     this.cfCore = cfCore;
+    this.log.setContext("CFCoreService");
   }
 
   async getFreeBalance(
@@ -67,7 +67,7 @@ export class CFCoreService {
         obj[xpubToAddress(userPubId)] = Zero;
         return obj;
       }
-      logger.error(e.message, e.stack);
+      this.log.error(e.message, e.stack);
       throw e;
     }
   }
@@ -94,9 +94,9 @@ export class CFCoreService {
         owners: [this.cfCore.publicIdentifier, counterpartyPublicIdentifier],
       } as CFCoreTypes.CreateChannelParams,
     };
-    logger.debug(`Calling createChannel with params: ${stringify(params)}`);
+    this.log.debug(`Calling createChannel with params: ${stringify(params)}`);
     const createRes = await this.cfCore.rpcRouter.dispatch(params);
-    logger.debug(`createChannel called with result: ${stringify(createRes.result.result)}`);
+    this.log.debug(`createChannel called with result: ${stringify(createRes.result.result)}`);
     return createRes.result.result as CFCoreTypes.CreateChannelResult;
   }
 
@@ -110,11 +110,11 @@ export class CFCoreService {
         multisigAddress,
       } as CFCoreTypes.DeployStateDepositHolderParams,
     };
-    logger.debug(
+    this.log.debug(
       `Calling ${ProtocolTypes.chan_deployStateDepositHolder} with params: ${stringify(params)}`,
     );
     const deployRes = await this.cfCore.rpcRouter.dispatch(params);
-    logger.debug(
+    this.log.debug(
       `${ProtocolTypes.chan_deployStateDepositHolder} called with result: ${stringify(
         deployRes.result.result,
       )}`,
@@ -127,7 +127,7 @@ export class CFCoreService {
     amount: BigNumber,
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.DepositResult> {
-    logger.debug(
+    this.log.debug(
       `Calling ${ProtocolTypes.chan_deposit} with params: ${stringify({
         amount,
         multisigAddress,
@@ -143,7 +143,7 @@ export class CFCoreService {
         tokenAddress: assetId,
       } as CFCoreTypes.DepositParams,
     });
-    logger.debug(`deposit called with result ${stringify(depositRes.result.result)}`);
+    this.log.debug(`deposit called with result ${stringify(depositRes.result.result)}`);
     return depositRes.result.result as CFCoreTypes.DepositResult;
   }
 
@@ -153,7 +153,7 @@ export class CFCoreService {
     assetId: string = AddressZero,
     recipient: string = this.cfCore.freeBalanceAddress,
   ): Promise<CFCoreTypes.WithdrawResult> {
-    logger.debug(
+    this.log.debug(
       `Calling ${ProtocolTypes.chan_withdraw} with params: ${stringify({
         amount,
         multisigAddress,
@@ -170,7 +170,7 @@ export class CFCoreService {
         tokenAddress: assetId,
       } as CFCoreTypes.WithdrawParams,
     });
-    logger.debug(`withdraw called with result ${stringify(withdrawRes.result.result)}`);
+    this.log.debug(`withdraw called with result ${stringify(withdrawRes.result.result)}`);
     return withdrawRes.result.result as CFCoreTypes.WithdrawResult;
   }
 
@@ -180,7 +180,7 @@ export class CFCoreService {
     assetId: string = AddressZero,
     recipient: string = this.cfCore.freeBalanceAddress,
   ): Promise<CFCoreTypes.WithdrawCommitmentResult> {
-    logger.debug(
+    this.log.debug(
       `Calling ${ProtocolTypes.chan_withdraw} with params: ${stringify({
         amount,
         multisigAddress,
@@ -197,20 +197,26 @@ export class CFCoreService {
         tokenAddress: assetId,
       } as CFCoreTypes.WithdrawCommitmentParams,
     });
-    logger.debug(`withdrawCommitment called with result ${stringify(withdrawRes.result.result)}`);
+    this.log.debug(
+      `withdrawCommitment called with result ${stringify(withdrawRes.result.result)}`,
+    );
     return withdrawRes.result.result as CFCoreTypes.WithdrawCommitmentResult;
   }
 
   async proposeInstallApp(
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> {
-    logger.debug(`Calling ${ProtocolTypes.chan_proposeInstall} with params: ${stringify(params)}`);
+    this.log.debug(
+      `Calling ${ProtocolTypes.chan_proposeInstall} with params: ${stringify(params)}`,
+    );
     const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: ProtocolTypes.chan_proposeInstall,
       parameters: params,
     });
-    logger.debug(`proposeInstallApp called with result ${stringify(proposeRes.result.result)}`);
+    this.log.debug(
+      `proposeInstallApp called with result ${stringify(proposeRes.result.result)}`,
+    );
     return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
   }
 
@@ -224,7 +230,7 @@ export class CFCoreService {
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
           boundReject = this.rejectInstallTransfer.bind(null, rej);
-          logger.debug(
+          this.log.debug(
             `Subscribing to: indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
           );
           await this.messagingProvider.subscribe(
@@ -234,12 +240,12 @@ export class CFCoreService {
           this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
-          logger.debug(`waiting for client to publish proposal results`);
+          this.log.debug(`waiting for client to publish proposal results`);
         },
       );
       return proposeRes;
     } catch (e) {
-      logger.error(`Error installing app: ${e.message}`, e.stack);
+      this.log.error(`Error installing app: ${e.message}`, e.stack);
       throw e;
     } finally {
       this.cleanupProposalListeners(boundReject, multisigAddress, params.proposedToIdentifier);
@@ -294,10 +300,11 @@ export class CFCoreService {
         );
         this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
       });
-      logger.log(`App was installed successfully!: ${stringify(proposeRes)}`);
+      this.log.info(`App was installed successfully: ${proposeRes.appInstanceId}`);
+      this.log.debug(`App install result: ${stringify(proposeRes)}`);
       return proposeRes;
     } catch (e) {
-      logger.error(`Error installing app: ${e.message}`, e.stack);
+      this.log.error(`Error installing app: ${e.message}`, e.stack);
       return undefined;
     } finally {
       this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, userPubId);
@@ -312,7 +319,8 @@ export class CFCoreService {
         appInstanceId,
       } as CFCoreTypes.InstallParams,
     });
-    logger.log(`installApp called with result ${stringify(installRes.result.result)}`);
+    this.log.info(`installApp succeeded for app ${appInstanceId}`);
+    this.log.debug(`installApp result: ${stringify(installRes.result.result)}`);
     return installRes.result.result as CFCoreTypes.InstallResult;
   }
 
@@ -324,7 +332,8 @@ export class CFCoreService {
         appInstanceId,
       } as CFCoreTypes.RejectInstallParams,
     });
-    logger.log(`rejectInstallApp called with result ${stringify(rejectRes.result.result)}`);
+    this.log.info(`rejectInstallApp succeeded for app ${appInstanceId}`);
+    this.log.debug(`rejectInstallApp result: ${stringify(rejectRes.result.result)}`);
     return rejectRes.result.result as CFCoreTypes.RejectInstallResult;
   }
 
@@ -332,12 +341,12 @@ export class CFCoreService {
     appInstanceId: string,
     action: AppActionBigNumber,
   ): Promise<CFCoreTypes.TakeActionResult> {
-    logger.log(`Taking action on app ${appInstanceId}: ${stringify(action)}`);
     // check the app is actually installed
     await this.assertAppInstalled(appInstanceId);
     // check state is not finalized
     const state: CFCoreTypes.GetStateResult = await this.getAppState(appInstanceId);
-    logger.log(`Taking action against state: ${stringify(state)}`);
+    this.log.info(`Taking action on app ${appInstanceId}`);
+    this.log.debug(`Taking action against state: ${stringify(state)}`);
     // FIXME: casting?
     if ((state.state as any).finalized) {
       throw new Error(`Cannot take action on an app with a finalized state.`);
@@ -351,14 +360,15 @@ export class CFCoreService {
       } as CFCoreTypes.TakeActionParams,
     });
 
-    logger.log(`takeAction called with result: ${stringify(actionResponse.result)}`);
+    this.log.info(`takeAction succeeded for app ${appInstanceId}`);
+    this.log.debug(`takeAction result: ${stringify(actionResponse.result)}`);
     return actionResponse.result.result as CFCoreTypes.TakeActionResult;
   }
 
   async uninstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult> {
     // check the app is actually installed
     await this.assertAppInstalled(appInstanceId);
-    logger.log(`Calling uninstallApp for appInstanceId ${appInstanceId}`);
+    this.log.info(`Calling uninstallApp for appInstanceId ${appInstanceId}`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: ProtocolTypes.chan_uninstall,
@@ -367,7 +377,8 @@ export class CFCoreService {
       },
     });
 
-    logger.log(`uninstallApp called with result ${stringify(uninstallResponse.result.result)}`);
+    this.log.info(`uninstallApp succeeded for app ${appInstanceId}`);
+    this.log.debug(`uninstallApp result: ${stringify(uninstallResponse.result.result)}`);
     return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
   }
 
@@ -376,16 +387,15 @@ export class CFCoreService {
     tokenAddress: string = AddressZero,
   ): Promise<CFCoreTypes.DepositResult> {
     // check the app is actually installed
-    logger.log(`Calling rescindDepositRights`);
+    this.log.info(`Calling rescindDepositRights`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: ProtocolTypes.chan_rescindDepositRights,
       parameters: { multisigAddress, tokenAddress } as CFCoreTypes.RescindDepositRightsParams,
     });
 
-    logger.log(
-      `rescindDepositRights called with result ${stringify(uninstallResponse.result.result)}`,
-    );
+    this.log.info(`rescindDepositRights succeeded for multisig ${multisigAddress}`);
+    this.log.debug(`rescindDepositRights result: ${stringify(uninstallResponse.result.result)}`);
     return uninstallResponse.result.result as CFCoreTypes.DepositResult;
   }
 
@@ -399,7 +409,7 @@ export class CFCoreService {
     });
 
     /*
-    logger.debug(
+    this.log.debug(
       `getAppInstances called with result ${stringify(appInstanceResponse.result.result)}`,
     );
     */
@@ -417,7 +427,8 @@ export class CFCoreService {
         app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
         app.latestState[`tokenAddress`] === tokenAddress,
     );
-    logger.log(`coinBalanceRefundAppArray: ${stringify(coinBalanceRefundAppArray)}`);
+    this.log.info(`Got coinBalanceRefundApps for multisig ${multisigAddress}`);
+    this.log.debug(`CoinBalanceRefundApps result: ${stringify(coinBalanceRefundAppArray)}`);
     if (coinBalanceRefundAppArray.length > 1) {
       throw new Error(
         `More than 1 instance of CoinBalanceRefundApp installed for asset! This should never happen.`,
@@ -436,8 +447,9 @@ export class CFCoreService {
       parameters: { multisigAddress } as CFCoreTypes.GetAppInstancesParams,
     });
 
-    logger.log(
-      `getProposedAppInstances called with result ${stringify(appInstanceResponse.result.result)}`,
+    this.log.info(`Got proposed app instances for multisig ${multisigAddress}`);
+    this.log.debug(
+      `getProposedAppInstances result: ${stringify(appInstanceResponse.result.result)}`,
     );
     return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
@@ -453,13 +465,14 @@ export class CFCoreService {
       appInstance = appInstanceResponse.result.result.appInstance;
     } catch (e) {
       if (e.message.includes(`No multisig address exists for the given appInstanceId`)) {
-        logger.warn(`${e.message}: ${appInstanceId}`);
+        this.log.warn(`${e.message}: ${appInstanceId}`);
         appInstance = undefined;
       } else {
         throw e;
       }
     }
-    logger.log(`getAppInstanceDetails called with result: ${stringify(appInstance)}`);
+    this.log.info(`Got app instance details for app ${appInstanceId}`);
+    this.log.debug(`getAppInstanceDetails result: ${stringify(appInstance)}`);
     return appInstance as AppInstanceJson;
   }
 
@@ -467,7 +480,7 @@ export class CFCoreService {
     // check the app is actually installed, or returned undefined
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      Logger.warn(err);
+      this.log.warn(err);
       return undefined;
     }
     const stateResponse = await this.cfCore.rpcRouter.dispatch({
@@ -477,7 +490,8 @@ export class CFCoreService {
         appInstanceId,
       } as CFCoreTypes.GetStateParams,
     });
-
+    this.log.info(`Got state for app ${appInstanceId}`);
+    this.log.debug(`getAppState result: ${stringify(stateResponse)}`);
     return stateResponse.result.result as CFCoreTypes.GetStateResult;
   }
 
@@ -544,12 +558,8 @@ export class CFCoreService {
     }
   }
 
-  registerCfCoreListener(
-    event: CFCoreTypes.EventName,
-    callback: (data: any) => any,
-    context: string = `CFCoreService`,
-  ): void {
-    Logger.log(`Registering cfCore callback for event ${event}`, context);
+  registerCfCoreListener(event: CFCoreTypes.EventName, callback: (data: any) => any): void {
+    this.log.info(`Registering cfCore callback for event ${event}`);
     this.cfCore.on(event, callback);
   }
 }

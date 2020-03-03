@@ -1,8 +1,8 @@
+import { ILoggerService } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, Provider, TransactionResponse } from "ethers/providers";
 import { Interface } from "ethers/utils";
-import log from "loglevel";
 import { jsonRpcMethod } from "rpc-server";
 
 import { MinimumViableMultisig, ProxyFactory } from "../../../contracts";
@@ -61,7 +61,7 @@ export default class DeployStateDepositHolderController extends NodeController {
     params: CFCoreTypes.DeployStateDepositHolderParams,
   ): Promise<CFCoreTypes.DeployStateDepositHolderResult> {
     const { multisigAddress, retryCount } = params;
-    const { networkContext, store, provider, wallet } = requestHandler;
+    const { log, networkContext, store, provider, wallet } = requestHandler;
 
     // By default, if the contract has been deployed and
     // DB has records of it, controller will return HashZero
@@ -82,7 +82,7 @@ export default class DeployStateDepositHolderController extends NodeController {
 
     // Check if the contract has already been deployed on-chain
     if ((await provider.getCode(multisigAddress)) === `0x`) {
-      tx = await sendMultisigDeployTx(wallet, channel, networkContext, retryCount);
+      tx = await sendMultisigDeployTx(wallet, channel, networkContext, retryCount, log);
     }
 
     return { transactionHash: tx.hash! };
@@ -94,6 +94,7 @@ async function sendMultisigDeployTx(
   stateChannel: StateChannel,
   networkContext: NetworkContext,
   retryCount: number = 1,
+  log: ILoggerService,
 ): Promise<TransactionResponse> {
   // make sure that the proxy factory used to deploy is the same as the one
   // used when the channel was created

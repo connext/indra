@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "4.1.0",
+  "version": "5.0.2",
   "description": "Client for Connext Network",
   "main": "dist/index.js",
   "files": [
@@ -9,7 +9,7 @@
     "types"
   ],
   "scripts": {
-    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
@@ -17,12 +17,12 @@
   },
   "dependencies": {
     "@connext/apps": "0.0.1",
-    "@connext/cf-core": "4.1.0",
-    "@connext/channel-provider": "4.1.0",
-    "@connext/crypto": "4.1.0",
-    "@connext/messaging": "4.1.0",
-    "@connext/store": "4.1.0",
-    "@connext/types": "4.1.0",
+    "@connext/cf-core": "5.0.2",
+    "@connext/channel-provider": "5.0.2",
+    "@connext/crypto": "5.0.2",
+    "@connext/messaging": "5.0.2",
+    "@connext/store": "5.0.2",
+    "@connext/types": "5.0.2",
     "core-js": "3.6.4",
     "ethers": "4.0.45",
     "eccrypto": "1.1.3",

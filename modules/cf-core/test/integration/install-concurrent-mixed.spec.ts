@@ -24,7 +24,7 @@ jest.setTimeout(15000);
 
 const { TicTacToeApp } = global[`networkContext`] as NetworkContextForTestSuite;
 
-describe(`Concurrently installing virtual and regular applications without issue`, () => {
+describe.skip(`Concurrently installing virtual and regular applications without issue`, () => {
   let multisigAddressAB: string;
   let multisigAddressBC: string;
   let nodeA: Node;

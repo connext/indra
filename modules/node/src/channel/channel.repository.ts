@@ -2,12 +2,12 @@ import { NotFoundException } from "@nestjs/common";
 import { AddressZero } from "ethers/constants";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { CLogger } from "../util";
 
 import { Channel } from "./channel.entity";
 
-const logger = new CLogger("ChannelRepository");
+const log = new LoggerService("ChannelRepository");
 
 @EntityRepository(Channel)
 export class ChannelRepository extends Repository<Channel> {
@@ -67,7 +67,7 @@ export class ChannelRepository extends Repository<Channel> {
       await transactionalEntityManager.save(rebalanceProfile);
 
       if (existing) {
-        logger.log(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
+        log.debug(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
           .relation(Channel, "rebalanceProfiles")

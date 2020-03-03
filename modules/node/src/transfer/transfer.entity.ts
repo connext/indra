@@ -160,9 +160,9 @@ export enum TransferType {
     "linked_transfer"."amount" as "amount",
     "linked_transfer"."assetId" as "assetId",
     "sender_channel"."userPublicIdentifier" as "senderPublicIdentifier",
-    "receiver_channel"."userPublicIdentifier" as "receiverPublicIdentifier",
     "linked_transfer"."createdAt" as "createdAt",
     "linked_transfer"."meta" as "meta",
+    "linked_transfer"."recipientPublicIdentifier" as "receiverPublicIdentifier",
     "linked_transfer"."status"::TEXT as "status",
     '${TransferType.LINKED}' AS "type"
   FROM linked_transfer

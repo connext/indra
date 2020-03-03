@@ -5,6 +5,7 @@ import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
+import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { LinkedTransfer } from "../transfer/transfer.entity";
 import { AbstractMessagingProvider } from "../util";
@@ -13,11 +14,12 @@ import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
-    messaging: IMessagingService,
     private readonly adminService: AdminService,
     private readonly authService: AuthService,
+    log: LoggerService,
+    messaging: IMessagingService,
   ) {
-    super(messaging);
+    super(log, messaging);
   }
 
   /**
@@ -126,14 +128,15 @@ class AdminMessaging extends AbstractMessagingProvider {
 }
 
 export const adminProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [MessagingProviderId, AdminService, AuthService],
+  inject: [AdminService, AuthService, LoggerService, MessagingProviderId],
   provide: AdminMessagingProviderId,
   useFactory: async (
-    messaging: IMessagingService,
     adminService: AdminService,
     authService: AuthService,
+    log: LoggerService,
+    messaging: IMessagingService,
   ): Promise<void> => {
-    const admin = new AdminMessaging(messaging, adminService, authService);
+    const admin = new AdminMessaging(adminService, authService, log, messaging);
     await admin.setupSubscriptions();
   },
 };

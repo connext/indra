@@ -1,20 +1,21 @@
 import { Injectable } from "@nestjs/common";
 
-import { CLogger } from "../util";
-
+import { LoggerService } from "../logger/logger.service";
 import { AnonymizedOnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { AnonymizedTransferRepository } from "../transfer/transfer.repository";
+
 import { AnonymizedTransfer } from "src/transfer/transfer.entity";
 import { AnonymizedOnchainTransaction } from "src/onchainTransactions/onchainTransaction.entity";
-
-const logger = new CLogger(`CollateralService`);
 
 @Injectable()
 export class CollateralService {
   constructor(
     private readonly anonymizedOnchainTransactionRepository: AnonymizedOnchainTransactionRepository,
     private readonly anonymizedTransferRepository: AnonymizedTransferRepository,
-  ) {}
+    private readonly log: LoggerService,
+  ) {
+    this.log.setContext("CollateralService");
+  }
 
   async getAnonymizedCollateralData(
     start: number,

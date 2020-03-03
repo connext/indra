@@ -19,7 +19,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
-describe("Node method follows spec - proposeInstallVirtual", () => {
+describe.skip("Node method follows spec - proposeInstallVirtual", () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;

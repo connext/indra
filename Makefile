@@ -12,7 +12,9 @@ release=$(shell cat package.json | grep '"version"' | head -n 1 | cut -d '"' -f 
 solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(commit) # $(shell echo $(release) | cut -d '.' -f 1).0.0
+# NOTE: no "5.0.0" was published, so using "5.0.2" -- when moving to 6.0.0
+# should update this versioning
+backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1-2).2
 
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_builder"; else echo ""; fi)
@@ -171,6 +173,9 @@ dls:
 	@echo "====="
 	@docker container ls -a
 
+flamegraph:
+	bash ops/test/integration.sh flamegraph
+
 ########################################
 # Test Runner Shortcuts
 
@@ -206,7 +211,7 @@ watch-cf: cf-core
 	bash ops/test/cf.sh --watch
 
 watch-integration:
-	bash ops/test/integration.sh --watch
+	bash ops/test/integration.sh watch
 
 # You can interactively select daicard or dashboard tests after running below
 watch-ui: node-modules
@@ -326,7 +331,7 @@ messaging: node-modules types apps $(shell find $(messaging)/src $(find_options)
 
 node: cf-core contracts types apps messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/node && npm run build"
+	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 store: node-modules types apps $(shell find $(store)/src $(find_options))
@@ -352,7 +357,7 @@ apps: node-modules $(shell find $(apps) $(find_options))
 ########################################
 # Common Prerequisites
 
-contracts: node-modules contract-artifacts types apps $(shell find $(contracts)/address-book.json $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
+contracts: node-modules contract-artifacts types apps $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run transpile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@

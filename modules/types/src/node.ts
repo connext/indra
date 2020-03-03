@@ -4,6 +4,7 @@ import { NetworkContext } from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
 import { ResolveLinkedTransferResponse } from "./inputs";
+import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
 import { ProtocolTypes } from "./protocol";
 
@@ -29,6 +30,7 @@ export type Transfer<T = string> = {
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier: string;
+  meta: any;
 };
 export type TransferBigNumber = Transfer<BigNumber>;
 
@@ -77,7 +79,7 @@ export interface PendingAsyncTransfer {
 
 export interface NodeInitializationParameters {
   messaging: IMessagingService;
-  logLevel?: number;
+  logger?: ILoggerService;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
   channelProvider?: IChannelProvider;

@@ -1,5 +1,6 @@
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
+import { formatEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { stringify } from "../lib";
@@ -9,7 +10,6 @@ import {
   ChannelState,
   CoinBalanceRefundAppStateBigNumber,
   convert,
-  ProtocolTypes,
   DepositParameters,
 } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
@@ -40,17 +40,20 @@ export class DepositController extends AbstractController {
     // TODO: remove free balance stuff?
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
 
-    this.log.info(`\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`);
+    this.log.info(
+      `Depositing ${formatEther(amount)} ${
+        assetId === AddressZero ? "ETH" : "Tokens"
+      } into channel ${this.connext.multisigAddress}`,
+    );
 
     // propose coin balance refund app
     const appId = await this.proposeDepositInstall(assetId);
-    this.log.debug(`Coin balance refund app proposed with id: ${appId}`);
+    this.log.debug(`Proposed coin balance refund app, appId: ${appId}`);
 
     try {
-      this.log.info(`Calling ${ProtocolTypes.chan_deposit}`);
       await this.connext.rescindDepositRights({ assetId });
       const depositResponse = await this.connext.providerDeposit(amount, assetId);
-      this.log.info(`Deposit Response: ${stringify(depositResponse)}`);
+      this.log.debug(`Deposit response: ${stringify(depositResponse)}`);
 
       const postDepositBalances = await this.connext.getFreeBalance(assetId);
 
@@ -63,8 +66,6 @@ export class DepositController extends AbstractController {
       if (diff.lt(amount)) {
         throw new Error(`My balance was not increased by the deposit amount.`);
       }
-
-      this.log.info(`Deposited!`);
     } catch (e) {
       const msg = `Failed to deposit: ${e.stack || e.message}`;
       this.log.error(msg);

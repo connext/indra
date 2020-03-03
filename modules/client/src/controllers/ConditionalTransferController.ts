@@ -1,7 +1,8 @@
 import { LINKED_TRANSFER, SimpleLinkedTransferApp } from "@connext/types";
 import { encryptWithPublicKey } from "@connext/crypto";
-import { HashZero, Zero } from "ethers/constants";
+import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
+import { formatEther } from "ethers/utils";
 
 import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import {
@@ -39,7 +40,12 @@ export class ConditionalTransferController extends AbstractController {
   public conditionalTransfer = async (
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
-    this.log.info(`Conditional transfer called with parameters: ${stringify(params)}`);
+    this.log.info(
+      `Generating conditional transfer of ${formatEther(params.amount)} ${
+        params.assetId === AddressZero ? "ETH" : "Tokens"
+      }`,
+    );
+    this.log.debug(`Conditional transfer parameters: ${stringify(params)}`);
 
     const conditionExecutor = this.conditionalExecutors[params.conditionType];
     if (!conditionExecutor) {
@@ -55,6 +61,7 @@ export class ConditionalTransferController extends AbstractController {
   private handleLinkedTransferToRecipient = async (
     params: LinkedTransferToRecipientParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
+    params.meta = params.meta && typeof params.meta === "object" ? params.meta : {};
     const {
       amount,
       assetId,
@@ -75,14 +82,6 @@ export class ConditionalTransferController extends AbstractController {
       invalidXpub(recipient),
     );
 
-    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
-
-    // wait for linked transfer
-    const ret = await this.handleLinkedTransfers({
-      ...params,
-      conditionType: LINKED_TRANSFER,
-    });
-
     // set recipient and encrypted pre-image on linked transfer
     // TODO: use app path instead?
     const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
@@ -90,18 +89,18 @@ export class ConditionalTransferController extends AbstractController {
       recipientPublicKey.replace(/^0x/, ``),
       preImage,
     );
-    // TODO: if this fails for ANY REASON, uninstall the app to make sure that
-    // the sender doesnt lose any money
-    await this.connext.setRecipientAndEncryptedPreImageForLinkedTransfer(
-      recipient,
-      encryptedPreImage,
-      linkedHash,
-    );
 
-    // publish encrypted secret
-    // TODO: should we move this to its own file?
-    // TODO: if this fails for ANY REASON, uninstall the app to make sure that
-    // the sender doesnt lose any money (retry logic?)
+    // add encrypted preImage to meta so node can store it in the DB
+    params.meta["encryptedPreImage"] = encryptedPreImage;
+    params.meta["recipient"] = recipient;
+
+    // wait for linked transfer
+    const ret = await this.handleLinkedTransfers({
+      ...params,
+      conditionType: LINKED_TRANSFER,
+    });
+
+    // publish encrypted secret for receiver
     await this.connext.messaging.publish(
       `transfer.send-async.${recipient}`,
       stringify({
