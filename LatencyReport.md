@@ -3,12 +3,13 @@
 
 ## TL;DR I want to make things faster, what do we do?
 
- - Reduce variability: better visibility into node's lock service (eg if locks are blocking each other, let us know) is a good place to start investigating
- - Replace the `recoverAddress` call in `cf-core/src/protocol/utils/signature-validator.ts` w a crypto primitive that's not written in JS.
+ - Sender is consistently slug in uninstalling their side of a transfer, in particular the transition between taking action & uninstalling.
+ - We need better visibility into node's lock service to find out why it occasionally takes 4000ms for a client to get a lock (eg if locks are blocking each other, let us know)
+ - Investigate replacing the `recoverAddress` call in `cf-core/src/protocol/utils/signature-validator.ts` w a crypto primitive that's not written in JS.
 
 ## re On-chain confirmation times
 
-These benchmark numbers were recorded using ganache as the ethprovider set to auto-mine (aka zero-second block times). On-chain transactions generally take ~25 ms to be confirmed so their contribution to latency in these tests is negligible.
+These benchmark numbers were recorded using ganache as the ethprovider set to auto-mine (aka zero-second block times). On-chain transactions generally take ~25 ms to be confirmed so their contribution is negligible.
 
 For example, breakdown of funding a client as part of test-runner's createClient() function:
  - Signed eth transfer tx in 137
@@ -19,13 +20,11 @@ For example, breakdown of funding a client as part of test-runner's createClient
 
 Some steps have very high variability. Steps that sometimes run in 50ms take 2000ms on subsequent runs w/out anything being different.
 
-eg Acquiring a lock is generally a very fast operation, often the node responds in less than 5ms. This is one that sometimes takes > 1000ms though so there's something else going on that's blocking the node from responding as quickly as it could. Most likely, it's because another client has the lock and the node's response is blocked until that lock is released. But often lock responses take longest immediately after the node wakes up so this might be worth investigating more.
+eg Acquiring a lock is generally a very fast operation, often the node responds in less than 5ms. This is one that sometimes takes > 1000ms (sometimes closer to 5000ms) though so there's something else going on that's blocking the node from responding as quickly as it could. Possibly, it's because another client has the lock and the node's response is blocked until that lock is released. But no one protocol takes 5000ms to run..
 
-The wait between a sender initiating propose-protocol and waiting for the node to initiate install-protocol is another one that is sometimes 50ms and sometimes 2000
+Requesting collateral stands out as a step that takes consistently > 1000ms.. Unexpected given that approximately none of the time is spent waiting for transactions to be mined. BUT this action will always be paired w an on-chain transaction in real-life situations so it's not super high-priority to optimize the off-chain side of things here.
 
-Requesting collateral stands out as a step that takes consistently > 1000ms.. Unexpected given that approximately none of the time is spent waiting for transactions to be resolved. BUT this action will always be paired w an on-chain transaction in real-life situations so it's not super high-priority to optimize the off-chain side of things.
-
-Even if we get variability down to be consistently best case.. The best case still won't be able to transfer more than once per second. Eg install & uninstall protocols consistently take 200-300ms and most of that time is spent in a call to `ethers.utils.recoverAddress` (up to 100ms per address recovery), specifically in `cf-core/src/protocol/utils/signature-validator.ts` which, at it's core, is calling into the `elliptic` library, a pure-JS implementation of some EC crypto primitives.
+Even if we get variability down to be consistently best case.. The best case still won't be able to transfer more than once per second. Eg install & uninstall protocols consistently take 200-300ms and most of that time is spent in a call to `ethers.utils.recoverAddress` (40-80ms per address recovery & eg it's called 4 times in the install protocol), specifically in `cf-core/src/protocol/utils/signature-validator.ts` which, at it's core, is calling into the `elliptic` library, a pure-JS implementation of some EC crypto primitives. Is this the kind of thing we could replace w a call to a browser's Web Crypto API?
 
 ## Closer look at transfers
 
