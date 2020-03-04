@@ -121,10 +121,6 @@ describe("FastGenericSignedTransferApp", () => {
     const destructured = decoded[0];
 
     // coin transfers decrement from sender
-    console.log(
-      "destructured.coinTransfers[1].amount: ",
-      destructured.coinTransfers[1].amount.toHexString(),
-    );
     expect({
       to: destructured.coinTransfers[0].to,
       amount: destructured.coinTransfers[0].amount.toHexString(),
