@@ -14,7 +14,8 @@ contract LibStateChannelApp {
     // The status of a challenge in the ChallengeRegistry
     enum ChallengeStatus {
         NO_CHALLENGE,
-        FINALIZES_AFTER_DEADLINE,
+        IN_DISPUTE,
+        IN_ONCHAIN_PROGRESSION,
         EXPLICITLY_FINALIZED
     }
 

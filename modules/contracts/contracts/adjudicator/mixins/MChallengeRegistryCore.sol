@@ -2,9 +2,15 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MChallengeRegistryCore {
+contract MChallengeRegistryCore is LibStateChannelApp {
+
+    using SafeMath for uint256;
+
+    // A mapping of appIdentityHash to timeouts
+    mapping (bytes32 => uint256) public appTimeouts;
 
     // A mapping of appIdentityHash to AppChallenge structs which represents
     // the current on-chain status of some particular application's state.
@@ -79,6 +85,31 @@ contract MChallengeRegistryCore {
                 action,
                 versionNumber
             )
+        );
+    }
+
+    /// @notice Checks if an application's state has been finalized by challenge
+    /// @param identityHash The unique hash of an `AppIdentity`
+    /// @return A boolean indicator
+    function isStateFinalized(bytes32 identityHash)
+        public
+        view
+        returns (bool)
+    {
+        LibStateChannelApp.AppChallenge storage appChallenge = appChallenges[identityHash];
+
+        return (
+          (
+              appChallenge.status == LibStateChannelApp.ChallengeStatus.IN_DISPUTE &&
+              LibStateChannelApp.hasPassed(appChallenge.finalizesAt.add(appTimeouts[identityHash]))
+          ) ||
+          (
+              appChallenge.status == LibStateChannelApp.ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
+              LibStateChannelApp.hasPassed(appChallenge.finalizesAt)
+          ) ||
+          (
+              appChallenge.status == LibStateChannelApp.ChallengeStatus.EXPLICITLY_FINALIZED
+          )
         );
     }
 

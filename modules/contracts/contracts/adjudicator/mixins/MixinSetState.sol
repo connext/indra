@@ -36,6 +36,10 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
 
         AppChallenge storage challenge = appChallenges[identityHash];
 
+        if (challenge.status == ChallengeStatus.NO_CHALLENGE) {
+            appTimeouts[identityHash] = appIdentity.defaultTimeout;
+        }
+
         require(
             challenge.status == ChallengeStatus.NO_CHALLENGE ||
             (

@@ -38,6 +38,8 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
     )
         public
     {
+        /*  TODO
+
         bytes32 identityHash = appIdentityToHash(appIdentity);
 
         AppChallenge storage challenge = appChallenges[identityHash];
@@ -74,7 +76,6 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
             action.encodedAction
         );
 
-
         uint256 finalizesAt = block.number.add(req.timeout);
 
         challenge.finalizesAt = finalizesAt;
@@ -82,6 +83,8 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
         challenge.appStateHash = keccak256(newState);
         challenge.versionNumber = req.versionNumber;
         challenge.latestSubmitter = msg.sender;
+
+        */
     }
 
     function correctKeysSignedAppChallengeUpdate(

@@ -23,8 +23,7 @@ contract MixinSetOutcome is LibStateChannelApp, LibAppCaller, MChallengeRegistry
         AppChallenge storage app = appChallenges[identityHash];
 
         require(
-            app.status == ChallengeStatus.EXPLICITLY_FINALIZED ||
-            (app.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number > app.finalizesAt),
+            isStateFinalized(identityHash),
             "setOutcome can only be called after a challenge has been finalized"
         );
 
