@@ -135,7 +135,14 @@ describe("WithdrawApp", () => {
   })
 
   describe("It cancels the withdrawal if state is not finalized", async () => {
+    // Compute outcome without taking action
+    let ret = await computeOutcome(initialState);
+    const decoded = decodeTransfers(ret);
 
+    expect(decoded[0].to).eq(initialState.coinTransfers[0].to);
+    expect(decoded[0].amount).eq(initialState.coinTransfers[0].amount);
+    expect(decoded[1].to).eq(initialState.coinTransfers[1].to);
+    expect(decoded[1].amount).eq(Zero);
   })
 
   describe("It reverts the action if withdrawer signature is invalid", () => {
