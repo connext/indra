@@ -5,7 +5,7 @@ import { waffle } from "@nomiclabs/buidler";
 import { Contract } from "ethers";
 import { BigNumber, defaultAbiCoder, bigNumberify } from "ethers/utils";
 
-import FastGenericSignedTransferApp from "../../build/FastGenericSignedTransferApp.json";
+import FastSignedTransferApp from "../../build/FastSignedTransferApp.json";
 
 import { mkAddress, mkHash, mkXpub, mkSig } from "../utils";
 import { Zero, One, AddressZero } from "ethers/constants";
@@ -108,7 +108,7 @@ describe("FastGenericSignedTransferApp", () => {
   beforeEach(async () => {
     const provider = waffle.provider;
     const wallet = getWallets(provider)[0];
-    transferApp = await deployContract(wallet, FastGenericSignedTransferApp);
+    transferApp = await deployContract(wallet, FastSignedTransferApp);
   });
 
   it.only("happy case: sender creates locked tranfers", async () => {

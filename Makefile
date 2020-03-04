@@ -358,7 +358,7 @@ apps: node-modules cf-core types $(shell find $(apps)/src $(find_options))
 ########################################
 # Common Prerequisites
 
-contracts: node-modules contract-artifacts types apps $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
+contracts: node-modules contract-artifacts types $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run transpile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
