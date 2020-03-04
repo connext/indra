@@ -262,19 +262,15 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    if (nodeTransfer.amount.lte(Zero)) {
+    if (!resolverTransfer.amount.eq(Zero)) {
       throw new Error(
-        `Cannot resolve a linked transfer with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
-          initialState.coinTransfers[0].amount,
-        ).toString()}`,
+        `Resolver transfer must initally be zero. Transfer amount: ${resolverTransfer.amount.toString()}`,
       );
     }
 
-    if (!resolverTransfer.amount.eq(Zero)) {
+    if (nodeTransfer.amount.lte(Zero)) {
       throw new Error(
-        `Cannot resolve a linked transfer app with a receiver transfer of != 0. Transfer amount: ${bigNumberify(
-          initialState.coinTransfers[1].amount,
-        ).toString()}`,
+        `Sender transfer must initially be full amount. Transfer amount: ${nodeTransfer.amount.toString()}`,
       );
     }
 

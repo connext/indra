@@ -352,11 +352,8 @@ export class TransferService {
     return await this.linkedTransferRepository.findReclaimable(channel);
   }
 
-  async getPendingTransfers(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
-    }
+  async getPendingLinkedTransfers(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    await this.channelRepository.findByUserPublicIdentifierOrThrow(userPublicIdentifier);
     return await this.linkedTransferRepository.findPendingByRecipient(userPublicIdentifier);
   }
 

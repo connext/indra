@@ -16,6 +16,7 @@ const stateEncoding = `
 `;
 
 export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
+  actionEncoding: `tuple(bytes32 preImage)`,
   allowNodeInstall: true,
   name: SimpleLinkedTransferApp,
   outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,

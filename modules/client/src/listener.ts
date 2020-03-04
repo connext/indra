@@ -108,8 +108,6 @@ export class ConnextListener extends ConnextEventEmitter {
         const coinBalanceDef = this.connext.appRegistry.find(
           (app: DefaultApp) => app.name === CoinBalanceRefundApp,
         );
-        console.log("coinBalanceDef: ", coinBalanceDef);
-        console.log("params: ", params);
 
         if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
           throw new Error(

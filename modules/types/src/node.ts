@@ -78,6 +78,25 @@ export interface PendingAsyncTransfer {
   paymentId: string;
 }
 
+enum LinkedTransferStatus {
+  PENDING = "PENDING",
+  REDEEMED = "REDEEMED",
+  FAILED = "FAILED",
+  RECLAIMED = "RECLAIMED",
+}
+
+export interface FetchedLinkedTransfer {
+  paymentId: string;
+  createdAt: Date;
+  amount: string;
+  assetId: string;
+  senderPublicIdentifier: string;
+  receiverPublicIdentifier: string;
+  type: string;
+  status: LinkedTransferStatus;
+  meta: any;
+}
+
 export interface NodeInitializationParameters {
   messaging: IMessagingService;
   logger?: ILoggerService;
@@ -111,7 +130,7 @@ export interface INodeApiClient {
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   withdraw(tx: ProtocolTypes.MinimalTransaction): Promise<TransactionResponse>;
-  fetchLinkedTransfer(paymentId: string): Promise<any>;
+  fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
   resolveLinkedTransfer(
     paymentId: string,
     linkedHash: string,

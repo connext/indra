@@ -38,7 +38,9 @@ export class ResolveLinkedTransferController extends AbstractController {
   public resolveLinkedTransfer = async (
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
-    const { assetId, amount, meta, sender } = await this.node.fetchLinkedTransfer(params.paymentId);
+    const { assetId, amount, meta, senderPublicIdentifier } = await this.node.fetchLinkedTransfer(
+      params.paymentId,
+    );
     // convert and validate
     // because this function is only used internally, it is safe to add
     // the amount / assetId to the api params without breaking interfaces
@@ -76,16 +78,16 @@ export class ResolveLinkedTransferController extends AbstractController {
     } = this.connext.getRegisteredAppDetails(SimpleLinkedTransferApp);
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
-      amount,
+      amount: amountBN,
       assetId,
       coinTransfers: [
         {
-          amount,
-          to: xpubToAddress(this.connext.publicIdentifier),
+          amount: amountBN,
+          to: xpubToAddress(this.connext.nodePublicIdentifier),
         },
         {
           amount: Zero,
-          to: xpubToAddress(this.connext.nodePublicIdentifier),
+          to: xpubToAddress(this.connext.publicIdentifier),
         },
       ],
       linkedHash: createLinkedHash(amountBN, assetId, paymentId, preImage),
@@ -105,7 +107,7 @@ export class ResolveLinkedTransferController extends AbstractController {
       initiatorDepositTokenAddress: assetId,
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
-      responderDeposit: amount,
+      responderDeposit: amountBN,
       responderDepositTokenAddress: assetId,
       timeout: Zero,
     };
@@ -124,7 +126,7 @@ export class ResolveLinkedTransferController extends AbstractController {
       assetId,
       meta,
       paymentId,
-      sender,
+      sender: senderPublicIdentifier,
     } as ReceiveTransferFinishedEventData);
 
     // TODO: remove when deprecated
@@ -135,7 +137,7 @@ export class ResolveLinkedTransferController extends AbstractController {
 
     return {
       appId,
-      sender,
+      sender: senderPublicIdentifier,
       paymentId,
       meta,
     };

@@ -8,7 +8,6 @@ import {
   calculateExchange,
   CFCoreChannel,
   CFCoreTypes,
-  convert,
   DefaultApp,
   SwapParameters,
 } from "../types";

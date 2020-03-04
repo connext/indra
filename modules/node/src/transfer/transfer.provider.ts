@@ -1,5 +1,11 @@
 import { IMessagingService } from "@connext/messaging";
-import { ResolveLinkedTransferResponse, Transfer, replaceBN, stringify } from "@connext/types";
+import {
+  ResolveLinkedTransferResponse,
+  Transfer,
+  replaceBN,
+  stringify,
+  PendingAsyncTransfer,
+} from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -61,8 +67,8 @@ export class TransferMessaging extends AbstractMessagingProvider {
     }
   }
 
-  async getPendingTransfers(pubId: string, data?: unknown): Promise<{ paymentId: string }[]> {
-    const transfers = await this.transferService.getPendingTransfers(pubId);
+  async getPendingTransfers(pubId: string): Promise<PendingAsyncTransfer[]> {
+    const transfers = await this.transferService.getPendingLinkedTransfers(pubId);
     return transfers.map((transfer: LinkedTransfer) => {
       const { assetId, amount, encryptedPreImage, linkedHash, paymentId } = transfer;
       return { amount: amount.toString(), assetId, encryptedPreImage, linkedHash, paymentId };
