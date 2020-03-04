@@ -2,6 +2,7 @@ pragma solidity 0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 /// @title LibStateChannelApp
@@ -10,6 +11,7 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 contract LibStateChannelApp {
 
     using ECDSA for bytes32;
+    using SafeMath for uint256;
 
     // The status of a challenge in the ChallengeRegistry
     enum ChallengeStatus {
@@ -62,6 +64,29 @@ contract LibStateChannelApp {
         return appChallenge.status == ChallengeStatus.NO_CHALLENGE ||
             (
                 appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+                !hasPassed(appChallenge.finalizesAt)
+            );
+    }
+
+    /// @dev Checks whether it is possible to send actions to progress state
+    /// @param appChallenge the app challenge to check
+    /// @param defaultTimeout the app instance's default timeout
+    function isProgressable(
+        AppChallenge memory appChallenge,
+        uint256 defaultTimeout
+    )
+        public
+        view
+        returns (bool)
+    {
+        return
+            (
+                appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+                hasPassed(appChallenge.finalizesAt) &&
+                !hasPassed(appChallenge.finalizesAt.add(defaultTimeout))
+            ) ||
+            (
+                appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
                 !hasPassed(appChallenge.finalizesAt)
             );
     }
