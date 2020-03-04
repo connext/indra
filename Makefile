@@ -350,7 +350,7 @@ types: node-modules $(shell find $(types)/src $(find_options))
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-apps: node-modules $(shell find $(apps) $(find_options))
+apps: node-modules $(shell find $(apps)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
