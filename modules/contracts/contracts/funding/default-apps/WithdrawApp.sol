@@ -41,8 +41,8 @@ contract WithdrawApp is CounterfactualApp {
         Action memory action = abi.decode(encodedAction, (Action));
 
         require(!finalized, "cannot take action on a finalized state");
-        require(signers[0] == state.data.recover(state.signatures[0]),"Invalid withdrawer signature");
-        require(signers[1] == state.data.recover(action.signature), "Invalid counterparty signature");
+        require(signers[0] == state.data.recover(state.signatures[0]),"invalid withdrawer signature");
+        require(signers[1] == state.data.recover(action.signature), "invalid counterparty signature");
 
         state.signatures[1] = action.signature;
         state.finalized = true;

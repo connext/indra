@@ -131,7 +131,6 @@ describe("WithdrawApp", () => {
     expect(decoded[0].amount).eq(Zero);
     expect(decoded[1].to).eq(initialState.coinTransfers[1].to);
     expect(decoded[1].amount).eq(Zero);
-
   })
 
   describe("It cancels the withdrawal if state is not finalized", async () => {
@@ -145,12 +144,23 @@ describe("WithdrawApp", () => {
     expect(decoded[1].amount).eq(Zero);
   })
 
-  describe("It reverts the action if withdrawer signature is invalid", () => {
+  describe("It reverts the action if state is finalized", async () => {
+    let ret = await applyAction(initialState, action);
+    const afterActionState = decodeAppState(ret);
+    expect(afterActionState.signatures[1]).to.eq(action.signature);
+    expect(afterActionState.finalized).to.be.true;
 
+    await expect(applyAction(afterActionState, action)).rejectedWith("cannot take action on a finalized state")
   })
 
-  describe("It reverts the action if counterparty signature is invalid", () => {
+  describe("It reverts the action if withdrawer signature is invalid", async () => {
+    initialState.signatures[0] = "";
+    await expect(applyAction(initialState, action)).rejectedWith("invalid withdrawer signature")
+  })
 
+  describe("It reverts the action if counterparty signature is invalid", async () => {
+    action.signature = "";
+    await expect(applyAction(initialState, action)).rejectedWith("invalid counterparty signature")
   })
 
 });
