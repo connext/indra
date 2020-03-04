@@ -2,15 +2,17 @@ import {
   chan_config,
   chan_nodeAuth,
   chan_restoreState,
-  chan_storeGet,
-  chan_storeSet,
+  chan_getUserWithdrawal,
+  chan_setUserWithdrawal,
+  chan_setStateChannel,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
   ConnextEventEmitter,
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
-  StorePair,
+  StateChannelJSON,
+  WithdrawalMonitorObject,
 } from "@connext/types";
 
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
@@ -51,11 +53,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   public send = async (method: ChannelProviderRpcMethod, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
-      case chan_storeSet:
-        result = await this.set(params.pairs);
+      case chan_setUserWithdrawal:
+        result = await this.setUserWithdrawal(params.withdrawalObject);
         break;
-      case chan_storeGet:
-        result = await this.get(params.path);
+      case chan_getUserWithdrawal:
+        result = await this.getUserWithdrawal();
         break;
       case chan_nodeAuth:
         result = await this.signMessage(params.message);
@@ -64,7 +66,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         result = this.config;
         break;
       case chan_restoreState:
-        result = await this.restoreState(params.path);
+        result = await this.restoreState();
+        break;
+      case chan_setStateChannel:
+        result = await this.setStateChannel(params.state);
         break;
       default:
         result = await this._send(method, params);
@@ -131,21 +136,22 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 
-  public get = async (path: string): Promise<any> => {
-    return this._send(chan_storeGet, {
-      path,
+  public getUserWithdrawal = async (): Promise<any> => {
+    return this._send(chan_getUserWithdrawal, {});
+  };
+
+  public setUserWithdrawal = async (withdrawalObject: WithdrawalMonitorObject): Promise<void> => {
+    return this._send(chan_setUserWithdrawal, {
+      withdrawalObject,
     });
   };
 
-  public set = async (pairs: StorePair[], allowDelete?: Boolean): Promise<void> => {
-    return this._send(chan_storeSet, {
-      allowDelete,
-      pairs,
-    });
+  public restoreState = async (): Promise<void> => {
+    return this._send(chan_restoreState, { });
   };
 
-  public restoreState = async (path: string): Promise<void> => {
-    return this._send(chan_restoreState, { path });
+  public setStateChannel = async (state: StateChannelJSON): Promise<void> => {
+    return this._send(chan_setStateChannel, { state });
   };
 
   /// ////////////////////////////////////////////

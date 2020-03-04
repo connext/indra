@@ -32,7 +32,7 @@ import {
   Transfer,
 } from "./node";
 import { ProtocolTypes } from "./protocol";
-import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
+import { IBackupServiceAPI, StoreType, IStoreService, WithdrawalMonitorObject } from "./store";
 import { CFCoreTypes } from "./cfCore";
 
 export type InternalClientOptions = ClientOptions & {
@@ -43,7 +43,7 @@ export type InternalClientOptions = ClientOptions & {
   messaging: IMessagingService;
   network: Network;
   node: INodeApiClient;
-  store: Store;
+  store: IStoreService;
   token: Contract;
 };
 
@@ -55,9 +55,9 @@ export interface ClientOptions {
   keyGen?: KeyGen;
   mnemonic?: string;
   xpub?: string;
-  store?: Store;
+  store?: IStoreService;
   logLevel?: number;
-  asyncStorage?: IAsyncStorage;
+  storeType?: StoreType;
   messaging?: IMessagingService;
   backupService?: IBackupServiceAPI;
 }
@@ -78,7 +78,7 @@ export interface IConnextClient {
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
-  store: Store;
+  store: IStoreService;
 
   ////////////////////////////////////////
   // Methods
@@ -157,6 +157,7 @@ export interface IConnextClient {
   getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
   getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
+  getLatestNodeSubmittedWithdrawal(): Promise<WithdrawalMonitorObject>;
   getProposedAppInstances(
     multisigAddress?: string,
   ): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;

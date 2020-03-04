@@ -11,6 +11,7 @@ export {
   CFChannelProviderOptions,
   CFCoreChannel,
   CFCoreTypes,
+  chan_setUserWithdrawal,
   ChannelAppSequences,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
