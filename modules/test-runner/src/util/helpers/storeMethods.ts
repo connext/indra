@@ -1,5 +1,14 @@
 import { ConnextStore, FileStorage, MemoryStorage } from "@connext/store";
-import { IAsyncStorage, StoreFactoryOptions, StorePair } from "@connext/types";
+import {
+  IAsyncStorage,
+  StoreFactoryOptions,
+  StorePair,
+  ASYNCSTORAGE,
+  FILESTORAGE,
+  LOCALSTORAGE,
+  MEMORYSTORAGE,
+  StoreType,
+} from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import localStorage from "localStorage";
 import MockAsyncStorage from "mock-async-storage";
@@ -8,19 +17,6 @@ import uuid from "uuid";
 import { expect } from "../";
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
-
-export const ASYNCSTORAGE = "ASYNCSTORAGE";
-export const FILESTORAGE = "FILESTORAGE";
-export const LOCALSTORAGE = "LOCALSTORAGE";
-export const MEMORYSTORAGE = "MEMORYSTORAGE";
-
-const StoreTypes = {
-  [ASYNCSTORAGE]: ASYNCSTORAGE,
-  [FILESTORAGE]: FILESTORAGE,
-  [LOCALSTORAGE]: LOCALSTORAGE,
-  [MEMORYSTORAGE]: MEMORYSTORAGE,
-};
-type StoreType = keyof typeof StoreTypes;
 
 export function createStore(
   type: StoreType,

@@ -17,23 +17,45 @@ export interface AsyncStorageData {
   [key: string]: any;
 }
 
-export interface StoreFactoryOptions {
+// storage types
+export const ASYNCSTORAGE = "ASYNCSTORAGE";
+export const FILESTORAGE = "FILESTORAGE";
+export const LOCALSTORAGE = "LOCALSTORAGE";
+export const MEMORYSTORAGE = "MEMORYSTORAGE";
+
+export const StoreTypes = {
+  [ASYNCSTORAGE]: ASYNCSTORAGE,
+  [FILESTORAGE]: FILESTORAGE,
+  [LOCALSTORAGE]: LOCALSTORAGE,
+  [MEMORYSTORAGE]: MEMORYSTORAGE,
+};
+export type StoreType = keyof typeof StoreTypes;
+
+export interface FileStorageOptions {
+  fileExt?: string;
+  fileDir?: string;
+}
+
+export interface StoreFactoryOptions extends FileStorageOptions {
   prefix?: string;
   separator?: string;
   asyncStorageKey?: string;
   backupService?: IBackupServiceAPI;
 }
 
+// TODO: delete
 export interface WrappedStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
   getKeys(): Promise<string[]>;
   getEntries(): Promise<[string, any][]>;
-  clear(prefix: string): Promise<void>;
-  getChannels(): Promise<ChannelsMap>;
+  clear(): Promise<void>;
+  restore(): Promise<void>;
+  joinWithSeparator(...args: string[]): string;
 }
 
+// TODO: delete
 export interface IAsyncStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -46,11 +68,6 @@ export interface IAsyncStorage {
 export interface IBackupServiceAPI {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
-}
-
-export interface FileStorageOptions {
-  fileExt?: string;
-  fileDir?: string;
 }
 
 /**
@@ -103,7 +120,16 @@ export interface IStoreService {
   saveExtendedPrvKey(extendedPrvKey: string): Promise<void>;
   clear(): Promise<void>;
   restore(): Promise<void>;
+  // used client side ONLY
+  setUserWithdrawal?(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  getUserWithdrawal?(): Promise<WithdrawalMonitorObject>;
 }
+
+// Used to monitor node submitted withdrawals on behalf of user
+export type WithdrawalMonitorObject = {
+  retry: number;
+  tx: CFCoreTypes.MinimalTransaction;
+};
 
 export interface Store extends IStoreServiceOld {
   set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
