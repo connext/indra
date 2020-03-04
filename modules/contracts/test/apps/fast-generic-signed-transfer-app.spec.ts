@@ -1,4 +1,3 @@
-/* global before */
 import { expect, use } from "chai";
 import { solidity, getWallets, deployContract } from "ethereum-waffle";
 import { waffle } from "@nomiclabs/buidler";
@@ -9,6 +8,10 @@ import FastSignedTransferApp from "../../build/FastSignedTransferApp.json";
 
 import { mkAddress, mkHash, mkXpub, mkSig } from "../utils";
 import { Zero, One, AddressZero } from "ethers/constants";
+import {
+  FastSignerTransferAppActionEncoding,
+  FastSignerTransferAppStateEncoding,
+} from "@connext/types";
 
 use(solidity);
 
@@ -21,7 +24,7 @@ type Payment = {
   amount: BigNumber;
   assetId: string;
   signer: string;
-  paymentID: string;
+  paymentId: string;
   timeout: BigNumber;
   recipientXpub: string;
   data: string;
@@ -47,48 +50,15 @@ type FastGenericSignedTransferAppAction = {
   actionType: ActionType;
 };
 
-const multiAssetMultiPartyCoinTransferEncoding = `
-  tuple(address to, uint256 amount)[2]
-`;
-
-const paymentsEncoding = `
-  tuple(
-    uint256 amount,
-    address assetId,
-    address signer,
-    bytes32 paymentID,
-    uint256 timeout,
-    string recipientXpub,
-    bytes32 data,
-    bytes signature
-  )[]
-`;
-
-const transferAppStateEncoding = `
-  tuple(
-    ${paymentsEncoding} lockedPayments,
-    ${multiAssetMultiPartyCoinTransferEncoding} coinTransfers,
-    bool finalized,
-    uint256 turnNum
-  )
-`;
-
-const transferAppActionEncoding = `
-  tuple(
-    ${paymentsEncoding} newLockedPayments,
-    uint256 actionType
-  )
-`;
-
 const decodeAppState = (encodedAppState: string): FastGenericSignedTransferAppState[] =>
-  defaultAbiCoder.decode([transferAppStateEncoding], encodedAppState);
+  defaultAbiCoder.decode([FastSignerTransferAppStateEncoding], encodedAppState);
 
 const encodeAppState = (state: FastGenericSignedTransferAppState): string => {
-  return defaultAbiCoder.encode([transferAppStateEncoding], [state]);
+  return defaultAbiCoder.encode([FastSignerTransferAppStateEncoding], [state]);
 };
 
 const encodeAppAction = (action: FastGenericSignedTransferAppAction): string => {
-  return defaultAbiCoder.encode([transferAppActionEncoding], [action]);
+  return defaultAbiCoder.encode([FastSignerTransferAppActionEncoding], [action]);
 };
 
 describe("FastGenericSignedTransferApp", () => {
@@ -111,7 +81,7 @@ describe("FastGenericSignedTransferApp", () => {
     transferApp = await deployContract(wallet, FastSignedTransferApp);
   });
 
-  it.only("happy case: sender creates locked tranfers", async () => {
+  it("happy case: sender creates locked tranfers", async () => {
     const sender = mkAddress("0xa");
     const receiver = mkAddress("0xb");
     const preState: FastGenericSignedTransferAppState = {
@@ -137,7 +107,7 @@ describe("FastGenericSignedTransferApp", () => {
           amount: One,
           assetId: AddressZero,
           data: mkHash("0x0"),
-          paymentID: mkHash("0xa"),
+          paymentId: mkHash("0xa"),
           recipientXpub: mkXpub("xpubB"),
           signature: mkSig("0x0"),
           signer: mkAddress("0xc"),
@@ -151,20 +121,26 @@ describe("FastGenericSignedTransferApp", () => {
     const destructured = decoded[0];
 
     // coin transfers decrement from sender
+    console.log(
+      "destructured.coinTransfers[1].amount: ",
+      destructured.coinTransfers[1].amount.toHexString(),
+    );
     expect({
       to: destructured.coinTransfers[0].to,
-      amount: destructured.coinTransfers[0].amount,
+      amount: destructured.coinTransfers[0].amount.toHexString(),
     }).contain({
       ...preState.coinTransfers[0],
-      amount: preState.coinTransfers[0].amount.sub(action.newLockedPayments[0].amount),
+      amount: preState.coinTransfers[0].amount
+        .sub(action.newLockedPayments[0].amount)
+        .toHexString(),
     });
-    // coin transfers increment receiver
+    // coin transfers does not increment receiver until unlocked
     expect({
       to: destructured.coinTransfers[1].to,
-      amount: destructured.coinTransfers[1].amount,
+      amount: destructured.coinTransfers[1].amount.toHexString(),
     }).contain({
       ...preState.coinTransfers[1],
-      amount: preState.coinTransfers[1].amount.add(action.newLockedPayments[0].amount),
+      amount: preState.coinTransfers[1].amount.toHexString(),
     });
 
     // not finalized
