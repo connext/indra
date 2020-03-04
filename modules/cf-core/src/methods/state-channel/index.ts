@@ -9,6 +9,10 @@ import WithdrawController from "./withdraw/controller";
 import RequestDepositRightsController from "./request-deposit-rights/controller";
 import RescindDepositRightsController from "./rescind-deposit-rights/controller";
 
+if (typeof CreateChannelController === "undefined") {
+  throw new Error(`Hey hey hey where did CreateChannelController go?`);
+}
+
 export {
   CreateChannelController,
   DeployStateDepositController,

@@ -4,7 +4,7 @@ import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
-import { createRpcRouter } from "./api";
+import { createRpcRouter } from "./methods";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";

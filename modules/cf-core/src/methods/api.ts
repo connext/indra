@@ -1,33 +1,38 @@
 import { PROTOCOL_MESSAGE_EVENT, REJECT_INSTALL_EVENT } from "@connext/types";
-import { handleRejectProposalMessage, handleReceivedProtocolMessage } from "./message-handling";
+import { handleRejectProposalMessage, handleReceivedProtocolMessage } from "../message-handling";
+import { RequestHandler } from "../request-handler";
+import RpcRouter from "../rpc-router";
+
+import {
+  GetInstalledAppInstancesController,
+  GetAppInstanceController,
+  GetFreeBalanceStateController,
+  GetAppInstanceStateController,
+  GetTokenIndexedFreeBalancesController,
+  InstallVirtualAppInstanceController,
+  InstallAppInstanceController,
+  ProposeInstallAppInstanceController,
+  RejectInstallController,
+  TakeActionController,
+  UninstallVirtualController,
+  UninstallController,
+  UpdateStateController,
+} from "./app-instance";
+import {
+  GetProposedAppInstancesController,
+  GetProposedAppInstanceController,
+} from "./proposed-app-instance";
 import {
   CreateChannelController,
   DepositController,
   GetAllChannelAddressesController,
-  GetAppInstanceController,
-  GetAppInstanceStateController,
-  GetFreeBalanceStateController,
-  GetInstalledAppInstancesController,
-  GetProposedAppInstanceController,
-  GetProposedAppInstancesController,
   GetStateChannelController,
   GetStateDepositHolderAddressController,
-  GetTokenIndexedFreeBalancesController,
-  InstallAppInstanceController,
-  InstallVirtualAppInstanceController,
-  ProposeInstallAppInstanceController,
-  RejectInstallController,
-  RescindDepositRightsController,
   RequestDepositRightsController,
-  TakeActionController,
-  UninstallController,
-  UninstallVirtualController,
-  UpdateStateController,
+  RescindDepositRightsController,
   WithdrawCommitmentController,
   WithdrawController,
-} from "./methods";
-import { RequestHandler } from "./request-handler";
-import RpcRouter from "./rpc-router";
+} from "./state-channel";
 
 const controllers = [
   /**

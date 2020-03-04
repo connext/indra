@@ -3,7 +3,7 @@ import { Signer } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
-import { eventNameToImplementation, methodNameToImplementation } from "./api";
+import { eventNameToImplementation, methodNameToImplementation } from "./methods";
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
