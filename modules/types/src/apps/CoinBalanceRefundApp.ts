@@ -7,3 +7,5 @@ export type CoinBalanceRefundAppState<T = string> = {
   tokenAddress: string;
 };
 export type CoinBalanceRefundAppStateBigNumber = CoinBalanceRefundAppState<BigNumber>;
+
+export const CoinBalanceRefundAppStateEncoding = `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`;

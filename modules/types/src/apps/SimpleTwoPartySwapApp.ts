@@ -1,5 +1,6 @@
 import { CoinTransfer } from "../";
 import { BigNumber } from "ethers/utils";
+import { multiAssetMultiPartyCoinTransferEncoding } from "../contracts";
 
 export type SimpleSwapAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[][];
@@ -31,3 +32,7 @@ export type SwapRate = AllowedSwap & {
   priceOracleType: PriceOracleType;
   blockNumber?: number;
 };
+
+export const SimpleSwapAppStateEncoding = `
+  tuple(${multiAssetMultiPartyCoinTransferEncoding} coinTransfers)
+`;

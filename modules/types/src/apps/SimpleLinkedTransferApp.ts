@@ -1,5 +1,6 @@
 import { CoinTransfer } from "../";
 import { BigNumber } from "ethers/utils";
+import { singleAssetTwoPartyCoinTransferEncoding } from "../contracts";
 
 export type SimpleLinkedTransferAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[];
@@ -74,3 +75,16 @@ export type ResolveLinkedTransferResponse = {
   paymentId: string;
   meta?: object;
 };
+
+export const SimpleLinkedTransferAppStateEncoding = `
+  tuple(
+    ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
+    bytes32 linkedHash,
+    uint256 amount,
+    address assetId,
+    bytes32 paymentId,
+    bytes32 preImage
+  )
+`;
+
+export const SimpleLinkedTransferAppActionEncoding = `tuple(bytes32 preImage)`;
