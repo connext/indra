@@ -4,9 +4,12 @@ pragma experimental "ABIEncoderV2";
 import "../libs/LibStateChannelApp.sol";
 import "../libs/LibAppCaller.sol";
 import "./MChallengeRegistryCore.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallengeRegistryCore {
+
+    using SafeMath for uint256;
 
     struct SignedAppChallengeUpdateWithAppState {
         // NOTE: We include the full bytes of the state update,
@@ -72,8 +75,7 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
         );
 
 
-        uint248 finalizesAt = uint248(block.number + req.timeout);
-        require(finalizesAt >= req.timeout, "uint248 addition overflow");
+        uint256 finalizesAt = block.number.add(req.timeout);
 
         challenge.finalizesAt = finalizesAt;
         challenge.status = ChallengeStatus.FINALIZES_AFTER_DEADLINE;

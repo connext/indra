@@ -3,9 +3,12 @@ pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
 import "./MChallengeRegistryCore.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
+
+    using SafeMath for uint256;
 
     struct SignedAppChallengeUpdate {
         bytes32 appStateHash;
@@ -56,8 +59,7 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
             "Tried to call setState with an outdated versionNumber version"
         );
 
-        uint248 finalizesAt = uint248(block.number + req.timeout);
-        require(finalizesAt >= req.timeout, "uint248 addition overflow");
+        uint256 finalizesAt = block.number.add(req.timeout);
 
         challenge.status = req.timeout > 0 ?
             ChallengeStatus.FINALIZES_AFTER_DEADLINE :
