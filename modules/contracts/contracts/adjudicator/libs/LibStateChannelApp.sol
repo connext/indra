@@ -50,6 +50,22 @@ contract LibStateChannelApp {
         return timeout <= block.number;
     }
 
+    /// @dev Checks whether it is still possible to send all-party-signed states
+    /// @param appChallenge the app challenge to check
+    function isDisputable(
+        AppChallenge memory appChallenge
+    )
+        public
+        view
+        returns (bool)
+    {
+        return appChallenge.status == ChallengeStatus.NO_CHALLENGE ||
+            (
+                appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+                !hasPassed(appChallenge.finalizesAt)
+            );
+    }
+
     /// @dev Verifies signatures given the signer addresses
     /// @param signatures message `txHash` signature
     /// @param txHash operation ethereum signed message hash
