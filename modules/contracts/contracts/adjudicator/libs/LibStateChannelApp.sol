@@ -32,7 +32,6 @@ contract LibStateChannelApp {
     struct AppChallenge {
         address latestSubmitter;
         bytes32 appStateHash;
-        uint128 challengeCounter;
         uint128 versionNumber;
         uint248 finalizesAt;
         ChallengeStatus status;

@@ -79,7 +79,6 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
         challenge.status = ChallengeStatus.FINALIZES_AFTER_DEADLINE;
         challenge.appStateHash = keccak256(newState);
         challenge.versionNumber = uint128(req.versionNumber);
-        challenge.challengeCounter += 1;
         challenge.latestSubmitter = msg.sender;
     }
 
