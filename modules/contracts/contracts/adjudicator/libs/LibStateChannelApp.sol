@@ -38,6 +38,18 @@ contract LibStateChannelApp {
         uint256 finalizesAt;
     }
 
+    /// @dev Checks whether the given timeout has passed
+    /// @param timeout a timeout as block number
+    function hasPassed(
+        uint256 timeout
+    )
+        public
+        view
+        returns (bool)
+    {
+        return timeout <= block.number;
+    }
+
     /// @dev Verifies signatures given the signer addresses
     /// @param signatures message `txHash` signature
     /// @param txHash operation ethereum signed message hash
