@@ -1,8 +1,8 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj, stringify } from "@connext/types";
 
-import { SimpleLinkedTransferAppStateBigNumber } from "./types";
 import { unidirectionalCoinTransferValidation } from "../shared";
+import { convertLinkedTransferAppState } from "./convert";
 
 export const validateSimpleLinkedTransferApp = (
   params: CFCoreTypes.ProposeInstallParams,
@@ -16,9 +16,7 @@ export const validateSimpleLinkedTransferApp = (
   const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
   const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
 
-  const initialState = bigNumberifyObj(
-    initialStateBadType,
-  ) as SimpleLinkedTransferAppStateBigNumber;
+  const initialState = convertLinkedTransferAppState("bignumber", initialStateBadType);
 
   initialState.coinTransfers = initialState.coinTransfers.map((transfer: CoinTransferBigNumber) =>
     bigNumberifyObj(transfer),

@@ -12,6 +12,7 @@ import {
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientResponse,
+  LINKED_TRANSFER,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -22,10 +23,9 @@ import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
-import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
+import { LinkedTransferController } from "./controllers/LinkedTransferController";
 import { DepositController } from "./controllers/DepositController";
 import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
-import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { stringify, withdrawalKey, xpubToAddress } from "./lib";
@@ -70,6 +70,7 @@ import {
 } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
+import { ResolveLinkedTransferController } from "./controllers/ResolveLinkedTransferController";
 
 const MAX_WITHDRAWAL_RETRIES = 3;
 
@@ -97,8 +98,8 @@ export class ConnextClient implements IConnextClient {
   private depositController: DepositController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
-  private conditionalTransferController: ConditionalTransferController;
-  private resolveConditionController: ResolveConditionController;
+  private linkedTransferController: LinkedTransferController;
+  private resolveLinkedTransferController: ResolveLinkedTransferController;
   private requestDepositRightsController: RequestDepositRightsController;
 
   constructor(opts: InternalClientOptions) {
@@ -128,12 +129,9 @@ export class ConnextClient implements IConnextClient {
     this.depositController = new DepositController("DepositController", this);
     this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
-    this.resolveConditionController = new ResolveConditionController(
-      "ResolveConditionController",
-      this,
-    );
-    this.conditionalTransferController = new ConditionalTransferController(
-      "ConditionalTransferController",
+    this.linkedTransferController = new LinkedTransferController("LinkedTransferController", this);
+    this.resolveLinkedTransferController = new ResolveLinkedTransferController(
+      "ResolveLinkedTransferController",
       this,
     );
     this.requestDepositRightsController = new RequestDepositRightsController(
@@ -345,7 +343,7 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: TransferParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
-    return this.conditionalTransferController.conditionalTransfer({
+    return this.linkedTransferController.linkedTransferToRecipient({
       amount: params.amount,
       assetId: params.assetId,
       conditionType: LINKED_TRANSFER_TO_RECIPIENT,
@@ -363,14 +361,32 @@ export class ConnextClient implements IConnextClient {
   public resolveCondition = async (
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
-    const res = await this.resolveConditionController.resolve(params);
-    return res;
+    switch (params.conditionType) {
+      case LINKED_TRANSFER_TO_RECIPIENT:
+      case LINKED_TRANSFER: {
+        return this.resolveLinkedTransferController.resolveLinkedTransfer({
+          ...params,
+          conditionType: LINKED_TRANSFER,
+        });
+      }
+      default:
+        throw new Error(`Condition type ${(params as any).conditionType} invalid`);
+    }
   };
 
   public conditionalTransfer = async (
     params: LinkedTransferParameters | LinkedTransferToRecipientParameters,
   ): Promise<LinkedTransferResponse | LinkedTransferToRecipientResponse> => {
-    return this.conditionalTransferController.conditionalTransfer(params);
+    switch (params.conditionType) {
+      case LINKED_TRANSFER: {
+        return this.linkedTransferController.linkedTransfer(params);
+      }
+      case LINKED_TRANSFER_TO_RECIPIENT: {
+        return this.linkedTransferController.linkedTransferToRecipient(params);
+      }
+      default:
+        throw new Error(`Condition type ${(params as any).conditionType} invalid`);
+    }
   };
 
   public getLatestNodeSubmittedWithdrawal = async (): Promise<

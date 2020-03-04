@@ -3,8 +3,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { BigNumber } from "ethers/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
-
-import { FastSignedTransferAppState } from "./types";
+import { convertFastSignedTransferAppState } from "./convert";
 
 export const validateFastSignedTransferApp = (
   params: CFCoreTypes.ProposeInstallParams,
@@ -14,9 +13,7 @@ export const validateFastSignedTransferApp = (
   const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
     params,
   );
-  const initialState = bigNumberifyObj(initialStateBadType) as FastSignedTransferAppState<
-    BigNumber
-  >;
+  const initialState = convertFastSignedTransferAppState("bignumber", initialStateBadType);
 
   initialState.coinTransfers = initialState.coinTransfers.map((transfer: CoinTransfer<BigNumber>) =>
     bigNumberifyObj(transfer),

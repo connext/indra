@@ -1,4 +1,3 @@
-import { SimpleLinkedTransferAppState } from "@connext/apps";
 import {
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
@@ -16,6 +15,7 @@ import {
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
   ProtocolTypes,
+  SimpleLinkedTransferAppState,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";

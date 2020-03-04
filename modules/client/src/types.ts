@@ -110,7 +110,6 @@ export {
   tokenToWei,
   toWei,
   Transfer,
-  TransferCondition,
   TransferParameters,
   UninstallMessage,
   UninstallVirtualMessage,

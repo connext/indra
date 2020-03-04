@@ -95,7 +95,7 @@ export class ConnextListener extends ConnextEventEmitter {
         return;
       }
       const {
-        data: { params },
+        data: { params, appInstanceId },
         from,
       } = msg;
       // return if its from us
@@ -103,29 +103,37 @@ export class ConnextListener extends ConnextEventEmitter {
         this.log.debug(`Received proposal from our own node, doing nothing ${time()}`);
         return;
       }
-      // matched app, take appropriate default actions
-      // only publish for coin balance refund app
-      const coinBalanceDef = this.connext.appRegistry.filter(
-        (app: DefaultApp) => app.name === CoinBalanceRefundApp,
-      )[0];
-      if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        throw new Error(`Clients do not allow apps to be installed.`);
+      // only allow proposal from CoinBalanceRefundApp
+      try {
+        const coinBalanceDef = this.connext.appRegistry.find(
+          (app: DefaultApp) => app.name === CoinBalanceRefundApp,
+        );
+        console.log("coinBalanceDef: ", coinBalanceDef);
+        console.log("params: ", params);
+
+        if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
+          throw new Error(
+            `Clients do not allow apps to be installed. Proposed app definition: ${params.appDefinition}`,
+          );
+        }
+        commonAppProposalValidation(
+          params,
+          // types weirdness
+          { ...coinBalanceDef, name: coinBalanceDef.name as SupportedApplication },
+          this.connext.config.supportedTokenAddresses,
+        );
+        this.log.debug(
+          `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+        );
+        await this.connext.messaging.publish(
+          `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+          stringify(params),
+        );
+        this.log.info(`Done processing propose install event ${time()}`);
+      } catch (e) {
+        this.log.error(`Caught error: ${e.toString()}`);
+        await this.connext.rejectInstallApp(appInstanceId);
       }
-      commonAppProposalValidation(
-        params,
-        // types weirdness
-        { ...coinBalanceDef, name: coinBalanceDef.name as SupportedApplication },
-        this.connext.config.supportedTokenAddresses,
-      );
-      this.log.debug(
-        `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-      );
-      await this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-        stringify(params),
-      );
-      this.log.info(`Done processing propose install event ${time()}`);
-      return;
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);

@@ -1,4 +1,4 @@
-import { Address, CoinTransfer } from "@connext/types";
+import { CoinTransfer } from "..";
 
 export const FAST_SIGNED_TRANSFER = "FAST_SIGNED_TRANSFER";
 
@@ -6,10 +6,10 @@ export type FastSignedTransferParameters<T = string> = {
   conditionType: typeof FAST_SIGNED_TRANSFER;
   recipient: string;
   amount: T;
-  assetId?: Address;
+  assetId?: string;
   paymentId: string;
   maxAllocation?: T;
-  signer: Address;
+  signer: string;
   meta?: object;
 };
 
@@ -22,8 +22,8 @@ export enum FastSignedTransferActionType {
 
 export type FastSignedTransfer<T = string> = {
   amount: T;
-  assetId: Address;
-  signer: Address;
+  assetId: string;
+  signer: string;
   paymentId: string;
   timeout: T;
   receipientXpub: string;

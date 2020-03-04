@@ -5,7 +5,6 @@ import {
   AppRegistry as RegistryOfApps,
   commonAppProposalValidation,
   validateSimpleLinkedTransferApp,
-  SimpleLinkedTransferAppStateBigNumber,
   validateSimpleSwapApp,
   FastSignedTransferApp,
   validateFastSignedTransferApp,
@@ -16,6 +15,7 @@ import {
   CoinTransferBigNumber,
   stringify,
   bigNumberifyObj,
+  SimpleLinkedTransferAppStateBigNumber,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";

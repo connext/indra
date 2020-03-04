@@ -2,14 +2,7 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
 import { AssetAmount, RebalanceProfile } from "./channel";
-import {
-  DepositParameters,
-  LinkedTransferParameters,
-  LinkedTransferToRecipientParameters,
-  SwapParameters,
-  TransferParameters,
-  WithdrawParameters,
-} from "./inputs";
+import { DepositParameters, WithdrawParameters } from "./inputs";
 import { CoinTransfer } from "./app";
 
 /////////////////////////////////////////////
@@ -170,39 +163,6 @@ function convertDepositParametersToAsset<To extends NumericTypeName>(
   return convertAssetAmountWithId(to, obj);
 }
 
-function convertSwapParameters<To extends NumericTypeName>(
-  to: To,
-  obj: SwapParameters<any>,
-): SwapParameters<NumericTypes[To]> {
-  const asset: any = {
-    ...obj,
-    fromAssetId: makeChecksumOrEthAddress(obj.fromAssetId),
-    toAssetId: makeChecksumOrEthAddress(obj.toAssetId),
-  };
-  return convertAmountField(to, asset);
-}
-
-function convertTransferParametersToAsset<To extends NumericTypeName>(
-  to: To,
-  obj: TransferParameters<any>,
-): TransferParameters<NumericTypes[To]> {
-  return convertAssetAmountWithId(to, obj);
-}
-
-function convertLinkedTransferParametersToAsset<To extends NumericTypeName>(
-  to: To,
-  obj: LinkedTransferParameters<any>,
-): LinkedTransferParameters<NumericTypes[To]> {
-  return convertAssetAmountWithId(to, obj);
-}
-
-function convertLinkedTransferToRecipientParametersToAsset<To extends NumericTypeName>(
-  to: To,
-  obj: LinkedTransferToRecipientParameters<any>,
-): LinkedTransferToRecipientParameters<NumericTypes[To]> {
-  return convertAssetAmountWithId(to, obj);
-}
-
 function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
@@ -214,12 +174,6 @@ function convertWithdrawParametersToAsset<To extends NumericTypeName>(
 export const convert = {
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
-  LinkedTransfer: convertLinkedTransferParametersToAsset,
-  LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
   RebalanceProfile: convertRebalanceProfile,
-  ResolveLinkedTransfer: convertAssetAmountWithId,
-  SwapParameters: convertSwapParameters,
-  Transfer: convertAssetAmount,
-  TransferParameters: convertTransferParametersToAsset,
   Withdraw: convertWithdrawParametersToAsset,
 };

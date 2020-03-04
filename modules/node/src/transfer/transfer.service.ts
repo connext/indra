@@ -1,16 +1,13 @@
-import {
-  SimpleLinkedTransferApp,
-  SimpleLinkedTransferAppState,
-  SimpleLinkedTransferAppStateBigNumber,
-} from "@connext/apps";
+import { SimpleLinkedTransferApp } from "@connext/apps";
 
 import {
-  DefaultApp,
   DepositConfirmationMessage,
   ResolveLinkedTransferResponse,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
+  SimpleLinkedTransferAppStateBigNumber,
+  SimpleLinkedTransferAppState,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";

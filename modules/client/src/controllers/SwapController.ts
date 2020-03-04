@@ -1,4 +1,4 @@
-import { SimpleSwapAppStateBigNumber } from "@connext/apps";
+import { convertSwapParameters } from "@connext/apps";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
@@ -21,14 +21,12 @@ import {
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { SimpleSwapAppStateBigNumber } from "@connext/types";
 
 export class SwapController extends AbstractController {
   public async swap(params: SwapParameters): Promise<CFCoreChannel> {
     // convert params + validate
-    const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters(
-      "bignumber",
-      params,
-    );
+    const { amount, toAssetId, fromAssetId, swapRate } = convertSwapParameters("bignumber", params);
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);

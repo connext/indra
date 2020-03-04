@@ -1,11 +1,18 @@
 import { OutcomeType } from "@connext/types";
 
-import { AppRegistryInfo, multiAssetMultiPartyCoinTransferEncoding } from "../shared";
+import { AppRegistryInfo, singleAssetTwoPartyCoinTransferEncoding } from "../shared";
 
 export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
 
 const stateEncoding = `
-  tuple(${multiAssetMultiPartyCoinTransferEncoding} coinTransfers)
+  tuple(
+    ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
+    bytes32 linkedHash,
+    uint256 amount,
+    address assetId,
+    bytes32 paymentId,
+    bytes32 preImage
+  )
 `;
 
 export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {

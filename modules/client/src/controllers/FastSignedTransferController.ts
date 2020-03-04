@@ -1,13 +1,16 @@
 import {
-  FastSignedTransferParameters,
-  FastSignedTransferAppState,
   convertFastSignedTransferParameters,
   convertFastSignedTransferAppState,
-  FastSignedTransferActionType,
-  FastSignedTransferAppAction,
   FastSignedTransferApp,
 } from "@connext/apps";
-import { AppInstanceJson, ProtocolTypes } from "@connext/types";
+import {
+  AppInstanceJson,
+  ProtocolTypes,
+  FastSignedTransferAppState,
+  FastSignedTransferParameters,
+  FastSignedTransferActionType,
+  FastSignedTransferAppAction,
+} from "@connext/types";
 import { Zero, MaxUint256, HashZero } from "ethers/constants";
 
 import { stringify, xpubToAddress } from "../lib";

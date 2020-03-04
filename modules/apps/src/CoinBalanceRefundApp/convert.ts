@@ -1,5 +1,10 @@
-import { NumericTypeName, NumericTypes, getType, convertFields } from "@connext/types";
-import { CoinBalanceRefundAppState } from "./types";
+import {
+  NumericTypeName,
+  NumericTypes,
+  getType,
+  convertFields,
+  CoinBalanceRefundAppState,
+} from "@connext/types";
 
 export function convertCoinBalanceRefund<To extends NumericTypeName>(
   to: To,

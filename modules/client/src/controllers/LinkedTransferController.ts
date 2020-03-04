@@ -1,21 +1,20 @@
-import { SimpleLinkedTransferApp, SimpleLinkedTransferAppStateBigNumber } from "@connext/apps";
-import { LINKED_TRANSFER } from "@connext/types";
+import {
+  SimpleLinkedTransferApp,
+  convertLinkedTransferToRecipientParameters,
+  convertLinkedTransferParameters,
+} from "@connext/apps";
+import { LINKED_TRANSFER, SimpleLinkedTransferAppStateBigNumber } from "@connext/types";
 import { encryptWithPublicKey } from "@connext/crypto";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
-import { formatEther } from "ethers/utils";
 
 import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import {
-  BigNumber,
   CFCoreTypes,
-  convert,
-  DefaultApp,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
-  TransferCondition,
 } from "../types";
 import {
   invalid32ByteHexString,
@@ -28,35 +27,8 @@ import {
 
 import { AbstractController } from "./AbstractController";
 
-type ConditionalExecutors = {
-  [index in TransferCondition]: (
-    params: LinkedTransferParameters | LinkedTransferToRecipientParameters,
-  ) => Promise<LinkedTransferResponse | LinkedTransferToRecipientParameters>;
-};
-
-export class ConditionalTransferController extends AbstractController {
-  public conditionalTransfer = async (
-    params: LinkedTransferParameters | LinkedTransferToRecipientParameters,
-  ): Promise<LinkedTransferResponse | LinkedTransferToRecipientResponse> => {
-    this.log.info(
-      `Generating conditional transfer of ${formatEther(params.amount)} ${
-        params.assetId === AddressZero ? "ETH" : "Tokens"
-      }`,
-    );
-    this.log.debug(`Conditional transfer parameters: ${stringify(params)}`);
-
-    const conditionExecutor = this.conditionalExecutors[params.conditionType];
-    if (!conditionExecutor) {
-      throw new Error(`Condition type ${params.conditionType} not supported`);
-    }
-    const res = await conditionExecutor(params);
-    return res;
-  };
-
-  /////////////////////////////////
-  ////// PRIVATE METHODS
-  // TODO: types
-  private handleLinkedTransferToRecipient = async (
+export class LinkedTransferController extends AbstractController {
+  public linkedTransferToRecipient = async (
     params: LinkedTransferToRecipientParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
     params.meta = params.meta && typeof params.meta === "object" ? params.meta : {};
@@ -67,7 +39,7 @@ export class ConditionalTransferController extends AbstractController {
       preImage,
       recipient,
       meta,
-    } = convert.LinkedTransferToRecipient(`bignumber`, params);
+    } = convertLinkedTransferToRecipientParameters(`bignumber`, params);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -93,7 +65,7 @@ export class ConditionalTransferController extends AbstractController {
     params.meta["recipient"] = recipient;
 
     // wait for linked transfer
-    const ret = await this.handleLinkedTransfers({
+    const ret = await this.linkedTransfer({
       ...params,
       conditionType: LINKED_TRANSFER,
     });
@@ -116,11 +88,11 @@ export class ConditionalTransferController extends AbstractController {
     return { ...ret, recipient };
   };
 
-  private handleLinkedTransfers = async (
+  public linkedTransfer = async (
     params: LinkedTransferParameters,
   ): Promise<LinkedTransferResponse> => {
     // convert params + validate
-    const { amount, assetId, paymentId, preImage, meta } = convert.LinkedTransfer(
+    const { amount, assetId, paymentId, preImage, meta } = convertLinkedTransferParameters(
       `bignumber`,
       params,
     );
@@ -134,8 +106,6 @@ export class ConditionalTransferController extends AbstractController {
       invalid32ByteHexString(paymentId),
       invalid32ByteHexString(preImage),
     );
-
-    const appInfo = this.connext.getRegisteredAppDetails(SimpleLinkedTransferApp);
 
     // install the transfer application
     const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
@@ -158,13 +128,29 @@ export class ConditionalTransferController extends AbstractController {
       preImage: HashZero,
     };
 
-    const appId = await this.conditionalTransferAppInstalled(
-      amount,
-      assetId,
+    const {
+      actionEncoding,
+      stateEncoding,
+      appDefinitionAddress: appDefinition,
+      outcomeType,
+    } = this.connext.getRegisteredAppDetails(SimpleLinkedTransferApp);
+    const proposeInstallParams: CFCoreTypes.ProposeInstallParams = {
+      abiEncodings: {
+        actionEncoding,
+        stateEncoding,
+      },
+      appDefinition,
       initialState,
-      appInfo,
+      initiatorDeposit: amount,
+      initiatorDepositTokenAddress: assetId,
       meta,
-    );
+      outcomeType,
+      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderDeposit: Zero,
+      responderDepositTokenAddress: assetId,
+      timeout: Zero,
+    };
+    const appId = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 
     if (!appId) {
       throw new Error(`App was not installed`);
@@ -174,47 +160,5 @@ export class ConditionalTransferController extends AbstractController {
       paymentId,
       preImage,
     };
-  };
-
-  // creates a promise that is resolved once the app is installed
-  // and rejected if the virtual application is rejected
-  private conditionalTransferAppInstalled = async (
-    initiatorDeposit: BigNumber,
-    assetId: string,
-    initialState: SimpleLinkedTransferAppStateBigNumber,
-    appInfo: DefaultApp,
-    meta?: object,
-  ): Promise<string | undefined> => {
-    const {
-      appDefinitionAddress: appDefinition,
-      outcomeType,
-      stateEncoding,
-      actionEncoding,
-    } = appInfo;
-    const params: CFCoreTypes.ProposeInstallParams = {
-      abiEncodings: {
-        actionEncoding,
-        stateEncoding,
-      },
-      appDefinition,
-      initialState,
-      initiatorDeposit,
-      initiatorDepositTokenAddress: assetId,
-      meta,
-      outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
-      responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
-      timeout: Zero,
-    };
-
-    const appId = await this.proposeAndInstallLedgerApp(params);
-    return appId;
-  };
-
-  // add all executors/handlers here
-  private conditionalExecutors: ConditionalExecutors = {
-    LINKED_TRANSFER: this.handleLinkedTransfers,
-    LINKED_TRANSFER_TO_RECIPIENT: this.handleLinkedTransferToRecipient,
   };
 }

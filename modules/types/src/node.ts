@@ -3,10 +3,10 @@ import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
 import { NetworkContext } from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
-import { ResolveLinkedTransferResponse } from "./inputs";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
 import { ProtocolTypes } from "./protocol";
+import { ResolveLinkedTransferResponse } from "./apps";
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES

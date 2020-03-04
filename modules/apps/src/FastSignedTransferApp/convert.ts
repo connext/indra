@@ -4,9 +4,9 @@ import {
   NumericTypes,
   convertFields,
   convertAmountField,
+  FastSignedTransferParameters,
+  FastSignedTransferAppState,
 } from "@connext/types";
-
-import { FastSignedTransferParameters, FastSignedTransferAppState } from "./types";
 
 export function convertFastSignedTransferParameters<To extends NumericTypeName>(
   to: To,

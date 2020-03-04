@@ -1,5 +1,11 @@
-import { NumericTypes, convertAmountField, NumericTypeName } from "@connext/types";
-import { SimpleSwapAppState } from "./types";
+import {
+  NumericTypes,
+  convertAmountField,
+  NumericTypeName,
+  SimpleSwapAppState,
+  SwapParameters,
+  makeChecksumOrEthAddress,
+} from "@connext/types";
 
 export function convertSimpleSwapAppState<To extends NumericTypeName>(
   to: To,
@@ -12,4 +18,16 @@ export function convertSimpleSwapAppState<To extends NumericTypeName>(
       convertAmountField(to, obj.coinTransfers[1]),
     ],
   };
+}
+
+export function convertSwapParameters<To extends NumericTypeName>(
+  to: To,
+  obj: SwapParameters<any>,
+): SwapParameters<NumericTypes[To]> {
+  const asset: any = {
+    ...obj,
+    fromAssetId: makeChecksumOrEthAddress(obj.fromAssetId),
+    toAssetId: makeChecksumOrEthAddress(obj.toAssetId),
+  };
+  return convertAmountField(to, asset);
 }

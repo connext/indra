@@ -1,7 +1,11 @@
 import { providers } from "ethers";
 
-import { AppInstanceJson } from "./app";
-import { AppRegistry, DefaultApp } from "./app";
+import {
+  ResolveLinkedTransferResponse,
+  ResolveConditionResponse,
+  ResolveConditionParameters,
+} from "./apps";
+import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { BigNumber } from "./basic";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
@@ -13,12 +17,8 @@ import {
   RequestDepositRightsParameters,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
-  ResolveConditionParameters,
-  ResolveConditionResponse,
-  ResolveLinkedTransferResponse,
-  SwapParameters,
-  TransferParameters,
   WithdrawParameters,
+  TransferParameters,
 } from "./inputs";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
@@ -32,6 +32,7 @@ import {
 import { ProtocolTypes } from "./protocol";
 import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
 import { CFCoreTypes } from "./cfCore";
+import { SwapParameters } from "./apps";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
