@@ -2,6 +2,7 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
@@ -16,14 +17,14 @@ contract WithdrawApp is CounterfactualApp {
 
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
-        bytes32[] signatures;
+        bytes[] signatures;
         address[] signers;
         bytes32 data;
         bool finalized;
     }
 
     struct Action {
-        bytes32 signature;
+        bytes signature;
     }
 
 /// Assume that the initial state contains data, signers[], and signatures[0]
@@ -40,9 +41,9 @@ contract WithdrawApp is CounterfactualApp {
         AppState memory state = abi.decode(encodedState, (AppState));
         Action memory action = abi.decode(encodedAction, (Action));
 
-        require(!finalized, "cannot take action on a finalized state");
-        require(signers[0] == state.data.recover(state.signatures[0]),"invalid withdrawer signature");
-        require(signers[1] == state.data.recover(action.signature), "invalid counterparty signature");
+        require(!state.finalized, "cannot take action on a finalized state");
+        require(state.signers[0] == state.data.recover(state.signatures[0]), "invalid withdrawer signature");
+        require(state.signers[1] == state.data.recover(action.signature), "invalid counterparty signature");
 
         state.signatures[1] = action.signature;
         state.finalized = true;

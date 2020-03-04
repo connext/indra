@@ -4,11 +4,10 @@ import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { BigNumber, defaultAbiCoder, solidityKeccak256, recoverAddress } from "ethers/utils";
+import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import { WithdrawApp } from "../../build/WithdrawApp.json"
+import WithdrawApp from "../../build/WithdrawApp.json"
 import { Zero } from "ethers/constants";
-import { fromMnemonic } from "ethers/utils/hdnode";
 
 type CoinTransfer = {
   to: string;
@@ -78,11 +77,11 @@ describe("WithdrawApp", () => {
   let action: WithdrawAction;
 
   async function computeOutcome(state: WithdrawAppState): Promise<string> {
-    return await WithdrawApp.functions.computeOutcome(encodeAppState(state));
+    return await withdrawApp.functions.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(state: any, action: SolidityValueType): Promise<string> {
-    return await WithdrawApp.functions.applyAction(
+    return await withdrawApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
