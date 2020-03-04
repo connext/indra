@@ -3,7 +3,7 @@ import { BigNumber } from "ethers/utils";
 
 import { SetStateCommitment } from "../ethereum";
 import { ConditionalTransaction } from "../ethereum/conditional-transaction-commitment";
-import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
+import { xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
 import { AppInstance, StateChannel } from "../models";
@@ -14,6 +14,7 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   NetworkContext,
   OutcomeType,
+  ProtocolExecutionFlow,
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,

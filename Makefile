@@ -300,7 +300,7 @@ client: cf-core contracts types crypto messaging store channel-provider $(shell 
 
 cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(docker_run) "cd modules/cf-core && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))

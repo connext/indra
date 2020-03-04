@@ -24,6 +24,7 @@ import GetAllChannelAddressesController from "./state-channel/get-all-addresses/
 import WithdrawCommitmentController from "./state-channel/withdraw-commitment/controller";
 import WithdrawController from "./state-channel/withdraw/controller";
 
+export * from "./errors";
 export {
   CreateChannelController,
   DeployStateDepositController,

@@ -3,7 +3,6 @@ import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { SetStateCommitment } from "../ethereum";
-import { ProtocolExecutionFlow } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { xkeyKthAddress } from "../machine/xkeys";
 import { AppInstance, StateChannel } from "../models";
@@ -11,6 +10,7 @@ import { Store } from "../store";
 import {
   Context,
   NetworkContext,
+  ProtocolExecutionFlow,
   ProtocolMessage,
   ProtocolParameters,
   UninstallVirtualAppProtocolParams,

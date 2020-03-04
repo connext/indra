@@ -8,7 +8,7 @@ import {
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
 } from "../ethereum";
-import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
+import { xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { AppInstance, StateChannel } from "../models";
 import {
@@ -16,6 +16,7 @@ import {
   Context,
   NetworkContext,
   OutcomeType,
+  ProtocolExecutionFlow,
   ProtocolMessage,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   WithdrawProtocolParams,

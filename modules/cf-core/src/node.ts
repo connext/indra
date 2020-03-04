@@ -7,14 +7,19 @@ import { Memoize } from "typescript-memoize";
 import { createRpcRouter } from "./api";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { Deferred } from "./deferred";
-import { Opcode, Protocol, ProtocolMessage, ProtocolRunner } from "./machine";
+import { Opcode, Protocol, ProtocolRunner } from "./machine";
 import { StateChannel } from "./models";
 import { getFreeBalanceAddress } from "./models/free-balance";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { NetworkContext, CFCoreTypes, NodeMessageWrappedProtocolMessage } from "./types";
+import {
+  CFCoreTypes,
+  NetworkContext,
+  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
+} from "./types";
 import { timeout } from "./utils";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS } from "@connext/types";

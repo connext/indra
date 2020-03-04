@@ -1,7 +1,7 @@
 import { SetStateCommitment } from "../ethereum";
-import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
+import { xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import { Context, ProtocolMessage, UpdateProtocolParams } from "../types";
+import { Context, ProtocolExecutionFlow, ProtocolMessage, UpdateProtocolParams } from "../types";
 import { logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";

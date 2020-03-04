@@ -1,8 +1,8 @@
 import { SetupCommitment } from "../ethereum";
-import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
+import { xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { StateChannel } from "../models/state-channel";
-import { Context, ProtocolMessage, SetupProtocolParams } from "../types";
+import { Context, ProtocolMessage, ProtocolExecutionFlow, SetupProtocolParams } from "../types";
 import { logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
@@ -86,7 +86,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
     let substart;
-    log.debug(`Responce started`);
+    log.debug(`Response started`);
 
     const {
       processID,
