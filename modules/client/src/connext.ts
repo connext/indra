@@ -810,14 +810,12 @@ export class ConnextClient implements IConnextClient {
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
-      const { encryptedPreImage, paymentId, amount, assetId } = transfer;
-      await this.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
+      const { encryptedPreImage, paymentId } = transfer;
+      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     }
   };
 
   public reclaimPendingAsyncTransfer = async (
-    amount: string,
-    assetId: string,
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse> => {
@@ -826,10 +824,8 @@ export class ConnextClient implements IConnextClient {
     let privateKey = await this.keyGen("0");
     const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
-    const response = await this.resolveCondition({
-      amount,
-      assetId,
-      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+    const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
+      conditionType: LINKED_TRANSFER,
       paymentId,
       preImage,
     });
