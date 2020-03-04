@@ -1,5 +1,5 @@
 import { expect, use } from "chai";
-import { solidity, getWallets, deployContract } from "ethereum-waffle";
+import { solidity, deployContract } from "ethereum-waffle";
 import { waffle } from "@nomiclabs/buidler";
 import { Contract } from "ethers";
 import { BigNumber, defaultAbiCoder, bigNumberify } from "ethers/utils";
@@ -77,11 +77,11 @@ describe("FastGenericSignedTransferApp", () => {
 
   beforeEach(async () => {
     const provider = waffle.provider;
-    const wallet = getWallets(provider)[0];
+    const wallet = provider.getWallets()[0];
     transferApp = await deployContract(wallet, FastSignedTransferApp);
   });
 
-  it.only("happy case: sender creates locked tranfers", async () => {
+  it("happy case: sender creates locked tranfers", async () => {
     const sender = mkAddress("0xa");
     const receiver = mkAddress("0xb");
     const preState: FastGenericSignedTransferAppState = {
