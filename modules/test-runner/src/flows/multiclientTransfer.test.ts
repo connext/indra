@@ -7,7 +7,7 @@ import { bigNumberify } from "ethers/utils";
 import { before, after } from "mocha";
 import { Client } from "ts-nats";
 
-import { env, Logger, createClient, fundChannel, connectNats, closeNats } from "../util";
+import { env, expect, Logger, createClient, fundChannel, connectNats, closeNats } from "../util";
 
 describe("Full Flow: Multi-client transfer", () => {
   let log = new Logger("MultiClientTransfer", env.logLevel);
