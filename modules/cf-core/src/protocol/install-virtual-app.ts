@@ -3,9 +3,9 @@ import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine/enums";
-import { sortAddresses, xkeyKthAddress } from "../machine/xkeys";
+import { Opcode, Protocol, sortAddresses, xkeyKthAddress } from "../machine";
 import { AppInstance, StateChannel } from "../models";
+import { Store } from "../store";
 import {
   Context,
   InstallVirtualAppProtocolParams,
@@ -18,11 +18,9 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   virtualAppAgreementEncoding,
 } from "../types";
-
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
-import { Store } from "../store";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
+
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
   defaultAbiCoder.encode([virtualAppAgreementEncoding], [params]);

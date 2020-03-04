@@ -6,7 +6,7 @@ import {
   CoinTransfer,
   convertCoinTransfersToCoinTransfersMap,
   TokenIndexedCoinTransferMap,
-} from "../../models/free-balance";
+} from "../../models";
 import {
   CoinBalanceRefundState,
   multiAssetMultiPartyCoinTransferEncoding,

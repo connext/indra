@@ -1,5 +1,6 @@
 import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
 import { Contract } from "ethers";
+import { Zero } from "ethers/constants";
 import { Provider } from "ethers/providers";
 import {
   BigNumber,
@@ -18,8 +19,7 @@ import { JSON_STRINGIFY_SPACE } from "./constants";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
 import { xkeyKthAddress } from "./machine";
-import { Zero } from "ethers/constants";
-import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods/errors";
+import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods";
 
 export const logTime = (log: ILoggerService, start: number, msg: string) => {
   const diff = Date.now() - start;

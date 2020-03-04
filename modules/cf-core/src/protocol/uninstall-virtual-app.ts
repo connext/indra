@@ -3,8 +3,7 @@ import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine/enums";
-import { xkeyKthAddress } from "../machine/xkeys";
+import { Opcode, Protocol, xkeyKthAddress } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
 import {
@@ -16,9 +15,11 @@ import {
   UninstallVirtualAppProtocolParams,
 } from "../types";
 
-import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import {
+  assertIsValidSignature,
+  computeTokenIndexedFreeBalanceIncrements,
+  UNASSIGNED_SEQ_NO,
+} from "./utils";
 
 /**
  * File notes:

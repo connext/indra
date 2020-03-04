@@ -1,4 +1,4 @@
-import { Protocol } from "../machine/enums";
+import { Protocol } from "../machine";
 import { ProtocolExecutionFlow } from "../types";
 
 import { INSTALL_PROTOCOL } from "./install";
@@ -29,6 +29,8 @@ export function getProtocolFromName(protocolName: Protocol): ProtocolExecutionFl
   }
   return protocolsByName[protocolName];
 }
+
+export * from "./utils";
 
 export {
   INSTALL_PROTOCOL,

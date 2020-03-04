@@ -1,11 +1,9 @@
 import { SetStateCommitment } from "../ethereum";
-import { xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Opcode, Protocol, xkeyKthAddress } from "../machine";
 import { Context, ProtocolExecutionFlow, ProtocolMessage, UpdateProtocolParams } from "../types";
 import { logTime } from "../utils";
 
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Update;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;

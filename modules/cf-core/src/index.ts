@@ -1,6 +1,6 @@
 export * from "rpc-server";
 export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./machine";
-export * from "./methods/errors";
+export * from "./methods";
 export { StateChannel } from "./models";
 export * from "./node";
 export * from "./private-keys-generator";

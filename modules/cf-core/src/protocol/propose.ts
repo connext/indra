@@ -2,19 +2,17 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { appIdentityToHash, SetStateCommitment } from "../ethereum";
-import { xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Opcode, Protocol, xkeyKthAddress } from "../machine";
+import { AppInstanceProposal, StateChannel } from "../models";
 import {
   Context,
   ProposeInstallProtocolParams,
   ProtocolExecutionFlow,
   ProtocolMessage,
 } from "../types";
-import { AppInstanceProposal, StateChannel } from "../models";
 import { logTime } from "../utils";
 
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;

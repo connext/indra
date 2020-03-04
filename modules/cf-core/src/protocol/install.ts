@@ -1,13 +1,10 @@
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { SetStateCommitment } from "../ethereum";
-import { ConditionalTransaction } from "../ethereum/conditional-transaction-commitment";
-import { xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
-import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
-import { AppInstance, StateChannel } from "../models";
-import { TokenIndexedCoinTransferMap } from "../models/free-balance";
+import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
+import { Opcode, Protocol, xkeyKthAddress } from "../machine";
+import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods";
+import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
   InstallProtocolParams,
@@ -21,8 +18,7 @@ import {
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
 const { Update, Install } = Protocol;

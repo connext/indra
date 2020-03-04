@@ -12,7 +12,7 @@ import {
 import { Protocol } from "../machine";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods";
 import { StateChannel } from "../models";
-import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
+import { UNASSIGNED_SEQ_NO } from "../protocol";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import {

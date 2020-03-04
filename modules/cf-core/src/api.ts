@@ -1,5 +1,5 @@
-import { handleRejectProposalMessage } from "./message-handling/handle-node-message";
-import { handleReceivedProtocolMessage } from "./message-handling/handle-protocol-message";
+import { PROTOCOL_MESSAGE_EVENT, REJECT_INSTALL_EVENT } from "@connext/types";
+import { handleRejectProposalMessage, handleReceivedProtocolMessage } from "./message-handling";
 import {
   CreateChannelController,
   DepositController,
@@ -28,7 +28,6 @@ import {
 } from "./methods";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { PROTOCOL_MESSAGE_EVENT, REJECT_INSTALL_EVENT } from "@connext/types";
 
 const controllers = [
   /**

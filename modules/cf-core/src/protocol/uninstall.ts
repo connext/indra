@@ -1,15 +1,16 @@
 import { BaseProvider } from "ethers/providers";
 
 import { SetStateCommitment } from "../ethereum";
-import { xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Opcode, Protocol, xkeyKthAddress } from "../machine";
 import { StateChannel } from "../models";
 import { Context, ProtocolExecutionFlow, ProtocolMessage, UninstallProtocolParams } from "../types";
 import { logTime } from "../utils";
 
-import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import {
+  assertIsValidSignature,
+  computeTokenIndexedFreeBalanceIncrements,
+  UNASSIGNED_SEQ_NO,
+} from "./utils";
 
 const protocol = Protocol.Uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;

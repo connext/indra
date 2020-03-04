@@ -8,8 +8,7 @@ import {
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
 } from "../ethereum";
-import { xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Opcode, Protocol, xkeyKthAddress } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import {
   coinBalanceRefundStateEncoding,
@@ -23,8 +22,7 @@ import {
 } from "../types";
 import { logTime } from "../utils";
 
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
 const { Install, Update, Withdraw } = Protocol;
