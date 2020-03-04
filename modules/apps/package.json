@@ -1,6 +1,6 @@
 {
   "name": "@connext/apps",
-  "version": "0.0.1",
+  "version": "5.0.2",
   "description": "Connext Counterfactual Apps",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -10,10 +10,10 @@
   "scripts": {
     "build": "./node_modules/.bin/tsc -b . && ./node_modules/.bin/rollup -c",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "rebuild": "npm run clean && npm run build",
+    "clean": "rm -rf ./dist"
   },
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@connext/cf-core": "5.0.2",
     "@connext/types": "5.0.2",
