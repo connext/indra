@@ -81,7 +81,7 @@ describe("FastGenericSignedTransferApp", () => {
     transferApp = await deployContract(wallet, FastSignedTransferApp);
   });
 
-  it("happy case: sender creates locked tranfers", async () => {
+  it.only("happy case: sender creates locked tranfers", async () => {
     const sender = mkAddress("0xa");
     const receiver = mkAddress("0xb");
     const preState: FastGenericSignedTransferAppState = {
@@ -110,7 +110,7 @@ describe("FastGenericSignedTransferApp", () => {
           paymentId: mkHash("0xa"),
           recipientXpub: mkXpub("xpubB"),
           signature: mkSig("0x0"),
-          signer: mkAddress("0xc"),
+          signer: mkAddress("0xC"),
           timeout: Zero,
         },
       ],
@@ -122,20 +122,20 @@ describe("FastGenericSignedTransferApp", () => {
 
     // coin transfers decrement from sender
     expect({
-      to: destructured.coinTransfers[0].to,
+      to: destructured.coinTransfers[0].to.toLowerCase(),
       amount: destructured.coinTransfers[0].amount.toHexString(),
-    }).contain({
-      ...preState.coinTransfers[0],
+    }).to.deep.eq({
+      to: preState.coinTransfers[0].to.toLowerCase(),
       amount: preState.coinTransfers[0].amount
         .sub(action.newLockedPayments[0].amount)
         .toHexString(),
     });
     // coin transfers does not increment receiver until unlocked
     expect({
-      to: destructured.coinTransfers[1].to,
+      to: destructured.coinTransfers[1].to.toLowerCase(),
       amount: destructured.coinTransfers[1].amount.toHexString(),
-    }).contain({
-      ...preState.coinTransfers[1],
+    }).to.deep.eq({
+      to: preState.coinTransfers[1].to.toLowerCase(),
       amount: preState.coinTransfers[1].amount.toHexString(),
     });
 
@@ -144,7 +144,16 @@ describe("FastGenericSignedTransferApp", () => {
 
     // locked payment added to state
     expect(destructured.lockedPayments.length).to.eq(1);
-    expect(destructured.lockedPayments).contain(action.newLockedPayments[0]);
+    expect({
+      amount: destructured.lockedPayments[0].amount,
+      assetId: destructured.lockedPayments[0].assetId,
+      data: destructured.lockedPayments[0].data,
+      paymentId: destructured.lockedPayments[0].paymentId,
+      recipientXpub: destructured.lockedPayments[0].recipientXpub,
+      signature: destructured.lockedPayments[0].signature,
+      signer: destructured.lockedPayments[0].signer,
+      timeout: destructured.lockedPayments[0].timeout,
+    } as Payment).to.deep.eq(action.newLockedPayments[0]);
 
     // turn num incremented
     expect(destructured.turnNum).to.eq(1);
