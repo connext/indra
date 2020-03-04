@@ -41,12 +41,8 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
         }
 
         require(
-            challenge.status == ChallengeStatus.NO_CHALLENGE ||
-            (
-                challenge.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE &&
-                challenge.finalizesAt >= block.number
-            ),
-            "setState was called on an app that has already been finalized"
+            isDisputable(challenge),
+            "setState was called on an app that cannot be disputed anymore"
         );
 
         require(
@@ -63,16 +59,11 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
             "Tried to call setState with an outdated versionNumber version"
         );
 
-        uint256 finalizesAt = block.number.add(req.timeout);
-
-        challenge.status = req.timeout > 0 ?
-            ChallengeStatus.FINALIZES_AFTER_DEADLINE :
-            ChallengeStatus.EXPLICITLY_FINALIZED;
-
+        challenge.status = ChallengeStatus.IN_DISPUTE;
+        challenge.latestSubmitter = msg.sender;
         challenge.appStateHash = req.appStateHash;
         challenge.versionNumber = req.versionNumber;
-        challenge.finalizesAt = finalizesAt;
-        challenge.latestSubmitter = msg.sender;
+        challenge.finalizesAt = block.number.add(req.timeout);
     }
 
     function correctKeysSignedAppChallengeUpdate(
