@@ -70,7 +70,7 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it.only("latency test: deposit, collateralize, many transfers, withdraw", async () => {
+  it("latency test: deposit, collateralize, many transfers, withdraw", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, ETH_AMOUNT_MD, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
