@@ -21,6 +21,7 @@ cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(p
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
+apps=$(cwd)/modules/apps
 cf-core=$(cwd)/modules/cf-core
 channel-provider=$(cwd)/modules/channel-provider
 client=$(cwd)/modules/client
