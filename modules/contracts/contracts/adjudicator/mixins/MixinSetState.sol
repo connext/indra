@@ -64,7 +64,7 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
             ChallengeStatus.EXPLICITLY_FINALIZED;
 
         challenge.appStateHash = req.appStateHash;
-        challenge.versionNumber = uint128(req.versionNumber);
+        challenge.versionNumber = req.versionNumber;
         challenge.finalizesAt = finalizesAt;
         challenge.latestSubmitter = msg.sender;
     }
