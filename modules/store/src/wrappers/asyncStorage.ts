@@ -5,20 +5,27 @@ import {
   InitCallback,
   safeJsonParse,
   safeJsonStringify,
-  WrappedStorage,
-  reduceChannelsMap,
+  DEFAULT_STORE_PREFIX,
+  DEFAULT_STORE_SEPARATOR,
+  CHANNEL_KEY,
+  COMMITMENT_KEY,
 } from "../helpers";
+import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
+import { AsyncStorage } from "react-native";
 
 export class WrappedAsyncStorage implements WrappedStorage {
   private asyncStorage: IAsyncStorage;
-  private asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY;
   private data: AsyncStorageData = {};
   private initializing: boolean = false;
   private initCallbacks: InitCallback[] = [];
 
-  constructor(asyncStorage: IAsyncStorage, asyncStorageKey?: string) {
-    this.asyncStorage = asyncStorage;
-    this.asyncStorageKey = asyncStorageKey || DEFAULT_ASYNC_STORAGE_KEY;
+  constructor(
+    private readonly prefix: string = DEFAULT_STORE_PREFIX,
+    private readonly separator: string = DEFAULT_STORE_SEPARATOR,
+    private readonly asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY,
+    private readonly backupService?: IBackupServiceAPI,
+  ) {
+    this.asyncStorage = AsyncStorage;
     this.loadData();
   }
 
@@ -53,21 +60,25 @@ export class WrappedAsyncStorage implements WrappedStorage {
     }
   }
 
-  async getItem(key: string): Promise<string | null> {
+  async getItem(key: string): Promise<string | undefined> {
     await this.loadData();
-    const result = this.data[`${key}`] || null;
+    const result = this.data[`${this.prefix}${this.separator}${key}`] || undefined;
     return result;
   }
 
   async setItem(key: string, value: string): Promise<void> {
     await this.loadData();
-    this.data[key] = value;
+    const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
+    if (this.backupService && shouldBackup) {
+      await this.backupService.backup({ path: key, value });
+    }
+    this.data[`${this.prefix}${this.separator}${key}`] = value;
     await this.persist();
   }
 
   async removeItem(key: string): Promise<void> {
     await this.loadData();
-    delete this.data[key];
+    delete this.data[`${this.prefix}${this.separator}${key}`];
     await this.persist();
   }
 
@@ -80,21 +91,36 @@ export class WrappedAsyncStorage implements WrappedStorage {
     return safeJsonParse(data) || {};
   }
 
+  async getKeys(): Promise<string[]> {
+    const relevantKeys = Object.keys(this.data).filter(key => key.startsWith(this.prefix));
+    return relevantKeys.map(key => key.split(`${this.prefix}${this.separator}`)[1]);
+  }
+
+  async getEntries(): Promise<[string, any][]> {
+    return Object.entries(this.data).filter(([name, _]) => name.startsWith(this.prefix));
+  }
+
   async clear(): Promise<void> {
     await this.asyncStorage.removeItem(this.asyncStorageKey);
   }
 
-  async getChannels(): Promise<AsyncStorageData> {
-    const entries = await this.getEntries();
-    const channelsObj = reduceChannelsMap(entries);
-    return channelsObj;
+  async restore(): Promise<void> {
+    if (!this.backupService) {
+      return this.clear();
+    }
+    const pairs = await this.backupService.restore();
+    pairs.forEach(pair => this.setItem(pair.path, pair.value));
   }
 
-  async getKeys(): Promise<string[]> {
-    return Object.keys(this.data);
-  }
-
-  async getEntries(): Promise<[string, any][]> {
-    return Object.entries(this.data);
+  joinWithSeparator(...args: string[]): string {
+    let str = "";
+    args.forEach(arg => {
+      // dont add separator to last one
+      if (args.indexOf(arg) === args.length - 1) {
+        return;
+      }
+      str.concat(arg, this.separator);
+    });
+    return str;
   }
 }

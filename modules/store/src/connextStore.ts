@@ -7,6 +7,7 @@ import {
   StateChannelJSON,
   StoreType,
   StoreTypes,
+  WithdrawalMonitorObject,
 } from "@connext/types";
 
 import {
@@ -15,7 +16,13 @@ import {
   IBackupServiceAPI,
   StoreFactoryOptions,
 } from "./helpers";
-import { FileStorage, MemoryStorage, WrappedAsyncStorage, WrappedLocalStorage } from "./wrappers";
+import {
+  FileStorage,
+  KeyValueStorage,
+  MemoryStorage,
+  WrappedAsyncStorage,
+  WrappedLocalStorage,
+} from "./wrappers";
 
 export class ConnextStore implements IStoreService {
   private internalStore: IStoreService;
@@ -32,23 +39,31 @@ export class ConnextStore implements IStoreService {
     // set internal storage
     switch (storageType.toUpperCase()) {
       case StoreTypes.LOCALSTORAGE:
-        this.internalStore = new WrappedLocalStorage(
-          this.prefix,
-          this.separator,
-          this.backupService,
+        this.internalStore = new KeyValueStorage(
+          new WrappedLocalStorage(this.prefix, this.separator, this.backupService),
         );
         break;
 
       case StoreTypes.ASYNCSTORAGE:
-        this.internalStore = new WrappedAsyncStorage(opts.asyncStorageKey, this.backupService);
+        this.internalStore = new KeyValueStorage(
+          new WrappedAsyncStorage(
+            this.prefix,
+            this.separator,
+            opts.asyncStorageKey,
+            this.backupService,
+          ),
+        );
         break;
 
       case StoreTypes.FILESTORAGE:
-        this.internalStore = new FileStorage(
-          this.separator,
-          opts.fileExt,
-          opts.fileDir,
-          this.backupService,
+        this.internalStore = new KeyValueStorage(
+          new FileStorage(
+            this.prefix,
+            this.separator,
+            opts.fileExt,
+            opts.fileDir,
+            this.backupService,
+          ),
         );
         break;
 
@@ -144,5 +159,19 @@ export class ConnextStore implements IStoreService {
 
   restore(): Promise<void> {
     return this.internalStore.restore();
+  }
+
+  getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
+    if (!this.internalStore.getUserWithdrawal) {
+      throw new Error("Method not implemented.");
+    }
+    return this.internalStore.getUserWithdrawal!();
+  }
+
+  setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    if (!this.internalStore.setUserWithdrawal) {
+      throw new Error("Method not implemented.");
+    }
+    return this.internalStore.setUserWithdrawal!(withdrawalObject);
   }
 }
