@@ -6,10 +6,10 @@ import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
 
-/// @title Withdrawal App
+/// @title Withdraw App
 /// @notice This contract allows a user to trustlessly generate a withdrawal
 ///         commitment by unlocking funds conditionally upon valid counterparty sig
-contract SimpleLinkedTransferApp is CounterfactualApp {
+contract WithdrawApp is CounterfactualApp {
 
     using SafeMath for uint256;
     using ECDSA for bytes32;
