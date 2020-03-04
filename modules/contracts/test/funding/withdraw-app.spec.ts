@@ -3,10 +3,12 @@ import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, Wallet } from "ethers";
 import { BigNumber, defaultAbiCoder, solidityKeccak256, recoverAddress } from "ethers/utils";
 
 import { WithdrawApp } from "../../build/WithdrawApp.json"
+import { Zero } from "ethers/constants";
+import { fromMnemonic } from "ethers/utils/hdnode";
 
 type CoinTransfer = {
   to: string;
@@ -45,8 +47,8 @@ const WithdrawAppActionEncoding = `
   )
 `;
 
-function mkAddress(prefix: string = "0xa"): string {
-  return prefix.padEnd(42, "0");
+function mkHash(prefix: string = "0xa"): string {
+  return prefix.padEnd(66, "0");
 }
 
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
@@ -70,6 +72,10 @@ const decodeAppState = (encodedAppState: string): WithdrawAppState =>
 describe("WithdrawApp", () => {
   let withdrawApp: Contract;
   let provider = buidler.provider;
+  let withdrawerWallet = Wallet.createRandom();
+  let counterpartyWallet = Wallet.createRandom();
+  let initialState: WithdrawAppState;
+  let action: WithdrawAction;
 
   async function computeOutcome(state: WithdrawAppState): Promise<string> {
     return await WithdrawApp.functions.computeOutcome(encodeAppState(state));
@@ -85,6 +91,59 @@ describe("WithdrawApp", () => {
   before(async () => {
     const wallet = (await provider.getWallets())[0];
     withdrawApp = await waffle.deployContract(wallet, WithdrawApp);
+    const withdrawerAddress = withdrawerWallet.address;
+    const counterpartyAddress = counterpartyWallet.address;
+    const amount = new BigNumber(10000);
+    const data = mkHash("0xb"); // TODO: test this with real withdrawal commitment
+
+    initialState = {
+      coinTransfers: [
+        {
+          amount,
+          to: withdrawerAddress,
+        },
+        {
+          amount: Zero,
+          to: counterpartyAddress,
+        },
+      ],
+      signatures: [await withdrawerWallet.signMessage(data), ""],
+      signers: [withdrawerAddress, counterpartyAddress],
+      data,
+      finalized: false,
+    };
+
+    action = {
+      signature: await counterpartyWallet.signMessage(data)
+    };
   });
+
+  describe("It zeroes withdrawer balance if state is finalized (w/ valid signatures)", async () => {
+    let ret = await applyAction(initialState, action);
+    const afterActionState = decodeAppState(ret);
+    expect(afterActionState.signatures[1]).to.eq(action.signature);
+    expect(afterActionState.finalized).to.be.true;
+
+    ret = await computeOutcome(afterActionState);
+    const decoded = decodeTransfers(ret);
+
+    expect(decoded[0].to).eq(initialState.coinTransfers[0].to);
+    expect(decoded[0].amount).eq(Zero);
+    expect(decoded[1].to).eq(initialState.coinTransfers[1].to);
+    expect(decoded[1].amount).eq(Zero);
+
+  })
+
+  describe("It cancels the withdrawal if state is not finalized", async () => {
+
+  })
+
+  describe("It reverts the action if withdrawer signature is invalid", () => {
+
+  })
+
+  describe("It reverts the action if counterparty signature is invalid", () => {
+
+  })
 
 });
