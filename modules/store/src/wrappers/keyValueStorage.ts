@@ -27,7 +27,7 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     return this.storage.getKeys();
   }
 
-  getItem(key: string): Promise<string> {
+  getItem(key: string): Promise<string | undefined> {
     return this.storage.getItem(key);
   }
 
