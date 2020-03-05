@@ -9,7 +9,8 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
 import { TransferModule } from "../transfer/transfer.module";
-import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
+import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -23,6 +24,7 @@ import { AppActionsService } from "./appActions.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
+    LinkedTransferModule,
     LoggerModule,
     MessagingModule,
     SwapRateModule,

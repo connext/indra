@@ -21,11 +21,10 @@ import { ClientProxy } from "@nestjs/microservices";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingClientProviderId } from "../constants";
-import { TransferService } from "../transfer/transfer.service";
+import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import {
   CFCoreTypes,
   CreateChannelMessage,
@@ -45,8 +44,8 @@ import {
   WithdrawStartedMessage,
 } from "../util/cfCore";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
-import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
-import { LinkedTransferStatus } from "../transfer/linkedTransfer.entity";
+import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { AppActionsService } from "../appRegistry/appActions.service";
 
 type CallbackStruct = {
@@ -60,10 +59,10 @@ export default class ListenerService implements OnModuleInit {
     private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly linkedTransferService: LinkedTransferService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
-    private readonly transferService: TransferService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ListenerService");
@@ -137,7 +136,7 @@ export default class ListenerService implements OnModuleInit {
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
         try {
-          await this.transferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
+          await this.linkedTransferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
             data.data.appInstanceId,
           );
         } catch (e) {

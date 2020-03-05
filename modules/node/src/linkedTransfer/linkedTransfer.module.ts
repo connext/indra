@@ -9,16 +9,14 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
-
-import { transferProviderFactory } from "./transfer.provider";
-import { TransferRepository } from "./transfer.repository";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
-import { TransferService } from "./transfer.service";
+
+import { LinkedTransferRepository } from "./linkedTransfer.repository";
+import { LinkedTransferService } from "./linkedTransfer.service";
 
 @Module({
   controllers: [],
-  exports: [TransferService],
+  exports: [LinkedTransferService],
   imports: [
     AuthModule,
     CFCoreModule,
@@ -30,10 +28,9 @@ import { TransferService } from "./transfer.service";
       ChannelRepository,
       AppRegistryRepository,
       LinkedTransferRepository,
-      TransferRepository,
       FastSignedTransferRepository,
     ]),
   ],
-  providers: [TransferService, transferProviderFactory],
+  providers: [LinkedTransferService],
 })
-export class TransferModule {}
+export class LinkedTransferModule {}

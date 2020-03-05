@@ -28,11 +28,11 @@ import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { MessagingClientProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { TransferService } from "../transfer/transfer.service";
+import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
-import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
-import { LinkedTransferStatus } from "../transfer/linkedTransfer.entity";
+import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -40,16 +40,16 @@ import { AppRegistryRepository } from "./appRegistry.repository";
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
   constructor(
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly cfCoreService: CFCoreService,
-    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly log: LoggerService,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
     private readonly swapRateService: SwapRateService,
-    private readonly transferService: TransferService,
+    private readonly linkedTransferService: LinkedTransferService,
+    private readonly appRegistryRepository: AppRegistryRepository,
+    private readonly channelRepository: ChannelRepository,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
+    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -185,14 +185,14 @@ export class AppRegistryService implements OnModuleInit {
 
         const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
         if (isResolving) {
-          const transfer = await this.transferService.getLinkedTransferByPaymentId(
+          const transfer = await this.linkedTransferRepository.findByPaymentId(
             initialState.paymentId,
           );
           transfer.receiverAppInstanceId = appInstanceId;
           await this.linkedTransferRepository.save(transfer);
           this.log.debug(`Updated transfer with receiver appId!`);
         } else {
-          await this.transferService.saveLinkedTransfer(
+          await this.linkedTransferService.saveLinkedTransfer(
             from,
             proposeInstallParams.initiatorDepositTokenAddress,
             bigNumberify(proposeInstallParams.initiatorDeposit),

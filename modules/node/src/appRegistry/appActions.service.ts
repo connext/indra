@@ -1,15 +1,8 @@
-import { ClientProxy } from "@nestjs/microservices";
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import { AppRegistryRepository } from "./appRegistry.repository";
-import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService } from "../channel/channel.service";
-import { ConfigService } from "../config/config.service";
-import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
-import { MessagingClientProviderId } from "../constants";
-import { SwapRateService } from "../swapRate/swapRate.service";
-import { TransferService } from "../transfer/transfer.service";
+import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { LoggerService } from "../logger/logger.service";
 import {
   SupportedApplication,
@@ -23,22 +16,16 @@ import {
   FastSignedTransferAppAction,
   FastSignedTransferActionType,
 } from "@connext/types";
-import { LinkedTransferStatus } from "../transfer/linkedTransfer.entity";
+import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { bigNumberify } from "ethers/utils";
 
 @Injectable()
 export class AppActionsService {
   constructor(
-    private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly cfCoreService: CFCoreService,
     private readonly channelRepository: ChannelRepository,
-    private readonly channelService: ChannelService,
-    private readonly configService: ConfigService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly log: LoggerService,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
-    private readonly swapRateService: SwapRateService,
-    private readonly transferService: TransferService,
+    private readonly transferService: LinkedTransferService,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -92,7 +79,6 @@ export class AppActionsService {
         break;
       }
       case FastSignedTransferActionType.UNLOCK: {
-        
       }
     }
   }

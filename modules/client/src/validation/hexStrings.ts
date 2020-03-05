@@ -12,3 +12,15 @@ export function invalid32ByteHexString(value: any): string | undefined {
 
   return undefined;
 }
+
+export function invalidEthSignature(value: any): string | undefined {
+  if (typeof value !== "string" || !utils.isHexString(value)) {
+    return `Value "${value.toString()}" is not a valid hex string`;
+  }
+  // check that its 32 bytes
+  if (hexDataLength(value) !== 32) {
+    return `Value "${value.toString()}" is not a valid 32 byte hex string`;
+  }
+
+  return undefined;
+}

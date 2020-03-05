@@ -14,10 +14,10 @@ export type FastSignedTransferParameters<T = string> = {
   meta?: object;
 };
 
-export type ResolveFastSignedTransferParameters<T = string> = {
+export type ResolveFastSignedTransferParameters = {
   conditionType: typeof FAST_SIGNED_TRANSFER;
-  paymentId: string;
-  preImage: string;
+  data: string;
+  signature: string;
 };
 
 export enum FastSignedTransferActionType {

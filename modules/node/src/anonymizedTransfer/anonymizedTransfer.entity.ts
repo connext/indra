@@ -1,6 +1,6 @@
 import { ViewColumn, ViewEntity } from "typeorm";
 
-import { TransferType } from "./transfer.entity";
+import { TransferType } from "../transfer/transfer.entity";
 
 @ViewEntity({
   expression: `

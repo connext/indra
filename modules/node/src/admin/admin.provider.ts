@@ -8,7 +8,7 @@ import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
-import { LinkedTransfer } from "../transfer/linkedTransfer.entity";
+import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 

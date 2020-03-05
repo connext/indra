@@ -2,9 +2,9 @@ import { Injectable } from "@nestjs/common";
 
 import { LoggerService } from "../logger/logger.service";
 import { AnonymizedOnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { AnonymizedTransferRepository } from "../transfer/anonymizedTransfer.repository";
+import { AnonymizedTransferRepository } from "../anonymizedTransfer/anonymizedTransfer.repository";
 
-import { AnonymizedTransfer } from "../transfer/anonymizedTransfer.entity";
+import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
 import { AnonymizedOnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 @Injectable()
