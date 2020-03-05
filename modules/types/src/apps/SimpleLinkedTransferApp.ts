@@ -69,12 +69,15 @@ export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedT
   BigNumber
 >;
 
-export type ResolveLinkedTransferResponse = {
+export type ResolveLinkedTransferResponse<T = string> = {
   appId: string;
   sender: string;
   paymentId: string;
+  amount: T;
+  assetId: string;
   meta?: object;
 };
+export type ResolveLinkedTransferResponseBigNumber = ResolveLinkedTransferResponse<BigNumber>;
 
 export const SimpleLinkedTransferAppStateEncoding = `
   tuple(

@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from "@nestjs/common";
 
-import { AnonymizedTransfer } from "../transfer/transfer.entity";
+import { AnonymizedTransfer } from "../transfer/anonymizedTransfer.entity";
 import { AnonymizedOnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 import { GetAnonymizedCollateralDataDto } from "./collateral.dto";

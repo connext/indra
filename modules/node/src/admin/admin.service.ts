@@ -10,7 +10,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { LinkedTransfer } from "../transfer/transfer.entity";
+import { LinkedTransfer } from "../transfer/linkedTransfer.entity";
 import { LoggerService } from "../logger/logger.service";
 import { TransferService } from "../transfer/transfer.service";
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";

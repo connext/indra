@@ -168,7 +168,7 @@ export default class ListenerService implements OnModuleInit {
           appRegistryInfo.name,
           appInstanceId,
           newState as any,
-          action,
+          action as any,
           data.from,
         );
       },

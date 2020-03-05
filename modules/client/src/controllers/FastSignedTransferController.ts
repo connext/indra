@@ -92,12 +92,6 @@ export class FastSignedTransferController extends AbstractController {
         // app needs to be finalized and re-installed
         this.log.info(`Installed app does not have funds for transfer, reinstalling`);
 
-        if (latestState.lockedPayments.length > 0) {
-          throw new Error(
-            `Cannot finalize until all transfer have been unlocked. Locked payments: ${latestState.lockedPayments}`,
-          );
-        }
-
         // finalize
         await this.connext.takeAction(installedTransferApp.identityHash, {
           actionType: FastSignedTransferActionType.FINALIZE,

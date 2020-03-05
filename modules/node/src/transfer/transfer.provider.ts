@@ -14,7 +14,7 @@ import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 
-import { LinkedTransfer } from "./transfer.entity";
+import { LinkedTransfer } from "./linkedTransfer.entity";
 import { TransferService } from "./transfer.service";
 
 export class TransferMessaging extends AbstractMessagingProvider {
@@ -41,14 +41,19 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async resolveLinkedTransfer(
     pubId: string,
-    data: { paymentId: string; linkedHash: string },
+    { paymentId }: { paymentId: string },
   ): Promise<ResolveLinkedTransferResponse> {
-    this.log.debug(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
-    const { paymentId, linkedHash } = data;
-    if (!paymentId || !linkedHash) {
-      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
+    this.log.debug(
+      `Got resolve link request with data: ${JSON.stringify(paymentId, replaceBN, 2)}`,
+    );
+    if (!paymentId) {
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
     }
-    return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash);
+    const response = await this.transferService.resolveLinkedTransfer(pubId, paymentId);
+    return {
+      ...response,
+      amount: response.amount.toString(),
+    };
   }
 
   /**

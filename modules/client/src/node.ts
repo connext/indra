@@ -164,14 +164,8 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async resolveLinkedTransfer(
-    paymentId: string,
-    linkedHash: string,
-    meta: object = {},
-  ): Promise<ResolveLinkedTransferResponse> {
+  public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
     return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
-      linkedHash,
-      meta,
       paymentId,
     });
   }

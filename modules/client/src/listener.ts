@@ -2,6 +2,8 @@ import {
   CoinBalanceRefundApp,
   commonAppProposalValidation,
   SupportedApplication,
+  SimpleLinkedTransferApp,
+  validateSimpleLinkedTransferApp,
 } from "@connext/apps";
 import { ILoggerService } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
@@ -82,56 +84,29 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(INSTALL_VIRTUAL_EVENT, msg.data);
     },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
-      const start = Date.now();
-      const time = () => `in ${Date.now() - start} ms`;
-      // validate and automatically install for the known and supported
-      // applications
-      this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
-      // check based on supported applications
-      // matched app, take appropriate default actions
-      const matchedResult = await this.matchAppInstance(msg);
-      if (!matchedResult) {
-        this.log.warn(`No matched app, doing nothing ${time()}, ${stringify(msg)}`);
-        return;
-      }
       const {
         data: { params, appInstanceId },
         from,
       } = msg;
       // return if its from us
+      const start = Date.now();
+      const time = () => `in ${Date.now() - start} ms`;
       if (from === this.connext.publicIdentifier) {
         this.log.debug(`Received proposal from our own node, doing nothing ${time()}`);
         return;
       }
-      // only allow proposal from CoinBalanceRefundApp
-      try {
-        const coinBalanceDef = this.connext.appRegistry.find(
-          (app: DefaultApp) => app.name === CoinBalanceRefundApp,
-        );
-
-        if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-          throw new Error(
-            `Clients do not allow apps to be installed. Proposed app definition: ${params.appDefinition}`,
-          );
-        }
-        commonAppProposalValidation(
-          params,
-          // types weirdness
-          { ...coinBalanceDef, name: coinBalanceDef.name as SupportedApplication },
-          this.connext.config.supportedTokenAddresses,
-        );
-        this.log.debug(
-          `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-        );
-        await this.connext.messaging.publish(
-          `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-          stringify(params),
-        );
-        this.log.info(`Done processing propose install event ${time()}`);
-      } catch (e) {
-        this.log.error(`Caught error: ${e.toString()}`);
-        await this.connext.rejectInstallApp(appInstanceId);
+      // validate and automatically install for the known and supported
+      // applications
+      this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
+      // check based on supported applications
+      const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
+        return app.appDefinitionAddress === msg.data.params.appDefinition;
+      });
+      if (!registryAppInfo) {
+        throw new Error(`Could not find registry info for app ${params.appDefinition}`);
       }
+      this.handleAppProposal(params, appInstanceId, from, registryAppInfo);
+      this.log.info(`Done processing propose install event ${time()}`);
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
@@ -237,40 +212,6 @@ export class ConnextListener extends ConnextEventEmitter {
     this.emit(event, data);
   };
 
-  private matchAppInstance = async (msg: ProposeMessage): Promise<any> => {
-    const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
-      return app.appDefinitionAddress === msg.data.params.appDefinition;
-    });
-
-    if (!filteredApps || filteredApps.length === 0) {
-      this.log.info(`Proposed app not in registered applications.`);
-      this.log.debug(`App: ${stringify(msg)}`);
-      return undefined;
-    }
-
-    if (filteredApps.length > 1) {
-      // TODO: throw error here?
-      this.log.error(
-        `Proposed app matched ${
-          filteredApps.length
-        } registered applications by definition address. App: ${stringify(msg)}`,
-      );
-      return undefined;
-    }
-    const { params, appInstanceId } = msg.data;
-    const { initiatorDeposit, responderDeposit } = params;
-    // matched app, take appropriate default actions
-    return {
-      appInstanceId,
-      matchedApp: filteredApps[0],
-      proposeParams: {
-        ...params,
-        initiatorDeposit: bigNumberify(initiatorDeposit),
-        responderDeposit: bigNumberify(responderDeposit),
-      },
-    };
-  };
-
   private registerAvailabilitySubscription = async (): Promise<void> => {
     const subject = `online.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(
@@ -310,5 +251,41 @@ export class ConnextListener extends ConnextEventEmitter {
       await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
       this.log.info(`Successfully redeemed transfer with paymentId: ${paymentId}`);
     });
+  };
+
+  private handleAppProposal = async (
+    params: ProtocolTypes.ProposeInstallParams,
+    appInstanceId: string,
+    from: string,
+    registryAppInfo: DefaultApp,
+  ): Promise<void> => {
+    try {
+      commonAppProposalValidation(
+        params,
+        // types weirdness
+        { ...registryAppInfo, name: registryAppInfo.name as SupportedApplication },
+        this.connext.config.supportedTokenAddresses,
+      );
+      switch (registryAppInfo.name) {
+        case CoinBalanceRefundApp: {
+          this.log.debug(
+            `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+          );
+          await this.connext.messaging.publish(
+            `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+            stringify(params),
+          );
+          return;
+        }
+        case SimpleLinkedTransferApp: {
+          validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
+          break;
+        }
+      }
+      await this.connext.installApp(appInstanceId);
+    } catch (e) {
+      this.log.error(`Caught error: ${e.toString()}`);
+      await this.connext.rejectInstallApp(appInstanceId);
+    }
   };
 }

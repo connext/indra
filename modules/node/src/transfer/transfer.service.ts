@@ -2,7 +2,7 @@ import { SimpleLinkedTransferApp } from "@connext/apps";
 
 import {
   DepositConfirmationMessage,
-  ResolveLinkedTransferResponse,
+  ResolveLinkedTransferResponseBigNumber,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
@@ -166,26 +166,15 @@ export class TransferService {
   async resolveLinkedTransfer(
     userPubId: string,
     paymentId: string,
-    linkedHash: string,
-  ): Promise<ResolveLinkedTransferResponse> {
-    this.log.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
-    if (!channel) {
-      throw new Error(`No channel exists for userPubId ${userPubId}`);
-    }
+  ): Promise<ResolveLinkedTransferResponseBigNumber> {
+    this.log.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId})`);
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
     // check that we have recorded this transfer in our db
-    const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
-    if (!transfer) {
-      throw new Error(`No transfer exists for paymentId ${paymentId}`);
-    }
+    const transfer = await this.linkedTransferRepository.findByPaymentIdOrThrow(paymentId);
 
     const { assetId, amount } = transfer;
     const amountBN = bigNumberify(amount);
-
-    if (linkedHash !== transfer.linkedHash) {
-      throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
-    }
 
     if (transfer.status !== LinkedTransferStatus.PENDING) {
       throw new Error(
@@ -204,11 +193,11 @@ export class TransferService {
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
         app.appInterface.addr === simpleLinkedTransferApp.appDefinitionAddress &&
-        (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash === linkedHash,
+        (app.latestState as SimpleLinkedTransferAppStateBigNumber).paymentId === paymentId,
     );
 
     if (!senderApp) {
-      throw new Error(`App with provided hash has not been installed: ${linkedHash}`);
+      throw new Error(`App with provided paymentId has not been installed: ${paymentId}`);
     }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
@@ -287,7 +276,7 @@ export class TransferService {
           to: xpubToAddress(userPubId),
         },
       ],
-      linkedHash,
+      linkedHash: transfer.linkedHash,
       paymentId,
       preImage: HashZero,
     };
@@ -317,6 +306,8 @@ export class TransferService {
       sender: transfer.senderChannel.userPublicIdentifier,
       meta: transfer.meta,
       paymentId,
+      amount: transfer.amount,
+      assetId: transfer.assetId,
     };
   }
 

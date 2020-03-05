@@ -9,6 +9,14 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     return await this.findOne({ relations: ["senderChannel"], where: { paymentId } });
   }
 
+  async findByPaymentIdOrThrow(paymentId: string): Promise<LinkedTransfer | undefined> {
+    const transfer = await this.findByPaymentId(paymentId);
+    if (!transfer) {
+      throw new Error(`No transfer exists for paymentId ${paymentId}`);
+    }
+    return transfer;
+  }
+
   async findByLinkedHash(linkedHash: string): Promise<LinkedTransfer | undefined> {
     return await this.findOne({ relations: ["senderChannel"], where: { linkedHash } });
   }

@@ -9,7 +9,7 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
 import { TransferModule } from "../transfer/transfer.module";
-import { LinkedTransferRepository } from "../transfer/transfer.repository";
+import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";

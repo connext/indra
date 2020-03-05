@@ -11,12 +11,10 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { transferProviderFactory } from "./transfer.provider";
-import {
-  LinkedTransferRepository,
-  PeerToPeerTransferRepository,
-  TransferRepository,
-} from "./transfer.repository";
+import { TransferRepository } from "./transfer.repository";
 import { TransferService } from "./transfer.service";
+import { LinkedTransferRepository } from "./linkedTransfer.repository";
+import { PeerToPeerTransferRepository } from "./peerToPeerTransfer.repository";
 
 @Module({
   controllers: [],

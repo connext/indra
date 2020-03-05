@@ -8,7 +8,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { TransferModule } from "../transfer/transfer.module";
-import { LinkedTransferRepository } from "../transfer/transfer.repository";
+import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
 
 import ListenerService from "./listener.service";
 

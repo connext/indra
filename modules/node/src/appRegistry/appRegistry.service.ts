@@ -32,10 +32,10 @@ import { TransferService } from "../transfer/transfer.service";
 import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
+import { LinkedTransferStatus } from "../transfer/linkedTransfer.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { LinkedTransferStatus } from "src/transfer/linkedTransfer.entity";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -61,10 +61,7 @@ export class AppRegistryService implements OnModuleInit {
   ): Promise<void> {
     let registryAppInfo: AppRegistry;
     let appInstance: AppInstanceJson;
-    const installerChannel = await this.channelRepository.findByUserPublicIdentifier(from);
-    if (!installerChannel) {
-      throw new Error(`Channel for ${from} not found`);
-    }
+    const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
 
     // if error, reject install
     try {
@@ -142,26 +139,11 @@ export class AppRegistryService implements OnModuleInit {
     commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
     switch (registryAppInfo.name) {
       case SimpleLinkedTransferApp: {
-        const {
-          responderDeposit,
-          initiatorDeposit,
-          initialState: initialStateBadType,
-        } = bigNumberifyObj(proposeInstallParams);
-        const initiatorReclaiming = responderDeposit.gt(Zero) && initiatorDeposit.eq(Zero);
-        if (initiatorReclaiming) {
-          // special validation for resolving that needs to check node-specific things
-          const initialState = bigNumberifyObj(
-            initialStateBadType,
-          ) as SimpleLinkedTransferAppStateBigNumber;
-          await this.validateResolvingLinkedTransfer(responderDeposit, initialState);
-        } else {
-          // normal validation
-          validateSimpleLinkedTransferApp(
-            proposeInstallParams,
-            from,
-            this.cfCoreService.cfCore.publicIdentifier,
-          );
-        }
+        validateSimpleLinkedTransferApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
         break;
       }
       case SimpleTwoPartySwapApp: {
