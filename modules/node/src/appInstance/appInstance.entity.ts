@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
-import { IsEthAddress, IsKeccak256Hash, IsXpub } from "src/util";
+import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
 import { SolidityValueType, OutcomeType, AppABIEncodings } from "@connext/types";
 
 import { Channel } from "../channel/channel.entity";

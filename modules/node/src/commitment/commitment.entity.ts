@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
-import { IsEthAddress, IsKeccak256Hash } from "src/util";
+import { IsEthAddress, IsKeccak256Hash } from "../util";
 
 export enum CommitmentType {
   CONDITIONAL,
