@@ -15,7 +15,7 @@ import {
   SET_STATE_COMMITMENT_KEY,
   WITHDRAWAL_COMMITMENT_KEY,
   CONDITIONAL_COMMITMENT_KEY,
-} from "src/helpers";
+} from "../helpers";
 
 /**
  * This class wraps a general key value storage service to become an `IStoreService`
