@@ -182,7 +182,7 @@ describe("Swap offline", () => {
       async () => {
         // we know client has swap app installed,
         // so delete store here
-        await providedClient.store.reset!();
+        await providedClient.store.clear();
       },
     );
 

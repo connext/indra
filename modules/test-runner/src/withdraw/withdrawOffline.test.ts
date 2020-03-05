@@ -24,8 +24,6 @@ import {
   ZERO_ZERO_ZERO_FIVE_ETH,
 } from "../util";
 
-const { withdrawalKey } = utils;
-
 describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
@@ -106,7 +104,7 @@ describe("Withdraw offline tests", () => {
     ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
 
     // make sure withdrawal is in the store
-    const { tx, retry } = await client.store.get(withdrawalKey(client.publicIdentifier));
+    const { tx, retry } = await client.store.getUserWithdrawal!();
     expect(tx).to.be.ok;
     expect(tx.to).to.be.equal(client.multisigAddress);
     expect(tx.value).equal(Zero); // amt transferred in internal tx
@@ -128,7 +126,7 @@ describe("Withdraw offline tests", () => {
     });
 
     // make sure the withdrawal has been handled
-    const resubmitted = await client.store.get(withdrawalKey(client.publicIdentifier));
+    const resubmitted = await client.store.getUserWithdrawal!();
     expect(resubmitted).to.not.be.ok;
   });
 });
