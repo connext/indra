@@ -14,7 +14,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { getAddress, Network as EthNetwork, parseEther, HDNode } from "ethers/utils";
+import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { OutcomeType } from "../util/cfCore";
@@ -221,8 +221,8 @@ export class ConfigService implements OnModuleInit {
     return {
       clusterId: this.get(`INDRA_NATS_CLUSTER_ID`),
       messagingUrl: (this.get(`INDRA_NATS_SERVERS`) || ``).split(`,`),
-      privateKey: (this.get(`INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`) || ``).replace(/\\n/g, '\n'),
-      publicKey: (this.get(`INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`) || ``).replace(/\\n/g, '\n'),
+      privateKey: (this.get(`INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`) || ``).replace(/\\n/g, "\n"),
+      publicKey: (this.get(`INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`) || ``).replace(/\\n/g, "\n"),
       token: this.get(`INDRA_NATS_TOKEN`),
       // websocketUrl: (this.get(`INDRA_NATS_WS_ENDPOINT`) || ``).split(`,`),
     };

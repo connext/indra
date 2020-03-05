@@ -1,23 +1,35 @@
-import { MessagingService } from "@connext/messaging";
+import { MessagingService, MessagingAuthService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { ClientProxy, ClientProxyFactory, Transport } from "@nestjs/microservices";
 
 import { ConfigService } from "../config/config.service";
 import { AuthService } from "../auth/auth.service";
-import { LoggerService } from "../logger/logger.service"
-import { MessagingClientProviderId, MessagingProviderId } from "../constants";
+import { LoggerService } from "../logger/logger.service";
+import {
+  MessagingClientProviderId,
+  MessagingProviderId,
+  MessagingAuthProviderId,
+} from "../constants";
 
 export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>> = {
   inject: [ConfigService, AuthService, LoggerService],
   provide: MessagingProviderId,
-  useFactory: async (config: ConfigService, auth: AuthService, log: LoggerService): Promise<MessagingService> => {
+  useFactory: async (
+    config: ConfigService,
+    auth: AuthService,
+    log: LoggerService,
+  ): Promise<MessagingService> => {
     const getBearerToken = async (): Promise<string> => {
       const nonce = await auth.getNonce(config.publicIdentifier);
-      log.info(`Got nonce from authService: ${nonce}`)
-      const signedNonce = await config.getEthWallet().signMessage(nonce)
+      log.info(`Got nonce from authService: ${nonce}`);
+      const signedNonce = await config.getEthWallet().signMessage(nonce);
       return auth.verifyAndVend(signedNonce, config.publicIdentifier);
-    }
-    const messagingService = new MessagingService(config.getMessagingConfig(), "indra", getBearerToken);
+    };
+    const messagingService = new MessagingService(
+      config.getMessagingConfig(),
+      "indra",
+      getBearerToken,
+    );
     await messagingService.connect();
     return messagingService;
   },

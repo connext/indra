@@ -1,13 +1,13 @@
-import { Injectable } from "@nestjs/common";
+import { MessagingAuthService } from "@connext/messaging";
+import { Injectable, Inject } from "@nestjs/common";
 import { arrayify, hexlify, randomBytes, verifyMessage } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
-import { ConfigService } from "../config/config.service";
 
 import { isXpub } from "../util";
-import { MessagingAuthService } from "@connext/messaging";
+import { MessagingAuthProviderId } from "../constants";
 
 const logger = new LoggerService("AuthService");
 const nonceLen = 16;
@@ -22,8 +22,7 @@ export class AuthService {
   private nonces: { [key: string]: { nonce: string; expiry: number } } = {};
   constructor(
     private readonly channelRepo: ChannelRepository,
-    private readonly messagingAuthSerivice: MessagingAuthService,
-    private readonly configService: ConfigService,
+    @Inject(MessagingAuthProviderId) private readonly messagingAuthService: MessagingAuthService,
   ) {}
 
   // FIXME-- fix this client api contract error...
@@ -52,7 +51,8 @@ export class AuthService {
       throw new Error(`verification failed... nonce expired for xpub: ${userPublicIdentifier}`);
     }
 
-    // TODO -- ARJUN: Change client to subscribe to app-registry/config. Try to get latest published OR move everything under xpub route.
+    // TODO -- ARJUN: Change client to subscribe to app-registry/config.
+    // Try to get latest published OR move everything under xpub route.
     const permissions = {
       publish: {
         allow: [`${userPublicIdentifier}.>`],
@@ -69,8 +69,7 @@ export class AuthService {
 
     // if(userPublicIdentifier = config.)
 
-    const jwt = this.messagingAuthSerivice.vend(userPublicIdentifier, nonceTTL, permissions);
-    logger.debug(``);
+    const jwt = this.messagingAuthService.vend(userPublicIdentifier, nonceTTL, permissions);
     return jwt;
   }
 

@@ -3,13 +3,14 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerModule } from "../logger/logger.module";
-import { MessagingModule } from "../messaging/messaging.module";
+import { ConfigModule } from "../config/config.module";
 
 import { AuthService } from "./auth.service";
+import { messagingAuthProviderFactory } from "./auth.provider";
 
 @Module({
-  exports: [AuthService],
-  imports: [MessagingModule, LoggerModule, TypeOrmModule.forFeature([ChannelRepository])],
-  providers: [AuthService],
+  exports: [AuthService, messagingAuthProviderFactory],
+  imports: [LoggerModule, TypeOrmModule.forFeature([ChannelRepository]), ConfigModule],
+  providers: [AuthService, messagingAuthProviderFactory],
 })
 export class AuthModule {}

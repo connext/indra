@@ -24,7 +24,7 @@ export class MessagingService implements IMessagingService {
 
   async connect(): Promise<void> {
     const messagingUrl = this.config.messagingUrl;
-    if(!this.bearerToken) {
+    if (!this.bearerToken) {
       this.bearerToken = await this.getBearerToken();
     }
     const service = natsutil.natsServiceFactory({
@@ -33,19 +33,19 @@ export class MessagingService implements IMessagingService {
       bearerToken: this.bearerToken,
       natsServers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl, // FIXME-- rename to servers instead of natsServers
     });
-    service.connect().then((natsConnection) => {
+    service.connect().then(natsConnection => {
       this.service = service;
       this.log.debug(`Connected!`);
       if (typeof natsConnection.addEventListener !== undefined) {
-        natsConnection.addEventListener('close', async () => {
+        natsConnection.addEventListener("close", async () => {
           this.bearerToken == null;
           await this.connect();
-        })
+        });
       } else {
-        natsConnection.on('close', async ()=> {
+        natsConnection.on("close", async () => {
           this.bearerToken == null;
           await this.connect();
-        })
+        });
       }
     });
   }
@@ -57,7 +57,10 @@ export class MessagingService implements IMessagingService {
   ////////////////////////////////////////
   // CFCoreTypes.IMessagingService Methods
 
-  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async onReceive(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     await this.service!.subscribe(this.prependKey(`${subject}.>`), (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
         this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
@@ -89,7 +92,10 @@ export class MessagingService implements IMessagingService {
     return response;
   }
 
-  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async subscribe(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     await this.service!.subscribe(subject, (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
         this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
