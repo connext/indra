@@ -39,7 +39,9 @@ export class WrappedLocalStorage implements WrappedStorage {
   }
 
   async getEntries(): Promise<[string, any][]> {
-    return Object.entries(this.localStorage).filter(([name, _]) => name.startsWith(this.prefix));
+    return Object.entries(this.localStorage)
+      .filter(([name, _]) => name.startsWith(this.prefix))
+      .map(([name, value]) => [name.replace(`${this.prefix}${this.separator}`, ""), value]);
   }
 
   async clear(): Promise<void> {
