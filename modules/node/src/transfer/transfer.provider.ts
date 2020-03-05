@@ -16,7 +16,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     private readonly transferRepository: TransferRepository,
   ) {
     super(log, messaging);
-    log.setContext("TransferMessaging");
+    this.log.setContext("TransferMessaging");
   }
 
   async getTransferHistory(pubId: string): Promise<Transfer[]> {
@@ -32,7 +32,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 }
 
 export const transferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [LoggerService, MessagingProviderId, TransferRepository],
+  inject: [AuthService, LoggerService, MessagingProviderId, TransferRepository],
   provide: TransferProviderId,
   useFactory: async (
     authService: AuthService,
