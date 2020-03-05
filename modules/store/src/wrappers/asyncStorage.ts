@@ -100,8 +100,8 @@ export class WrappedAsyncStorage implements WrappedStorage {
     return Object.entries(this.data).filter(([name, _]) => name.startsWith(this.prefix));
   }
 
-  async clear(): Promise<void> {
-    await this.asyncStorage.removeItem(this.asyncStorageKey);
+  clear(): Promise<void> {
+    return this.asyncStorage.removeItem(this.asyncStorageKey);
   }
 
   async restore(): Promise<void> {
