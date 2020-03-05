@@ -1,6 +1,6 @@
 import { connect } from "@connext/client";
-import { ConnextStore, MemoryStorage } from "@connext/store";
-import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
+import { ConnextStore } from "@connext/store";
+import { ClientOptions, IChannelProvider, IConnextClient, MEMORYSTORAGE } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -17,7 +17,7 @@ export const getMnemonic = (xpub: string): string => {
 };
 
 export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
-  const store = opts.store || new ConnextStore(new MemoryStorage());
+  const store = opts.store || new ConnextStore(MEMORYSTORAGE);
   const mnemonic = Wallet.createRandom().mnemonic;
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,

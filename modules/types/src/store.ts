@@ -45,7 +45,7 @@ export interface StoreFactoryOptions extends FileStorageOptions {
 
 // TODO: delete
 export interface WrappedStorage {
-  getItem(key: string): Promise<string | null>;
+  getItem(key: string): Promise<string | undefined>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
   getKeys(): Promise<string[]>;

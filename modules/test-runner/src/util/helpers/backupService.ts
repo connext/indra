@@ -1,4 +1,3 @@
-import { MemoryStorage } from "@connext/store";
 import { IBackupServiceAPI, StorePair } from "@connext/types";
 
 /**
@@ -14,27 +13,31 @@ import { IBackupServiceAPI, StorePair } from "@connext/types";
  */
 export class MockBackupService implements IBackupServiceAPI {
   private prefix: string;
-  private storage: MemoryStorage = new MemoryStorage();
+  private storage = new Map<string, any>();
 
   constructor(prefix: string = "backup/") {
     this.prefix = prefix;
   }
 
   public async restore(): Promise<StorePair[]> {
-    const keys = (await this.storage.getAllKeys()).filter((k: string) =>
-      k.includes(`${this.prefix}`),
-    );
+    this.storage.keys();
+    const keys: string[] = [];
+    for (const key of this.storage.keys()) {
+      if (key.includes(this.prefix)) {
+        keys.push(key);
+      }
+    }
     const statesToRestore: StorePair[] = [];
     for (const key of keys) {
-      const value = await this.storage.getItem(key);
+      const value = await this.storage.get(key);
       const path = key.split(this.prefix)[1];
       statesToRestore.push({ path, value });
-      await this.storage.setItem(path, value);
+      await this.storage.set(path, value);
     }
     return statesToRestore;
   }
 
   public async backup(pair: StorePair): Promise<any> {
-    return await this.storage.setItem(`${this.prefix}${pair.path}`, pair.value);
+    return await this.storage.set(`${this.prefix}${pair.path}`, pair.value);
   }
 }
