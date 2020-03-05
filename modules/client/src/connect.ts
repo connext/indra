@@ -2,9 +2,14 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, ILoggerService, StateSchemaVersion } from "@connext/types";
+import {
+  CF_PATH,
+  CREATE_CHANNEL_EVENT,
+  ILoggerService,
+  StateSchemaVersion,
+  CoinBalanceRefundState,
+} from "@connext/types";
 import { Contract, providers } from "ethers";
-import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 
@@ -265,8 +270,15 @@ export const connect = async (
   await client.cleanupRegistryApps();
 
   // check if there is a coin refund app installed for eth and tokens
-  await client.uninstallCoinBalanceIfNeeded(AddressZero);
-  await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
+  const apps = await client.getAppInstances();
+  const coinBalanceRefundApps = apps.filter(
+    app => app.appInterface.addr === client.config.contractAddresses.CoinBalanceRefundApp,
+  );
+  for (const coinBalance of coinBalanceRefundApps) {
+    await client.uninstallCoinBalanceIfNeeded(
+      (coinBalance.latestState as CoinBalanceRefundState).tokenAddress,
+    );
+  }
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
