@@ -15,6 +15,7 @@ import { TransferRepository } from "./transfer.repository";
 import { TransferService } from "./transfer.service";
 import { LinkedTransferRepository } from "./linkedTransfer.repository";
 import { PeerToPeerTransferRepository } from "./peerToPeerTransfer.repository";
+import { FastSignedTransferRepository } from "./fastSignedTransfer.repository";
 
 @Module({
   controllers: [],
@@ -32,6 +33,7 @@ import { PeerToPeerTransferRepository } from "./peerToPeerTransfer.repository";
       LinkedTransferRepository,
       PeerToPeerTransferRepository,
       TransferRepository,
+      FastSignedTransferRepository,
     ]),
   ],
   providers: [TransferService, transferProviderFactory],

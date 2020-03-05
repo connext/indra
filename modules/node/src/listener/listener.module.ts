@@ -9,6 +9,7 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { TransferModule } from "../transfer/transfer.module";
 import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 
 import ListenerService from "./listener.service";
 
@@ -23,7 +24,7 @@ import ListenerService from "./listener.service";
     MessagingModule,
     MessagingModule,
     TransferModule,
-    TypeOrmModule.forFeature([LinkedTransferRepository, ChannelRepository]),
+    TypeOrmModule.forFeature([LinkedTransferRepository, ChannelRepository, AppRegistryRepository]),
   ],
   providers: [ListenerService],
 })

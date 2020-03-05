@@ -14,10 +14,11 @@ import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository"
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
 import { AppRegistryService } from "./appRegistry.service";
+import { AppActionsService } from "./appActions.service";
 
 @Module({
   controllers: [AppRegistryController],
-  exports: [AppRegistryService],
+  exports: [AppRegistryService, AppActionsService],
   imports: [
     CFCoreModule,
     ChannelModule,
@@ -28,6 +29,6 @@ import { AppRegistryService } from "./appRegistry.service";
     TransferModule,
     TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository, LinkedTransferRepository]),
   ],
-  providers: [AppRegistryService],
+  providers: [AppRegistryService, AppActionsService],
 })
 export class AppRegistryModule {}

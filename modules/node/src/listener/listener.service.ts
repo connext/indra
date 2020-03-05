@@ -15,7 +15,6 @@ import {
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
   ProtocolTypes,
-  SimpleLinkedTransferAppState,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -60,7 +59,6 @@ export default class ListenerService implements OnModuleInit {
     private readonly appRegistryService: AppRegistryService,
     private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
-    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
