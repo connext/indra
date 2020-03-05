@@ -44,8 +44,8 @@ const findInstalledFastSignedApp = (
 };
 
 export class FastSignedTransferController extends AbstractController {
-  public fastLinkedTransfer = async (params: FastSignedTransferParameters) => {
-    this.log.info(`fastLinkedTransfer called with params ${stringify(params)}`);
+  public fastSignedTransfer = async (params: FastSignedTransferParameters) => {
+    this.log.info(`fastSignedTransfer called with params ${stringify(params)}`);
 
     const {
       amount,
@@ -91,6 +91,12 @@ export class FastSignedTransferController extends AbstractController {
       if (latestState.coinTransfers[0].amount.gt(amount)) {
         // app needs to be finalized and re-installed
         this.log.info(`Installed app does not have funds for transfer, reinstalling`);
+
+        if (latestState.lockedPayments.length > 0) {
+          throw new Error(
+            `Cannot finalize until all transfer have been unlocked. Locked payments: ${latestState.lockedPayments}`,
+          );
+        }
 
         // finalize
         await this.connext.takeAction(installedTransferApp.identityHash, {

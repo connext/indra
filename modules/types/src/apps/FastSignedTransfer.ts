@@ -14,6 +14,12 @@ export type FastSignedTransferParameters<T = string> = {
   meta?: object;
 };
 
+export type ResolveFastSignedTransferParameters<T = string> = {
+  conditionType: typeof FAST_SIGNED_TRANSFER;
+  paymentId: string;
+  preImage: string;
+};
+
 export enum FastSignedTransferActionType {
   CREATE,
   UNLOCK,

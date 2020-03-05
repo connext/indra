@@ -10,12 +10,11 @@ import {
   AnonymizedOnchainTransaction,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import {
-  LinkedTransfer,
-  PeerToPeerTransfer,
-  Transfer,
-  AnonymizedTransfer,
-} from "../transfer/transfer.entity";
+import { Transfer } from "../transfer/transfer.entity";
+import { PeerToPeerTransfer } from "../transfer/peerToPeerTransfer.entity";
+import { AnonymizedTransfer } from "../transfer/anonymizedTransfer.entity";
+import { FastSignedTransfer } from "../transfer/fastSignedTransfer.entity";
+import { LinkedTransfer } from "../transfer/linkedTransfer.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -43,6 +42,7 @@ export const entities = [
   Transfer,
   AnonymizedOnchainTransaction,
   AnonymizedTransfer,
+  FastSignedTransfer,
 ];
 
 export const migrations = [

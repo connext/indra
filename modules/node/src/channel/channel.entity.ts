@@ -2,8 +2,10 @@ import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColum
 
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
 import { IsEthAddress, IsXpub } from "../util";
+import { FastSignedTransfer } from "../transfer/fastSignedTransfer.entity";
+import { PeerToPeerTransfer } from "../transfer/peerToPeerTransfer.entity";
+import { LinkedTransfer } from "../transfer/linkedTransfer.entity";
 
 @Entity()
 export class Channel {
@@ -47,6 +49,18 @@ export class Channel {
     (transfer: LinkedTransfer) => transfer.receiverChannel,
   )
   receiverLinkedTransfers!: LinkedTransfer[];
+
+  @OneToMany(
+    (type: any) => FastSignedTransfer,
+    (transfer: FastSignedTransfer) => transfer.senderChannel,
+  )
+  senderFastSignedTransfers!: FastSignedTransfer[];
+
+  @OneToMany(
+    (type: any) => FastSignedTransfer,
+    (transfer: FastSignedTransfer) => transfer.receiverChannel,
+  )
+  receiverFastSignedTransfers!: FastSignedTransfer[];
 
   @OneToMany(
     (type: any) => LinkedTransfer,

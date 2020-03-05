@@ -28,14 +28,14 @@ import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { MessagingClientProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { LinkedTransferStatus } from "../transfer/transfer.entity";
-import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { TransferService } from "../transfer/transfer.service";
 import { CFCoreTypes } from "../util/cfCore";
+import { LoggerService } from "../logger/logger.service";
+import { LinkedTransferRepository } from "../transfer/linkedTransfer.repository";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { LoggerService } from "../logger/logger.service";
+import { LinkedTransferStatus } from "src/transfer/linkedTransfer.entity";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -209,23 +209,24 @@ export class AppRegistryService implements OnModuleInit {
           transfer.receiverAppInstanceId = appInstanceId;
           await this.linkedTransferRepository.save(transfer);
           this.log.debug(`Updated transfer with receiver appId!`);
-          return;
+        } else {
+          await this.transferService.saveLinkedTransfer(
+            from,
+            proposeInstallParams.initiatorDepositTokenAddress,
+            bigNumberify(proposeInstallParams.initiatorDeposit),
+            appInstanceId,
+            initialState.linkedHash,
+            initialState.paymentId,
+            proposeInstallParams.meta["encryptedPreImage"],
+            proposeInstallParams.meta["recipient"],
+            proposeInstallParams.meta,
+          );
+          this.log.debug(`Linked transfer saved!`);
         }
-        await this.transferService.saveLinkedTransfer(
-          from,
-          proposeInstallParams.initiatorDepositTokenAddress,
-          bigNumberify(proposeInstallParams.initiatorDeposit),
-          appInstanceId,
-          initialState.linkedHash,
-          initialState.paymentId,
-          proposeInstallParams.meta["encryptedPreImage"],
-          proposeInstallParams.meta["recipient"],
-          proposeInstallParams.meta,
-        );
-        this.log.debug(`Linked transfer saved!`);
         break;
       }
-      // TODO: add something for swap app? maybe for history preserving reasons.
+      case FastSignedTransferApp:
+        break;
       default:
         this.log.debug(`No post-install actions configured.`);
     }

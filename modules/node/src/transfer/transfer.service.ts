@@ -23,19 +23,16 @@ import { MessagingClientProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
+import { Channel } from "../channel/channel.entity";
 
-import {
-  LinkedTransfer,
-  LinkedTransferStatus,
-  PeerToPeerTransfer,
-  PeerToPeerTransferStatus,
-  Transfer,
-} from "./transfer.entity";
-import {
-  LinkedTransferRepository,
-  PeerToPeerTransferRepository,
-  TransferRepository,
-} from "./transfer.repository";
+import { Transfer } from "./transfer.entity";
+import { TransferRepository } from "./transfer.repository";
+import { PeerToPeerTransfer, PeerToPeerTransferStatus } from "./peerToPeerTransfer.entity";
+import { LinkedTransferRepository } from "./linkedTransfer.repository";
+import { PeerToPeerTransferRepository } from "./peerToPeerTransfer.repository";
+import { FastSignedTransferRepository } from "./fastSignedTransfer.repository";
+import { FastSignedTransfer, FastSignedTransferStatus } from "./fastSignedTransfer.entity";
+import { LinkedTransfer, LinkedTransferStatus } from "./linkedTransfer.entity";
 
 @Injectable()
 export class TransferService {
@@ -48,6 +45,7 @@ export class TransferService {
     private readonly channelRepository: ChannelRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly p2pTransferRepository: PeerToPeerTransferRepository,
+    private readonly fastSignedTransferRespository: FastSignedTransferRepository,
     private readonly transferRepositiory: TransferRepository,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
@@ -95,11 +93,10 @@ export class TransferService {
     recipientPublicIdentifier?: string,
     meta?: object,
   ): Promise<LinkedTransfer> {
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
-    if (!senderChannel) {
-      throw new Error(`Sender channel does not exist for ${senderPubId}`);
-    }
-    let receiverChannel;
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      senderPubId,
+    );
+    let receiverChannel: Channel;
     if (recipientPublicIdentifier) {
       receiverChannel = await this.channelRepository.findByUserPublicIdentifier(
         recipientPublicIdentifier,
@@ -120,6 +117,37 @@ export class TransferService {
     transfer.receiverChannel = receiverChannel;
 
     return await this.linkedTransferRepository.save(transfer);
+  }
+
+  async saveFastSignedTransfer(
+    senderPubId: string,
+    assetId: string,
+    amount: BigNumber,
+    appInstanceId: string,
+    signer: string,
+    paymentId: string,
+    recipientPublicIdentifier?: string,
+    meta?: object,
+  ): Promise<FastSignedTransfer> {
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      senderPubId,
+    );
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      recipientPublicIdentifier,
+    );
+
+    const transfer = new FastSignedTransfer();
+    transfer.senderAppInstanceId = appInstanceId;
+    transfer.amount = amount;
+    transfer.assetId = assetId;
+    transfer.paymentId = paymentId;
+    transfer.signer = signer;
+    transfer.meta = meta;
+    transfer.senderChannel = senderChannel;
+    transfer.receiverChannel = receiverChannel;
+    transfer.status = FastSignedTransferStatus.PENDING;
+
+    return await this.fastSignedTransferRespository.save(transfer);
   }
 
   async getTransferByPaymentId(paymentId: string): Promise<Transfer | undefined> {
