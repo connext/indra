@@ -144,12 +144,10 @@ export interface IConnextClient {
     notifyCounterparty: boolean,
   ): Promise<ProtocolTypes.DepositResult>;
   getFreeBalance(assetId?: string): Promise<ProtocolTypes.GetFreeBalanceStateResult>;
-  getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]>;
+  getAppInstances(): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
   getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
-  getProposedAppInstances(
-    multisigAddress?: string,
-  ): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;
+  getProposedAppInstances(): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;
   getProposedAppInstance(
     appInstanceId: string,
   ): Promise<ProtocolTypes.GetProposedAppInstanceResult | undefined>;
