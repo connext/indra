@@ -78,13 +78,15 @@ export class FileStorage implements WrappedStorage {
   async getEntries(): Promise<[string, any][]> {
     const keys = await this.getKeys();
     const entries = [];
-    keys.forEach(async key => entries.push([key, await this.getItem(key)]));
+    for (const key of keys) {
+      entries.push([key, await this.getItem(key)]);
+    }
     return entries;
   }
 
   async clear(): Promise<void> {
     const keys = await this.getKeys();
-    Promise.all(keys.map(key => this.removeItem(key)));
+    await Promise.all(keys.map(async key => await this.removeItem(key)));
   }
 
   async restore(): Promise<void> {
@@ -94,7 +96,7 @@ export class FileStorage implements WrappedStorage {
     }
     // otherwise set the item
     const pairs = await this.backupService.restore();
-    Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
+    await Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
   }
 
   joinWithSeparator(...args: string[]): string {
