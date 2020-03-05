@@ -1,7 +1,6 @@
 import {
   AsyncStorageData,
   DEFAULT_ASYNC_STORAGE_KEY,
-  IAsyncStorage,
   InitCallback,
   safeJsonParse,
   safeJsonStringify,
@@ -11,10 +10,10 @@ import {
   COMMITMENT_KEY,
 } from "../helpers";
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
-import { AsyncStorage } from "react-native";
+import AsyncStorage from "@react-native-community/async-storage";
 
 export class WrappedAsyncStorage implements WrappedStorage {
-  private asyncStorage: IAsyncStorage;
+  private asyncStorage: any; // AsyncStorageStatic;
   private data: AsyncStorageData = {};
   private initializing: boolean = false;
   private initCallbacks: InitCallback[] = [];
