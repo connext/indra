@@ -34,7 +34,7 @@ export const requestDepositRights = async (
     // give client rights
     await client.requestDepositRights({ assetId });
     // get latest installed app
-    const latestApp = (await client.getAppInstances(client.multisigAddress)).sort(
+    const latestApp = (await client.getAppInstances()).sort(
       (a: AppInstanceJson, b: AppInstanceJson) => b.appSeqNo - a.appSeqNo,
     )[0];
     // make sure its the coin balance refund app

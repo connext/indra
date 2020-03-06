@@ -1,5 +1,6 @@
 import "./setup";
 import "./channelProvider/channelProvider.test";
+import "./clientConnect/clientConnect.test";
 import "./createChannel/createChannel.test";
 import "./deposit/deposit.test";
 import "./deposit/depositOffline.test";
