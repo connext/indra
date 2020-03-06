@@ -20,27 +20,23 @@ contract FastSignedTransferApp is CounterfactualApp {
     enum ActionType {
         CREATE,
         UNLOCK,
-        REJECT,
-        FINALIZE
+        REJECT
     }
 
     struct Payment {
+        string recipientXpub; // Not checked in app, but is part of the state for intermediaries to use
         uint256 amount;
-        address assetId; // TODO: Do we need this?
         address signer;
         // This needs to be unique to each payment - the entropy is used to ensure that
         // intermediaries can't steal money by replaying state.
         bytes32 paymentId;
-        uint256 timeout; // Block height. 0 is special case where there's no timeout.
-        string recipientXpub; // Not checked in app, but is part of the state for intermediaries to use
         bytes32 data;
         bytes signature;
     }
 
     struct AppState {
-        Payment[] lockedPayments; // What happens with many locked payments in a dispute?
+        Payment[] lockedPayments;
         LibOutcome.CoinTransfer[2] coinTransfers; // balances
-        bool finalized;
         uint256 turnNum;
     }
 
@@ -62,25 +58,13 @@ contract FastSignedTransferApp is CounterfactualApp {
         ];
     }
 
-    function isStateTerminal(bytes calldata encodedState)
-        external
-        pure
-        returns (bool)
-    {
-        return abi.decode(encodedState, (AppState)).finalized;
-    }
-
     function computeOutcome(bytes calldata encodedState)
         external
         pure
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
-        if (state.finalized) {
-            return abi.encode(state.coinTransfers);
-        } else {
-            revert("State is not finalized. Please finalize before uninstalling");
-        }
+        return abi.encode(state.coinTransfers);
     }
 
     function applyAction(
@@ -103,15 +87,12 @@ contract FastSignedTransferApp is CounterfactualApp {
 
         AppState memory postState;
 
-        require(!state.finalized, "Cannot take actions in a finalized channel, please reinstall.");
         if (action.actionType == ActionType.CREATE) {
             postState = doCreate(state, action);
         } else if (action.actionType == ActionType.UNLOCK) {
             postState = doUnlock(state, action);
         } else if (action.actionType == ActionType.REJECT) {
             postState = doReject(state, action);
-        } else if (action.actionType == ActionType.FINALIZE) {
-            postState = doFinalize(state, action);
         }
 
         postState.turnNum += 1;
@@ -127,15 +108,15 @@ contract FastSignedTransferApp is CounterfactualApp {
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 0, "Only senders can create locked payments.");
-        for (uint8 i = 0; i < action.newLockedPayments.length; i++) { // TODO uint8?
+        for (uint i = 0; i < action.newLockedPayments.length; i++) {
             require(
-                action.newLockedPayments[i].paymentId != "" && action.newLockedPayments[i].paymentId != 0, "PaymentID cannot be 0 or empty string"
+                action.newLockedPayments[i].paymentId != bytes32(0), "PaymentID cannot be empty bytes"
             );
             require(
                 (find(state.lockedPayments, action.newLockedPayments[i].paymentId)).paymentId == bytes32(0), "Locked payment with this paymentId already exists."
             );
             require(action.newLockedPayments[i].amount <= state.coinTransfers[0].amount, "Insufficient balance for new locked payment");
-            require(action.newLockedPayments[i].data == 0 || action.newLockedPayments[i].data == "", "Data field must be empty");
+            require(action.newLockedPayments[i].data == bytes32(0), "Data field must be empty bytes");
 
             // Reduce sender's balance by locked payment amount and then insert into state lockedPayments array
             state.coinTransfers[0].amount = state.coinTransfers[0].amount.sub(action.newLockedPayments[i].amount);
@@ -144,7 +125,6 @@ contract FastSignedTransferApp is CounterfactualApp {
         return state;
     }
 
-    // TODO Can we safely batch unlock payments? Sender has incentive to choose the least unlocked one.
     function doUnlock(
         AppState memory state,
         Action memory action
@@ -154,10 +134,10 @@ contract FastSignedTransferApp is CounterfactualApp {
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 1, "Only receivers can unlock payments.");
-        for (uint8 i = 0; i < action.newLockedPayments.length; i++) {
+        for (uint i = 0; i < action.newLockedPayments.length; i++) {
             require(
                 action.newLockedPayments[i].paymentId != bytes32(0),
-                "PaymentID cannot be 0"
+                "PaymentID cannot be empty bytes"
             );
             require(
                 (find(state.lockedPayments, action.newLockedPayments[i].paymentId)).paymentId != bytes32(0),
@@ -165,19 +145,13 @@ contract FastSignedTransferApp is CounterfactualApp {
             );
 
             Payment memory lockedPayment = find(state.lockedPayments, action.newLockedPayments[i].paymentId);
-            // If timeout exists and has expired, remove the locked payment without applying balances
-            // TODO timeouts may not work w/ single-signed updates because node can just wait to countersign
-            // TODO: need this to be lockedPayment.timeout <= block.number but that makes visibiity "view" which breaks
-            if (lockedPayment.timeout <= 0 && lockedPayment.timeout != 0) {
-                state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentId);
-            } else {
-                bytes32 rawHash = keccak256(abi.encodePacked(action.newLockedPayments[i].data, lockedPayment.paymentId)); // TODO any possibility of collision?
-                require(lockedPayment.signer == rawHash.recover(action.newLockedPayments[i].signature), "Incorrect signer recovered from signature");
+            // TODO any possibility of collision?
+            bytes32 rawHash = keccak256(abi.encodePacked(action.newLockedPayments[i].data, lockedPayment.paymentId));
+            require(lockedPayment.signer == rawHash.recover(action.newLockedPayments[i].signature), "Incorrect signer recovered from signature");
 
-                // Add balances to transfers
-                state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(lockedPayment.amount);
-                state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentId);
-            }
+            // Add balances to transfers
+            state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(lockedPayment.amount);
+            state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentId);
         }
         return state;
     }
@@ -198,19 +172,6 @@ contract FastSignedTransferApp is CounterfactualApp {
             );
             state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentId);
         }
-        return state;
-    }
-
-    function doFinalize(
-        AppState memory state,
-        Action memory action
-    )
-        internal
-        pure
-        returns (AppState memory)
-    {
-        require(state.turnNum % 2 == 0, "Only senders can create finalize state.");
-        state.finalized == true;
         return state;
     }
 
@@ -244,7 +205,7 @@ contract FastSignedTransferApp is CounterfactualApp {
     {
         uint j = 0;
         Payment[] memory newLockedPayments = new Payment[](lockedPayments.length-1);
-        for (uint i = 0; i < lockedPayments.length; i++) { // TODO uint size?
+        for (uint i = 0; i < lockedPayments.length; i++) {
             // If the element should stay, write it to a new array
             if (lockedPayments[i].paymentId != paymentId) {
                 newLockedPayments[j] = lockedPayments[i];
