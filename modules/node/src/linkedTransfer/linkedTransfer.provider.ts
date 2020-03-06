@@ -11,7 +11,7 @@ import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
-import { MessagingProviderId, TransferProviderId } from "../constants";
+import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 import { TransferRepository } from "../transfer/transfer.repository";
 
@@ -117,7 +117,7 @@ export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
     TransferRepository,
     LinkedTransferRepository,
   ],
-  provide: TransferProviderId,
+  provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,

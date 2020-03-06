@@ -10,9 +10,11 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
+import { TransferRepository } from "../transfer/transfer.repository";
 
 import { LinkedTransferRepository } from "./linkedTransfer.repository";
 import { LinkedTransferService } from "./linkedTransfer.service";
+import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
 
 @Module({
   controllers: [],
@@ -29,8 +31,9 @@ import { LinkedTransferService } from "./linkedTransfer.service";
       AppRegistryRepository,
       LinkedTransferRepository,
       FastSignedTransferRepository,
+      TransferRepository,
     ]),
   ],
-  providers: [LinkedTransferService],
+  providers: [LinkedTransferService, linkedTransferProviderFactory],
 })
 export class LinkedTransferModule {}
