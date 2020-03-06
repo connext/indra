@@ -43,7 +43,7 @@ export class AuthService {
     logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
-    const addr = verifyMessage(arrayify(nonce), signedNonce);
+    const addr = verifyMessage(nonce, signedNonce);
     if (addr !== xpubAddress) {
       throw new Error(`verification failed`);
     }
@@ -78,7 +78,7 @@ export class AuthService {
       // Get & validate xpub from subject
       const xpub = subject.split(".")[0]; // first item of subscription is xpub
       if (!xpub || !isXpub(xpub)) {
-        throw new Error(`Subject's first item isn't a valid xpub: ${subject}`)
+        throw new Error(`Subject's first item isn't a valid xpub: ${subject}`);
       }
       return callback(xpub, data);
     };

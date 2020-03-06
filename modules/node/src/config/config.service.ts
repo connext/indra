@@ -14,7 +14,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
+import { getAddress, Network as EthNetwork, parseEther, HDNode } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { OutcomeType } from "../util/cfCore";
@@ -63,8 +63,12 @@ export class ConfigService implements OnModuleInit {
     return this.ethProvider;
   }
 
+  getHDNode(): HDNode.HDNode {
+    return fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
+  }
+
   getEthWallet(): Wallet {
-    return this.wallet;
+    return Wallet.fromMnemonic(this.getMnemonic()).connect(this.getEthProvider());
   }
 
   async getEthNetwork(): Promise<EthNetwork> {
@@ -158,6 +162,11 @@ export class ConfigService implements OnModuleInit {
       return "0.005";
     }
     return undefined;
+  }
+
+  getPublicIdentifier(): string {
+    const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
+    return hdNode.neuter().extendedKey;
   }
 
   async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {
@@ -280,10 +289,15 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  onModuleInit(): void {
-    const wallet = Wallet.fromMnemonic(this.getMnemonic());
-    this.wallet = wallet.connect(this.getEthProvider());
-    const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
-    this.publicIdentifier = hdNode.neuter().extendedKey;
+  async onModuleInit(): Promise<void> {
+    throw Error("WHY AM I NOT BEING CALLED");
+    // const wallet = Wallet.fromMnemonic(this.getMnemonic());
+    // console.log("this.getMnemonic(): ", this.getMnemonic());
+    // console.log("wallet: ", wallet);
+    // this.wallet = wallet.connect(this.getEthProvider());
+    // console.log("this.getEthProvider(): ", this.getEthProvider());
+    // console.log("this.wallet: ", this.wallet);
+    // const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
+    // this.publicIdentifier = hdNode.neuter().extendedKey;
   }
 }

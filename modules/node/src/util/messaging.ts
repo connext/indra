@@ -9,10 +9,7 @@ export interface IMessagingProvider {
 }
 
 export abstract class AbstractMessagingProvider implements IMessagingProvider {
-  constructor(
-    public readonly log: LoggerService,
-    protected readonly messaging: MessagingService,
-  ) {
+  constructor(public readonly log: LoggerService, protected readonly messaging: MessagingService) {
     this.log.setContext("MessagingInterface");
   }
 

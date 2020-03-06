@@ -5,11 +5,9 @@ import { ClientProxy, ClientProxyFactory, Transport } from "@nestjs/microservice
 import { ConfigService } from "../config/config.service";
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
-import {
-  MessagingClientProviderId,
-  MessagingProviderId,
-  MessagingAuthProviderId,
-} from "../constants";
+import { MessagingClientProviderId, MessagingProviderId } from "../constants";
+import { SigningKey } from "ethers/utils";
+import { Wallet } from "ethers";
 
 export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>> = {
   inject: [ConfigService, AuthService, LoggerService],
@@ -19,11 +17,14 @@ export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>
     auth: AuthService,
     log: LoggerService,
   ): Promise<MessagingService> => {
+    log.setContext("MessagingProviderFactory");
     const getBearerToken = async (): Promise<string> => {
-      const nonce = await auth.getNonce(config.publicIdentifier);
-      log.info(`Got nonce from authService: ${nonce}`);
-      const signedNonce = await config.getEthWallet().signMessage(nonce);
-      return auth.verifyAndVend(signedNonce, config.publicIdentifier);
+      const nonce = await auth.getNonce(config.getPublicIdentifier());
+      log.warn(`Got nonce from authService: ${nonce}`);
+      const signer = new SigningKey(config.getHDNode().derivePath("0"));
+      const wallet = new Wallet(signer.privateKey, config.getEthProvider());
+      const signedNonce = await wallet.signMessage(nonce);
+      return auth.verifyAndVend(signedNonce, config.getPublicIdentifier());
     };
     const messagingService = new MessagingService(
       config.getMessagingConfig(),

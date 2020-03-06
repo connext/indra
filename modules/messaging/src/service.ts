@@ -27,27 +27,29 @@ export class MessagingService implements IMessagingService {
     if (!this.bearerToken) {
       this.bearerToken = await this.getBearerToken();
     }
+    console.log('this.bearerToken: ', this.bearerToken);
+    console.log('messagingUrl: ', messagingUrl);
     const service = natsutil.natsServiceFactory({
-      ...this.config,
-      ...this.config.options,
       bearerToken: this.bearerToken,
       natsServers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl, // FIXME-- rename to servers instead of natsServers
     });
-    service.connect().then(natsConnection => {
-      this.service = service;
-      this.log.debug(`Connected!`);
-      if (typeof natsConnection.addEventListener !== undefined) {
-        natsConnection.addEventListener("close", async () => {
-          this.bearerToken == null;
-          await this.connect();
-        });
-      } else {
-        natsConnection.on("close", async () => {
-          this.bearerToken == null;
-          await this.connect();
-        });
-      }
-    });
+
+    const natsConnection = await service.connect();
+    this.service = service;
+    this.log.debug(`Connected!`);
+    if (typeof natsConnection.addEventListener === "function") {
+      natsConnection.addEventListener("close", async () => {
+        console.log("ON CLOSE LOG 1");
+        this.bearerToken == null;
+        await this.connect();
+      });
+    } else {
+      natsConnection.on("close", async () => {
+        console.log("ON CLOSE LOG 2");
+        this.bearerToken == null;
+        await this.connect();
+      });
+    }
   }
 
   async disconnect(): Promise<void> {

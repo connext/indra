@@ -526,10 +526,10 @@ export class ChannelService {
     );
     this.log.debug(`Deploy multisig tx: ${deployTx}`);
 
-    const wallet = this.configService.getEthWallet();
+    const provider = this.configService.getEthProvider();
     if (deployTx !== HashZero) {
       this.log.debug(`Waiting for deployment transaction...`);
-      wallet.provider.waitForTransaction(deployTx);
+      provider.waitForTransaction(deployTx);
       this.log.debug(`Deployment transaction complete!`);
     } else {
       this.log.debug(`Multisig already deployed, proceeding with withdrawal`);
