@@ -14,6 +14,10 @@ export type FastSignedTransferParameters<T = string> = {
   meta?: object;
 };
 
+export type FastSignedTransferResponse = {
+  transferAppInstanceId: string;
+};
+
 export type ResolveFastSignedTransferParameters = {
   conditionType: typeof FAST_SIGNED_TRANSFER;
   data: string;

@@ -107,6 +107,7 @@ export class FastSignedTransferController extends AbstractController {
       }
     }
 
+    // install if needed
     if (needsInstall) {
       const {
         actionEncoding,
@@ -154,6 +155,7 @@ export class FastSignedTransferController extends AbstractController {
       transferAppInstanceId = await this.proposeAndInstallLedgerApp(installParams);
     }
 
+    // always take action to create payment
     await this.connext.takeAction(transferAppInstanceId, {
       actionType: FastSignedTransferActionType.CREATE,
       newLockedPayments: [

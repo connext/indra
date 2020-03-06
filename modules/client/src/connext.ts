@@ -3,16 +3,17 @@ import { IMessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
   IChannelProvider,
-  LinkedTransferToRecipientParameters,
   LINKED_TRANSFER_TO_RECIPIENT,
   ILoggerService,
   chan_storeGet,
   chan_storeSet,
   chan_restoreState,
-  LinkedTransferParameters,
-  LinkedTransferResponse,
   LinkedTransferToRecipientResponse,
   LINKED_TRANSFER,
+  ConditionalTransferParameters,
+  ConditionalTransferResponse,
+  FAST_SIGNED_TRANSFER,
+  FastSignedTransferParameters,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -71,6 +72,8 @@ import {
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { ResolveLinkedTransferController } from "./controllers/ResolveLinkedTransferController";
+import { FastSignedTransferController } from "./controllers/FastSignedTransferController";
+import { ResolveFastSignedTransferController } from "./controllers/ResolveFastSignedTransferController";
 
 const MAX_WITHDRAWAL_RETRIES = 3;
 
@@ -101,6 +104,8 @@ export class ConnextClient implements IConnextClient {
   private linkedTransferController: LinkedTransferController;
   private resolveLinkedTransferController: ResolveLinkedTransferController;
   private requestDepositRightsController: RequestDepositRightsController;
+  private fastSignedTransferController: FastSignedTransferController;
+  private resolveFastSignedTransferController: ResolveFastSignedTransferController;
 
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -136,6 +141,14 @@ export class ConnextClient implements IConnextClient {
     );
     this.requestDepositRightsController = new RequestDepositRightsController(
       "RequestDepositRightsController",
+      this,
+    );
+    this.fastSignedTransferController = new FastSignedTransferController(
+      "FastSignedTransferController",
+      this,
+    );
+    this.resolveFastSignedTransferController = new ResolveFastSignedTransferController(
+      "ResolveFastSignedTransferController",
       this,
     );
   }
@@ -369,20 +382,28 @@ export class ConnextClient implements IConnextClient {
           conditionType: LINKED_TRANSFER,
         });
       }
+      case FAST_SIGNED_TRANSFER: {
+        // return this.resolveFastSignedTransferController.resolveFastSignedTransfer({ ...params });
+      }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
     }
   };
 
   public conditionalTransfer = async (
-    params: LinkedTransferParameters | LinkedTransferToRecipientParameters,
-  ): Promise<LinkedTransferResponse | LinkedTransferToRecipientResponse> => {
+    params: ConditionalTransferParameters,
+  ): Promise<ConditionalTransferResponse> => {
     switch (params.conditionType) {
       case LINKED_TRANSFER: {
         return this.linkedTransferController.linkedTransfer(params);
       }
       case LINKED_TRANSFER_TO_RECIPIENT: {
         return this.linkedTransferController.linkedTransferToRecipient(params);
+      }
+      case FAST_SIGNED_TRANSFER: {
+        return this.fastSignedTransferController.fastSignedTransfer(
+          params as FastSignedTransferParameters,
+        );
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);

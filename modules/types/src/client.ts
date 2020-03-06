@@ -4,6 +4,8 @@ import {
   ResolveLinkedTransferResponse,
   ResolveConditionResponse,
   ResolveConditionParameters,
+  ConditionalTransferParameters,
+  ConditionalTransferResponse,
 } from "./apps";
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { BigNumber } from "./basic";
@@ -91,7 +93,7 @@ export interface IConnextClient {
   transfer(params: TransferParameters): Promise<any>;
   withdraw(params: WithdrawParameters): Promise<ChannelState>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
-  conditionalTransfer(params: any): Promise<any>;
+  conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
   restoreState(): Promise<void>;
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   requestDepositRights(

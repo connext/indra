@@ -7,7 +7,11 @@ import {
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferToRecipientParameters,
 } from "./SimpleLinkedTransferApp";
-import { FastSignedTransferParameters } from "./FastSignedTransfer";
+import {
+  FastSignedTransferParameters,
+  FastSignedTransferResponse,
+  ResolveFastSignedTransferParameters,
+} from "./FastSignedTransfer";
 export * from "./CoinBalanceRefundApp";
 export * from "./FastSignedTransfer";
 export * from "./SimpleLinkedTransferApp";
@@ -20,9 +24,11 @@ export type ConditionalTransferParameters =
 
 export type ConditionalTransferResponse =
   | LinkedTransferResponse
-  | LinkedTransferToRecipientResponse;
+  | LinkedTransferToRecipientResponse
+  | FastSignedTransferResponse;
 
 export type ResolveConditionParameters =
   | ResolveLinkedTransferParameters
-  | ResolveLinkedTransferToRecipientParameters;
+  | ResolveLinkedTransferToRecipientParameters
+  | ResolveFastSignedTransferParameters;
 export type ResolveConditionResponse = ResolveLinkedTransferResponse;
