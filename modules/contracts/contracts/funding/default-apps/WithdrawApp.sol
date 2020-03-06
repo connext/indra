@@ -3,8 +3,8 @@ pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
-import "../adjudicator/interfaces/CounterfactualApp.sol";
-import "../funding/libs/LibOutcome.sol";
+import "../../adjudicator/interfaces/CounterfactualApp.sol";
+import "../libs/LibOutcome.sol";
 
 
 /// @title Withdraw App
