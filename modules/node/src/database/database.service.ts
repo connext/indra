@@ -21,7 +21,8 @@ import {
   ConditionalTransactionCommitmentEntity,
   SetStateCommitmentEntity,
   WithdrawCommitment,
-} from "../commitment/commitment.entity"
+} from "../commitment/commitment.entity";
+import { AppInstance } from "../appInstance/appInstance.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -40,6 +41,7 @@ import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-
 import { InitCommitmentTable1582692126872 } from "../../migrations/1582692126872-init-commitment-table";
 
 export const entities = [
+  AppInstance,
   AppRegistry,
   Channel,
   CFCoreRecord,

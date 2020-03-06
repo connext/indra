@@ -25,7 +25,7 @@ export class AppInstance {
   @Column("json")
   abiEncodings!: AppABIEncodings;
 
-  @Column("number")
+  @Column("integer")
   appSeqNo!: number;
 
   @Column("text")
@@ -38,10 +38,10 @@ export class AppInstance {
   @Column("json")
   latestState!: SolidityValueType;
 
-  @Column("number")
+  @Column("integer")
   latestTimeout!: number;
 
-  @Column("number")
+  @Column("integer")
   latestVersionNumber!: number;
 
   @Column("text")

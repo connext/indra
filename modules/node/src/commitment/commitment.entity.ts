@@ -46,7 +46,7 @@ export class SetStateCommitmentEntity {
   @IsKeccak256Hash()
   appStateHash!: string;
 
-  @Column("challengeRegistryAddress")
+  @Column("text")
   @IsEthAddress()
   challengeRegistryAddress!: string;
 
@@ -76,7 +76,7 @@ export class ConditionalTransactionCommitmentEntity {
   @IsKeccak256Hash()
   freeBalanceAppIdentityHash!: string;
 
-  @Column("challengeRegistryAddress")
+  @Column("text")
   @IsEthAddress()
   interpreterAddr!: string;
 
@@ -87,7 +87,7 @@ export class ConditionalTransactionCommitmentEntity {
   @IsEthAddress()
   multisigAddress!: string;
 
-  @Column("array")
+  @Column("text", { array: true })
   multisigOwners!: string[];
 
   @Column("json")

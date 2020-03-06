@@ -23,7 +23,7 @@ export class Channel {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("number")
+  @Column("integer")
   schemaVersion!: number;
 
   @Column("json")
@@ -66,10 +66,10 @@ export class Channel {
   )
   freeBalanceAppInstance!: AppInstance;
 
-  @Column("array")
+  @Column("text", { array: true })
   singleAssetTwoPartyIntermediaryAgreements!: [string, SingleAssetTwoPartyIntermediaryAgreement][];
 
-  @Column("number")
+  @Column("integer")
   monotonicNumProposedApps!: number;
 
   @ManyToMany(
