@@ -120,7 +120,6 @@ export class ConfigService implements OnModuleInit {
 
     if (currentChainId !== 1) {
       const tokenConfig = await this.getTestnetTokenConfig();
-      console.log('tokenConfig: ', tokenConfig);
       const configIndex = tokenConfig.findIndex(tc =>
         tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
       );
