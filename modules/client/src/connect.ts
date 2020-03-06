@@ -2,9 +2,16 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { MessagingService } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, ILoggerService, StateSchemaVersion, MessagingConfig, VerifyNonceDtoType } from "@connext/types";
+import {
+  CF_PATH,
+  CREATE_CHANNEL_EVENT,
+  ILoggerService,
+  StateSchemaVersion,
+  MessagingConfig,
+  VerifyNonceDtoType,
+  CoinBalanceRefundState,
+} from "@connext/types";
 import { Contract, providers, Wallet } from "ethers";
-import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 
@@ -30,40 +37,51 @@ import {
   INodeApiClient,
 } from "./types";
 
-const axios = require('axios').default;
-
+const axios = require("axios").default;
 
 //TODO --ARJUN : Keep nodeUrl and messagingUrl separate
-const createMessagingService = async (logger: ILoggerService, messagingUrl: string, xpub: string, getSignature: (nonce: string) => Promise<string>): Promise<MessagingService> => {
+const createMessagingService = async (
+  logger: ILoggerService,
+  messagingUrl: string,
+  xpub: string,
+  getSignature: (nonce: string) => Promise<string>,
+): Promise<MessagingService> => {
   const config: MessagingConfig = {
     messagingUrl,
-    logger
-  }
+    logger,
+  };
   // create a messaging service client
-  const messaging = new MessagingService(config, "indra", () => getBearerToken(logger, messagingUrl, xpub, getSignature));
+  const messaging = new MessagingService(config, "indra", () =>
+    getBearerToken(logger, messagingUrl, xpub, getSignature),
+  );
   await messaging.connect();
   return messaging;
 };
 
-const getBearerToken = async (log: ILoggerService, messagingUrl: string, xpub: string, getSignature: (nonce: string) => Promise<string>): Promise<string> => {
+const getBearerToken = async (
+  log: ILoggerService,
+  messagingUrl: string,
+  xpub: string,
+  getSignature: (nonce: string) => Promise<string>,
+): Promise<string> => {
   try {
-    let url = messagingUrl.split("//")[1]
+    let url = messagingUrl.split("//")[1];
     const nonce = await axios.get(`https://${url}/getNonce`, {
       params: {
-        userPublicIdentifier: xpub
-      }
-    })
+        userPublicIdentifier: xpub,
+      },
+    });
     const sig = await getSignature(nonce);
     const bearerToken: string = await axios.post(`https://${url}/verifyNonce`, {
       sig,
-      xpub
-    } as VerifyNonceDtoType)
+      xpub,
+    } as VerifyNonceDtoType);
     return bearerToken;
-  } catch(e) {
-    log.error(`Error getting bearer token: ${e}`)
+  } catch (e) {
+    log.error(`Error getting bearer token: ${e}`);
     return e;
   }
-}
+};
 
 const setupMultisigAddress = async (
   node: INodeApiClient,
@@ -143,7 +161,14 @@ export const connect = async (
     log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
     if (!messaging) {
       // TODO nonce generation needs to be added to rpc methods for channelProvider to work
-      messaging = await createMessagingService(log, channelProvider.config.nodeUrl, channelProvider.config.userPublicIdentifier, async (nonce)=> {return '';});
+      messaging = await createMessagingService(
+        log,
+        channelProvider.config.nodeUrl,
+        channelProvider.config.userPublicIdentifier,
+        async nonce => {
+          return "";
+        },
+      );
     } else {
       await messaging.connect();
     }
@@ -177,14 +202,14 @@ export const connect = async (
       log.debug(`Creating channelProvider with xpub: ${xpub}`);
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
-    const getSignature = async (nonce) => {
-      const wallet = new Wallet(await keyGen('0'))
+    const getSignature = async nonce => {
+      const wallet = new Wallet(await keyGen("0"));
       return wallet.signMessage(nonce);
-    }
+    };
 
     log.debug(`Creating messaging service client ${nodeUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(log,  nodeUrl, xpub, getSignature);
+      messaging = await createMessagingService(log, nodeUrl, xpub, getSignature);
     } else {
       await messaging.connect();
     }
@@ -297,8 +322,15 @@ export const connect = async (
   await client.cleanupRegistryApps();
 
   // check if there is a coin refund app installed for eth and tokens
-  await client.uninstallCoinBalanceIfNeeded(AddressZero);
-  await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
+  const apps = await client.getAppInstances();
+  const coinBalanceRefundApps = apps.filter(
+    app => app.appInterface.addr === client.config.contractAddresses.CoinBalanceRefundApp,
+  );
+  for (const coinBalance of coinBalanceRefundApps) {
+    await client.uninstallCoinBalanceIfNeeded(
+      (coinBalance.latestState as CoinBalanceRefundState).tokenAddress,
+    );
+  }
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");

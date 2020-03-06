@@ -926,6 +926,10 @@ export class ConnextClient implements IConnextClient {
     const isTokenDeposit =
       latestState["tokenAddress"] && latestState["tokenAddress"] !== AddressZero;
     const isClientDeposit = latestState["recipient"] === this.freeBalanceAddress;
+    if (!isClientDeposit) {
+      this.log.warn(`Counterparty's coinBalanceRefund app is installed, cannot uninstall`);
+      return;
+    }
 
     const multisigBalance = !isTokenDeposit
       ? await this.ethProvider.getBalance(this.multisigAddress)
@@ -945,7 +949,7 @@ export class ConnextClient implements IConnextClient {
     const uninstallRefund = async (): Promise<void> => {
       this.log.debug("Deposit has been executed, uninstalling refund app");
       // deposit has been executed, uninstall
-      await this.uninstallApp(coinRefund.identityHash);
+      await this.rescindDepositRights({ assetId });
       this.log.debug("Successfully uninstalled");
     };
 
@@ -960,26 +964,27 @@ export class ConnextClient implements IConnextClient {
       // for successful uninstalling since their queued uninstall request
       // would be lost. if the deposit is from the node, they will be waiting
       // to send an uninstall request to the client
-      if (isClientDeposit) {
-        if (isTokenDeposit) {
-          new Contract(assetId, tokenAbi, this.ethProvider).once(
-            "Transfer",
-            async (sender: string, recipient: string, amount: BigNumber) => {
-              if (recipient === this.multisigAddress && amount.gt(0)) {
-                this.log.info("Multisig transfer was for our channel, uninstalling refund app");
-                await uninstallRefund();
-              }
-            },
-          );
-        } else {
-          this.ethProvider.once(this.multisigAddress, async () => await uninstallRefund());
-        }
+      if (isTokenDeposit) {
+        new Contract(assetId, tokenAbi, this.ethProvider).once(
+          "Transfer",
+          async (sender: string, recipient: string, amount: BigNumber) => {
+            if (recipient === this.multisigAddress && amount.gt(0)) {
+              this.log.info("Multisig transfer was for our channel, uninstalling refund app");
+              await uninstallRefund();
+            }
+          },
+        );
+      } else {
+        this.ethProvider.once(this.multisigAddress, async (balance: BigNumber) => {
+          if (balance.gt(threshold)) {
+            await uninstallRefund();
+          }
+        });
       }
-      return;
+    } else {
+      // multisig bal > threshold so deposit has been executed, uninstall
+      await uninstallRefund();
     }
-
-    // multisig bal > threshold so deposit has been executed, uninstall
-    await uninstallRefund();
   };
 
   public resubmitActiveWithdrawal = async (): Promise<void> => {
