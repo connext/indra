@@ -1,5 +1,6 @@
 import { CoinTransfer } from "..";
 import { singleAssetTwoPartyCoinTransferEncoding } from "../contracts";
+import { BigNumber } from "ethers/utils";
 
 export const FAST_SIGNED_TRANSFER = "FAST_SIGNED_TRANSFER";
 
@@ -28,16 +29,13 @@ export enum FastSignedTransferActionType {
   CREATE,
   UNLOCK,
   REJECT,
-  FINALIZE,
 }
 
 export type FastSignedTransfer<T = string> = {
+  receipientXpub: string;
   amount: T;
-  assetId: string;
   signer: string;
   paymentId: string;
-  timeout: T;
-  receipientXpub: string;
   data: string;
   signature: string;
 };
@@ -48,20 +46,20 @@ export type FastSignedTransferAppState<T = string> = {
   finalized: boolean;
   turnNum: T;
 };
+export type FastSignedTransferAppStateBigNumber = FastSignedTransferAppState<BigNumber>;
 
 export type FastSignedTransferAppAction<T = string> = {
   newLockedPayments: FastSignedTransfer<T>[];
   actionType: FastSignedTransferActionType;
 };
+export type FastSignedTransferAppActionBigNumber = FastSignedTransferAppAction<BigNumber>;
 
 export const FastSignerTransferAppPaymentsEncoding = `
   tuple(
+    string receipientXpub,
     uint256 amount,
-    address assetId,
     address signer,
     bytes32 paymentId,
-    uint256 timeout,
-    string recipientXpub,
     bytes32 data,
     bytes signature
   )[]
@@ -71,7 +69,6 @@ export const FastSignerTransferAppStateEncoding = `
   tuple(
     ${FastSignerTransferAppPaymentsEncoding} lockedPayments,
     ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-    bool finalized,
     uint256 turnNum
   )
 `;
