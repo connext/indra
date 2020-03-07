@@ -1,4 +1,4 @@
-import { getDirectoryFiles, isDirectorySync } from "@connext/store";
+import { getDirectoryFiles, isDirectorySync, KeyValueStorage } from "@connext/store";
 import uuid from "uuid";
 
 import {
@@ -9,8 +9,16 @@ import {
   testAsyncStorageKey,
   createKeyValueStore,
   TEST_STORE_PAIR,
+  createArray,
 } from "../util";
-import { LOCALSTORAGE, ASYNCSTORAGE, FILESTORAGE } from "@connext/types";
+import {
+  LOCALSTORAGE,
+  ASYNCSTORAGE,
+  FILESTORAGE,
+  StoreTypes,
+  StoreType,
+  MEMORYSTORAGE,
+} from "@connext/types";
 
 describe("KeyValueStorage", () => {
   const length = 10;
@@ -18,50 +26,41 @@ describe("KeyValueStorage", () => {
   const fileDir = env.storeDir;
   const testValue = "something";
 
-  it("happy case: instantiate with localStorage", async () => {
-    const store = createKeyValueStore(LOCALSTORAGE);
-    await setAndGet(store);
+  describe("happy case: instantiate", () => {
+    for (const type of Object.keys(StoreTypes)) {
+      if (type === ASYNCSTORAGE || type === MEMORYSTORAGE) {
+        continue;
+      }
+      it(`should work for ${type}`, async () => {
+        const store = createKeyValueStore(type as StoreType, { fileDir });
+        await setAndGet(store);
 
-    // test + validate entries
-    const entries = await store.getEntries();
-    expect(entries.length).to.eq(1);
-    expect(entries[0]).to.deep.equal([TEST_STORE_PAIR.path, TEST_STORE_PAIR.value]);
+        // test + validate entries
+        const entries = await store.getEntries();
+        expect(entries.length).to.eq(1);
+        expect(entries[0]).to.deep.equal([TEST_STORE_PAIR.path, TEST_STORE_PAIR.value]);
 
-    // test clearing
-    await store.clear();
-    const keys = await store.getKeys();
-    expect(keys.length).to.be.eq(0);
+        // test clearing
+        await store.clear();
+        const keys = await store.getKeys();
+        expect(keys.length).to.be.eq(0);
+      });
+    }
   });
 
-  // TODO: fix async storage build with mocha
-  it.skip("happy case: instantiate with AsyncStorage", async () => {
-    const store = createKeyValueStore(ASYNCSTORAGE);
-    await setAndGet(store);
-
-    // test + validate entries
-    const entries = await store.getEntries();
-    expect(entries.length).to.eq(1);
-    expect(entries[0]).to.deep.equal([TEST_STORE_PAIR.path, TEST_STORE_PAIR.value]);
-
-    // test clearing
-    await store.clear();
-    const keys = await store.getKeys();
-    expect(keys.length).to.be.eq(0);
-  });
-
-  it("happy case: instantiate with FileStorage", async () => {
-    const store = createKeyValueStore(FILESTORAGE, { asyncStorageKey, fileDir });
-    await setAndGet(store);
-
-    // test + validate entries
-    const entries = await store.getEntries();
-    expect(entries.length).to.eq(1);
-    expect(entries[0]).to.deep.equal([TEST_STORE_PAIR.path, TEST_STORE_PAIR.value]);
-
-    // test clearing
-    await store.clear();
-    const keys = await store.getKeys();
-    expect(keys.length).to.be.eq(0);
+  describe("happy case: should be able to remove an item", async () => {
+    for (const type of Object.keys(StoreTypes)) {
+      if (type === ASYNCSTORAGE || type === MEMORYSTORAGE) {
+        continue;
+      }
+      it(`should work for ${type}`, async () => {
+        const store = createKeyValueStore(type as StoreType, { fileDir });
+        await setAndGet(store, TEST_STORE_PAIR);
+        await store.removeItem(TEST_STORE_PAIR.path);
+        const val = await store.getItem(TEST_STORE_PAIR.path);
+        expect(val).to.be.undefined;
+      });
+    }
   });
 
   it("happy case: localStorage should include multiple keys", async () => {
@@ -94,9 +93,14 @@ describe("KeyValueStorage", () => {
   });
 
   it("happy case: FileStorage should create a store directory", async () => {
-    const store = createKeyValueStore(FILESTORAGE, { asyncStorageKey, fileDir });
+    const id = uuid.v4();
+    expect(isDirectorySync(`${fileDir}/${id}`)).to.be.false;
+    const store = createKeyValueStore(FILESTORAGE, {
+      asyncStorageKey,
+      fileDir: `${fileDir}/${id}`,
+    });
 
-    expect(isDirectorySync(fileDir)).to.be.true;
+    expect(isDirectorySync(`${fileDir}/${id}`)).to.be.true;
     await store.clear();
   });
 
@@ -151,5 +155,30 @@ describe("KeyValueStorage", () => {
 
     await storeA.clear();
     await storeB.clear();
+  });
+
+  describe("happy case: set & get the same path consecutively", async () => {
+    for (const type of Object.keys(StoreTypes)) {
+      if (type === ASYNCSTORAGE || type === MEMORYSTORAGE) {
+        continue;
+      }
+      it(`${type} should work`, async () => {
+        const store = createKeyValueStore(type as StoreType, { fileDir });
+        await Promise.all(createArray(5).map(() => setAndGet(store)));
+      });
+    }
+  });
+
+  describe("happy case: should join strings correctly", () => {
+    for (const type of Object.keys(StoreTypes)) {
+      if (type === ASYNCSTORAGE || type === MEMORYSTORAGE) {
+        continue;
+      }
+      it(`${type} should work`, async () => {
+        const store = createKeyValueStore(type as StoreType, { fileDir });
+        const expected = `expected${type === FILESTORAGE ? "-" : "/"}string`;
+        expect(store.joinWithSeparator("expected", "string")).to.be.equal(expected);
+      });
+    }
   });
 });
