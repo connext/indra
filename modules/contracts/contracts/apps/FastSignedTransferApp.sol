@@ -110,7 +110,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         require(state.turnNum % 2 == 0, "Only senders can create locked payments.");
         for (uint i = 0; i < action.newLockedPayments.length; i++) {
             require(
-                action.newLockedPayments[i].paymentId != bytes32(0), "PaymentID cannot be empty bytes"
+                action.newLockedPayments[i].paymentId != bytes32(0), "paymentId cannot be empty bytes"
             );
             require(
                 (find(state.lockedPayments, action.newLockedPayments[i].paymentId)).paymentId == bytes32(0), "Locked payment with this paymentId already exists."
@@ -137,7 +137,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         for (uint i = 0; i < action.newLockedPayments.length; i++) {
             require(
                 action.newLockedPayments[i].paymentId != bytes32(0),
-                "PaymentID cannot be empty bytes"
+                "paymentId cannot be empty bytes"
             );
             require(
                 (find(state.lockedPayments, action.newLockedPayments[i].paymentId)).paymentId != bytes32(0),
@@ -168,7 +168,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         for (uint8 i = 0; i < action.newLockedPayments.length; i++) {
             require(
                 action.newLockedPayments[i].paymentId != bytes32(0),
-                "PaymentID cannot be 0"
+                "paymentId cannot be 0"
             );
             state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentId);
         }
