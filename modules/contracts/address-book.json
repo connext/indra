@@ -320,9 +320,9 @@
     },
     "FastSignedTransferApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
-      "creationCodeHash": "0x073c28bdebc4607d6f7772286e06583fae31e45d7ac163177db3db765786ee0d",
-      "runtimeCodeHash": "0x07aae7878d76a3f9eb51197672d9168f6b8f6b3824d7c8ae5709f497a1cd4ce8",
-      "txHash": "0x5ff2fbc42b1463b57d374348ec0b1f9eeb6a6272c65bda2ea3468854c791fb87"
+      "creationCodeHash": "0xaf96cf23c4634c072be233b3cffbf43d5f1fa5c9dfea733084c22070801f5959",
+      "runtimeCodeHash": "0xe08aabaf215b04f7e9bb3508e300ac6e5fab01e1a8c0f30af7c45d675dd1d117",
+      "txHash": "0xdc675603f72fca076481f894586600f3987671c83891e997c4c0920d19647339"
     }
   }
 }
