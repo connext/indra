@@ -3,6 +3,7 @@ import {
   ConditionalTransactionCommitmentJSON,
   IStoreService,
   ProtocolTypes,
+  STORE_SCHEMA_VERSION,
   SetStateCommitmentJSON,
   StateChannelJSON,
   StoreType,
@@ -30,6 +31,8 @@ export class ConnextStore implements IStoreService {
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
+
+  private schemaVersion: number = STORE_SCHEMA_VERSION;
 
   constructor(storageType: StoreType, opts: StoreFactoryOptions = {}) {
     this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
@@ -59,7 +62,7 @@ export class ConnextStore implements IStoreService {
         this.internalStore = new KeyValueStorage(
           new FileStorage(
             this.prefix,
-            this.separator,
+            this.separator === DEFAULT_STORE_SEPARATOR ? "-" : this.separator,
             opts.fileExt,
             opts.fileDir,
             this.backupService,
@@ -74,6 +77,10 @@ export class ConnextStore implements IStoreService {
       default:
         throw new Error(`Unable to create test store of type: ${storageType}`);
     }
+  }
+
+  getSchemaVersion(): number {
+    return this.schemaVersion;
   }
 
   get channelPrefix(): string {

@@ -5,6 +5,7 @@ import {
   StateChannelJSON,
   AppInstanceJson,
   ProtocolTypes,
+  STORE_SCHEMA_VERSION,
 } from "@connext/types";
 
 class MockStoreServiceOld implements CFCoreTypes.IStoreServiceOld {
@@ -18,6 +19,9 @@ class MockStoreServiceOld implements CFCoreTypes.IStoreServiceOld {
 }
 
 class MockStoreService implements CFCoreTypes.IStoreService {
+  getSchemaVersion(): number {
+    return STORE_SCHEMA_VERSION;
+  }
   getAllChannels(): Promise<StateChannelJSON[]> {
     return Promise.resolve([]);
   }

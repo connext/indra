@@ -6,6 +6,7 @@ import {
   SetStateCommitmentJSON,
   ProtocolTypes,
   ConditionalTransactionCommitmentJSON,
+  STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
 } from "@connext/types";
 import {
@@ -21,7 +22,12 @@ import {
  * This class wraps a general key value storage service to become an `IStoreService`
  */
 export class KeyValueStorage implements WrappedStorage, IStoreService {
+  private schemaVersion: number = STORE_SCHEMA_VERSION;
   constructor(private readonly storage: WrappedStorage) {}
+
+  getSchemaVersion(): number {
+    return this.schemaVersion;
+  }
 
   getKeys(): Promise<string[]> {
     return this.storage.getKeys();

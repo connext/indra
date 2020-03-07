@@ -6,6 +6,7 @@ import {
   StateChannelJSON,
   AppInstanceJson,
   ProtocolTypes,
+  STORE_SCHEMA_VERSION,
 } from "@connext/types";
 
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
@@ -20,6 +21,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
+  private schemaVersion: number = STORE_SCHEMA_VERSION;
   constructor(
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
@@ -27,6 +29,10 @@ export class CFCoreStore implements IStoreService {
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
   ) {}
+
+  getSchemaVersion(): number {
+    return this.schemaVersion;
+  }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
     throw new Error("Method not implemented.");

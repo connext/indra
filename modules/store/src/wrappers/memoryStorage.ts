@@ -5,9 +5,12 @@ import {
   AppInstanceJson,
   StateChannelJSON,
   IStoreService,
+  STORE_SCHEMA_VERSION,
+  IBackupServiceAPI,
 } from "@connext/types";
 
 export class MemoryStorage implements IStoreService {
+  private schemaVersion: number = STORE_SCHEMA_VERSION;
   private channels: Map<string, StateChannelJSON> = new Map();
   private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
   private conditionalTransactionCommitment: Map<
@@ -17,6 +20,12 @@ export class MemoryStorage implements IStoreService {
   private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
   private extendedPrivKey: string = "";
   private appInstances: Map<string, AppInstanceJson> = new Map();
+
+  constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
+
+  getSchemaVersion(): number {
+    return this.schemaVersion;
+  }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
     return [...this.channels.values()];
@@ -115,6 +124,9 @@ export class MemoryStorage implements IStoreService {
   }
 
   async restore(): Promise<void> {
-    throw new Error("Method not implemented for MemoryStorage");
+    if (!this.backupService) {
+      return this.clear();
+    }
+    throw new Error(`Method not implemented for MemoryStorage`)
   }
 }
