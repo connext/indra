@@ -18,6 +18,7 @@ import {
 } from "@connext/types";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { bigNumberify } from "ethers/utils";
+import { AddressZero } from "ethers/constants";
 
 @Injectable()
 export class AppActionsService {
@@ -69,7 +70,7 @@ export class AppActionsService {
         for (const lockedPayment of action.newLockedPayments) {
           await this.transferService.saveFastSignedTransfer(
             from,
-            lockedPayment.assetId,
+            AddressZero, // TODO
             bigNumberify(lockedPayment.amount),
             appInstanceId,
             lockedPayment.signer,
