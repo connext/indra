@@ -93,14 +93,10 @@ export class LinkedTransferService {
     appInstanceId: string,
     signer: string,
     paymentId: string,
-    recipientPublicIdentifier?: string,
     meta?: object,
   ): Promise<FastSignedTransfer> {
     const senderChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       senderPubId,
-    );
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      recipientPublicIdentifier,
     );
 
     const transfer = new FastSignedTransfer();
@@ -111,7 +107,6 @@ export class LinkedTransferService {
     transfer.signer = signer;
     transfer.meta = meta;
     transfer.senderChannel = senderChannel;
-    transfer.receiverChannel = receiverChannel;
     transfer.status = FastSignedTransferStatus.PENDING;
 
     return await this.fastSignedTransferRespository.save(transfer);
