@@ -10,6 +10,7 @@ import {
   FastSignedTransferParameters,
   FastSignedTransferActionType,
   FastSignedTransferAppAction,
+  minBN,
 } from "@connext/types";
 import { Zero, MaxUint256, HashZero } from "ethers/constants";
 
@@ -21,12 +22,10 @@ import {
   notLessThanOrEqualTo,
   invalid32ByteHexString,
   invalidXpub,
-  notLessThan,
-  notGreaterThan,
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, hexZeroPad } from "ethers/utils";
 import { xkeyKthAddress } from "@connext/cf-core";
 
 const findInstalledFastSignedApp = (
@@ -46,6 +45,7 @@ const findInstalledFastSignedApp = (
 export class FastSignedTransferController extends AbstractController {
   public fastSignedTransfer = async (params: FastSignedTransferParameters) => {
     this.log.info(`fastSignedTransfer called with params ${stringify(params)}`);
+    params.maxAllocation = params.maxAllocation || MaxUint256.toString();
 
     const {
       amount,
@@ -64,9 +64,11 @@ export class FastSignedTransferController extends AbstractController {
       invalidAddress(assetId),
       invalidXpub(recipient),
       notLessThanOrEqualTo(amount, preTransferBal),
+      // amount: 1, maxAllocation: 100
       // eslint-disable-next-line max-len
-      notLessThan(amount, maxAllocation || MaxUint256), // if maxAllocation not provided, dont fail this check
-      notGreaterThan(maxAllocation || Zero, preTransferBal),
+      notLessThanOrEqualTo(amount, maxAllocation), // if maxAllocation not provided, dont fail this check
+      // maxAllocation: 100, preTransferBal: 10
+      notLessThanOrEqualTo(maxAllocation.eq(MaxUint256) ? Zero : maxAllocation, preTransferBal),
       invalid32ByteHexString(paymentId),
     );
 
@@ -92,12 +94,6 @@ export class FastSignedTransferController extends AbstractController {
         // app needs to be finalized and re-installed
         this.log.info(`Installed app does not have funds for transfer, reinstalling`);
 
-        // finalize
-        await this.connext.takeAction(installedTransferApp.identityHash, {
-          actionType: FastSignedTransferActionType.FINALIZE,
-          newLockedPayments: [],
-        } as FastSignedTransferAppAction<BigNumber>);
-
         // uninstall
         await this.connext.uninstallApp(installedTransferApp.identityHash);
       } else {
@@ -117,7 +113,7 @@ export class FastSignedTransferController extends AbstractController {
       } = this.connext.getRegisteredAppDetails(FastSignedTransferApp);
 
       // if max allocation not provided, use the full free balnce
-      const initalAmount = maxAllocation ? maxAllocation : preTransferBal;
+      const initialDeposit = minBN([maxAllocation, preTransferBal]);
 
       const installParams = {
         abiEncodings: {
@@ -129,13 +125,13 @@ export class FastSignedTransferController extends AbstractController {
           coinTransfers: [
             // sender
             {
-              amount: initalAmount,
+              amount: initialDeposit,
               to: this.connext.freeBalanceAddress,
             },
-            // receiver
+            // receiver is node
             {
               amount: Zero,
-              to: xkeyKthAddress(recipient),
+              to: xkeyKthAddress(this.connext.nodePublicIdentifier),
             },
           ],
           finalized: false,
@@ -143,7 +139,7 @@ export class FastSignedTransferController extends AbstractController {
           lockedPayments: [], // TODO: figure out if we can add initial state here
         } as FastSignedTransferAppState<BigNumber>,
         proposedToIdentifier: this.connext.nodePublicIdentifier,
-        initiatorDeposit: initalAmount,
+        initiatorDeposit: initialDeposit,
         initiatorDepositTokenAddress: assetId,
         responderDeposit: Zero,
         responderDepositTokenAddress: assetId,
@@ -161,13 +157,11 @@ export class FastSignedTransferController extends AbstractController {
       newLockedPayments: [
         {
           amount,
-          assetId, // TODO: do we need this?
           data: HashZero,
           paymentId,
           receipientXpub: recipient,
-          signature: "",
+          signature: hexZeroPad(HashZero, 65),
           signer,
-          timeout: Zero,
         },
       ],
     } as FastSignedTransferAppAction<BigNumber>);
