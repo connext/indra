@@ -61,10 +61,10 @@ export class AppRegistryService implements OnModuleInit {
   ): Promise<void> {
     let registryAppInfo: AppRegistry;
     let appInstance: AppInstanceJson;
-    const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
 
     // if error, reject install
     try {
+      const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
       registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
@@ -218,78 +218,6 @@ export class AppRegistryService implements OnModuleInit {
       proposeInstallParams.responderDepositTokenAddress,
       RebalanceType.RECLAIM,
     );
-  }
-
-  private async validateResolvingLinkedTransfer(
-    responderDeposit: BigNumber,
-    initialState: SimpleLinkedTransferAppStateBigNumber,
-  ) {
-    initialState.coinTransfers = initialState.coinTransfers.map(
-      (transfer: CoinTransfer<BigNumber>) => bigNumberifyObj(transfer),
-    ) as any;
-
-    const nodeTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
-      return transfer.to === this.cfCoreService.cfCore.freeBalanceAddress;
-    })[0];
-    const resolverTransfer = initialState.coinTransfers.filter(
-      (transfer: CoinTransferBigNumber) => {
-        return transfer.to !== this.cfCoreService.cfCore.freeBalanceAddress;
-      },
-    )[0];
-    if (!initialState.amount.eq(responderDeposit)) {
-      throw new Error(
-        `Payment amount must be the same as responder deposit ${stringify({
-          responderDeposit,
-          initialState,
-        })}`,
-      );
-    }
-
-    if (!resolverTransfer.amount.eq(Zero)) {
-      throw new Error(
-        `Resolver transfer must initally be zero. Transfer amount: ${resolverTransfer.amount.toString()}`,
-      );
-    }
-
-    if (nodeTransfer.amount.lte(Zero)) {
-      throw new Error(
-        `Sender transfer must initially be full amount. Transfer amount: ${nodeTransfer.amount.toString()}`,
-      );
-    }
-
-    // check that we have recorded this transfer in our db
-    const transfer = await this.linkedTransferRepository.findByPaymentId(initialState.paymentId);
-    if (!transfer) {
-      throw new Error(`No transfer exists for paymentId ${initialState.paymentId}`);
-    }
-
-    if (initialState.linkedHash !== transfer.linkedHash) {
-      throw new Error(`No transfer exists for linkedHash ${initialState.linkedHash}`);
-    }
-
-    if (transfer.status === LinkedTransferStatus.REDEEMED) {
-      throw new Error(
-        `Transfer with linkedHash ${initialState.linkedHash} has already been redeemed`,
-      );
-    }
-
-    // check that linked transfer app has been installed from sender
-    const ethNetwork = await this.configService.getEthNetwork();
-    const simpleLinkedTransferApp = await this.appRegistryRepository.findByNameAndNetwork(
-      SimpleLinkedTransferApp,
-      ethNetwork.chainId,
-    );
-    const installedApps = await this.cfCoreService.getAppInstances();
-    const senderApp = installedApps.find(
-      (app: AppInstanceJson) =>
-        app.appInterface.addr === simpleLinkedTransferApp.appDefinitionAddress &&
-        (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash ===
-          initialState.linkedHash,
-    );
-
-    if (!senderApp) {
-      throw new Error(`App with provided hash has not been installed: ${initialState.linkedHash}`);
-    }
   }
 
   async onModuleInit() {
