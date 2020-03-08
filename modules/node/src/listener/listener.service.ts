@@ -16,6 +16,8 @@ import {
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
   ProtocolTypes,
+  DefaultApp,
+  WithdrawApp,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -47,6 +49,7 @@ import {
   WithdrawFailedMessage,
   WithdrawStartedMessage,
 } from "../util/cfCore";
+import { ConfigService } from "src/config/config.service";
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
@@ -59,6 +62,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly cfCoreService: CFCoreService,
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
+    private readonly configService: ConfigService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly log: LoggerService,
     private readonly transferService: TransferService,
@@ -97,6 +101,12 @@ export default class ListenerService implements OnModuleInit {
       },
       INSTALL_EVENT: async (data: InstallMessage): Promise<void> => {
         this.logEvent(INSTALL_EVENT, data);
+        const appInstance = await this.cfCoreService.getAppInstanceDetails(data.data.params.appInstanceId)
+        if((await this.configService.getDefaultApps()).filter(
+          (app: DefaultApp) => app.name === WithdrawApp,
+        )[0].appDefinitionAddress == appInstance.appInterface.addr) {
+          this.channelService.respondToUserWithdraw(appInstance);
+        }
       },
       // TODO: make cf return app instance id and app def?
       INSTALL_VIRTUAL_EVENT: async (data: InstallVirtualMessage): Promise<void> => {
@@ -159,6 +169,13 @@ export default class ListenerService implements OnModuleInit {
           await this.channelRepository.findByUserPublicIdentifier(data.from),
         );
         this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+        const appInstance = await this.cfCoreService.getAppInstanceDetails(data.data.appInstanceId)
+        if((await this.configService.getDefaultApps()).filter(
+          (app: DefaultApp) => app.name === WithdrawApp,
+        )[0].appDefinitionAddress == appInstance.appInterface.addr) {
+          this.log.debug(`User countersigned withdraw commitment! Finalizing.`)
+          this.channelService.respondToUserWithdraw(appInstance);
+        }
       },
       WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
         this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
