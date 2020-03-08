@@ -108,7 +108,6 @@ export interface INodeApiClient {
   getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  withdraw(tx: ProtocolTypes.MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<any>;
   resolveLinkedTransfer(
     paymentId: string,

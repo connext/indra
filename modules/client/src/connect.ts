@@ -269,8 +269,8 @@ export const connect = async (
   await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
-  log.debug("Resubmitting active withdrawals");
-  await client.resubmitActiveWithdrawal();
+  // log.debug("Resubmitting active withdrawals");
+  // await client.resubmitActiveWithdrawal();
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
