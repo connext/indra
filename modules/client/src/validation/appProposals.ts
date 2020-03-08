@@ -323,4 +323,5 @@ export const appProposalValidation: ProposalValidator = {
   SimpleLinkedTransferApp: validateLinkedTransferApp,
   SimpleTransferApp: validateSimpleTransferApp,
   SimpleTwoPartySwapApp: validateSwapApp,
+  WithdrawApp: baseAppValidation, // TODO ARJUN: How does this work?
 };
