@@ -10,15 +10,19 @@ import "../libs/LibOutcome.sol";
 /// @title Withdraw App
 /// @notice This contract allows a user to trustlessly generate a withdrawal
 ///         commitment by unlocking funds conditionally upon valid counterparty sig
+
+///         THIS CONTRACT WILL ONLY WORK FOR 2-PARTY CHANNELS!
 contract WithdrawApp is CounterfactualApp {
 
     using SafeMath for uint256;
     using ECDSA for bytes32;
 
     struct AppState {
+        // coinTransfers[0].to == recipient;
+        // coinTransfers[0].amount == withdrawAmount;
         LibOutcome.CoinTransfer[2] coinTransfers;
-        bytes[] signatures;
-        address[] signers;
+        bytes[2] signatures;
+        address[2] signers;
         bytes32 data;
         bool finalized;
     }
