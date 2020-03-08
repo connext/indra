@@ -1,6 +1,7 @@
 import {
   chan_storeSet,
   chan_storeGet,
+  chan_signWithdrawCommitment,
   chan_nodeAuth,
   chan_restoreState,
   IChannelProvider,
@@ -80,9 +81,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_storeGet:
         result = await this.storeGet(params.path);
         break;
-      case chan_nodeAuth:
+      case chan_signWithdrawCommitment:
         result = await this.walletSign(params.message);
         break;
+      case chan_nodeAuth:
+          result = await this.walletSign(params.message);
+          break;
       case chan_restoreState:
         result = await this.restoreState(params.path);
         break;
