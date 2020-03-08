@@ -21,9 +21,23 @@ export type FastSignedTransferResponse = {
 
 export type ResolveFastSignedTransferParameters = {
   conditionType: typeof FAST_SIGNED_TRANSFER;
+  paymentId: string;
   data: string;
   signature: string;
 };
+
+export type ResolveFastSignedTransferResponse<T = string> = {
+  appId: string;
+  sender: string;
+  paymentId: string;
+  amount: T;
+  assetId: string;
+  signer: string;
+  meta?: object;
+};
+export type ResolveFastSignedTransferResponseBigNumber = ResolveFastSignedTransferResponse<
+  BigNumber
+>;
 
 export enum FastSignedTransferActionType {
   CREATE,
@@ -43,7 +57,6 @@ export type FastSignedTransfer<T = string> = {
 export type FastSignedTransferAppState<T = string> = {
   lockedPayments: FastSignedTransfer<T>[];
   coinTransfers: [CoinTransfer<T>, CoinTransfer<T>];
-  finalized: boolean;
   turnNum: T;
 };
 export type FastSignedTransferAppStateBigNumber = FastSignedTransferAppState<BigNumber>;

@@ -28,3 +28,4 @@ export const RedlockProviderId = "REDLOCK";
 export const SwapRateProviderId = "SWAP_RATE";
 export const TransferProviderId = "TRANSFER";
 export const LinkedTransferProviderId = "LINKED_TRANSFER";
+export const FastSignedTransferProviderId = "FAST_SIGNED_TRANSFER";

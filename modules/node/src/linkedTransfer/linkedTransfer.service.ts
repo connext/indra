@@ -133,22 +133,6 @@ export class LinkedTransferService {
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
 
-    const ethNetwork = await this.configService.getEthNetwork();
-    const simpleLinkedTransferApp = await this.appRegistryRepository.findByNameAndNetwork(
-      SimpleLinkedTransferApp,
-      ethNetwork.chainId,
-    );
-    const installedApps = await this.cfCoreService.getAppInstances();
-    const senderApp = installedApps.find(
-      (app: AppInstanceJson) =>
-        app.appInterface.addr === simpleLinkedTransferApp.appDefinitionAddress &&
-        (app.latestState as SimpleLinkedTransferAppStateBigNumber).paymentId === paymentId,
-    );
-
-    if (!senderApp) {
-      throw new Error(`App with provided paymentId has not been installed: ${paymentId}`);
-    }
-
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(

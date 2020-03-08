@@ -337,16 +337,6 @@ export class CFCoreService {
     appInstanceId: string,
     action: AppActionBigNumber,
   ): Promise<CFCoreTypes.TakeActionResult> {
-    // check the app is actually installed
-    await this.assertAppInstalled(appInstanceId);
-    // check state is not finalized
-    const state: CFCoreTypes.GetStateResult = await this.getAppState(appInstanceId);
-    this.log.info(`Taking action on app ${appInstanceId}`);
-    this.log.debug(`Taking action against state: ${stringify(state)}`);
-    // FIXME: casting?
-    if ((state.state as any).finalized) {
-      throw new Error(`Cannot take action on an app with a finalized state.`);
-    }
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: ProtocolTypes.chan_takeAction,
@@ -362,8 +352,6 @@ export class CFCoreService {
   }
 
   async uninstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult> {
-    // check the app is actually installed
-    await this.assertAppInstalled(appInstanceId);
     this.log.info(`Calling uninstallApp for appInstanceId ${appInstanceId}`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
@@ -395,7 +383,7 @@ export class CFCoreService {
     return uninstallResponse.result.result as CFCoreTypes.DepositResult;
   }
 
-  async getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]> {
+  async getAppInstances(multisigAddress: string): Promise<AppInstanceJson[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: ProtocolTypes.chan_getAppInstances,
@@ -472,13 +460,8 @@ export class CFCoreService {
     return appInstance as AppInstanceJson;
   }
 
-  async getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult | undefined> {
+  async getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult> {
     // check the app is actually installed, or returned undefined
-    const err = await this.appNotInstalled(appInstanceId);
-    if (err) {
-      this.log.warn(err);
-      return undefined;
-    }
     const stateResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: ProtocolTypes.chan_getState,
@@ -530,29 +513,6 @@ export class CFCoreService {
     );
     this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
   };
-
-  private async appNotInstalled(appInstanceId: string): Promise<string | undefined> {
-    const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceJson) => app.identityHash === appInstanceId);
-    if (!app || app.length === 0) {
-      return `Could not find installed app with id: ${appInstanceId}. Installed apps: ${stringify(
-        apps,
-      )}.`;
-    }
-    if (app.length > 1) {
-      return `CRITICAL ERROR: found multiple apps with the same id. Installed apps: ${stringify(
-        apps,
-      )}.`;
-    }
-    return undefined;
-  }
-
-  private async assertAppInstalled(appInstanceId: string): Promise<void> {
-    const err = await this.appNotInstalled(appInstanceId);
-    if (err) {
-      throw new Error(err);
-    }
-  }
 
   registerCfCoreListener(event: CFCoreTypes.EventName, callback: (data: any) => any): void {
     this.log.info(`Registering cfCore callback for event ${event}`);

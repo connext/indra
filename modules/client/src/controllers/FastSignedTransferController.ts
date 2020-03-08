@@ -3,6 +3,7 @@ import {
   convertFastSignedTransferAppState,
   FastSignedTransferApp,
 } from "@connext/apps";
+import { xkeyKthAddress } from "@connext/cf-core";
 import {
   AppInstanceJson,
   ProtocolTypes,
@@ -11,6 +12,7 @@ import {
   FastSignedTransferActionType,
   FastSignedTransferAppAction,
   minBN,
+  FastSignedTransferAppStateBigNumber,
 } from "@connext/types";
 import { Zero, MaxUint256, HashZero } from "ethers/constants";
 
@@ -26,18 +28,19 @@ import {
 
 import { AbstractController } from "./AbstractController";
 import { BigNumber, hexZeroPad } from "ethers/utils";
-import { xkeyKthAddress } from "@connext/cf-core";
 
-const findInstalledFastSignedApp = (
+const findInstalledFastSignedAppWithSpace = (
+  amount: BigNumber,
   apps: AppInstanceJson[],
   recipientFreeBalanceAddress: string,
   fastSignedTransferAppDefAddress: string,
 ): AppInstanceJson | undefined => {
   return apps.find(app => {
-    const latestState = app.latestState as FastSignedTransferAppState;
+    const latestState = app.latestState as FastSignedTransferAppStateBigNumber;
     return (
       app.appInterface.addr === fastSignedTransferAppDefAddress && // interface matches
-      latestState.coinTransfers[1].to === recipientFreeBalanceAddress // recipient matches
+      latestState.coinTransfers[1].to === recipientFreeBalanceAddress && // recipient matches
+      latestState.coinTransfers[0].amount.gte(amount)
     );
   });
 };
@@ -73,38 +76,16 @@ export class FastSignedTransferController extends AbstractController {
     );
 
     const installedApps = await this.connext.getAppInstances();
-    const installedTransferApp = findInstalledFastSignedApp(
+    const installedTransferApp = findInstalledFastSignedAppWithSpace(
+      amount,
       installedApps,
       xpubToAddress(recipient),
       this.connext.config.contractAddresses.FastSignedTransfer,
     );
 
-    // assume the app needs to be installed
-    let needsInstall = true;
-
     let transferAppInstanceId: string;
-    if (installedTransferApp) {
-      const latestState = convertFastSignedTransferAppState(
-        `bignumber`,
-        installedTransferApp.latestState as FastSignedTransferAppState,
-      );
-
-      // check sender amount
-      if (latestState.coinTransfers[0].amount.gt(amount)) {
-        // app needs to be finalized and re-installed
-        this.log.info(`Installed app does not have funds for transfer, reinstalling`);
-
-        // uninstall
-        await this.connext.uninstallApp(installedTransferApp.identityHash);
-      } else {
-        // app is installed and has funds, can directly take action
-        needsInstall = false;
-        transferAppInstanceId = installedTransferApp.identityHash;
-      }
-    }
-
     // install if needed
-    if (needsInstall) {
+    if (!installedTransferApp) {
       const {
         actionEncoding,
         stateEncoding,
@@ -149,6 +130,8 @@ export class FastSignedTransferController extends AbstractController {
       } as ProtocolTypes.ProposeInstallParams;
 
       transferAppInstanceId = await this.proposeAndInstallLedgerApp(installParams);
+    } else {
+      transferAppInstanceId = installedTransferApp.identityHash;
     }
 
     // always take action to create payment

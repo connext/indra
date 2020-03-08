@@ -29,6 +29,7 @@ import { EditViewTable1578621554000 } from "../../migrations/1578621554000-edit-
 import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-network-to-chain-id";
 import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
 import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
+import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
 
 export const entities = [
   AppRegistry,
@@ -57,6 +58,7 @@ export const migrations = [
   NetworkToChainId1579686361011,
   AddAnonymizedViewTables1581090243171,
   RebalancingProfile1581796200880,
+  fastSignedTransfer1583682931763,
 ];
 
 @Injectable()

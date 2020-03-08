@@ -6,7 +6,7 @@ import { IChannelProvider } from "./channelProvider";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
 import { ProtocolTypes } from "./protocol";
-import { ResolveLinkedTransferResponse } from "./apps";
+import { ResolveLinkedTransferResponse, ResolveFastSignedTransferResponse } from "./apps";
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
@@ -78,6 +78,13 @@ export interface PendingAsyncTransfer {
   paymentId: string;
 }
 
+export interface PendingFastSignedTransfer {
+  assetId: string;
+  amount: string;
+  paymentId: string;
+  signer: string;
+}
+
 enum LinkedTransferStatus {
   PENDING = "PENDING",
   REDEEMED = "REDEEMED",
@@ -132,6 +139,7 @@ export interface INodeApiClient {
   withdraw(tx: ProtocolTypes.MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
+  resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;

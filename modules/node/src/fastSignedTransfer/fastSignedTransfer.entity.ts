@@ -43,14 +43,6 @@ export class FastSignedTransfer {
 
   @Column("text")
   @IsBytes32()
-  senderAppInstanceId!: string;
-
-  @Column("text", { nullable: true })
-  @IsBytes32()
-  receiverAppInstanceId!: string;
-
-  @Column("text")
-  @IsBytes32()
   paymentId!: string;
 
   @Column("text", { nullable: true })
@@ -63,6 +55,14 @@ export class FastSignedTransfer {
 
   @Column("enum", { default: FastSignedTransferStatus.PENDING, enum: FastSignedTransferStatus })
   status!: FastSignedTransferStatus;
+
+  @Column("text")
+  @IsBytes32()
+  senderAppInstanceId!: string;
+
+  @Column("text", { nullable: true })
+  @IsBytes32()
+  receiverAppInstanceId!: string;
 
   @ManyToOne(
     (type: any) => Channel,

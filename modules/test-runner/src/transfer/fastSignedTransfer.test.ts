@@ -3,7 +3,6 @@ import {
   FastSignedTransferParameters,
   FAST_SIGNED_TRANSFER,
   FastSignedTransferAppStateBigNumber,
-  FastSignedTransfer,
   bigNumberifyObj,
   CoinTransfer,
 } from "@connext/types";
@@ -28,7 +27,7 @@ describe("Fast Signed Transfer", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("Should send a fast signed transfer", async () => {
+  it.only("Should send a fast signed transfer", async () => {
     const paymentId = hexlify(randomBytes(32));
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
