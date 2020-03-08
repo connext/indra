@@ -119,12 +119,14 @@ export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
 export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
 export const SimpleTransferApp = "SimpleTransferApp";
 export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
+export const WithdrawApp = "WithdrawApp";
 
 export const SupportedApplications = {
   [CoinBalanceRefundApp]: CoinBalanceRefundApp,
   [SimpleLinkedTransferApp]: SimpleLinkedTransferApp,
   [SimpleTransferApp]: SimpleTransferApp,
   [SimpleTwoPartySwapApp]: SimpleTwoPartySwapApp,
+  [WithdrawApp]: WithdrawApp
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 
@@ -284,3 +286,19 @@ export type CoinBalanceRefundAppState<T = string> = {
   tokenAddress: string;
 };
 export type CoinBalanceRefundAppStateBigNumber = CoinBalanceRefundAppState<BigNumber>;
+
+////////////////////////////////////
+// Withdraw
+
+export type WithdrawAppState<T = string> = {
+  transfers: [CoinTransfer<T>, CoinTransfer<T>];
+  signatures: [string, string];
+  signers: [string, string];
+  data: string;
+  finalized: boolean;
+}
+
+export type WithdrawAppStateBigNumber = WithdrawAppState<BigNumber>;
+export type WithdrawAppAction = {
+  signature: string;
+};
