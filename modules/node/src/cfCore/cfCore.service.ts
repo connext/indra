@@ -6,9 +6,10 @@ import {
   StateChannelJSON,
   REJECT_INSTALL_EVENT,
   ProtocolTypes,
+  WithdrawParameters,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -27,6 +28,7 @@ import {
 } from "../util";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
+import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
 
 Injectable();
 export class CFCoreService {
@@ -175,33 +177,24 @@ export class CFCoreService {
     return withdrawRes.result.result as CFCoreTypes.WithdrawResult;
   }
 
-  async generateWithdrawCommitment(
-    multisigAddress: string,
-    amount: BigNumber,
-    assetId: string = AddressZero,
-    recipient: string = this.cfCore.freeBalanceAddress,
-  ): Promise<CFCoreTypes.WithdrawCommitmentResult> {
-    this.log.debug(
-      `Calling ${ProtocolTypes.chan_withdraw} with params: ${stringify({
-        amount,
-        multisigAddress,
-        tokenAddress: assetId,
-      })}`,
-    );
-    const withdrawRes = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: ProtocolTypes.chan_withdrawCommitment,
-      parameters: {
-        amount,
-        multisigAddress,
+  async createWithdrawCommitment(params: WithdrawParameters<BigNumber>, multisigAddress: string): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
+    const { assetId, amount, recipient } = params;
+    const channel = await this.getStateChannel(multisigAddress);
+    if ( assetId === HashZero) {
+      return new WithdrawETHCommitment(
+        channel.data.multisigAddress,
+        channel.data.freeBalanceAppInstance.participants,
         recipient,
-        tokenAddress: assetId,
-      } as CFCoreTypes.WithdrawCommitmentParams,
-    });
-    this.log.debug(
-      `withdrawCommitment called with result ${stringify(withdrawRes.result.result)}`,
+        amount,
+      );
+    }
+    return new WithdrawERC20Commitment(
+      channel.data.multisigAddress,
+      channel.data.freeBalanceAppInstance.participants,
+      recipient,
+      amount,
+      assetId,
     );
-    return withdrawRes.result.result as CFCoreTypes.WithdrawCommitmentResult;
   }
 
   async proposeInstallApp(
