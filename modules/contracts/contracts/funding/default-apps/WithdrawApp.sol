@@ -18,9 +18,10 @@ contract WithdrawApp is CounterfactualApp {
     using ECDSA for bytes32;
 
     struct AppState {
-        // coinTransfers[0].to == recipient;
-        // coinTransfers[0].amount == withdrawAmount;
-        LibOutcome.CoinTransfer[2] coinTransfers;
+        // Note:
+        // transfers[0].to == recipient;
+        // transfers[0].amount == withdrawAmount;
+        LibOutcome.CoinTransfer[2] transfers;
         bytes[2] signatures;
         address[2] signers;
         bytes32 data;
@@ -69,12 +70,12 @@ contract WithdrawApp is CounterfactualApp {
              */
             transfers = LibOutcome.CoinTransfer[2]([
                 LibOutcome.CoinTransfer(
-                    state.coinTransfers[0].to,
+                    state.transfers[0].to,
                     /* should be set to 0 */
                     0
                 ),
                 LibOutcome.CoinTransfer(
-                    state.coinTransfers[1].to,
+                    state.transfers[1].to,
                     /* should always be 0 */
                     0
                 )
@@ -85,11 +86,11 @@ contract WithdrawApp is CounterfactualApp {
              */
             transfers = LibOutcome.CoinTransfer[2]([
                 LibOutcome.CoinTransfer(
-                    state.coinTransfers[0].to,
-                    state.coinTransfers[0].amount
+                    state.transfers[0].to,
+                    state.transfers[0].amount
                 ),
                 LibOutcome.CoinTransfer(
-                    state.coinTransfers[1].to,
+                    state.transfers[1].to,
                     0
                 )
             ]);
