@@ -2,7 +2,7 @@ import { Interface, joinSignature, keccak256, Signature, solidityPack } from "et
 
 import { MinimumViableMultisig } from "../contracts";
 import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
-import { sortSignaturesBySignerAddress } from "../utils";
+import { sortSignaturesBySignerAddress, sortStringSignaturesBySignerAddress } from "../utils";
 
 /// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment extends EthereumCommitment {
@@ -12,12 +12,19 @@ export abstract class MultisigCommitment extends EthereumCommitment {
 
   abstract getTransactionDetails(): MultisigTransaction;
 
-  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
+  public getSignedTransaction(sigs: Signature[] | string[]): CFCoreTypes.MinimalTransaction {
     const multisigInput = this.getTransactionDetails();
+    let signaturesList: string[];
 
-    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(
-      joinSignature,
-    );
+    if(typeof sigs[0] == "string") {
+      //@ts-ignore
+      signaturesList = sortStringSignaturesBySignerAddress(this.hashToSign(), sigs);
+    } else {
+      //@ts-ignore
+      signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(
+        joinSignature,
+      );
+    }
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,
