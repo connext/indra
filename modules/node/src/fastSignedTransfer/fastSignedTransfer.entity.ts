@@ -53,6 +53,10 @@ export class FastSignedTransfer {
   @IsValidHex()
   data!: string;
 
+  @Column("text", { nullable: true })
+  @IsValidHex()
+  signature!: string;
+
   @Column("enum", { default: FastSignedTransferStatus.PENDING, enum: FastSignedTransferStatus })
   status!: FastSignedTransferStatus;
 

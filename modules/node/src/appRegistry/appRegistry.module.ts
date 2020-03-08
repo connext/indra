@@ -11,6 +11,7 @@ import { SwapRateModule } from "../swapRate/swapRate.module";
 import { TransferModule } from "../transfer/transfer.module";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
+import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -29,7 +30,12 @@ import { AppActionsService } from "./appActions.service";
     MessagingModule,
     SwapRateModule,
     TransferModule,
-    TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository, LinkedTransferRepository]),
+    TypeOrmModule.forFeature([
+      AppRegistryRepository,
+      ChannelRepository,
+      LinkedTransferRepository,
+      FastSignedTransferRepository,
+    ]),
   ],
   providers: [AppRegistryService, AppActionsService],
 })

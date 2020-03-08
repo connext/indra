@@ -10,13 +10,16 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { FastSignedTransferRepository } from "./fastSignedTransfer.repository";
 import { TransferRepository } from "../transfer/transfer.repository";
+import { AuthModule } from "../auth/auth.module";
 
 import { FastSignedTransferService } from "./fastSignedTransfer.service";
+import { fastSignedTransferProviderFactory } from "./fastSignedTransfer.provider";
 
 @Module({
   controllers: [],
   exports: [FastSignedTransferService],
   imports: [
+    AuthModule,
     CFCoreModule,
     ChannelModule,
     ConfigModule,
@@ -29,6 +32,6 @@ import { FastSignedTransferService } from "./fastSignedTransfer.service";
       TransferRepository,
     ]),
   ],
-  providers: [FastSignedTransferService],
+  providers: [FastSignedTransferService, fastSignedTransferProviderFactory],
 })
 export class FastSignedTransferTransferModule {}

@@ -17,7 +17,7 @@ export class ResolveFastSignedTransferController extends AbstractController {
     paymentId,
     data,
     signature,
-  }: ResolveFastSignedTransferParameters) => {
+  }: ResolveFastSignedTransferParameters): Promise<ResolveFastSignedTransferResponse> => {
     validate(
       invalid32ByteHexString(paymentId),
       invalid32ByteHexString(data),
@@ -72,5 +72,7 @@ export class ResolveFastSignedTransferController extends AbstractController {
       });
       throw e;
     }
+
+    return resolveRes;
   };
 }

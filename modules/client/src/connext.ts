@@ -383,7 +383,10 @@ export class ConnextClient implements IConnextClient {
         });
       }
       case FAST_SIGNED_TRANSFER: {
-        // return this.resolveFastSignedTransferController.resolveFastSignedTransfer({ ...params });
+        return this.resolveFastSignedTransferController.resolveFastSignedTransfer({
+          ...params,
+          conditionType: FAST_SIGNED_TRANSFER,
+        });
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);

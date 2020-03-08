@@ -89,7 +89,7 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
   }
 }
 
-export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
+export const fastSignedTransferProviderFactory: FactoryProvider<Promise<void>> = {
   inject: [
     AuthService,
     LoggerService,

@@ -1,9 +1,3 @@
-import { Injectable } from "@nestjs/common";
-
-import { ChannelRepository } from "../channel/channel.repository";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
-import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
-import { LoggerService } from "../logger/logger.service";
 import {
   SupportedApplication,
   FastSignedTransferApp,
@@ -16,17 +10,26 @@ import {
   FastSignedTransferAppAction,
   FastSignedTransferActionType,
 } from "@connext/types";
-import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
+import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
+
+import { ChannelRepository } from "../channel/channel.repository";
+import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
+import { LoggerService } from "../logger/logger.service";
+import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
+import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
+import { FastSignedTransferStatus } from "../fastSignedTransfer/fastSignedTransfer.entity";
 
 @Injectable()
 export class AppActionsService {
   constructor(
     private readonly channelRepository: ChannelRepository,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly log: LoggerService,
     private readonly transferService: LinkedTransferService,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly fastSignedTransferRepository: FastSignedTransferRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -80,6 +83,15 @@ export class AppActionsService {
         break;
       }
       case FastSignedTransferActionType.UNLOCK: {
+        for (const lockedPayment of action.newLockedPayments) {
+          let transfer = await this.fastSignedTransferRepository.findByPaymentIdOrThrow(
+            lockedPayment.paymentId,
+          );
+          transfer.signature = lockedPayment.signature;
+          transfer.data = lockedPayment.data;
+          transfer.status = FastSignedTransferStatus.REDEEMED;
+          await this.fastSignedTransferRepository.save(transfer);
+        }
       }
     }
   }
@@ -89,10 +101,7 @@ export class AppActionsService {
     newState: SimpleLinkedTransferAppState,
     from: string,
   ): Promise<void> {
-    let transfer = await this.linkedTransferRepository.findByPaymentId(newState.paymentId);
-    if (!transfer) {
-      throw new Error(`Transfer does not exist! ${appInstanceId}`);
-    }
+    let transfer = await this.linkedTransferRepository.findByPaymentIdOrThrow(newState.paymentId);
     if (appInstanceId !== transfer.receiverAppInstanceId) {
       this.log.debug(
         `Not updating transfer preimage or marking as redeemed for sender update state events`,

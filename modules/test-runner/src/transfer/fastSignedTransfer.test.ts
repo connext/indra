@@ -5,8 +5,18 @@ import {
   FastSignedTransferAppStateBigNumber,
   bigNumberifyObj,
   CoinTransfer,
+  ResolveLinkedTransferParameters,
+  ResolveFastSignedTransferResponse,
+  ResolveFastSignedTransferParameters,
 } from "@connext/types";
-import { hexlify, randomBytes, bigNumberify, BigNumber, hexZeroPad } from "ethers/utils";
+import {
+  hexlify,
+  randomBytes,
+  bigNumberify,
+  BigNumber,
+  hexZeroPad,
+  solidityKeccak256,
+} from "ethers/utils";
 import { Wallet } from "ethers";
 import { AddressZero, One, HashZero, Zero } from "ethers/constants";
 
@@ -46,9 +56,9 @@ describe("Fast Signed Transfer", () => {
       meta: { foo: "bar" },
     } as FastSignedTransferParameters);
 
-    const transferApp = await clientA.getAppInstanceDetails(transferAppInstanceId);
+    let transferApp = await clientA.getAppInstanceDetails(transferAppInstanceId);
     expect(transferApp).to.be.ok;
-    const transferAppState = transferApp.appInstance
+    let transferAppState = transferApp.appInstance
       .latestState as FastSignedTransferAppStateBigNumber;
 
     const coinTransfers: CoinTransfer<BigNumber>[] = transferAppState.coinTransfers.map(
@@ -69,5 +79,23 @@ describe("Fast Signed Transfer", () => {
     expect(transfer[3]).to.eq(paymentId);
     expect(transfer[4]).to.eq(HashZero);
     expect(transfer[5]).to.eq(hexZeroPad(HashZero, 65));
+
+    const data = hexlify(randomBytes(32));
+    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+    console.log("digest: ", digest);
+    const signature = await signerWallet.signMessage(digest);
+    console.log("signature: ", signature);
+
+    await clientB.resolveCondition({
+      conditionType: FAST_SIGNED_TRANSFER,
+      paymentId,
+      signature,
+      data,
+    } as ResolveFastSignedTransferParameters);
+
+    transferApp = await clientA.getAppInstanceDetails(transferAppInstanceId);
+    console.log("transferApp: ", transferApp);
+    transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppStateBigNumber;
+    console.log("transferAppState: ", transferAppState);
   });
 });
