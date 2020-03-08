@@ -13,7 +13,7 @@ import {
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, WithdrawAppState, WithdrawAppAction, UPDATE_STATE_EVENT } from "@connext/types";
+import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, WithdrawAppState, WithdrawAppAction, UPDATE_STATE_EVENT, AppInstanceJson } from "@connext/types";
 import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
 const ETH_ADDRESS = AddressZero
 
@@ -39,7 +39,7 @@ export class WithdrawalController extends AbstractController {
       2. UserSubmitted withdraw tx fails --> emit withdraw_failed
       3. No node submitted withdraw tx within time period?
     */
-    return new Promise( async (resolve,reject): Promise<void> => {
+    return new Promise( async (resolve): Promise<void> => {
       const params = convert.Withdraw(`bignumber`, paramsRaw);
       let transaction: TransactionResponse | undefined;
   
@@ -101,31 +101,34 @@ export class WithdrawalController extends AbstractController {
   (b) Set timeout on withdrawal within which we assume the node is offline? For now we can skip this
   (c) Resolve or reject all promises
   */
-  public async respondToCounterpartyWithdraw(data: any) {
+  public async respondToCounterpartyWithdraw(appInstance: AppInstanceJson) {
+    const state = appInstance.latestState as WithdrawAppState<BigNumber>;
     const generatedCommitment = await this.createWithdrawCommitment({
-      amount: data.amount,
-      assetId: data.assetId,
-      recipient: data.recipient
+      amount: state.transfers[0].amount,
+      assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+      recipient: state.transfers[0].to
     } as WithdrawParameters<BigNumber>)
 
-    const recoveredSigner = recoverAddress(generatedCommitment.hashToSign(), data.withdrawerSignatureOnWithdrawCommitment)
+    const recoveredSigner = recoverAddress(generatedCommitment.hashToSign(), state.signatures[0])
 
-    if(generatedCommitment !== data.withdrawCommitment) {
-      throw new Error(`Generated withdraw commitment did not match commitment from initial state: ${generatedCommitment} vs ${data.withdrawCommitment}`)
+    if(generatedCommitment.hashToSign() !== state.data) {
+      throw new Error(`Generated withdraw commitment did not match commitment from initial state: ${generatedCommitment.hashToSign()} vs ${state.data}`)
     }
 
-    if(recoveredSigner !== data.signer[0]) {
-      throw new Error(`Recovered signer did not match signer in app state: ${recoveredSigner} vs ${data.signer[0]}`)
+    if(recoveredSigner !== state.signers[0]) {
+      throw new Error(`Recovered signer did not match signer in app state: ${recoveredSigner} vs ${state.signers[0]}`)
     }
 
     if(recoveredSigner !== xpubToAddress(this.connext.nodePublicIdentifier)) {
       throw new Error(`Recoverd signer did not match node's signer: ${recoveredSigner} vs ${xpubToAddress(this.connext.nodePublicIdentifier)}`)
     }
 
-    //TODO ARJUN validate our cointransfers amount is zero
+    if(state.transfers[1].amount !== Zero) {
+      throw new Error(`Will not withdraw - our transfer amount is not equal to zero`)
+    }
 
     const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(generatedCommitment);
-    await this.connext.takeAction(data.appId, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
+    await this.connext.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
   }
 
   private async validateWithdrawParams(params: WithdrawParameters<BigNumber>): Promise<void> {
