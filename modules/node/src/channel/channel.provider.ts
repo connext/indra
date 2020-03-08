@@ -85,12 +85,12 @@ class ChannelMessaging extends AbstractMessagingProvider {
     ) as unknown)) as CFCoreTypes.DepositResult;
   }
 
-  async withdraw(
-    pubId: string,
-    data: { tx: CFCoreTypes.MinimalTransaction },
-  ): Promise<TransactionResponse> {
-    return await this.channelService.withdrawForClient(pubId, data.tx);
-  }
+  // async withdraw(
+  //   pubId: string,
+  //   data: { tx: CFCoreTypes.MinimalTransaction },
+  // ): Promise<TransactionResponse> {
+  //   return await this.channelService.withdrawForClient(pubId, data.tx);
+  // }
 
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
     const profile = convert.RebalanceProfile("bignumber", data.profile);
@@ -145,10 +145,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
       "channel.create.>",
       this.authService.useUnverifiedPublicIdentifier(this.createChannel.bind(this)),
     );
-    await super.connectRequestReponse(
-      "channel.withdraw.>",
-      this.authService.useUnverifiedPublicIdentifier(this.withdraw.bind(this)),
-    );
+    // await super.connectRequestReponse(
+    //   "channel.withdraw.>",
+    //   this.authService.useUnverifiedPublicIdentifier(this.withdraw.bind(this)),
+    // );
     await super.connectRequestReponse(
       "channel.request-collateral.>",
       this.authService.useUnverifiedPublicIdentifier(this.requestCollateral.bind(this)),
