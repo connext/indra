@@ -8,6 +8,7 @@ import {
   chan_storeGet,
   chan_storeSet,
   chan_restoreState,
+  TransactionResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -395,25 +396,26 @@ export class ConnextClient implements IConnextClient {
     return value;
   };
 
-  public watchForUserWithdrawal = async (): Promise<void> => {
+  public watchForUserWithdrawal = async (): Promise<TransactionResponse | undefined> => {
     // poll for withdrawal tx submitted to multisig matching tx data
     const maxBlocks = 15;
     const startingBlock = await this.ethProvider.getBlockNumber();
+    let transaction: TransactionResponse;
 
     // TODO: poller should not be completely blocking, but safe to leave for now
     // because the channel should be blocked
     try {
-      await new Promise((resolve: any, reject: any): any => {
+      transaction = await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on(
           "block",
           async (blockNumber: number): Promise<void> => {
-            const found = await this.checkForUserWithdrawal(blockNumber);
-            if (found) {
+            const transaction = await this.checkForUserWithdrawal(blockNumber);
+            if (transaction) {
               await this.channelProvider.send(chan_storeSet, {
                 pairs: [{ path: withdrawalKey(this.publicIdentifier), value: undefined }],
               });
               this.ethProvider.removeAllListeners("block");
-              resolve();
+              resolve(transaction);
             }
             if (blockNumber - startingBlock >= maxBlocks) {
               this.ethProvider.removeAllListeners("block");
@@ -428,6 +430,7 @@ export class ConnextClient implements IConnextClient {
         await this.retryNodeSubmittedWithdrawal();
       }
     }
+    return transaction
   };
 
   ////////////////////////////////////////
@@ -1085,11 +1088,11 @@ export class ConnextClient implements IConnextClient {
     return undefined;
   };
 
-  private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
+  private checkForUserWithdrawal = async (inBlock: number): Promise<TransactionResponse | undefined> => {
     const val = await this.getLatestNodeSubmittedWithdrawal();
     if (!val) {
       this.log.error("No transaction found in store.");
-      return false;
+      return undefined;
     }
 
     const { tx } = val;
@@ -1097,21 +1100,21 @@ export class ConnextClient implements IConnextClient {
     // the contract method
     const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
     if (txsTo === 0) {
-      return false;
+      return undefined;
     }
 
     const block = await this.ethProvider.getBlock(inBlock);
     const { transactions } = block;
     if (transactions.length === 0) {
-      return false;
+      return undefined;
     }
 
     for (const transactionHash of transactions) {
       const transaction = await this.ethProvider.getTransaction(transactionHash);
       if (this.matchTx(transaction, tx)) {
-        return true;
+        return transaction;
       }
     }
-    return false;
+    return undefined;
   };
 }
