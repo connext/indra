@@ -1,4 +1,4 @@
-import { ILoggerService } from "@connext/types";
+import { ILoggerService, WithdrawApp, AppInstanceJson } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
 import { ConnextClient } from "./connext";
@@ -198,16 +198,17 @@ export class ConnextListener extends ConnextEventEmitter {
 
     this.channelProvider.on(
       ProtocolTypes.chan_install,
-      async (msg: any): Promise<void> => {
-        const {
-          result: {
-            result: { appInstance },
-          },
-        } = msg;
+      async (data: any): Promise<void> => {
+      const appInstance: AppInstanceJson = data.result.result;
         await this.connext.messaging.publish(
           `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
           stringify(appInstance),
         );
+        if(this.connext.appRegistry.filter(
+          (app: DefaultApp) => app.name === WithdrawApp,
+        )[0].appDefinitionAddress == appInstance.appInterface.addr) {
+          this.connext.respondToCounterpartyWithdraw(appInstance);
+        }
       },
     );
 
