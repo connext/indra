@@ -4,6 +4,7 @@ export * from "./methods/errors";
 export { StateChannel } from "./models";
 export * from "./node";
 export * from "./private-keys-generator";
+export { WithdrawERC20Commitment, WithdrawETHCommitment } from "./ethereum";
 export {
   getCreate2MultisigAddress,
   bigNumberifyJson,
