@@ -4,6 +4,7 @@ import { BigNumber } from "ethers/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 import { convertFastSignedTransferAppState } from "./convert";
+import { HashZero } from "ethers/constants";
 
 export const validateFastSignedTransferApp = (
   params: CFCoreTypes.ProposeInstallParams,
@@ -18,6 +19,10 @@ export const validateFastSignedTransferApp = (
   initialState.coinTransfers = initialState.coinTransfers.map((transfer: CoinTransfer<BigNumber>) =>
     bigNumberifyObj(transfer),
   ) as any;
+
+  if (initialState.paymentId !== HashZero) {
+    throw new Error(`Cannot install with pre-populated paymentId`);
+  }
 
   const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
   const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);

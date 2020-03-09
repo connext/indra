@@ -21,11 +21,10 @@ export function convertFastSignedTransferAppState<To extends NumericTypeName>(
   obj: FastSignedTransferAppState<any>,
 ): FastSignedTransferAppState<NumericTypes[To]> {
   return {
-    ...obj,
     coinTransfers: [
       convertAmountField(to, obj.coinTransfers[0]),
       convertAmountField(to, obj.coinTransfers[1]),
     ],
-    lockedPayments: obj.lockedPayments.map(lockedPayment => convertAmountField(to, lockedPayment)),
+    ...convertAmountField(to, obj),
   };
 }

@@ -1,25 +1,20 @@
-import { SimpleLinkedTransferApp, FastSignedTransferApp } from "@connext/apps";
-
+import { FastSignedTransferApp } from "@connext/apps";
+import { xkeyKthAddress } from "@connext/cf-core";
 import {
   DepositConfirmationMessage,
-  ResolveLinkedTransferResponseBigNumber,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
-  SimpleLinkedTransferAppStateBigNumber,
-  SimpleLinkedTransferAppState,
   AppInstanceJson,
   FastSignedTransferAppStateBigNumber,
-  FastSignedTransferAppState,
   FastSignedTransferAppActionBigNumber,
-  ResolveFastSignedTransferParameters,
   FastSignedTransferActionType,
   ResolveFastSignedTransferResponse,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
-import { HashZero, Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, hexZeroPad } from "ethers/utils";
+import { HashZero, Zero, AddressZero } from "ethers/constants";
+import { BigNumber, hexZeroPad } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -28,15 +23,13 @@ import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { MessagingClientProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
+import { Channel } from "../channel/channel.entity";
 
 import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
 import {
   FastSignedTransfer,
   FastSignedTransferStatus,
 } from "../fastSignedTransfer/fastSignedTransfer.entity";
-import { xkeyKthAddress } from "@connext/cf-core";
-import { Channel } from "src/channel/channel.entity";
-import { xpubToAddress } from "src/util";
 
 const findInstalledFastSignedAppWithSpace = (
   amount: BigNumber,
@@ -127,29 +120,27 @@ export class FastSignedTransferService {
     let installedReceiverApp = findInstalledFastSignedAppWithSpace(
       transfer.amount,
       apps,
-      xkeyKthAddress(transfer.receiverChannel.userPublicIdentifier),
+      xkeyKthAddress(receiverChannel.userPublicIdentifier),
       fastSignedTransferApp.appDefinitionAddress,
     );
 
-    let installedAppInstanceId = installedReceiverApp.identityHash;
+    let installedAppInstanceId: string;
 
     if (!installedReceiverApp) {
       this.log.debug(`Could not find app that allows transfer, installing a new one`);
       installedAppInstanceId = await this.installFastTransferApp(receiverChannel, transfer);
+    } else {
+      installedAppInstanceId = installedReceiverApp.identityHash;
     }
 
     const appAction = {
       actionType: FastSignedTransferActionType.CREATE,
-      newLockedPayments: [
-        {
-          data: HashZero,
-          paymentId,
-          receipientXpub: receiverChannel.userPublicIdentifier,
-          signature: hexZeroPad(HashZero, 65),
-          signer: transfer.signer,
-          amount: transfer.amount,
-        },
-      ],
+      amount: transfer.amount,
+      paymentId,
+      recipientXpub: receiverChannel.userPublicIdentifier,
+      signer: transfer.signer,
+      signature: hexZeroPad(HashZero, 65),
+      data: HashZero,
     } as FastSignedTransferAppActionBigNumber;
 
     await this.cfCoreService.takeAction(installedAppInstanceId, appAction);
@@ -249,7 +240,10 @@ export class FastSignedTransferService {
           to: xkeyKthAddress(channel.userPublicIdentifier),
         },
       ],
-      lockedPayments: [],
+      amount: Zero,
+      paymentId: HashZero,
+      recipientXpub: "",
+      signer: AddressZero,
       turnNum: Zero,
     };
 

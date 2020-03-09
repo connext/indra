@@ -16,6 +16,10 @@ import {
   BigNumber,
   hexZeroPad,
   solidityKeccak256,
+  solidityPack,
+  keccak256,
+  SigningKey,
+  joinSignature,
 } from "ethers/utils";
 import { Wallet } from "ethers";
 import { AddressZero, One, HashZero, Zero } from "ethers/constants";
@@ -39,8 +43,10 @@ describe("Fast Signed Transfer", () => {
 
   it.only("Should send a fast signed transfer", async () => {
     const paymentId = hexlify(randomBytes(32));
+    console.log("paymentId: ", paymentId);
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
+    console.log("signerAddress: ", signerAddress);
 
     const initialChannelBalance = bigNumberify(10);
     const transferAmount = One;
@@ -69,22 +75,20 @@ describe("Fast Signed Transfer", () => {
     expect(coinTransfers[1][0]).eq(xkeyKthAddress(clientA.nodePublicIdentifier));
     expect(coinTransfers[1][1]).eq(Zero);
 
+    console.log("transferAppState: ", transferAppState);
     // locked payments contains transfer info
-    const transfers = transferAppState.lockedPayments;
-    expect(transfers.length).to.eq(1);
-    const [transfer] = transfers;
-    expect(transfer[0]).to.eq(clientB.publicIdentifier);
-    expect(transfer[1]).to.eq(transferAmount);
-    expect(transfer[2]).to.eq(signerAddress);
-    expect(transfer[3]).to.eq(paymentId);
-    expect(transfer[4]).to.eq(HashZero);
-    expect(transfer[5]).to.eq(hexZeroPad(HashZero, 65));
+    expect(transferAppState[0]).to.eq(clientB.publicIdentifier);
+    expect(transferAppState[1]).to.eq(transferAmount);
+    expect(transferAppState[2]).to.eq(signerAddress);
+    expect(transferAppState[3]).to.eq(paymentId);
+    expect(transferAppState[4]).to.eq(HashZero);
+    expect(transferAppState[5]).to.eq(hexZeroPad(HashZero, 65));
 
     const data = hexlify(randomBytes(32));
+
+    const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    console.log("digest: ", digest);
-    const signature = await signerWallet.signMessage(digest);
-    console.log("signature: ", signature);
+    const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
 
     await clientB.resolveCondition({
       conditionType: FAST_SIGNED_TRANSFER,

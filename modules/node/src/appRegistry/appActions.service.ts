@@ -70,28 +70,24 @@ export class AppActionsService {
   ): Promise<void> {
     switch (action.actionType) {
       case FastSignedTransferActionType.CREATE: {
-        for (const lockedPayment of action.newLockedPayments) {
-          await this.transferService.saveFastSignedTransfer(
-            from,
-            AddressZero, // TODO
-            bigNumberify(lockedPayment.amount),
-            appInstanceId,
-            lockedPayment.signer,
-            lockedPayment.paymentId,
-          );
-        }
+        await this.transferService.saveFastSignedTransfer(
+          from,
+          AddressZero, // TODO
+          bigNumberify(action.amount),
+          appInstanceId,
+          action.signer,
+          action.paymentId,
+        );
         break;
       }
       case FastSignedTransferActionType.UNLOCK: {
-        for (const lockedPayment of action.newLockedPayments) {
-          let transfer = await this.fastSignedTransferRepository.findByPaymentIdOrThrow(
-            lockedPayment.paymentId,
-          );
-          transfer.signature = lockedPayment.signature;
-          transfer.data = lockedPayment.data;
-          transfer.status = FastSignedTransferStatus.REDEEMED;
-          await this.fastSignedTransferRepository.save(transfer);
-        }
+        let transfer = await this.fastSignedTransferRepository.findByPaymentIdOrThrow(
+          action.paymentId,
+        );
+        transfer.signature = action.signature;
+        transfer.data = action.data;
+        transfer.status = FastSignedTransferStatus.REDEEMED;
+        await this.fastSignedTransferRepository.save(transfer);
       }
     }
   }
