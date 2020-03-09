@@ -16,6 +16,10 @@ import {
   BigNumber,
   hexZeroPad,
   solidityKeccak256,
+  solidityPack,
+  keccak256,
+  SigningKey,
+  joinSignature,
 } from "ethers/utils";
 import { Wallet } from "ethers";
 import { AddressZero, One, HashZero, Zero } from "ethers/constants";
@@ -37,7 +41,7 @@ describe("Fast Signed Transfer", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("Should send a fast signed transfer", async () => {
+  it.skip("Should send a fast signed transfer", async () => {
     const paymentId = hexlify(randomBytes(32));
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
@@ -69,22 +73,19 @@ describe("Fast Signed Transfer", () => {
     expect(coinTransfers[1][0]).eq(xkeyKthAddress(clientA.nodePublicIdentifier));
     expect(coinTransfers[1][1]).eq(Zero);
 
+    console.log("transferAppState: ", transferAppState);
     // locked payments contains transfer info
-    const transfers = transferAppState.lockedPayments;
-    expect(transfers.length).to.eq(1);
-    const [transfer] = transfers;
-    expect(transfer[0]).to.eq(clientB.publicIdentifier);
-    expect(transfer[1]).to.eq(transferAmount);
-    expect(transfer[2]).to.eq(signerAddress);
-    expect(transfer[3]).to.eq(paymentId);
-    expect(transfer[4]).to.eq(HashZero);
-    expect(transfer[5]).to.eq(hexZeroPad(HashZero, 65));
+    expect(transferAppState.amount).to.eq(transferAmount);
+    expect(transferAppState.paymentId).to.eq(paymentId);
+    expect(transferAppState.recipientXpub).to.eq(clientB.publicIdentifier);
+    expect(transferAppState.signer).to.eq(signerAddress);
+    expect(transferAppState.turnNum).to.eq(One);
 
     const data = hexlify(randomBytes(32));
+
+    const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    console.log("digest: ", digest);
-    const signature = await signerWallet.signMessage(digest);
-    console.log("signature: ", signature);
+    const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
 
     await clientB.resolveCondition({
       conditionType: FAST_SIGNED_TRANSFER,

@@ -84,7 +84,7 @@ export const FastSignedTransferAppActionEncoding = `
     address signer,
     bytes32 paymentId,
     bytes32 data,
-    bytes signature
+    bytes signature,
     uint256 actionType
   )
 `;

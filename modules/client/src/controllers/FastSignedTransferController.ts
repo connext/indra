@@ -1,8 +1,4 @@
-import {
-  convertFastSignedTransferParameters,
-  convertFastSignedTransferAppState,
-  FastSignedTransferApp,
-} from "@connext/apps";
+import { convertFastSignedTransferParameters, FastSignedTransferApp } from "@connext/apps";
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
   AppInstanceJson,
@@ -14,17 +10,10 @@ import {
   minBN,
   FastSignedTransferAppStateBigNumber,
 } from "@connext/types";
-import { Zero, MaxUint256, HashZero } from "ethers/constants";
+import { Zero, MaxUint256, HashZero, AddressZero } from "ethers/constants";
 
 import { stringify, xpubToAddress } from "../lib";
-import {
-  validate,
-  notNegative,
-  invalidAddress,
-  notLessThanOrEqualTo,
-  invalid32ByteHexString,
-  invalidXpub,
-} from "../validation";
+import { validate, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 import { BigNumber, hexZeroPad } from "ethers/utils";
@@ -63,16 +52,11 @@ export class FastSignedTransferController extends AbstractController {
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
     validate(
-      notNegative(amount),
-      invalidAddress(assetId),
-      invalidXpub(recipient),
-      notLessThanOrEqualTo(amount, preTransferBal),
       // amount: 1, maxAllocation: 100
       // eslint-disable-next-line max-len
       notLessThanOrEqualTo(amount, maxAllocation), // if maxAllocation not provided, dont fail this check
       // maxAllocation: 100, preTransferBal: 10
       notLessThanOrEqualTo(maxAllocation.eq(MaxUint256) ? Zero : maxAllocation, preTransferBal),
-      invalid32ByteHexString(paymentId),
     );
 
     const installedApps = await this.connext.getAppInstances();
@@ -115,9 +99,11 @@ export class FastSignedTransferController extends AbstractController {
               to: xkeyKthAddress(this.connext.nodePublicIdentifier),
             },
           ],
-          finalized: false,
           turnNum: Zero,
-          lockedPayments: [], // TODO: figure out if we can add initial state here
+          amount: Zero,
+          paymentId: HashZero,
+          recipientXpub: "",
+          signer: AddressZero,
         } as FastSignedTransferAppState<BigNumber>,
         proposedToIdentifier: this.connext.nodePublicIdentifier,
         initiatorDeposit: initialDeposit,
@@ -135,18 +121,15 @@ export class FastSignedTransferController extends AbstractController {
     }
 
     // always take action to create payment
+    // if previous payment has not been resolved, this will error
     await this.connext.takeAction(transferAppInstanceId, {
       actionType: FastSignedTransferActionType.CREATE,
-      newLockedPayments: [
-        {
-          amount,
-          data: HashZero,
-          paymentId,
-          receipientXpub: recipient,
-          signature: hexZeroPad(HashZero, 65),
-          signer,
-        },
-      ],
+      paymentId,
+      amount,
+      signer,
+      recipientXpub: recipient,
+      data: HashZero,
+      signature: hexZeroPad(HashZero, 65),
     } as FastSignedTransferAppAction<BigNumber>);
 
     return { transferAppInstanceId };

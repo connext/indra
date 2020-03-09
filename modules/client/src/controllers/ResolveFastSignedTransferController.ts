@@ -39,16 +39,13 @@ export class ResolveFastSignedTransferController extends AbstractController {
         .latestState as FastSignedTransferAppStateBigNumber;
       const action = {
         actionType: FastSignedTransferActionType.UNLOCK,
-        newLockedPayments: [
-          {
-            amount: bigNumberify(transfer.amount),
-            data,
-            paymentId,
-            receipientXpub: this.connext.publicIdentifier,
-            signature,
-            signer: transfer.signer,
-          },
-        ],
+        data,
+        signature,
+        // other params are not even necessary
+        amount: bigNumberify(transfer.amount),
+        paymentId,
+        recipientXpub: this.connext.publicIdentifier,
+        signer: transfer.signer,
       } as FastSignedTransferAppActionBigNumber;
 
       const takeActionRes = await this.connext.takeAction(resolveRes.appId, action);
@@ -56,9 +53,9 @@ export class ResolveFastSignedTransferController extends AbstractController {
       // TODO: when to uninstall
 
       if (
-        newState.coinTransfers[1].amount
+        newState.coinTransfers[1][1]
           .sub(transfer.amount)
-          .lt(preTransferAppState.coinTransfers[1].amount)
+          .lt(preTransferAppState.coinTransfers[1][1])
       ) {
         throw new Error(`Transfer amount not present in coin transfer after resolution`);
       }

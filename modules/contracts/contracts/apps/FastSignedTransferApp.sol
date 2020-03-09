@@ -189,5 +189,6 @@ contract FastSignedTransferApp is CounterfactualApp {
         state.amount = 0;
         state.signer = address(0);
         state.paymentId = bytes32(0);
+        return state;
     }
 }
