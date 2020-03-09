@@ -14,7 +14,7 @@ export class InitAppInstanceTable1583612960994 implements MigrationInterface {
         "appDefinition" text NOT NULL,
         "abiEncodings" json NOT NULL,
         "appSeqNo" integer NOT NULL,
-        "identityHash" text NOT NULL,
+        "identityHash" text NOT NULL UNIQUE,
         "initialState" json NOT NULL,
         "latestState" json NOT NULL,
         "latestTimeout" integer NOT NULL,
