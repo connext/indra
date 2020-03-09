@@ -1,7 +1,6 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../../adjudicator/interfaces/CounterfactualApp.sol";
 import "../libs/LibOutcome.sol";
@@ -13,8 +12,6 @@ import "../libs/LibOutcome.sol";
 
 ///         THIS CONTRACT WILL ONLY WORK FOR 2-PARTY CHANNELS!
 contract WithdrawApp is CounterfactualApp {
-
-    using SafeMath for uint256;
     using ECDSA for bytes32;
 
     struct AppState {
@@ -23,13 +20,34 @@ contract WithdrawApp is CounterfactualApp {
         // transfers[0].amount == withdrawAmount;
         LibOutcome.CoinTransfer[2] transfers;
         bytes[2] signatures;
-        address[2] signers;
+        address[2] signers; // must be multisig participants with withdrawer at [0]
         bytes32 data;
         bool finalized;
     }
 
     struct Action {
         bytes signature;
+    }
+
+    function isStateTerminal(bytes calldata encodedState)
+        external
+        pure
+        returns (bool)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+        return state.finalized;
+    }
+
+    function getTurnTaker(
+        bytes calldata encodedState,
+        address[] calldata participants
+    )
+        external
+        pure
+        returns (address)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+        return state.signers[1];
     }
 
 /// Assume that the initial state contains data, signers[], and signatures[0]
