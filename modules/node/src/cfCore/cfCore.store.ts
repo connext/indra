@@ -18,6 +18,8 @@ import {
 } from "../commitment/commitment.repository";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
+import { ConfigService } from "../config/config.service";
+import { OutcomeType } from "../util";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -28,6 +30,7 @@ export class CFCoreStore implements IStoreService {
     private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
+    private readonly configService: ConfigService,
   ) {}
 
   getSchemaVersion(): number {
@@ -53,18 +56,69 @@ export class CFCoreStore implements IStoreService {
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     let channel = await this.channelRepository.findByMultisigAddress(stateChannel.multisigAddress);
     if (!channel) {
+      // update fields that should only be touched on creation
       channel = new Channel();
+      channel.schemaVersion = this.schemaVersion;
+      channel.nodePublicIdentifier = this.configService.getPublicIdentifier();
+      channel.userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.filter(
+        xpub => xpub !== this.configService.getPublicIdentifier(),
+      )[0];
+      channel.multisigAddress = stateChannel.multisigAddress;
+      channel.addresses = stateChannel.addresses;
     }
-    channel.multisigAddress = stateChannel.multisigAddress;
+    // update all other fields
+    // nonce
+    channel.monotonicNumProposedApps = stateChannel.monotonicNumProposedApps;
 
+    /////////////////////////////
+    // free balance
+    let freeBalanceSaved = await this.appInstanceRepository.findByIdentityHash(
+      stateChannel.freeBalanceAppInstance.identityHash,
+    );
+    const { freeBalanceAppInstance: freeBalanceData } = stateChannel;
+    if (!freeBalanceSaved) {
+      freeBalanceSaved = new AppInstance();
+      freeBalanceSaved.identityHash = freeBalanceData.identityHash;
+      freeBalanceSaved.type = AppType.FREE_BALANCE;
+      freeBalanceSaved.abiEncodings = {
+        stateEncoding: freeBalanceData.appInterface.stateEncoding,
+        actionEncoding: freeBalanceData.appInterface.actionEncoding,
+      };
+      freeBalanceSaved.appDefinition = freeBalanceData.appInterface.addr;
+      freeBalanceSaved.appSeqNo = freeBalanceData.appSeqNo;
+      freeBalanceSaved.channel = channel;
+      freeBalanceSaved.outcomeType = OutcomeType[freeBalanceData.outcomeType];
+    }
+    freeBalanceSaved.latestState = freeBalanceData.latestState;
+    freeBalanceSaved.latestTimeout = freeBalanceData.latestTimeout;
+    freeBalanceSaved.latestVersionNumber = freeBalanceData.latestVersionNumber;
+    // interpreter params
+    freeBalanceSaved.multiAssetMultiPartyCoinTransferInterpreterParams =
+      freeBalanceData.multiAssetMultiPartyCoinTransferInterpreterParams;
+
+    freeBalanceSaved.singleAssetTwoPartyCoinTransferInterpreterParams =
+      freeBalanceData.singleAssetTwoPartyCoinTransferInterpreterParams;
+
+    freeBalanceSaved.twoPartyOutcomeInterpreterParams =
+      freeBalanceData.twoPartyOutcomeInterpreterParams;
+
+    channel.freeBalanceAppInstance = freeBalanceSaved;
+
+    /////////////////////////////
+    // single asset two party intermediary agreements
+    channel.singleAssetTwoPartyIntermediaryAgreements =
+      stateChannel.singleAssetTwoPartyIntermediaryAgreements;
+
+    /////////////////////////////
     // assemble proposed apps
-    const proposedApps = await Promise.all(
+    const proposedApps: AppInstance[] = await Promise.all(
       stateChannel.proposedAppInstances.map(async ([identityHash, appJson]) => {
         let app = await this.appInstanceRepository.findByIdentityHash(identityHash);
-        if (!app) {
-          app = new AppInstance();
-          app.identityHash = identityHash;
+        if (app && app.type === AppType.PROPOSAL) {
+          return app;
         }
+        app = new AppInstance();
+        app.identityHash = identityHash;
         app.abiEncodings = appJson.abiEncodings;
         app.appDefinition = appJson.appDefinition;
         app.appSeqNo = appJson.appSeqNo;
@@ -83,15 +137,18 @@ export class CFCoreStore implements IStoreService {
         return app;
       }),
     );
-    channel.proposedAppInstances = proposedApps;
+    channel.proposedAppInstances = proposedApps.filter(x => !!x);
 
+    /////////////////////////////
     // assemble installed apps
-    const installedApps = await Promise.all(
+    const installedApps: AppInstance[] = await Promise.all(
       stateChannel.appInstances.map(async ([identityHash, appJson]) => {
         let app = await this.appInstanceRepository.findByIdentityHash(identityHash);
         if (!app) {
-          app = new AppInstance();
-          app.identityHash = identityHash;
+          throw new Error(`Did not find app with identity hash: ${identityHash}`);
+        }
+        if (app.type === AppType.PROPOSAL) {
+          app.type = AppType.INSTANCE;
         }
         app.appSeqNo = appJson.appSeqNo;
         app.latestState = appJson.latestState;
@@ -99,12 +156,12 @@ export class CFCoreStore implements IStoreService {
         app.latestVersionNumber = appJson.latestVersionNumber;
 
         // TODO: everything else should already be in from the proposal, verify this
-
-        app.channel = channel;
         return app;
       }),
     );
     channel.appInstances = installedApps;
+
+    await this.channelRepository.save(channel);
   }
 
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
