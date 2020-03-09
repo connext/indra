@@ -1,4 +1,4 @@
-import { getDirectoryFiles, isDirectorySync, KeyValueStorage } from "@connext/store";
+import { getDirectoryFiles, isDirectorySync } from "@connext/store";
 import uuid from "uuid";
 
 import {
