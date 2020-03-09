@@ -1,6 +1,6 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { WithdrawAppState, WithdrawAppAction, CoinTransfer } from "@connext/types";
+import { WithdrawAppState, WithdrawAppAction, CoinTransfer, singleAssetTwoPartyCoinTransferEncoding, WithdrawAppStateEncoding, WithdrawAppActionEncoding } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
@@ -10,24 +10,6 @@ import WithdrawApp from "../../build/WithdrawApp.json"
 import { Zero } from "ethers/constants";
 
 const { expect } = chai;
-
-const singleAssetTwoPartyCoinTransferEncoding = `
-  tuple(address to, uint256 amount)[2]
-`;
-
-const WithdrawAppStateEncoding = `tuple(
-  ${singleAssetTwoPartyCoinTransferEncoding} transfers,
-  bytes[2] signatures,
-  address[2] signers,
-  bytes32 data,
-  bool finalized
-)`;
-
-const WithdrawAppActionEncoding = `
-  tuple(
-    bytes signature
-  )
-`;
 
 function mkHash(prefix: string = "0xa"): string {
   return prefix.padEnd(66, "0");
