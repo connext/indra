@@ -19,7 +19,6 @@ import {
   RequestDepositRightsParameters,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
-  WithdrawParameters,
   TransferParameters,
 } from "./inputs";
 import { ILogger, ILoggerService } from "./logger";
@@ -34,7 +33,7 @@ import {
 import { ProtocolTypes } from "./protocol";
 import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
 import { CFCoreTypes } from "./cfCore";
-import { SwapParameters } from "./apps";
+import { SwapParameters, WithdrawParameters } from "./apps";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {

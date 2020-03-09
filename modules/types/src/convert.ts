@@ -2,7 +2,7 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
 import { AssetAmount, RebalanceProfile } from "./channel";
-import { DepositParameters, WithdrawParameters } from "./inputs";
+import { DepositParameters } from "./inputs";
 import { CoinTransfer } from "./app";
 
 /////////////////////////////////////////////
@@ -163,17 +163,9 @@ function convertDepositParametersToAsset<To extends NumericTypeName>(
   return convertAssetAmountWithId(to, obj);
 }
 
-function convertWithdrawParametersToAsset<To extends NumericTypeName>(
-  to: To,
-  obj: WithdrawParameters<any>,
-): WithdrawParameters<NumericTypes[To]> {
-  return convertAssetAmountWithId(to, obj);
-}
-
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert = {
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
   RebalanceProfile: convertRebalanceProfile,
-  Withdraw: convertWithdrawParametersToAsset,
 };

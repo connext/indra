@@ -16,6 +16,7 @@ export * from "./CoinBalanceRefundApp";
 export * from "./FastSignedTransfer";
 export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleTwoPartySwapApp";
+export * from "./WithdrawApp";
 
 export type ConditionalTransferParameters =
   | LinkedTransferParameters
