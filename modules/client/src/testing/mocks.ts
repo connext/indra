@@ -124,8 +124,7 @@ export class MockNodeClientApi implements INodeApiClient {
     createChannel: {} as CreateChannelResponse,
     getChannel: {} as GetChannelResponse,
     resolveLinkedTransfer: {} as ResolveLinkedTransferResponse,
-    verifyAppSequenceNumber: {} as ChannelAppSequences,
-    withdraw: {} as TransactionResponse,
+    verifyAppSequenceNumber: {} as ChannelAppSequences
   };
 
   public async appRegistry(appDetails?: {
@@ -194,10 +193,6 @@ export class MockNodeClientApi implements INodeApiClient {
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
 
   public async requestCollateral(): Promise<RequestCollateralResponse | void> {}
-
-  public async withdraw(): Promise<TransactionResponse> {
-    return MockNodeClientApi.returnValues.withdraw;
-  }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {}
 

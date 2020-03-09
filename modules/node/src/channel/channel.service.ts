@@ -17,7 +17,7 @@ import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify, Signature, recoverAddress } from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify, Signature, recoverAddress, SigningKey, joinSignature } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -181,16 +181,18 @@ export class ChannelService {
       channel.multisigAddress,
     );
 
-    const withdrawerSignatureOnCommitment = await this.configService.getEthWallet().signMessage(commitment.hashToSign())
+    const signingKey = new SigningKey(this.configService.getEthWallet().privateKey)
+    const withdrawerSignatureOnCommitment = joinSignature(signingKey.signDigest(commitment.hashToSign()));
 
     const transfers: CoinTransfer[] = [
       {amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress},
       {amount: Zero.toString(), to: xpubToAddress(channel.userPublicIdentifier)}
     ]
+    const prefix = "0x0";
 
     const initialState: WithdrawAppState = {
       transfers: [transfers[0],transfers[1]],
-      signatures: [withdrawerSignatureOnCommitment, ""],
+      signatures: [withdrawerSignatureOnCommitment, prefix.padEnd(66, "0")],
       signers: [this.cfCoreService.cfCore.freeBalanceAddress, xpubToAddress(channel.userPublicIdentifier)],
       data: commitment.hashToSign(),
       finalized: false
@@ -259,7 +261,7 @@ export class ChannelService {
     )
 
     const channel = await this.channelRepository.findByMultisigAddress(appInstance.multisigAddress);
-    const recoveredSigner = recoverAddress(generatedCommitment.hashToSign(), state.signatures[0])
+    const recoveredSigner = recoverAddress(generatedCommitment.hashToSign(), state.signatures[0]);
 
     if(generatedCommitment.hashToSign() !== state.data) {
       throw new Error(`Generated withdraw commitment did not match commitment from initial state: ${generatedCommitment.hashToSign()} vs ${state.data}`)
