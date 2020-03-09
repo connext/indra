@@ -7,6 +7,7 @@ import {
   IStoreService,
   STORE_SCHEMA_VERSION,
   IBackupServiceAPI,
+  WithdrawalMonitorObject,
 } from "@connext/types";
 
 export class MemoryStorage implements IStoreService {
@@ -20,6 +21,7 @@ export class MemoryStorage implements IStoreService {
   private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
   private extendedPrivKey: string = "";
   private appInstances: Map<string, AppInstanceJson> = new Map();
+  private userWithdrawals: WithdrawalMonitorObject | undefined = undefined;
 
   constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
 
@@ -117,10 +119,19 @@ export class MemoryStorage implements IStoreService {
     this.extendedPrivKey = extendedPrvKey;
   }
 
+  async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
+    return this.userWithdrawals;
+  }
+
+  async setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    this.userWithdrawals = withdrawalObject;
+  }
+
   async clear(): Promise<void> {
     this.channels = new Map();
     this.withdrawals = new Map();
     this.appInstances = new Map();
+    this.userWithdrawals = undefined;
   }
 
   async restore(): Promise<void> {
