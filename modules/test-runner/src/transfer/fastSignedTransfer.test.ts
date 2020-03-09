@@ -41,12 +41,10 @@ describe("Fast Signed Transfer", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("Should send a fast signed transfer", async () => {
+  it.skip("Should send a fast signed transfer", async () => {
     const paymentId = hexlify(randomBytes(32));
-    console.log("paymentId: ", paymentId);
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
-    console.log("signerAddress: ", signerAddress);
 
     const initialChannelBalance = bigNumberify(10);
     const transferAmount = One;
@@ -77,12 +75,11 @@ describe("Fast Signed Transfer", () => {
 
     console.log("transferAppState: ", transferAppState);
     // locked payments contains transfer info
-    expect(transferAppState[0]).to.eq(clientB.publicIdentifier);
-    expect(transferAppState[1]).to.eq(transferAmount);
-    expect(transferAppState[2]).to.eq(signerAddress);
-    expect(transferAppState[3]).to.eq(paymentId);
-    expect(transferAppState[4]).to.eq(HashZero);
-    expect(transferAppState[5]).to.eq(hexZeroPad(HashZero, 65));
+    expect(transferAppState.amount).to.eq(transferAmount);
+    expect(transferAppState.paymentId).to.eq(paymentId);
+    expect(transferAppState.recipientXpub).to.eq(clientB.publicIdentifier);
+    expect(transferAppState.signer).to.eq(signerAddress);
+    expect(transferAppState.turnNum).to.eq(One);
 
     const data = hexlify(randomBytes(32));
 
