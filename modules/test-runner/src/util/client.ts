@@ -73,7 +73,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     logLevel: env.logLevel,
     store: new ConnextStore(LOCALSTORAGE),
   };
-  if (network === "mainnet") {
+  if (network === "mainnet" || network === "rinkeby") {
     clientOpts = {
       mnemonic: Wallet.createRandom().mnemonic,
       ...clientOpts,
