@@ -1,49 +1,24 @@
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, formatEther, getAddress, AbiCoder, recoverAddress } from "ethers/utils";
 
 import { stringify, withdrawalKey, xpubToAddress } from "../lib";
 import {
   BigNumber,
-  CFCoreTypes,
-  convert,
-  WithdrawalResponse,
-  WithdrawParameters,
+  CFCoreTypes
 } from "../types";
-import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
+import { convertWithdrawParameters, WithdrawAppState, WithdrawAppAction} from "@connext/apps";
 
 import { AbstractController } from "./AbstractController";
-import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, WithdrawAppState, WithdrawAppAction, UPDATE_STATE_EVENT, AppInstanceJson } from "@connext/types";
+import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, UPDATE_STATE_EVENT, AppInstanceJson, WithdrawResponse, WithdrawParameters } from "@connext/types";
 import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
 const ETH_ADDRESS = AddressZero
 
 export class WithdrawalController extends AbstractController {
-  public async withdraw(paramsRaw: WithdrawParameters): Promise<WithdrawalResponse> {
-    /*
-      Withdrawal steps:
-      1. Validate params
-      2. Ensure that a deposit isn't currently in progress -- this should eventually be obviated
-      3. Create and sign withdraw commitment
-      4. Install withdraw app
-      5. Emit the withdrawal_started event
-      6. Setup listener for takeAction on that app
-      7. On event catch, save doublesigned commitment to store
-      8. Uninstall the app
-      9. If userSubmitted, deploy multisig onchain
-      10. If userSubmitted, retrieve commitment from store and attempt to put onchain
-      11. Else, wait for node to emit withdraw_finished with txHash?
-      12. Emit the withdraw_finished event (should contain commitment and txHash)
-
-      Failure cases:
-      1. WithdrawApp uninstalled without being finalized --> set up listener for uninstall and emit withdrawal_failed
-      2. UserSubmitted withdraw tx fails --> emit withdraw_failed
-      3. No node submitted withdraw tx within time period?
-    */
+  public async withdraw(paramsRaw: WithdrawParameters): Promise<WithdrawResponse> {
     return new Promise( async (resolve): Promise<void> => {
-      const params = convert.Withdraw(`bignumber`, paramsRaw);
+      const params = convertWithdrawParameters(`bignumber`, paramsRaw);
       let transaction: TransactionResponse | undefined;
-  
-      await this.validateWithdrawParams(params);
   
       this.log.info(
         `Withdrawing ${formatEther(params.amount)} ${
@@ -51,7 +26,7 @@ export class WithdrawalController extends AbstractController {
         } from multisig to ${params.recipient}`,
       );
   
-      await this.cleanupPendingDeposit(params.assetId);
+      await this.cleanupPendingDeposit(params.assetId); //TODO try to remove this with deposit redesign
   
       const withdrawCommitment = await this.createWithdrawCommitment(params);
       const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(withdrawCommitment.hashToSign());
@@ -65,85 +40,35 @@ export class WithdrawalController extends AbstractController {
       this.connext.listener.on(EventNames[UPDATE_STATE_EVENT], async (data) => {
         if(data.appInstanceId === appInstanceId) {
           const state = await this.connext.getAppState(data.appInstanceId);
+          
           await this.saveWithdrawCommitmentToStore(withdrawCommitment, (state.state as any).signatures as string[]);
           await this.connext.uninstallApp(data.appInstanceId)
-  
-          // If userSubmitted, then attempt to put commitment onchain
-          if(params.userSubmitted) {
-            // TODO ARJUN build out this codepath
-            await this.deployMultisig();
-            transaction = await this.attemptUserSubmittedWithdraw();
-          } else {
-            transaction = await this.connext.watchForUserWithdrawal();
-            this.log.info(`Node responded with transaction: ${transaction.hash}`);
-            this.log.debug(`Transaction details: ${stringify(transaction)}`);
-          }
+
+          transaction = await this.connext.watchForUserWithdrawal();
+          this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
+          this.log.debug(`Transaction details: ${stringify(transaction)}`);
+
           this.connext.listener.emit(EventNames[WITHDRAWAL_CONFIRMED_EVENT], {transaction})
           this.connext.listener.removeListener(EventNames[UPDATE_STATE_EVENT], () => {});
-          resolve({
-            apps: await this.connext.getAppInstances(this.connext.multisigAddress),
-            freeBalance: await this.connext.getFreeBalance(),
-            transaction,
-          });
+
+          resolve({transaction});
         }
       })
     })
   }
-  
-  /* In case of counterparty withdrawal:
-  1. Set up listener on client start
-  2. On counterparty install of withdrawApp, call respondToCounterpartyWithdraw() in controller
-  3. Validate the withdraw commitment in initial state against provided params
-  4. If ok, countersign the withdraw commitment and takeAction.
 
-  Misc:
-  (a) Cleanup finalized but not uninstalled withdraw apps on client start
-  (b) Set timeout on withdrawal within which we assume the node is offline? For now we can skip this
-  (c) Resolve or reject all promises
-  */
   public async respondToCounterpartyWithdraw(appInstance: AppInstanceJson) {
     const state = appInstance.latestState as WithdrawAppState<BigNumber>;
+
     const generatedCommitment = await this.createWithdrawCommitment({
       amount: state.transfers[0].amount,
       assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
       recipient: state.transfers[0].to
     } as WithdrawParameters<BigNumber>)
 
-    const recoveredSigner = recoverAddress(generatedCommitment.hashToSign(), state.signatures[0])
-
-    if(generatedCommitment.hashToSign() !== state.data) {
-      throw new Error(`Generated withdraw commitment did not match commitment from initial state: ${generatedCommitment.hashToSign()} vs ${state.data}`)
-    }
-
-    if(recoveredSigner !== state.signers[0]) {
-      throw new Error(`Recovered signer did not match signer in app state: ${recoveredSigner} vs ${state.signers[0]}`)
-    }
-
-    if(recoveredSigner !== xpubToAddress(this.connext.nodePublicIdentifier)) {
-      throw new Error(`Recoverd signer did not match node's signer: ${recoveredSigner} vs ${xpubToAddress(this.connext.nodePublicIdentifier)}`)
-    }
-
-    if(state.transfers[1].amount !== Zero) {
-      throw new Error(`Will not withdraw - our transfer amount is not equal to zero`)
-    }
-
+    // Dont need to validate anything because we already did it during the propose flow
     const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(generatedCommitment);
     await this.connext.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
-  }
-
-  private async validateWithdrawParams(params: WithdrawParameters<BigNumber>): Promise<void> {
-    const { assetId, amount, recipient } = params;
-    const preWithdrawalBal = (await this.connext.getFreeBalance(assetId))[this.connext.freeBalanceAddress];
-    validate(
-      notPositive(amount),
-      notLessThanOrEqualTo(amount, preWithdrawalBal),
-    );
-    if(assetId) {
-      validate(invalidAddress(assetId));
-    }
-    if (recipient) {
-      validate(invalidAddress(recipient));
-    }
   }
 
   private async cleanupPendingDeposit(assetId: string) {
@@ -179,11 +104,11 @@ export class WithdrawalController extends AbstractController {
 
   private async withdrawAppInstalled(params: WithdrawParameters<BigNumber>, withdrawCommitment: any, withdrawerSignatureOnWithdrawCommitment: string): Promise<string> {
     const { amount, recipient, assetId } = params;
-    const appInfo = this.connext.getRegisteredAppDetails("WithdrawApp");
+    const appInfo = this.connext.getRegisteredAppDetails(WithdrawApp);
     const { appDefinitionAddress: appDefinition, outcomeType, stateEncoding, actionEncoding } = appInfo;
-    const initialState: WithdrawAppState = {
+    const initialState: WithdrawAppState  = {
       transfers: [{amount: amount.toString(), to: recipient}, {amount: Zero.toString(), to: xpubToAddress(this.connext.nodePublicIdentifier)}],
-      signatures: [withdrawerSignatureOnWithdrawCommitment, ""],
+      signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [xpubToAddress(this.connext.publicIdentifier), xpubToAddress(this.connext.nodePublicIdentifier)],
       data: withdrawCommitment,
       finalized: false
@@ -220,6 +145,7 @@ export class WithdrawalController extends AbstractController {
     return;
   }
 
+  // TODO ARJUN: Do we ever want to do this from the client?
   private async deployMultisig(): Promise<TransactionResponse> {
     const deployRes = await this.connext.deployMultisig();
     this.log.info(`Deploying multisig: ${deployRes.transactionHash}`);
@@ -230,10 +156,5 @@ export class WithdrawalController extends AbstractController {
       this.ethProvider.waitForTransaction(deployRes.transactionHash);
     }
     return await this.ethProvider.getTransaction(deployRes.transactionHash);
-  }
-
-  //TODO ARJUN do we want this?
-  private async attemptUserSubmittedWithdraw(): Promise<TransactionResponse> {
-    return {} as TransactionResponse;
   }
 }
