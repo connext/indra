@@ -39,6 +39,8 @@ import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-ne
 import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
 import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
 import { InitCommitmentTable1582692126872 } from "../../migrations/1582692126872-init-commitment-table";
+import { InitAppInstanceTable1583612960994 } from "../../migrations/1583612960994-init-app-instance-table";
+import { UpdateChannelTable1583618773094 } from "../../migrations/1583618773094-update-channel-table";
 
 export const entities = [
   AppInstance,
@@ -72,6 +74,8 @@ export const migrations = [
   AddAnonymizedViewTables1581090243171,
   RebalancingProfile1581796200880,
   InitCommitmentTable1582692126872,
+  InitAppInstanceTable1583612960994,
+  UpdateChannelTable1583618773094,
 ];
 
 @Injectable()
