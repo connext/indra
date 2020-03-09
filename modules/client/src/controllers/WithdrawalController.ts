@@ -133,7 +133,7 @@ export class WithdrawalController extends AbstractController {
 
   private async validateWithdrawParams(params: WithdrawParameters<BigNumber>): Promise<void> {
     const { assetId, amount, recipient } = params;
-    const preWithdrawalBal = await this.connext.getFreeBalance(assetId)[this.connext.freeBalanceAddress];
+    const preWithdrawalBal = (await this.connext.getFreeBalance(assetId))[this.connext.freeBalanceAddress];
     validate(
       notPositive(amount),
       notLessThanOrEqualTo(amount, preWithdrawalBal),
