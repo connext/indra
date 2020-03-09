@@ -539,7 +539,7 @@ export class ConnextClient implements IConnextClient {
 
   public getAppInstances = async (multisigAddress?: string): Promise<AppInstanceJson[]> => {
     const { appInstances } = await this.channelProvider.send(ProtocolTypes.chan_getAppInstances, {
-      multisigAddress,
+      multisigAddress: multisigAddress || this.multisigAddress,
     } as CFCoreTypes.GetAppInstancesParams);
     return appInstances;
   };
@@ -576,14 +576,14 @@ export class ConnextClient implements IConnextClient {
     multisigAddress?: string,
   ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined> => {
     return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstances, {
-      multisigAddress,
+      multisigAddress: multisigAddress || this.multisigAddress,
     } as CFCoreTypes.GetProposedAppInstancesParams);
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstances, {
+    return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstance, {
       appInstanceId,
     } as CFCoreTypes.GetProposedAppInstanceParams);
   };
@@ -1068,7 +1068,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
-    const apps = await this.getAppInstances(this.multisigAddress);
+    const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
@@ -1086,7 +1086,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
-    const apps = await this.getAppInstances(this.multisigAddress);
+    const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (app.length > 0) {
       return (

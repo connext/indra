@@ -185,6 +185,7 @@ export namespace ProtocolTypes {
   export const chan_getStateDepositHolderAddress = "chan_getStateDepositHolderAddress";
   export const chan_getFreeBalanceState = "chan_getFreeBalanceState";
   export const chan_getTokenIndexedFreeBalanceStates = "chan_getTokenIndexedFreeBalanceStates";
+  export const chan_getProposedAppInstance = "chan_getProposedAppInstance";
   export const chan_getProposedAppInstances = "chan_getProposedAppInstances";
   export const chan_getState = "chan_getState";
   export const chan_getStateChannel = "chan_getStateChannel";
@@ -212,6 +213,7 @@ export namespace ProtocolTypes {
     [chan_getFreeBalanceState]: chan_getFreeBalanceState,
     [chan_getTokenIndexedFreeBalanceStates]: chan_getTokenIndexedFreeBalanceStates,
     [chan_getProposedAppInstances]: chan_getProposedAppInstances,
+    [chan_getProposedAppInstance]: chan_getProposedAppInstance,
     [chan_getState]: chan_getState,
     [chan_getStateChannel]: chan_getStateChannel,
     [chan_install]: chan_install,
