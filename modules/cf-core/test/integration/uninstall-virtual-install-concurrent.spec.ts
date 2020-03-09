@@ -23,7 +23,7 @@ jest.setTimeout(7500);
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
-describe("Node method follows spec when happening concurrently - install / uninstall virtual", () => {
+describe.skip("Node method follows spec when happening concurrently - install / uninstall virtual", () => {
   let multisigAddressAB: string;
   let multisigAddressBC: string;
   let nodeA: Node;

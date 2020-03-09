@@ -17,7 +17,7 @@ import {
   fundChannel,
   getMnemonic,
   getProtocolFromData,
-  MesssagingEventData,
+  MessagingEventData,
   PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   RECEIVED,
   REQUEST,
@@ -28,6 +28,9 @@ import {
   TOKEN_AMOUNT_SM,
 } from "../util";
 import { BigNumber } from "ethers/utils";
+import { Client } from "ts-nats";
+import { connectNats, closeNats } from "../util/nats";
+import { before, after } from "mocha";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,
@@ -62,7 +65,7 @@ const verifyTransfer = async (
   expected: any, //Partial<Transfer> type uses `null` not `undefined`
 ): Promise<void> => {
   expect(expected.paymentId).to.be.ok;
-  const transfer = await client.getLinkedTransfer(expected.paymentId!);
+  const transfer = await client.getLinkedTransfer(expected.paymentId);
   // verify the saved transfer information
   expect(transfer).to.containSubset(expected);
 };
@@ -71,6 +74,11 @@ describe("Async transfer offline tests", () => {
   let clock: any;
   let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
+  let nats: Client;
+
+  before(async () => {
+    nats = await connectNats();
+  });
 
   beforeEach(async () => {
     clock = lolex.install({
@@ -86,45 +94,8 @@ describe("Async transfer offline tests", () => {
     await receiverClient.messaging.disconnect();
   });
 
-  /**
-   * In this case, node will not know the recipient or encrypted preimage,
-   * the transfer to recipient is essentially installed as an unclaimable
-   * (i.e. preImage lost) linked transfer without a specified recipient.
-   *
-   * Avoid `transfer.set-recipient.${this.userPublicIdentifier}` endpoint
-   * with the hub. The hub should clean these up during disputes
-   */
-  it("sender successfully installs transfer, goes offline before sending paymentId or preimage, then comes online and has the pending installed transfer", async () => {
-    // create the sender client and receiver clients
-    senderClient = await createClientWithMessagingLimits({
-      forbiddenSubjects: [`transfer.set-recipient`],
-    });
-    receiverClient = await createClientWithMessagingLimits();
-    const tokenAddress = senderClient.config.contractAddresses.Token;
-    // fund the channels
-    await fundForTransfers(receiverClient, senderClient);
-    // make the transfer call, should fail when sending info to node, but
-    // will retry. fast forward through NATS_TIMEOUT
-    (senderClient.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
-      clock.tick(89_000);
-    });
-    await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
-    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
-    // make sure that the app is installed with the hub/sender
-    const senderLinkedApp = await getLinkedApp(senderClient);
-    const { paymentId } = senderLinkedApp.latestState as any;
-    // verify the saved transfer information
-    await verifyTransfer(senderClient, {
-      amount: TOKEN_AMOUNT_SM.toString(),
-      receiverPublicIdentifier: null,
-      paymentId,
-      senderPublicIdentifier: senderClient.publicIdentifier,
-      status: "PENDING",
-      type: "LINKED",
-    });
-    const receiverLinkedApp = await getLinkedApp(receiverClient, false);
-    expect(receiverLinkedApp.length).to.equal(0);
+  after(() => {
+    closeNats();
   });
 
   /**
@@ -147,7 +118,7 @@ describe("Async transfer offline tests", () => {
       clock.tick(89_000);
     });
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
     // make sure that the app is installed with the hub/sender
     const senderLinkedApp = await getLinkedApp(senderClient);
@@ -175,7 +146,7 @@ describe("Async transfer offline tests", () => {
    * Client calls `resolve` on node, node will install and propose, client
    * will take action with recipient.
    */
-  it("sender installs transfer successfully, receiver proposes install but node is offline", async () => {
+  it.skip("sender installs transfer successfully, receiver proposes install but node is offline", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     // 1 successful proposal (balance refund)
@@ -187,7 +158,7 @@ describe("Async transfer offline tests", () => {
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       REQUEST,
-      async (msg: MesssagingEventData) => {
+      async (msg: MessagingEventData) => {
         const { subject } = msg;
         if (subject!.includes(`resolve`)) {
           // wait for message to be sent, event is fired first
@@ -198,7 +169,7 @@ describe("Async transfer offline tests", () => {
     );
     // make the transfer call, should timeout in propose protocol
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(`Failed to send message: Request timed out`);
   });
 
@@ -216,14 +187,14 @@ describe("Async transfer offline tests", () => {
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       RECEIVED,
-      async (msg: MesssagingEventData) => {
+      async (msg: MessagingEventData) => {
         if (getProtocolFromData(msg) === "takeAction") {
           clock.tick(89_000);
         }
       },
     );
     await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
     ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG("takeAction"));
   });
 
@@ -283,6 +254,7 @@ describe("Async transfer offline tests", () => {
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
     expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
     // make sure the transfer is properly reclaimed
+    await delay(5000);
     await verifyTransfer(reconnected, { ...expected, status: "RECLAIMED" });
   });
 

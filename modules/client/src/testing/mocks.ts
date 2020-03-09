@@ -1,5 +1,6 @@
+import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
-import { ILoggerService } from "@connext/types";
+import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
 import { providers } from "ethers";
 import { BigNumber, Transaction } from "ethers/utils";
 
@@ -18,7 +19,6 @@ import {
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
-  SupportedApplication,
   Transfer,
 } from "../types";
 
@@ -101,6 +101,10 @@ export class MockNodeClientApi implements INodeApiClient {
     this.messaging = (opts.messaging as any) || new MockMessagingService(opts);
     this.nonce = undefined;
     this.signature = undefined;
+  }
+
+  resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse<string>> {
+    throw new Error("Method not implemented.");
   }
 
   async acquireLock(
@@ -212,6 +216,10 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async verifyAppSequenceNumber(): Promise<ChannelAppSequences> {
     return MockNodeClientApi.returnValues.verifyAppSequenceNumber;
+  }
+
+  esolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse<string>> {
+    throw new Error("Method not implemented.");
   }
 
   public async setRecipientAndEncryptedPreImageForLinkedTransfer(

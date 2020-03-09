@@ -17,9 +17,12 @@ export const getMnemonic = (xpub: string): string => {
   return mnemonics[xpub] || "";
 };
 
-export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
+export const createClient = async (
+  opts: Partial<ClientOptions> = {},
+  fund: boolean = true,
+): Promise<IConnextClient> => {
   const store = opts.store || new ConnextStore(new MemoryStorage());
-  const mnemonic = Wallet.createRandom().mnemonic;
+  const mnemonic = opts.mnemonic || Wallet.createRandom().mnemonic;
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     loggerService: new Logger("TestRunner", env.logLevel),
@@ -34,9 +37,11 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
     to: client.signerAddress,
     value: ETH_AMOUNT_MD,
   });
-  const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
-  const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
-  await Promise.all([ethTx.wait(), tokenTx.wait()]);
+  if (fund) {
+    const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
+    const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
+    await Promise.all([ethTx.wait(), tokenTx.wait()]);
+  }
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
   expect(client.multisigAddress).to.be.ok;

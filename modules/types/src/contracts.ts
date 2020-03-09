@@ -99,7 +99,9 @@ export const twoPartyFixedOutcomeInterpreterParamsEncoding =
 export const virtualAppAgreementEncoding =
   "tuple(uint256 capitalProvided, address capitalProvider, address virtualAppUser, address tokenAddress)";
 
-export const multiAssetMultiPartyCoinTransferEncoding = "tuple(address to, uint256 amount)[][]";
+export const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[2]`;
+
+export const multiAssetMultiPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[][]`;
 
 export const coinBalanceRefundStateEncoding =
   "tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)";

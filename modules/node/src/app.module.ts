@@ -16,6 +16,8 @@ import { RedisModule } from "./redis/redis.module";
 import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
 import { CollateralModule } from "./collateral/collateral.module";
+import { LinkedTransferModule } from "./linkedTransfer/linkedTransfer.module";
+import { FastSignedTransferTransferModule } from "./fastSignedTransfer/fastSignedTransfer.module";
 
 @Module({
   controllers: [CFCoreController],
@@ -29,7 +31,9 @@ import { CollateralModule } from "./collateral/collateral.module";
     CollateralModule,
     ConfigModule,
     DatabaseModule,
+    FastSignedTransferTransferModule,
     ListenerModule,
+    LinkedTransferModule,
     LockModule,
     LoggerModule,
     MessagingModule,

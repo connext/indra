@@ -32,7 +32,7 @@ beforeAll(async () => {
 });
 
 describe("Three mininodes", () => {
-  it("Can run all the protocols", async () => {
+  it.skip("Can run all the protocols", async () => {
     const tr = new TestRunner();
     await tr.connectToGanache();
 

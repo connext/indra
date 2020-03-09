@@ -20,6 +20,7 @@ export default class UninstallVirtualController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.UninstallVirtualParams,
   ): Promise<string[]> {
+    throw Error(`Virtual app protocols not supported.`);
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
@@ -72,6 +73,7 @@ export default class UninstallVirtualController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.UninstallVirtualParams,
   ) {
+    throw Error(`Virtual app protocols not supported.`);
     const { appInstanceId } = params;
 
     if (!appInstanceId) {
@@ -83,6 +85,7 @@ export default class UninstallVirtualController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.UninstallVirtualParams,
   ): Promise<CFCoreTypes.UninstallVirtualResult> {
+    throw Error(`Virtual app protocols not supported.`);
     const { store, protocolRunner, publicIdentifier, provider } = requestHandler;
 
     const { appInstanceId, intermediaryIdentifier } = params;

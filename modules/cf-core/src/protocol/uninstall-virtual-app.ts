@@ -20,6 +20,22 @@ import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-in
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 
+/**
+ * File notes:
+ *
+ * FIXME: This file should use the xkeyKthAddress function instead of a
+ *        file-specific helper.
+ *
+ * FIXME: Need to verify the proper private key is being used in signing
+ *        here
+ *
+ * FIXME: Need to make adjustments to the `propose` protocol to allow for
+ *        the intermediary to refuse to support a virtual app (rn they only
+ *        find out in a meaningful way through the `INSTALL_VIRTUAL_EVENT`
+ *        triggered at the end of the protocol, or parsing every protocol
+ *        message and trying to stop a protocol mid-execution)
+ */
+
 function xkeyTo0thAddress(xpub: string) {
   return fromExtendedKey(xpub).derivePath("0").address;
 }
@@ -50,6 +66,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
    */
 
   0 /* Initiating */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const {
       message: { processID, params },
       provider,
@@ -58,9 +75,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
 
     const { intermediaryXpub, responderXpub } = params as UninstallVirtualAppProtocolParams;
-
-    const intermediaryAddress = xkeyKthAddress(intermediaryXpub, 0);
-    const responderAddress = xkeyKthAddress(responderXpub, 0);
 
     const [
       stateChannelWithAllThreeParties,
@@ -74,6 +88,18 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network,
     );
 
+    const intermediaryFreeBalanceAddress = xkeyKthAddress(intermediaryXpub, 0);
+    const intermediaryEphemeralAddress = xkeyKthAddress(
+      intermediaryXpub,
+      timeLockedPassThroughAppInstance.appSeqNo,
+    );
+
+    const responderFreeBalanceAddress = xkeyKthAddress(responderXpub, 0);
+    const responderEphemeralAddress = xkeyKthAddress(
+      responderXpub,
+      timeLockedPassThroughAppInstance.appSeqNo,
+    );
+
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
       network,
       timeLockedPassThroughAppInstance.identity,
@@ -85,6 +111,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const initiatingSignatureOnTimeLockedPassThroughSetStateCommitment = yield [
       OP_SIGN,
       timeLockedPassThroughSetStateCommitment,
+      timeLockedPassThroughAppInstance.appSeqNo,
     ];
 
     const m1 = {
@@ -108,13 +135,13 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } = m4;
 
     assertIsValidSignature(
-      responderAddress,
+      responderEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       responderSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
 
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
     );
@@ -127,6 +154,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithIntermediary.freeBalance.timeout,
     );
 
+    // use fb address for fb app updates
     const initiatingSignatureOnAliceIngridAppDisactivationCommitment = yield [
       OP_SIGN,
       aliceIngridAppDisactivationCommitment,
@@ -148,8 +176,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: intermediarySignatureOnAliceIngridAppDisactivationCommitment },
     } = m8;
 
+    // use fb address for fb app updates
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryFreeBalanceAddress,
       aliceIngridAppDisactivationCommitment,
       intermediarySignatureOnAliceIngridAppDisactivationCommitment,
     );
@@ -176,6 +205,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Intermediary */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const {
       message: {
         processID,
@@ -189,9 +219,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { initiatorXpub, responderXpub } = params as UninstallVirtualAppProtocolParams;
 
-    const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
-    const responderAddress = xkeyKthAddress(responderXpub, 0);
-
     const [
       stateChannelWithAllThreeParties,
       stateChannelWithInitiating,
@@ -204,6 +231,18 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network,
     );
 
+    const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorXpub, 0);
+    const initiatorEphemeralAddress = xkeyKthAddress(
+      initiatorXpub,
+      timeLockedPassThroughAppInstance.appSeqNo,
+    );
+
+    const responderFreeBalanceAddress = xkeyKthAddress(responderXpub, 0);
+    const responderEphemeralAddress = xkeyKthAddress(
+      responderXpub,
+      timeLockedPassThroughAppInstance.appSeqNo,
+    );
+
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
       network,
       timeLockedPassThroughAppInstance.identity,
@@ -213,7 +252,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       initiatingSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
@@ -221,6 +260,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const intermediarySignatureOnTimeLockedPassThroughSetStateCommitment = yield [
       OP_SIGN,
       timeLockedPassThroughSetStateCommitment,
+      timeLockedPassThroughAppInstance.appSeqNo,
     ];
 
     const m2 = {
@@ -242,7 +282,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } = m3;
 
     assertIsValidSignature(
-      responderAddress,
+      responderEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       respondingSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
@@ -272,8 +312,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithInitiating.freeBalance.timeout,
     );
 
+    // use fb address for fb app
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorFreeBalanceAddress,
       aliceIngridAppDisactivationCommitment,
       initiatingSignatureOnAliceIngridAppDisactivationCommitment,
     );
@@ -291,6 +332,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithResponding.freeBalance.timeout,
     );
 
+    // use fb address for fb app
     const intermediarySignatureOnIngridBobAppDisactivationCommitment = yield [
       OP_SIGN,
       ingridBobAppDisactivationCommitment,
@@ -312,8 +354,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: respondingSignatureOnIngridBobAppDisactivationCommitment },
     } = m7;
 
+    // use fb address for fb app
     assertIsValidSignature(
-      responderAddress,
+      responderFreeBalanceAddress,
       ingridBobAppDisactivationCommitment,
       respondingSignatureOnIngridBobAppDisactivationCommitment,
     );
@@ -352,6 +395,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   2 /* Responding */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const {
       message: {
         processID,
@@ -368,9 +412,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { initiatorXpub, intermediaryXpub } = params as UninstallVirtualAppProtocolParams;
 
-    const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
-    const intermediaryAddress = xkeyKthAddress(intermediaryXpub, 0);
-
     const [
       stateChannelWithAllThreeParties,
       stateChannelWithIntermediary,
@@ -383,6 +424,18 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network,
     );
 
+    const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorXpub, 0);
+    const initiatorEphemeralAddress = xkeyKthAddress(
+      initiatorXpub,
+      timeLockedPassThroughAppInstance.appSeqNo,
+    );
+
+    const intermediaryFreeBalanceAddress = xkeyKthAddress(intermediaryXpub, 0);
+    const intermediaryEphemeralAddress = xkeyKthAddress(
+      intermediaryXpub,
+      timeLockedPassThroughAppInstance.appSeqNo,
+    );
+
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
       network,
       timeLockedPassThroughAppInstance.identity,
@@ -392,13 +445,13 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       initiatingSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
 
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
     );
@@ -406,6 +459,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const respondingSignatureOnTimeLockedPassThroughSetStateCommitment = yield [
       OP_SIGN,
       timeLockedPassThroughSetStateCommitment,
+      timeLockedPassThroughAppInstance.appSeqNo,
     ];
 
     const m3 = {
@@ -432,12 +486,14 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithIntermediary.freeBalance.timeout,
     );
 
+    // free balance addr for free balance app
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryFreeBalanceAddress,
       ingridBobAppDisactivationCommitment,
       intermediarySignatureOnIngridBobAppDisactivationCommitment,
     );
 
+    // free balance addr for free balance app
     const respondingSignatureOnIngridBobAppDisactivationCommitment = yield [
       OP_SIGN,
       ingridBobAppDisactivationCommitment,

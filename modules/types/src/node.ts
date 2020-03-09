@@ -1,12 +1,12 @@
-import { AppRegistry, SupportedApplication } from "./app";
+import { AppRegistry } from "./app";
 import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
 import { NetworkContext } from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
-import { ResolveLinkedTransferResponse } from "./inputs";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
 import { ProtocolTypes } from "./protocol";
+import { ResolveLinkedTransferResponse, ResolveFastSignedTransferResponse } from "./apps";
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
@@ -30,6 +30,7 @@ export type Transfer<T = string> = {
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier: string;
+  meta: any;
 };
 export type TransferBigNumber = Transfer<BigNumber>;
 
@@ -52,6 +53,7 @@ export type GetConfigResponse = {
   contractAddresses: ContractAddresses;
   nodePublicIdentifier: string;
   messaging: MessagingConfig;
+  supportedTokenAddresses: string[];
 };
 
 export type GetChannelResponse = CFCoreChannel;
@@ -76,6 +78,32 @@ export interface PendingAsyncTransfer {
   paymentId: string;
 }
 
+export interface PendingFastSignedTransfer {
+  assetId: string;
+  amount: string;
+  paymentId: string;
+  signer: string;
+}
+
+enum LinkedTransferStatus {
+  PENDING = "PENDING",
+  REDEEMED = "REDEEMED",
+  FAILED = "FAILED",
+  RECLAIMED = "RECLAIMED",
+}
+
+export interface FetchedLinkedTransfer {
+  paymentId: string;
+  createdAt: Date;
+  amount: string;
+  assetId: string;
+  senderPublicIdentifier: string;
+  receiverPublicIdentifier: string;
+  type: string;
+  status: LinkedTransferStatus;
+  meta: any;
+}
+
 export interface NodeInitializationParameters {
   messaging: IMessagingService;
   logger?: ILoggerService;
@@ -93,7 +121,7 @@ export interface INodeApiClient {
   appRegistry(
     appDetails?:
       | {
-          name: SupportedApplication;
+          name: string;
           chainId: number;
         }
       | { appDefinitionAddress: string },
@@ -108,11 +136,9 @@ export interface INodeApiClient {
   getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  fetchLinkedTransfer(paymentId: string): Promise<any>;
-  resolveLinkedTransfer(
-    paymentId: string,
-    linkedHash: string,
-  ): Promise<ResolveLinkedTransferResponse>;
+  fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
+  resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
+  resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
