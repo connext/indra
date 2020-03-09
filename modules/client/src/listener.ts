@@ -1,3 +1,10 @@
+import {
+  CoinBalanceRefundApp,
+  commonAppProposalValidation,
+  SupportedApplication,
+  SimpleLinkedTransferApp,
+  validateSimpleLinkedTransferApp,
+} from "@connext/apps";
 import { ILoggerService } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
@@ -14,7 +21,6 @@ import {
   IChannelProvider,
   InstallMessage,
   InstallVirtualMessage,
-  MatchAppInstanceResponse,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
@@ -25,7 +31,6 @@ import {
   WithdrawFailedMessage,
   WithdrawStartedMessage,
 } from "./types";
-import { appProposalValidation } from "./validation/appProposals";
 import {
   ProtocolTypes,
   CREATE_CHANNEL_EVENT,
@@ -43,8 +48,6 @@ import {
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
-  CoinBalanceRefundApp,
-  SimpleTwoPartySwapApp,
 } from "@connext/types";
 
 // TODO: index of connext events only?
@@ -81,49 +84,29 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(INSTALL_VIRTUAL_EVENT, msg.data);
     },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
-      const start = Date.now();
-      const time = () => `in ${Date.now() - start} ms`;
-      // validate and automatically install for the known and supported
-      // applications
-      this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
-      // check based on supported applications
-      // matched app, take appropriate default actions
-      const matchedResult = await this.matchAppInstance(msg);
-      if (!matchedResult) {
-        this.log.warn(`No matched app, doing nothing ${time()}, ${stringify(msg)}`);
-        return;
-      }
       const {
-        data: { params },
+        data: { params, appInstanceId },
         from,
       } = msg;
       // return if its from us
+      const start = Date.now();
+      const time = () => `in ${Date.now() - start} ms`;
       if (from === this.connext.publicIdentifier) {
         this.log.debug(`Received proposal from our own node, doing nothing ${time()}`);
         return;
       }
-      // matched app, take appropriate default actions
-      const { matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(msg, matchedApp);
-      // only publish for coin balance refund app
-      const coinBalanceDef = this.connext.appRegistry.filter(
-        (app: DefaultApp) => app.name === CoinBalanceRefundApp,
-      )[0];
-      if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        this.log.info(
-          `Proposed app isn't a coinbalance refund app, not sending propose message ${time()}`,
-        );
-        return;
+      // validate and automatically install for the known and supported
+      // applications
+      this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
+      // check based on supported applications
+      const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
+        return app.appDefinitionAddress === msg.data.params.appDefinition;
+      });
+      if (!registryAppInfo) {
+        throw new Error(`Could not find registry info for app ${params.appDefinition}`);
       }
-      this.log.debug(
-        `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-      );
-      await this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-        stringify(params),
-      );
+      this.handleAppProposal(params, appInstanceId, from, registryAppInfo);
       this.log.info(`Done processing propose install event ${time()}`);
-      return;
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
@@ -229,94 +212,6 @@ export class ConnextListener extends ConnextEventEmitter {
     this.emit(event, data);
   };
 
-  private matchAppInstance = async (
-    msg: ProposeMessage,
-  ): Promise<MatchAppInstanceResponse | undefined> => {
-    const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
-      return app.appDefinitionAddress === msg.data.params.appDefinition;
-    });
-
-    if (!filteredApps || filteredApps.length === 0) {
-      this.log.info(`Proposed app not in registered applications.`);
-      this.log.debug(`App: ${stringify(msg)}`);
-      return undefined;
-    }
-
-    if (filteredApps.length > 1) {
-      // TODO: throw error here?
-      this.log.error(
-        `Proposed app matched ${
-          filteredApps.length
-        } registered applications by definition address. App: ${stringify(msg)}`,
-      );
-      return undefined;
-    }
-    const { params, appInstanceId } = msg.data;
-    const { initiatorDeposit, responderDeposit } = params;
-    // matched app, take appropriate default actions
-    return {
-      appInstanceId,
-      matchedApp: filteredApps[0],
-      proposeParams: {
-        ...params,
-        initiatorDeposit: bigNumberify(initiatorDeposit),
-        responderDeposit: bigNumberify(responderDeposit),
-      },
-    };
-  };
-
-  private verifyAndInstallKnownApp = async (
-    msg: ProposeMessage,
-    matchedApp: DefaultApp,
-  ): Promise<void> => {
-    const {
-      data: { params, appInstanceId },
-      from,
-    } = msg;
-    const invalidProposal = await appProposalValidation[matchedApp.name](
-      params,
-      from,
-      matchedApp,
-      this.connext,
-    );
-
-    if (invalidProposal) {
-      // reject app installation
-      this.log.error(`Proposed app is invalid. ${invalidProposal}`);
-      await this.connext.rejectInstallApp(appInstanceId);
-      return;
-    }
-
-    // proposal is valid, automatically install known app, but
-    // do not ever automatically install swap app since theres no
-    // way to validate the exchange in app against the rate input
-    // to controller
-    // this means the hub can only install apps, and cannot propose a swap
-    // and there cant easily be an automatic install swap app between users
-    if (matchedApp.name === SimpleTwoPartySwapApp) {
-      return;
-    }
-
-    // dont automatically install coin balance refund app
-    if (matchedApp.name === CoinBalanceRefundApp) {
-      return;
-    }
-
-    this.log.debug("Proposal for app install successful, attempting install now...");
-    let res: CFCoreTypes.InstallResult;
-
-    // TODO: determine virtual app in a more resilient way
-    // for now only simple transfer apps are virtual apps
-    const virtualAppDefs = [this.connext.config.contractAddresses["SimpleTransferApp"]];
-    if (virtualAppDefs.includes(params.appDefinition)) {
-      res = await this.connext.installVirtualApp(appInstanceId);
-    } else {
-      res = await this.connext.installApp(appInstanceId);
-    }
-    this.log.debug(`App installed, res: ${stringify(res)}`);
-    return;
-  };
-
   private registerAvailabilitySubscription = async (): Promise<void> => {
     const subject = `online.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(
@@ -353,8 +248,44 @@ export class ConnextListener extends ConnextEventEmitter {
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }
-      await this.connext.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
+      await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
       this.log.info(`Successfully redeemed transfer with paymentId: ${paymentId}`);
     });
+  };
+
+  private handleAppProposal = async (
+    params: ProtocolTypes.ProposeInstallParams,
+    appInstanceId: string,
+    from: string,
+    registryAppInfo: DefaultApp,
+  ): Promise<void> => {
+    try {
+      commonAppProposalValidation(
+        params,
+        // types weirdness
+        { ...registryAppInfo, name: registryAppInfo.name as SupportedApplication },
+        this.connext.config.supportedTokenAddresses,
+      );
+      switch (registryAppInfo.name) {
+        case CoinBalanceRefundApp: {
+          this.log.debug(
+            `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+          );
+          await this.connext.messaging.publish(
+            `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+            stringify(params),
+          );
+          return;
+        }
+        case SimpleLinkedTransferApp: {
+          validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
+          break;
+        }
+      }
+      await this.connext.installApp(appInstanceId);
+    } catch (e) {
+      this.log.error(`Caught error: ${e.toString()}`);
+      await this.connext.rejectInstallApp(appInstanceId);
+    }
   };
 }

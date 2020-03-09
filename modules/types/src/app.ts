@@ -106,33 +106,13 @@ export type AppInstanceProposal = {
   singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
-export type MatchAppInstanceResponse = {
-  matchedApp: DefaultApp;
-  proposeParams: CFCoreTypes.ProposeInstallParams;
-  appInstanceId: string;
-};
-
 ////////////////////////////////////
 ////// App Registry
-
-export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
-export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
-export const SimpleTransferApp = "SimpleTransferApp";
-export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
-
-export const SupportedApplications = {
-  [CoinBalanceRefundApp]: CoinBalanceRefundApp,
-  [SimpleLinkedTransferApp]: SimpleLinkedTransferApp,
-  [SimpleTransferApp]: SimpleTransferApp,
-  [SimpleTwoPartySwapApp]: SimpleTwoPartySwapApp,
-};
-export type SupportedApplication = keyof typeof SupportedApplications;
-
 export type DefaultApp = {
   actionEncoding?: string;
   allowNodeInstall: boolean;
   appDefinitionAddress: string;
-  name: SupportedApplication;
+  name: string;
   chainId: number;
   outcomeType: OutcomeType;
   stateEncoding: string;
@@ -143,144 +123,8 @@ export type AppRegistry = DefaultApp[];
 ////////////////////////////////////
 // Generic Apps
 
-export type App<T = string> = {
-  id: number;
-  channel: CFCoreChannel;
-  appRegistry: DefaultApp; // TODO: is this right?
-  appId: number;
-  xpubPartyA: string;
-  xpubPartyB: string;
-  depositA: T;
-  depositB: T;
-  intermediaries: string[];
-  initialState: any; // TODO: BAD!!
-  timeout: number;
-  updates: AppUpdate[];
-};
-export type AppBigNumber = App<BigNumber>;
-
-export type AppUpdate<T = string> = {
-  id: number;
-  app: App<T>;
-  action: any; // TODO: BAD!!
-  sigs: string[];
-};
-export type AppUpdateBigNumber = AppUpdate<BigNumber>;
-
 export type CoinTransfer<T = string> = {
   amount: T;
   to: Address; // NOTE: must be the xpub!!!
 };
 export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
-
-// all the types of cf app states
-export type AppState<T = string> =
-  | SimpleTransferAppState<T>
-  | SimpleLinkedTransferAppState<T>
-  | SimpleSwapAppState<T>;
-export type AppStateBigNumber = AppState<BigNumber>;
-
-// all the types of cf app actions
-export type AppAction<T = string> = SimpleLinkedTransferAppAction | SolidityValueType;
-export type AppActionBigNumber = AppAction<BigNumber> | SolidityValueType;
-
-////////////////////////////////////
-// Swap Apps
-
-export type SimpleSwapAppState<T = string> = {
-  coinTransfers: CoinTransfer<T>[][];
-};
-export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
-
-////////////////////////////////////
-// Simple Transfer Apps
-
-export type SimpleTransferAppState<T = string> = {
-  coinTransfers: CoinTransfer<T>[];
-};
-export type SimpleTransferAppStateBigNumber = SimpleTransferAppState<BigNumber>;
-
-////////////////////////////////////
-// Simple Linked Transfer Apps
-
-export type SimpleLinkedTransferAppState<T = string> = {
-  coinTransfers: CoinTransfer<T>[];
-  linkedHash: string;
-  amount: T;
-  assetId: string;
-  paymentId: string;
-  preImage: string;
-};
-export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
-export type SimpleLinkedTransferAppAction = {
-  preImage: string;
-};
-
-////////////////////////////////////
-// Unidirectional Transfer Apps
-
-export type UnidirectionalTransferAppState<T = string> = {
-  finalized: false;
-  transfers: [CoinTransfer<T>, CoinTransfer<T>];
-  stage: UnidirectionalTransferAppStage;
-  turnNum: T;
-};
-export type UnidirectionalTransferAppStateBigNumber = UnidirectionalTransferAppState<BigNumber>;
-
-export enum UnidirectionalTransferAppActionType {
-  SEND_MONEY,
-  END_CHANNEL,
-}
-
-export type UnidirectionalTransferAppAction<T = string> = {
-  actionType: UnidirectionalTransferAppActionType;
-  amount: T;
-};
-
-export enum UnidirectionalTransferAppStage {
-  POST_FUND,
-  MONEY_SENT,
-  CHANNEL_CLOSED,
-}
-
-////////////////////////////////////
-// Unidirectional Linked Transfer Apps
-
-export type UnidirectionalLinkedTransferAppState<T = string> = {
-  stage: UnidirectionalLinkedTransferAppStage;
-  transfers: [CoinTransfer<T>, CoinTransfer<T>];
-  linkedHash: string;
-  turnNum: T;
-  finalized: false;
-};
-export type UnidirectionalLinkedTransferAppStateBigNumber = UnidirectionalLinkedTransferAppState<
-  BigNumber
->;
-
-export type UnidirectionalLinkedTransferAppAction<T = string> = {
-  amount: T;
-  assetId: Address;
-  paymentId: string;
-  preImage: string;
-};
-
-export type UnidirectionalLinkedTransferAppActionBigNumber = UnidirectionalLinkedTransferAppAction<
-  BigNumber
->;
-
-export enum UnidirectionalLinkedTransferAppStage {
-  POST_FUND,
-  PAYMENT_CLAIMED,
-  CHANNEL_CLOSED,
-}
-
-////////////////////////////////////
-// CoinBalanceRefund
-
-export type CoinBalanceRefundAppState<T = string> = {
-  multisig: string;
-  recipient: string;
-  threshold: T;
-  tokenAddress: string;
-};
-export type CoinBalanceRefundAppStateBigNumber = CoinBalanceRefundAppState<BigNumber>;

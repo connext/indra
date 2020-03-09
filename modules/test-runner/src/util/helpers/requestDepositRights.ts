@@ -1,5 +1,5 @@
 import { utils } from "@connext/client";
-import { AppInstanceJson, CoinBalanceRefundAppState, IConnextClient } from "@connext/types";
+import { AppInstanceJson, IConnextClient, CoinBalanceRefundAppState } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";

@@ -10,7 +10,7 @@ export class RebalanceProfile {
   id!: number;
 
   @Column("text", {
-    default: Zero,
+    default: "0",
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),
@@ -19,7 +19,7 @@ export class RebalanceProfile {
   lowerBoundCollateralize!: BigNumber;
 
   @Column("text", {
-    default: Zero,
+    default: "0",
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),
@@ -28,7 +28,7 @@ export class RebalanceProfile {
   upperBoundCollateralize!: BigNumber;
 
   @Column("text", {
-    default: Zero,
+    default: "0",
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),
@@ -37,7 +37,7 @@ export class RebalanceProfile {
   lowerBoundReclaim!: BigNumber;
 
   @Column("text", {
-    default: Zero,
+    default: "0",
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),

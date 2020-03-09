@@ -2,10 +2,10 @@ import { Injectable } from "@nestjs/common";
 
 import { LoggerService } from "../logger/logger.service";
 import { AnonymizedOnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { AnonymizedTransferRepository } from "../transfer/transfer.repository";
+import { AnonymizedTransferRepository } from "../anonymizedTransfer/anonymizedTransfer.repository";
 
-import { AnonymizedTransfer } from "src/transfer/transfer.entity";
-import { AnonymizedOnchainTransaction } from "src/onchainTransactions/onchainTransaction.entity";
+import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
+import { AnonymizedOnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 @Injectable()
 export class CollateralService {

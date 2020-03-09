@@ -17,7 +17,7 @@ import {
   fundChannel,
   getMnemonic,
   getProtocolFromData,
-  MesssagingEventData,
+  MessagingEventData,
   PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   RECEIVED,
   REQUEST,
@@ -146,7 +146,7 @@ describe("Async transfer offline tests", () => {
    * Client calls `resolve` on node, node will install and propose, client
    * will take action with recipient.
    */
-  it("sender installs transfer successfully, receiver proposes install but node is offline", async () => {
+  it.skip("sender installs transfer successfully, receiver proposes install but node is offline", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     // 1 successful proposal (balance refund)
@@ -158,7 +158,7 @@ describe("Async transfer offline tests", () => {
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       REQUEST,
-      async (msg: MesssagingEventData) => {
+      async (msg: MessagingEventData) => {
         const { subject } = msg;
         if (subject!.includes(`resolve`)) {
           // wait for message to be sent, event is fired first
@@ -187,7 +187,7 @@ describe("Async transfer offline tests", () => {
     await fundForTransfers(receiverClient, senderClient);
     (receiverClient.messaging as TestMessagingService).on(
       RECEIVED,
-      async (msg: MesssagingEventData) => {
+      async (msg: MessagingEventData) => {
         if (getProtocolFromData(msg) === "takeAction") {
           clock.tick(89_000);
         }

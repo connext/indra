@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@connext/apps": "5.0.2",
     "@connext/cf-core": "5.0.2",
     "@connext/channel-provider": "5.0.2",
     "@connext/client": "5.0.2",

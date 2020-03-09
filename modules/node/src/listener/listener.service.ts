@@ -1,5 +1,4 @@
 import {
-  SimpleLinkedTransferAppState,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -22,13 +21,10 @@ import { ClientProxy } from "@nestjs/microservices";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingClientProviderId } from "../constants";
-import { LinkedTransferStatus } from "../transfer/transfer.entity";
-import { LinkedTransferRepository } from "../transfer/transfer.repository";
-import { TransferService } from "../transfer/transfer.service";
+import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import {
   CFCoreTypes,
   CreateChannelMessage,
@@ -47,6 +43,10 @@ import {
   WithdrawFailedMessage,
   WithdrawStartedMessage,
 } from "../util/cfCore";
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
+import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
+import { AppActionsService } from "../appRegistry/appActions.service";
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
@@ -56,12 +56,13 @@ type CallbackStruct = {
 export default class ListenerService implements OnModuleInit {
   constructor(
     private readonly appRegistryService: AppRegistryService,
+    private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
-    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
+    private readonly linkedTransferService: LinkedTransferService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
-    private readonly transferService: TransferService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ListenerService");
@@ -135,7 +136,7 @@ export default class ListenerService implements OnModuleInit {
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
         try {
-          await this.transferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
+          await this.linkedTransferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
             data.data.appInstanceId,
           );
         } catch (e) {
@@ -149,47 +150,24 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UNINSTALL_VIRTUAL_EVENT, data);
       },
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
+        if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
+          this.log.debug(`Received update state from our own node. Doing nothing.`);
+          return;
+        }
         // if this is for a recipient of a transfer
         this.logEvent(UPDATE_STATE_EVENT, data);
-        const { newState, appInstanceId } = data.data;
-        let transfer = await this.linkedTransferRepository.findByLinkedHash(
-          (newState as SimpleLinkedTransferAppState).linkedHash,
+        const { newState, appInstanceId, action } = data.data;
+        const app = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
+        const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+          app.appInterface.addr,
         );
-        if (!transfer) {
-          this.log.debug(
-            `Could not find transfer for update state event for app: ${appInstanceId}`,
-          );
-          return;
-        }
-        if (appInstanceId !== transfer.receiverAppInstanceId) {
-          this.log.debug(
-            `Not updating transfer preimage or marking as redeemed for sender update state events`,
-          );
-          return;
-        }
-        // update transfer
-        transfer.preImage = (newState as SimpleLinkedTransferAppState).preImage;
-
-        if (
-          transfer.status === LinkedTransferStatus.RECLAIMED ||
-          transfer.status === LinkedTransferStatus.REDEEMED
-        ) {
-          this.log.warn(
-            `Got update state event for a receiver's transfer app (transfer.id: ${transfer.id}) with unexpected status: ${transfer.status}`,
-          );
-          return;
-        }
-
-        // transfers are set to `PENDING` when created. They are set to
-        // `FAILED` when the receiver rejects an install event. If a transfer
-        // makes it to the `UPDATE_STATE_EVENT` portion, it means the transfer
-        // was successfully installed. There is no reason to not redeem it in
-        // that case.
-        transfer = await this.linkedTransferRepository.markAsRedeemed(
-          transfer,
-          await this.channelRepository.findByUserPublicIdentifier(data.from),
+        await this.appActionsService.handleAppAction(
+          appRegistryInfo.name,
+          appInstanceId,
+          newState as any,
+          action as any,
+          data.from,
         );
-        this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
       },
       WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
         this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
