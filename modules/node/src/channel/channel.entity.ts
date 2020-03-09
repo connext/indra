@@ -66,7 +66,7 @@ export class Channel {
   )
   freeBalanceAppInstance!: AppInstance;
 
-  @Column("json", { array: true })
+  @Column("json")
   singleAssetTwoPartyIntermediaryAgreements!: [string, SingleAssetTwoPartyIntermediaryAgreement][];
 
   @Column("integer")
