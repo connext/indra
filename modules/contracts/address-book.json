@@ -317,6 +317,12 @@
       "creationCodeHash": "0x15a50be77512dde6420d6d79ac5a273236c93850c92a2564596570aa33961e61",
       "runtimeCodeHash": "0x94ee377930298d1af932c16a0da2468327125f76c93d99ed3b650bb3cc9433ec",
       "txHash": "0x308e3a097f3fb27d46fddfde3c12f983fa1abb7f5b5f50de8d261330b7fbe465"
+    },
+    "WithdrawApp": {
+      "address": "0xF328c11c4dF88d18FcBd30ad38d8B4714F4b33bF",
+      "creationCodeHash": "0x8819de38b886c3693ce4050236833b699b123c1d5779a3f14ffedeb592a59c62",
+      "runtimeCodeHash": "0xbc7de85592221f44f98c8ea7f12075c0bcfda101d79180ff1e52df03cb6fbeb5",
+      "txHash": "0x5406aeb6d12aaaa6cf994a68655c8935f7cc95962284099b0b65e9bfbe6d2df5"
     }
   }
 }

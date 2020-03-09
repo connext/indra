@@ -19,7 +19,7 @@ const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
 ];
 */
 
-const appContracts = ["SimpleLinkedTransferApp", "SimpleTransferApp", "SimpleTwoPartySwapApp"];
+const appContracts = ["SimpleLinkedTransferApp", "SimpleTransferApp", "SimpleTwoPartySwapApp", "WithdrawApp"];
 
 const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
 
