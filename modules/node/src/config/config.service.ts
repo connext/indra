@@ -1,5 +1,6 @@
 import { MessagingConfig } from "@connext/messaging";
 import {
+  CF_PATH,
   ContractAddresses,
   DefaultApp,
   SupportedApplication,
@@ -17,6 +18,7 @@ import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { OutcomeType } from "../util/cfCore";
+import { fromMnemonic } from "ethers/utils/hdnode";
 
 type PostgresConfig = {
   database: string;
@@ -273,6 +275,11 @@ export class ConfigService implements OnModuleInit {
       default:
         return undefined;
     }
+  }
+
+  getPublicIdentifier(): string {
+    const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
+    return hdNode.neuter().extendedKey;
   }
 
   onModuleInit(): void {
