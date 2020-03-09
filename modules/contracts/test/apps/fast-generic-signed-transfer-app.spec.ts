@@ -2,75 +2,43 @@ import { expect, use } from "chai";
 import { solidity, deployContract } from "ethereum-waffle";
 import { waffle } from "@nomiclabs/buidler";
 import { Contract } from "ethers";
-import { BigNumber, defaultAbiCoder, bigNumberify } from "ethers/utils";
+import { defaultAbiCoder, bigNumberify } from "ethers/utils";
 
 import FastSignedTransferApp from "../../build/FastSignedTransferApp.json";
 
 import { mkAddress, mkHash, mkXpub, mkSig } from "../utils";
-import { Zero, One, AddressZero } from "ethers/constants";
+import { Zero, One, AddressZero, HashZero } from "ethers/constants";
 import {
-  FastSignerTransferAppActionEncoding,
-  FastSignerTransferAppStateEncoding,
+  FastSignedTransferAppActionBigNumber,
+  FastSignedTransferAppStateBigNumber,
+  FastSignedTransferAppStateEncoding,
+  FastSignedTransferAppActionEncoding,
+  FastSignedTransferActionType,
 } from "@connext/types";
 
 use(solidity);
 
-type CoinTransfer = {
-  to: string;
-  amount: BigNumber;
+const decodeAppState = (encodedAppState: string): FastSignedTransferAppStateBigNumber[] =>
+  defaultAbiCoder.decode([FastSignedTransferAppStateEncoding], encodedAppState);
+
+const encodeAppState = (state: FastSignedTransferAppStateBigNumber): string => {
+  return defaultAbiCoder.encode([FastSignedTransferAppStateEncoding], [state]);
 };
 
-type Payment = {
-  amount: BigNumber;
-  assetId: string;
-  signer: string;
-  paymentId: string;
-  timeout: BigNumber;
-  recipientXpub: string;
-  data: string;
-  signature: string;
-};
-
-type FastGenericSignedTransferAppState = {
-  lockedPayments: Payment[];
-  coinTransfers: CoinTransfer[];
-  finalized: boolean;
-  turnNum: BigNumber;
-};
-
-enum ActionType {
-  CREATE,
-  UNLOCK,
-  REJECT,
-  FINALIZE,
-}
-
-type FastGenericSignedTransferAppAction = {
-  newLockedPayments: Payment[];
-  actionType: ActionType;
-};
-
-const decodeAppState = (encodedAppState: string): FastGenericSignedTransferAppState[] =>
-  defaultAbiCoder.decode([FastSignerTransferAppStateEncoding], encodedAppState);
-
-const encodeAppState = (state: FastGenericSignedTransferAppState): string => {
-  return defaultAbiCoder.encode([FastSignerTransferAppStateEncoding], [state]);
-};
-
-const encodeAppAction = (action: FastGenericSignedTransferAppAction): string => {
-  return defaultAbiCoder.encode([FastSignerTransferAppActionEncoding], [action]);
+const encodeAppAction = (action: FastSignedTransferAppActionBigNumber): string => {
+  return defaultAbiCoder.encode([FastSignedTransferAppActionEncoding], [action]);
 };
 
 describe("FastGenericSignedTransferApp", () => {
   let transferApp: Contract;
 
-  async function computeOutcome(state: FastGenericSignedTransferAppState): Promise<string> {
+  async function computeOutcome(state: FastSignedTransferAppStateBigNumber): Promise<string> {
     return await transferApp.functions.computeOutcome(encodeAppState(state));
   }
 
   async function takeAction(
-    state: FastGenericSignedTransferAppState,
-    action: FastGenericSignedTransferAppAction,
+    state: FastSignedTransferAppStateBigNumber,
+    action: FastSignedTransferAppActionBigNumber,
   ): Promise<string> {
     return await transferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
   }
@@ -84,7 +52,7 @@ describe("FastGenericSignedTransferApp", () => {
   it("happy case: sender creates locked tranfers", async () => {
     const sender = mkAddress("0xa");
     const receiver = mkAddress("0xb");
-    const preState: FastGenericSignedTransferAppState = {
+    const preState: FastSignedTransferAppStateBigNumber = {
       coinTransfers: [
         {
           amount: bigNumberify(10),
@@ -95,25 +63,21 @@ describe("FastGenericSignedTransferApp", () => {
           to: receiver,
         },
       ],
-      finalized: false,
-      lockedPayments: [],
+      amount: Zero,
+      paymentId: HashZero,
+      recipientXpub: "",
+      signer: AddressZero,
       turnNum: Zero,
     };
 
-    const action: FastGenericSignedTransferAppAction = {
-      actionType: ActionType.CREATE,
-      newLockedPayments: [
-        {
-          amount: One,
-          assetId: AddressZero,
-          data: mkHash("0x0"),
-          paymentId: mkHash("0xa"),
-          recipientXpub: mkXpub("xpubB"),
-          signature: mkSig("0x0"),
-          signer: mkAddress("0xC"),
-          timeout: Zero,
-        },
-      ],
+    const action: FastSignedTransferAppActionBigNumber = {
+      actionType: FastSignedTransferActionType.CREATE,
+      amount: One,
+      recipientXpub: mkXpub("xpubB"),
+      signer: mkAddress("0xC"),
+      paymentId: mkHash("0xa"),
+      signature: mkSig("0x0"),
+      data: mkHash("0x0"),
     };
 
     const ret = await takeAction(preState, action);
@@ -126,9 +90,7 @@ describe("FastGenericSignedTransferApp", () => {
       amount: destructured.coinTransfers[0].amount.toHexString(),
     }).to.deep.eq({
       to: preState.coinTransfers[0].to.toLowerCase(),
-      amount: preState.coinTransfers[0].amount
-        .sub(action.newLockedPayments[0].amount)
-        .toHexString(),
+      amount: preState.coinTransfers[0].amount.sub(action.amount).toHexString(),
     });
     // coin transfers does not increment receiver until unlocked
     expect({
@@ -139,21 +101,13 @@ describe("FastGenericSignedTransferApp", () => {
       amount: preState.coinTransfers[1].amount.toHexString(),
     });
 
-    // not finalized
-    expect(destructured.finalized).is.false;
-
     // locked payment added to state
-    expect(destructured.lockedPayments.length).to.eq(1);
     expect({
-      amount: destructured.lockedPayments[0].amount,
-      assetId: destructured.lockedPayments[0].assetId,
-      data: destructured.lockedPayments[0].data,
-      paymentId: destructured.lockedPayments[0].paymentId,
-      recipientXpub: destructured.lockedPayments[0].recipientXpub,
-      signature: destructured.lockedPayments[0].signature,
-      signer: destructured.lockedPayments[0].signer,
-      timeout: destructured.lockedPayments[0].timeout,
-    } as Payment).to.deep.eq(action.newLockedPayments[0]);
+      amount: destructured.amount,
+      paymentId: destructured.paymentId,
+      recipientXpub: destructured.recipientXpub,
+      signer: destructured.signer,
+    }).to.deep.contain(action);
 
     // turn num incremented
     expect(destructured.turnNum).to.eq(1);

@@ -159,7 +159,7 @@ contract FastSignedTransferApp is CounterfactualApp {
 
         // Add balances to transfers
         state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(state.amount);
-        AppState newState = removeTransfer(state);
+        AppState memory newState = removeTransfer(state);
         return newState;
     }
 
@@ -172,7 +172,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 1, "Only receivers can reject payments.");
-        AppState newState = removeTransfer(state);
+        AppState memory newState = removeTransfer(state);
         return newState;
     }
 
@@ -186,7 +186,5 @@ contract FastSignedTransferApp is CounterfactualApp {
         state.amount = 0;
         state.signer = address(0);
         state.paymentId = bytes32(0);
-        state.data = bytes32(0);
-        state.signature = [];
     }
 }

@@ -45,50 +45,46 @@ export enum FastSignedTransferActionType {
   REJECT,
 }
 
-export type FastSignedTransfer<T = string> = {
-  receipientXpub: string;
+export type FastSignedTransferAppState<T = string> = {
+  recipientXpub: string;
   amount: T;
   signer: string;
   paymentId: string;
-  data: string;
-  signature: string;
-};
-
-export type FastSignedTransferAppState<T = string> = {
-  lockedPayments: FastSignedTransfer<T>[];
   coinTransfers: [CoinTransfer<T>, CoinTransfer<T>];
   turnNum: T;
 };
 export type FastSignedTransferAppStateBigNumber = FastSignedTransferAppState<BigNumber>;
 
 export type FastSignedTransferAppAction<T = string> = {
-  newLockedPayments: FastSignedTransfer<T>[];
+  recipientXpub: string;
+  amount: T;
+  signer: string;
+  paymentId: string;
+  data: string;
+  signature: string;
   actionType: FastSignedTransferActionType;
 };
 export type FastSignedTransferAppActionBigNumber = FastSignedTransferAppAction<BigNumber>;
 
-export const FastSignerTransferAppPaymentsEncoding = `
+export const FastSignedTransferAppStateEncoding = `
   tuple(
-    string receipientXpub,
+    string recipientXpub,
     uint256 amount,
     address signer,
     bytes32 paymentId,
-    bytes32 data,
-    bytes signature
-  )[]
-`;
-
-export const FastSignerTransferAppStateEncoding = `
-  tuple(
-    ${FastSignerTransferAppPaymentsEncoding} lockedPayments,
     ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
     uint256 turnNum
   )
 `;
 
-export const FastSignerTransferAppActionEncoding = `
+export const FastSignedTransferAppActionEncoding = `
   tuple(
-    ${FastSignerTransferAppPaymentsEncoding} newLockedPayments,
+    string recipientXpub,
+    uint256 amount,
+    address signer,
+    bytes32 paymentId,
+    bytes32 data,
+    bytes signature
     uint256 actionType
   )
 `;
