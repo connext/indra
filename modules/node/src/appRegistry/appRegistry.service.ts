@@ -163,6 +163,14 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
+      case WithdrawApp: {
+        validateWithdrawApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        break;
+      }
       default: {
         throw new Error(
           `Will not install app without configured validation: ${registryAppInfo.name}`,

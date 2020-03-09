@@ -9,6 +9,8 @@ import {
   SimpleLinkedTransferAppAction,
   FastSignedTransferAppAction,
   FastSignedTransferActionType,
+  WithdrawAppState,
+  WithdrawAppAction,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";
@@ -37,8 +39,8 @@ export class AppActionsService {
   async handleAppAction(
     appName: SupportedApplication,
     appInstanceId: string,
-    newState: SimpleLinkedTransferAppState | FastSignedTransferAppState,
-    action: SimpleLinkedTransferAppAction | FastSignedTransferAppAction,
+    newState: SimpleLinkedTransferAppState | FastSignedTransferAppState | WithdrawAppState,
+    action: SimpleLinkedTransferAppAction | FastSignedTransferAppAction | WithdrawAppAction,
     from: string,
   ): Promise<void> {
     switch (appName) {
@@ -58,6 +60,14 @@ export class AppActionsService {
           from,
         );
         break;
+      }
+      case WithdrawApp: {
+        await this.handleWithdrawAppAction(
+          appInstanceId,
+          newState as WithdrawAppState,
+          action as WithdrawAppAction,
+          from,
+        )
       }
     }
   }
@@ -128,4 +138,9 @@ export class AppActionsService {
     );
     this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
   }
+
+  // private async handleWithdrawAppAction(
+  //   appInstanceId: string,
+
+  // )
 }
