@@ -21,8 +21,6 @@ import DepositController from "./state-channel/deposit/controller";
 import GetStateChannelController from "./state-channel/get/controller";
 import GetStateDepositHolderAddressController from "./state-channel/get-state-deposit-holder-address/controller";
 import GetAllChannelAddressesController from "./state-channel/get-all-addresses/controller";
-import WithdrawCommitmentController from "./state-channel/withdraw-commitment/controller";
-import WithdrawController from "./state-channel/withdraw/controller";
 
 export {
   CreateChannelController,
@@ -48,6 +46,4 @@ export {
   RescindDepositRightsController,
   UninstallVirtualController,
   UpdateStateController,
-  WithdrawCommitmentController,
-  WithdrawController,
 };
