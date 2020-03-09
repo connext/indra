@@ -1,10 +1,11 @@
-import { ILoggerService, WithdrawApp, AppInstanceJson } from "@connext/types";
+import { ILoggerService, AppInstanceJson } from "@connext/types";
 import {
   CoinBalanceRefundApp,
   commonAppProposalValidation,
   SupportedApplication,
   SimpleLinkedTransferApp,
   validateSimpleLinkedTransferApp,
+  validateWithdrawApp
 } from "@connext/apps";
 import { bigNumberify } from "ethers/utils";
 
@@ -61,7 +62,7 @@ export class ConnextListener extends ConnextEventEmitter {
   private connext: ConnextClient;
 
   // TODO: add custom parsing functions here to convert event data
-  // to something more usable?
+  // to something more usable? -- OR JUST FIX THE EVENT DATA! :p
   private defaultCallbacks: CallbackStruct = {
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
       this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
@@ -76,8 +77,14 @@ export class ConnextListener extends ConnextEventEmitter {
       this.log.info(`Deposit transaction: ${msg.data.txHash}`);
       this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
-    INSTALL_EVENT: (msg: InstallMessage): void => {
+    INSTALL_EVENT: async (msg: InstallMessage): Promise<void> => {
       this.emitAndLog(INSTALL_EVENT, msg.data);
+      const appInstance = (await this.connext.getAppInstanceDetails(msg.data.params.appInstanceId)).appInstance;
+      if(this.connext.appRegistry.filter(
+        (app: DefaultApp) => app.name === WithdrawApp,
+      )[0].appDefinitionAddress == appInstance.appInterface.addr) {
+        this.connext.respondToCounterpartyWithdraw(appInstance);
+      }
     },
     // TODO: make cf return app instance id and app def?
     INSTALL_VIRTUAL_EVENT: (msg: InstallVirtualMessage): void => {
@@ -179,6 +186,7 @@ export class ConnextListener extends ConnextEventEmitter {
       this.channelProvider.on(event, callback);
     });
 
+    // TODO why is this here? Can we delete?
     this.channelProvider.on(
       ProtocolTypes.chan_install,
       async (data: any): Promise<void> => {
@@ -187,11 +195,6 @@ export class ConnextListener extends ConnextEventEmitter {
           `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
           stringify(appInstance),
         );
-        if(this.connext.appRegistry.filter(
-          (app: DefaultApp) => app.name === WithdrawApp,
-        )[0].appDefinitionAddress == appInstance.appInterface.addr) {
-          this.connext.respondToCounterpartyWithdraw(appInstance);
-        }
       },
     );
 
@@ -281,6 +284,9 @@ export class ConnextListener extends ConnextEventEmitter {
         case SimpleLinkedTransferApp: {
           validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
           break;
+        }
+        case WithdrawApp: {
+          validateWithdrawApp(params, from, this.connext.publicIdentifier)
         }
       }
       await this.connext.installApp(appInstanceId);
