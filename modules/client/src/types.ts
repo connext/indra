@@ -115,7 +115,6 @@ export {
   UninstallVirtualMessage,
   UpdateStateMessage,
   weiToToken,
-  WithdrawalResponse,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
   WithdrawParameters,

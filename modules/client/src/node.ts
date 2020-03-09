@@ -152,12 +152,6 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-  // public async withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse> {
-  //   return await this.send(`channel.withdraw.${this.userPublicIdentifier}`, {
-  //     tx,
-  //   });
-  // }
-
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
     return await this.send(`transfer.fetch-linked.${this.userPublicIdentifier}`, {
       paymentId,
