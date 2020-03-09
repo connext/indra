@@ -24,6 +24,7 @@ import { ClientProxy } from "@nestjs/microservices";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { ConfigService } from "../config/config.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
@@ -49,7 +50,6 @@ import {
   WithdrawFailedMessage,
   WithdrawStartedMessage,
 } from "../util/cfCore";
-import { ConfigService } from "src/config/config.service";
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
