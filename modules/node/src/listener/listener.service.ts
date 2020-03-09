@@ -101,9 +101,10 @@ export default class ListenerService implements OnModuleInit {
       INSTALL_EVENT: async (data: InstallMessage): Promise<void> => {
         this.logEvent(INSTALL_EVENT, data);
         const appInstance = await this.cfCoreService.getAppInstanceDetails(data.data.params.appInstanceId)
-        if((await this.configService.getDefaultApps()).filter(
-          (app: DefaultApp) => app.name === WithdrawApp,
-        )[0].appDefinitionAddress == appInstance.appInterface.addr) {
+        let registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+          appInstance.appInterface.addr,
+        );
+        if(registryAppInfo.name == "WithdrawApp") {
           this.channelService.respondToUserWithdraw(appInstance);
         }
       },

@@ -6,6 +6,9 @@ import {
   RebalanceProfileBigNumber,
   stringify,
   GetConfigResponse,
+  ProtocolTypes,
+  CoinTransfer,
+  WithdrawAppState,
 } from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
