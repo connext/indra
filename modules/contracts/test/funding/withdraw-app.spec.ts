@@ -7,7 +7,7 @@ import { Contract, Wallet } from "ethers";
 import { BigNumber, defaultAbiCoder, joinSignature, SigningKey } from "ethers/utils";
 
 import WithdrawApp from "../../build/WithdrawApp.json"
-import { Zero } from "ethers/constants";
+import { Zero, HashZero } from "ethers/constants";
 
 const { expect } = chai;
 
@@ -68,7 +68,7 @@ describe("WithdrawApp", async () => {
           to: counterpartyWallet.address,
         },
       ],
-      signatures: [joinSignature(withdrawerSigningKey.signDigest(data)), mkHash("0x0")],
+      signatures: [joinSignature(withdrawerSigningKey.signDigest(data)), HashZero],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
       data,
       finalized: false,
@@ -139,7 +139,7 @@ describe("WithdrawApp", async () => {
     let initialState = createInitialState();
     let action = createAction();
 
-    action.signature = mkHash("0x0");
+    action.signature = HashZero;
     await expect(applyAction(initialState, action)).revertedWith("invalid counterparty signature")
   })
 });
