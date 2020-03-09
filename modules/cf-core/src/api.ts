@@ -23,8 +23,6 @@ import {
   UninstallController,
   UninstallVirtualController,
   UpdateStateController,
-  WithdrawCommitmentController,
-  WithdrawController,
 } from "./methods";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
@@ -46,8 +44,6 @@ const controllers = [
   UninstallController,
   UninstallVirtualController,
   UpdateStateController,
-  WithdrawCommitmentController,
-  WithdrawController,
 
   /**
    * Constant methods

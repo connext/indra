@@ -213,13 +213,7 @@ export class Node {
       const { store } = this.requestHandler;
 
       const [protocol, commitment, ...key] = args;
-
-      if (protocol === Protocol.Withdraw) {
-        const [multisigAddress] = key;
-        await store.storeWithdrawalCommitment(multisigAddress, commitment);
-      } else {
-        await store.setCommitment([protocol, ...key], commitment);
-      }
+      await store.setCommitment([protocol, ...key], commitment);
     });
 
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
