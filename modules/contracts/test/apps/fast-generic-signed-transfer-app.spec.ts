@@ -107,7 +107,12 @@ describe("FastGenericSignedTransferApp", () => {
       paymentId: destructured.paymentId,
       recipientXpub: destructured.recipientXpub,
       signer: destructured.signer,
-    }).to.deep.contain(action);
+    }).to.deep.contain({
+      amount: action.amount,
+      paymentId: action.paymentId,
+      recipientXpub: action.recipientXpub,
+      signer: action.signer,
+    });
 
     // turn num incremented
     expect(destructured.turnNum).to.eq(1);

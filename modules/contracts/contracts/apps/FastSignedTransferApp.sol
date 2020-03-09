@@ -131,6 +131,9 @@ contract FastSignedTransferApp is CounterfactualApp {
         state.signer = action.signer;
         state.paymentId = action.paymentId;
 
+        // remove sender amount
+        state.coinTransfers[0].amount = state.coinTransfers[0].amount.sub(state.amount);
+
         return state;
     }
 
