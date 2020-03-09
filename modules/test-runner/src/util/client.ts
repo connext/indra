@@ -1,10 +1,15 @@
 import { connect } from "@connext/client";
 import { ConnextStore } from "@connext/store";
-import { ClientOptions, IChannelProvider, IConnextClient, MEMORYSTORAGE } from "@connext/types";
+import {
+  ClientOptions,
+  IChannelProvider,
+  IConnextClient,
+  MEMORYSTORAGE,
+  LOCALSTORAGE,
+} from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
-import localStorage from "localStorage";
 
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
@@ -66,7 +71,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     ...opts,
     ...urlOptions,
     logLevel: env.logLevel,
-    store: new ConnextStore(localStorage), // TODO: replace with polyfilled window.localStorage
+    store: new ConnextStore(LOCALSTORAGE),
   };
   if (network === "mainnet") {
     clientOpts = {
