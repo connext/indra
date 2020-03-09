@@ -858,14 +858,18 @@ export class ConnextClient implements IConnextClient {
     const linkedRegistryInfo = this.appRegistry.filter(
       (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
     )[0];
+    const withdrawRegistryInfo = this.appRegistry.filter(
+      (app: DefaultApp) => app.name === "WithdrawApp",
+    )[0];
 
     await this.removeHangingProposalsByDefinition([
       swapAppRegistryInfo.appDefinitionAddress,
       linkedRegistryInfo.appDefinitionAddress,
+      withdrawRegistryInfo.appDefinitionAddress
     ]);
 
     // deal with any swap apps that are installed
-    await this.uninstallAllAppsByDefintion([swapAppRegistryInfo.appDefinitionAddress]);
+    await this.uninstallAllAppsByDefintion([swapAppRegistryInfo.appDefinitionAddress, withdrawRegistryInfo.appDefinitionAddress]);
   };
 
   /**
@@ -892,6 +896,7 @@ export class ConnextClient implements IConnextClient {
     const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
       appDefinitions.includes(app.appInterface.addr),
     );
+    //TODO ARJUN there is an edgecase where this will cancel withdrawal
     for (const app of apps) {
       await this.uninstallApp(app.identityHash);
     }
