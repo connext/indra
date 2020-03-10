@@ -1,16 +1,14 @@
 import {
-  SupportedApplication,
-  FastSignedTransferApp,
-  SimpleLinkedTransferApp,
-} from "@connext/apps";
-import {
   SimpleLinkedTransferAppState,
   FastSignedTransferAppState,
   SimpleLinkedTransferAppAction,
   FastSignedTransferAppAction,
   FastSignedTransferActionType,
   FastSignedTransferAppActionBigNumber,
+  FastSignedTransferApp,
+  SimpleLinkedTransferApp,
 } from "@connext/types";
+import { SupportedApplication } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";
 import { AddressZero } from "ethers/constants";

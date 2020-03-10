@@ -1,4 +1,3 @@
-import { FastSignedTransferApp } from "@connext/apps";
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
   DepositConfirmationMessage,
@@ -10,6 +9,7 @@ import {
   FastSignedTransferAppActionBigNumber,
   FastSignedTransferActionType,
   ResolveFastSignedTransferResponse,
+  FastSignedTransferApp,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";

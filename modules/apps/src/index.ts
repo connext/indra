@@ -1,19 +1,20 @@
 import { BigNumber } from "ethers/utils";
 
-import { FastSignedTransferAppRegistryInfo, FastSignedTransferApp } from "./FastSignedTransferApp";
+import { FastSignedTransferAppRegistryInfo } from "./FastSignedTransferApp";
 import { AppRegistry as AppRegistryType } from "./shared";
-import {
-  SimpleLinkedTransferApp,
-  SimpleLinkedTransferAppRegistryInfo,
-} from "./SimpleLinkedTransferApp";
-import { SimpleTwoPartySwapApp, SimpleTwoPartySwapAppRegistryInfo } from "./SimpleTwoPartySwapApp";
-import { CoinBalanceRefundApp, CoinBalanceRefundAppRegistryInfo } from "./CoinBalanceRefundApp";
+import { SimpleLinkedTransferAppRegistryInfo } from "./SimpleLinkedTransferApp";
+import { SimpleTwoPartySwapAppRegistryInfo } from "./SimpleTwoPartySwapApp";
+import { CoinBalanceRefundAppRegistryInfo } from "./CoinBalanceRefundApp";
 import {
   SimpleLinkedTransferAppAction,
   SimpleSwapAppState,
   SimpleLinkedTransferAppState,
   FastSignedTransferAppAction,
   FastSignedTransferAppState,
+  CoinBalanceRefundApp,
+  SimpleLinkedTransferApp,
+  SimpleTwoPartySwapApp,
+  FastSignedTransferApp,
 } from "@connext/types";
 
 export * from "./shared";
