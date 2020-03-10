@@ -99,7 +99,7 @@ describe("Fast Signed Transfer", () => {
     expect(coinTransfers[1][1]).eq(Zero.add(transferAmount));
   });
 
-  it("Should send multiple fast signed transfers using the same app", async () => {
+  it.only("Should send multiple fast signed transfers using the same app", async () => {
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
 
@@ -142,6 +142,7 @@ describe("Fast Signed Transfer", () => {
         initialReceiverAppInstanceId = res.appId;
       }
       expect(res.appId).to.be.eq(initialReceiverAppInstanceId);
+      await delay(1000);
     }
     await delay(5000);
 
@@ -153,6 +154,5 @@ describe("Fast Signed Transfer", () => {
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
     expect(coinTransfers[1][0]).eq(clientB.freeBalanceAddress);
     expect(coinTransfers[1][1]).eq(10);
-    console.log("coinTransfers[1][1]: ", coinTransfers[1][1]);
   });
 });
