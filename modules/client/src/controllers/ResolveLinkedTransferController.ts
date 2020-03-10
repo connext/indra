@@ -3,7 +3,6 @@ import {
   RECEIVE_TRANSFER_FINISHED_EVENT,
   RECEIVE_TRANSFER_STARTED_EVENT,
   ReceiveTransferFinishedEventData,
-  LINKED_TRANSFER_TO_RECIPIENT,
   LINKED_TRANSFER,
 } from "@connext/types";
 
