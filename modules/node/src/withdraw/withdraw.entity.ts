@@ -6,10 +6,12 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  OneToOne,
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
-import { IsEthAddress, IsBytes32, IsXpub } from "../util";
+import { IsEthAddress, IsBytes32 } from "../util";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 @Entity()
 export class Withdraw {
@@ -62,6 +64,12 @@ export class Withdraw {
     (channel: Channel) => channel.multisigAddress,
   )
   channel!: Channel;
+
+  @OneToOne(
+    (type: any) => OnchainTransaction,
+    (onchainTransaction: OnchainTransaction) => onchainTransaction.id,
+  )
+  onchainTransaction!: OnchainTransaction;
 
   @Column({ type: "json" })
   meta: object;

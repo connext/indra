@@ -14,7 +14,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelModule } from "../channel/channel.module";
 
 // import { channelProviderFactory } from "./withdraw.provider";
-// import { WithdrawRepository } from "./withdraw.repository";
+import { WithdrawRepository } from "./withdraw.repository";
 import { WithdrawService } from "./withdraw.service";
 
 @Module({
@@ -33,7 +33,7 @@ import { WithdrawService } from "./withdraw.service";
         // LinkedTransferRepository,
         // FastSignedTransferRepository,
         // TransferRepository,
-        // WithdrawRepository
+        WithdrawRepository
         ]),
     ],
     providers: [WithdrawService],
