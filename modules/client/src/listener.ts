@@ -240,7 +240,6 @@ export class ConnextListener extends ConnextEventEmitter {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (msg: any) => {
       this.log.debug(`Received message for ${subject} subscription`);
-      this.log.debug(`Message data: ${stringify(JSON.parse(msg.data))}`);
       if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }
@@ -248,6 +247,7 @@ export class ConnextListener extends ConnextEventEmitter {
       if (typeof data === `string`) {
         data = JSON.parse(data);
       }
+      this.log.debug(`Message data: ${stringify(data)}`);
       const { paymentId, encryptedPreImage, amount, assetId } = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
