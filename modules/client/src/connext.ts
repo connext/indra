@@ -375,8 +375,8 @@ export class ConnextClient implements IConnextClient {
     return await this.withdrawalController.respondToNodeWithdraw(appInstance);
   }
 
-  public saveWithdrawCommitmentToStore = async(commitment: WithdrawERC20Commitment | WithdrawETHCommitment, signatures: string[]): Promise<void> => {
-    return await this.withdrawalController.saveWithdrawCommitmentToStore(commitment, signatures);
+  public saveWithdrawCommitmentToStore = async(params: WithdrawParameters<BigNumber>, signatures: string[]): Promise<void> => {
+    return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
   }
 
   public resolveCondition = async (

@@ -1,4 +1,4 @@
-import { ILoggerService, AppInstanceJson, WithdrawAppState } from "@connext/types";
+import { ILoggerService, AppInstanceJson, WithdrawAppState, BigNumber } from "@connext/types";
 import {
   CoinBalanceRefundApp,
   commonAppProposalValidation,
@@ -8,7 +8,6 @@ import {
   validateWithdrawApp,
   WithdrawApp
 } from "@connext/apps";
-import { bigNumberify } from "ethers/utils";
 
 import { ConnextClient } from "./connext";
 import { stringify } from "./lib";
@@ -131,7 +130,7 @@ export class ConnextListener extends ConnextEventEmitter {
       });
       if(registryAppInfo.name == WithdrawApp) {
         const params = {
-          amount: state.transfers[0].amount,
+          amount: new BigNumber(state.transfers[0].amount),
           recipient: state.transfers[0].to,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress
         }

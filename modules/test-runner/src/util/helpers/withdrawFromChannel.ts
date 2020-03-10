@@ -21,7 +21,6 @@ export const withdrawFromChannel = async (
     amount: amount.toString(),
     assetId,
     recipient,
-    userSubmitted,
   });
   const postWithdrawalBalance = await client.getFreeBalance(assetId);
   let recipientBalance;
