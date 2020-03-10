@@ -99,7 +99,7 @@ describe("Fast Signed Transfer", () => {
     expect(coinTransfers[1][1]).eq(Zero.add(transferAmount));
   });
 
-  it.only("Should send multiple fast signed transfers using the same app", async () => {
+  it("Should send multiple fast signed transfers using the same app", async () => {
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
 
@@ -110,12 +110,7 @@ describe("Fast Signed Transfer", () => {
 
     let initialSenderAppInstanceId: string = "";
     let initialReceiverAppInstanceId: string = "";
-    for (let i = 0; i < 2; i++) {
-      console.log("i: ", i);
-      if (initialSenderAppInstanceId) {
-        const app = await clientA.getAppInstanceDetails(initialSenderAppInstanceId);
-        console.log("app: ", app.appInstance.latestState);
-      }
+    for (let i = 0; i < 10; i++) {
       const paymentId = hexlify(randomBytes(32));
       const { transferAppInstanceId } = (await clientA.conditionalTransfer({
         amount: transferAmount.toString(),
@@ -130,9 +125,6 @@ describe("Fast Signed Transfer", () => {
         initialSenderAppInstanceId = transferAppInstanceId;
       }
       expect(transferAppInstanceId).to.eq(initialSenderAppInstanceId);
-      console.log("initialSenderAppInstanceId: ", initialSenderAppInstanceId);
-      console.log("transferAppInstanceId: ", transferAppInstanceId);
-      console.log(`FINISHED CREATING TRANSFER ${i}`);
 
       const data = hexlify(randomBytes(32));
 
@@ -149,13 +141,9 @@ describe("Fast Signed Transfer", () => {
       if (i === 0) {
         initialReceiverAppInstanceId = res.appId;
       }
-      console.log("initialReceiverAppInstanceId: ", initialReceiverAppInstanceId);
-      console.log("res.appId: ", res.appId);
       expect(res.appId).to.be.eq(initialReceiverAppInstanceId);
-      console.log(`FINISHED RESOLVING TRANSFER ${i}`);
-
-      await delay(5000);
     }
+    await delay(5000);
 
     // locked payment can resolve
     const transferApp = await clientB.getAppInstanceDetails(initialReceiverAppInstanceId);
@@ -165,5 +153,6 @@ describe("Fast Signed Transfer", () => {
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
     expect(coinTransfers[1][0]).eq(clientB.freeBalanceAddress);
     expect(coinTransfers[1][1]).eq(10);
+    console.log("coinTransfers[1][1]: ", coinTransfers[1][1]);
   });
 });

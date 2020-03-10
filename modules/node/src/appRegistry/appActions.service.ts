@@ -93,7 +93,7 @@ export class AppActionsService {
         transfer.status = FastSignedTransferStatus.REDEEMED;
         await this.fastSignedTransferRepository.save(transfer);
 
-        // unlock sender payment
+        // unlock sender payment, if successful mark as reclaimed
         this.log.debug(`Received unlock for receiver payment, unlocking sender payment`);
         const senderAppAction = {
           actionType: FastSignedTransferActionType.UNLOCK,
@@ -105,6 +105,8 @@ export class AppActionsService {
           signer: transfer.signer,
         } as FastSignedTransferAppActionBigNumber;
         await this.cfCoreService.takeAction(transfer.senderAppInstanceId, senderAppAction);
+        transfer.status = FastSignedTransferStatus.RECLAIMED;
+        await this.fastSignedTransferRepository.save(transfer);
       }
     }
   }

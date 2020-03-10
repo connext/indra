@@ -74,7 +74,7 @@ export class FastSignedTransferController extends AbstractController {
         bigNumberify(
           (installedTransferApp.latestState as FastSignedTransferAppStateBigNumber)
             .coinTransfers[0][1],
-        ).gt(amount)
+        ).gte(amount)
       ) {
         needsInstall = false;
         transferAppInstanceId = installedTransferApp.identityHash;
@@ -84,7 +84,6 @@ export class FastSignedTransferController extends AbstractController {
       }
     }
 
-    console.log("needsInstall: ", needsInstall);
     if (needsInstall) {
       const {
         actionEncoding,
@@ -130,6 +129,7 @@ export class FastSignedTransferController extends AbstractController {
         timeout: Zero, // TODO
         meta,
       } as ProtocolTypes.ProposeInstallParams;
+      console.log("installParams: ", installParams);
 
       transferAppInstanceId = await this.proposeAndInstallLedgerApp(installParams);
     }

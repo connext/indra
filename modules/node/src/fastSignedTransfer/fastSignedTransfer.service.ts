@@ -127,7 +127,7 @@ export class FastSignedTransferService {
     // install if needed
     if (installedReceiverApp) {
       if (
-        (installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber).coinTransfers[0][1].gt(
+        (installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber).coinTransfers[0][1].gte(
           transfer.amount,
         )
       ) {

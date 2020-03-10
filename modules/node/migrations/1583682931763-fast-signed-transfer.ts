@@ -40,12 +40,12 @@ export class fastSignedTransfer1583682931763 implements MigrationInterface {
         "sender_channel"."userPublicIdentifier" as "senderPublicIdentifier",
         "fast_signed_transfer"."createdAt" as "createdAt",
         "fast_signed_transfer"."meta" as "meta",
-        "fast_signed_transfer"."recipientPublicIdentifier" as "receiverPublicIdentifier",
+        "receiver_channel"."userPublicIdentifier" as "receiverPublicIdentifier",
         "fast_signed_transfer"."status"::TEXT as "status",
         'FAST_SIGNED' AS "type"
       FROM fast_signed_transfer
         LEFT JOIN channel receiver_channel ON receiver_channel.id = fast_signed_transfer."receiverChannelId"
-        LEFT JOIN channel sender_channel ON sender_channel.id = fast_signed_transfer."senderChannelId";
+        LEFT JOIN channel sender_channel ON sender_channel.id = fast_signed_transfer."senderChannelId"
       UNION ALL
       SELECT
         "linked_transfer"."paymentId" as "paymentId",
