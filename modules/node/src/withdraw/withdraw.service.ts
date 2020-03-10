@@ -1,4 +1,5 @@
 import { Injectable, HttpService, Inject } from "@nestjs/common";
+import { convertWithrawAppState, WithdrawApp } from "@connext/apps"
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -7,11 +8,14 @@ import { OnchainTransactionService } from "../onchainTransactions/onchainTransac
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreTypes, xpubToAddress } from "../util";
-import { TransactionResponse, AppInstanceJson, BigNumber, ProtocolTypes } from "@connext/types";
-import { HashZero, Zero } from "ethers/constants";
+import { TransactionResponse, AppInstanceJson, BigNumber, ProtocolTypes, stringify, CoinTransfer, WithdrawAppState, WithdrawParameters, WithdrawAppAction } from "@connext/types";
+import { HashZero, Zero, AddressZero } from "ethers/constants";
 import { recoverAddress, SigningKey, joinSignature } from "ethers/utils";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
+import { WithdrawRepository} from "../withdraw/withdraw.repository";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import { Withdraw } from "./withdraw.entity";
 
 @Injectable()
 export class WithdrawService {
@@ -24,11 +28,101 @@ export class WithdrawService {
         private readonly httpService: HttpService,
         private readonly onchainTransactionRepository: OnchainTransactionRepository,
         private readonly appRegistryRepository: AppRegistryRepository,
+        private readonly withdrawRepository: WithdrawRepository,
     ) {
     this.log.setContext("ChannelService");
     }
 
-    async withdrawForClient(
+    /*
+        Called in the case that node wants to withdraw funds from channel
+    */
+    async withdraw(
+        multisigAddress: string,
+        amount: BigNumber,
+        assetId: string = AddressZero,
+      ): Promise<ProtocolTypes.ProposeInstallResult> {
+        return new Promise(async (resolve): Promise<void> => {
+          const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+          if (!channel) {
+            throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
+          }
+      
+          // don't allow withdraw if user's balance refund app is installed
+          const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(
+            multisigAddress,
+            assetId,
+          );
+          if (
+            balanceRefundApp &&
+            balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
+          ) {
+            throw new Error(
+              `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
+            );
+          }
+      
+          if (
+            balanceRefundApp &&
+            balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
+          ) {
+            this.log.info(`Removing node's installed CoinBalanceRefundApp before depositing`);
+            await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
+          }
+    
+          const result = await this.proposeWithdrawApp(amount, assetId, channel);
+          resolve(result);
+        })
+    }
+
+      /*
+        Primary response method to user withdrawal. Called from appRegistry service.
+      */
+    async handleUserWithdraw(appInstance: AppInstanceJson): Promise<void> {
+        const state = appInstance.latestState as WithdrawAppState<BigNumber>;
+    
+        const generatedCommitment = await this.cfCoreService.createWithdrawCommitment({
+          amount: state.transfers[0].amount,
+          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          recipient: state.transfers[0].to
+        } as WithdrawParameters<BigNumber>,
+        appInstance.multisigAddress
+        )
+    
+        await this.withdrawRepository.create()
+    
+        const counterpartySignatureOnWithdrawCommitment = await this.configService.getEthWallet().signMessage(generatedCommitment.hashToSign())
+        await this.cfCoreService.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
+
+        let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+        await this.withdrawRepository.addCounterpartySignatureAndFinalize(withdraw, counterpartySignatureOnWithdrawCommitment);
+
+        await this.cfCoreService.uninstallApp(appInstance.identityHash)
+        const commitment = await this.cfCoreService.createWithdrawCommitment(
+          {
+            amount: state.transfers[0].amount,
+            recipient: state.transfers[0].to,
+            assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress
+          } as WithdrawParameters<BigNumber>,
+          appInstance.multisigAddress
+        )
+        const signedWithdrawalCommitment = commitment.getSignedTransaction([
+          state.signatures[0],
+          state.signatures[1],
+        ]);
+        const transaction = await this.submitWithdrawForClient(
+          (await this.channelRepository.findByMultisigAddress(appInstance.multisigAddress)).userPublicIdentifier,
+          signedWithdrawalCommitment
+        );
+
+        withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+        const onchainTransaction = await this.onchainTransactionRepository.findByHash(transaction.hash)
+        await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);
+        this.log.info(`Node responded with transaction: ${transaction.hash}`);
+        this.log.debug(`Transaction details: ${stringify(transaction)}`);
+        return;
+    }
+
+    async submitWithdrawForClient(
       userPublicIdentifier: string,
       tx: CFCoreTypes.MinimalTransaction,
     ): Promise<TransactionResponse> {
@@ -51,10 +145,69 @@ export class WithdrawService {
       this.log.debug(`Multisig already deployed, proceeding with withdrawal`);
     }
 
-    const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
+    const txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx);
     return txRes;
   }
 
+  async submitWithdrawForNode(
+        appInstanceId: string,
+        counterpartySignature: string,
+        state: WithdrawAppState,
+    ): Promise<TransactionResponse> {
+    const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
+    if (!appInstance) {
+        throw new Error(`No channel exists for multisigAddress ${appInstance.multisigAddress}`);
+    }
+
+    const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
+        appInstance.multisigAddress,
+    );
+    this.log.debug(`Deploy multisig tx: ${deployTx}`);
+
+    const wallet = this.configService.getEthWallet();
+    if (deployTx !== HashZero) {
+        this.log.debug(`Waiting for deployment transaction...`);
+        wallet.provider.waitForTransaction(deployTx);
+        this.log.debug(`Deployment transaction complete!`);
+    } else {
+        this.log.debug(`Multisig already deployed, proceeding with withdrawal`);
+    }
+
+    const stateBigNumber = convertWithrawAppState("bignumber", state);
+    const commitment = await this.cfCoreService.createWithdrawCommitment({
+        amount: stateBigNumber.transfers[0].amount,
+        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        recipient: this.cfCoreService.cfCore.freeBalanceAddress
+    }, appInstance.multisigAddress)
+    const tx = commitment.getSignedTransaction([stateBigNumber.signatures[0], counterpartySignature])
+
+    const channel = await this.channelRepository.findByMultisigAddress(appInstance.multisigAddress)
+    const txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx);
+    return txRes;
+    }
+
+  async saveUserWithdrawal(
+      appInstanceId: string,
+      amount: BigNumber,
+      assetId: string,
+      recipient: string,
+      data: string,
+      withdrawerSignature: string,
+      counterpartySignature: string,
+      multisigAddress: string,
+    ) {
+      const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+      const withdraw = await new Withdraw();
+      withdraw.appInstanceId = appInstanceId;
+      withdraw.amount = amount;
+      withdraw.assetId = assetId;
+      withdraw.recipient = recipient;
+      withdraw.data = data;
+      withdraw.withdrawerSignature = withdrawerSignature;
+      withdraw.counterpartySignature = counterpartySignature;
+      withdraw.finalized = false;
+      withdraw.channel = channel;
+  }
 
   async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
@@ -65,64 +218,6 @@ export class WithdrawService {
     return await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
       userPublicIdentifier,
     );
-  }
-
-  async respondToUserWithdraw(appInstance: AppInstanceJson): Promise<void> {
-    const state = appInstance.latestState as WithdrawAppState<BigNumber>;
-
-    const generatedCommitment = await this.cfCoreService.createWithdrawCommitment({
-      amount: state.transfers[0].amount,
-      assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-      recipient: state.transfers[0].to
-    } as WithdrawParameters<BigNumber>,
-    appInstance.multisigAddress
-    )
-
-    const channel = await this.channelRepository.findByMultisigAddress(appInstance.multisigAddress);
-    const recoveredSigner = recoverAddress(generatedCommitment.hashToSign(), state.signatures[0]);
-
-    if(generatedCommitment.hashToSign() !== state.data) {
-      throw new Error(`Generated withdraw commitment did not match commitment from initial state: ${generatedCommitment.hashToSign()} vs ${state.data}`)
-    }
-
-    if(recoveredSigner !== state.signers[0]) {
-      throw new Error(`Recovered signer did not match signer in app state: ${recoveredSigner} vs ${state.signers[0]}`)
-    }
-
-    if(recoveredSigner !== xpubToAddress(channel.userPublicIdentifier)) {
-      throw new Error(`Recoverd signer did not match user's signer: ${recoveredSigner} vs ${xpubToAddress(channel.userPublicIdentifier)}`)
-    }
-
-    if(state.transfers[1].amount !== Zero) {
-      throw new Error(`Will not withdraw - our transfer amount is not equal to zero`)
-    }
-
-    const counterpartySignatureOnWithdrawCommitment = await this.configService.getEthWallet().signMessage(generatedCommitment.hashToSign())
-    await this.cfCoreService.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
-  }
-
-  async finalizeWithdraw(appInstance: AppInstanceJson): Promise<TransactionResponse> {
-    const state = appInstance.latestState as WithdrawAppState<BigNumber>;
-    await this.cfCoreService.uninstallApp(appInstance.identityHash)
-    const commitment = await this.cfCoreService.createWithdrawCommitment(
-      {
-        amount: state.transfers[0].amount,
-        recipient: state.transfers[0].to,
-        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress
-      } as WithdrawParameters<BigNumber>,
-      appInstance.multisigAddress
-    )
-    const signedWithdrawalCommitment = commitment.getSignedTransaction([
-      state.signatures[0],
-      state.signatures[1],
-    ]);
-    const transaction = await this.withdrawForClient(
-      (await this.channelRepository.findByMultisigAddress(appInstance.multisigAddress)).userPublicIdentifier,
-      signedWithdrawalCommitment
-    );
-    this.log.info(`Node responded with transaction: ${transaction.hash}`);
-    this.log.debug(`Transaction details: ${stringify(transaction)}`);
-    return transaction;
   }
 
   private async proposeWithdrawApp(
@@ -147,11 +242,10 @@ export class WithdrawService {
       {amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress},
       {amount: Zero.toString(), to: xpubToAddress(channel.userPublicIdentifier)}
     ]
-    const prefix = "0x0";
 
     const initialState: WithdrawAppState = {
       transfers: [transfers[0],transfers[1]],
-      signatures: [withdrawerSignatureOnCommitment, prefix.padEnd(66, "0")],
+      signatures: [withdrawerSignatureOnCommitment, HashZero],
       signers: [this.cfCoreService.cfCore.freeBalanceAddress, xpubToAddress(channel.userPublicIdentifier)],
       data: commitment.hashToSign(),
       finalized: false
@@ -162,7 +256,7 @@ export class WithdrawService {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = await this.configService.getDefaultAppByName(WithdrawApp);
+    } = await this.appRegistryRepository.findByNameAndNetwork(WithdrawApp, (await this.configService.getEthNetwork()).chainId)
 
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
@@ -182,44 +276,5 @@ export class WithdrawService {
 
     // propose install + wait for client confirmation
     return this.cfCoreService.proposeAndWaitForAccepted(params, channel.multisigAddress);
-  }
-
-  async initiateWithdraw(
-    multisigAddress: string,
-    amount: BigNumber,
-    assetId: string = AddressZero,
-  ): Promise<AppInstanceJson> {
-    return new Promise(async (resolve): Promise<void> => {
-      const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
-      if (!channel) {
-        throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
-      }
-  
-      // don't allow withdraw if user's balance refund app is installed
-      const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(
-        multisigAddress,
-        assetId,
-      );
-      if (
-        balanceRefundApp &&
-        balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
-      ) {
-        throw new Error(
-          `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
-        );
-      }
-  
-      if (
-        balanceRefundApp &&
-        balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
-      ) {
-        this.log.info(`Removing node's installed CoinBalanceRefundApp before depositing`);
-        await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
-      }
-
-      const result = await this.proposeWithdrawApp(amount, assetId, channel);
-      const {appInstance} = await this.cfCoreService.installApp(result.appInstanceId);
-      resolve(appInstance);
-    })
   }
 }
