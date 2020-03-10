@@ -266,7 +266,7 @@ export const connect = async (
     ethProvider,
     keyGen,
     logger: log,
-    messaging,
+    messaging: messaging as MessagingService,
     network,
     node,
     store,

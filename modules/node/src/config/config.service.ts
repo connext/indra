@@ -1,5 +1,4 @@
-import { MessagingConfig } from "@connext/messaging";
-import { ContractAddresses, SwapRate } from "@connext/types";
+import { ContractAddresses, SwapRate, MessagingConfig, CF_PATH } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";

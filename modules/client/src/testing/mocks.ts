@@ -1,6 +1,9 @@
 import { SupportedApplication } from "@connext/apps";
-import { IMessagingService } from "@connext/messaging";
-import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
+import {
+  ILoggerService,
+  ResolveFastSignedTransferResponse,
+  IMessagingService,
+} from "@connext/types";
 import { providers } from "ethers";
 import { BigNumber, Transaction } from "ethers/utils";
 

@@ -5,12 +5,12 @@ import {
   GetConfigResponse,
   IChannelProvider,
   ILoggerService,
-  IMessagingService,
   INodeApiClient,
   KeyGen,
   Network,
   Store,
 } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
 
 // This type is only ever used inside the client,
 // No need to keep it in the global types package.
@@ -21,7 +21,7 @@ export type InternalClientOptions = {
   ethProvider: JsonRpcProvider;
   keyGen: KeyGen;
   logger: ILoggerService;
-  messaging: IMessagingService;
+  messaging: MessagingService;
   network: Network;
   node: INodeApiClient;
   store: Store;

@@ -1,5 +1,5 @@
 import { SupportedApplication, AppActionBigNumber, AppStateBigNumber } from "@connext/apps";
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
   IChannelProvider,
@@ -85,7 +85,7 @@ export class ConnextClient implements IConnextClient {
   public freeBalanceAddress: string;
   public listener: ConnextListener;
   public log: ILoggerService;
-  public messaging: IMessagingService;
+  public messaging: MessagingService;
   public multisigAddress: Address;
   public network: Network;
   public node: INodeApiClient;

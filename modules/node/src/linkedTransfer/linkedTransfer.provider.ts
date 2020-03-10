@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import {
   ResolveLinkedTransferResponse,
   Transfer,
@@ -23,7 +23,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     private readonly linkedTransferService: LinkedTransferService,
     private readonly transferRepository: TransferRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
@@ -90,20 +90,20 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "transfer.fetch-linked.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
+      "*.transfer.fetch-linked",
+      this.authService.parseXpub(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
-      "transfer.resolve-linked.>",
-      this.authService.useUnverifiedPublicIdentifier(this.resolveLinkedTransfer.bind(this)),
+      "*.transfer.resolve-linked",
+      this.authService.parseXpub(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
-      "transfer.get-pending.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getPendingTransfers.bind(this)),
+      "*.transfer.get-pending",
+      this.authService.parseXpub(this.getPendingTransfers.bind(this)),
     );
     await super.connectRequestReponse(
-      "client.check-in.>",
-      this.authService.useUnverifiedPublicIdentifier(this.clientCheckIn.bind(this)),
+      "*.client.check-in",
+      this.authService.parseXpub(this.clientCheckIn.bind(this)),
     );
   }
 }
@@ -121,7 +121,7 @@ export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     linkedTransferService: LinkedTransferService,
     transferRepository: TransferRepository,
     linkedTransferRepository: LinkedTransferRepository,

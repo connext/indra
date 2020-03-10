@@ -1,5 +1,5 @@
 import { SupportedApplication } from "@connext/apps";
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
@@ -31,7 +31,7 @@ const sendFailed = "Failed to send message";
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
-  public messaging: IMessagingService;
+  public messaging: MessagingService;
   public latestSwapRates: { [key: string]: string } = {};
   public log: ILoggerService;
 
@@ -40,7 +40,7 @@ export class NodeApiClient implements INodeApiClient {
   private _channelProvider: IChannelProvider | undefined;
 
   constructor(opts: NodeInitializationParameters) {
-    this.messaging = opts.messaging;
+    this.messaging = opts.messaging as MessagingService;
     this.log = opts.logger.newContext("NodeApiClient");
     this._userPublicIdentifier = opts.userPublicIdentifier;
     this._nodePublicIdentifier = opts.nodePublicIdentifier;
@@ -81,7 +81,9 @@ export class NodeApiClient implements INodeApiClient {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    const lockValue = await this.send(`${this.userPublicIdentifier}.lock.acquire.${lockName}`, { lockTTL: timeout });
+    const lockValue = await this.send(`${this.userPublicIdentifier}.lock.acquire.${lockName}`, {
+      lockTTL: timeout,
+    });
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
@@ -160,9 +162,7 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async resolveLinkedTransfer(
-    paymentId: string,
-  ): Promise<ResolveLinkedTransferResponse> {
+  public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
     return await this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
       paymentId,
     });

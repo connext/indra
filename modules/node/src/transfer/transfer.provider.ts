@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { Transfer } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
@@ -25,7 +25,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "transfer.get-history.>",
+      "*.transfer.get-history",
       this.authService.parseXpub(this.getTransferHistory.bind(this)),
     );
   }
@@ -37,7 +37,7 @@ export const transferProviderFactory: FactoryProvider<Promise<void>> = {
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     transferRepository: TransferRepository,
   ): Promise<void> => {
     const transfer = new TransferMessaging(authService, logging, messaging, transferRepository);
