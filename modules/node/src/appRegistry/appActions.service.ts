@@ -94,7 +94,7 @@ export class AppActionsService {
         await this.fastSignedTransferRepository.save(transfer);
 
         // unlock sender payment
-        console.log(`Received unlock for receiver payment, unlocking sender payment`);
+        this.log.debug(`Received unlock for receiver payment, unlocking sender payment`);
         const senderAppAction = {
           actionType: FastSignedTransferActionType.UNLOCK,
           amount: transfer.amount,
@@ -104,11 +104,7 @@ export class AppActionsService {
           signature: action.signature,
           signer: transfer.signer,
         } as FastSignedTransferAppActionBigNumber;
-        const res = await this.cfCoreService.takeAction(
-          transfer.senderAppInstanceId,
-          senderAppAction,
-        );
-        console.log("res: ", res);
+        await this.cfCoreService.takeAction(transfer.senderAppInstanceId, senderAppAction);
       }
     }
   }
