@@ -1,12 +1,9 @@
 import {
-  CoinBalanceRefundApp,
   commonAppProposalValidation,
   SupportedApplication,
-  SimpleLinkedTransferApp,
   validateSimpleLinkedTransferApp,
 } from "@connext/apps";
-import { ILoggerService } from "@connext/types";
-import { bigNumberify } from "ethers/utils";
+import { ILoggerService, CoinBalanceRefundApp, SimpleLinkedTransferApp } from "@connext/types";
 
 import { ConnextClient } from "./connext";
 import { stringify } from "./lib";

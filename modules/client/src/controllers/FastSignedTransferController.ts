@@ -1,4 +1,4 @@
-import { convertFastSignedTransferParameters, FastSignedTransferApp } from "@connext/apps";
+import { convertFastSignedTransferParameters } from "@connext/apps";
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
   AppInstanceJson,
@@ -9,6 +9,10 @@ import {
   FastSignedTransferAppAction,
   minBN,
   FastSignedTransferAppStateBigNumber,
+  FAST_SIGNED_TRANSFER,
+  CreateTransferEventData,
+  CREATE_TRANSFER,
+  FastSignedTransferApp,
 } from "@connext/types";
 import { Zero, MaxUint256, HashZero, AddressZero } from "ethers/constants";
 
@@ -148,6 +152,19 @@ export class FastSignedTransferController extends AbstractController {
     if (needsUninstall) {
       await this.connext.uninstallApp(needsUninstall);
     }
+
+    const eventData = {
+      type: FAST_SIGNED_TRANSFER,
+      amount: amount.toString(),
+      assetId,
+      paymentId,
+      sender: this.connext.publicIdentifier,
+      meta,
+      transferMeta: {
+        signer,
+      },
+    } as CreateTransferEventData<typeof FAST_SIGNED_TRANSFER>;
+    this.connext.emit(CREATE_TRANSFER, eventData);
 
     return { transferAppInstanceId };
   };

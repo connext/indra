@@ -1,8 +1,6 @@
-import { OutcomeType, SimpleSwapAppStateEncoding } from "@connext/types";
+import { OutcomeType, SimpleSwapAppStateEncoding, SimpleTwoPartySwapApp } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
-
-export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
 
 export const SimpleTwoPartySwapAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,

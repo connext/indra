@@ -1,4 +1,3 @@
-import { CoinBalanceRefundApp } from "@connext/apps";
 import {
   ChannelAppSequences,
   StateChannelJSON,
@@ -6,6 +5,7 @@ import {
   RebalanceProfileBigNumber,
   stringify,
   GetConfigResponse,
+  CoinBalanceRefundApp,
 } from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";

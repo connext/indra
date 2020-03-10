@@ -1,5 +1,4 @@
-import { CoinBalanceRefundApp } from "@connext/apps";
-import { CoinBalanceRefundAppStateBigNumber } from "@connext/types";
+import { CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";

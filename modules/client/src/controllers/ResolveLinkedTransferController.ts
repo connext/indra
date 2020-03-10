@@ -2,10 +2,9 @@ import {
   RECEIVE_TRANSFER_FAILED_EVENT,
   RECEIVE_TRANSFER_FINISHED_EVENT,
   RECEIVE_TRANSFER_STARTED_EVENT,
-  RECIEVE_TRANSFER_FAILED_EVENT,
-  RECIEVE_TRANSFER_FINISHED_EVENT,
-  RECIEVE_TRANSFER_STARTED_EVENT,
   ReceiveTransferFinishedEventData,
+  LINKED_TRANSFER_TO_RECIPIENT,
+  LINKED_TRANSFER,
 } from "@connext/types";
 
 import { ResolveLinkedTransferParameters, ResolveLinkedTransferResponse } from "../types";
@@ -19,12 +18,6 @@ export class ResolveLinkedTransferController extends AbstractController {
     this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.stack || e.message}`);
     this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
       error: e.stack || e.message,
-      paymentId,
-    });
-
-    // TODO: remove when deprecated
-    this.connext.emit(RECIEVE_TRANSFER_FAILED_EVENT, {
-      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_FAILED_EVENT}`,
       paymentId,
     });
   };
@@ -44,12 +37,6 @@ export class ResolveLinkedTransferController extends AbstractController {
       paymentId,
     });
 
-    // TODO: remove when deprecated
-    this.connext.emit(RECIEVE_TRANSFER_STARTED_EVENT, {
-      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_STARTED_EVENT}`,
-      paymentId,
-    });
-
     let resolveRes: ResolveLinkedTransferResponse;
     try {
       // node installs app, validation happens in listener
@@ -61,16 +48,15 @@ export class ResolveLinkedTransferController extends AbstractController {
       throw e;
     }
 
-    this.connext.emit(
-      RECEIVE_TRANSFER_FINISHED_EVENT,
-      resolveRes as ReceiveTransferFinishedEventData,
-    );
-
-    // TODO: remove when deprecated
-    this.connext.emit(RECIEVE_TRANSFER_FINISHED_EVENT, {
-      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_FINISHED_EVENT}`,
+    this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
+      type: LINKED_TRANSFER,
+      amount: resolveRes.amount,
+      assetId: resolveRes.assetId,
       paymentId,
-    });
+      sender: resolveRes.sender,
+      recipient: this.connext.publicIdentifier,
+      meta: resolveRes.meta,
+    } as ReceiveTransferFinishedEventData<typeof LINKED_TRANSFER>);
 
     return resolveRes;
   };
