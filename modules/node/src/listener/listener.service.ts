@@ -16,7 +16,6 @@ import {
   WITHDRAWAL_STARTED_EVENT,
   ProtocolTypes,
   DefaultApp,
-  WithdrawApp,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -100,13 +99,6 @@ export default class ListenerService implements OnModuleInit {
       },
       INSTALL_EVENT: async (data: InstallMessage): Promise<void> => {
         this.logEvent(INSTALL_EVENT, data);
-        const appInstance = await this.cfCoreService.getAppInstanceDetails(data.data.params.appInstanceId)
-        let registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-          appInstance.appInterface.addr,
-        );
-        if(registryAppInfo.name == "WithdrawApp") {
-          this.channelService.respondToUserWithdraw(appInstance);
-        }
       },
       // TODO: make cf return app instance id and app def?
       INSTALL_VIRTUAL_EVENT: async (data: InstallVirtualMessage): Promise<void> => {

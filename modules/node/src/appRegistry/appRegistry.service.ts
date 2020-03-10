@@ -8,6 +8,8 @@ import {
   validateSimpleSwapApp,
   FastSignedTransferApp,
   validateFastSignedTransferApp,
+  WithdrawApp,
+  validateWithdrawApp,
 } from "@connext/apps";
 import {
   AppInstanceJson,
@@ -16,6 +18,7 @@ import {
   stringify,
   bigNumberifyObj,
   SimpleLinkedTransferAppStateBigNumber,
+  WithdrawAppStateBigNumber,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -36,6 +39,7 @@ import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
+import { WithdrawService } from "src/withdraw/withdraw.service";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -46,6 +50,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly log: LoggerService,
     private readonly swapRateService: SwapRateService,
     private readonly linkedTransferService: LinkedTransferService,
+    private readonly withdrawService: WithdrawService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
@@ -217,6 +222,23 @@ export class AppRegistryService implements OnModuleInit {
       }
       case FastSignedTransferApp:
         break;
+      case WithdrawApp: {
+        this.log.debug(`Doing withdrawal post-install tasks`)
+        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
+        const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
+        await this.withdrawService.saveUserWithdrawal(
+          appInstanceId,
+          bigNumberify(proposeInstallParams.initiatorDeposit),
+          proposeInstallParams.initiatorDepositTokenAddress,
+          initialState.transfers[0].to,
+          initialState.data,
+          initialState.signatures[0],
+          initialState.signatures[1],
+          appInstance.multisigAddress,
+        )
+        this.withdrawService.handleUserWithdraw(appInstance);
+        break;
+      }
       default:
         this.log.debug(`No post-install actions configured.`);
     }

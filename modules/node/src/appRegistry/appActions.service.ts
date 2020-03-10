@@ -2,6 +2,7 @@ import {
   SupportedApplication,
   FastSignedTransferApp,
   SimpleLinkedTransferApp,
+  WithdrawApp
 } from "@connext/apps";
 import {
   SimpleLinkedTransferAppState,
@@ -23,6 +24,8 @@ import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
 import { FastSignedTransferStatus } from "../fastSignedTransfer/fastSignedTransfer.entity";
+import { WithdrawRepository } from "../withdraw/withdraw.repository"
+import { WithdrawService } from "../withdraw/withdraw.service";
 
 @Injectable()
 export class AppActionsService {
@@ -32,6 +35,8 @@ export class AppActionsService {
     private readonly transferService: LinkedTransferService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly fastSignedTransferRepository: FastSignedTransferRepository,
+    private readonly withdrawRepository: WithdrawRepository,
+    private readonly withdrawService: WithdrawService,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -64,9 +69,8 @@ export class AppActionsService {
       case WithdrawApp: {
         await this.handleWithdrawAppAction(
           appInstanceId,
-          newState as WithdrawAppState,
           action as WithdrawAppAction,
-          from,
+          newState as WithdrawAppState
         )
       }
     }
@@ -139,8 +143,15 @@ export class AppActionsService {
     this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
   }
 
-  // private async handleWithdrawAppAction(
-  //   appInstanceId: string,
+  private async handleWithdrawAppAction(
+    appInstanceId: string,
+    action: WithdrawAppAction,
+    state: WithdrawAppState,
+  ): Promise<void> {
+    let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstanceId);
+    withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(withdraw, action.signature);
 
-  // )
+    this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstanceId}`)
+    await this.withdrawService.submitWithdrawForNode(appInstanceId, action.signature, state);
+  }
 }
