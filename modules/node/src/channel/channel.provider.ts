@@ -160,10 +160,11 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     authService: AuthService,
     channelRepo: ChannelRepository,
     channelService: ChannelService,
+    withdrawService: WithdrawService,
     log: LoggerService,
     messaging: IMessagingService,
   ): Promise<void> => {
-    const channel = new ChannelMessaging(authService, channelRepo, channelService, log, messaging);
+    const channel = new ChannelMessaging(authService, channelRepo, channelService, withdrawService, log, messaging);
     await channel.setupSubscriptions();
   },
 };
