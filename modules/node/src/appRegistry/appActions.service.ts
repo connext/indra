@@ -30,13 +30,13 @@ import { WithdrawService } from "../withdraw/withdraw.service";
 @Injectable()
 export class AppActionsService {
   constructor(
-    private readonly channelRepository: ChannelRepository,
     private readonly log: LoggerService,
     private readonly transferService: LinkedTransferService,
+    private readonly withdrawService: WithdrawService,
+    private readonly channelRepository: ChannelRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly fastSignedTransferRepository: FastSignedTransferRepository,
     private readonly withdrawRepository: WithdrawRepository,
-    private readonly withdrawService: WithdrawService,
   ) {
     this.log.setContext("AppRegistryService");
   }

@@ -1,4 +1,4 @@
-import { Module, HttpModule } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -9,11 +9,8 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { RebalanceProfileRepository } from "../rebalanceProfile/rebalanceProfile.repository";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelModule } from "../channel/channel.module";
 
-// import { channelProviderFactory } from "./withdraw.provider";
 import { WithdrawRepository } from "./withdraw.repository";
 import { WithdrawService } from "./withdraw.service";
 
@@ -21,19 +18,15 @@ import { WithdrawService } from "./withdraw.service";
     controllers: [],
     exports: [WithdrawService],
     imports: [
-        AuthModule,
         CFCoreModule,
-        ChannelModule,
         ConfigModule,
+        OnchainTransactionModule,
         LoggerModule,
-        MessagingModule,
         TypeOrmModule.forFeature([
-        ChannelRepository,
+        OnchainTransactionRepository,
         AppRegistryRepository,
-        // LinkedTransferRepository,
-        // FastSignedTransferRepository,
-        // TransferRepository,
-        WithdrawRepository
+        WithdrawRepository,
+        ChannelRepository,
         ]),
     ],
     providers: [WithdrawService],

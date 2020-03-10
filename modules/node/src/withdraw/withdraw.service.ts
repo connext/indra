@@ -21,14 +21,13 @@ import { Withdraw } from "./withdraw.entity";
 export class WithdrawService {
     constructor(
         private readonly cfCoreService: CFCoreService,
-        private readonly channelRepository: ChannelRepository,
         private readonly configService: ConfigService,
         private readonly onchainTransactionService: OnchainTransactionService,
         private readonly log: LoggerService,
-        private readonly httpService: HttpService,
         private readonly onchainTransactionRepository: OnchainTransactionRepository,
         private readonly appRegistryRepository: AppRegistryRepository,
         private readonly withdrawRepository: WithdrawRepository,
+        private readonly channelRepository: ChannelRepository,
     ) {
     this.log.setContext("ChannelService");
     }

@@ -29,6 +29,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 import { MessagingClientProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
@@ -39,7 +40,6 @@ import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { WithdrawService } from "src/withdraw/withdraw.service";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {

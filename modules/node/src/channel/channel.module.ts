@@ -8,6 +8,7 @@ import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
+import { WithdrawModule } from "../withdraw/withdraw.module";
 import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { RebalanceProfileRepository } from "../rebalanceProfile/rebalanceProfile.repository";
@@ -24,6 +25,7 @@ import { ChannelService } from "./channel.service";
     CFCoreModule,
     ConfigModule,
     HttpModule,
+    WithdrawModule,
     LoggerModule,
     MessagingModule,
     OnchainTransactionModule,

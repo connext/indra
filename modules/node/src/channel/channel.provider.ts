@@ -14,6 +14,7 @@ import { getAddress } from "ethers/utils";
 import { AuthService } from "../auth/auth.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
@@ -21,7 +22,6 @@ import { CFCore, CFCoreTypes } from "../util/cfCore";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
-import { WithdrawService } from "src/withdraw/withdraw.service";
 
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
@@ -119,10 +119,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
       "channel.create.>",
       this.authService.useUnverifiedPublicIdentifier(this.createChannel.bind(this)),
     );
-    // await super.connectRequestReponse(
-    //   "channel.withdraw.>",
-    //   this.authService.useUnverifiedPublicIdentifier(this.withdraw.bind(this)),
-    // );
     await super.connectRequestReponse(
       "channel.request-collateral.>",
       this.authService.useUnverifiedPublicIdentifier(this.requestCollateral.bind(this)),
@@ -154,7 +150,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, ChannelRepository, ChannelService, LoggerService, MessagingProviderId],
+  inject: [AuthService, ChannelRepository, ChannelService, WithdrawService, LoggerService, MessagingProviderId],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,

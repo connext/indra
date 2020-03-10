@@ -14,6 +14,7 @@ import { Transfer } from "../transfer/transfer.entity";
 import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
 import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
+import { Withdraw } from "../withdraw/withdraw.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -42,6 +43,7 @@ export const entities = [
   AnonymizedOnchainTransaction,
   AnonymizedTransfer,
   FastSignedTransfer,
+  Withdraw,
 ];
 
 export const migrations = [

@@ -313,16 +313,16 @@
       "txHash": "0xfbe0c59b37515610ba4781b3539580b1f2fb0a50167640a8980a3df85cfd2bbe"
     },
     "Token": {
-      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",
+      "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC",
       "creationCodeHash": "0x15a50be77512dde6420d6d79ac5a273236c93850c92a2564596570aa33961e61",
       "runtimeCodeHash": "0x94ee377930298d1af932c16a0da2468327125f76c93d99ed3b650bb3cc9433ec",
-      "txHash": "0x308e3a097f3fb27d46fddfde3c12f983fa1abb7f5b5f50de8d261330b7fbe465"
+      "txHash": "0xc4bc6979712880e8ec27a12149e4b82eb2954eb6b16319246e838b129158da94"
     },
     "WithdrawApp": {
-      "address": "0xF328c11c4dF88d18FcBd30ad38d8B4714F4b33bF",
-      "creationCodeHash": "0x8819de38b886c3693ce4050236833b699b123c1d5779a3f14ffedeb592a59c62",
-      "runtimeCodeHash": "0xbc7de85592221f44f98c8ea7f12075c0bcfda101d79180ff1e52df03cb6fbeb5",
-      "txHash": "0x5406aeb6d12aaaa6cf994a68655c8935f7cc95962284099b0b65e9bfbe6d2df5"
+      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",
+      "creationCodeHash": "0x0761b233e19652b211a1ef47b0b1d2dd738b546a9c9cc712cbb9d7f685c782c1",
+      "runtimeCodeHash": "0xd79f773a16e7b6459800341854346be7a82d3a694209fe8e87a5406f5413387e",
+      "txHash": "0x40a12a175719c81f308a366b11ab8ea57c65b16a7de481afcfcfb219593da729"
     },
     "FastSignedTransferApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",

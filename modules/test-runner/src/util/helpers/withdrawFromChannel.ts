@@ -11,7 +11,6 @@ export const withdrawFromChannel = async (
   client: IConnextClient,
   amount: BigNumber,
   assetId: string,
-  userSubmitted: boolean = false,
   recipient: string = Wallet.createRandom().address,
 ): Promise<void> => {
   // try to withdraw

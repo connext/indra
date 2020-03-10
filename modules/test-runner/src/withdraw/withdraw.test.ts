@@ -18,7 +18,7 @@ import {
 
 const { xpubToAddress } = utils;
 
-describe("Withdrawal", () => {
+describe.only("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
 
@@ -31,14 +31,14 @@ describe("Withdrawal", () => {
     // fund client with eth
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, true);
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
   });
 
   it("happy case: client successfully withdraws tokens and submits the tx itself", async () => {
     // fund client with tokens
     await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
     // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress, true);
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
   });
 
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {
@@ -71,7 +71,7 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     const recipient = "0xabc";
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, recipient),
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient),
     ).to.be.rejectedWith(`Value \"${recipient}\" is not a valid eth address`);
   });
 
@@ -118,7 +118,7 @@ describe("Withdrawal", () => {
     client.requestCollateral(AddressZero);
     // use user-submitted to make sure that the event is properly
     // thrown
-    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, true);
+    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
     // TODO: events for withdrawal commitments! issue 698
   });
 
