@@ -11,9 +11,9 @@ import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify, Signature, recoverAddress, SigningKey, joinSignature } from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify} from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -30,6 +30,7 @@ import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
+import { WithdrawService } from "src/withdraw/withdraw.service";
 
 type RebalancingTargetsResponse<T = string> = {
   assetId: string;
@@ -51,6 +52,7 @@ export class ChannelService {
     private readonly channelRepository: ChannelRepository,
     private readonly configService: ConfigService,
     private readonly onchainTransactionService: OnchainTransactionService,
+    private readonly withdrawService: WithdrawService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
@@ -161,7 +163,7 @@ export class ChannelService {
       await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
     }
 
-    await this.initiateWithdraw(channel.multisigAddress, amount, assetId);
+    await this.withdrawService.withdraw(channel.multisigAddress, amount, assetId);
 
     return {} as TransactionResponse; //TODO ARJUN temporary!!
   }

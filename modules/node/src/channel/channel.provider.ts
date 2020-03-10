@@ -21,12 +21,14 @@ import { CFCore, CFCoreTypes } from "../util/cfCore";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
+import { WithdrawService } from "src/withdraw/withdraw.service";
 
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
+    private readonly withdrawService: WithdrawService,
     log: LoggerService,
     messaging: IMessagingService,
   ) {
@@ -64,13 +66,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     ) as unknown)) as CFCoreTypes.DepositResult;
   }
 
-  // async withdraw(
-  //   pubId: string,
-  //   data: { tx: CFCoreTypes.MinimalTransaction },
-  // ): Promise<TransactionResponse> {
-  //   return await this.channelService.withdrawForClient(pubId, data.tx);
-  // }
-
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
     const profile = convert.RebalanceProfile("bignumber", data.profile);
     await this.channelService.addRebalanceProfileToChannel(pubId, profile);
@@ -106,7 +101,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
-    const onchainTx = await this.channelService.getLatestWithdrawal(pubId);
+    const onchainTx = await this.withdrawService.getLatestWithdrawal(pubId);
     // TODO: conversions needed?
     return onchainTx;
   }
