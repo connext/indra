@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { StateChannelJSON } from "@connext/types";
+import { StateChannelJSON, stringify } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -7,8 +7,8 @@ import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
-import { LinkedTransfer } from "../transfer/transfer.entity";
-import { AbstractMessagingProvider, stringify } from "../util";
+import { AbstractMessagingProvider } from "../util";
+import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 

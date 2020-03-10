@@ -275,26 +275,29 @@ export const connect = async (
   });
 
   // return before any cleanup using the assumption that all injected clients
-  // have an online client that it can access that has don the cleanup
+  // have an online client that it can access that has done the cleanup
   if (isInjected) {
     logTime(log, start, `Client successfully connected`);
     return client;
   }
 
   // waits until the setup protocol or create channel call is completed
-  await new Promise(
-    async (resolve: any, reject: any): Promise<any> => {
-      // Wait for channel to be available
-      const channelIsAvailable = async (): Promise<boolean> => {
-        const chan = await node.getChannel();
-        return chan && chan.available;
-      };
-      while (!(await channelIsAvailable())) {
-        await new Promise((res: any): any => setTimeout((): void => res(), 100));
-      }
-      resolve();
-    },
-  );
+  await Promise.race([
+    new Promise(
+      async (resolve: any, reject: any): Promise<any> => {
+        // Wait for channel to be available
+        const channelIsAvailable = async (): Promise<boolean> => {
+          const chan = await node.getChannel();
+          return chan && chan.available;
+        };
+        while (!(await channelIsAvailable())) {
+          await new Promise((res: any): any => setTimeout((): void => res(), 100));
+        }
+        resolve();
+      },
+    ),
+    delayAndThrow(30_000, "Channel was not available after 30 seconds."),
+  ]);
 
   try {
     await client.getFreeBalance();
@@ -354,9 +357,6 @@ export const connect = async (
 
   // check in with node to do remaining work
   await client.clientCheckIn();
-
-  // check if client is available
-  await client.isAvailable();
 
   logTime(log, start, `Client successfully connected`);
   return client;

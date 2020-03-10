@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 import { OutcomeType } from "../util/cfCore";
+import { SupportedApplication } from "@connext/apps";
 
 @Entity()
 export class AppRegistry {
@@ -8,7 +9,7 @@ export class AppRegistry {
   id!: number;
 
   @Column("text")
-  name!: string;
+  name!: SupportedApplication;
 
   @Column("integer")
   chainId!: number;

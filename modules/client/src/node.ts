@@ -1,4 +1,6 @@
-import { ILoggerService, IMessagingService } from "@connext/types";
+import { SupportedApplication } from "@connext/apps";
+import { IMessagingService } from "@connext/messaging";
+import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
@@ -18,7 +20,6 @@ import {
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
-  SupportedApplication,
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";
@@ -161,12 +162,16 @@ export class NodeApiClient implements INodeApiClient {
 
   public async resolveLinkedTransfer(
     paymentId: string,
-    linkedHash: string,
-    meta: object = {},
   ): Promise<ResolveLinkedTransferResponse> {
     return await this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
-      linkedHash,
-      meta,
+      paymentId,
+    });
+  }
+
+  public async resolveFastSignedTransfer(
+    paymentId: string,
+  ): Promise<ResolveFastSignedTransferResponse> {
+    return await this.send(`${this.userPublicIdentifier}.transfer.resolve-fast-signed`, {
       paymentId,
     });
   }
