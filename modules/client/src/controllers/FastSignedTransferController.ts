@@ -129,7 +129,6 @@ export class FastSignedTransferController extends AbstractController {
         timeout: Zero, // TODO
         meta,
       } as ProtocolTypes.ProposeInstallParams;
-      console.log("installParams: ", installParams);
 
       transferAppInstanceId = await this.proposeAndInstallLedgerApp(installParams);
     }
