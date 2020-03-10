@@ -1,11 +1,12 @@
-import { ILoggerService, AppInstanceJson } from "@connext/types";
+import { ILoggerService, AppInstanceJson, WithdrawAppState } from "@connext/types";
 import {
   CoinBalanceRefundApp,
   commonAppProposalValidation,
   SupportedApplication,
   SimpleLinkedTransferApp,
   validateSimpleLinkedTransferApp,
-  validateWithdrawApp
+  validateWithdrawApp,
+  WithdrawApp
 } from "@connext/apps";
 import { bigNumberify } from "ethers/utils";
 
@@ -79,12 +80,6 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     INSTALL_EVENT: async (msg: InstallMessage): Promise<void> => {
       this.emitAndLog(INSTALL_EVENT, msg.data);
-      const appInstance = (await this.connext.getAppInstanceDetails(msg.data.params.appInstanceId)).appInstance;
-      if(this.connext.appRegistry.filter(
-        (app: DefaultApp) => app.name === WithdrawApp,
-      )[0].appDefinitionAddress == appInstance.appInterface.addr) {
-        this.connext.respondToCounterpartyWithdraw(appInstance);
-      }
     },
     // TODO: make cf return app instance id and app def?
     INSTALL_VIRTUAL_EVENT: (msg: InstallVirtualMessage): void => {
@@ -127,8 +122,21 @@ export class ConnextListener extends ConnextEventEmitter {
     UNINSTALL_VIRTUAL_EVENT: (msg: UninstallVirtualMessage): void => {
       this.emitAndLog(UNINSTALL_VIRTUAL_EVENT, msg.data);
     },
-    UPDATE_STATE_EVENT: (msg: UpdateStateMessage): void => {
+    UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
+      const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appInstanceId)).appInstance
+      const state = msg.data.newState as WithdrawAppState
+      const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
+        return app.appDefinitionAddress === appInstance.appInterface.addr;
+      });
+      if(registryAppInfo.name == WithdrawApp) {
+        const params = {
+          amount: state.transfers[0].amount,
+          recipient: state.transfers[0].to,
+          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress
+        }
+        this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
+      }
     },
     WITHDRAWAL_CONFIRMED_EVENT: (msg: WithdrawConfirmationMessage): void => {
       this.emitAndLog(WITHDRAWAL_CONFIRMED_EVENT, msg.data);
@@ -290,9 +298,23 @@ export class ConnextListener extends ConnextEventEmitter {
         }
       }
       await this.connext.installApp(appInstanceId);
+      await this.runPostInstallTasks(appInstanceId, registryAppInfo);
     } catch (e) {
       this.log.error(`Caught error: ${e.toString()}`);
       await this.connext.rejectInstallApp(appInstanceId);
     }
   };
+
+  private runPostInstallTasks = async (
+    appInstanceId: string,
+    registryAppInfo: DefaultApp,
+  ): Promise<void> =>  {
+    switch (registryAppInfo.name) {
+      case WithdrawApp: {
+        const appInstance = (await this.connext.getAppInstanceDetails(appInstanceId)).appInstance;
+        this.connext.respondToNodeWithdraw(appInstance);
+        break;
+      }
+    }
+  }
 }

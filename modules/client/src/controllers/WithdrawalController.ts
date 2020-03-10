@@ -7,57 +7,46 @@ import {
   BigNumber,
   CFCoreTypes
 } from "../types";
-import { convertWithdrawParameters, WithdrawAppState, WithdrawAppAction} from "@connext/apps";
+import { convertWithdrawParameters, WithdrawApp } from "@connext/apps";
 
 import { AbstractController } from "./AbstractController";
-import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, UPDATE_STATE_EVENT, AppInstanceJson, WithdrawResponse, WithdrawParameters } from "@connext/types";
+import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, UPDATE_STATE_EVENT, AppInstanceJson, WithdrawResponse, WithdrawParameters, WithdrawAppState, WithdrawAppAction, DefaultApp, UpdateStateMessage, WithdrawAppStateBigNumber } from "@connext/types";
 import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
 const ETH_ADDRESS = AddressZero
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(paramsRaw: WithdrawParameters): Promise<WithdrawResponse> {
-    return new Promise( async (resolve): Promise<void> => {
-      const params = convertWithdrawParameters(`bignumber`, paramsRaw);
-      let transaction: TransactionResponse | undefined;
-  
-      this.log.info(
-        `Withdrawing ${formatEther(params.amount)} ${
-          params.assetId === AddressZero ? "ETH" : "Tokens"
-        } from multisig to ${params.recipient}`,
-      );
-  
-      await this.cleanupPendingDeposit(params.assetId); //TODO try to remove this with deposit redesign
-  
-      const withdrawCommitment = await this.createWithdrawCommitment(params);
-      const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(withdrawCommitment.hashToSign());
-      
-      const appInstanceId = await this.withdrawAppInstalled(params, withdrawCommitment, withdrawerSignatureOnWithdrawCommitment)
-  
-      this.connext.listener.emit(EventNames[WITHDRAWAL_STARTED_EVENT], {params,
-      withdrawCommitment, withdrawerSignatureOnWithdrawCommitment})
-      
-      // TODO ARJUN what happens if no event fired? We should set timeout to reject the promise and emit withdraw_failed
-      this.connext.listener.on(EventNames[UPDATE_STATE_EVENT], async (data) => {
-        if(data.appInstanceId === appInstanceId) {
-          const state = await this.connext.getAppState(data.appInstanceId);
-          
-          await this.saveWithdrawCommitmentToStore(withdrawCommitment, (state.state as any).signatures as string[]);
-          await this.connext.uninstallApp(data.appInstanceId)
+    const params = convertWithdrawParameters(`bignumber`, paramsRaw);
+    let transaction: TransactionResponse | undefined;
 
-          transaction = await this.connext.watchForUserWithdrawal();
-          this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
-          this.log.debug(`Transaction details: ${stringify(transaction)}`);
+    this.log.info(
+      `Withdrawing ${formatEther(params.amount)} ${
+        params.assetId === AddressZero ? "ETH" : "Tokens"
+      } from multisig to ${params.recipient}`,
+    );
 
-          this.connext.listener.emit(EventNames[WITHDRAWAL_CONFIRMED_EVENT], {transaction})
-          this.connext.listener.removeListener(EventNames[UPDATE_STATE_EVENT], () => {});
+    await this.cleanupPendingDeposit(params.assetId); //TODO try to remove this with deposit redesign
 
-          resolve({transaction});
-        }
-      })
-    })
+    const withdrawCommitment = await this.createWithdrawCommitment(params);
+    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(withdrawCommitment.hashToSign());
+    
+    await this.proposeWithdrawApp(params, withdrawCommitment, withdrawerSignatureOnWithdrawCommitment);
+
+    this.connext.listener.emit(EventNames[WITHDRAWAL_STARTED_EVENT], {params,
+    withdrawCommitment, withdrawerSignatureOnWithdrawCommitment})
+
+    transaction = await this.connext.watchForUserWithdrawal();
+    this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
+    this.log.debug(`Transaction details: ${stringify(transaction)}`);
+
+    this.connext.listener.emit(EventNames[WITHDRAWAL_CONFIRMED_EVENT], {transaction})
+
+    // Note that we listen for the signed commitment and save it to store only in listener.ts
+
+    return {transaction};
   }
 
-  public async respondToCounterpartyWithdraw(appInstance: AppInstanceJson) {
+  public async respondToNodeWithdraw(appInstance: AppInstanceJson) {
     const state = appInstance.latestState as WithdrawAppState<BigNumber>;
 
     const generatedCommitment = await this.createWithdrawCommitment({
@@ -69,6 +58,7 @@ export class WithdrawalController extends AbstractController {
     // Dont need to validate anything because we already did it during the propose flow
     const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(generatedCommitment);
     await this.connext.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
+    await this.connext.uninstallApp(appInstance.identityHash);
   }
 
   private async cleanupPendingDeposit(assetId: string) {
@@ -102,7 +92,7 @@ export class WithdrawalController extends AbstractController {
     );
   }
 
-  private async withdrawAppInstalled(params: WithdrawParameters<BigNumber>, withdrawCommitment: any, withdrawerSignatureOnWithdrawCommitment: string): Promise<string> {
+  private async proposeWithdrawApp(params: WithdrawParameters<BigNumber>, withdrawCommitment: any, withdrawerSignatureOnWithdrawCommitment: string): Promise<string> {
     const { amount, recipient, assetId } = params;
     const appInfo = this.connext.getRegisteredAppDetails(WithdrawApp);
     const { appDefinitionAddress: appDefinition, outcomeType, stateEncoding, actionEncoding } = appInfo;
@@ -133,28 +123,15 @@ export class WithdrawalController extends AbstractController {
     return appId;
   }
 
-  private async saveWithdrawCommitmentToStore(withdrawCommitment: any, signers: string[]): Promise<void> {
+  public async saveWithdrawCommitmentToStore(params: WithdrawParameters<BigNumber>, signatures: string[]): Promise<void> {
     // set the withdrawal tx in the store
-    // TODO ARJUN what do we actually need to save?
-    // const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
-    // await this.connext.channelProvider.send(chan_storeSet, {
-    //   pairs: [
-    //     { path: withdrawalKey(this.connext.publicIdentifier), value: { tx: minTx, retry: 0 } },
-    //   ],
-    // });
+    const commitment = await this.createWithdrawCommitment(params);
+    const minTx: CFCoreTypes.MinimalTransaction = commitment.getSignedTransaction(signatures)
+    await this.connext.channelProvider.send(chan_storeSet, {
+      pairs: [
+        { path: withdrawalKey(this.connext.publicIdentifier), value: { tx: minTx, retry: 0 } },
+      ],
+    });
     return;
-  }
-
-  // TODO ARJUN: Do we ever want to do this from the client?
-  private async deployMultisig(): Promise<TransactionResponse> {
-    const deployRes = await this.connext.deployMultisig();
-    this.log.info(`Deploying multisig: ${deployRes.transactionHash}`);
-    this.log.debug(`Multisig deploy transaction: ${stringify(deployRes)}`);
-    if (deployRes.transactionHash !== AddressZero) {
-      // wait for multisig deploy transaction
-      // will be 0x000.. if the multisig has already been deployed.
-      this.ethProvider.waitForTransaction(deployRes.transactionHash);
-    }
-    return await this.ethProvider.getTransaction(deployRes.transactionHash);
   }
 }
