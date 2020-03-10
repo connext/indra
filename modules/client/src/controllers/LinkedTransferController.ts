@@ -41,16 +41,7 @@ export class LinkedTransferController extends AbstractController {
       meta,
     } = convertLinkedTransferToRecipientParameters(`bignumber`, params);
 
-    const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    validate(
-      notNegative(amount),
-      invalidAddress(assetId),
-      notLessThanOrEqualTo(amount, preTransferBal),
-      invalid32ByteHexString(paymentId),
-      invalid32ByteHexString(preImage),
-      invalidXpub(recipient),
-    );
+    validate(invalidXpub(recipient));
 
     // set recipient and encrypted pre-image on linked transfer
     // TODO: use app path instead?

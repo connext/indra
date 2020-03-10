@@ -12,6 +12,7 @@ import {
   FastSignedTransferActionType,
   WithdrawAppState,
   WithdrawAppAction,
+  FastSignedTransferAppActionBigNumber,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";
@@ -26,6 +27,7 @@ import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTr
 import { FastSignedTransferStatus } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { WithdrawRepository } from "../withdraw/withdraw.repository"
 import { WithdrawService } from "../withdraw/withdraw.service";
+import { CFCoreService } from "../cfCore/cfCore.service";
 
 @Injectable()
 export class AppActionsService {
@@ -33,10 +35,11 @@ export class AppActionsService {
     private readonly log: LoggerService,
     private readonly transferService: LinkedTransferService,
     private readonly withdrawService: WithdrawService,
-    private readonly channelRepository: ChannelRepository,
+    private readonly cfCoreService: CFCoreService,
+    private readonly withdrawRepository: WithdrawRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly fastSignedTransferRepository: FastSignedTransferRepository,
-    private readonly withdrawRepository: WithdrawRepository,
+    private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -95,12 +98,28 @@ export class AppActionsService {
         break;
       }
       case FastSignedTransferActionType.UNLOCK: {
+        // update and save transfer status
         let transfer = await this.fastSignedTransferRepository.findByPaymentIdOrThrow(
           action.paymentId,
         );
         transfer.signature = action.signature;
         transfer.data = action.data;
         transfer.status = FastSignedTransferStatus.REDEEMED;
+        await this.fastSignedTransferRepository.save(transfer);
+
+        // unlock sender payment, if successful mark as reclaimed
+        this.log.debug(`Received unlock for receiver payment, unlocking sender payment`);
+        const senderAppAction = {
+          actionType: FastSignedTransferActionType.UNLOCK,
+          amount: transfer.amount,
+          data: action.data,
+          paymentId: action.paymentId,
+          recipientXpub: transfer.receiverChannel.userPublicIdentifier,
+          signature: action.signature,
+          signer: transfer.signer,
+        } as FastSignedTransferAppActionBigNumber;
+        await this.cfCoreService.takeAction(transfer.senderAppInstanceId, senderAppAction);
+        transfer.status = FastSignedTransferStatus.RECLAIMED;
         await this.fastSignedTransferRepository.save(transfer);
       }
     }

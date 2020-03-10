@@ -24,8 +24,6 @@ export class ResolveFastSignedTransferController extends AbstractController {
       invalidEthSignature(signature),
     );
 
-    const transfer = await this.node.resolveFastSignedTransfer(paymentId);
-
     this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
       paymentId,
     });
@@ -42,10 +40,10 @@ export class ResolveFastSignedTransferController extends AbstractController {
         data,
         signature,
         // other params are not even necessary
-        amount: bigNumberify(transfer.amount),
+        amount: bigNumberify(resolveRes.amount),
         paymentId,
         recipientXpub: this.connext.publicIdentifier,
-        signer: transfer.signer,
+        signer: resolveRes.signer,
       } as FastSignedTransferAppActionBigNumber;
 
       const takeActionRes = await this.connext.takeAction(resolveRes.appId, action);
@@ -54,7 +52,7 @@ export class ResolveFastSignedTransferController extends AbstractController {
 
       if (
         newState.coinTransfers[1][1]
-          .sub(transfer.amount)
+          .sub(resolveRes.amount)
           .lt(preTransferAppState.coinTransfers[1][1])
       ) {
         throw new Error(`Transfer amount not present in coin transfer after resolution`);

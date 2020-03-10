@@ -162,6 +162,11 @@ export default class ListenerService implements OnModuleInit {
         const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
           app.appInterface.addr,
         );
+        if (!appRegistryInfo) {
+          throw new Error(
+            `Could not find registry info for updated app ${data.data.appInstanceId}`,
+          );
+        }
         await this.appActionsService.handleAppAction(
           appRegistryInfo.name,
           appInstanceId,

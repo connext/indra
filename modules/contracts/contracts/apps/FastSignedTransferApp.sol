@@ -175,6 +175,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 1, "Only receivers can reject payments.");
+        state.coinTransfers[0].amount = state.coinTransfers[0].amount.add(state.amount);
         AppState memory newState = removeTransfer(state);
         return newState;
     }
