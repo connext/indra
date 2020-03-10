@@ -32,17 +32,17 @@ import {
 } from "../fastSignedTransfer/fastSignedTransfer.entity";
 
 const findInstalledFastSignedAppWithSpace = (
-  amount: BigNumber,
   apps: AppInstanceJson[],
   recipientFreeBalanceAddress: string,
   fastSignedTransferAppDefAddress: string,
 ): AppInstanceJson | undefined => {
   return apps.find(app => {
+    console.log("app: ", app);
     const latestState = app.latestState as FastSignedTransferAppStateBigNumber;
+    console.log("app.latestState: ", app.latestState);
     return (
       app.appInterface.addr === fastSignedTransferAppDefAddress && // interface matches
-      latestState.coinTransfers[1].to === recipientFreeBalanceAddress && // recipient matches
-      latestState.coinTransfers[0].amount.gte(amount)
+      latestState.coinTransfers[1][0] === recipientFreeBalanceAddress // recipient matches
     );
   });
 };
@@ -118,7 +118,6 @@ export class FastSignedTransferService {
       ethNetwork.chainId,
     );
     let installedReceiverApp = findInstalledFastSignedAppWithSpace(
-      transfer.amount,
       apps,
       xkeyKthAddress(receiverChannel.userPublicIdentifier),
       fastSignedTransferApp.appDefinitionAddress,
@@ -126,7 +125,24 @@ export class FastSignedTransferService {
 
     let installedAppInstanceId: string;
 
-    if (!installedReceiverApp) {
+    let needsInstall: boolean = true;
+    // install if needed
+    console.log("installedReceiverApp: ", installedReceiverApp);
+    if (installedReceiverApp) {
+      if (
+        (installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber).coinTransfers[0][1].gt(
+          transfer.amount,
+        )
+      ) {
+        needsInstall = false;
+        installedAppInstanceId = installedReceiverApp.identityHash;
+      } else {
+        // uninstall
+        await this.cfCoreService.uninstallApp(installedReceiverApp.identityHash);
+      }
+    }
+
+    if (needsInstall) {
       this.log.debug(`Could not find app that allows transfer, installing a new one`);
       installedAppInstanceId = await this.installFastTransferApp(receiverChannel, transfer);
     } else {

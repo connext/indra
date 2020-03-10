@@ -9,6 +9,7 @@ import {
   SimpleLinkedTransferAppAction,
   FastSignedTransferAppAction,
   FastSignedTransferActionType,
+  FastSignedTransferAppActionBigNumber,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";
@@ -21,15 +22,17 @@ import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
 import { FastSignedTransferStatus } from "../fastSignedTransfer/fastSignedTransfer.entity";
+import { CFCoreService } from "../cfCore/cfCore.service";
 
 @Injectable()
 export class AppActionsService {
   constructor(
-    private readonly channelRepository: ChannelRepository,
     private readonly log: LoggerService,
     private readonly transferService: LinkedTransferService,
+    private readonly cfCoreService: CFCoreService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly fastSignedTransferRepository: FastSignedTransferRepository,
+    private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -81,6 +84,7 @@ export class AppActionsService {
         break;
       }
       case FastSignedTransferActionType.UNLOCK: {
+        // update and save transfer status
         let transfer = await this.fastSignedTransferRepository.findByPaymentIdOrThrow(
           action.paymentId,
         );
@@ -88,6 +92,23 @@ export class AppActionsService {
         transfer.data = action.data;
         transfer.status = FastSignedTransferStatus.REDEEMED;
         await this.fastSignedTransferRepository.save(transfer);
+
+        // unlock sender payment
+        console.log(`Received unlock for receiver payment, unlocking sender payment`);
+        const senderAppAction = {
+          actionType: FastSignedTransferActionType.UNLOCK,
+          amount: transfer.amount,
+          data: action.data,
+          paymentId: action.paymentId,
+          recipientXpub: transfer.receiverChannel.userPublicIdentifier,
+          signature: action.signature,
+          signer: transfer.signer,
+        } as FastSignedTransferAppActionBigNumber;
+        const res = await this.cfCoreService.takeAction(
+          transfer.senderAppInstanceId,
+          senderAppAction,
+        );
+        console.log("res: ", res);
       }
     }
   }

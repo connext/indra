@@ -29,7 +29,7 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     private readonly fastSignedTransferRepository: FastSignedTransferRepository,
   ) {
     super(log, messaging);
-    log.setContext("LinkedTransferMessaging");
+    log.setContext("FastSignedTransferMessaging");
   }
 
   async getFastSignedTransferByPaymentId(
