@@ -67,10 +67,7 @@ export class Withdraw {
 
   @OneToOne(
     (type: any) => OnchainTransaction,
-    (onchainTransaction: OnchainTransaction) => onchainTransaction.id,
+    { nullable: true }
   )
   onchainTransaction!: OnchainTransaction;
-
-  @Column({ type: "json" })
-  meta: object;
 }
