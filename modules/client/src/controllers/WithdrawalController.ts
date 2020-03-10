@@ -30,7 +30,7 @@ export class WithdrawalController extends AbstractController {
     const withdrawCommitment = await this.createWithdrawCommitment(params);
     const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(withdrawCommitment.hashToSign());
     
-    await this.proposeWithdrawApp(params, withdrawCommitment, withdrawerSignatureOnWithdrawCommitment);
+    await this.proposeWithdrawApp(params, withdrawCommitment.hashToSign(), withdrawerSignatureOnWithdrawCommitment);
 
     this.connext.listener.emit(EventNames[WITHDRAWAL_STARTED_EVENT], {params,
     withdrawCommitment, withdrawerSignatureOnWithdrawCommitment})
@@ -92,15 +92,15 @@ export class WithdrawalController extends AbstractController {
     );
   }
 
-  private async proposeWithdrawApp(params: WithdrawParameters<BigNumber>, withdrawCommitment: any, withdrawerSignatureOnWithdrawCommitment: string): Promise<string> {
+  private async proposeWithdrawApp(params: WithdrawParameters<BigNumber>, withdrawCommitmentHash: string, withdrawerSignatureOnWithdrawCommitment: string): Promise<string> {
     const { amount, recipient, assetId } = params;
     const appInfo = this.connext.getRegisteredAppDetails(WithdrawApp);
     const { appDefinitionAddress: appDefinition, outcomeType, stateEncoding, actionEncoding } = appInfo;
-    const initialState: WithdrawAppState  = {
-      transfers: [{amount: amount.toString(), to: recipient}, {amount: Zero.toString(), to: xpubToAddress(this.connext.nodePublicIdentifier)}],
+    const initialState: WithdrawAppState<BigNumber>  = {
+      transfers: [{amount: amount, to: recipient}, {amount: Zero, to: xpubToAddress(this.connext.nodePublicIdentifier)}],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [xpubToAddress(this.connext.publicIdentifier), xpubToAddress(this.connext.nodePublicIdentifier)],
-      data: withdrawCommitment,
+      data: withdrawCommitmentHash,
       finalized: false
     }
     const installParams: CFCoreTypes.ProposeInstallParams = {
@@ -115,7 +115,7 @@ export class WithdrawalController extends AbstractController {
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
-      responderDepositTokenAddress: params.assetId,
+      responderDepositTokenAddress: assetId,
       timeout: Zero,
     };
 

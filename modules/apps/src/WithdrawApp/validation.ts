@@ -4,7 +4,7 @@ import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj, WithdrawAppState }
 import { unidirectionalCoinTransferValidation } from "../shared";
 import { convertWithrawAppState } from "./convert";
 import { BigNumber, recoverAddress } from "ethers/utils";
-import { HashZero } from "ethers/constants";
+import { HashZero, Zero } from "ethers/constants";
 
 export const validateWithdrawApp = (
   params: CFCoreTypes.ProposeInstallParams,
@@ -24,12 +24,8 @@ export const validateWithdrawApp = (
     bigNumberifyObj(transfer),
   ) as any;
 
-  const initiatorTransfer = initialState.transfers.filter((transfer: CoinTransferBigNumber) => {
-    return transfer.to === initiatorFreeBalanceAddress;
-  })[0];
-  const responderTransfer = initialState.transfers.filter((transfer: CoinTransferBigNumber) => {
-    return transfer.to === responderFreeBalanceAddress;
-  })[0];
+  const initiatorTransfer = initialState.transfers[0];
+  const responderTransfer = initialState.transfers[1];
 
   unidirectionalCoinTransferValidation(
     initiatorDeposit,
@@ -53,6 +49,12 @@ export const validateWithdrawApp = (
   if(initialState.signers[0] != initiatorFreeBalanceAddress || initialState.signers[1] != responderFreeBalanceAddress) {
       throw new Error(
         `Cannot install a withdraw app if signers[] do not match multisig participant addresses. Signers[]: ${initialState.signers}`
+      )
+  }
+
+  if(initialState.transfers[1].amount != Zero) {
+      throw new Error(
+        `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1]}`
       )
   }
 
