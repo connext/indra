@@ -15,6 +15,8 @@ import {
   ConditionalTransferResponse,
   FAST_SIGNED_TRANSFER,
   FastSignedTransferParameters,
+  WithdrawParameters,
+  WithdrawResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -73,6 +75,7 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { ResolveLinkedTransferController } from "./controllers/ResolveLinkedTransferController";
 import { FastSignedTransferController } from "./controllers/FastSignedTransferController";
 import { ResolveFastSignedTransferController } from "./controllers/ResolveFastSignedTransferController";
+import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
@@ -364,12 +367,16 @@ export class ConnextClient implements IConnextClient {
     }) as Promise<LinkedTransferToRecipientResponse>;
   };
 
-  public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
+  public withdraw = async (params: WithdrawParameters): Promise<WithdrawResponse> => {
     return await this.withdrawalController.withdraw(params);
   };
 
-  public respondToCounterpartyWithdraw = async(appInstance: AppInstanceJson): Promise<void> => {
-    return await this.withdrawalController.respondToCounterpartyWithdraw(appInstance);
+  public respondToNodeWithdraw = async(appInstance: AppInstanceJson): Promise<void> => {
+    return await this.withdrawalController.respondToNodeWithdraw(appInstance);
+  }
+
+  public saveWithdrawCommitmentToStore = async(commitment: WithdrawERC20Commitment | WithdrawETHCommitment, signatures: string[]): Promise<void> => {
+    return await this.withdrawalController.saveWithdrawCommitmentToStore(commitment, signatures);
   }
 
   public resolveCondition = async (

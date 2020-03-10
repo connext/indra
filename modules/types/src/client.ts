@@ -6,6 +6,7 @@ import {
   ResolveConditionParameters,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  WithdrawResponse,
 } from "./apps";
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { BigNumber } from "./basic";
@@ -34,6 +35,7 @@ import { ProtocolTypes } from "./protocol";
 import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
 import { CFCoreTypes } from "./cfCore";
 import { SwapParameters, WithdrawParameters } from "./apps";
+import { TransactionResponse } from "ethers/providers";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
@@ -90,7 +92,7 @@ export interface IConnextClient {
   deposit(params: DepositParameters): Promise<ChannelState>;
   swap(params: SwapParameters): Promise<CFCoreChannel>;
   transfer(params: TransferParameters): Promise<any>;
-  withdraw(params: WithdrawParameters): Promise<ChannelState>;
+  withdraw(params: WithdrawParameters): Promise<WithdrawResponse>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
   restoreState(): Promise<void>;
