@@ -99,7 +99,7 @@ describe("Fast Signed Transfer", () => {
     expect(coinTransfers[1][1]).eq(Zero.add(transferAmount));
   });
 
-  it.only("Should send multiple fast signed transfers using the same app", async () => {
+  it("Should send multiple fast signed transfers using the same app", async () => {
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
 
