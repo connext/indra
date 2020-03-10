@@ -1,4 +1,4 @@
-import { convertFastSignedTransferParameters, FastSignedTransferApp } from "@connext/apps";
+import { convertFastSignedTransferParameters } from "@connext/apps";
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
   AppInstanceJson,
@@ -9,6 +9,10 @@ import {
   FastSignedTransferAppAction,
   minBN,
   FastSignedTransferAppStateBigNumber,
+  FAST_SIGNED_TRANSFER,
+  CreateTransferEventData,
+  CREATE_TRANSFER,
+  FastSignedTransferApp,
 } from "@connext/types";
 import { Zero, MaxUint256, HashZero, AddressZero } from "ethers/constants";
 
@@ -16,10 +20,9 @@ import { stringify, xpubToAddress } from "../lib";
 import { validate, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { BigNumber, hexZeroPad } from "ethers/utils";
+import { BigNumber, hexZeroPad, bigNumberify } from "ethers/utils";
 
 const findInstalledFastSignedAppWithSpace = (
-  amount: BigNumber,
   apps: AppInstanceJson[],
   recipientFreeBalanceAddress: string,
   fastSignedTransferAppDefAddress: string,
@@ -28,8 +31,7 @@ const findInstalledFastSignedAppWithSpace = (
     const latestState = app.latestState as FastSignedTransferAppStateBigNumber;
     return (
       app.appInterface.addr === fastSignedTransferAppDefAddress && // interface matches
-      latestState.coinTransfers[1].to === recipientFreeBalanceAddress && // recipient matches
-      latestState.coinTransfers[0].amount.gte(amount)
+      latestState.coinTransfers[1][0] === recipientFreeBalanceAddress // recipient matches
     );
   });
 };
@@ -61,15 +63,32 @@ export class FastSignedTransferController extends AbstractController {
 
     const installedApps = await this.connext.getAppInstances();
     const installedTransferApp = findInstalledFastSignedAppWithSpace(
-      amount,
       installedApps,
-      xpubToAddress(recipient),
-      this.connext.config.contractAddresses.FastSignedTransfer,
+      xpubToAddress(this.connext.nodePublicIdentifier),
+      this.connext.config.contractAddresses.FastSignedTransferApp,
     );
 
     let transferAppInstanceId: string;
+
+    let needsInstall: boolean = true;
+    let needsUninstall: string = "";
     // install if needed
-    if (!installedTransferApp) {
+    if (installedTransferApp) {
+      if (
+        bigNumberify(
+          (installedTransferApp.latestState as FastSignedTransferAppStateBigNumber)
+            .coinTransfers[0][1],
+        ).gte(amount)
+      ) {
+        needsInstall = false;
+        transferAppInstanceId = installedTransferApp.identityHash;
+      } else {
+        // no room in app for transfer, uninstall at the end
+        needsUninstall = installedTransferApp.identityHash;
+      }
+    }
+
+    if (needsInstall) {
       const {
         actionEncoding,
         stateEncoding,
@@ -116,8 +135,6 @@ export class FastSignedTransferController extends AbstractController {
       } as ProtocolTypes.ProposeInstallParams;
 
       transferAppInstanceId = await this.proposeAndInstallLedgerApp(installParams);
-    } else {
-      transferAppInstanceId = installedTransferApp.identityHash;
     }
 
     // always take action to create payment
@@ -131,6 +148,23 @@ export class FastSignedTransferController extends AbstractController {
       data: HashZero,
       signature: hexZeroPad(HashZero, 65),
     } as FastSignedTransferAppAction<BigNumber>);
+
+    if (needsUninstall) {
+      await this.connext.uninstallApp(needsUninstall);
+    }
+
+    const eventData = {
+      type: FAST_SIGNED_TRANSFER,
+      amount: amount.toString(),
+      assetId,
+      paymentId,
+      sender: this.connext.publicIdentifier,
+      meta,
+      transferMeta: {
+        signer,
+      },
+    } as CreateTransferEventData<typeof FAST_SIGNED_TRANSFER>;
+    this.connext.emit(CREATE_TRANSFER, eventData);
 
     return { transferAppInstanceId };
   };

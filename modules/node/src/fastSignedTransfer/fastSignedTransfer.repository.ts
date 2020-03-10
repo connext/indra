@@ -5,7 +5,10 @@ import { FastSignedTransfer, FastSignedTransferStatus } from "./fastSignedTransf
 @EntityRepository(FastSignedTransfer)
 export class FastSignedTransferRepository extends Repository<FastSignedTransfer> {
   async findByPaymentId(paymentId: string): Promise<FastSignedTransfer | undefined> {
-    return await this.findOne({ relations: ["senderChannel"], where: { paymentId } });
+    return await this.findOne({
+      relations: ["senderChannel", "receiverChannel"],
+      where: { paymentId },
+    });
   }
 
   async findByPaymentIdOrThrow(paymentId: string): Promise<FastSignedTransfer> {

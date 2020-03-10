@@ -7,6 +7,7 @@ import {
   ConnextEventEmitter,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
+import { signMessage } from "@connext/crypto";
 import { Wallet } from "ethers";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
@@ -120,7 +121,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private walletSign = async (message: string): Promise<string> => {
-    return this.wallet.signMessage(message);
+    const { chainId } = await this.wallet.provider.getNetwork();
+    return signMessage(this.wallet.privateKey, message, chainId);
   };
 
   private storeGet = async (path: string): Promise<any> => {

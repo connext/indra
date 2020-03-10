@@ -147,20 +147,11 @@ contract FastSignedTransferApp is CounterfactualApp {
     {
         require(state.turnNum % 2 == 1, "Only receivers can unlock transfers.");
 
-        require(
-            action.paymentId != bytes32(0),
-            "paymentId cannot be empty bytes"
-        );
-        require(
-            state.paymentId == action.paymentId,
-            "No locked transfer with that paymentId exists"
-        );
-
         // TODO any possibility of collision?
         bytes32 rawHash = keccak256(abi.encodePacked(action.data, state.paymentId));
         require(state.signer == rawHash.recover(action.signature), "Incorrect signer recovered from signature");
 
-        // Add balances to transfers
+        // Add receiver balances to coinTransfer
         state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(state.amount);
         AppState memory newState = removeTransfer(state);
         return newState;
@@ -175,6 +166,9 @@ contract FastSignedTransferApp is CounterfactualApp {
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 1, "Only receivers can reject payments.");
+
+        // Add sender balance to coinTransfer
+        state.coinTransfers[0].amount = state.coinTransfers[0].amount.add(state.amount);
         AppState memory newState = removeTransfer(state);
         return newState;
     }

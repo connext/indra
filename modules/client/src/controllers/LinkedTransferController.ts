@@ -1,9 +1,15 @@
 import {
-  SimpleLinkedTransferApp,
   convertLinkedTransferToRecipientParameters,
   convertLinkedTransferParameters,
 } from "@connext/apps";
-import { LINKED_TRANSFER, SimpleLinkedTransferAppStateBigNumber } from "@connext/types";
+import {
+  SimpleLinkedTransferApp,
+  LINKED_TRANSFER,
+  LINKED_TRANSFER_TO_RECIPIENT,
+  SimpleLinkedTransferAppStateBigNumber,
+  CreateTransferEventData,
+  CREATE_TRANSFER,
+} from "@connext/types";
 import { encryptWithPublicKey } from "@connext/crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -41,16 +47,7 @@ export class LinkedTransferController extends AbstractController {
       meta,
     } = convertLinkedTransferToRecipientParameters(`bignumber`, params);
 
-    const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    validate(
-      notNegative(amount),
-      invalidAddress(assetId),
-      notLessThanOrEqualTo(amount, preTransferBal),
-      invalid32ByteHexString(paymentId),
-      invalid32ByteHexString(preImage),
-      invalidXpub(recipient),
-    );
+    validate(invalidXpub(recipient));
 
     // set recipient and encrypted pre-image on linked transfer
     // TODO: use app path instead?
@@ -70,17 +67,25 @@ export class LinkedTransferController extends AbstractController {
       conditionType: LINKED_TRANSFER,
     });
 
+    const eventData = {
+      type: LINKED_TRANSFER_TO_RECIPIENT,
+      amount: amount.toString(),
+      assetId,
+      paymentId,
+      sender: this.connext.publicIdentifier,
+      recipient,
+      meta,
+      transferMeta: {
+        encryptedPreImage,
+      },
+    } as CreateTransferEventData<typeof LINKED_TRANSFER_TO_RECIPIENT>;
     // publish encrypted secret for receiver
     await this.connext.messaging.publish(
       `transfer.send-async.${recipient}`,
-      stringify({
-        amount: amount.toString(),
-        assetId,
-        encryptedPreImage,
-        paymentId,
-        meta,
-      }),
+      stringify({ ...eventData, encryptedPreImage }),
     );
+
+    this.connext.emit(CREATE_TRANSFER, eventData);
 
     // need to flush here so that the client can exit knowing that messages are in the NATS server
     await this.connext.messaging.flush();
@@ -155,6 +160,17 @@ export class LinkedTransferController extends AbstractController {
     if (!appId) {
       throw new Error(`App was not installed`);
     }
+
+    const eventData = {
+      type: LINKED_TRANSFER,
+      amount: amount.toString(),
+      assetId,
+      paymentId,
+      sender: this.connext.publicIdentifier,
+      meta,
+      transferMeta: {},
+    } as CreateTransferEventData<typeof LINKED_TRANSFER>;
+    this.connext.emit(CREATE_TRANSFER, eventData);
 
     return {
       paymentId,

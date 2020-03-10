@@ -4,6 +4,8 @@ import { BigNumber } from "ethers/utils";
 
 export const FAST_SIGNED_TRANSFER = "FAST_SIGNED_TRANSFER";
 
+export const FastSignedTransferApp = "FastSignedTransferApp";
+
 export type FastSignedTransferParameters<T = string> = {
   conditionType: typeof FAST_SIGNED_TRANSFER;
   recipient: string;

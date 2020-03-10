@@ -6,6 +6,9 @@ import {
   FastSignedTransferActionType,
   FastSignedTransferAppStateBigNumber,
   RECEIVE_TRANSFER_FAILED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  ReceiveTransferFinishedEventData,
+  FAST_SIGNED_TRANSFER,
 } from "@connext/types";
 
 import { validate, invalid32ByteHexString, invalidEthSignature } from "../validation";
@@ -24,8 +27,6 @@ export class ResolveFastSignedTransferController extends AbstractController {
       invalidEthSignature(signature),
     );
 
-    const transfer = await this.node.resolveFastSignedTransfer(paymentId);
-
     this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
       paymentId,
     });
@@ -42,10 +43,10 @@ export class ResolveFastSignedTransferController extends AbstractController {
         data,
         signature,
         // other params are not even necessary
-        amount: bigNumberify(transfer.amount),
+        amount: bigNumberify(resolveRes.amount),
         paymentId,
         recipientXpub: this.connext.publicIdentifier,
-        signer: transfer.signer,
+        signer: resolveRes.signer,
       } as FastSignedTransferAppActionBigNumber;
 
       const takeActionRes = await this.connext.takeAction(resolveRes.appId, action);
@@ -54,11 +55,21 @@ export class ResolveFastSignedTransferController extends AbstractController {
 
       if (
         newState.coinTransfers[1][1]
-          .sub(transfer.amount)
+          .sub(resolveRes.amount)
           .lt(preTransferAppState.coinTransfers[1][1])
       ) {
         throw new Error(`Transfer amount not present in coin transfer after resolution`);
       }
+
+      this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
+        paymentId,
+        amount: resolveRes.amount,
+        assetId: resolveRes.assetId,
+        sender: resolveRes.sender,
+        recipient: this.connext.publicIdentifier,
+        meta: resolveRes.meta,
+        type: FAST_SIGNED_TRANSFER,
+      } as ReceiveTransferFinishedEventData<typeof FAST_SIGNED_TRANSFER>);
     } catch (e) {
       this.log.error(
         `Failed to resolve fast signed transfer ${paymentId}: ${e.stack || e.message}`,

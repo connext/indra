@@ -1,4 +1,3 @@
-import { FastSignedTransferApp } from "@connext/apps";
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
   DepositConfirmationMessage,
@@ -10,6 +9,7 @@ import {
   FastSignedTransferAppActionBigNumber,
   FastSignedTransferActionType,
   ResolveFastSignedTransferResponse,
+  FastSignedTransferApp,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -32,7 +32,6 @@ import {
 } from "../fastSignedTransfer/fastSignedTransfer.entity";
 
 const findInstalledFastSignedAppWithSpace = (
-  amount: BigNumber,
   apps: AppInstanceJson[],
   recipientFreeBalanceAddress: string,
   fastSignedTransferAppDefAddress: string,
@@ -41,8 +40,7 @@ const findInstalledFastSignedAppWithSpace = (
     const latestState = app.latestState as FastSignedTransferAppStateBigNumber;
     return (
       app.appInterface.addr === fastSignedTransferAppDefAddress && // interface matches
-      latestState.coinTransfers[1].to === recipientFreeBalanceAddress && // recipient matches
-      latestState.coinTransfers[0].amount.gte(amount)
+      latestState.coinTransfers[1][0] === recipientFreeBalanceAddress // recipient matches
     );
   });
 };
@@ -118,7 +116,6 @@ export class FastSignedTransferService {
       ethNetwork.chainId,
     );
     let installedReceiverApp = findInstalledFastSignedAppWithSpace(
-      transfer.amount,
       apps,
       xkeyKthAddress(receiverChannel.userPublicIdentifier),
       fastSignedTransferApp.appDefinitionAddress,
@@ -126,12 +123,31 @@ export class FastSignedTransferService {
 
     let installedAppInstanceId: string;
 
-    if (!installedReceiverApp) {
+    let needsInstall: boolean = true;
+    // install if needed
+    if (installedReceiverApp) {
+      if (
+        (installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber).coinTransfers[0][1].gte(
+          transfer.amount,
+        )
+      ) {
+        needsInstall = false;
+        installedAppInstanceId = installedReceiverApp.identityHash;
+      } else {
+        // uninstall
+        await this.cfCoreService.uninstallApp(installedReceiverApp.identityHash);
+      }
+    }
+
+    if (needsInstall) {
       this.log.debug(`Could not find app that allows transfer, installing a new one`);
       installedAppInstanceId = await this.installFastTransferApp(receiverChannel, transfer);
     } else {
       installedAppInstanceId = installedReceiverApp.identityHash;
     }
+    transfer.receiverAppInstanceId = installedAppInstanceId;
+    transfer.receiverChannel = receiverChannel;
+    await this.fastSignedTransferRespository.save(transfer);
 
     const appAction = {
       actionType: FastSignedTransferActionType.CREATE,
@@ -257,9 +273,6 @@ export class FastSignedTransferService {
       FastSignedTransferApp,
     );
 
-    transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
-    transfer.receiverChannel = channel;
-    await this.fastSignedTransferRespository.save(transfer);
     return receiverAppInstallRes.appInstanceId;
   }
 }
