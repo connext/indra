@@ -37,9 +37,7 @@ const findInstalledFastSignedAppWithSpace = (
   fastSignedTransferAppDefAddress: string,
 ): AppInstanceJson | undefined => {
   return apps.find(app => {
-    console.log("app: ", app);
     const latestState = app.latestState as FastSignedTransferAppStateBigNumber;
-    console.log("app.latestState: ", app.latestState);
     return (
       app.appInterface.addr === fastSignedTransferAppDefAddress && // interface matches
       latestState.coinTransfers[1][0] === recipientFreeBalanceAddress // recipient matches
@@ -127,7 +125,6 @@ export class FastSignedTransferService {
 
     let needsInstall: boolean = true;
     // install if needed
-    console.log("installedReceiverApp: ", installedReceiverApp);
     if (installedReceiverApp) {
       if (
         (installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber).coinTransfers[0][1].gt(
@@ -148,6 +145,9 @@ export class FastSignedTransferService {
     } else {
       installedAppInstanceId = installedReceiverApp.identityHash;
     }
+    transfer.receiverAppInstanceId = installedAppInstanceId;
+    transfer.receiverChannel = receiverChannel;
+    await this.fastSignedTransferRespository.save(transfer);
 
     const appAction = {
       actionType: FastSignedTransferActionType.CREATE,
@@ -273,9 +273,6 @@ export class FastSignedTransferService {
       FastSignedTransferApp,
     );
 
-    transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
-    transfer.receiverChannel = channel;
-    await this.fastSignedTransferRespository.save(transfer);
     return receiverAppInstallRes.appInstanceId;
   }
 }
