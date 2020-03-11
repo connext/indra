@@ -1,24 +1,11 @@
+import { ConnextStore, KeyValueStorage, WrappedLocalStorage, FileStorage } from "@connext/store";
 import {
-  ConnextStore,
-  safeJsonParse,
-  safeJsonStringify,
-  DEFAULT_STORE_PREFIX,
-  DEFAULT_STORE_SEPARATOR,
-  DEFAULT_ASYNC_STORAGE_KEY,
-  KeyValueStorage,
-  WrappedLocalStorage,
-  FileStorage,
-} from "@connext/store";
-import {
-  IAsyncStorage,
   StoreFactoryOptions,
   StorePair,
   StoreType,
   StoreTypes,
   ASYNCSTORAGE,
   WrappedStorage,
-  AsyncStorageData,
-  InitCallback,
   LOCALSTORAGE,
   FILESTORAGE,
 } from "@connext/types";
@@ -33,9 +20,10 @@ export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" 
 export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions = {}) {
   switch (type) {
     case ASYNCSTORAGE:
-      return new KeyValueStorage(
-        new MockAsyncWrappedStorage(opts.prefix, opts.separator, opts.asyncStorageKey),
-      );
+      // return new KeyValueStorage(
+      //   new MockAsyncWrappedStorage(opts.prefix, opts.separator, opts.asyncStorageKey),
+      // );
+      throw new Error(`Fix react native error with build!`);
     case LOCALSTORAGE:
       return new KeyValueStorage(new WrappedLocalStorage(opts.prefix, opts.separator));
     case FILESTORAGE:
@@ -53,11 +41,12 @@ export function createConnextStore(type: StoreType, opts: StoreFactoryOptions = 
   }
 
   if (type === ASYNCSTORAGE) {
-    const store = new KeyValueStorage(
-      new MockAsyncWrappedStorage(opts.prefix, opts.separator, opts.asyncStorageKey),
-    );
-    expect(store).to.be.instanceOf(KeyValueStorage);
-    return store as any; // still implements IStoreService
+    throw new Error(`Fix react native error with build!`);
+    // const store = new KeyValueStorage(
+    //   new MockAsyncWrappedStorage(opts.prefix, opts.separator, opts.asyncStorageKey),
+    // );
+    // expect(store).to.be.instanceOf(KeyValueStorage);
+    // return store as any; // still implements IStoreService
   }
 
   const store = new ConnextStore(type, opts);
@@ -109,107 +98,3 @@ export async function testAsyncStorageKey(
   expect(keys.length).to.equal(1);
   expect(keys[0]).to.equal(asyncStorageKey);
 }
-
-// export class MockAsyncWrappedStorage implements WrappedStorage {
-//   private asyncStorage: IAsyncStorage;
-//   private data: AsyncStorageData = {};
-//   private initializing: boolean = false;
-//   private initCallbacks: InitCallback[] = [];
-
-//   constructor(
-//     private readonly prefix: string = DEFAULT_STORE_PREFIX,
-//     private readonly separator: string = DEFAULT_STORE_SEPARATOR,
-//     private readonly asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY,
-//   ) {
-//     this.asyncStorage = new MockAsyncStorage();
-//     this.loadData();
-//   }
-
-//   loadData(): Promise<AsyncStorageData> {
-//     return new Promise(
-//       async (resolve, reject): Promise<void> => {
-//         if (this.initializing) {
-//           // @ts-ignore
-//           this.onInit((cb: InitCallback) => resolve(cb));
-//         } else {
-//           try {
-//             this.initializing = true;
-//             this.data = await this.fetch();
-//             this.initializing = false;
-//             resolve(this.data);
-//             this.triggerInit(this.data);
-//           } catch (e) {
-//             this.initializing = false;
-//             reject(e);
-//           }
-//         }
-//       },
-//     );
-//   }
-
-//   onInit(callback: InitCallback): void {
-//     this.initCallbacks.push(callback);
-//   }
-
-//   triggerInit(data: AsyncStorageData): void {
-//     if (this.initCallbacks && this.initCallbacks.length) {
-//       this.initCallbacks.forEach((callback: InitCallback) => callback(data));
-//     }
-//   }
-
-//   async getItem(key: string) {
-//     await this.loadData();
-//     const result = this.data[`${this.prefix}${this.separator}${key}`] || undefined;
-//     return result as any;
-//   }
-
-//   async setItem(key: string, value: string): Promise<void> {
-//     await this.loadData();
-//     this.data[`${this.prefix}${this.separator}${key}`] = value;
-//     await this.persist();
-//   }
-
-//   async removeItem(key: string): Promise<void> {
-//     await this.loadData();
-//     delete this.data[`${this.prefix}${this.separator}${key}`];
-//     await this.persist();
-//   }
-
-//   async persist(): Promise<void> {
-//     await this.asyncStorage.setItem(this.asyncStorageKey, safeJsonStringify(this.data));
-//   }
-
-//   async fetch(): Promise<AsyncStorageData> {
-//     const data = await this.asyncStorage.getItem(this.asyncStorageKey);
-//     return safeJsonParse(data) || {};
-//   }
-
-//   async getKeys(): Promise<string[]> {
-//     const relevantKeys = Object.keys(this.data).filter(key => key.startsWith(this.prefix));
-//     return relevantKeys.map(key => key.split(`${this.prefix}${this.separator}`)[1]);
-//   }
-
-//   async getEntries(): Promise<[string, any][]> {
-//     return Object.entries(this.data).filter(([name, _]) => name.startsWith(this.prefix));
-//   }
-
-//   clear(): Promise<void> {
-//     return this.asyncStorage.removeItem(this.asyncStorageKey);
-//   }
-
-//   restore(): Promise<void> {
-//     return this.clear();
-//   }
-
-//   joinWithSeparator(...args: string[]): string {
-//     let str = "";
-//     args.forEach(arg => {
-//       // dont add separator to last one
-//       if (args.indexOf(arg) === args.length - 1) {
-//         return;
-//       }
-//       str.concat(arg, this.separator);
-//     });
-//     return str;
-//   }
-// }
