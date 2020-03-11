@@ -10,6 +10,7 @@ import {
   ProtocolTypes,
   SetStateCommitmentJSON,
 } from "@connext/types";
+import { AppInstance } from "../appInstance/appInstance.entity";
 
 @EntityRepository(WithdrawCommitment)
 export class WithdrawCommitmentRepository extends Repository<WithdrawCommitment> {
@@ -104,14 +105,25 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
   }
 }
 
+export const setStateToJson = (entity: SetStateCommitmentEntity): SetStateCommitmentJSON => {
+  return {
+    appIdentity: entity.appIdentity as any,
+    appIdentityHash: entity.app.identityHash,
+    appStateHash: entity.appStateHash,
+    challengeRegistryAddress: entity.challengeRegistryAddress,
+    signatures: entity.signatures as any,
+    timeout: entity.timeout,
+    versionNumber: entity.versionNumber,
+  };
+};
+
 @EntityRepository(SetStateCommitmentEntity)
 export class SetStateCommitmentRepository extends Repository<SetStateCommitmentEntity> {
   findByAppIdentityHash(appIdentityHash: string): Promise<SetStateCommitmentEntity | undefined> {
-    return this.findOne({
-      where: {
-        appIdentityHash,
-      },
-    });
+    return this.createQueryBuilder("set_state")
+      .leftJoinAndSelect("set_state.app", "app")
+      .where("app.identityHash = :appIdentityHash", { appIdentityHash })
+      .getOne();
   }
 
   findByAppStateHash(appStateHash: string): Promise<SetStateCommitmentEntity | undefined> {
@@ -129,16 +141,16 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitmentE
     if (!commitment) {
       return undefined;
     }
-    return commitment as SetStateCommitmentJSON;
+    return setStateToJson(commitment);
   }
 
   async saveLatestSetStateCommitment(
-    appIdentityHash: string,
+    app: AppInstance,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
     const commitmentEntity = new SetStateCommitmentEntity();
     commitmentEntity.type = CommitmentType.SET_STATE;
-    commitmentEntity.appIdentityHash = appIdentityHash;
+    commitmentEntity.app = app;
     commitmentEntity.appIdentity = commitment.appIdentity;
     commitmentEntity.appStateHash = commitment.appStateHash;
     commitmentEntity.challengeRegistryAddress = commitment.challengeRegistryAddress;

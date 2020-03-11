@@ -6,10 +6,9 @@ export class InitCommitmentTable1582692126872 implements MigrationInterface {
       CREATE TYPE "commitment_type_enum"
         AS ENUM('CONDITIONAL', 'WITHDRAWAL', 'SET_STATE', 'SETUP');
 
-      CREATE TABLE "conditional_transaction_commitment" (
-        "id" SERIAL NOT NULL,
+      CREATE TABLE "conditional_transaction_commitment_entity" (
+        "id" SERIAL PRIMARY KEY,
         "type" "commitment_type_enum" NOT NULL,
-        "appIdentityHash" text NOT NULL,
         "interpreterAddr" text NOT NULL,
         "interpreterParams" text NOT NULL,
         "multisigAddress" text NOT NULL,
@@ -18,10 +17,9 @@ export class InitCommitmentTable1582692126872 implements MigrationInterface {
         "signatures" json
       );
 
-      CREATE TABLE "set_state_commitment" (
-        "id" SERIAL NOT NULL,
+      CREATE TABLE "set_state_commitment_entity" (
+        "id" SERIAL PRIMARY KEY,
         "type" "commitment_type_enum" NOT NULL,
-        "appIdentityHash" text NOT NULL,
         "appIdentity" json NOT NULL,
         "appStateHash" text NOT NULL,
         "challengeRegistryAddress" text NOT NULL,
@@ -31,7 +29,7 @@ export class InitCommitmentTable1582692126872 implements MigrationInterface {
       );
 
       CREATE TABLE "withdraw_commitment" (
-        "id" SERIAL NOT NULL,
+        "id" SERIAL PRIMARY KEY,
         "type" "commitment_type_enum" NOT NULL,
         "multisigAddress" text,
         "commitmentHash" text,
@@ -42,8 +40,8 @@ export class InitCommitmentTable1582692126872 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<any> {
     await queryRunner.query(`
-      DROP TABLE "conditional_transaction_commitment";
-      DROP TABLE "set_state_commitment";
+      DROP TABLE "conditional_transaction_commitment_entity";
+      DROP TABLE "set_state_commitment_entity";
       DROP TABLE "withdraw_commitment";
       DROP TYPE "commitment_type_enum";
     `);

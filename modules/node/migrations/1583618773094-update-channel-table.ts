@@ -13,17 +13,19 @@ export class UpdateChannelTable1583618773094 implements MigrationInterface {
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "conditional_transaction_commitment" 
+      ALTER TABLE "conditional_transaction_commitment_entity" 
+        ADD COLUMN "appId" integer,
         ADD CONSTRAINT "PK_5bb6fd3cc74b86faf8bfee876dd"
-        FOREIGN KEY ("appIdentityHash")
-        REFERENCES "app_instance" ("identityHash");
+        FOREIGN KEY ("appId")
+        REFERENCES "app_instance" ("id");
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "set_state_commitment" 
+      ALTER TABLE "set_state_commitment_entity" 
+        ADD COLUMN "appId" integer,
         ADD CONSTRAINT "PK_5bb6fd3cc74b86faf8bfff873ee"
-        FOREIGN KEY ("appIdentityHash")
-        REFERENCES "app_instance" ("identityHash");
+        FOREIGN KEY ("appId")
+        REFERENCES "app_instance" ("id");
     `);
 
     await queryRunner.query(`
@@ -42,6 +44,18 @@ export class UpdateChannelTable1583618773094 implements MigrationInterface {
         DROP COLUMN "addresses",
         DROP COLUMN "singleAssetTwoPartyIntermediaryAgreements",
         DROP COLUMN "monotonicNumProposedApps";
+    `);
+    await queryRunner.query(`
+      ALTER TABLE "conditional_transaction_commitment_entity"
+        DROP CONSTRAINT "PK_5bb6fd3cc74b86faf8bfee876dd";
+    `);
+    await queryRunner.query(`
+      ALTER TABLE "set_state_commitment_entity"
+        DROP CONSTRAINT "PK_5bb6fd3cc74b86faf8bfff873ee";
+    `);
+    await queryRunner.query(`
+      ALTER TABLE "withdraw_commitment"
+        DROP CONSTRAINT "PK_5bb6fd3cc74b86faf8bfbb679ee";
     `);
   }
 }

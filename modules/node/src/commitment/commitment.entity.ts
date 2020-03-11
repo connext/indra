@@ -1,11 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToOne, JoinColumn } from "typeorm";
 import { IsEthAddress, IsKeccak256Hash } from "../util";
+import { Channel } from "../channel/channel.entity";
+import { AppInstance } from "../appInstance/appInstance.entity";
 
 export enum CommitmentType {
-  CONDITIONAL,
-  WITHDRAWAL,
-  SET_STATE,
-  SETUP,
+  CONDITIONAL = "CONDITIONAL",
+  WITHDRAWAL = "WITHDRAWAL",
+  SET_STATE = "SET_STATE",
+  SETUP = "SETUP",
 }
 
 @Entity()
@@ -26,6 +28,12 @@ export class WithdrawCommitment {
 
   @Column("json")
   data!: object;
+
+  @ManyToOne(
+    (type: any) => Channel,
+    (channel: Channel) => channel.withdrawalCommitments,
+  )
+  channel!: Channel;
 }
 
 @Entity()
@@ -35,9 +43,6 @@ export class SetStateCommitmentEntity {
 
   @Column("enum", { enum: CommitmentType })
   type!: CommitmentType;
-
-  @Column("text")
-  appIdentityHash!: string;
 
   @Column("json")
   appIdentity!: object;
@@ -58,6 +63,10 @@ export class SetStateCommitmentEntity {
 
   @Column("integer")
   versionNumber!: number;
+
+  @OneToOne((type: any) => AppInstance)
+  @JoinColumn()
+  app!: AppInstance;
 }
 
 @Entity()
@@ -95,4 +104,7 @@ export class ConditionalTransactionCommitmentEntity {
 
   @Column("json", { nullable: true })
   signatures!: object; // Signature[]
+
+  @OneToOne((type: any) => AppInstance)
+  app!: AppInstance;
 }

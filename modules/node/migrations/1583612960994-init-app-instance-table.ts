@@ -9,7 +9,7 @@ export class InitAppInstanceTable1583612960994 implements MigrationInterface {
 
     await queryRunner.query(
       `CREATE TABLE "app_instance" (
-        "id" SERIAL NOT NULL,
+        "id" SERIAL PRIMARY KEY,
         "type" "app_instance_type_enum" NOT NULL,
         "appDefinition" text NOT NULL,
         "abiEncodings" json NOT NULL,
@@ -27,8 +27,10 @@ export class InitAppInstanceTable1583612960994 implements MigrationInterface {
         "responderDeposit" text NOT NULL,
         "responderDepositTokenAddress" text NOT NULL,
         "timeout" text NOT NULL,
+        "participants" json,
         "twoPartyOutcomeInterpreterParams" json, "multiAssetMultiPartyCoinTransferInterpreterParams" json, "singleAssetTwoPartyCoinTransferInterpreterParams" json,
-        "channelId" integer, CONSTRAINT "PK_5bb6fd3cc74b86faf8bfff765cc" PRIMARY KEY ("id"))`,
+        "channelId" integer
+      );`,
       undefined,
     );
 

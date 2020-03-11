@@ -6,7 +6,7 @@ import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance } from "../util/ethprovider";
 
-describe("Deposits", () => {
+describe.only("Deposits", () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;

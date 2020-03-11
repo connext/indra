@@ -7,9 +7,13 @@ import { AppInstance } from "./appInstance.entity";
 import { bigNumberify } from "ethers/utils";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
+  if (!app) {
+    return undefined;
+  }
   return {
     appInterface: {
-      ...app.abiEncodings,
+      stateEncoding: app.abiEncodings.stateEncoding,
+      actionEncoding: app.abiEncodings.actionEncoding || undefined,
       addr: app.appDefinition,
     },
     appSeqNo: app.appSeqNo,
@@ -21,7 +25,7 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     latestVersionNumber: app.latestVersionNumber,
     multisigAddress: channel.multisigAddress,
     outcomeType: (app.outcomeType as unknown) as number,
-    participants: [channel.userPublicIdentifier, channel.nodePublicIdentifier],
+    participants: app.participants,
     multiAssetMultiPartyCoinTransferInterpreterParams:
       app.multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams:
@@ -37,14 +41,14 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
     appSeqNo: app.appSeqNo,
     identityHash: app.identityHash,
     initialState: app.initialState,
-    initiatorDeposit: app.initiatorDeposit,
+    initiatorDeposit: app.initiatorDeposit.toHexString(),
     initiatorDepositTokenAddress: app.initiatorDepositTokenAddress,
     outcomeType: app.outcomeType,
     proposedByIdentifier: app.proposedByIdentifier,
     proposedToIdentifier: app.proposedToIdentifier,
-    responderDeposit: app.responderDeposit,
+    responderDeposit: app.responderDeposit.toHexString(),
     responderDepositTokenAddress: app.responderDepositTokenAddress,
-    timeout: app.timeout,
+    timeout: bigNumberify(app.timeout).toHexString(),
     intermediaryIdentifier: null, // hardcode
     multiAssetMultiPartyCoinTransferInterpreterParams:
       app.multiAssetMultiPartyCoinTransferInterpreterParams,

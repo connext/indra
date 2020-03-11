@@ -11,23 +11,25 @@ import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 import { Channel } from "./channel.entity";
+import { AppType } from "../appInstance/appInstance.entity";
 
 const logger = new LoggerService("ChannelRepository");
 
-const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
+export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
   return {
     addresses: channel.addresses,
-    appInstances: channel.appInstances.map(app => [
-      app.identityHash,
-      convertAppToInstanceJSON(app, channel),
-    ]),
-    freeBalanceAppInstance: convertAppToInstanceJSON(channel.freeBalanceAppInstance, channel),
+    appInstances: channel.appInstances
+      .filter(app => app.type === AppType.INSTANCE)
+      .map(app => [app.identityHash, convertAppToInstanceJSON(app, channel)]),
+    freeBalanceAppInstance: convertAppToInstanceJSON(
+      channel.appInstances.filter(app => app.type === AppType.FREE_BALANCE)[0],
+      channel,
+    ),
     monotonicNumProposedApps: channel.monotonicNumProposedApps,
     multisigAddress: channel.multisigAddress,
-    proposedAppInstances: channel.proposedAppInstances.map(app => [
-      app.identityHash,
-      convertAppToProposedInstanceJSON(app),
-    ]),
+    proposedAppInstances: channel.appInstances
+      .filter(app => app.type === AppType.PROPOSAL)
+      .map(app => [app.identityHash, convertAppToProposedInstanceJSON(app)]),
     schemaVersion: channel.schemaVersion,
     singleAssetTwoPartyIntermediaryAgreements: channel.singleAssetTwoPartyIntermediaryAgreements,
     userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier],
@@ -71,25 +73,21 @@ export class ChannelRepository extends Repository<Channel> {
   async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
     return this.findOne({
       where: { multisigAddress },
-      relations: ["proposedAppInstances", "appInstances", "freeBalanceAppInstance"],
+      relations: ["appInstances"],
     });
   }
 
   async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
     return this.findOne({
       where: { userPublicIdentifier },
-      relations: ["proposedAppInstances", "appInstances", "freeBalanceAppInstance"],
+      relations: ["appInstances"],
     });
   }
 
   async findByAppInstanceId(appInstanceId: string): Promise<Channel | undefined> {
     return this.createQueryBuilder("channel")
-      .leftJoinAndSelect("channel.proposedAppInstances", "proposedAppInstance")
       .leftJoinAndSelect("channel.appInstances", "appInstance")
-      .leftJoinAndSelect("channel.freeBalanceAppInstance", "freeBalanceAppInstance")
-      .where("proposedAppInstance.identityHash = :appInstanceId", { appInstanceId })
-      .orWhere("appInstance.identityHash = :appInstanceId", { appInstanceId })
-      .orWhere("freeBalanceAppInstance.identityHash = :appInstanceId", { appInstanceId })
+      .where("appInstance.identityHash = :appInstanceId", { appInstanceId })
       .getOne();
   }
 

@@ -10,7 +10,7 @@ import {
   COMMITMENT_KEY,
 } from "../helpers";
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
-import AsyncStorage from "@react-native-community/async-storage";
+// import AsyncStorage from "@react-native-community/async-storage";
 
 export class WrappedAsyncStorage implements WrappedStorage {
   private asyncStorage: any; // AsyncStorageStatic;
@@ -24,7 +24,7 @@ export class WrappedAsyncStorage implements WrappedStorage {
     private readonly asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY,
     private readonly backupService?: IBackupServiceAPI,
   ) {
-    this.asyncStorage = AsyncStorage;
+    this.asyncStorage = {}; // AsyncStorage;
     this.loadData();
   }
 
@@ -115,10 +115,7 @@ export class WrappedAsyncStorage implements WrappedStorage {
     let str = "";
     args.forEach(arg => {
       // dont add separator to last one
-      if (args.indexOf(arg) === args.length - 1) {
-        return;
-      }
-      str.concat(arg, this.separator);
+      str = str.concat(arg, args.indexOf(arg) === args.length - 1 ? "" : this.separator);
     });
     return str;
   }

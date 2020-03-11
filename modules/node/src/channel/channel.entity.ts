@@ -2,21 +2,14 @@ import {
   CriticalStateChannelAddresses,
   SingleAssetTwoPartyIntermediaryAgreement,
 } from "@connext/types";
-import {
-  Column,
-  Entity,
-  JoinTable,
-  ManyToMany,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  OneToOne,
-} from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
 import { IsEthAddress, IsXpub } from "../util";
+import { WithdrawCommitment } from "../commitment/commitment.entity";
 
 @Entity()
 export class Channel {
@@ -51,26 +44,21 @@ export class Channel {
   @OneToMany(
     (type: any) => AppInstance,
     (appInstance: AppInstance) => appInstance.channel,
+    { cascade: true },
   )
   appInstances!: AppInstance[];
-
-  @OneToMany(
-    (type: any) => AppInstance,
-    (appInstance: AppInstance) => appInstance.channel,
-  )
-  proposedAppInstances!: AppInstance[];
-
-  @OneToOne(
-    (type: any) => AppInstance,
-    (appInstance: AppInstance) => appInstance.channel,
-  )
-  freeBalanceAppInstance!: AppInstance;
 
   @Column("json")
   singleAssetTwoPartyIntermediaryAgreements!: [string, SingleAssetTwoPartyIntermediaryAgreement][];
 
   @Column("integer")
   monotonicNumProposedApps!: number;
+
+  @OneToMany(
+    (type: any) => WithdrawCommitment,
+    (withdrawalCommitment: WithdrawCommitment) => withdrawalCommitment.channel,
+  )
+  withdrawalCommitments!: WithdrawCommitment[];
 
   @ManyToMany(
     (type: any) => RebalanceProfile,

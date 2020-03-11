@@ -20,6 +20,8 @@ import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import { OutcomeType } from "../util";
+import { Zero, AddressZero } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -69,6 +71,10 @@ export class CFCoreStore implements IStoreService {
     // update all other fields
     // nonce
     channel.monotonicNumProposedApps = stateChannel.monotonicNumProposedApps;
+    /////////////////////////////
+    // single asset two party intermediary agreements
+    channel.singleAssetTwoPartyIntermediaryAgreements =
+      stateChannel.singleAssetTwoPartyIntermediaryAgreements || [];
 
     /////////////////////////////
     // free balance
@@ -88,26 +94,32 @@ export class CFCoreStore implements IStoreService {
       freeBalanceSaved.appSeqNo = freeBalanceData.appSeqNo;
       freeBalanceSaved.channel = channel;
       freeBalanceSaved.outcomeType = OutcomeType[freeBalanceData.outcomeType];
+      // new instance, save initial state as latest
+      freeBalanceSaved.initialState = freeBalanceData.latestState;
+      freeBalanceSaved.participants = freeBalanceData.participants;
+      // TODO: proper way to add these since free balance does not go thorugh
+      // propose flow
+      freeBalanceSaved.initiatorDeposit = Zero;
+      freeBalanceSaved.initiatorDepositTokenAddress = AddressZero;
+      freeBalanceSaved.responderDeposit = Zero;
+      freeBalanceSaved.responderDepositTokenAddress = AddressZero;
+      freeBalanceSaved.proposedToIdentifier = channel.userPublicIdentifier;
+      freeBalanceSaved.proposedByIdentifier = channel.nodePublicIdentifier;
+      freeBalanceSaved.timeout = freeBalanceData.latestTimeout;
+
+      // interpreter params
+      freeBalanceSaved.multiAssetMultiPartyCoinTransferInterpreterParams =
+        freeBalanceData.multiAssetMultiPartyCoinTransferInterpreterParams;
+
+      freeBalanceSaved.singleAssetTwoPartyCoinTransferInterpreterParams =
+        freeBalanceData.singleAssetTwoPartyCoinTransferInterpreterParams;
+
+      freeBalanceSaved.twoPartyOutcomeInterpreterParams =
+        freeBalanceData.twoPartyOutcomeInterpreterParams;
     }
     freeBalanceSaved.latestState = freeBalanceData.latestState;
     freeBalanceSaved.latestTimeout = freeBalanceData.latestTimeout;
     freeBalanceSaved.latestVersionNumber = freeBalanceData.latestVersionNumber;
-    // interpreter params
-    freeBalanceSaved.multiAssetMultiPartyCoinTransferInterpreterParams =
-      freeBalanceData.multiAssetMultiPartyCoinTransferInterpreterParams;
-
-    freeBalanceSaved.singleAssetTwoPartyCoinTransferInterpreterParams =
-      freeBalanceData.singleAssetTwoPartyCoinTransferInterpreterParams;
-
-    freeBalanceSaved.twoPartyOutcomeInterpreterParams =
-      freeBalanceData.twoPartyOutcomeInterpreterParams;
-
-    channel.freeBalanceAppInstance = freeBalanceSaved;
-
-    /////////////////////////////
-    // single asset two party intermediary agreements
-    channel.singleAssetTwoPartyIntermediaryAgreements =
-      stateChannel.singleAssetTwoPartyIntermediaryAgreements;
 
     /////////////////////////////
     // assemble proposed apps
@@ -123,11 +135,14 @@ export class CFCoreStore implements IStoreService {
         app.appDefinition = appJson.appDefinition;
         app.appSeqNo = appJson.appSeqNo;
         app.initialState = appJson.initialState;
-        app.initiatorDeposit = appJson.initiatorDeposit;
+        app.initiatorDeposit = bigNumberify(appJson.initiatorDeposit);
         app.initiatorDepositTokenAddress = appJson.initiatorDepositTokenAddress;
-        app.responderDeposit = appJson.responderDeposit;
+        app.latestState = appJson.initialState;
+        app.latestTimeout = bigNumberify(appJson.timeout).toNumber();
+        app.latestVersionNumber = 0;
+        app.responderDeposit = bigNumberify(appJson.responderDeposit);
         app.responderDepositTokenAddress = appJson.responderDepositTokenAddress;
-        app.timeout = appJson.timeout;
+        app.timeout = bigNumberify(appJson.timeout).toNumber();
         app.proposedToIdentifier = appJson.proposedToIdentifier;
         app.proposedByIdentifier = appJson.proposedByIdentifier;
         app.outcomeType = appJson.outcomeType;
@@ -137,7 +152,6 @@ export class CFCoreStore implements IStoreService {
         return app;
       }),
     );
-    channel.proposedAppInstances = proposedApps.filter(x => !!x);
 
     /////////////////////////////
     // assemble installed apps
@@ -147,10 +161,17 @@ export class CFCoreStore implements IStoreService {
         if (!app) {
           throw new Error(`Did not find app with identity hash: ${identityHash}`);
         }
+        if (
+          app.type === AppType.INSTANCE &&
+          app.latestVersionNumber === appJson.latestVersionNumber
+        ) {
+          // app was not updated, return app
+          return app;
+        }
         if (app.type === AppType.PROPOSAL) {
           app.type = AppType.INSTANCE;
+          app.participants = appJson.participants;
         }
-        app.appSeqNo = appJson.appSeqNo;
         app.latestState = appJson.latestState;
         app.latestTimeout = appJson.latestTimeout;
         app.latestVersionNumber = appJson.latestVersionNumber;
@@ -159,7 +180,9 @@ export class CFCoreStore implements IStoreService {
         return app;
       }),
     );
-    channel.appInstances = installedApps;
+    channel.appInstances = [freeBalanceSaved]
+      .concat(installedApps.filter(x => !!x))
+      .concat(proposedApps.filter(x => !!x));
 
     await this.channelRepository.save(channel);
   }
@@ -168,7 +191,7 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.getAppInstance(appInstanceId);
   }
 
-  saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+  saveAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
     throw new Error("Method not implemented.");
   }
 
@@ -178,14 +201,15 @@ export class CFCoreStore implements IStoreService {
     return this.setStateCommitmentRepository.getLatestSetStateCommitment(appIdentityHash);
   }
 
-  saveLatestSetStateCommitment(
+  async saveLatestSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    return this.setStateCommitmentRepository.saveLatestSetStateCommitment(
-      appIdentityHash,
-      commitment,
-    );
+    const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
+    if (!app) {
+      throw new Error(`[saveLatestSetStateCommitment] Cannot find app with id: ${appIdentityHash}`);
+    }
+    return this.setStateCommitmentRepository.saveLatestSetStateCommitment(app, commitment);
   }
 
   getConditionalTransactionCommitment(

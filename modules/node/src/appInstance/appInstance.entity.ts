@@ -1,13 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToOne } from "typeorm";
 import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
 import { SolidityValueType, OutcomeType, AppABIEncodings } from "@connext/types";
 
 import { Channel } from "../channel/channel.entity";
+import { BigNumber } from "ethers/utils";
 
 export enum AppType {
-  PROPOSAL,
-  INSTANCE,
-  FREE_BALANCE,
+  PROPOSAL = "PROPOSAL",
+  INSTANCE = "INSTANCE",
+  FREE_BALANCE = "FREE_BALANCE",
 }
 
 @Entity("app_instance")
@@ -44,8 +45,13 @@ export class AppInstance {
   @Column("integer")
   latestVersionNumber!: number;
 
-  @Column("text")
-  initiatorDeposit!: string;
+  @Column("text", {
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  initiatorDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()
@@ -62,15 +68,24 @@ export class AppInstance {
   @IsXpub()
   proposedToIdentifier!: string;
 
-  @Column("text")
-  responderDeposit!: string;
+  @Column("text", {
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  responderDeposit!: BigNumber;
 
   @Column("text")
   @IsEthAddress()
   responderDepositTokenAddress!: string;
 
-  @Column("text")
-  timeout!: string;
+  @Column("integer")
+  timeout!: number;
+
+  // assigned a value on installation not proposal
+  @Column("json", { nullable: true })
+  participants!: string[];
 
   // Interpreter-related Fields
   @Column("json", { nullable: true })
