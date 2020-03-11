@@ -1,23 +1,32 @@
+import {
+  PROTOCOL_MESSAGE_EVENT,
+  NODE_EVENTS,
+  ILoggerService,
+  nullLogger,
+  ProtocolTypes,
+} from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
-import log from "loglevel";
 import { Memoize } from "typescript-memoize";
 
-import { createRpcRouter } from "./api";
+import { createRpcRouter } from "./methods";
 import AutoNonceWallet from "./auto-nonce-wallet";
+import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
-import { Opcode, Commitment, ProtocolMessage, ProtocolRunner } from "./machine";
-import { StateChannel } from "./models";
-import { getFreeBalanceAddress } from "./models/free-balance";
+import { Opcode, Commitment, ProtocolRunner } from "./machine";
+import { getFreeBalanceAddress, StateChannel } from "./models";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { NetworkContext, CFCoreTypes, NodeMessageWrappedProtocolMessage } from "./types";
+import {
+  CFCoreTypes,
+  NetworkContext,
+  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
+} from "./types";
 import { timeout } from "./utils";
-import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
-import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS, ProtocolTypes } from "@connext/types";
 import { Store } from "./store";
 import {
   ConditionalTransactionCommitment,
@@ -63,6 +72,7 @@ export class Node {
     publicExtendedKey?: string,
     privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,
+    logger?: ILoggerService,
   ): Promise<Node> {
     const [privateKeysGenerator, extendedPubKey] = await getPrivateKeysGeneratorAndXPubOrThrow(
       storeService,
@@ -79,6 +89,7 @@ export class Node {
       provider,
       networkContext,
       blocksNeededForConfirmation,
+      logger,
       lockService,
     );
 
@@ -94,21 +105,21 @@ export class Node {
     private readonly provider: BaseProvider,
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
+    public readonly log: ILoggerService = nullLogger,
     private readonly lockService?: CFCoreTypes.ILockService,
   ) {
+    this.log = log.newContext("CF-Node");
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.store = new Store(this.storeService);
     this.protocolRunner = this.buildProtocolRunner();
-    log.info(`Waiting for ${this.blocksNeededForConfirmation} block confirmations`);
   }
 
-  public async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
-    // TODO: is "0" a reasonable path to derive `signer` private key from?
+  private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
     this.signer = new SigningKey(await this.privateKeyGetter.getPrivateKey("0"));
-    log.info(`Node signer address: ${this.signer.address}`);
-    log.info(`Node public identifier: ${this.publicIdentifier}`);
+    this.log.info(`Node signer address: ${this.signer.address}`);
+    this.log.info(`Node public identifier: ${this.publicIdentifier}`);
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -121,11 +132,11 @@ export class Node {
       new AutoNonceWallet(this.signer.privateKey, this.provider),
       this.blocksNeededForConfirmation!,
       new ProcessQueue(this.lockService),
+      this.log,
     );
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
-
     return this;
   }
 
@@ -149,7 +160,12 @@ export class Node {
    * for the OP_SIGN, IO_SEND, and IO_SEND_AND_WAIT opcodes.
    */
   private buildProtocolRunner(): ProtocolRunner {
-    const protocolRunner = new ProtocolRunner(this.networkContext, this.provider, this.store);
+    const protocolRunner = new ProtocolRunner(
+      this.networkContext,
+      this.provider,
+      this.store,
+      this.log.newContext("CF-ProtocolRunner"),
+    );
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
       if (args.length !== 1 && args.length !== 2) {

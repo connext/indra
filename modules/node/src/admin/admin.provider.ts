@@ -1,5 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
-import { StateChannelJSON } from "@connext/types";
+import { StateChannelJSON, stringify } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -7,8 +7,8 @@ import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
-import { LinkedTransfer } from "../transfer/transfer.entity";
-import { AbstractMessagingProvider, stringify } from "../util";
+import { AbstractMessagingProvider } from "../util";
+import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 
@@ -16,10 +16,10 @@ class AdminMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly adminService: AdminService,
     private readonly authService: AuthService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ) {
-    super(logger, messaging);
+    super(log, messaging);
   }
 
   /**
@@ -133,10 +133,10 @@ export const adminProviderFactory: FactoryProvider<Promise<void>> = {
   useFactory: async (
     adminService: AdminService,
     authService: AuthService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ): Promise<void> => {
-    const admin = new AdminMessaging(adminService, authService, logger, messaging);
+    const admin = new AdminMessaging(adminService, authService, log, messaging);
     await admin.setupSubscriptions();
   },
 };

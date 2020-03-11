@@ -6,20 +6,22 @@ import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
-import { InstallProtocolParams, Protocol, xkeyKthAddress } from "../../../machine";
+import { Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import {
   AppInterface,
+  CFCoreTypes,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
   DepositFailedMessage,
+  InstallProtocolParams,
   NetworkContext,
-  CFCoreTypes,
   OutcomeType,
   SolidityValueType,
 } from "../../../types";
 import { DEPOSIT_FAILED, NOT_YOUR_BALANCE_REFUND_APP } from "../../errors";
+import { logTime } from "../../../utils";
 
 const DEPOSIT_RETRY_COUNT = 3;
 
@@ -83,6 +85,9 @@ export async function makeDeposit(
   const { multisigAddress, amount, tokenAddress } = params;
   const { provider, blocksNeededForConfirmation, outgoing, publicIdentifier } = requestHandler;
 
+  const log = requestHandler.log.newContext(`CF-makeDeposit`);
+  let start;
+
   const signer = await requestHandler.getSigner();
   const signerAddress = await signer.getAddress();
 
@@ -108,6 +113,7 @@ export async function makeDeposit(
           nonce: provider.getTransactionCount(signerAddress, `pending`),
         });
       }
+      start = Date.now();
       break;
     } catch (e) {
       errors.push(e.toString());
@@ -140,6 +146,7 @@ export async function makeDeposit(
   });
 
   await txResponse!.wait(blocksNeededForConfirmation);
+  logTime(log, start, `Deposit tx ${txResponse!.hash} was confirmed`);
   return txResponse!.hash;
 }
 

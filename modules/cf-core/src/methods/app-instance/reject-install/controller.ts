@@ -1,9 +1,9 @@
+import { REJECT_INSTALL_EVENT } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes, RejectProposalMessage } from "../../../types";
 import { NodeController } from "../../controller";
-import { REJECT_INSTALL_EVENT } from "@connext/types";
 
 export default class RejectInstallController extends NodeController {
   protected async getRequiredLockNames(

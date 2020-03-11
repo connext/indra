@@ -11,7 +11,7 @@ import {
   getMnemonic,
   getProtocolFromData,
   MessagingEvent,
-  MesssagingEventData,
+  MessagingEventData,
   RECEIVED,
   SEND,
   TestMessagingService,
@@ -47,7 +47,7 @@ const makeDepositCall = async (opts: {
   // get messaging of client
   (client.messaging as TestMessagingService).on(
     subjectToFastforward,
-    async (msg: MesssagingEventData) => {
+    async (msg: MessagingEventData) => {
       // check if you should fast forward on specific protocol, or
       // just on specfic subject
       if (!protocol) {

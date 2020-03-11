@@ -1,7 +1,5 @@
 export {
-  EXTENDED_PRIVATE_KEY_PATH,
   getCreate2MultisigAddress,
-  JsonRpcResponse,
   Node as CFCore,
   scanForCriticalAddresses,
   sortAddresses,

@@ -1,14 +1,18 @@
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
+import { xkeyKthAddress, Commitment, Opcode, Protocol, appIdentityToHash } from "../machine";
 import { SetStateCommitment } from "../ethereum";
-import { appIdentityToHash, ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
-import { Commitment, Opcode, Protocol } from "../machine/enums";
-import { Context, ProposeInstallProtocolParams, ProtocolMessage } from "../types";
 import { AppInstanceProposal, StateChannel } from "../models";
+import {
+  Context,
+  ProposeInstallProtocolParams,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+} from "../types";
+import { logTime } from "../utils";
 
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
@@ -17,6 +21,10 @@ const { SetState } = Commitment;
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { message, network, store } = context;
+    const log = context.log.newContext("CF-ProposeProtocol");
+    const start = Date.now();
+    let substart;
+    log.debug(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -88,7 +96,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout.toNumber(),
     );
 
-    const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitment];
+    const initiatorSignatureOnInitialState = yield [
+      OP_SIGN,
+      setStateCommitment,
+      appInstanceProposal.appSeqNo,
+    ];
 
     const m1 = {
       protocol,
@@ -101,15 +113,21 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
+    substart = Date.now();
     const m2 = yield [IO_SEND_AND_WAIT, m1];
+    logTime(log, substart, `Received responder's m2`);
 
     const {
       customData: { signature: responderSignatureOnInitialState },
     } = m2! as ProtocolMessage;
 
-    const responderAddress = xkeyKthAddress(responderXpub, 0);
-
-    assertIsValidSignature(responderAddress, setStateCommitment, responderSignatureOnInitialState);
+    substart = Date.now();
+    assertIsValidSignature(
+      xkeyKthAddress(responderXpub, appInstanceProposal.appSeqNo),
+      setStateCommitment,
+      responderSignatureOnInitialState,
+    );
+    logTime(log, substart, `Validated responder's sig on initial state`);
 
     // add signatures to commitment and save
     setStateCommitment.signatures = [
@@ -118,10 +136,15 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [WRITE_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+    logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { message, network, store } = context;
+    const log = context.log.newContext("CF-ProposeProtocol");
+    const start = Date.now();
+    let substart;
+    log.debug(`Response started`);
 
     const { params, processID } = message;
 
@@ -193,15 +216,23 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout.toNumber(),
     );
 
-    const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
-
-    assertIsValidSignature(initiatorAddress, setStateCommitment, initiatorSignatureOnInitialState);
-
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
+
+    substart = Date.now();
+    assertIsValidSignature(
+      xkeyKthAddress(initiatorXpub, appInstanceProposal.appSeqNo),
+      setStateCommitment,
+      initiatorSignatureOnInitialState,
+    );
+    logTime(log, substart, `Validated initiator's sig on initial state`);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
-    const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment];
+    const responderSignatureOnInitialState = yield [
+      OP_SIGN,
+      setStateCommitment,
+      appInstanceProposal.appSeqNo,
+    ];
 
     setStateCommitment.signatures = [
       initiatorSignatureOnInitialState,
@@ -222,5 +253,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
+    logTime(log, start, `Finished responding`);
   },
 };

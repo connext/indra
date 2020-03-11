@@ -8,8 +8,7 @@ import {
   SigningKey,
 } from "ethers/utils";
 
-import { SetStateCommitment } from "../../../../src/ethereum";
-import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
+import { appIdentityToHash, SetStateCommitment } from "../../../../src/ethereum";
 import { ChallengeRegistry } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { generateRandomNetworkContext } from "../../mocks";

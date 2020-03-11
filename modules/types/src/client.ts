@@ -1,65 +1,56 @@
 import { providers } from "ethers";
 
-import { AppInstanceJson } from "./app";
-import { AppActionBigNumber, AppRegistry, AppState, DefaultApp, SupportedApplication } from "./app";
-import { BigNumber, Contract, JsonRpcProvider, Network } from "./basic";
+import {
+  ResolveLinkedTransferResponse,
+  ResolveConditionResponse,
+  ResolveConditionParameters,
+  ConditionalTransferParameters,
+  ConditionalTransferResponse,
+} from "./apps";
+import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
+import { BigNumber } from "./basic";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { ConnextEvent } from "./events";
 import {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
   DepositParameters,
   RequestDepositRightsParameters,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
-  ResolveConditionParameters,
-  ResolveConditionResponse,
-  ResolveLinkedTransferResponse,
-  SwapParameters,
-  TransferParameters,
   WithdrawParameters,
+  TransferParameters,
 } from "./inputs";
+import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
-  INodeApiClient,
   RequestCollateralResponse,
   Transfer,
 } from "./node";
 import { ProtocolTypes } from "./protocol";
 import { IBackupServiceAPI, StoreType, IStoreService, WithdrawalMonitorObject } from "./store";
 import { CFCoreTypes } from "./cfCore";
-
-export type InternalClientOptions = ClientOptions & {
-  appRegistry: AppRegistry;
-  channelProvider: IChannelProvider;
-  config: GetConfigResponse;
-  ethProvider: JsonRpcProvider;
-  messaging: IMessagingService;
-  network: Network;
-  node: INodeApiClient;
-  store: IStoreService;
-  token: Contract;
-};
+import { SwapParameters } from "./apps";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
-  ethProviderUrl: string;
-  nodeUrl?: string; // ws:// or nats:// urls are supported
+  backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;
+  ethProviderUrl: string;
   keyGen?: KeyGen;
   mnemonic?: string;
   xpub?: string;
   store?: IStoreService;
-  logLevel?: number;
   storeType?: StoreType;
+  logger?: ILogger;
+  loggerService?: ILoggerService;
+  logLevel?: number;
   messaging?: IMessagingService;
-  backupService?: IBackupServiceAPI;
+  nodeUrl?: string; // ws:// or nats:// urls are supported
 }
 
 export interface IConnextClient {
@@ -99,7 +90,7 @@ export interface IConnextClient {
   // CORE CHANNEL METHODS
   deposit(params: DepositParameters): Promise<ChannelState>;
   swap(params: SwapParameters): Promise<CFCoreChannel>;
-  transfer(params: TransferParameters): Promise<ConditionalTransferResponse>;
+  transfer(params: TransferParameters): Promise<any>;
   withdraw(params: WithdrawParameters): Promise<ChannelState>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
@@ -122,12 +113,12 @@ export interface IConnextClient {
   getAppRegistry(
     appDetails?:
       | {
-          name: SupportedApplication;
+          name: string;
           chainId: number;
         }
       | { appDefinitionAddress: string },
   ): Promise<AppRegistry>;
-  getRegisteredAppDetails(appName: SupportedApplication): DefaultApp;
+  getRegisteredAppDetails(appName: string): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
@@ -154,7 +145,7 @@ export interface IConnextClient {
     notifyCounterparty: boolean,
   ): Promise<ProtocolTypes.DepositResult>;
   getFreeBalance(assetId?: string): Promise<ProtocolTypes.GetFreeBalanceStateResult>;
-  getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]>;
+  getAppInstances(): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
   getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
   getLatestNodeSubmittedWithdrawal(): Promise<WithdrawalMonitorObject>;
@@ -170,14 +161,8 @@ export interface IConnextClient {
   installVirtualApp(appInstanceId: string): Promise<ProtocolTypes.InstallVirtualResult>;
   installApp(appInstanceId: string): Promise<ProtocolTypes.InstallResult>;
   rejectInstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
-  takeAction(
-    appInstanceId: string,
-    action: AppActionBigNumber,
-  ): Promise<ProtocolTypes.TakeActionResult>;
-  updateState(
-    appInstanceId: string,
-    newState: AppState | any,
-  ): Promise<ProtocolTypes.UpdateStateResult>;
+  takeAction(appInstanceId: string, action: any): Promise<ProtocolTypes.TakeActionResult>;
+  updateState(appInstanceId: string, newState: any): Promise<ProtocolTypes.UpdateStateResult>;
   uninstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
   uninstallVirtualApp(appInstanceId: string): Promise<ProtocolTypes.UninstallVirtualResult>;
 }

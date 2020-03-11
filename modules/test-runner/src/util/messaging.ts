@@ -3,6 +3,9 @@ import { ConnextEventEmitter, CFCoreTypes, MessagingConfig } from "@connext/type
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
+import { Logger } from "./logger";
+
+const log = new Logger("Messaging", env.logLevel);
 
 // TYPES
 export type MessageCounter = {
@@ -47,12 +50,12 @@ export const MessagingEvents = {
   [SUBJECT_FORBIDDEN]: SUBJECT_FORBIDDEN,
 };
 export type MessagingEvent = keyof typeof MessagingEvents;
-export type MesssagingEventData = {
+export type MessagingEventData = {
   subject?: string;
   data?: any;
 };
 
-export const getProtocolFromData = (msg: MesssagingEventData) => {
+export const getProtocolFromData = (msg: MessagingEventData) => {
   const { subject, data } = msg;
   if (!data || !subject) {
     return;
@@ -91,7 +94,6 @@ const zeroCounter = (): MessageCounter => {
 const defaultOpts = (): TestMessagingConfig => {
   return {
     messagingConfig: {
-      logLevel: env.logLevel,
       messagingUrl: env.nodeUrl,
     },
     protocolDefaults: {
@@ -132,7 +134,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
     this.connection = new MessagingServiceFactory({
-      logLevel: this.options.messagingConfig.logLevel,
       messagingUrl: this.options.messagingConfig.messagingUrl,
       options: {
         maxPingOut: 1_000_000_000,
@@ -195,7 +196,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   ): Promise<void> {
     // return connection callback
     return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
-      this.emit(RECEIVED, { subject, data: msg } as MesssagingEventData);
+      this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
       // make sure that client is allowed to send message
       this.subjectForbidden(subject, "receive");
       // wait out delay
@@ -204,12 +205,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         this.hasCeiling({ type: "received" }) &&
         this.count.ceiling!.received! <= this.count.received
       ) {
-        env.logLevel > 2 &&
-          console.log(
-            `Reached ceiling (${
-              this.count.ceiling!.received
-            }), refusing to process any more messages. Received ${this.count.received} messages`,
-          );
+        log.warn(
+          `Reached ceiling (${
+            this.count.ceiling!.received
+          }), refusing to process any more messages. Received ${this.count.received} messages`,
+        );
         return;
       }
       // handle overall protocol count
@@ -233,7 +233,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${
           this.protocolDefaults[protocol].received
         } received, ceiling: ${this.protocolDefaults[protocol].ceiling!.received!}`;
-        env.logLevel > 2 && console.log(msg);
+        log.warn(msg);
         return;
       }
       this.protocolDefaults[protocol].received += 1;
@@ -243,18 +243,17 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   }
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
-    this.emit(SEND, { subject: to, data: msg } as MesssagingEventData);
+    this.emit(SEND, { subject: to, data: msg } as MessagingEventData);
     // make sure that client is allowed to send message
     this.subjectForbidden(to, "send");
 
     // wait out delay
     await this.awaitDelay(true);
     if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
-      env.logLevel > 2 &&
-        console.log(
-          `Reached ceiling (${this.count.ceiling!
-            .sent!}), refusing to send any more messages. Sent ${this.count.sent} messages`,
-        );
+      log.warn(
+        `Reached ceiling (${this.count.ceiling!
+          .sent!}), refusing to send any more messages. Sent ${this.count.sent} messages`,
+      );
       return;
     }
 
@@ -274,7 +273,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${
         this.protocolDefaults[protocol].sent
       } sent, ceiling: ${this.protocolDefaults[protocol].ceiling!.sent!}`;
-      env.logLevel > 2 && console.log(msg);
+      log.warn(msg);
       return;
     }
     // handle counts
@@ -303,24 +302,24 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   // More generic methods
 
   async connect(): Promise<void> {
-    this.emit(CONNECT, {} as MesssagingEventData);
+    this.emit(CONNECT, {} as MessagingEventData);
     await this.connection.connect();
   }
 
   async disconnect(): Promise<void> {
-    this.emit(DISCONNECT, {} as MesssagingEventData);
+    this.emit(DISCONNECT, {} as MessagingEventData);
     await this.connection.disconnect();
   }
 
   async flush(): Promise<void> {
-    this.emit(FLUSH, {} as MesssagingEventData);
+    this.emit(FLUSH, {} as MessagingEventData);
     return await this.connection.flush();
   }
 
   async publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
     this.subjectForbidden(subject, "publish");
-    this.emit(PUBLISH, { data, subject } as MesssagingEventData);
+    this.emit(PUBLISH, { data, subject } as MessagingEventData);
     return await this.connection.publish(subject, data);
   }
 
@@ -334,7 +333,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // note: when sending via node.ts uses request
     // make sure that client is allowed to send message
 
-    this.emit(REQUEST, { data, subject } as MesssagingEventData);
+    this.emit(REQUEST, { data, subject } as MessagingEventData);
     this.subjectForbidden(subject, "request");
     return await this.connection.request(subject, timeout, data, callback);
   }
@@ -365,7 +364,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     });
     if (hasSubject) {
       const msg = `Subject is forbidden, refusing to ${operation || "send"} data to subject: ${to}`;
-      this.emit(SUBJECT_FORBIDDEN, { subject: to } as MesssagingEventData);
+      this.emit(SUBJECT_FORBIDDEN, { subject: to } as MessagingEventData);
       throw new Error(msg);
     }
     return hasSubject;

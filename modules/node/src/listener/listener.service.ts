@@ -1,5 +1,4 @@
 import {
-  SimpleLinkedTransferAppState,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -22,13 +21,10 @@ import { ClientProxy } from "@nestjs/microservices";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingClientProviderId } from "../constants";
-import { LinkedTransferStatus } from "../transfer/transfer.entity";
-import { LinkedTransferRepository } from "../transfer/transfer.repository";
-import { TransferService } from "../transfer/transfer.service";
+import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import {
   CFCoreTypes,
   CreateChannelMessage,
@@ -47,6 +43,10 @@ import {
   WithdrawFailedMessage,
   WithdrawStartedMessage,
 } from "../util/cfCore";
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
+import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
+import { AppActionsService } from "../appRegistry/appActions.service";
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
@@ -56,19 +56,20 @@ type CallbackStruct = {
 export default class ListenerService implements OnModuleInit {
   constructor(
     private readonly appRegistryService: AppRegistryService,
+    private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
-    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
+    private readonly linkedTransferService: LinkedTransferService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
-    private readonly logger: LoggerService,
-    private readonly transferService: TransferService,
+    private readonly appRegistryRepository: AppRegistryRepository,
+    private readonly log: LoggerService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
-    this.logger.setContext("ListenerService");
+    this.log.setContext("ListenerService");
   }
 
   logEvent(event: CFCoreTypes.EventName, res: CFCoreTypes.NodeMessage & { data: any }): void {
-    this.logger.debug(
+    this.log.debug(
       `${event} event fired from ${res && res.from ? res.from : null}, data: ${
         res ? JSON.stringify(res.data) : `event did not have a result`
       }`,
@@ -104,7 +105,7 @@ export default class ListenerService implements OnModuleInit {
       },
       PROPOSE_INSTALL_EVENT: (data: ProposeMessage): void => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
-          this.logger.debug(`Received proposal from our own node. Doing nothing.`);
+          this.log.debug(`Received proposal from our own node. Doing nothing.`);
           return;
         }
         this.logEvent(PROPOSE_INSTALL_EVENT, data);
@@ -124,7 +125,7 @@ export default class ListenerService implements OnModuleInit {
           data.data.appInstanceId,
         );
         if (!transfer) {
-          this.logger.debug(`Transfer not found`);
+          this.log.debug(`Transfer not found`);
           return;
         }
         transfer.status = LinkedTransferStatus.FAILED;
@@ -134,31 +135,44 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(UNINSTALL_EVENT, data);
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
-        this.transferService.reclaimLinkedTransferCollateralByAppInstanceId(
-          data.data.appInstanceId,
-        );
+        try {
+          await this.linkedTransferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
+            data.data.appInstanceId,
+          );
+        } catch (e) {
+          if (e.message.includes(`Could not find transfer`)) {
+            return;
+          }
+          throw e;
+        }
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         this.logEvent(UNINSTALL_VIRTUAL_EVENT, data);
       },
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
-        // if this is for a recipient of a transfer
-        this.logEvent(UPDATE_STATE_EVENT, data);
-        const { newState } = data.data;
-        let transfer = await this.linkedTransferRepository.findByLinkedHash(
-          (newState as SimpleLinkedTransferAppState).linkedHash,
-        );
-        if (!transfer) {
-          this.logger.debug(`Could not find transfer for update state event`);
+        if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
+          this.log.debug(`Received update state from our own node. Doing nothing.`);
           return;
         }
-        // update transfer
-        transfer.preImage = (newState as SimpleLinkedTransferAppState).preImage;
-        transfer = await this.linkedTransferRepository.markAsRedeemed(
-          transfer,
-          await this.channelRepository.findByUserPublicIdentifier(data.from),
+        // if this is for a recipient of a transfer
+        this.logEvent(UPDATE_STATE_EVENT, data);
+        const { newState, appInstanceId, action } = data.data;
+        const app = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
+        const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+          app.appInterface.addr,
         );
-        this.logger.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+        if (!appRegistryInfo) {
+          throw new Error(
+            `Could not find registry info for updated app ${data.data.appInstanceId}`,
+          );
+        }
+        await this.appActionsService.handleAppAction(
+          appRegistryInfo.name,
+          appInstanceId,
+          newState as any,
+          action as any,
+          data.from,
+        );
       },
       WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
         this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
@@ -179,23 +193,8 @@ export default class ListenerService implements OnModuleInit {
       },
     );
 
-    this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_install as any, (data: any) => {
-      const appInstance = data.result.result.appInstance;
-      this.logger.debug(
-        `Emitting CFCoreTypes.RpcMethodName.INSTALL event at subject indra.node.${
-          this.cfCoreService.cfCore.publicIdentifier
-        }.install.${appInstance.identityHash}: ${JSON.stringify(appInstance)}`,
-      );
-      this.messagingClient
-        .emit(
-          `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
-          appInstance,
-        )
-        .toPromise();
-    });
-
     this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_uninstall as any, (data: any) => {
-      this.logger.debug(
+      this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(
           data.result.result,
         )} at subject indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${

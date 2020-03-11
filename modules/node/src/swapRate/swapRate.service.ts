@@ -16,10 +16,10 @@ export class SwapRateService implements OnModuleInit {
 
   constructor(
     private readonly config: ConfigService,
-    private readonly logger: LoggerService,
+    private readonly log: LoggerService,
     @Inject(MessagingProviderId) private readonly messaging: IMessagingService,
   ) {
-    this.logger.setContext("SwapRateService");
+    this.log.setContext("SwapRateService");
   }
 
   async getOrFetchRate(from: string, to: string): Promise<string> {
@@ -74,7 +74,7 @@ export class SwapRateService implements OnModuleInit {
           throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
       }
     } catch (e) {
-      this.logger.warn(`Failed to fetch swap rate from ${priceOracleType} for ${from} to ${to}`);
+      this.log.warn(`Failed to fetch swap rate from ${priceOracleType} for ${from} to ${to}`);
       if (process.env.NODE_ENV === "development") {
         newRate = await this.config.getDefaultSwapRate(from, to);
         if (!newRate) {
@@ -93,7 +93,7 @@ export class SwapRateService implements OnModuleInit {
     const oldRateBn = parseEther(oldRate || "0");
     const newRateBn = parseEther(newRate);
     if (!oldRateBn.eq(newRateBn)) {
-      this.logger.log(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
+      this.log.info(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
       this.broadcastRate(from, to); // Only broadcast the rate if it's changed
     }
     return newRate;

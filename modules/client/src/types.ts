@@ -1,11 +1,39 @@
+import { JsonRpcProvider } from "ethers/providers";
+import {
+  AppRegistry,
+  Contract,
+  GetConfigResponse,
+  IChannelProvider,
+  ILoggerService,
+  IMessagingService,
+  INodeApiClient,
+  KeyGen,
+  Network,
+  Store,
+} from "@connext/types";
+
+// This type is only ever used inside the client,
+// No need to keep it in the global types package.
+export type InternalClientOptions = {
+  appRegistry: AppRegistry;
+  channelProvider: IChannelProvider;
+  config: GetConfigResponse;
+  ethProvider: JsonRpcProvider;
+  keyGen: KeyGen;
+  logger: ILoggerService;
+  messaging: IMessagingService;
+  network: Network;
+  node: INodeApiClient;
+  store: Store;
+  token: Contract;
+  xpub: string;
+};
+
 export {
   Address,
-  App,
-  AppActionBigNumber,
   AppInstanceInfo,
   AppInstanceJson,
   AppRegistry,
-  AppStateBigNumber,
   BigNumber,
   calculateExchange,
   CFChannelProviderOptions,
@@ -19,11 +47,7 @@ export {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
   ClientOptions,
-  CoinBalanceRefundAppState,
-  CoinBalanceRefundAppStateBigNumber,
   CoinTransferBigNumber,
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
   ConnextClientStorePrefix,
   ConnextEvent,
   ConnextEventEmitter,
@@ -46,7 +70,6 @@ export {
   INodeApiClient,
   InstallMessage,
   InstallVirtualMessage,
-  InternalClientOptions,
   inverse,
   IRpcConnection,
   isBN,
@@ -60,7 +83,6 @@ export {
   LinkedTransferToRecipientResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
-  MatchAppInstanceResponse,
   maxBN,
   minBN,
   NodeInitializationParameters,
@@ -81,23 +103,14 @@ export {
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
   ResolveLinkedTransferToRecipientParameters,
-  SimpleLinkedTransferAppState,
-  SimpleLinkedTransferAppStateBigNumber,
-  SimpleSwapAppState,
-  SimpleSwapAppStateBigNumber,
-  SimpleTransferAppState,
-  SimpleTransferAppStateBigNumber,
   StateChannelJSON,
   Store,
   StorePair,
-  SupportedApplication,
-  SupportedApplications,
   SwapParameters,
   toBN,
   tokenToWei,
   toWei,
   Transfer,
-  TransferCondition,
   TransferParameters,
   UninstallMessage,
   UninstallVirtualMessage,

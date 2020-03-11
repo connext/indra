@@ -1,3 +1,4 @@
+import { UPDATE_STATE_EVENT } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -14,14 +15,12 @@ import {
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE,
 } from "../../errors";
-import { UPDATE_STATE_EVENT } from "@connext/types";
 
 export default class TakeActionController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_takeAction)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
-    // @ts-ignore
     requestHandler: RequestHandler,
     params: CFCoreTypes.TakeActionParams,
   ): Promise<string[]> {

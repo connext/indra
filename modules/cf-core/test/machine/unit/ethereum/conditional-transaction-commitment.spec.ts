@@ -10,9 +10,8 @@ import {
 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { ConditionalTransactionCommitment } from "../../../../src/ethereum";
+import { appIdentityToHash, ConditionalTransactionCommitment } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
-import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
 import { StateChannel } from "../../../../src/models";
 import { FreeBalanceClass } from "../../../../src/models/free-balance";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";

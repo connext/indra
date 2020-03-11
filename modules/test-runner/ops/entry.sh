@@ -30,7 +30,7 @@ bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 
 bundle=dist/tests.bundle.js
 
-if [[ ! -f "$bundle" || "$NODE_ENV" == "development" ]]
+if [[ ! -f "$bundle" ]]
 then webpack --config ops/webpack.config.js
 fi
 

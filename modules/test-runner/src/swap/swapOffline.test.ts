@@ -12,7 +12,7 @@ import {
   getProtocolFromData,
   INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   MessagingEvent,
-  MesssagingEventData,
+  MessagingEventData,
   RECEIVED,
   requestCollateral,
   SEND,
@@ -74,7 +74,7 @@ const fundChannelAndSwap = async (opts: {
     // after swapping
     (client.messaging as TestMessagingService)!.on(
       fastForward,
-      async (msg: MesssagingEventData) => {
+      async (msg: MessagingEventData) => {
         // check if you should fast forward on specific protocol, or
         // just on specfic subject
         if (!protocol) {

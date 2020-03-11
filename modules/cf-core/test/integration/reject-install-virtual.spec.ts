@@ -1,3 +1,4 @@
+import { REJECT_INSTALL_EVENT } from "@connext/types";
 import { Node } from "../../src";
 import { ProposeMessage, RejectInstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
@@ -11,7 +12,6 @@ import {
   makeVirtualProposeCall,
   assertNodeMessage,
 } from "./utils";
-import { REJECT_INSTALL_EVENT } from "@connext/types";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 

@@ -1,16 +1,21 @@
+import { DEPOSIT_CONFIRMED_EVENT, PROTOCOL_MESSAGE_EVENT, ILoggerService } from "@connext/types";
 import { Signer } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
-import log from "loglevel";
 
-import { eventNameToImplementation, methodNameToImplementation } from "./api";
+import { eventNameToImplementation, methodNameToImplementation } from "./methods";
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
-import { NetworkContext, CFCoreTypes, NODE_EVENTS, NodeEvent } from "./types";
-import { bigNumberifyJson } from "./utils";
-import { DEPOSIT_CONFIRMED_EVENT } from "@connext/types";
+import {
+  CFCoreTypes,
+  NetworkContext,
+  NODE_EVENTS,
+  NodeEvent,
+  NodeMessageWrappedProtocolMessage,
+} from "./types";
+import { bigNumberifyJson, logTime } from "./utils";
 
 /**
  * This class registers handlers for requests to get or set some information
@@ -34,7 +39,10 @@ export class RequestHandler {
     readonly wallet: Signer,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
-  ) {}
+    public readonly log: ILoggerService,
+  ) {
+    this.log = this.log.newContext("CF-RequestHandler");
+  }
 
   injectRouter(router: RpcRouter) {
     this.router = router;
@@ -52,41 +60,36 @@ export class RequestHandler {
     method: CFCoreTypes.MethodName,
     req: CFCoreTypes.MethodRequest,
   ): Promise<CFCoreTypes.MethodResponse> {
+    const start = Date.now();
     const result: CFCoreTypes.MethodResponse = {
       type: req.type,
       requestId: req.requestId,
       result: await this.methods.get(method)(this, req.params),
     };
-
+    logTime(this.log, start, `Method ${method} was executed`);
     return result;
   }
 
   /**
    * This registers all of the methods the Node is expected to have
-   * as described at https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#public-methods
    */
   private mapPublicApiMethods() {
     for (const methodName in methodNameToImplementation) {
       this.methods.set(methodName, methodNameToImplementation[methodName]);
-
       this.incoming.on(methodName, async (req: CFCoreTypes.MethodRequest) => {
         const res: CFCoreTypes.MethodResponse = {
           type: req.type,
           requestId: req.requestId,
           result: await this.methods.get(methodName)(this, bigNumberifyJson(req.params)),
         };
-
-        // @ts-ignore
-        this.router.emit(req.methodName, res, "outgoing");
+        this.router.emit((req as any).methodName, res, "outgoing");
       });
     }
   }
 
   /**
    * This maps the Node event names to their respective handlers.
-   *
    * These are the events being listened on to detect requests from peer Nodes.
-   * https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#events
    */
   private mapEventHandlers() {
     for (const eventName of Object.values(NODE_EVENTS)) {
@@ -101,12 +104,13 @@ export class RequestHandler {
    * @param msg
    */
   public async callEvent(event: NodeEvent, msg: CFCoreTypes.NodeMessage) {
+    const start = Date.now();
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
       if (event === DEPOSIT_CONFIRMED_EVENT) {
-        log.info(
+        this.log.info(
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,
             undefined,
@@ -122,6 +126,15 @@ export class RequestHandler {
       await controllerExecutionMethod(this, msg);
     }
 
+    logTime(
+      this.log,
+      start,
+      `Event ${
+        event !== PROTOCOL_MESSAGE_EVENT
+          ? event
+          : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
+      } was processed`,
+    );
     this.router.emit(event, msg);
   }
 

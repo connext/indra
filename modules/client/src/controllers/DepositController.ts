@@ -1,21 +1,14 @@
+import { CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { stringify } from "../lib";
-import {
-  BigNumber,
-  CFCoreTypes,
-  ChannelState,
-  CoinBalanceRefundAppStateBigNumber,
-  convert,
-  DepositParameters,
-} from "../types";
+import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { CoinBalanceRefundApp } from "@connext/types";
 
 // TODO: refactor to use unrolled version
 export class DepositController extends AbstractController {
@@ -73,7 +66,7 @@ export class DepositController extends AbstractController {
     }
 
     return {
-      apps: await this.connext.getAppInstances(this.connext.multisigAddress),
+      apps: await this.connext.getAppInstances(),
       freeBalance: await this.connext.getFreeBalance(assetId),
     };
   };

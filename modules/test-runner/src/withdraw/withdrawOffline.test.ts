@@ -15,7 +15,7 @@ import {
   fundChannel,
   getMnemonic,
   getProtocolFromData,
-  MesssagingEventData,
+  MessagingEventData,
   RECEIVED,
   SEND,
   SUBJECT_FORBIDDEN,
@@ -59,7 +59,7 @@ describe("Withdraw offline tests", () => {
       protocol: "withdraw",
     });
 
-    (client.messaging as TestMessagingService).on(RECEIVED, (msg: MesssagingEventData) => {
+    (client.messaging as TestMessagingService).on(RECEIVED, (msg: MessagingEventData) => {
       if (getProtocolFromData(msg) === "withdraw") {
         clock.tick(89_000);
       }
@@ -77,7 +77,7 @@ describe("Withdraw offline tests", () => {
     });
 
     let eventCount = 0;
-    (client.messaging as TestMessagingService).on(SEND, async (msg: MesssagingEventData) => {
+    (client.messaging as TestMessagingService).on(SEND, async (msg: MessagingEventData) => {
       eventCount += 1;
       if (getProtocolFromData(msg) === "withdraw" && eventCount === 1) {
         // wait for message to be sent (happens after event thrown)

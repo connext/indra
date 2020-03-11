@@ -1,4 +1,6 @@
+import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
+import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
 import { providers } from "ethers";
 import { BigNumber, Transaction } from "ethers/utils";
 
@@ -17,7 +19,6 @@ import {
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
-  SupportedApplication,
   Transfer,
 } from "../types";
 
@@ -34,10 +35,10 @@ export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs";
 
 export class MockMessagingService implements IMessagingService {
   private returnVals: any = MockNodeClientApi.returnValues;
-  private log: Logger;
+  private log: ILoggerService;
 
   public constructor(opts?: any) {
-    this.log = new Logger("MockMessagingService", opts ? opts.logLevel : 3);
+    this.log = opts.logger || new Logger("MockMessagingService", 3);
   }
 
   async connect(): Promise<void> {
@@ -84,7 +85,7 @@ export class MockMessagingService implements IMessagingService {
 
 export class MockNodeClientApi implements INodeApiClient {
   // public receivedUpdateRequests: UpdateRequest[] = []
-  public log: Logger;
+  public log: ILoggerService;
 
   private nodeUrl: string;
   private messaging: IMessagingService;
@@ -96,10 +97,14 @@ export class MockNodeClientApi implements INodeApiClient {
   public nodePublicIdentifier: string | undefined;
 
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
-    this.log = new Logger("MockNodeClientApi", opts.logLevel);
+    this.log = opts.logger || new Logger("MockNodeClientApi", 3);
     this.messaging = (opts.messaging as any) || new MockMessagingService(opts);
     this.nonce = undefined;
     this.signature = undefined;
+  }
+
+  resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse<string>> {
+    throw new Error("Method not implemented.");
   }
 
   async acquireLock(
@@ -216,6 +221,10 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async verifyAppSequenceNumber(): Promise<ChannelAppSequences> {
     return MockNodeClientApi.returnValues.verifyAppSequenceNumber;
+  }
+
+  esolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse<string>> {
+    throw new Error("Method not implemented.");
   }
 
   public async setRecipientAndEncryptedPreImageForLinkedTransfer(

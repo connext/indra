@@ -11,6 +11,7 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
+import { signMessage } from "@connext/crypto";
 import { Wallet } from "ethers";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
@@ -32,6 +33,7 @@ export const createCFChannelProvider = async ({
   nodeUrl,
   store,
   xpub,
+  logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
     messaging as any,
@@ -42,6 +44,8 @@ export const createCFChannelProvider = async ({
     lockService,
     xpub,
     keyGen,
+    undefined,
+    logger,
   );
   const channelProviderConfig: ChannelProviderConfig = {
     freeBalanceAddress: xpubToAddress(xpub),
@@ -122,7 +126,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private walletSign = async (message: string): Promise<string> => {
-    return this.wallet.signMessage(message);
+    const { chainId } = await this.wallet.provider.getNetwork();
+    return signMessage(this.wallet.privateKey, message, chainId);
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {

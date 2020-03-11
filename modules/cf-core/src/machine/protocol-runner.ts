@@ -1,3 +1,4 @@
+import { ILoggerService } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import uuid from "uuid";
 
@@ -72,6 +73,7 @@ export class ProtocolRunner {
     public readonly network: NetworkContext,
     public readonly provider: BaseProvider,
     public readonly store: Store,
+    public readonly log: ILoggerService,
   ) {
     this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
@@ -121,6 +123,7 @@ export class ProtocolRunner {
     message: ProtocolMessage,
   ): Promise<void> {
     const context: Context = {
+      log: this.log,
       message,
       store: this.store,
       network: this.network,

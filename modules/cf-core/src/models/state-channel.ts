@@ -6,7 +6,7 @@ import {
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
-import { flip, flipTokenIndexedBalances } from "../ethereum/utils/free-balance-app";
+import { flip, flipTokenIndexedBalances } from "../ethereum";
 import { xkeyKthAddress } from "../machine/xkeys";
 import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";

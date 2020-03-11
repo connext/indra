@@ -7,7 +7,7 @@ import {
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
   NO_MULTISIG_FOR_COUNTERPARTIES,
   NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
-} from "./methods/errors";
+} from "./methods";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { CFCoreTypes, SolidityValueType } from "./types";
 import { getCreate2MultisigAddress } from "./utils";

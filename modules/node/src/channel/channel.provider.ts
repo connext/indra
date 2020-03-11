@@ -12,50 +12,32 @@ import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
-import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
+import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
-import { CFCore, CFCoreTypes } from "../util/cfCore";
+import { CFCoreTypes } from "../util/cfCore";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
+import { CFCoreService } from "../cfCore/cfCore.service";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
 
-// This should be done in the config module but i didnt want to create a circular dependency
-class ConfigMessaging extends AbstractMessagingProvider {
-  constructor(
-    private readonly cfCore: CFCore,
-    private readonly configService: ConfigService,
-    logger: LoggerService,
-    messaging: IMessagingService,
-  ) {
-    super(logger, messaging);
-  }
-
-  async getConfig(): Promise<GetConfigResponse> {
-    return {
-      contractAddresses: await this.configService.getContractAddresses(),
-      ethNetwork: await this.configService.getEthNetwork(),
-      messaging: this.configService.getMessagingConfig(),
-      nodePublicIdentifier: this.cfCore.publicIdentifier,
-    };
-  }
-
-  async setupSubscriptions(): Promise<void> {
-    super.connectRequestReponse("config.get", this.getConfig.bind(this));
-  }
-}
-
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    private readonly channelRepository: ChannelRepository,
-    private readonly channelService: ChannelService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
+    private readonly channelService: ChannelService,
+    private readonly cfCoreService: CFCoreService,
+    private readonly channelRepository: ChannelRepository,
+    private readonly onchainTransactionRepository: OnchainTransactionRepository,
   ) {
-    super(logger, messaging);
+    super(log, messaging);
+  }
+
+  async getConfig(): Promise<GetConfigResponse> {
+    return await this.channelService.getConfig();
   }
 
   async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse> {
@@ -127,7 +109,9 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
-    const onchainTx = await this.channelService.getLatestWithdrawal(pubId);
+    const onchainTx = await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+      pubId,
+    );
     // TODO: conversions needed?
     return onchainTx;
   }
@@ -173,38 +157,41 @@ class ChannelMessaging extends AbstractMessagingProvider {
       "channel.latestWithdrawal.>",
       this.authService.useUnverifiedPublicIdentifier(this.getLatestWithdrawal.bind(this)),
     );
+
+    // should move this at some point, this will probably move to be an HTTP endpoint
+    await super.connectRequestReponse("config.get", this.getConfig.bind(this));
   }
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
   inject: [
     AuthService,
-    CFCoreProviderId,
-    ChannelRepository,
-    ChannelService,
-    ConfigService,
     LoggerService,
     MessagingProviderId,
+    ChannelService,
+    CFCoreService,
+    ChannelRepository,
+    OnchainTransactionRepository,
   ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,
-    cfCore: CFCore,
-    channelRepo: ChannelRepository,
-    channelService: ChannelService,
-    configService: ConfigService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
+    channelService: ChannelService,
+    cfCore: CFCoreService,
+    channelRepo: ChannelRepository,
+    onchain: OnchainTransactionRepository,
   ): Promise<void> => {
     const channel = new ChannelMessaging(
       authService,
-      channelRepo,
-      channelService,
-      logger,
+      log,
       messaging,
+      channelService,
+      cfCore,
+      channelRepo,
+      onchain,
     );
     await channel.setupSubscriptions();
-    const config = new ConfigMessaging(cfCore, configService, logger, messaging);
-    await config.setupSubscriptions();
   },
 };

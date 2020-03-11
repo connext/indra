@@ -1,5 +1,9 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT, NetworkContext } from "@connext/types";
+import {
+  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
+  NetworkContext,
+  nullLogger,
+} from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
@@ -39,6 +43,7 @@ describe("Can handle correct & incorrect installs", () => {
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as BaseProvider,
       store,
+      nullLogger,
     );
     initiatorIdentifier = HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
   });

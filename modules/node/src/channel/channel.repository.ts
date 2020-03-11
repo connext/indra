@@ -13,7 +13,7 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { Channel } from "./channel.entity";
 import { AppType } from "../appInstance/appInstance.entity";
 
-const logger = new LoggerService("ChannelRepository");
+const log = new LoggerService("ChannelRepository");
 
 export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
   return {
@@ -98,6 +98,23 @@ export class ChannelRepository extends Repository<Channel> {
     });
   }
 
+  async findByMultisigAddressOrThrow(multisigAddress: string): Promise<Channel> {
+    const channel = await this.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`Channel does not exist for multisig ${multisigAddress}`);
+    }
+    return channel;
+  }
+
+  async findByUserPublicIdentifierOrThrow(userPublicIdentifier: string): Promise<Channel> {
+    const channel = await this.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+
+    return channel;
+  }
+
   async addRebalanceProfileToChannel(
     userPublicIdentifier: string,
     rebalanceProfile: RebalanceProfile,
@@ -121,7 +138,7 @@ export class ChannelRepository extends Repository<Channel> {
       await transactionalEntityManager.save(rebalanceProfile);
 
       if (existing) {
-        logger.debug(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
+        log.debug(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
           .relation(Channel, "rebalanceProfiles")

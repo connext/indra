@@ -8,18 +8,18 @@ export default [
     output: [
       {
         file: pkg.main,
-        format: "cjs"
+        format: "cjs",
       },
       {
         file: pkg.module,
-        format: "esm"
+        format: "esm",
       },
       {
         file: pkg.iife,
         format: "iife",
-        name: "window.types"
-      }
+        name: "window.types",
+      },
     ],
-    plugins: [typescript()]
-  }
+    plugins: [typescript()],
+  },
 ];

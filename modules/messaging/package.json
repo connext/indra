@@ -1,7 +1,7 @@
 {
   "name": "@connext/messaging",
   "description": "Messaging module for Connext client",
-  "version": "4.2.0",
+  "version": "5.1.1",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -11,12 +11,12 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc -p . && rollup -c",
+    "build": "rm -rf ./dist/* && tsc -p . && rollup -c",
     "build:watch": "tsc -p . && rollup -c -w",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/types": "4.2.0",
+    "@connext/types": "5.1.1",
     "ts-nats": "1.2.4",
     "websocket-nats": "0.3.3"
   },

@@ -1,8 +1,14 @@
-import { CFCoreTypes, NetworkContext, ProtocolMessage, SolidityValueType, IStoreService } from "@connext/types";
+import {
+  CFCoreTypes,
+  ILoggerService,
+  NetworkContext,
+  ProtocolMessage,
+  SolidityValueType,
+} from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { Signature } from "ethers/utils";
 
-import { Opcode } from "./machine/enums";
+import { Opcode } from "./machine";
 import { StateChannel } from "./models";
 import { Store } from "./store";
 
@@ -48,9 +54,11 @@ export type Instruction = Function | Opcode;
 /// Arguments passed to a protocol execulion flow
 export interface Context {
   store: Store;
-  network: NetworkContext;
+  log: ILoggerService;
   message: ProtocolMessage;
+  network: NetworkContext;
   provider: BaseProvider;
+  stateChannelsMap: Map<string, StateChannel>;
 }
 
 export type TakeActionProtocolParams = {

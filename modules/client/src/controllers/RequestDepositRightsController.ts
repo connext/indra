@@ -1,3 +1,4 @@
+import { CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -8,14 +9,12 @@ import {
   BigNumber,
   CFCoreTypes,
   ProtocolTypes,
-  CoinBalanceRefundAppStateBigNumber,
   RequestDepositRightsParameters,
   RequestDepositRightsResponse,
 } from "../types";
 import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { CoinBalanceRefundApp } from "@connext/types";
 
 export class RequestDepositRightsController extends AbstractController {
   public requestDepositRights = async (

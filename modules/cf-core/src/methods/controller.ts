@@ -29,23 +29,17 @@ export abstract class NodeController extends Controller {
   ): Promise<CFCoreTypes.MethodResult>;
 
   protected async beforeExecution(
-    // @ts-ignore
     requestHandler: RequestHandler,
-    // @ts-ignore
     params: CFCoreTypes.MethodParams,
   ): Promise<void> {}
 
   protected async afterExecution(
-    // @ts-ignore
     requestHandler: RequestHandler,
-    // @ts-ignore
     params: CFCoreTypes.MethodParams,
   ): Promise<void> {}
 
   protected async getRequiredLockNames(
-    // @ts-ignore
     requestHandler: RequestHandler,
-    // @ts-ignore
     params: CFCoreTypes.MethodParams,
   ): Promise<string[]> {
     return [];

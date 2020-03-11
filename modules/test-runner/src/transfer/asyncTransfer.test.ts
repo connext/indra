@@ -1,5 +1,6 @@
+/* global before after */
 import { utils } from "@connext/client";
-import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, toBN } from "@connext/types";
+import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, toBN, CF_PATH } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
@@ -9,6 +10,7 @@ import {
   AssetOptions,
   asyncTransferAsset,
   createClient,
+  env,
   ETH_AMOUNT_LG,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
@@ -18,8 +20,14 @@ import {
   FUNDED_MNEMONICS,
   TOKEN_AMOUNT,
   requestCollateral,
+  Logger,
   delay,
+  withdrawFromChannel,
+  ZERO_ZERO_TWO_ETH,
+  ZERO_ZERO_ONE_ETH,
 } from "../util";
+import { connectNats, closeNats } from "../util/nats";
+import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
 
@@ -27,10 +35,15 @@ describe("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
+  let nats: Client;
+
+  before(async () => {
+    nats = await connectNats();
+  });
 
   beforeEach(async () => {
-    clientA = await createClient();
-    clientB = await createClient();
+    clientA = await createClient({ id: "A" });
+    clientB = await createClient({ id: "B" });
     tokenAddress = clientA.config.contractAddresses.Token;
   });
 
@@ -39,22 +52,54 @@ describe("Async Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
+  after(() => {
+    closeNats();
+  });
+
   it("happy case: client A transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
-    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
   it("happy case: client A transfers tokens to client B through node", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientB.requestCollateral(transfer.assetId);
-    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it.skip("latency test: client A transfers eth to client B through node", function() {
-    return new Promise(async res => {
+  it("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
+    const receiverMnemonic = Wallet.createRandom().mnemonic;
+    console.log("receiverMnemonic: ", receiverMnemonic);
+    const receiverXpub = HDNode.fromMnemonic(receiverMnemonic)
+      .derivePath(CF_PATH)
+      .neuter().extendedKey;
+    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
+    await clientA.transfer({
+      amount: ETH_AMOUNT_SM.toString(),
+      assetId: tokenAddress,
+      recipient: receiverXpub,
+    });
+    const receiverClient = await createClient({ mnemonic: receiverMnemonic }, false);
+    expect(receiverClient.publicIdentifier).to.eq(receiverXpub);
+    const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
+    expect(freeBalance[receiverClient.freeBalanceAddress]).to.be.above(0);
+    receiverClient.messaging.disconnect();
+  });
+
+  it.skip("latency test: deposit, collateralize, many transfers, withdraw", async () => {
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, ETH_AMOUNT_MD, transfer.assetId);
+    await requestCollateral(clientB, transfer.assetId);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero, true);
+    /*
       // @ts-ignore
       this.timeout(1200000);
       const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
@@ -63,18 +108,14 @@ describe("Async Transfers", () => {
       let startTime: number[] = [];
       let y = 0;
       clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", data => {
-        // console.log(data)
+        // log.info(data)
         const duration = Date.now() - startTime[data.meta.index];
-        console.log(
-          "Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000,
-        );
-        console.log("===========================");
+        log.info("Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000);
         y++;
         if (y === 5) {
           res();
         }
       });
-
       for (let i = 0; i < 5; i++) {
         startTime[i] = Date.now();
         await clientA.transfer({
@@ -84,9 +125,10 @@ describe("Async Transfers", () => {
           recipient: clientB.publicIdentifier,
         });
         delay(30000);
-        console.log("i: " + i);
+        log.info("i: " + i);
       }
     });
+    */
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {
@@ -96,14 +138,14 @@ describe("Async Transfers", () => {
     const receiverBal = await clientB.getFreeBalance(transfer.assetId);
     expect(receiverBal[xpubToAddress(clientB.nodePublicIdentifier)].lt(transfer.amount)).to.be.true;
 
-    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
   it("client A transfers tokens to client B without collateralizing", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
   it("Bot A tries to transfer a negative amount", async () => {
@@ -223,17 +265,5 @@ describe("Async Transfers", () => {
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
-  });
-
-  it("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {
-    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
-
-    await expect(
-      clientA.transfer({
-        amount: ETH_AMOUNT_SM.toString(),
-        assetId: tokenAddress,
-        recipient: HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey,
-      }),
-    ).to.be.rejectedWith("No channel exists for recipientPublicIdentifier");
   });
 });

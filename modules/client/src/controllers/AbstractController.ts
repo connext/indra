@@ -1,15 +1,15 @@
-import { CFCoreTypes, IChannelProvider, REJECT_INSTALL_EVENT } from "@connext/types";
+import { CFCoreTypes, IChannelProvider, ILoggerService, REJECT_INSTALL_EVENT } from "@connext/types";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
-import { CF_METHOD_TIMEOUT, delayAndThrow, Logger, stringify } from "../lib";
+import { CF_METHOD_TIMEOUT, delayAndThrow, stringify } from "../lib";
 import { ConnextListener } from "../listener";
 import { INodeApiClient } from "../types";
 
 export abstract class AbstractController {
   public name: string;
   public connext: ConnextClient;
-  public log: Logger;
+  public log: ILoggerService;
   public node: INodeApiClient;
   public channelProvider: IChannelProvider;
   public listener: ConnextListener;
@@ -21,13 +21,17 @@ export abstract class AbstractController {
     this.node = connext.node;
     this.channelProvider = connext.channelProvider;
     this.listener = connext.listener;
-    this.log = new Logger(name, connext.log.logLevel);
+    this.log = connext.log.newContext(name);
     this.ethProvider = connext.ethProvider;
   }
 
+  /**
+   * @returns {string} appInstanceId - Installed app's appInstanceId
+   */
   proposeAndInstallLedgerApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<string> => {
+    // 163 ms
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
@@ -41,6 +45,7 @@ export abstract class AbstractController {
     let boundReject: (reason?: any) => void;
 
     try {
+      // 1676 ms TODO: why does this step take so long?
       const res = await Promise.race([
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -61,7 +66,7 @@ export abstract class AbstractController {
       ]);
 
       this.log.info(`Installed app with id: ${appInstanceId}`);
-      this.log.debug(`Installed app details: ${stringify(res as object)}`);
+      // this.log.debug(`Installed app details: ${stringify(res as object)}`);
       return appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
@@ -106,7 +111,7 @@ export abstract class AbstractController {
                 proposed = true;
               }
             };
-            const [proposeResult, _] = await Promise.all([
+            const [proposeResult] = await Promise.all([
               this.connext.proposeInstallApp(params),
               this.connext.messaging.subscribe(
                 `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,

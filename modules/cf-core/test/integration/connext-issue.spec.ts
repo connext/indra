@@ -105,7 +105,8 @@ function redeemLinkPoller(
  * only appear when multiple bots are running. This test suite will
  * attempt to recreate them in the simplest context.
  */
-describe("Can update and install multiple apps simultaneously", () => {
+// Skipped because uses virtual apps
+describe.skip("Can update and install multiple apps simultaneously", () => {
   let nodeA: Node; // sending client
   let nodeB: Node; // node
   let nodeC: Node; // receiving client

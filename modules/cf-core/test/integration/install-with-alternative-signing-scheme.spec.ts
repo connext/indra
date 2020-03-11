@@ -1,7 +1,6 @@
 import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
-import log from "loglevel";
 
 import { generatePrivateKeyGeneratorAndXPubPair, Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
@@ -23,8 +22,6 @@ import {
 } from "./utils";
 
 expect.extend({ toBeLt });
-
-log.disableAll();
 
 describe(`Uses a provided signing key generation function to sign channel state updates`, () => {
   let multisigAddress: string;

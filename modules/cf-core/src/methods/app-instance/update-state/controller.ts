@@ -19,7 +19,6 @@ export default class UpdateStateController extends NodeController {
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
-    // @ts-ignore
     requestHandler: RequestHandler,
     params: CFCoreTypes.UpdateStateParams,
   ): Promise<string[]> {

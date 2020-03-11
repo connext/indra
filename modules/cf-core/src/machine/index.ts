@@ -18,6 +18,7 @@ import {
   WithdrawProtocolParams,
 } from "../types";
 import {
+  computeRandomExtendedPrvKey,
   sortAddresses,
   xkeyKthAddress,
   xkeysToSortedKthAddresses,
@@ -47,4 +48,5 @@ export {
   xkeysToSortedKthAddresses,
   xkeysToSortedKthSigningKeys,
   sortAddresses,
+  computeRandomExtendedPrvKey,
 };

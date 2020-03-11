@@ -5,24 +5,21 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
-import { LoggerService } from "../logger/logger.service";
 import {
   OnchainTransaction,
   AnonymizedOnchainTransaction,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import {
-  LinkedTransfer,
-  PeerToPeerTransfer,
-  Transfer,
-  AnonymizedTransfer,
-} from "../transfer/transfer.entity";
-import {
   ConditionalTransactionCommitmentEntity,
   SetStateCommitmentEntity,
   WithdrawCommitment,
 } from "../commitment/commitment.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
+import { Transfer } from "../transfer/transfer.entity";
+import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
+import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
+import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -41,6 +38,7 @@ import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-
 import { InitCommitmentTable1582692126872 } from "../../migrations/1582692126872-init-commitment-table";
 import { InitAppInstanceTable1583612960994 } from "../../migrations/1583612960994-init-app-instance-table";
 import { UpdateChannelTable1583618773094 } from "../../migrations/1583618773094-update-channel-table";
+import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
 
 export const entities = [
   AppInstance,
@@ -49,7 +47,6 @@ export const entities = [
   CFCoreRecord,
   RebalanceProfile,
   LinkedTransfer,
-  PeerToPeerTransfer,
   OnchainTransaction,
   Transfer,
   AnonymizedOnchainTransaction,
@@ -57,6 +54,7 @@ export const entities = [
   ConditionalTransactionCommitmentEntity,
   SetStateCommitmentEntity,
   WithdrawCommitment,
+  FastSignedTransfer,
 ];
 
 export const migrations = [
@@ -76,11 +74,12 @@ export const migrations = [
   InitCommitmentTable1582692126872,
   InitAppInstanceTable1583612960994,
   UpdateChannelTable1583618773094,
+  fastSignedTransfer1583682931763,
 ];
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
-  constructor(private readonly config: ConfigService, private readonly logger: LoggerService) {}
+  constructor(private readonly config: ConfigService) {}
   createTypeOrmOptions(): TypeOrmModuleOptions {
     return {
       ...this.config.getPostgresConfig(),
