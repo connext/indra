@@ -48,6 +48,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
       }
     }
 
+    // eslint-disable-next-line max-len
     const reclaimableFastSignedTransfers = await this.fastSignedTransferService.getFastSignedTransfersForReclaim(
       pubId,
     );
