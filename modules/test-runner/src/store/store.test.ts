@@ -59,7 +59,7 @@ describe("ConnextStore", () => {
         const retrieved = await store.getStateChannel(multisigAddress);
         expect(retrieved).to.deep.equal({ multisigAddress });
 
-        await store.restore();
+        await expect(store.restore()).to.be.rejectedWith(`No backup provided, store cleared`);
         expect(await store.getStateChannel(multisigAddress)).to.deep.equal(undefined);
         await store.clear();
       });

@@ -65,10 +65,11 @@ describe("KeyValueStorage", () => {
 
   it("happy case: localStorage should include multiple keys", async () => {
     const store = createKeyValueStore(LOCALSTORAGE);
+    const preInsert = await store.getEntries();
 
     await setAndGetMultiple(store, length);
 
-    expect((await store.getEntries()).length).to.equal(length);
+    expect((await store.getEntries()).length).to.equal(preInsert.length + length);
     await store.clear();
   });
 
