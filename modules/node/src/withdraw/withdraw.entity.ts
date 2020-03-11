@@ -10,7 +10,7 @@ import {
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
-import { IsEthAddress, IsBytes32 } from "../util";
+import { IsEthAddress, IsBytes32, IsEthSignature } from "../util";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 @Entity()
@@ -49,11 +49,11 @@ export class Withdraw {
   data!: string;
 
   @Column("text")
-  @IsBytes32()
+  @IsEthSignature()
   withdrawerSignature!: string;
 
   @Column("text", { nullable: true })
-  @IsBytes32()
+  @IsEthSignature()
   counterpartySignature!: string;
 
   @Column("text")
@@ -61,7 +61,6 @@ export class Withdraw {
 
   @ManyToOne(
     (type: any) => Channel,
-    (channel: Channel) => channel.multisigAddress,
   )
   channel!: Channel;
 
