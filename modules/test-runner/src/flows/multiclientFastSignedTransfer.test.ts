@@ -76,7 +76,7 @@ describe("Full Flow: Multi-client transfer", () => {
       received: 0,
     };
 
-    await new Promise(async (res, rej) => {
+    await new Promise(async done => {
       await fundChannel(gateway, bigNumberify(100));
       await fundChannel(indexerA, bigNumberify(100));
 
@@ -85,33 +85,40 @@ describe("Full Flow: Multi-client transfer", () => {
         async (data: ReceiveTransferFinishedEventData) => {
           if (Date.now() - startTime >= DURATION) {
             // sufficient time has elapsed, resolve
-            res();
+            done();
           }
-          if (data.sender === indexerA.publicIdentifier) {
-            await gateway.conditionalTransfer({
-              amount: "1",
-              conditionType: "FAST_SIGNED_TRANSFER",
-              paymentId: hexlify(randomBytes(32)),
-              recipient: indexerA.publicIdentifier,
-              signer: signerWalletA.address,
-              assetId: AddressZero,
-              maxAllocation: "10",
-            } as FastSignedTransferParameters);
-            gatewayTransfers.sent += 1;
-            console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} TO INDEXER A`);
-          } else if (data.sender === indexerB.publicIdentifier) {
-            await gateway.conditionalTransfer({
-              amount: "1",
-              conditionType: "FAST_SIGNED_TRANSFER",
-              paymentId: hexlify(randomBytes(32)),
-              recipient: indexerB.publicIdentifier,
-              signer: signerWalletB.address,
-              assetId: AddressZero,
-              maxAllocation: "10",
-            } as FastSignedTransferParameters);
-            gatewayTransfers.sent += 1;
-            console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} TO INDEXER B`);
-          }
+          await new Promise(async res => {
+            const newPaymentId = hexlify(randomBytes(32));
+            await nats.subscribe(`transfer.fast-signed.${newPaymentId}.reclaimed`, () => {
+              console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} RECLAIMED`);
+              res();
+            });
+            if (data.sender === indexerA.publicIdentifier) {
+              await gateway.conditionalTransfer({
+                amount: "1",
+                conditionType: "FAST_SIGNED_TRANSFER",
+                paymentId: newPaymentId,
+                recipient: indexerA.publicIdentifier,
+                signer: signerWalletA.address,
+                assetId: AddressZero,
+                maxAllocation: "10",
+              } as FastSignedTransferParameters);
+              gatewayTransfers.sent += 1;
+              console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} TO INDEXER A`);
+            } else if (data.sender === indexerB.publicIdentifier) {
+              await gateway.conditionalTransfer({
+                amount: "1",
+                conditionType: "FAST_SIGNED_TRANSFER",
+                paymentId: newPaymentId,
+                recipient: indexerB.publicIdentifier,
+                signer: signerWalletB.address,
+                assetId: AddressZero,
+                maxAllocation: "10",
+              } as FastSignedTransferParameters);
+              gatewayTransfers.sent += 1;
+              console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} TO INDEXER B`);
+            }
+          });
         },
       );
 
@@ -131,6 +138,7 @@ describe("Full Flow: Multi-client transfer", () => {
           } else if (eventData.transferMeta.signer === signerWalletB.address) {
             withdrawerSigningKey = new SigningKey(signerWalletB.privateKey);
             indexer = indexerB;
+            indexerTransfers = indexerBTransfers;
           }
           const data = hexlify(randomBytes(32));
           const digest = solidityKeccak256(["bytes32", "bytes32"], [data, eventData.paymentId]);
@@ -161,42 +169,34 @@ describe("Full Flow: Multi-client transfer", () => {
         },
       );
 
-      // indexerB.on(
-      //   "RECEIVE_TRANSFER_FINISHED_EVENT",
-      //   async (data: ReceiveTransferFinishedEventData) => {
-      //     await indexerA.transfer({
-      //       amount: data.amount,
-      //       assetId: AddressZero,
-      //       recipient: data.sender,
-      //     });
-      //     indexerBTransfers.sent += 1;
-      //     console.log(`INDEXER B TRANSFER ${indexerBTransfers.sent} TO GATEWAY`);
-      //   },
-      // );
-
+      await new Promise(async res => {
+        const newPaymentId = hexlify(randomBytes(32));
+        await nats.subscribe(`transfer.fast-signed.${newPaymentId}.reclaimed`, () => {
+          res();
+        });
+        await gateway.conditionalTransfer({
+          amount: "1",
+          conditionType: "FAST_SIGNED_TRANSFER",
+          paymentId: hexlify(randomBytes(32)),
+          recipient: indexerA.publicIdentifier,
+          signer: signerWalletA.address,
+          assetId: AddressZero,
+          maxAllocation: "10",
+        } as FastSignedTransferParameters);
+        gatewayTransfers.sent += 1;
+        console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} TO INDEXER A`);
+      });
       await gateway.conditionalTransfer({
         amount: "1",
         conditionType: "FAST_SIGNED_TRANSFER",
         paymentId: hexlify(randomBytes(32)),
-        recipient: indexerA.publicIdentifier,
-        signer: signerWalletA.address,
+        recipient: indexerB.publicIdentifier,
+        signer: signerWalletB.address,
         assetId: AddressZero,
         maxAllocation: "10",
       } as FastSignedTransferParameters);
       gatewayTransfers.sent += 1;
-      console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} TO INDEXER A`);
-      await delay(10000);
-      // await gateway.conditionalTransfer({
-      //   amount: "1",
-      //   conditionType: "FAST_SIGNED_TRANSFER",
-      //   paymentId: hexlify(randomBytes(32)),
-      //   recipient: indexerB.publicIdentifier,
-      //   signer: signerAddressB,
-      //   assetId: AddressZero,
-      //   maxAllocation: "10",
-      // } as FastSignedTransferParameters);
-      // gatewayTransfers.sent += 1;
-      // console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} TO INDEXER B`);
+      console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} TO INDEXER B`);
     });
   });
 });
