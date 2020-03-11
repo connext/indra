@@ -1,6 +1,7 @@
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
+import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
 import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
 import { Opcode, Protocol } from "../machine";
@@ -19,7 +20,7 @@ import {
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
 const { Update, Install } = Protocol;

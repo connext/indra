@@ -1,3 +1,4 @@
+import { UNASSIGNED_SEQ_NO } from "../constants";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -16,11 +17,7 @@ import {
 } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 
-import {
-  assertIsValidSignature,
-  computeTokenIndexedFreeBalanceIncrements,
-  UNASSIGNED_SEQ_NO,
-} from "./utils";
+import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
 
 /**
  * File notes:

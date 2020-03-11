@@ -1,22 +1,46 @@
 import { BaseProvider } from "ethers/providers";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, getAddress, recoverAddress, Signature } from "ethers/utils";
 
 import {
   AppInstance,
   CoinTransfer,
   convertCoinTransfersToCoinTransfersMap,
   TokenIndexedCoinTransferMap,
-} from "../../models";
+} from "../models";
 import {
   CoinBalanceRefundState,
+  EthereumCommitment,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
-} from "../../types";
-import { wait } from "../../utils";
+} from "../types";
+import { wait } from "../utils";
+
+export function assertIsValidSignature(
+  expectedSigner: string,
+  commitment?: EthereumCommitment,
+  signature?: Signature,
+) {
+  if (commitment === undefined) {
+    throw Error("assertIsValidSignature received an undefined commitment");
+  }
+
+  if (signature === undefined) {
+    throw Error("assertIsValidSignature received an undefined signature");
+  }
+
+  // recoverAddress: 83 ms, hashToSign: 7 ms
+  const signer = recoverAddress(commitment.hashToSign(), signature);
+
+  if (getAddress(expectedSigner) !== signer) {
+    throw Error(
+      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitment.hashToSign()}.`,
+    );
+  }
+}
 
 /**
  * Get the outcome of the app instance given, decode it according

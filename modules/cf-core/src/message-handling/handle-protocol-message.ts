@@ -9,10 +9,10 @@ import {
   UNINSTALL_VIRTUAL_EVENT,
 } from "@connext/types";
 
+import { UNASSIGNED_SEQ_NO } from "../constants";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../errors";
 import { Protocol } from "../machine";
 import { StateChannel } from "../models";
-import { UNASSIGNED_SEQ_NO } from "../protocol";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import {

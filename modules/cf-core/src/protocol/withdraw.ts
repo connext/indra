@@ -1,7 +1,7 @@
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import {
   ConditionalTransaction,
   SetStateCommitment,
@@ -23,7 +23,7 @@ import {
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
 const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
 const { Install, Update, Withdraw } = Protocol;

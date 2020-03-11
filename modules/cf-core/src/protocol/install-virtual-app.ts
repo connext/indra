@@ -2,6 +2,7 @@ import { MaxUint256 } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
+import { UNASSIGNED_SEQ_NO } from "../constants";
 import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
 import { Opcode, Protocol } from "../machine";
 import { AppInstance, StateChannel } from "../models";
@@ -21,7 +22,7 @@ import {
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 import { sortAddresses, xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
 export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
   defaultAbiCoder.encode([virtualAppAgreementEncoding], [params]);

@@ -1,10 +1,11 @@
+import { UNASSIGNED_SEQ_NO } from "../constants";
 import { SetStateCommitment } from "../ethereum";
 import { Opcode, Protocol } from "../machine";
 import { Context, ProtocolExecutionFlow, ProtocolMessage, UpdateProtocolParams } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
 const protocol = Protocol.Update;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;

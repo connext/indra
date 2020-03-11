@@ -2,7 +2,7 @@ import { HashZero } from "ethers/constants";
 import { hexlify, randomBytes, recoverAddress, Signature, SigningKey } from "ethers/utils";
 
 import { EthereumCommitment } from "../../../../src/types";
-import { assertIsValidSignature } from "../../../../src/protocol/utils/signature-validator";
+import { assertIsValidSignature } from "../../../../src/protocol/utils";
 
 describe("Signature Validator Helper", () => {
   let signer: SigningKey;
