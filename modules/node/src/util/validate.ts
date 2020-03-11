@@ -1,8 +1,24 @@
 import { registerDecorator, ValidationOptions } from "class-validator";
 import { arrayify, isHexString } from "ethers/utils";
 
-export const isValidHex = (hex: string, bytes: number): boolean =>
-  isHexString(hex) && arrayify(hex).length === bytes;
+export const isValidHex = (hex: string, bytes?: number): boolean =>
+  isHexString(hex) && (bytes ? arrayify(hex).length === bytes : true);
+
+export function IsValidHex(validationOptions?: ValidationOptions): Function {
+  return function(object: Object, propertyName: string): void {
+    registerDecorator({
+      name: "isValidHex",
+      options: validationOptions,
+      propertyName,
+      target: object.constructor,
+      validator: {
+        validate(value: any): boolean {
+          return isValidHex(value);
+        },
+      },
+    });
+  };
+}
 
 export const isEthAddress = (address: string): boolean => isValidHex(address, 20);
 
@@ -16,6 +32,24 @@ export function IsEthAddress(validationOptions?: ValidationOptions): Function {
       validator: {
         validate(value: any): boolean {
           return isEthAddress(value);
+        },
+      },
+    });
+  };
+}
+
+export const isBytes32 = (address: string): boolean => isValidHex(address, 32);
+
+export function IsBytes32(validationOptions?: ValidationOptions): Function {
+  return function(object: Object, propertyName: string): void {
+    registerDecorator({
+      name: "isBytes32",
+      options: validationOptions,
+      propertyName,
+      target: object.constructor,
+      validator: {
+        validate(value: any): boolean {
+          return isBytes32(value);
         },
       },
     });

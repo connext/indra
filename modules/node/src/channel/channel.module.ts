@@ -1,6 +1,7 @@
 import { Module, HttpModule } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AuthModule } from "../auth/auth.module";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
@@ -27,6 +28,7 @@ import { ChannelService } from "./channel.service";
     MessagingModule,
     OnchainTransactionModule,
     TypeOrmModule.forFeature([
+      AppRegistryRepository,
       ChannelRepository,
       RebalanceProfileRepository,
       CFCoreRecordRepository,

@@ -1,6 +1,6 @@
 /* global before after */
 import { utils } from "@connext/client";
-import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, toBN } from "@connext/types";
+import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, toBN, CF_PATH } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
@@ -70,7 +70,26 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it("latency test: deposit, collateralize, many transfers, withdraw", async () => {
+  it("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
+    const receiverMnemonic = Wallet.createRandom().mnemonic;
+    console.log("receiverMnemonic: ", receiverMnemonic);
+    const receiverXpub = HDNode.fromMnemonic(receiverMnemonic)
+      .derivePath(CF_PATH)
+      .neuter().extendedKey;
+    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
+    await clientA.transfer({
+      amount: ETH_AMOUNT_SM.toString(),
+      assetId: tokenAddress,
+      recipient: receiverXpub,
+    });
+    const receiverClient = await createClient({ mnemonic: receiverMnemonic }, false);
+    expect(receiverClient.publicIdentifier).to.eq(receiverXpub);
+    const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
+    expect(freeBalance[receiverClient.freeBalanceAddress]).to.be.above(0);
+    receiverClient.messaging.disconnect();
+  });
+
+  it.skip("latency test: deposit, collateralize, many transfers, withdraw", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, ETH_AMOUNT_MD, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
@@ -81,7 +100,6 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
     await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero, true);
     /*
-    return new Promise(async res => {
       // @ts-ignore
       this.timeout(1200000);
       const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
@@ -93,7 +111,6 @@ describe("Async Transfers", () => {
         // log.info(data)
         const duration = Date.now() - startTime[data.meta.index];
         log.info("Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000);
-        log.info("===========================");
         y++;
         if (y === 5) {
           res();
@@ -248,20 +265,5 @@ describe("Async Transfers", () => {
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
-  });
-
-  // TODO: this actually works now since the preimage storage was changed. there's really no
-  // reason this shouldn't work, since you can deterministically get an xpub for someone without
-  // them having a channel
-  it.skip("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {
-    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
-
-    await expect(
-      clientA.transfer({
-        amount: ETH_AMOUNT_SM.toString(),
-        assetId: tokenAddress,
-        recipient: HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey,
-      }),
-    ).to.be.rejectedWith("No channel exists for recipientPublicIdentifier");
   });
 });

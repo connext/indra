@@ -2,9 +2,13 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, StateSchemaVersion } from "@connext/types";
+import {
+  CF_PATH,
+  CREATE_CHANNEL_EVENT,
+  StateSchemaVersion,
+  CoinBalanceRefundState,
+} from "@connext/types";
 import { Contract, providers } from "ethers";
-import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 
@@ -213,26 +217,29 @@ export const connect = async (
   log.debug(`Done creating connext client`);
 
   // return before any cleanup using the assumption that all injected clients
-  // have an online client that it can access that has don the cleanup
+  // have an online client that it can access that has done the cleanup
   if (isInjected) {
     logTime(log, start, `Client successfully connected`);
     return client;
   }
 
   // waits until the setup protocol or create channel call is completed
-  await new Promise(
-    async (resolve: any, reject: any): Promise<any> => {
-      // Wait for channel to be available
-      const channelIsAvailable = async (): Promise<boolean> => {
-        const chan = await node.getChannel();
-        return chan && chan.available;
-      };
-      while (!(await channelIsAvailable())) {
-        await new Promise((res: any): any => setTimeout((): void => res(), 100));
-      }
-      resolve();
-    },
-  );
+  await Promise.race([
+    new Promise(
+      async (resolve: any, reject: any): Promise<any> => {
+        // Wait for channel to be available
+        const channelIsAvailable = async (): Promise<boolean> => {
+          const chan = await node.getChannel();
+          return chan && chan.available;
+        };
+        while (!(await channelIsAvailable())) {
+          await new Promise((res: any): any => setTimeout((): void => res(), 100));
+        }
+        resolve();
+      },
+    ),
+    delayAndThrow(30_000, "Channel was not available after 30 seconds."),
+  ]);
 
   log.debug(`Channel is available`);
 
@@ -262,8 +269,15 @@ export const connect = async (
   await client.cleanupRegistryApps();
 
   // check if there is a coin refund app installed for eth and tokens
-  await client.uninstallCoinBalanceIfNeeded(AddressZero);
-  await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
+  const apps = await client.getAppInstances();
+  const coinBalanceRefundApps = apps.filter(
+    app => app.appInterface.addr === client.config.contractAddresses.CoinBalanceRefundApp,
+  );
+  for (const coinBalance of coinBalanceRefundApps) {
+    await client.uninstallCoinBalanceIfNeeded(
+      (coinBalance.latestState as CoinBalanceRefundState).tokenAddress,
+    );
+  }
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
@@ -287,9 +301,6 @@ export const connect = async (
 
   // check in with node to do remaining work
   await client.clientCheckIn();
-
-  // check if client is available
-  await client.isAvailable();
 
   logTime(log, start, `Client successfully connected`);
   return client;

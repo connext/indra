@@ -50,12 +50,12 @@ export const MessagingEvents = {
   [SUBJECT_FORBIDDEN]: SUBJECT_FORBIDDEN,
 };
 export type MessagingEvent = keyof typeof MessagingEvents;
-export type MesssagingEventData = {
+export type MessagingEventData = {
   subject?: string;
   data?: any;
 };
 
-export const getProtocolFromData = (msg: MesssagingEventData) => {
+export const getProtocolFromData = (msg: MessagingEventData) => {
   const { subject, data } = msg;
   if (!data || !subject) {
     return;
@@ -196,7 +196,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   ): Promise<void> {
     // return connection callback
     return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
-      this.emit(RECEIVED, { subject, data: msg } as MesssagingEventData);
+      this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
       // make sure that client is allowed to send message
       this.subjectForbidden(subject, "receive");
       // wait out delay
@@ -243,7 +243,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   }
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
-    this.emit(SEND, { subject: to, data: msg } as MesssagingEventData);
+    this.emit(SEND, { subject: to, data: msg } as MessagingEventData);
     // make sure that client is allowed to send message
     this.subjectForbidden(to, "send");
 
@@ -302,24 +302,24 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   // More generic methods
 
   async connect(): Promise<void> {
-    this.emit(CONNECT, {} as MesssagingEventData);
+    this.emit(CONNECT, {} as MessagingEventData);
     await this.connection.connect();
   }
 
   async disconnect(): Promise<void> {
-    this.emit(DISCONNECT, {} as MesssagingEventData);
+    this.emit(DISCONNECT, {} as MessagingEventData);
     await this.connection.disconnect();
   }
 
   async flush(): Promise<void> {
-    this.emit(FLUSH, {} as MesssagingEventData);
+    this.emit(FLUSH, {} as MessagingEventData);
     return await this.connection.flush();
   }
 
   async publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
     this.subjectForbidden(subject, "publish");
-    this.emit(PUBLISH, { data, subject } as MesssagingEventData);
+    this.emit(PUBLISH, { data, subject } as MessagingEventData);
     return await this.connection.publish(subject, data);
   }
 
@@ -333,7 +333,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // note: when sending via node.ts uses request
     // make sure that client is allowed to send message
 
-    this.emit(REQUEST, { data, subject } as MesssagingEventData);
+    this.emit(REQUEST, { data, subject } as MessagingEventData);
     this.subjectForbidden(subject, "request");
     return await this.connection.request(subject, timeout, data, callback);
   }
@@ -364,7 +364,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     });
     if (hasSubject) {
       const msg = `Subject is forbidden, refusing to ${operation || "send"} data to subject: ${to}`;
-      this.emit(SUBJECT_FORBIDDEN, { subject: to } as MesssagingEventData);
+      this.emit(SUBJECT_FORBIDDEN, { subject: to } as MessagingEventData);
       throw new Error(msg);
     }
     return hasSubject;

@@ -16,6 +16,7 @@
     "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
+    "@connext/apps": "5.0.2",
     "@connext/cf-core": "5.0.2",
     "@connext/channel-provider": "5.0.2",
     "@connext/crypto": "5.0.2",

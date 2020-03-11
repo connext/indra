@@ -19,6 +19,7 @@ export const getMnemonic = (xpub: string): string => {
 
 export const createClient = async (
   opts: Partial<ClientOptions | any> = {},
+  fund: boolean = true,
 ): Promise<IConnextClient> => {
   const store = opts.store || new ConnextStore(new MemoryStorage());
   const mnemonic = opts.mnemonic || Wallet.createRandom().mnemonic;
@@ -42,15 +43,11 @@ export const createClient = async (
     to: client.signerAddress,
     value: ETH_AMOUNT_LG,
   });
-  start = Date.now();
-
-  const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
-  const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
-  start = Date.now();
-
-  await Promise.all([ethTx.wait(), tokenTx.wait()]);
-  start = Date.now();
-
+  if (fund) {
+    const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
+    const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
+    await Promise.all([ethTx.wait(), tokenTx.wait()]);
+  }
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
   expect(client.multisigAddress).to.be.ok;

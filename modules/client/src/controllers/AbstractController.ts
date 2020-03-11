@@ -25,6 +25,9 @@ export abstract class AbstractController {
     this.ethProvider = connext.ethProvider;
   }
 
+  /**
+   * @returns {string} appInstanceId - Installed app's appInstanceId
+   */
   proposeAndInstallLedgerApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<string> => {
@@ -108,7 +111,7 @@ export abstract class AbstractController {
                 proposed = true;
               }
             };
-            const [proposeResult, _] = await Promise.all([
+            const [proposeResult] = await Promise.all([
               this.connext.proposeInstallApp(params),
               this.connext.messaging.subscribe(
                 `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
