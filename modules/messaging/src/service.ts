@@ -27,8 +27,8 @@ export class MessagingService implements IMessagingService {
     if (!this.bearerToken) {
       this.bearerToken = await this.getBearerToken();
     }
-    console.log('this.bearerToken: ', this.bearerToken);
-    console.log('messagingUrl: ', messagingUrl);
+    console.log("this.bearerToken: ", this.bearerToken);
+    console.log("messagingUrl: ", messagingUrl);
     const service = natsutil.natsServiceFactory({
       bearerToken: this.bearerToken,
       natsServers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl, // FIXME-- rename to servers instead of natsServers
@@ -40,13 +40,13 @@ export class MessagingService implements IMessagingService {
     if (typeof natsConnection.addEventListener === "function") {
       natsConnection.addEventListener("close", async () => {
         console.log("ON CLOSE LOG 1");
-        this.bearerToken == null;
+        this.bearerToken = null;
         await this.connect();
       });
     } else {
       natsConnection.on("close", async () => {
         console.log("ON CLOSE LOG 2");
-        this.bearerToken == null;
+        this.bearerToken = null;
         await this.connect();
       });
     }
