@@ -109,7 +109,7 @@ export class WrappedAsyncStorage implements WrappedStorage {
       throw new Error(`No backup provided, store cleared`);
     }
     const pairs = await this.backupService.restore();
-    pairs.forEach(pair => this.setItem(pair.path, pair.value));
+    await Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
   }
 
   joinWithSeparator(...args: string[]): string {
