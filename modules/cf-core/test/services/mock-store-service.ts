@@ -44,12 +44,6 @@ class MockStoreService implements CFCoreTypes.IStoreService {
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
-  getCommitment(commitmentHash: string): Promise<ProtocolTypes.MinimalTransaction | undefined> {
-    return Promise.resolve(undefined);
-  }
-  saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
-    return Promise.resolve();
-  }
   getLatestSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {
     return Promise.resolve(undefined);
   }

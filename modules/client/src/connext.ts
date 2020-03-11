@@ -174,8 +174,6 @@ export class ConnextClient implements IConnextClient {
 
   /**
    * Checks if the coin balance refund app is installed.
-   *
-   * NOTE: should probably take assetId into account
    */
   public getBalanceRefundApp = async (
     assetId: string = AddressZero,
@@ -325,6 +323,9 @@ export class ConnextClient implements IConnextClient {
     params: CheckDepositRightsParameters,
   ): Promise<CheckDepositRightsResponse> => {
     const refundApp = await this.getBalanceRefundApp(params.assetId);
+    if (!refundApp) {
+      throw new Error(`No balance refund app installed for ${params.assetId}`);
+    }
     const multisigBalance =
       !refundApp.latestState["tokenAddress"] &&
       refundApp.latestState["tokenAddress"] !== AddressZero
