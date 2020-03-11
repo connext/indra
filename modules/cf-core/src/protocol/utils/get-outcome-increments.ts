@@ -1,8 +1,8 @@
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import { AppInstance } from "../../models";
 import {
+  AppInstance,
   CoinTransfer,
   convertCoinTransfersToCoinTransfersMap,
   TokenIndexedCoinTransferMap,
@@ -115,9 +115,7 @@ async function handleRefundAppOutcomeSpecialCase(
     mutableOutcome = await appInstance.computeOutcomeWithCurrentState(provider);
   }
 
-  throw Error(
-    "When attempting to check for a deposit having been made to the multisig, did not find any non-zero deposits.",
-  );
+  throw Error("When attempting to check for a deposit, did not find any non-zero deposits.");
 }
 
 function handleTwoPartyFixedOutcome(
