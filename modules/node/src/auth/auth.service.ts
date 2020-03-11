@@ -73,6 +73,20 @@ export class AuthService {
     return jwt;
   }
 
+  async vendAdminToken(userPublicIdentifier: string): Promise<string> {
+    const permissions = {
+      publish: {
+        allow: [`>`],
+      },
+      subscribe: {
+        allow: [`>`],
+      },
+    };
+
+    const jwt = this.messagingAuthService.vend(userPublicIdentifier, nonceTTL, permissions);
+    return jwt;
+  }
+
   parseXpub(callback: any): any {
     return async (subject: string, data: any): Promise<string> => {
       // Get & validate xpub from subject
