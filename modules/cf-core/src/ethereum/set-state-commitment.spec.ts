@@ -7,12 +7,13 @@ import {
   TransactionDescription,
 } from "ethers/utils";
 
-import { SetStateCommitment } from "../../../../src/ethereum";
-import { appIdentityToHash } from "../../../../src/utils";
+import { createAppInstanceForTest } from "../../test/unit/utils";
+import { generateRandomNetworkContext } from "../../test/machine/mocks";
 
-import { ChallengeRegistry } from "../../../contracts";
-import { createAppInstanceForTest } from "../../../unit/utils";
-import { generateRandomNetworkContext } from "../../mocks";
+import { ChallengeRegistry } from "../contracts";
+import { appIdentityToHash } from "../utils";
+
+import { SetStateCommitment } from "./set-state-commitment";
 
 /**
  * This test suite decodes a constructed SetState Commitment transaction object

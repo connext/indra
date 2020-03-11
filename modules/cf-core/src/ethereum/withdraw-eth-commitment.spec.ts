@@ -1,7 +1,7 @@
 import { CFCoreTypes } from "@connext/types";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 
-import { WithdrawETHCommitment } from "../../../../src/ethereum";
+import { WithdrawETHCommitment } from "./withdraw-eth-commitment";
 
 /**
  * This test suite decodes a constructed WithdrawETHCommitment transaction object

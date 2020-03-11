@@ -1,13 +1,14 @@
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
-import { SetupCommitment } from "../../../../src/ethereum";
-import { MultisigTransaction } from "../../../../src/types";
-import { StateChannel } from "../../../../src/models";
-import { appIdentityToHash } from "../../../../src/utils";
+import { getRandomExtendedPubKey } from "../../test/machine/integration/random-signing-keys";
+import { generateRandomNetworkContext } from "../../test/machine/mocks";
 
-import { ConditionalTransactionDelegateTarget } from "../../../contracts";
-import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../mocks";
+import { ConditionalTransactionDelegateTarget } from "../contracts";
+import { StateChannel } from "../models";
+import { MultisigTransaction } from "../types";
+import { appIdentityToHash } from "../utils";
+
+import { SetupCommitment } from "./setup-commitment";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according

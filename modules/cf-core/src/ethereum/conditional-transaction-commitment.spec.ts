@@ -1,17 +1,17 @@
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { ConditionalTransaction } from "../../../../src/ethereum";
-import { MultisigTransaction } from "../../../../src/types";
-import { StateChannel } from "../../../../src/models";
-import { FreeBalanceClass } from "../../../../src/models/free-balance";
-import { appIdentityToHash } from "../../../../src/utils";
+import { createAppInstanceForTest } from "../../test/unit/utils";
+import { getRandomExtendedPubKey } from "../../test/machine/integration/random-signing-keys";
+import { generateRandomNetworkContext } from "../../test/machine/mocks";
 
-import { ConditionalTransactionDelegateTarget } from "../../../contracts";
-import { createAppInstanceForTest } from "../../../unit/utils";
-import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../mocks";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
+import { ConditionalTransactionDelegateTarget } from "../contracts";
+import { FreeBalanceClass, StateChannel } from "../models";
+import { MultisigTransaction } from "../types";
+import { appIdentityToHash } from "../utils";
+
+import { ConditionalTransaction } from "./conditional-transaction-commitment";
 
 describe("ConditionalTransaction", () => {
   let tx: MultisigTransaction;
