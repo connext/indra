@@ -153,6 +153,12 @@
     },
     "Token": {
       "address": "0x16655FAf612D714039F92c408407D46c5A394a6C"
+    },
+    "FastSignedTransferApp": {
+      "address": "0x22270dF7A98Ea6410Eda2C02fc3B3E10620e357d",
+      "creationCodeHash": "0x889080c90d2ca24b35e94e230263e5b1e95417962e714d047556ceb4a4441db5",
+      "runtimeCodeHash": "0x56804fbc469a56bc00f1a30ee6c1583102fc4996577cf68cc9d88b338b41d055",
+      "txHash": "0x8929e0795590b225a8e1f3ff37341c0f03c333b1748fea790c91d4028f76cd2a"
     }
   },
   "6": {
