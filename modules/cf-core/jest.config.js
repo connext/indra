@@ -21,7 +21,7 @@ module.exports = {
   globalTeardown: "<rootDir>/test/global-teardown.jest.ts",
   moduleFileExtensions: ["ts", "js", "json"],
   rootDir: ".",
-  roots: ["src"],
+  roots: ["src", "test"],
   testEnvironment: "<rootDir>/test/node-test-environment.jest.js",
   testPathIgnorePatterns: ["node_modules", "dist"],
   testRegex: "\\.spec\\.(jsx?|tsx?)$",
