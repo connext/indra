@@ -5,10 +5,10 @@ import { generateRandomNetworkContext } from "../../test/machine/mocks";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { StateChannel } from "../models";
-import { MultisigTransaction } from "../types";
+import { Context, MultisigTransaction } from "../types";
 import { appIdentityToHash } from "../utils";
 
-import { SetupCommitment } from "./setup-commitment";
+import { getSetupCommitment } from "./setup-commitment";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according
@@ -20,7 +20,9 @@ describe("SetupCommitment", () => {
   let tx: MultisigTransaction;
 
   // Dummy network context
-  const networkContext = generateRandomNetworkContext();
+  const context = {
+    network: generateRandomNetworkContext(),
+  } as Context;
 
   // General interaction testing values
   const interaction = {
@@ -30,10 +32,10 @@ describe("SetupCommitment", () => {
 
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(
-    networkContext.IdentityApp,
+    context.network.IdentityApp,
     {
-      proxyFactory: networkContext.ProxyFactory,
-      multisigMastercopy: networkContext.MinimumViableMultisig,
+      proxyFactory: context.network.ProxyFactory,
+      multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(hexlify(randomBytes(20))),
     [interaction.sender, interaction.receiver],
@@ -42,16 +44,11 @@ describe("SetupCommitment", () => {
   const freeBalance = stateChannel.freeBalance;
 
   beforeAll(() => {
-    tx = new SetupCommitment(
-      networkContext,
-      stateChannel.multisigAddress,
-      stateChannel.multisigOwners,
-      freeBalance.identity,
-    ).getTransactionDetails();
+    tx = getSetupCommitment(context, stateChannel).getTransactionDetails();
   });
 
   it("should be to ConditionalTransactionDelegateTarget", () => {
-    expect(tx.to).toBe(networkContext.ConditionalTransactionDelegateTarget);
+    expect(tx.to).toBe(context.network.ConditionalTransactionDelegateTarget);
   });
 
   it("should have no value", () => {
@@ -73,9 +70,9 @@ describe("SetupCommitment", () => {
 
     it("should contain expected arguments", () => {
       const [appRegistry, appIdentityHash, interpreterAddress] = desc.args;
-      expect(appRegistry).toBe(networkContext.ChallengeRegistry);
+      expect(appRegistry).toBe(context.network.ChallengeRegistry);
       expect(appIdentityHash).toBe(appIdentityToHash(freeBalance.identity));
-      expect(interpreterAddress).toBe(networkContext.MultiAssetMultiPartyCoinTransferInterpreter);
+      expect(interpreterAddress).toBe(context.network.MultiAssetMultiPartyCoinTransferInterpreter);
     });
   });
 });

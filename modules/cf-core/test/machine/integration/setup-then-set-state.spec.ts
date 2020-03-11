@@ -6,14 +6,18 @@ import { Interface, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
 import { ChallengeRegistry, MinimumViableMultisig, ProxyFactory } from "../../contracts";
-import { SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
+import { SetStateCommitment, getSetupCommitment } from "../../../src/ethereum";
 import { FreeBalanceClass, StateChannel } from "../../../src/models";
+import { Context } from "../../../src/types";
 import { getCreate2MultisigAddress } from "../../../src/utils";
 import { xkeysToSortedKthSigningKeys } from "../../../src/xkeys";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "./random-signing-keys";
+
+expect.extend({ toBeEq });
+jest.setTimeout(10000);
 
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
 // gas needed, so we hard-code this number to ensure the tx completes
@@ -26,25 +30,23 @@ const SETUP_COMMITMENT_GAS = 6e9;
 // written this test to do that yet
 const SETSTATE_COMMITMENT_GAS = 6e9;
 
-let provider: JsonRpcProvider;
-let wallet: Wallet;
-let network: NetworkContext;
-let appRegistry: Contract;
-
-expect.extend({ toBeEq });
-
-jest.setTimeout(10000);
-
-beforeAll(async () => {
-  [provider, wallet, {}] = await connectToGanache();
-  network = global["networkContext"];
-  appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
-});
-
 /**
  * @summary Setup a StateChannel then set state on ETH Free Balance
  */
 describe("Scenario: Setup, set state on free balance, go on chain", () => {
+  let context: Context;
+  let provider: JsonRpcProvider;
+  let wallet: Wallet;
+  let network: NetworkContext;
+  let appRegistry: Contract;
+
+  beforeAll(async () => {
+    [provider, wallet, {}] = await connectToGanache();
+    network = global["networkContext"];
+    context = { network } as Context;
+    appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
+  });
+
   it("should distribute funds in ETH free balance when put on chain", async done => {
     const xprvs = getRandomExtendedPrvKeys(2);
 
@@ -105,12 +107,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
 
       await appRegistry.functions.setOutcome(freeBalance.identity, freeBalance.encodedLatestState);
 
-      const setupCommitment = new SetupCommitment(
-        network,
-        stateChannel.multisigAddress,
-        stateChannel.multisigOwners,
-        stateChannel.freeBalance.identity,
-      );
+      const setupCommitment = getSetupCommitment(context, stateChannel);
 
       const setupTx = setupCommitment.getSignedTransaction([
         multisigOwnerKeys[0].signDigest(setupCommitment.hashToSign()),

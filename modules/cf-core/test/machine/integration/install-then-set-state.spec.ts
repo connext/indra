@@ -10,9 +10,14 @@ import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, Interface, keccak256, parseEther } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
-import { ConditionalTransaction, SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
+import {
+  ConditionalTransaction,
+  getSetupCommitment,
+  SetStateCommitment,
+} from "../../../src/ethereum";
 import { AppInstance, StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
+import { Context } from "../../../src/types";
 import { xkeysToSortedKthSigningKeys } from "../../../src/xkeys";
 
 import {
@@ -28,6 +33,8 @@ import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "./random-signing-keys";
 
+expect.extend({ toBeEq });
+
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
 // gas needed, so we hard-code this number to ensure the tx completes
 const CREATE_PROXY_AND_SETUP_GAS = 1e6;
@@ -40,22 +47,6 @@ const SETSTATE_COMMITMENT_GAS = 1e6;
 // delegatecall for the conditional transaction
 const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
 
-let provider: JsonRpcProvider;
-let wallet: Wallet;
-let network: NetworkContext;
-let appRegistry: Contract;
-
-expect.extend({ toBeEq });
-
-beforeAll(async () => {
-  jest.setTimeout(10000);
-  [provider, wallet, {}] = await connectToGanache();
-
-  network = global["networkContext"];
-
-  appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
-});
-
 /**
  * @summary Set up a StateChannel and then install a new AppInstance into it.
  *
@@ -65,6 +56,20 @@ beforeAll(async () => {
  * the balances have been updated on-chain.
  */
 describe("Scenario: install AppInstance, set state, put on-chain", () => {
+  let context: Context;
+  let provider: JsonRpcProvider;
+  let wallet: Wallet;
+  let network: NetworkContext;
+  let appRegistry: Contract;
+
+  beforeAll(async () => {
+    jest.setTimeout(10000);
+    [provider, wallet, {}] = await connectToGanache();
+    network = global["networkContext"];
+    context = { network } as Context;
+    appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
+  });
+
   it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
     const xprvs = getRandomExtendedPrvKeys(2);
 
@@ -233,12 +238,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         WeiPerEther,
       );
 
-      const freeBalanceConditionalTransaction = new SetupCommitment(
-        network,
-        stateChannel.multisigAddress,
-        stateChannel.multisigOwners,
-        stateChannel.freeBalance.identity,
-      );
+      const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
 
       const multisigDelegateCallTx2 = freeBalanceConditionalTransaction.getSignedTransaction([
         multisigOwnerKeys[0].signDigest(freeBalanceConditionalTransaction.hashToSign()),

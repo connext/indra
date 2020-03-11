@@ -1,5 +1,5 @@
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { SetupCommitment } from "../ethereum";
+import { getSetupCommitment } from "../ethereum";
 import { StateChannel } from "../models";
 import {
   Context,
@@ -43,12 +43,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       [initiatorXpub, responderXpub],
     );
 
-    const setupCommitment = new SetupCommitment(
-      network,
-      stateChannel.multisigAddress,
-      stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity,
-    );
+    const setupCommitment = getSetupCommitment(context, stateChannel);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -111,12 +106,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       [initiatorXpub, responderXpub],
     );
 
-    const setupCommitment = new SetupCommitment(
-      network,
-      stateChannel.multisigAddress,
-      stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity,
-    );
+    const setupCommitment = getSetupCommitment(context, stateChannel);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
