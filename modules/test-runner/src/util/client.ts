@@ -6,7 +6,7 @@ import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 import localStorage from "localStorage";
 
-import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
+import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
 import { Logger } from "./logger";
@@ -17,26 +17,37 @@ export const getMnemonic = (xpub: string): string => {
   return mnemonics[xpub] || "";
 };
 
-export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
+export const createClient = async (
+  opts: Partial<ClientOptions | any> = {},
+  fund: boolean = true,
+): Promise<IConnextClient> => {
   const store = opts.store || new ConnextStore(new MemoryStorage());
   const mnemonic = opts.mnemonic || Wallet.createRandom().mnemonic;
+  const log = new Logger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new Logger("TestRunner", env.logLevel),
+    loggerService: new Logger("CreateClient", env.logLevel, true, opts.id),
     mnemonic,
     nodeUrl: env.nodeUrl,
     store,
     ...opts,
   };
+  log.info(`connect() called`);
+  let start = Date.now();
   const client = await connect(clientOpts);
+  log.info(`connect() returned after ${Date.now() - start}ms`);
+  start = Date.now();
   mnemonics[client.publicIdentifier] = mnemonic;
+
   const ethTx = await ethWallet.sendTransaction({
     to: client.signerAddress,
-    value: ETH_AMOUNT_MD,
+    value: ETH_AMOUNT_LG,
   });
-  const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
-  const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
-  await Promise.all([ethTx.wait(), tokenTx.wait()]);
+  if (fund) {
+    const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
+    const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
+    await Promise.all([ethTx.wait(), tokenTx.wait()]);
+  }
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
   expect(client.multisigAddress).to.be.ok;
@@ -49,7 +60,7 @@ export const createRemoteClient = async (
   const clientOpts: ClientOptions = {
     channelProvider,
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new Logger("TestRunner", env.logLevel),
+    loggerService: new Logger("TestRunner", env.logLevel, true),
   };
   const client = await connect(clientOpts);
   expect(client.freeBalanceAddress).to.be.ok;
@@ -66,7 +77,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   let clientOpts: Partial<ClientOptions> = {
     ...opts,
     ...urlOptions,
-    loggerService: new Logger("TestRunner", env.logLevel),
+    loggerService: new Logger("TestRunner", env.logLevel, true),
     store: new ConnextStore(localStorage), // TODO: replace with polyfilled window.localStorage
   };
   if (network === "mainnet") {

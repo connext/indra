@@ -4,7 +4,7 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
-import { appIdentityToHash } from "../ethereum/utils/app-identity";
+import { appIdentityToHash } from "../ethereum";
 import {
   AppIdentity,
   AppInstanceJson,

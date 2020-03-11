@@ -1,14 +1,24 @@
-import { createClient, AssetOptions, ETH_AMOUNT_SM, fundChannel, requestCollateral } from "../util";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { ConnextStore, FileStorage } from "@connext/store";
 import { connect } from "@connext/client";
 
+import {
+  AssetOptions,
+  createClient,
+  env,
+  ETH_AMOUNT_SM,
+  fundChannel,
+  Logger,
+  requestCollateral,
+} from "../util";
+
 export let clientA: IConnextClient;
 export let clientB: IConnextClient;
 
 export default async () => {
-  console.log("Setting up clients");
+  const log = new Logger("FlamegraphPrep", env.logLevel);
+  log.info("Setting up clients");
   const clientA = await connect({
     mnemonic:
       "harsh cancel view follow approve digital tool cram physical easily lend cinnamon betray scene round",
@@ -25,8 +35,8 @@ export default async () => {
   });
 
   const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-  console.log("Funding channel");
+  log.info("Funding channel");
   await fundChannel(clientA, transfer.amount, transfer.assetId);
-  console.log("requesting collateral");
+  log.info("requesting collateral");
   await requestCollateral(clientB, transfer.assetId);
 };

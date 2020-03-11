@@ -1,14 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import {
-  ContractAddresses,
-  DefaultApp,
-  SupportedApplication,
-  SimpleTransferApp,
-  SimpleTwoPartySwapApp,
-  SimpleLinkedTransferApp,
-  CoinBalanceRefundApp,
-  SwapRate,
-} from "@connext/types";
+import { ContractAddresses, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -16,7 +7,6 @@ import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { OutcomeType } from "../util/cfCore";
 
 type PostgresConfig = {
   database: string;
@@ -32,10 +22,6 @@ type TokenConfig = {
   chainId: number;
   address: string;
 }[];
-
-const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[2]`;
-
-const multiAssetMultiPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[][]`;
 
 @Injectable()
 export class ConfigService implements OnModuleInit {
@@ -157,51 +143,6 @@ export class ConfigService implements OnModuleInit {
     return undefined;
   }
 
-  async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {
-    const apps = await this.getDefaultApps();
-    return apps.filter((app: DefaultApp) => app.name === name)[0];
-  }
-
-  async getDefaultApps(): Promise<DefaultApp[]> {
-    const ethNetwork = await this.getEthNetwork();
-    const addressBook = await this.getContractAddresses();
-    return [
-      {
-        allowNodeInstall: false,
-        appDefinitionAddress: addressBook[SimpleTransferApp],
-        chainId: ethNetwork.chainId,
-        name: SimpleTransferApp,
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers)`,
-      },
-      {
-        allowNodeInstall: true,
-        appDefinitionAddress: addressBook[SimpleTwoPartySwapApp],
-        chainId: ethNetwork.chainId,
-        name: SimpleTwoPartySwapApp,
-        outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-        stateEncoding: `tuple(${multiAssetMultiPartyCoinTransferEncoding} coinTransfers)`,
-      },
-      {
-        actionEncoding: `tuple(bytes32 preImage)`,
-        allowNodeInstall: true,
-        appDefinitionAddress: addressBook[SimpleLinkedTransferApp],
-        chainId: ethNetwork.chainId,
-        name: SimpleLinkedTransferApp,
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers, bytes32 linkedHash, uint256 amount, address assetId, bytes32 paymentId, bytes32 preImage)`,
-      },
-      {
-        allowNodeInstall: true,
-        appDefinitionAddress: addressBook[CoinBalanceRefundApp],
-        chainId: ethNetwork.chainId,
-        name: CoinBalanceRefundApp,
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`,
-      },
-    ];
-  }
-
   getLogLevel(): number {
     return parseInt(this.get(`INDRA_LOG_LEVEL`) || `3`, 10);
   }
@@ -274,7 +215,7 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  onModuleInit(): void {
+  async onModuleInit(): Promise<void> {
     const wallet = Wallet.fromMnemonic(this.getMnemonic());
     this.wallet = wallet.connect(this.getEthProvider());
   }

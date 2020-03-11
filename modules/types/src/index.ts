@@ -1,4 +1,5 @@
 export * from "./app";
+export * from "./apps";
 export * from "./basic";
 export * from "./bn";
 export * from "./cfCore";
@@ -16,3 +17,4 @@ export * from "./node";
 export * from "./protocol";
 export * from "./state";
 export * from "./store";
+export * from "./utils";

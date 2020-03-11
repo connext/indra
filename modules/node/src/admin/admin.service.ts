@@ -10,10 +10,10 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { LinkedTransfer } from "../transfer/transfer.entity";
+import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { LoggerService } from "../logger/logger.service";
-import { TransferService } from "../transfer/transfer.service";
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
+import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -23,12 +23,12 @@ export interface RepairCriticalAddressesResponse {
 @Injectable()
 export class AdminService {
   constructor(
-    private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
-    private readonly transferService: TransferService,
+    private readonly cfCoreRepository: CFCoreRecordRepository,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {
     this.log.setContext("AdminService");
   }
@@ -56,13 +56,13 @@ export class AdminService {
   /** Get all transfers */
   // @hunter -- see notes in transfer service fns
   async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
-    return await this.transferService.getAllLinkedTransfers();
+    return await this.linkedTransferRepository.findAll();
   }
 
   /** Get transfer */
   // @hunter -- see notes in transfer service fns
   async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
-    return await this.transferService.getLinkedTransferByPaymentId(paymentId);
+    return await this.linkedTransferRepository.findByPaymentId(paymentId);
   }
 
   /////////////////////////////////////////

@@ -1,11 +1,19 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, RECEIVE_TRANSFER_FINISHED_EVENT, UNINSTALL_EVENT } from "@connext/types";
+import {
+  IConnextClient,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  UNINSTALL_EVENT,
+} from "@connext/types";
 import { BigNumber } from "ethers/utils";
+import { Client } from "ts-nats";
 
+import { env } from "../env";
+import { Logger } from "../logger";
 import { expect } from "../";
 import { ExistingBalancesAsyncTransfer } from "../types";
-import { RECEIVE_TRANSFER_FAILED_EVENT } from "@connext/types";
-import { Client } from "ts-nats";
+
+const log = new Logger("AsyncTransfer", env.logLevel);
 
 // NOTE: will fail if not collateralized by transfer amount exactly
 // when pretransfer balances are not supplied.
@@ -50,15 +58,20 @@ export async function asyncTransferAsset(
     }),
   ]);
 
+  let start = Date.now();
+  log.info(`call client.transfer()`);
   const { paymentId: senderPaymentId } = await clientA.transfer({
     amount: transferAmount.toString(),
     assetId,
     meta: { hello: "world" },
     recipient: clientB.publicIdentifier,
   });
+  log.info(`transfer() returned in ${Date.now() - start}ms`);
   paymentId = senderPaymentId;
 
   await transferFinished;
+  log.info(`Got transfer finished event in ${Date.now() - start}ms`);
+
   expect((await clientB.getAppInstances()).length).to.be.eq(0);
   expect((await clientA.getAppInstances()).length).to.be.eq(0);
 

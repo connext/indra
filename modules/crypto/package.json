@@ -1,6 +1,6 @@
 {
   "name": "@connext/crypto",
-  "version": "5.0.2",
+  "version": "5.1.0",
   "description": "Crypto module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -15,8 +15,8 @@
     "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/types": "5.0.2",
-    "eccrypto-js": "4.3.5"
+    "@connext/types": "5.1.0",
+    "eccrypto-js": "4.4.0"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.3",

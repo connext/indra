@@ -1,10 +1,9 @@
 import { SetStateCommitment } from "../ethereum";
-import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
-import { Context, ProtocolMessage, UpdateProtocolParams } from "../types";
+import { Opcode, Protocol, xkeyKthAddress } from "../machine";
+import { Context, ProtocolExecutionFlow, ProtocolMessage, UpdateProtocolParams } from "../types";
+import { logTime } from "../utils";
 
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Update;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
@@ -18,6 +17,10 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Intiating */: async function*(context: Context) {
     const { stateChannelsMap, message, network } = context;
+    const log = context.log.newContext("CF-UpdateProtocol");
+    const start = Date.now();
+    let substart;
+    log.debug(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -46,6 +49,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
+    substart = Date.now();
     const {
       customData: { signature: responderSignature },
     } = yield [
@@ -61,8 +65,11 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
+    logTime(log, substart, `Received responder's sig`);
 
+    substart = Date.now();
     assertIsValidSignature(responderEphemeralKey, setStateCommitment, responderSignature);
+    logTime(log, substart, `Verified responder's sig`);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -70,10 +77,15 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { stateChannelsMap, message, network } = context;
+    const log = context.log.newContext("CF-UpdateProtocol");
+    const start = Date.now();
+    let substart;
+    log.debug(`Response started`);
 
     const {
       processID,
@@ -104,7 +116,9 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       appInstance.timeout,
     );
 
+    substart = Date.now();
     assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);
+    logTime(log, substart, `Verified initator's sig`);
 
     const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
@@ -127,5 +141,6 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished responding`);
   },
 };

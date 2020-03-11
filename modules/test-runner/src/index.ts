@@ -1,5 +1,6 @@
 import "./setup";
 import "./channelProvider/channelProvider.test";
+import "./clientConnect/clientConnect.test";
 import "./createChannel/createChannel.test";
 import "./deposit/deposit.test";
 import "./deposit/depositOffline.test";
@@ -18,6 +19,7 @@ import "./swap/swap.test";
 import "./swap/swapOffline.test";
 import "./transfer/asyncTransfer.test";
 import "./transfer/asyncTransferOffline.test";
+import "./transfer/fastSignedTransfer.test";
 import "./transfer/getLinkedTransfer.test";
 import "./withdraw/withdraw.test";
 import "./withdraw/withdrawOffline.test";

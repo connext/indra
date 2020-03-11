@@ -11,6 +11,7 @@ export class ConfigController {
     return JSON.stringify({
       contractAddresses: await this.configService.getContractAddresses(),
       ethNetwork: await this.configService.getEthNetwork(),
+      supportedTokens: this.configService.getSupportedTokenAddresses(),
     });
   }
 }

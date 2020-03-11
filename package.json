@@ -1,6 +1,6 @@
 {
   "name": "indra",
-  "version": "5.0.2",
+  "version": "5.1.0",
   "registry": "docker.io/connextproject",
   "description": "",
   "repository": {

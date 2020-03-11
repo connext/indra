@@ -4,6 +4,8 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
+import { env } from "../env";
+import { Logger } from "../logger";
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
 
@@ -17,12 +19,16 @@ export const withdrawFromChannel = async (
   // try to withdraw
   const preWithdrawalBalance = await client.getFreeBalance(assetId);
   const expected = preWithdrawalBalance[client.freeBalanceAddress].sub(amount);
+  const log = new Logger("WithdrawFromChannel", env.logLevel);
+  log.info(`client.withdraw() called`);
+  const start = Date.now();
   await client.withdraw({
     amount: amount.toString(),
     assetId,
     recipient,
     userSubmitted,
   });
+  log.info(`client.withdraw() returned in ${Date.now() - start}ms`);
   const postWithdrawalBalance = await client.getFreeBalance(assetId);
   let recipientBalance;
   if (assetId === AddressZero) {
