@@ -73,6 +73,7 @@ else
   echo -n "> "
   read -s secret
   SECRET_ENV="--env=ETH_MNEMONIC=$secret"
+  echo
 fi
 
 ########################################

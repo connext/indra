@@ -33,11 +33,7 @@ const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
 
 const artifacts = {};
 for (const contract of coreContracts) {
-  try {
-    artifacts[contract] = require(`../build/${contract}.json`);
-  } catch (e) {
-    artifacts[contract] = require(`../build/${contract}.json`);
-  }
+  artifacts[contract] = require(`../build/${contract}.json`);
 }
 
 for (const contract of appContracts) {
