@@ -6,16 +6,17 @@ import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
-import { InstallProtocolParams, Protocol, xkeyKthAddress } from "../../../machine";
+import { Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import {
   AppInterface,
+  CFCoreTypes,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
   DepositFailedMessage,
+  InstallProtocolParams,
   NetworkContext,
-  CFCoreTypes,
   OutcomeType,
   SolidityValueType,
 } from "../../../types";

@@ -10,6 +10,7 @@ import {
   AssetOptions,
   asyncTransferAsset,
   createClient,
+  env,
   ETH_AMOUNT_LG,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
@@ -19,7 +20,11 @@ import {
   FUNDED_MNEMONICS,
   TOKEN_AMOUNT,
   requestCollateral,
+  Logger,
   delay,
+  withdrawFromChannel,
+  ZERO_ZERO_TWO_ETH,
+  ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { connectNats, closeNats } from "../util/nats";
 import { Client } from "ts-nats";
@@ -37,8 +42,8 @@ describe("Async Transfers", () => {
   });
 
   beforeEach(async () => {
-    clientA = await createClient();
-    clientB = await createClient();
+    clientA = await createClient({ id: "A" });
+    clientB = await createClient({ id: "B" });
     tokenAddress = clientA.config.contractAddresses.Token;
   });
 
@@ -84,8 +89,17 @@ describe("Async Transfers", () => {
     receiverClient.messaging.disconnect();
   });
 
-  it.skip("latency test: client A transfers eth to client B through node", function() {
-    return new Promise(async res => {
+  it.skip("latency test: deposit, collateralize, many transfers, withdraw", async () => {
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, ETH_AMOUNT_MD, transfer.assetId);
+    await requestCollateral(clientB, transfer.assetId);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero, true);
+    /*
       // @ts-ignore
       this.timeout(1200000);
       const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
@@ -94,18 +108,14 @@ describe("Async Transfers", () => {
       let startTime: number[] = [];
       let y = 0;
       clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", data => {
-        // console.log(data)
+        // log.info(data)
         const duration = Date.now() - startTime[data.meta.index];
-        console.log(
-          "Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000,
-        );
-        console.log("===========================");
+        log.info("Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000);
         y++;
         if (y === 5) {
           res();
         }
       });
-
       for (let i = 0; i < 5; i++) {
         startTime[i] = Date.now();
         await clientA.transfer({
@@ -115,9 +125,10 @@ describe("Async Transfers", () => {
           recipient: clientB.publicIdentifier,
         });
         delay(30000);
-        console.log("i: " + i);
+        log.info("i: " + i);
       }
     });
+    */
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {

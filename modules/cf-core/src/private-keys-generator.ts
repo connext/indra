@@ -1,9 +1,9 @@
+import { CF_PATH } from "@connext/types";
 import { Wallet } from "ethers";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { Memoize } from "typescript-memoize";
 
-import { CF_PATH } from "./constants";
 import { CFCoreTypes } from "./types";
 
 export class PrivateKeysGetter {

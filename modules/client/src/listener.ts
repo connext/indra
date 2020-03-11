@@ -193,7 +193,7 @@ export class ConnextListener extends ConnextEventEmitter {
 
     this.channelProvider.on(ProtocolTypes.chan_uninstall, (data: any): any => {
       const result = data.result.result;
-      this.log.debug(`Emitting ProtocolTypes.chan_uninstall event: ${stringify(result)}`);
+      this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
       this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
         stringify(result),
@@ -205,7 +205,6 @@ export class ConnextListener extends ConnextEventEmitter {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
-    this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 

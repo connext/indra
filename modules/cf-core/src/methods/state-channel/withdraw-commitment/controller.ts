@@ -1,3 +1,4 @@
+import { AddressZero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
 import { xkeyKthAddress } from "../../../machine";
@@ -13,7 +14,6 @@ import {
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
 } from "../../errors";
-import { AddressZero } from "ethers/constants";
 
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.

@@ -27,19 +27,28 @@ const colors = {
 };
 
 export class Logger implements ILoggerService {
-  private color: { [key: string]: string } = {
+  private color = true; // flag for turning color on/off
+  private colors: { [key: string]: string } = {
+    context: colors.FgCyan,
     debug: colors.FgMagenta,
     error: colors.FgRed,
     info: colors.FgGreen,
     warn: colors.FgYellow,
+    reset: colors.Reset,
   };
   private context = "UnknownContext";
   private level = 3;
   private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
+  private id = "?";
 
-  public constructor(context?: string, level?: number) {
+  public constructor(context?: string, level?: number, color?: boolean, id?: string) {
     this.context = typeof context !== "undefined" ? context : this.context;
     this.level = typeof level !== "undefined" ? parseInt(level.toString(), 10) : this.level;
+    this.color = color || false;
+    this.id = id || "?";
+    if (!this.color) {
+      this.colors = { context: "", debug: "", error: "", info: "", warn: "", reset: "" };
+    }
   }
 
   public setContext(context: string): void {
@@ -47,7 +56,7 @@ export class Logger implements ILoggerService {
   }
 
   public newContext(context: string): Logger {
-    return new Logger(context, this.level);
+    return new Logger(context, this.level, this.color, this.id);
   }
 
   public error(msg: string): void {
@@ -70,7 +79,9 @@ export class Logger implements ILoggerService {
     if (this.levels[level] > this.level) return;
     const now = new Date().toISOString();
     console[level](
-      `${colors.Reset}${now} ${colors.FgCyan}[${this.context}]${colors.Reset} ${this.color[level]}${msg}${colors.Reset}`,
+      `${now} ${this.colors[level]}${level.substring(0, 1).toUpperCase()} ` +
+        `${this.colors.context}[${this.id}][${this.context}] ` +
+        `${this.colors[level]}${msg}${this.colors.reset}`,
     );
   }
 }

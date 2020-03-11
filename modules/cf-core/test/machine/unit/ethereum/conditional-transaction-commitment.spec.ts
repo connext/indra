@@ -2,9 +2,8 @@ import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { ConditionalTransaction } from "../../../../src/ethereum";
+import { appIdentityToHash, ConditionalTransaction } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
-import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
 import { StateChannel } from "../../../../src/models";
 import { FreeBalanceClass } from "../../../../src/models/free-balance";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";

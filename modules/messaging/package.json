@@ -1,7 +1,7 @@
 {
   "name": "@connext/messaging",
   "description": "Messaging module for Connext client",
-  "version": "5.0.2",
+  "version": "5.1.1",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/types": "5.0.2",
+    "@connext/types": "5.1.1",
     "jsonwebtoken": "^8.5.1",
     "ts-natsutil": "^0.1.21"
   },

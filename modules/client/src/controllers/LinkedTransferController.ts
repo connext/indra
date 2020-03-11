@@ -61,7 +61,7 @@ export class LinkedTransferController extends AbstractController {
     params.meta["encryptedPreImage"] = encryptedPreImage;
     params.meta["recipient"] = recipient;
 
-    // wait for linked transfer
+    // wait for linked transfer (2562 ms)
     const ret = await this.linkedTransfer({
       ...params,
       conditionType: LINKED_TRANSFER,

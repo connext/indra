@@ -1,5 +1,10 @@
-import { AppInstance } from "./app-instance";
-import { AppInstanceProposal } from "./app-instance-proposal";
-import { StateChannel } from "./state-channel";
-
-export { AppInstance, AppInstanceProposal, StateChannel };
+export { AppInstance } from "./app-instance";
+export { AppInstanceProposal } from "./app-instance-proposal";
+export {
+  CoinTransfer,
+  CoinTransferMap,
+  convertCoinTransfersToCoinTransfersMap,
+  getFreeBalanceAddress,
+  TokenIndexedCoinTransferMap,
+} from "./free-balance";
+export { StateChannel } from "./state-channel";

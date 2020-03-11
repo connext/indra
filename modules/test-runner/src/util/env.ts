@@ -18,4 +18,3 @@ export const env = {
   natsPrivateKey: process.env.INDRA_NATS_JWT_SIGNER_PRIVATE_KEY,
   natsPublicKey: process.env.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY,
 };
-// console.log(`Starting tests in env: ${JSON.stringify(env, null, 2)}`);

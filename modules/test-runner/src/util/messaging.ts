@@ -1,12 +1,22 @@
 import { MessagingService } from "@connext/messaging";
-import { ConnextEventEmitter, CFCoreTypes, MessagingConfig, IMessagingService, VerifyNonceDtoType, CF_PATH } from "@connext/types";
+import {
+  ConnextEventEmitter,
+  CFCoreTypes,
+  MessagingConfig,
+  IMessagingService,
+  VerifyNonceDtoType,
+  CF_PATH,
+} from "@connext/types";
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
 import { Wallet } from "ethers";
 import { fromMnemonic } from "ethers/utils/hdnode";
+import { Logger } from "./logger";
 
-const axios = require('axios').default;
+const axios = require("axios").default;
+
+const log = new Logger("Messaging", env.logLevel);
 
 // TYPES
 export type MessageCounter = {
@@ -136,30 +146,35 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     const hdNode = fromMnemonic(Wallet.createRandom().mnemonic).derivePath(CF_PATH);
     const xpub = hdNode.neuter().extendedKey;
     const getSignature = (nonce: string): Promise<string> =>
-      Promise.resolve(new Wallet(hdNode.derivePath('0').privateKey).signMessage(nonce));
+      Promise.resolve(new Wallet(hdNode.derivePath("0").privateKey).signMessage(nonce));
 
-    const getBearerToken = async (xpub: string, getSignature: (nonce: string) => Promise<string>): Promise<string> => {
+    const getBearerToken = async (
+      xpub: string,
+      getSignature: (nonce: string) => Promise<string>,
+    ): Promise<string> => {
       const messagingUrl = this.options.messagingConfig.messagingUrl as string;
       try {
-        let url = messagingUrl.split("//")[1]
+        let url = messagingUrl.split("//")[1];
         const nonce = await axios.get(`https://${url}/getNonce`, {
           params: {
-            userPublicIdentifier: xpub
-          }
-        })
+            userPublicIdentifier: xpub,
+          },
+        });
         const sig = await getSignature(nonce);
         const bearerToken: string = await axios.post(`https://${url}/verifyNonce`, {
           sig,
-          xpub
-        } as VerifyNonceDtoType)
+          xpub,
+        } as VerifyNonceDtoType);
         return bearerToken;
-      } catch(e) {
+      } catch (e) {
         return e;
       }
-    }
+    };
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
-    this.connection = new MessagingService(this.options.messagingConfig, "indra", () => getBearerToken(xpub, getSignature))
+    this.connection = new MessagingService(this.options.messagingConfig, "indra", () =>
+      getBearerToken(xpub, getSignature),
+    );
     this.protocolDefaults = this.options.protocolDefaults;
     this.countInternal = this.options.count;
     this.forbiddenSubjects = this.options.forbiddenSubjects;
@@ -225,12 +240,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         this.hasCeiling({ type: "received" }) &&
         this.count.ceiling!.received! <= this.count.received
       ) {
-        env.logLevel > 2 &&
-          console.log(
-            `Reached ceiling (${
-              this.count.ceiling!.received
-            }), refusing to process any more messages. Received ${this.count.received} messages`,
-          );
+        log.warn(
+          `Reached ceiling (${
+            this.count.ceiling!.received
+          }), refusing to process any more messages. Received ${this.count.received} messages`,
+        );
         return;
       }
       // handle overall protocol count
@@ -254,7 +268,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${
           this.protocolDefaults[protocol].received
         } received, ceiling: ${this.protocolDefaults[protocol].ceiling!.received!}`;
-        env.logLevel > 2 && console.log(msg);
+        log.warn(msg);
         return;
       }
       this.protocolDefaults[protocol].received += 1;
@@ -271,11 +285,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // wait out delay
     await this.awaitDelay(true);
     if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
-      env.logLevel > 2 &&
-        console.log(
-          `Reached ceiling (${this.count.ceiling!
-            .sent!}), refusing to send any more messages. Sent ${this.count.sent} messages`,
-        );
+      log.warn(
+        `Reached ceiling (${this.count.ceiling!.sent!}), refusing to send any more messages. Sent ${
+          this.count.sent
+        } messages`,
+      );
       return;
     }
 
@@ -295,7 +309,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${
         this.protocolDefaults[protocol].sent
       } sent, ceiling: ${this.protocolDefaults[protocol].ceiling!.sent!}`;
-      env.logLevel > 2 && console.log(msg);
+      log.warn(msg);
       return;
     }
     // handle counts
