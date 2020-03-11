@@ -19,6 +19,19 @@ contract MChallengeRegistryCore is LibStateChannelApp {
     // A mapping of appIdentityHash to outcomes
     mapping (bytes32 => bytes) public appOutcomes;
 
+    /// @notice Compute a hash of an application's state
+    /// @param appState The ABI encoded state
+    /// @return A bytes32 hash of the state
+    function appStateToHash(
+        bytes memory appState
+    )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(appState);
+    }
+
     /// @notice Compute a unique hash for a single instance of an App
     /// @param appIdentity An `AppIdentity` struct that encodes all unique info for an App
     /// @return A bytes32 hash of the AppIdentity
