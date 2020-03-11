@@ -1,7 +1,9 @@
+import { AppIdentity, NetworkContext } from "@connext/types";
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToOne, JoinColumn } from "typeorm";
 import { IsEthAddress, IsKeccak256Hash } from "../util";
 import { Channel } from "../channel/channel.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
+import { BigNumber, Signature } from "ethers/utils";
 
 export enum CommitmentType {
   CONDITIONAL = "CONDITIONAL",
@@ -18,16 +20,19 @@ export class WithdrawCommitment {
   @Column("enum", { enum: CommitmentType })
   type!: CommitmentType;
 
-  @Column("text", { nullable: true })
-  @IsEthAddress()
-  multisigAddress!: string;
+  @Column("text", {
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  value!: BigNumber;
 
-  @Column("text", { nullable: true })
-  @IsKeccak256Hash()
-  commitmentHash!: string;
+  @Column("text")
+  to: string;
 
-  @Column("json")
-  data!: object;
+  @Column("text")
+  data!: string;
 
   @ManyToOne(
     (type: any) => Channel,
@@ -45,7 +50,7 @@ export class SetStateCommitmentEntity {
   type!: CommitmentType;
 
   @Column("json")
-  appIdentity!: object;
+  appIdentity!: AppIdentity;
 
   @Column("text")
   @IsKeccak256Hash()
@@ -56,7 +61,7 @@ export class SetStateCommitmentEntity {
   challengeRegistryAddress!: string;
 
   @Column("json", { nullable: true })
-  signatures!: object; // Signature[]
+  signatures!: Signature[];
 
   @Column("integer")
   timeout!: number;
@@ -79,10 +84,6 @@ export class ConditionalTransactionCommitmentEntity {
 
   @Column("text")
   @IsKeccak256Hash()
-  appIdentityHash!: string;
-
-  @Column("text")
-  @IsKeccak256Hash()
   freeBalanceAppIdentityHash!: string;
 
   @Column("text")
@@ -100,11 +101,12 @@ export class ConditionalTransactionCommitmentEntity {
   multisigOwners!: string[];
 
   @Column("json")
-  networkContext!: object;
+  networkContext!: NetworkContext;
 
   @Column("json", { nullable: true })
-  signatures!: object; // Signature[]
+  signatures!: Signature[];
 
   @OneToOne((type: any) => AppInstance)
+  @JoinColumn()
   app!: AppInstance;
 }

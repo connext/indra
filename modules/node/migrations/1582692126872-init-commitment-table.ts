@@ -12,6 +12,7 @@ export class InitCommitmentTable1582692126872 implements MigrationInterface {
         "interpreterAddr" text NOT NULL,
         "interpreterParams" text NOT NULL,
         "multisigAddress" text NOT NULL,
+        "freeBalanceAppIdentityHash" text NOT NULL,
         "multisigOwners" text[] NOT NULL,
         "networkContext" json NOT NULL,
         "signatures" json
@@ -31,9 +32,9 @@ export class InitCommitmentTable1582692126872 implements MigrationInterface {
       CREATE TABLE "withdraw_commitment" (
         "id" SERIAL PRIMARY KEY,
         "type" "commitment_type_enum" NOT NULL,
-        "multisigAddress" text,
-        "commitmentHash" text,
-        "data" json NOT NULL
+        "to" text NOT NULL,
+        "value" text NOT NULL,
+        "data" text NOT NULL
       );
     `);
   }

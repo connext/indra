@@ -11,44 +11,50 @@ import {
   SetStateCommitmentJSON,
 } from "@connext/types";
 import { AppInstance } from "../appInstance/appInstance.entity";
+import { Channel } from "../channel/channel.entity";
+import { bigNumberify } from "ethers/utils";
+
+function convertWithdrawToMinimalTransaction(commitment: WithdrawCommitment) {
+  return {
+    to: commitment.to,
+    value: commitment.value,
+    data: commitment.data,
+  };
+}
 
 @EntityRepository(WithdrawCommitment)
 export class WithdrawCommitmentRepository extends Repository<WithdrawCommitment> {
+  // TODO: assumes there will only be one withdrawal commitment per multisig
   findByMultisigAddress(multisigAddress: string): Promise<WithdrawCommitment> {
-    return this.findOne({
-      where: {
-        multisigAddress,
-      },
-    });
+    return this.createQueryBuilder("withdraw")
+      .leftJoinAndSelect("withdraw.channel", "channel")
+      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
+      .getOne();
   }
 
-  findByCommitmentHash(commitmentHash: string): Promise<WithdrawCommitment> {
-    return this.findOne({
-      where: {
-        commitmentHash,
-      },
-    });
-  }
-
-  async getWithdrawalCommitment(
+  async getWithdrawalCommitmentTx(
     multisigAddress: string,
   ): Promise<ProtocolTypes.MinimalTransaction> {
-    const commitment = await this.findByMultisigAddress(multisigAddress);
-    if (!commitment) {
+    const withdrawal = await this.findByMultisigAddress(multisigAddress);
+    if (!withdrawal) {
       return undefined;
     }
-
-    return commitment.data as ProtocolTypes.MinimalTransaction;
+    return convertWithdrawToMinimalTransaction(withdrawal);
   }
 
   async saveWithdrawalCommitment(
-    multisigAddress: string,
+    channel: Channel,
     commitment: ProtocolTypes.MinimalTransaction,
   ): Promise<void> {
-    const commitmentEnt = new WithdrawCommitment();
-    commitmentEnt.type = CommitmentType.WITHDRAWAL;
-    commitmentEnt.multisigAddress = multisigAddress;
-    commitmentEnt.data = commitment;
+    let commitmentEnt = await this.findByMultisigAddress(channel.multisigAddress);
+    if (!commitmentEnt) {
+      commitmentEnt = new WithdrawCommitment();
+      commitmentEnt.type = CommitmentType.WITHDRAWAL;
+      commitmentEnt.channel = channel;
+    }
+    commitmentEnt.to = commitment.to;
+    commitmentEnt.value = bigNumberify(commitment.value);
+    commitmentEnt.data = commitment.data;
     this.save(commitmentEnt);
   }
 }
@@ -60,17 +66,16 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
   findByAppIdentityHash(
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentEntity | undefined> {
-    return this.findOne({
-      where: {
-        appIdentityHash,
-      },
-    });
+    return this.createQueryBuilder("conditional")
+      .leftJoinAndSelect("conditional.app", "app")
+      .where("app.identityHash = :appIdentityHash", { appIdentityHash })
+      .getOne();
   }
 
   findByMultisigAddress(
     multisigAddress: string,
-  ): Promise<ConditionalTransactionCommitmentEntity | undefined> {
-    return this.findOne({
+  ): Promise<ConditionalTransactionCommitmentEntity[]> {
+    return this.find({
       where: {
         multisigAddress,
       },
@@ -84,24 +89,37 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
     if (!commitment) {
       return undefined;
     }
-    return commitment as ConditionalTransactionCommitmentJSON;
+    return {
+      appIdentityHash,
+      freeBalanceAppIdentityHash: commitment.freeBalanceAppIdentityHash,
+      interpreterAddr: commitment.interpreterAddr,
+      interpreterParams: commitment.interpreterParams,
+      multisigAddress: commitment.multisigAddress,
+      multisigOwners: commitment.multisigOwners,
+      networkContext: commitment.networkContext,
+      signatures: commitment.signatures,
+    };
   }
 
   async saveConditionalTransactionCommitment(
-    appIdentityHash: string,
+    app: AppInstance,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
-    const commitmentEntity = new ConditionalTransactionCommitmentEntity();
-    commitmentEntity.type = CommitmentType.CONDITIONAL;
-    commitmentEntity.appIdentityHash = appIdentityHash;
-    commitmentEntity.freeBalanceAppIdentityHash = commitment.freeBalanceAppIdentityHash;
-    commitmentEntity.interpreterAddr = commitment.interpreterAddr;
+    let commitmentEntity = await this.findByAppIdentityHash(app.identityHash);
+    if (!commitmentEntity) {
+      commitmentEntity = new ConditionalTransactionCommitmentEntity();
+      commitmentEntity.type = CommitmentType.CONDITIONAL;
+      commitmentEntity.app = app;
+      commitmentEntity.freeBalanceAppIdentityHash = commitment.freeBalanceAppIdentityHash;
+      commitmentEntity.multisigAddress = commitment.multisigAddress;
+      commitmentEntity.multisigOwners = commitment.multisigOwners;
+      const { provider, ...networkContext } = commitment.networkContext;
+      commitmentEntity.networkContext = networkContext;
+      commitmentEntity.interpreterAddr = commitment.interpreterAddr;
+    }
     commitmentEntity.interpreterParams = commitment.interpreterParams;
-    commitmentEntity.multisigAddress = commitment.multisigAddress;
-    commitmentEntity.multisigOwners = commitment.multisigOwners;
-    commitmentEntity.networkContext = commitment.networkContext;
     commitmentEntity.signatures = commitment.signatures;
-    this.save(commitmentEntity);
+    await this.save(commitmentEntity);
   }
 }
 
@@ -148,15 +166,18 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitmentE
     app: AppInstance,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    const commitmentEntity = new SetStateCommitmentEntity();
-    commitmentEntity.type = CommitmentType.SET_STATE;
-    commitmentEntity.app = app;
-    commitmentEntity.appIdentity = commitment.appIdentity;
-    commitmentEntity.appStateHash = commitment.appStateHash;
-    commitmentEntity.challengeRegistryAddress = commitment.challengeRegistryAddress;
-    commitmentEntity.signatures = commitment.signatures;
-    commitmentEntity.timeout = commitment.timeout;
-    commitmentEntity.versionNumber = commitment.versionNumber;
-    this.save(commitmentEntity);
+    let entity = await this.findByAppIdentityHash(app.identityHash);
+    if (!entity) {
+      entity = new SetStateCommitmentEntity();
+      entity.type = CommitmentType.SET_STATE;
+      entity.app = app;
+      entity.appIdentity = commitment.appIdentity;
+    }
+    entity.appStateHash = commitment.appStateHash;
+    entity.challengeRegistryAddress = commitment.challengeRegistryAddress;
+    entity.signatures = commitment.signatures;
+    entity.timeout = commitment.timeout;
+    entity.versionNumber = commitment.versionNumber;
+    this.save(entity);
   }
 }

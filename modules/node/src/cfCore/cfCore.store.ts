@@ -220,25 +220,35 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  saveConditionalTransactionCommitment(
+  async saveConditionalTransactionCommitment(
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
+    const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
+    if (!app) {
+      throw Error(
+        `Could not find appid for conditional transaction commitment. AppId: ${appIdentityHash}`,
+      );
+    }
     return this.conditionalTransactionCommitmentRepository.saveConditionalTransactionCommitment(
-      appIdentityHash,
+      app,
       commitment,
     );
   }
 
   getWithdrawalCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
-    return this.withdrawCommitmentRepository.getWithdrawalCommitment(multisigAddress);
+    return this.withdrawCommitmentRepository.getWithdrawalCommitmentTx(multisigAddress);
   }
 
-  saveWithdrawalCommitment(
+  async saveWithdrawalCommitment(
     multisigAddress: string,
     commitment: ProtocolTypes.MinimalTransaction,
   ): Promise<void> {
-    return this.withdrawCommitmentRepository.saveWithdrawalCommitment(multisigAddress, commitment);
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel found for withdrawal commitment, multisig: ${multisigAddress}`);
+    }
+    return this.withdrawCommitmentRepository.saveWithdrawalCommitment(channel, commitment);
   }
 
   getExtendedPrvKey(): Promise<string> {
