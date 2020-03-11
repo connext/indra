@@ -4,6 +4,7 @@ import {
   IMessagingService,
   MessagingConfig,
   nullLogger,
+  stringify,
 } from "@connext/types";
 import * as natsutil from "ts-natsutil";
 
@@ -37,17 +38,18 @@ export class MessagingService implements IMessagingService {
     const natsConnection = await service.connect();
     this.service = service;
     this.log.debug(`Connected!`);
+    const self = this;
     if (typeof natsConnection.addEventListener === "function") {
       natsConnection.addEventListener("close", async () => {
         console.log("ON CLOSE LOG 1");
         this.bearerToken = null;
-        await this.connect();
+        await self.connect();
       });
     } else {
       natsConnection.on("close", async () => {
         console.log("ON CLOSE LOG 2");
         this.bearerToken = null;
-        await this.connect();
+        await self.connect();
       });
     }
   }
@@ -84,6 +86,9 @@ export class MessagingService implements IMessagingService {
 
   async publish(subject: string, data: any): Promise<void> {
     this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
+    if (typeof data === "object") {
+      data = stringify(data);
+    }
     this.service!.publish(subject, data);
   }
 

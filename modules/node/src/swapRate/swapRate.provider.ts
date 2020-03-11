@@ -27,7 +27,7 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    super.connectRequestReponse(`swap-rate.>`, this.getLatestSwapRate.bind(this));
+    super.connectRequestReponse(`*.swap-rate`, this.getLatestSwapRate.bind(this));
   }
 }
 

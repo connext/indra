@@ -21,7 +21,7 @@ import { FastSignedTransferTransferModule } from "./fastSignedTransfer/fastSigne
 
 @Module({
   controllers: [CFCoreController],
-  exports: [ConfigModule, LoggerModule],
+  exports: [ConfigModule, LoggerModule, AuthModule],
   imports: [
     AdminModule,
     AppRegistryModule,

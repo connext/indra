@@ -149,6 +149,9 @@ export class ConfigService implements OnModuleInit {
   }
 
   getPublicIdentifier(): string {
+    if (this.publicIdentifier) {
+      return this.publicIdentifier;
+    }
     const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
     return hdNode.neuter().extendedKey;
   }
@@ -229,14 +232,9 @@ export class ConfigService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    throw Error("WHY AM I NOT BEING CALLED");
-    // const wallet = Wallet.fromMnemonic(this.getMnemonic());
-    // console.log("this.getMnemonic(): ", this.getMnemonic());
-    // console.log("wallet: ", wallet);
-    // this.wallet = wallet.connect(this.getEthProvider());
-    // console.log("this.getEthProvider(): ", this.getEthProvider());
-    // console.log("this.wallet: ", this.wallet);
-    // const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
-    // this.publicIdentifier = hdNode.neuter().extendedKey;
+    const wallet = Wallet.fromMnemonic(this.getMnemonic());
+    this.wallet = wallet.connect(this.getEthProvider());
+    const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
+    this.publicIdentifier = hdNode.neuter().extendedKey;
   }
 }
