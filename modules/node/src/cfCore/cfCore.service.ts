@@ -9,7 +9,7 @@ import {
   stringify,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
-import { AddressZero, Zero, HashZero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -179,7 +179,7 @@ export class CFCoreService {
   async createWithdrawCommitment(params: WithdrawParameters<BigNumber>, multisigAddress: string): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
     const { assetId, amount, recipient } = params;
     const channel = await this.getStateChannel(multisigAddress);
-    if ( assetId === HashZero) {
+    if ( assetId === AddressZero) {
       return new WithdrawETHCommitment(
         channel.data.multisigAddress,
         channel.data.freeBalanceAppInstance.participants,

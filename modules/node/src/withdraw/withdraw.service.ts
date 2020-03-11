@@ -78,21 +78,24 @@ export class WithdrawService {
       */
     async handleUserWithdraw(appInstance: AppInstanceJson): Promise<void> {
         const state = appInstance.latestState as WithdrawAppState<BigNumber>;
-    
-        const generatedCommitment = await this.cfCoreService.createWithdrawCommitment({
-          amount: state.transfers[0].amount,
-          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-          recipient: state.transfers[0].to
-        } as WithdrawParameters<BigNumber>,
-        appInstance.multisigAddress
+
+        const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
+          {
+            amount: state.transfers[0].amount,
+            assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+            recipient: state.transfers[0].to
+          } as WithdrawParameters<BigNumber>,
+          appInstance.multisigAddress
         )
     
-        await this.withdrawRepository.create()
-    
-        const counterpartySignatureOnWithdrawCommitment = await this.configService.getEthWallet().signMessage(generatedCommitment.hashToSign())
+        const key = new SigningKey(this.configService.getEthWallet().privateKey)
+        const counterpartySignatureOnWithdrawCommitment = joinSignature(key.signDigest(generatedCommitment.hashToSign()))
         await this.cfCoreService.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
 
         let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+        if(!withdraw) {
+          this.log.error(`Unable to find withdraw entity that we just took action upon. AppId ${appInstance.identityHash}`)
+        }
         await this.withdrawRepository.addCounterpartySignatureAndFinalize(withdraw, counterpartySignatureOnWithdrawCommitment);
 
         await this.cfCoreService.uninstallApp(appInstance.identityHash)
@@ -195,8 +198,8 @@ export class WithdrawService {
       counterpartySignature: string,
       multisigAddress: string,
     ) {
-      const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
-      const withdraw = await new Withdraw();
+      const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+      const withdraw = new Withdraw();
       withdraw.appInstanceId = appInstanceId;
       withdraw.amount = amount;
       withdraw.assetId = assetId;
@@ -206,6 +209,7 @@ export class WithdrawService {
       withdraw.counterpartySignature = counterpartySignature;
       withdraw.finalized = false;
       withdraw.channel = channel;
+      return await this.withdrawRepository.save(withdraw);
   }
 
   async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {

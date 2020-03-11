@@ -52,9 +52,9 @@ export const validateWithdrawApp = (
       )
   }
 
-  if(initialState.transfers[1].amount != Zero) {
+  if(!initialState.transfers[1].amount.eq(Zero)) {
       throw new Error(
-        `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1]}`
+        `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1].amount.toString()}`
       )
   }
 

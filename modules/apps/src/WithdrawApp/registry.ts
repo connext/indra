@@ -1,4 +1,4 @@
-import { OutcomeType, WithdrawAppStateEncoding } from "@connext/types";
+import { OutcomeType, WithdrawAppStateEncoding, WithdrawAppActionEncoding } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
 
@@ -9,4 +9,5 @@ export const WithdrawAppRegistryInfo: AppRegistryInfo = {
   name: WithdrawApp,
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   stateEncoding: WithdrawAppStateEncoding,
+  actionEncoding: WithdrawAppActionEncoding,
 };

@@ -12,7 +12,6 @@ import { convertWithdrawParameters, WithdrawApp } from "@connext/apps";
 import { AbstractController } from "./AbstractController";
 import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, UPDATE_STATE_EVENT, AppInstanceJson, WithdrawResponse, WithdrawParameters, WithdrawAppState, WithdrawAppAction, DefaultApp, UpdateStateMessage, WithdrawAppStateBigNumber } from "@connext/types";
 import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
-const ETH_ADDRESS = AddressZero
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(paramsRaw: WithdrawParameters): Promise<WithdrawResponse> {
@@ -75,7 +74,7 @@ export class WithdrawalController extends AbstractController {
   private async createWithdrawCommitment(params: WithdrawParameters<BigNumber>): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
     const { assetId, amount, recipient } = params;
     const channel = await this.connext.getStateChannel();
-    if ( assetId === ETH_ADDRESS) {
+    if ( assetId === AddressZero) {
       return new WithdrawETHCommitment(
         channel.data.multisigAddress,
         channel.data.freeBalanceAppInstance.participants,
