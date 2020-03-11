@@ -117,8 +117,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getStatesForRestore(pubId: string): Promise<StateChannelJSON> {
-    const res = await this.cfCoreService.getStateChannel(pubId);
-    return res.data;
+    return await this.channelService.getStateChannel(pubId);
   }
 
   async setupSubscriptions(): Promise<void> {

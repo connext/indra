@@ -5,6 +5,7 @@ import {
   stringify,
   GetConfigResponse,
   CoinBalanceRefundApp,
+  StateChannelJSON,
 } from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -545,6 +546,16 @@ export class ChannelService {
 
     const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
     return txRes;
+  }
+
+  async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
+
+    return state;
   }
 
   async getDataFromRebalancingService(
