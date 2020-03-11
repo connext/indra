@@ -3,6 +3,11 @@ import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
+import {
+  INVALID_FACTORY_ADDRESS,
+  INVALID_MASTERCOPY_ADDRESS,
+  INCORRECT_MULTISIG_ADDRESS,
+} from "../../../errors";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { RequestHandler } from "../../../request-handler";
@@ -11,11 +16,6 @@ import { getCreate2MultisigAddress } from "../../../utils";
 import { xkeyKthAddress } from "../../../xkeys";
 
 import { NodeController } from "../../controller";
-import {
-  INVALID_FACTORY_ADDRESS,
-  INVALID_MASTERCOPY_ADDRESS,
-  INCORRECT_MULTISIG_ADDRESS,
-} from "../../errors";
 import { installBalanceRefundApp, uninstallBalanceRefundApp } from "../deposit/operation";
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install

@@ -1,18 +1,17 @@
 import { jsonRpcMethod } from "rpc-server";
 
-import { uninstallAppInstanceFromChannel } from "./operation";
-
 import {
   APP_ALREADY_UNINSTALLED,
   CANNOT_UNINSTALL_FREE_BALANCE,
   NO_APP_INSTANCE_ID_TO_UNINSTALL,
   USE_RESCIND_DEPOSIT_RIGHTS,
-} from "../../errors";
-
+} from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
+
+import { uninstallAppInstanceFromChannel } from "./operation";
 
 export default class UninstallController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_uninstall)

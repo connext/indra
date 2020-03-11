@@ -1,6 +1,8 @@
 import { v4 as generateUUID } from "uuid";
 
-import { NO_MULTISIG_FOR_APP_INSTANCE_ID, Node } from "../../src";
+import { Node } from "../../src";
+import { NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src/errors";
+
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";

@@ -2,7 +2,8 @@ import { INSTALL_EVENT } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { Node, NOT_YOUR_BALANCE_REFUND_APP } from "../../src";
+import { Node } from "../../src";
+import { NOT_YOUR_BALANCE_REFUND_APP } from "../../src/errors";
 import { CoinBalanceRefundState, ProtocolTypes } from "../../src/types";
 import { xkeyKthAddress } from "../../src/xkeys";
 

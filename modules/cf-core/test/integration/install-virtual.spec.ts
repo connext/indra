@@ -1,4 +1,5 @@
-import { Node, VIRTUAL_APP_INSTALLATION_FAIL, bigNumberifyJson } from "../../src";
+import { Node, bigNumberifyJson } from "../../src";
+import { VIRTUAL_APP_INSTALLATION_FAIL } from "../../src/errors";
 import { ProposeMessage, InstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 

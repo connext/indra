@@ -1,4 +1,5 @@
-import { CANNOT_UNINSTALL_FREE_BALANCE, Node } from "../../src";
+import { Node } from "../../src";
+import { CANNOT_UNINSTALL_FREE_BALANCE } from "../../src/errors";
 import { StateChannel } from "../../src/models";
 
 import { setup, SetupContext } from "./setup";

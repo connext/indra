@@ -1,9 +1,9 @@
 import { bigNumberify } from "ethers/utils";
 
+import { NO_APP_INSTANCE_ID_TO_INSTALL, VIRTUAL_APP_INSTALLATION_FAIL } from "../../../errors";
 import { Protocol, ProtocolRunner } from "../../../machine";
 import { Store } from "../../../store";
 import { AppInstanceProposal, CFCoreTypes } from "../../../types";
-import { NO_APP_INSTANCE_ID_TO_INSTALL, VIRTUAL_APP_INSTALLATION_FAIL } from "../../errors";
 
 export async function installVirtual(
   store: Store,

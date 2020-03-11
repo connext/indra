@@ -1,8 +1,9 @@
 import { One } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { Node, NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../src";
+import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
+import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../src/errors";
 import { InstallMessage, ProposeInstallProtocolParams, ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";

@@ -1,7 +1,7 @@
 import { BigNumber } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { prettyPrintObject } from "../utils";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "./constants";
+import { prettyPrintObject } from "./utils";
 
 export const APP_ALREADY_UNINSTALLED = (id: string): string =>
   `Cannot uninstall app ${id}, it has already been uninstalled`;

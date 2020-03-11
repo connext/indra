@@ -4,6 +4,7 @@ import { Zero } from "ethers/constants";
 import { BaseProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
 
+import { DEPOSIT_FAILED, NOT_YOUR_BALANCE_REFUND_APP } from "../../../errors";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { Protocol } from "../../../machine";
@@ -20,7 +21,6 @@ import {
   OutcomeType,
   SolidityValueType,
 } from "../../../types";
-import { DEPOSIT_FAILED, NOT_YOUR_BALANCE_REFUND_APP } from "../../errors";
 import { logTime } from "../../../utils";
 import { xkeyKthAddress } from "../../../xkeys";
 

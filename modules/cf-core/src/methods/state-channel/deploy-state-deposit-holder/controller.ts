@@ -5,6 +5,13 @@ import { JsonRpcProvider, Provider, TransactionResponse } from "ethers/providers
 import { Interface } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
+import {
+  CHANNEL_CREATION_FAILED,
+  NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT,
+  INCORRECT_MULTISIG_ADDRESS,
+  INVALID_FACTORY_ADDRESS,
+  INVALID_MASTERCOPY_ADDRESS,
+} from "../../../errors";
 import { MinimumViableMultisig, ProxyFactory } from "../../../contracts";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
@@ -13,13 +20,6 @@ import { getCreate2MultisigAddress, prettyPrintObject, sleep } from "../../../ut
 import { sortAddresses, xkeysToSortedKthAddresses } from "../../../xkeys";
 
 import { NodeController } from "../../controller";
-import {
-  CHANNEL_CREATION_FAILED,
-  NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT,
-  INCORRECT_MULTISIG_ADDRESS,
-  INVALID_FACTORY_ADDRESS,
-  INVALID_MASTERCOPY_ADDRESS,
-} from "../../errors";
 
 // Estimate based on rinkeby transaction:
 // 0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec

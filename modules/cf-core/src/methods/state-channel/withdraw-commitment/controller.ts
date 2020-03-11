@@ -1,20 +1,21 @@
 import { AddressZero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
-import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
-import { NodeController } from "../../controller";
-import WithdrawController from "../withdraw/controller";
-import { runWithdrawProtocol } from "../withdraw/operation";
-import { getCreate2MultisigAddress } from "../../../utils";
-import { xkeyKthAddress } from "../../../xkeys";
-
 import {
   CANNOT_WITHDRAW,
   INCORRECT_MULTISIG_ADDRESS,
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
-} from "../../errors";
+} from "../../../errors";
+import { RequestHandler } from "../../../request-handler";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { runWithdrawProtocol } from "../withdraw/operation";
+import { getCreate2MultisigAddress } from "../../../utils";
+import { xkeyKthAddress } from "../../../xkeys";
+
+import { NodeController } from "../../controller";
+
+import WithdrawController from "../withdraw/controller";
 
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.

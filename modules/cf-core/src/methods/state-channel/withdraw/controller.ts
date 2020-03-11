@@ -7,12 +7,6 @@ import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
-import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
-import { getCreate2MultisigAddress } from "../../../utils";
-import { xkeyKthAddress } from "../../../xkeys";
-
-import { NodeController } from "../../controller";
 import {
   CANNOT_WITHDRAW,
   INCORRECT_MULTISIG_ADDRESS,
@@ -20,7 +14,13 @@ import {
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
   WITHDRAWAL_FAILED,
-} from "../../errors";
+} from "../../../errors";
+import { RequestHandler } from "../../../request-handler";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { getCreate2MultisigAddress } from "../../../utils";
+import { xkeyKthAddress } from "../../../xkeys";
+
+import { NodeController } from "../../controller";
 
 import { runWithdrawProtocol } from "./operation";
 

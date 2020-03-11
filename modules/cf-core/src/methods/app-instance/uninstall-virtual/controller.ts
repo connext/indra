@@ -1,14 +1,14 @@
 import { jsonRpcMethod } from "rpc-server";
 
-import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
-import { getFirstElementInListNotEqualTo } from "../../../utils";
-import { NodeController } from "../../controller";
 import {
   APP_ALREADY_UNINSTALLED,
   NO_APP_INSTANCE_ID_TO_UNINSTALL,
   NO_NETWORK_PROVIDER_CREATE2,
-} from "../../errors";
+} from "../../../errors";
+import { RequestHandler } from "../../../request-handler";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { getFirstElementInListNotEqualTo } from "../../../utils";
+import { NodeController } from "../../controller";
 
 import { uninstallVirtualAppInstanceFromChannel } from "./operation";
 

@@ -1,9 +1,9 @@
 import { jsonRpcMethod } from "rpc-server";
 
+import { NO_NETWORK_PROVIDER_CREATE2 } from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
-import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 
 export default class GetStateDepositHolderAddressController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_getStateDepositHolderAddress)

@@ -2,8 +2,9 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { NO_APP_INSTANCE_ID_FOR_GET_STATE } from "../../../errors";
+
 import { NodeController } from "../../controller";
-import { NO_APP_INSTANCE_ID_FOR_GET_STATE } from "../../errors";
 
 /**
  * Handles the retrieval of an AppInstance's state.

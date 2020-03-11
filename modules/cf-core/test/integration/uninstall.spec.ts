@@ -1,8 +1,9 @@
 import { AppInstanceJson } from "@connext/types";
 import { One, Two, Zero } from "ethers/constants";
 
-import { Node, USE_RESCIND_DEPOSIT_RIGHTS } from "../../src";
+import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
+import { USE_RESCIND_DEPOSIT_RIGHTS } from "../../src/errors";
 import { UninstallMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeEq } from "../machine/integration/bignumber-jest-matcher";

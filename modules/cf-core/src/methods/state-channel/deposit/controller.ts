@@ -1,14 +1,8 @@
+import { DEPOSIT_CONFIRMED_EVENT } from "@connext/types";
 import { Contract } from "ethers";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
-import { ERC20 } from "../../../contracts";
-import { StateChannel } from "../../../models";
-import { RequestHandler } from "../../../request-handler";
-import { DepositConfirmationMessage, CFCoreTypes, ProtocolTypes } from "../../../types";
-
-import { NodeController } from "../../controller";
 import {
   CANNOT_DEPOSIT,
   FAILED_TO_GET_ERC20_BALANCE,
@@ -18,11 +12,17 @@ import {
   INCORRECT_MULTISIG_ADDRESS,
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
-} from "../../errors";
+} from "../../../errors";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
+import { ERC20 } from "../../../contracts";
+import { StateChannel } from "../../../models";
+import { RequestHandler } from "../../../request-handler";
+import { DepositConfirmationMessage, CFCoreTypes, ProtocolTypes } from "../../../types";
+import { getCreate2MultisigAddress } from "../../../utils";
+
+import { NodeController } from "../../controller";
 
 import { installBalanceRefundApp, makeDeposit, uninstallBalanceRefundApp } from "./operation";
-import { getCreate2MultisigAddress } from "../../../utils";
-import { DEPOSIT_CONFIRMED_EVENT } from "@connext/types";
 
 export default class DepositController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_deposit)

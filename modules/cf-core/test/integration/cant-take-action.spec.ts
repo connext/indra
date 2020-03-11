@@ -1,4 +1,6 @@
-import { INVALID_ACTION, Node } from "../../src";
+import { Node } from "../../src";
+import { INVALID_ACTION } from "../../src/errors";
+
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
