@@ -380,7 +380,9 @@ export class AppRegistryService implements OnModuleInit {
       const defaultApp = (await this.configService.getDefaultApps()).find(
         (app: DefaultApp) => app.name === SimpleLinkedTransferApp,
       );
-      const installedApps = await this.cfCoreService.getAppInstances();
+      const installedApps = await this.cfCoreService.getAppInstances(
+        transfer.senderChannel.multisigAddress,
+      );
       const senderApp = installedApps.find(
         (app: AppInstanceJson) =>
           app.appInterface.addr === defaultApp!.appDefinitionAddress &&

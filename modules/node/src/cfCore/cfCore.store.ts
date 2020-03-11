@@ -171,6 +171,11 @@ export class CFCoreStore implements IStoreService {
         if (app.type === AppType.PROPOSAL) {
           app.type = AppType.INSTANCE;
           app.participants = appJson.participants;
+          app.singleAssetTwoPartyCoinTransferInterpreterParams =
+            appJson.singleAssetTwoPartyCoinTransferInterpreterParams;
+          app.twoPartyOutcomeInterpreterParams = appJson.twoPartyOutcomeInterpreterParams;
+          app.multiAssetMultiPartyCoinTransferInterpreterParams =
+            appJson.multiAssetMultiPartyCoinTransferInterpreterParams;
         }
         app.latestState = appJson.latestState;
         app.latestTimeout = appJson.latestTimeout;

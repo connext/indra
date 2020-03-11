@@ -85,10 +85,17 @@ export class ChannelRepository extends Repository<Channel> {
   }
 
   async findByAppInstanceId(appInstanceId: string): Promise<Channel | undefined> {
-    return this.createQueryBuilder("channel")
-      .leftJoinAndSelect("channel.appInstances", "appInstance")
+    // TODO: fix this query
+    // when you return just `channel` you will only have one app instance
+    // that matches the appId
+    const channel = await this.createQueryBuilder("channel")
+      .leftJoin("channel.appInstances", "appInstance")
       .where("appInstance.identityHash = :appInstanceId", { appInstanceId })
       .getOne();
+    return this.findOne({
+      where: { id: channel.id },
+      relations: ["appInstances"],
+    });
   }
 
   async addRebalanceProfileToChannel(
