@@ -1,6 +1,5 @@
 import {
   ChannelAppSequences,
-  StateChannelJSON,
   maxBN,
   RebalanceProfileBigNumber,
   stringify,
@@ -21,7 +20,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingClientProviderId } from "../constants";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
@@ -243,17 +241,13 @@ export class ChannelService {
     minimumRequiredCollateral: BigNumber = Zero,
   ): Promise<TransactionResponse | undefined> {
     const normalizedAssetId = getAddress(assetId);
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
-
-    if (!channel) {
-      throw new Error(`Channel does not exist for user ${userPubId}`);
-    }
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
     let rebalancingTargets = await this.getDataFromRebalancingService(userPubId, assetId);
     if (!rebalancingTargets) {
       this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
-      rebalancingTargets = await this.getRebalanceProfileForChannelAndAsset(
+      rebalancingTargets = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
         userPubId,
         normalizedAssetId,
       );
@@ -506,12 +500,9 @@ export class ChannelService {
     userPublicIdentifier: string,
     userSequenceNumber: number,
   ): Promise<ChannelAppSequences> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(
-        `Could not find channel associated with: ${userPublicIdentifier} in verifyAppSequenceNumber`,
-      );
-    }
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
     const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
     const [, appJson] = sc.appInstances.reduce((prev, curr) => {
       const [, prevJson] = prev;
@@ -534,10 +525,9 @@ export class ChannelService {
     userPublicIdentifier: string,
     tx: CFCoreTypes.MinimalTransaction,
   ): Promise<TransactionResponse> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
-    }
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
 
     const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
       channel.multisigAddress,
@@ -588,56 +578,5 @@ export class ChannelService {
       lowerBoundReclaim: bigNumberify(rebalancingTargets.lowerBoundReclaim),
       upperBoundReclaim: bigNumberify(rebalancingTargets.upperBoundReclaim),
     };
-  }
-
-  async getRebalanceProfileForChannelAndAsset(
-    userPublicIdentifier: string,
-    assetId: string = AddressZero,
-  ): Promise<RebalanceProfile | undefined> {
-    // try to get rebalance profile configured
-    let profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
-      userPublicIdentifier,
-      assetId,
-    );
-    return profile;
-  }
-
-  async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
-    }
-
-    return await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
-      userPublicIdentifier,
-    );
-  }
-
-  async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
-    }
-    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
-
-    return state;
-  }
-
-  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
-    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
-    if (!channel) {
-      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
-    }
-    const { data: state } = await this.cfCoreService.getStateChannel(multisigAddress);
-
-    return state;
-  }
-
-  async getAllChannels(): Promise<Channel[]> {
-    const channels = await this.channelRepository.findAll();
-    if (!channels) {
-      throw new Error(`No channels found. This should never happen`);
-    }
-    return channels;
   }
 }

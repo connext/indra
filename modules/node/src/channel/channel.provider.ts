@@ -12,12 +12,13 @@ import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
-import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
+import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
-import { CFCore, CFCoreTypes } from "../util/cfCore";
+import { CFCoreTypes } from "../util/cfCore";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
+import { CFCoreService } from "../cfCore/cfCore.service";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -25,10 +26,12 @@ import { ChannelService, RebalanceType } from "./channel.service";
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    private readonly channelRepository: ChannelRepository,
-    private readonly channelService: ChannelService,
     log: LoggerService,
     messaging: IMessagingService,
+    private readonly channelService: ChannelService,
+    private readonly cfCoreService: CFCoreService,
+    private readonly channelRepository: ChannelRepository,
+    private readonly onchainTransactionRepository: OnchainTransactionRepository,
   ) {
     super(log, messaging);
   }
@@ -106,13 +109,16 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
-    const onchainTx = await this.channelService.getLatestWithdrawal(pubId);
+    const onchainTx = await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+      pubId,
+    );
     // TODO: conversions needed?
     return onchainTx;
   }
 
   async getStatesForRestore(pubId: string): Promise<StateChannelJSON> {
-    return await this.channelService.getStateChannel(pubId);
+    const res = await this.cfCoreService.getStateChannel(pubId);
+    return res.data;
   }
 
   async setupSubscriptions(): Promise<void> {
@@ -159,16 +165,34 @@ class ChannelMessaging extends AbstractMessagingProvider {
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, ChannelRepository, ChannelService, LoggerService, MessagingProviderId],
+  inject: [
+    AuthService,
+    LoggerService,
+    MessagingProviderId,
+    ChannelService,
+    CFCoreService,
+    ChannelRepository,
+    OnchainTransactionRepository,
+  ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,
-    channelRepo: ChannelRepository,
-    channelService: ChannelService,
     log: LoggerService,
     messaging: IMessagingService,
+    channelService: ChannelService,
+    cfCore: CFCoreService,
+    channelRepo: ChannelRepository,
+    onchain: OnchainTransactionRepository,
   ): Promise<void> => {
-    const channel = new ChannelMessaging(authService, channelRepo, channelService, log, messaging);
+    const channel = new ChannelMessaging(
+      authService,
+      log,
+      messaging,
+      channelService,
+      cfCore,
+      channelRepo,
+      onchain,
+    );
     await channel.setupSubscriptions();
   },
 };

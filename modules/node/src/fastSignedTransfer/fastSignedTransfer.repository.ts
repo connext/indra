@@ -1,6 +1,7 @@
 import { EntityRepository, Repository } from "typeorm";
 
 import { FastSignedTransfer, FastSignedTransferStatus } from "./fastSignedTransfer.entity";
+import { Channel } from "src/channel/channel.entity";
 
 @EntityRepository(FastSignedTransfer)
 export class FastSignedTransferRepository extends Repository<FastSignedTransfer> {
@@ -29,5 +30,16 @@ export class FastSignedTransferRepository extends Repository<FastSignedTransfer>
       )
       .where("fastSignedTransfer.status = :status", { status: FastSignedTransferStatus.PENDING })
       .getMany();
+  }
+
+  async findReclaimable(senderChannel: Channel): Promise<FastSignedTransfer[]> {
+    return await this.find({
+      where: { senderChannel, status: FastSignedTransferStatus.REDEEMED },
+    });
+  }
+
+  async markAsReclaimed(transfer: FastSignedTransfer): Promise<FastSignedTransfer> {
+    transfer.status = FastSignedTransferStatus.RECLAIMED;
+    return await this.save(transfer);
   }
 }
