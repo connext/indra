@@ -10,7 +10,7 @@ import {
 } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
-import { appIdentityToHash } from "./utils/app-identity";
+import { appIdentityToHash } from "./utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 

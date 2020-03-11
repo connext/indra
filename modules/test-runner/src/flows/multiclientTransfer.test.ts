@@ -3,12 +3,14 @@ import {
   ReceiveTransferFinishedEventData,
   RECEIVE_TRANSFER_FAILED_EVENT,
 } from "@connext/types";
-import { Client } from "ts-nats";
-import { before, after } from "mocha";
-import { createClient, expect, fundChannel, connectNats, closeNats } from "../util";
 import { bigNumberify } from "ethers/utils";
+import { before, after } from "mocha";
+import { Client } from "ts-nats";
 
-describe("Full Flow: Transfer", () => {
+import { env, expect, Logger, createClient, fundChannel, connectNats, closeNats } from "../util";
+
+describe("Full Flow: Multi-client transfer", () => {
+  let log = new Logger("MultiClientTransfer", env.logLevel);
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;

@@ -1,16 +1,14 @@
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { CoinTransferMap, TokenIndexedCoinTransferMap } from "../../models/free-balance";
-import { AppInterface } from "../../types";
-
-const freeBalanceAppStateEncoding = `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`;
+import { CoinTransferMap, TokenIndexedCoinTransferMap } from "../models";
+import { AppInterface } from "../types";
 
 export function getFreeBalanceAppInterface(addr: string): AppInterface {
   return {
     actionEncoding: undefined, // because no actions exist for FreeBalanceApp
     addr,
-    stateEncoding: freeBalanceAppStateEncoding,
+    stateEncoding: `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`,
   };
 }
 

@@ -1,6 +1,6 @@
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
-import { AppIdentity } from "../../types";
+import { AppIdentity } from "../types";
 
 export function appIdentityToHash(appIdentity: AppIdentity): string {
   return keccak256(
@@ -10,3 +10,5 @@ export function appIdentityToHash(appIdentity: AppIdentity): string {
     ),
   );
 }
+
+export const APP_IDENTITY = `tuple(address[] participants,address appDefinition,uint256 defaultTimeout)`;

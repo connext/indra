@@ -86,7 +86,7 @@ export class NodeApiClient implements INodeApiClient {
     timeout: number,
   ): Promise<any> {
     const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
-    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    // this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
       retVal = await callback();
@@ -94,7 +94,7 @@ export class NodeApiClient implements INodeApiClient {
       this.log.error(`Failed to execute callback while lock is held: ${e.stack || e.message}`);
     } finally {
       await this.send(`lock.release.${lockName}`, { lockValue });
-      this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
+      // this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
   }
