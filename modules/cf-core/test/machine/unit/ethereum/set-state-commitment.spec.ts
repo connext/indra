@@ -7,7 +7,9 @@ import {
   TransactionDescription,
 } from "ethers/utils";
 
-import { appIdentityToHash, SetStateCommitment } from "../../../../src/ethereum";
+import { SetStateCommitment } from "../../../../src/ethereum";
+import { appIdentityToHash } from "../../../../src/utils";
+
 import { ChallengeRegistry } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { generateRandomNetworkContext } from "../../mocks";

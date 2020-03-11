@@ -1,19 +1,21 @@
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { getFreeBalanceAppInterface, merge } from "../ethereum";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../machine/xkeys";
-import { OutcomeType } from "../types";
+import { AppInterface, OutcomeType } from "../types";
 import { prettyPrintObject } from "../utils";
 
 import { AppInstance } from "./app-instance";
+import { merge } from "./utils";
 
-const HARD_CODED_ASSUMPTIONS = {
-  freeBalanceInitialStateTimeout: 172800,
-  // We assume the Free Balance is the first app ever installed
-  appSequenceNumberForFreeBalance: 0,
-};
+export function getFreeBalanceAppInterface(addr: string): AppInterface {
+  return {
+    actionEncoding: undefined, // because no actions exist for FreeBalanceApp
+    addr,
+    stateEncoding: `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`,
+  };
+}
 
 /*
 Keep in sync with the solidity struct LibOutcome::CoinTransfer

@@ -4,6 +4,13 @@ import { AddressZero } from "ethers/constants";
 // JSON text to make it easier to read
 export const JSON_STRINGIFY_SPACE = 2;
 
+export const HARD_CODED_ASSUMPTIONS = {
+  freeBalanceDefaultTimeout: 172800,
+  freeBalanceInitialStateTimeout: 172800,
+  // We assume the Free Balance is the first app ever installed
+  appSequenceNumberForFreeBalance: 0,
+};
+
 /**
  * We use 0x00...000 to represent an identifier for the ETH token
  * in places where values are indexed on token address. Of course,

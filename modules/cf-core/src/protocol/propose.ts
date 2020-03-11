@@ -1,7 +1,7 @@
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { appIdentityToHash, SetStateCommitment } from "../ethereum";
+import { SetStateCommitment } from "../ethereum";
 import { Opcode, Protocol, xkeyKthAddress } from "../machine";
 import { AppInstanceProposal, StateChannel } from "../models";
 import {
@@ -10,7 +10,7 @@ import {
   ProtocolExecutionFlow,
   ProtocolMessage,
 } from "../types";
-import { logTime } from "../utils";
+import { appIdentityToHash, logTime } from "../utils";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 

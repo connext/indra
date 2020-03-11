@@ -4,7 +4,6 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
-import { appIdentityToHash } from "../ethereum";
 import {
   AppIdentity,
   AppInstanceJson,
@@ -19,7 +18,7 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   virtualAppAgreementEncoding,
 } from "../types";
-import { bigNumberifyJson } from "../utils";
+import { appIdentityToHash, bigNumberifyJson } from "../utils";
 
 /**
  * Representation of an AppInstance.

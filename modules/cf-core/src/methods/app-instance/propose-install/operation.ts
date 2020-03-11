@@ -1,8 +1,8 @@
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
-import { appIdentityToHash } from "../../../ethereum";
 import { AppInstanceProposal } from "../../../models";
 import { Store } from "../../../store";
 import { NetworkContext, CFCoreTypes } from "../../../types";
+import { appIdentityToHash } from "../../../utils";
 
 /**
  * Creates a AppInstanceProposal to reflect the proposal received from

@@ -5,6 +5,7 @@ import { Provider } from "ethers/providers";
 import {
   BigNumber,
   bigNumberify,
+  defaultAbiCoder,
   getAddress,
   Interface,
   joinSignature,
@@ -20,6 +21,7 @@ import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from
 import { StateChannel } from "./models";
 import { xkeyKthAddress } from "./machine";
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods";
+import { AppIdentity } from "./types";
 
 export const logTime = (log: ILoggerService, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -34,6 +36,17 @@ export const logTime = (log: ILoggerService, start: number, msg: string) => {
     log.error(message);
   }
 };
+
+export function appIdentityToHash(appIdentity: AppIdentity): string {
+  return keccak256(
+    defaultAbiCoder.encode(
+      ["uint256", "address[]"],
+      [appIdentity.channelNonce, appIdentity.participants],
+    ),
+  );
+}
+
+export const APP_IDENTITY = `tuple(address[] participants,address appDefinition,uint256 defaultTimeout)`;
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
   return list.filter(x => x !== test)[0];
@@ -52,6 +65,7 @@ export const deBigNumberifyJson = (json: object) =>
   JSON.parse(JSON.stringify(json), (key, val) =>
     val && BigNumber.isBigNumber(val) ? val.toHexString() : val,
   );
+
 /**
  * Converts an array of signatures into a single string
  *
@@ -114,9 +128,10 @@ export async function sleep(timeInMilliseconds: number) {
  *
  * @export
  * @param {string[]} owners - the addresses of the owners of the multisig
- * @param {string} proxyFactoryAddress - address of ProxyFactory library
- * @param {string} multisigMastercopyAddress - address of masterCopy of multisig
- * @param {string} provider - to fetch proxyBytecode from the proxyFactoryAddress
+ * @param {string} addresses - critical addresses required to deploy multisig
+ * @param {string} ethProvider - to fetch proxyBytecode from the proxyFactoryAddress
+ * @param {string} legacyKeygen - Should we use CF_PATH or `${CF_PATH}/0` ?
+ * @param {string} toxicBytecode - Use given bytecode if given instead of fetching from proxyFactory
  *
  * @returns {string} the address of the multisig
  *

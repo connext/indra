@@ -1,15 +1,10 @@
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { CoinTransferMap, TokenIndexedCoinTransferMap } from "../models";
-import { AppInterface } from "../types";
+import { CoinTransferMap, TokenIndexedCoinTransferMap } from "./free-balance";
 
-export function getFreeBalanceAppInterface(addr: string): AppInterface {
-  return {
-    actionEncoding: undefined, // because no actions exist for FreeBalanceApp
-    addr,
-    stateEncoding: `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`,
-  };
+export function sortAddresses(addrs: string[]) {
+  return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 }
 
 export function flipTokenIndexedBalances(

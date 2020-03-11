@@ -1,12 +1,10 @@
 import { Address, BigNumber, BigNumberish, SolidityValueType } from "./basic";
-import { CFCoreChannel } from "./channel";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "./contracts";
-import { CFCoreTypes } from "./cfCore";
 
 ////////////////////////////////////
 ////// App Instances

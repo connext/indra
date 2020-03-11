@@ -6,7 +6,7 @@ import {
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
-import { flip, flipTokenIndexedBalances } from "../ethereum";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { xkeyKthAddress } from "../machine/xkeys";
 import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";
@@ -20,12 +20,7 @@ import {
   FreeBalanceClass,
   TokenIndexedCoinTransferMap,
 } from "./free-balance";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-
-// TODO: Hmmm this code should probably be somewhere else?
-export const HARD_CODED_ASSUMPTIONS = {
-  freeBalanceDefaultTimeout: 172800,
-};
+import { flip, flipTokenIndexedBalances, sortAddresses } from "./utils";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,
@@ -36,10 +31,6 @@ const ERRORS = {
   INSUFFICIENT_FUNDS: "Attempted to install an appInstance without sufficient funds",
   MULTISIG_OWNERS_NOT_SORTED: "multisigOwners parameter of StateChannel must be sorted",
 };
-
-function sortAddresses(addrs: string[]) {
-  return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-}
 
 export class StateChannel {
   constructor(

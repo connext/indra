@@ -1,8 +1,10 @@
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
-import { appIdentityToHash, SetupCommitment } from "../../../../src/ethereum";
+import { SetupCommitment } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
 import { StateChannel } from "../../../../src/models";
+import { appIdentityToHash } from "../../../../src/utils";
+
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";

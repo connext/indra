@@ -8,9 +8,7 @@ import {
   NetworkContext,
   SignedStateHashUpdate,
 } from "../types";
-import { sortSignaturesBySignerAddress } from "../utils";
-
-import { appIdentityToHash } from "./utils";
+import { appIdentityToHash, sortSignaturesBySignerAddress } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 
