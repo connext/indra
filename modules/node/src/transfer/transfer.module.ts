@@ -9,6 +9,8 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
+import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
+import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransfer.module";
 
 import { transferProviderFactory } from "./transfer.provider";
 import { TransferRepository } from "./transfer.repository";
@@ -24,7 +26,9 @@ import { TransferService } from "./transfer.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
+    FastSignedTransferModule,
     LoggerModule,
+    LinkedTransferModule,
     MessagingModule,
     TypeOrmModule.forFeature([
       ChannelRepository,
