@@ -1,7 +1,8 @@
 import { BaseProvider } from "ethers/providers";
 
-import { Protocol, ProtocolRunner } from "../../../machine";
+import { ProtocolRunner } from "../../../machine";
 import { Store } from "../../../store";
+import { Protocol } from "../../../types";
 
 export async function uninstallVirtualAppInstanceFromChannel(
   store: Store,

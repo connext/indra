@@ -10,7 +10,9 @@ import {
   InstallVirtualAppProtocolParams,
   Middleware,
   NetworkContext,
+  Opcode,
   ProposeInstallProtocolParams,
+  Protocol,
   ProtocolMessage,
   SetupProtocolParams,
   TakeActionProtocolParams,
@@ -20,7 +22,6 @@ import {
   WithdrawProtocolParams,
 } from "../types";
 
-import { Opcode, Protocol } from "./enums";
 import { MiddlewareContainer } from "./middleware";
 
 /**

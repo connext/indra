@@ -2,11 +2,12 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine";
 import { AppInstanceProposal, StateChannel } from "../models";
 import {
   Context,
+  Opcode,
   ProposeInstallProtocolParams,
+  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
 } from "../types";

@@ -3,8 +3,8 @@ import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import { HDNode } from "ethers/utils/hdnode";
 
-import { EthereumCommitment } from "../../../src/types";
-import { Opcode, ProtocolRunner } from "../../../src/machine";
+import { EthereumCommitment, Opcode } from "../../../src/types";
+import { ProtocolRunner } from "../../../src/machine";
 import { StateChannel } from "../../../src/models";
 
 import { getRandomHDNodes } from "./random-signing-keys";

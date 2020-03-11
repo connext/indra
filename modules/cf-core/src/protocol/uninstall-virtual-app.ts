@@ -4,12 +4,13 @@ import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
 import {
   Context,
   NetworkContext,
+  Opcode,
+  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
   ProtocolParameters,

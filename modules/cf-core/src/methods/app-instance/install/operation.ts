@@ -1,10 +1,10 @@
 import { bigNumberify } from "ethers/utils";
 
 import { NO_APP_INSTANCE_ID_TO_INSTALL } from "../../../errors";
-import { Protocol, ProtocolRunner } from "../../../machine";
+import { ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { Store } from "../../../store";
-import { AppInstanceProposal, CFCoreTypes } from "../../../types";
+import { AppInstanceProposal, CFCoreTypes, Protocol } from "../../../types";
 
 export async function install(
   store: Store,

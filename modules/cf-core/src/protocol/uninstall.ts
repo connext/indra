@@ -2,9 +2,15 @@ import { BaseProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine";
 import { StateChannel } from "../models";
-import { Context, ProtocolExecutionFlow, ProtocolMessage, UninstallProtocolParams } from "../types";
+import {
+  Context,
+  Opcode,
+  Protocol,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+  UninstallProtocolParams,
+} from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 

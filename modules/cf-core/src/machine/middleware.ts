@@ -1,5 +1,4 @@
-import { Opcode } from "./enums";
-import { Middleware } from "../types";
+import { Middleware, Opcode } from "../types";
 
 export class MiddlewareContainer {
   public readonly middlewares: { [I in Opcode]: Middleware[] } = {

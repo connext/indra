@@ -1,5 +1,6 @@
-import { Protocol, ProtocolRunner } from "../../../machine";
+import { ProtocolRunner } from "../../../machine";
 import { Store } from "../../../store";
+import { Protocol } from "../../../types";
 
 export async function uninstallAppInstanceFromChannel(
   store: Store,

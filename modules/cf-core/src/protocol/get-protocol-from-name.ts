@@ -1,5 +1,4 @@
-import { Protocol } from "../machine";
-import { ProtocolExecutionFlow } from "../types";
+import { Protocol, ProtocolExecutionFlow } from "../types";
 
 import { INSTALL_PROTOCOL } from "./install";
 import { INSTALL_VIRTUAL_APP_PROTOCOL } from "./install-virtual-app";

@@ -11,10 +11,11 @@ import { anything, instance, mock, when } from "ts-mockito";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src/errors";
-import { Protocol, ProtocolRunner } from "../../src/machine";
+import { ProtocolRunner } from "../../src/machine";
 import { install } from "../../src/methods/app-instance/install/operation";
 import { StateChannel } from "../../src/models";
 import { Store } from "../../src/store";
+import { Protocol } from "../../src/types";
 import { xkeysToSortedKthAddresses } from "../../src/xkeys";
 
 import { getRandomExtendedPubKeys } from "../machine/integration/random-signing-keys";

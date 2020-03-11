@@ -4,7 +4,6 @@ import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
 import {
@@ -12,7 +11,9 @@ import {
   InstallVirtualAppProtocolParams,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   NetworkContext,
+  Opcode,
   OutcomeType,
+  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,

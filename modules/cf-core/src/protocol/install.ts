@@ -4,14 +4,15 @@ import { BigNumber } from "ethers/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
 import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
   InstallProtocolParams,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   NetworkContext,
+  Opcode,
   OutcomeType,
+  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,

@@ -8,13 +8,14 @@ import {
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
 } from "../ethereum";
-import { Opcode, Protocol } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import {
   coinBalanceRefundStateEncoding,
   Context,
   NetworkContext,
+  Opcode,
   OutcomeType,
+  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,

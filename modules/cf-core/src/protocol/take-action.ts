@@ -1,8 +1,9 @@
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine";
 import {
   Context,
+  Opcode,
+  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
   TakeActionProtocolParams,

@@ -11,7 +11,6 @@ import {
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../errors";
-import { Protocol } from "../machine";
 import { StateChannel } from "../models";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
@@ -22,6 +21,7 @@ import {
   NetworkContext,
   NodeMessageWrappedProtocolMessage,
   ProposeInstallProtocolParams,
+  Protocol,
   ProtocolParameters,
   SetupProtocolParams,
   SolidityValueType,

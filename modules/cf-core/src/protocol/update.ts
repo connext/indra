@@ -1,7 +1,13 @@
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine";
-import { Context, ProtocolExecutionFlow, ProtocolMessage, UpdateProtocolParams } from "../types";
+import {
+  Context,
+  Opcode,
+  Protocol,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+  UpdateProtocolParams,
+} from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 

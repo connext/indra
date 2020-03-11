@@ -7,10 +7,9 @@ import {
   INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
   NULL_INITIAL_STATE_FOR_PROPOSAL,
 } from "../../../errors";
-import { Protocol } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, Protocol, ProtocolTypes } from "../../../types";
 import { xkeyKthAddress } from "../../../xkeys";
 
 import { NodeController } from "../../controller";

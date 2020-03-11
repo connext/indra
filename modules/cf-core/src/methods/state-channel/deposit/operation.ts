@@ -7,7 +7,6 @@ import { bigNumberify } from "ethers/utils";
 import { DEPOSIT_FAILED, NOT_YOUR_BALANCE_REFUND_APP } from "../../../errors";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
-import { Protocol } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import {
@@ -19,6 +18,7 @@ import {
   InstallProtocolParams,
   NetworkContext,
   OutcomeType,
+  Protocol,
   SolidityValueType,
 } from "../../../types";
 import { logTime } from "../../../utils";

@@ -8,7 +8,7 @@ import { createRpcRouter } from "./methods";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
-import { Opcode, Protocol, ProtocolRunner } from "./machine";
+import { ProtocolRunner } from "./machine";
 import { getFreeBalanceAddress, StateChannel } from "./models";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
@@ -18,6 +18,8 @@ import {
   CFCoreTypes,
   NetworkContext,
   NodeMessageWrappedProtocolMessage,
+  Opcode,
+  Protocol,
   ProtocolMessage,
 } from "./types";
 import { timeout } from "./utils";
