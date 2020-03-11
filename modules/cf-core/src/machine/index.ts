@@ -1,4 +1,4 @@
-import { appIdentityToHash } from "../ethereum/utils/app-identity";
+import { appIdentityToHash } from "../ethereum";
 
 import { Commitment, Opcode, Protocol } from "./enums";
 import { ProtocolRunner } from "./protocol-runner";
