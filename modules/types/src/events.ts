@@ -5,6 +5,7 @@ import {
   LINKED_TRANSFER_TO_RECIPIENT,
   FAST_SIGNED_TRANSFER,
   ConditionalTransferTypes,
+  CreateTransferMetas,
 } from "./apps";
 
 export const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
@@ -56,41 +57,25 @@ export const ConnextEvents = {
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
 
-export type CreatedLinkedTransferMeta = {};
-export type CreatedLinkedTransferToRecipientMeta = {
-  encryptedPreImage: string;
-};
-export type CreatedFastSignedTransferMeta = {
-  signer: string;
-};
-
-export type ReceiveTransferFinishedEventData<
-  T extends ConditionalTransferTypes | undefined = undefined
-> = {
+export type ReceiveTransferFinishedEventData<T extends keyof ConditionalTransferTypes> = {
   amount: string;
   assetId: string;
   paymentId: string;
   sender: string;
   recipient?: string;
   meta: any;
-  type: T;
+  type: ConditionalTransferTypes[T];
 };
 
-export type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = undefined> = {
+export type CreateTransferEventData<T extends keyof ConditionalTransferTypes> = {
   amount: string;
   assetId: string;
   paymentId: string;
   sender: string;
   recipient?: string;
   meta: any;
-  type: T;
-  transferMeta: T extends typeof LINKED_TRANSFER
-    ? CreatedLinkedTransferMeta
-    : T extends typeof LINKED_TRANSFER_TO_RECIPIENT
-    ? CreatedLinkedTransferToRecipientMeta
-    : T extends typeof FAST_SIGNED_TRANSFER
-    ? CreatedFastSignedTransferMeta
-    : undefined;
+  type: ConditionalTransferTypes[T];
+  transferMeta: CreateTransferMetas[T];
 };
 
 export class ConnextEventEmitter extends EventEmitter<

@@ -6,14 +6,11 @@ import {
   LinkedTransferToRecipientResponse,
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferToRecipientParameters,
-  LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
 } from "./SimpleLinkedTransferApp";
 import {
   FastSignedTransferParameters,
   FastSignedTransferResponse,
   ResolveFastSignedTransferParameters,
-  FAST_SIGNED_TRANSFER,
 } from "./FastSignedTransfer";
 export * from "./CoinBalanceRefundApp";
 export * from "./FastSignedTransfer";
@@ -36,7 +33,22 @@ export type ResolveConditionParameters =
   | ResolveFastSignedTransferParameters;
 export type ResolveConditionResponse = ResolveLinkedTransferResponse;
 
-export type ConditionalTransferTypes =
-  | typeof LINKED_TRANSFER
-  | typeof LINKED_TRANSFER_TO_RECIPIENT
-  | typeof FAST_SIGNED_TRANSFER;
+export type ConditionalTransferTypes = {
+  LINKED_TRANSFER: "LINKED_TRANSFER";
+  LINKED_TRANSFER_TO_RECIPIENT: "LINKED_TRANSFER_TO_RECIPIENT";
+  FAST_SIGNED_TRANSFER: "FAST_SIGNED_TRANSFER";
+};
+
+export type CreatedLinkedTransferMeta = {};
+export type CreatedLinkedTransferToRecipientMeta = {
+  encryptedPreImage: string;
+};
+export type CreatedFastSignedTransferMeta = {
+  signer: string;
+};
+
+export type CreateTransferMetas = {
+  LINKED_TRANSFER: CreatedLinkedTransferMeta;
+  LINKED_TRANSFER_TO_RECIPIENT: CreatedLinkedTransferToRecipientMeta;
+  FAST_SIGNED_TRANSFER: CreatedFastSignedTransferMeta;
+};
