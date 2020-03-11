@@ -86,7 +86,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         result = await this.restoreState();
         break;
       case chan_setStateChannel:
-        result = await this.setStateChannel(params.channel);
+        result = await this.setStateChannel(params.state);
         break;
       default:
         result = await this.routerDispatch(method, params);

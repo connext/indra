@@ -104,8 +104,9 @@ export class WrappedAsyncStorage implements WrappedStorage {
   }
 
   async restore(): Promise<void> {
+    await this.clear();
     if (!this.backupService) {
-      return this.clear();
+      throw new Error(`No backup provided, store cleared`);
     }
     const pairs = await this.backupService.restore();
     pairs.forEach(pair => this.setItem(pair.path, pair.value));

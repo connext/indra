@@ -135,8 +135,9 @@ export class MemoryStorage implements IStoreService {
   }
 
   async restore(): Promise<void> {
+    await this.clear();
     if (!this.backupService) {
-      return this.clear();
+      throw new Error(`No backup provided, store cleared`);
     }
     throw new Error(`Method not implemented for MemoryStorage`)
   }
