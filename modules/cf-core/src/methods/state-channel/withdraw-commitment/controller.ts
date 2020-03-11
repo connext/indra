@@ -1,13 +1,14 @@
 import { AddressZero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
-import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import WithdrawController from "../withdraw/controller";
 import { runWithdrawProtocol } from "../withdraw/operation";
 import { getCreate2MultisigAddress } from "../../../utils";
+import { xkeyKthAddress } from "../../../xkeys";
+
 import {
   CANNOT_WITHDRAW,
   INCORRECT_MULTISIG_ADDRESS,

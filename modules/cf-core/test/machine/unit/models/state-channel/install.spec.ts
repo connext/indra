@@ -2,9 +2,10 @@ import { WeiPerEther, Zero } from "ethers/constants";
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../../src/constants";
-import { xkeyKthAddress } from "../../../../../src/machine";
 import { AppInstance, StateChannel } from "../../../../../src/models";
 import { FreeBalanceClass } from "../../../../../src/models/free-balance";
+import { xkeyKthAddress } from "../../../../../src/xkeys";
+
 import { createAppInstanceForTest } from "../../../../unit/utils";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../../mocks";

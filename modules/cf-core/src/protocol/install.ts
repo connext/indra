@@ -2,7 +2,7 @@ import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress } from "../machine";
+import { Opcode, Protocol } from "../machine";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
@@ -17,6 +17,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 

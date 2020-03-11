@@ -8,6 +8,8 @@ import { MultisigCommitment } from "./multisig-commitment";
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
+// export const getSetupCommitment = (context: Context, stateChannel: StateChannel) => {}
+
 export class SetupCommitment extends MultisigCommitment {
   public constructor(
     public readonly networkContext: NetworkContext,

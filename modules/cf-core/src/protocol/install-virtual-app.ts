@@ -3,7 +3,7 @@ import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol, sortAddresses, xkeyKthAddress } from "../machine";
+import { Opcode, Protocol } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
 import {
@@ -19,6 +19,7 @@ import {
   virtualAppAgreementEncoding,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
+import { sortAddresses, xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 

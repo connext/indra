@@ -3,10 +3,12 @@ import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
-import { Protocol, xkeyKthAddress } from "../../../machine";
+import { Protocol } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { xkeyKthAddress } from "../../../xkeys";
+
 import { NodeController } from "../../controller";
 import {
   INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,

@@ -7,12 +7,12 @@ import {
 import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
-import { xkeyKthAddress } from "../machine/xkeys";
 import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";
 import { prettyPrintObject } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { AppInstanceProposal } from ".";
+import { AppInstanceProposal } from "./app-instance-proposal";
 import { AppInstance } from "./app-instance";
 import {
   CoinTransferMap,

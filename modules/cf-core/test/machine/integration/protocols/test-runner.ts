@@ -5,9 +5,10 @@ import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { Protocol, xkeyKthAddress } from "../../../../src/machine";
-import { sortAddresses } from "../../../../src/machine/xkeys";
+import { Protocol } from "../../../../src/machine";
 import { getCreate2MultisigAddress } from "../../../../src/utils";
+import { sortAddresses, xkeyKthAddress } from "../../../../src/xkeys";
+
 import { IdentityApp } from "../../../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { connectToGanache } from "../connect-ganache";

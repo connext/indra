@@ -2,9 +2,9 @@ import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
-import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../machine/xkeys";
 import { AppInterface, OutcomeType } from "../types";
 import { prettyPrintObject } from "../utils";
+import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
 
 import { AppInstance } from "./app-instance";
 import { merge } from "./utils";

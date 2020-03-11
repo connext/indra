@@ -1,8 +1,9 @@
 import { SetupCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress } from "../machine";
+import { Opcode, Protocol } from "../machine";
 import { StateChannel } from "../models";
 import { Context, ProtocolMessage, ProtocolExecutionFlow, SetupProtocolParams } from "../types";
 import { logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 

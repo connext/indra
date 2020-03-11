@@ -3,8 +3,9 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
 import { CreateChannelMessage, CFCoreTypes, ProtocolTypes } from "../../../types";
+import { xkeysToSortedKthAddresses } from "../../../xkeys";
+
 import { NodeController } from "../../controller";
-import { xkeysToSortedKthAddresses } from "../../../machine";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"

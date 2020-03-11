@@ -11,10 +11,12 @@ import {
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
 } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { Protocol, ProtocolRunner, xkeysToSortedKthAddresses } from "../../src/machine";
+import { Protocol, ProtocolRunner } from "../../src/machine";
 import { install } from "../../src/methods/app-instance/install/operation";
 import { StateChannel } from "../../src/models";
 import { Store } from "../../src/store";
+import { xkeysToSortedKthAddresses } from "../../src/xkeys";
+
 import { getRandomExtendedPubKeys } from "../machine/integration/random-signing-keys";
 import { MemoryStoreService } from "../services/memory-store-service";
 

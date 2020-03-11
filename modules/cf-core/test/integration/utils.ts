@@ -25,7 +25,7 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
-import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../../src/machine";
+import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../../src/xkeys";
 
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
 import { initialSimpleTransferState, simpleTransferAbiEncodings } from "./simple-transfer";

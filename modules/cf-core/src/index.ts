@@ -1,4 +1,3 @@
-export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./machine";
 export {
   CANNOT_UNINSTALL_FREE_BALANCE,
   INVALID_ACTION,
@@ -23,3 +22,4 @@ export {
   deBigNumberifyJson,
   scanForCriticalAddresses,
 } from "./utils";
+export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./xkeys";

@@ -6,11 +6,12 @@ import { Interface } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import { MinimumViableMultisig, ProxyFactory } from "../../../contracts";
-import { sortAddresses, xkeysToSortedKthAddresses } from "../../../machine/xkeys";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { NetworkContext, CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getCreate2MultisigAddress, prettyPrintObject, sleep } from "../../../utils";
+import { sortAddresses, xkeysToSortedKthAddresses } from "../../../xkeys";
+
 import { NodeController } from "../../controller";
 import {
   CHANNEL_CREATION_FAILED,

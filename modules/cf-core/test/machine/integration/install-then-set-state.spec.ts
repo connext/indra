@@ -11,9 +11,10 @@ import { defaultAbiCoder, Interface, keccak256, parseEther } from "ethers/utils"
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
 import { ConditionalTransaction, SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
-import { xkeysToSortedKthSigningKeys } from "../../../src/machine/xkeys";
 import { AppInstance, StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
+import { xkeysToSortedKthSigningKeys } from "../../../src/xkeys";
+
 import {
   ChallengeRegistry,
   DolphinCoin,

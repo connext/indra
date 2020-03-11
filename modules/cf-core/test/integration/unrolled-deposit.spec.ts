@@ -1,8 +1,11 @@
+import { INSTALL_EVENT } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node, NOT_YOUR_BALANCE_REFUND_APP } from "../../src";
 import { CoinBalanceRefundState, ProtocolTypes } from "../../src/types";
+import { xkeyKthAddress } from "../../src/xkeys";
+
 import { toBeLt, toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
@@ -16,8 +19,6 @@ import {
   requestDepositRights,
   transferERC20Tokens,
 } from "./utils";
-import { xkeyKthAddress } from "../../src/machine";
-import { INSTALL_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt, toBeEq });
 

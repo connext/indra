@@ -3,7 +3,7 @@ import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress } from "../machine";
+import { Opcode, Protocol } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
 import {
@@ -14,6 +14,7 @@ import {
   ProtocolParameters,
   UninstallVirtualAppProtocolParams,
 } from "../types";
+import { xkeyKthAddress } from "../xkeys";
 
 import {
   assertIsValidSignature,

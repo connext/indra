@@ -3,8 +3,8 @@ import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { computeRandomExtendedPrvKey } from "../../src/machine/xkeys";
 import { AppInstance, AppInstanceProposal, StateChannel } from "../../src/models";
+import { computeRandomExtendedPrvKey } from "../../src/xkeys";
 
 export function createAppInstanceProposalForTest(appInstanceId: string): AppInstanceProposal {
   return {

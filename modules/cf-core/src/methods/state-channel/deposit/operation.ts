@@ -6,7 +6,7 @@ import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
-import { Protocol, xkeyKthAddress } from "../../../machine";
+import { Protocol } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import {
@@ -22,6 +22,7 @@ import {
 } from "../../../types";
 import { DEPOSIT_FAILED, NOT_YOUR_BALANCE_REFUND_APP } from "../../errors";
 import { logTime } from "../../../utils";
+import { xkeyKthAddress } from "../../../xkeys";
 
 const DEPOSIT_RETRY_COUNT = 3;
 

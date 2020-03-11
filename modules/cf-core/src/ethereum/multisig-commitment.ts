@@ -4,7 +4,7 @@ import { MinimumViableMultisig } from "../contracts";
 import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
-/// A commitment to make MinimumViableMultisig perform a message call
+// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment extends EthereumCommitment {
   constructor(readonly multisigAddress: string, readonly multisigOwners: string[]) {
     super();

@@ -5,10 +5,11 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
-import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
+import { xkeyKthAddress } from "../../../xkeys";
+
 import { NodeController } from "../../controller";
 import {
   INVALID_FACTORY_ADDRESS,

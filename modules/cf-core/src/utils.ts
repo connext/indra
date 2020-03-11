@@ -19,7 +19,7 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 import { JSON_STRINGIFY_SPACE } from "./constants";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
-import { xkeyKthAddress } from "./machine";
+import { xkeyKthAddress } from "./xkeys";
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods";
 import { AppIdentity } from "./types";
 

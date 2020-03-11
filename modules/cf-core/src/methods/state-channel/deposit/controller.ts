@@ -7,6 +7,7 @@ import { ERC20 } from "../../../contracts";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { DepositConfirmationMessage, CFCoreTypes, ProtocolTypes } from "../../../types";
+
 import { NodeController } from "../../controller";
 import {
   CANNOT_DEPOSIT,
