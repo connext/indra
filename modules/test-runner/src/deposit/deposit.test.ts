@@ -5,14 +5,17 @@ import { AddressZero } from "ethers/constants";
 import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance } from "../util/ethprovider";
+import { Wallet } from "ethers";
 
 describe.only("Deposits", () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
+  let mnemonic: string;
 
   beforeEach(async () => {
-    client = await createClient();
+    mnemonic = Wallet.createRandom().mnemonic;
+    client = await createClient({ mnemonic });
     tokenAddress = client.config.contractAddresses.Token;
     nodeFreeBalanceAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
   });
@@ -21,12 +24,18 @@ describe.only("Deposits", () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should deposit ETH", async () => {
+  it.only("happy case: client should deposit ETH", async () => {
     await client.deposit({ amount: ONE, assetId: AddressZero });
     const freeBalance = await client.getFreeBalance(AddressZero);
     expect(freeBalance[client.freeBalanceAddress]).to.equal(ONE);
     expect(freeBalance[nodeFreeBalanceAddress]).to.equal("0");
     // TODO: assert node's version of free balance also?
+    await client.restoreState();
+    console.log(`[test case] state restored`);
+    const nodeFreeBalance = await client.getFreeBalance(AddressZero);
+    expect(nodeFreeBalance[client.freeBalanceAddress]).to.equal(ONE);
+    expect(nodeFreeBalance[nodeFreeBalanceAddress]).to.equal("0");
+    console.log(`[test case] node free balance asserted`);
   });
 
   it("happy case: client should deposit tokens", async () => {
