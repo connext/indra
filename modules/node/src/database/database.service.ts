@@ -31,7 +31,8 @@ import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-ne
 import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
 import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
 import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
-import { withdraw1583917148573 } from "../../migrations/1583917148573-withdraw"
+import { withdraw1583917148573 } from "../../migrations/1583917148573-withdraw";
+import { withdraw1583937670139 } from "../../migrations/1583937670139-withdraw";
 
 export const entities = [
   AppRegistry,
@@ -63,6 +64,7 @@ export const migrations = [
   RebalancingProfile1581796200880,
   fastSignedTransfer1583682931763,
   withdraw1583917148573,
+  withdraw1583937670139,
 ];
 
 @Injectable()

@@ -27,20 +27,6 @@ describe.only("Withdrawal", () => {
     tokenAddress = client.config.contractAddresses.Token;
   });
 
-  it("happy case: client successfully withdraws eth and submits the tx itself", async () => {
-    // fund client with eth
-    await fundChannel(client, ZERO_ZERO_TWO_ETH);
-    // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
-  });
-
-  it("happy case: client successfully withdraws tokens and submits the tx itself", async () => {
-    // fund client with tokens
-    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
-    // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
-  });
-
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     // withdraw

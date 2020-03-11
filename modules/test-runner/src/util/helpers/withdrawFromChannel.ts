@@ -1,4 +1,4 @@
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, TransactionResponse } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -16,13 +16,13 @@ export const withdrawFromChannel = async (
   // try to withdraw
   const preWithdrawalBalance = await client.getFreeBalance(assetId);
   const expected = preWithdrawalBalance[client.freeBalanceAddress].sub(amount);
-  await client.withdraw({
+  const { transaction } = await client.withdraw({
     amount: amount.toString(),
     assetId,
     recipient,
   });
   const postWithdrawalBalance = await client.getFreeBalance(assetId);
-  let recipientBalance;
+  let recipientBalance: BigNumber;
   if (assetId === AddressZero) {
     recipientBalance = await ethProvider.getBalance(recipient);
   } else {
@@ -31,5 +31,6 @@ export const withdrawFromChannel = async (
   }
   expect(recipientBalance.toString()).to.be.eq(amount.toString());
   expect(postWithdrawalBalance[client.freeBalanceAddress].toString()).to.be.eq(expected.toString());
+  expect(transaction.hash).to.exist;
   return;
 };

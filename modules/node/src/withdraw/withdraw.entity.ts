@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   OneToOne,
+  JoinColumn,
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -68,5 +69,6 @@ export class Withdraw {
     (type: any) => OnchainTransaction,
     { nullable: true }
   )
+  @JoinColumn()
   onchainTransaction!: OnchainTransaction;
 }

@@ -1,4 +1,4 @@
-import { ILoggerService, AppInstanceJson, WithdrawAppState, BigNumber } from "@connext/types";
+import { ILoggerService, AppInstanceJson, WithdrawAppState, BigNumber, WithdrawParameters } from "@connext/types";
 import {
   CoinBalanceRefundApp,
   commonAppProposalValidation,
@@ -6,7 +6,8 @@ import {
   SimpleLinkedTransferApp,
   validateSimpleLinkedTransferApp,
   validateWithdrawApp,
-  WithdrawApp
+  WithdrawApp,
+  convertWithdrawParameters
 } from "@connext/apps";
 
 import { ConnextClient } from "./connext";
@@ -124,14 +125,14 @@ export class ConnextListener extends ConnextEventEmitter {
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
       const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appInstanceId)).appInstance
-      const state = msg.data.newState as WithdrawAppState
+      const state = msg.data.newState as WithdrawAppState<BigNumber>
       const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
         return app.appDefinitionAddress === appInstance.appInterface.addr;
       });
       if(registryAppInfo.name == WithdrawApp) {
         const params = {
-          amount: new BigNumber(state.transfers[0].amount),
-          recipient: state.transfers[0].to,
+          amount: state.transfers[0][1],
+          recipient: state.transfers[0][0],
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress
         }
         this.connext.saveWithdrawCommitmentToStore(params, state.signatures);

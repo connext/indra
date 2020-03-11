@@ -325,10 +325,10 @@
       "txHash": "0x40a12a175719c81f308a366b11ab8ea57c65b16a7de481afcfcfb219593da729"
     },
     "FastSignedTransferApp": {
-      "address": "0xB9B7e0cb2EDF5Ea031C8B297A5A1Fa20379b6A0a",
+      "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
       "creationCodeHash": "0x7a9b811d397b4fd1d8784081138125021b3bd0ac45ebe30ab151342baa44aae2",
       "runtimeCodeHash": "0xff2d01e580d263a18b213df273daac1482055180707552f9a0298c8f476385f1",
-      "txHash": "0xf09a3c0d3ec81cc16b466d25ce991198d1c6ce062b393e138755f66f7c00453b"
+      "txHash": "0x11e53869c65ff60b7dd997a91cb1f325cf535d59804640c85b927569721e17a6"
     }
   }
 }

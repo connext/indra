@@ -27,6 +27,7 @@ export function convertWithdrawParameters<To extends NumericTypeName>(
   const asset: any = {
     ...obj,
     assetId: makeChecksumOrEthAddress(obj.assetId),
+    recipient: makeChecksumOrEthAddress(obj.recipient)
   };
   return convertAmountField(to, asset);
 }

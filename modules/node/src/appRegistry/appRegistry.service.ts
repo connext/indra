@@ -226,6 +226,7 @@ export class AppRegistryService implements OnModuleInit {
         this.log.debug(`Doing withdrawal post-install tasks`)
         const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
         const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
+        this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`)
         await this.withdrawService.saveUserWithdrawal(
           appInstanceId,
           bigNumberify(proposeInstallParams.initiatorDeposit),

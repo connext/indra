@@ -77,8 +77,9 @@ export class WithdrawService {
         Primary response method to user withdrawal. Called from appRegistry service.
       */
     async handleUserWithdraw(appInstance: AppInstanceJson): Promise<void> {
-        const state = appInstance.latestState as WithdrawAppState<BigNumber>;
+        let state = appInstance.latestState as WithdrawAppState<BigNumber>;
 
+        // Create the same commitment from scratch
         const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
           {
             amount: state.transfers[0].amount,
@@ -88,10 +89,14 @@ export class WithdrawService {
           appInstance.multisigAddress
         )
     
+        // Sign commitment
         const key = new SigningKey(this.configService.getEthWallet().privateKey)
         const counterpartySignatureOnWithdrawCommitment = joinSignature(key.signDigest(generatedCommitment.hashToSign()))
-        await this.cfCoreService.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
 
+        await this.cfCoreService.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
+        state = (await this.cfCoreService.getAppState(appInstance.identityHash)).state as WithdrawAppState<BigNumber>;
+
+        // Update the db entity with signature
         let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
         if(!withdraw) {
           this.log.error(`Unable to find withdraw entity that we just took action upon. AppId ${appInstance.identityHash}`)
@@ -99,25 +104,25 @@ export class WithdrawService {
         await this.withdrawRepository.addCounterpartySignatureAndFinalize(withdraw, counterpartySignatureOnWithdrawCommitment);
 
         await this.cfCoreService.uninstallApp(appInstance.identityHash)
-        const commitment = await this.cfCoreService.createWithdrawCommitment(
-          {
-            amount: state.transfers[0].amount,
-            recipient: state.transfers[0].to,
-            assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress
-          } as WithdrawParameters<BigNumber>,
-          appInstance.multisigAddress
-        )
-        const signedWithdrawalCommitment = commitment.getSignedTransaction([
-          state.signatures[0],
-          state.signatures[1],
-        ]);
+
+        // Get a finalized minTx object and put it onchain
+        const signedWithdrawalCommitment = generatedCommitment.getSignedTransaction(state.signatures);
         const transaction = await this.submitWithdrawForClient(
           (await this.channelRepository.findByMultisigAddress(appInstance.multisigAddress)).userPublicIdentifier,
           signedWithdrawalCommitment
         );
 
+        // Update db entry again
         withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+        if(!withdraw) {
+          this.log.error(`Unable to find withdraw entity that we just uninstalled. AppId ${appInstance.identityHash}`)
+        }
+
         const onchainTransaction = await this.onchainTransactionRepository.findByHash(transaction.hash)
+        if(!onchainTransaction) {
+          this.log.error(`Unable to find onchain tx that we just submitted in db. Hash: ${transaction.hash}`)
+        }
+
         await this.withdrawRepository.addOnchainTransaction(withdraw, onchainTransaction);
         this.log.info(`Node responded with transaction: ${transaction.hash}`);
         this.log.debug(`Transaction details: ${stringify(transaction)}`);
@@ -147,7 +152,9 @@ export class WithdrawService {
       this.log.debug(`Multisig already deployed, proceeding with withdrawal`);
     }
 
+    this.log.debug(`Sending withdrawal to chain`)
     const txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx);
+    this.log.debug(`Withdrawal tx sent! Hash: ${txRes.hash}`)
     return txRes;
   }
 

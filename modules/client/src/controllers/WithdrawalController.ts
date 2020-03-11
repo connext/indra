@@ -15,6 +15,14 @@ import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(paramsRaw: WithdrawParameters): Promise<WithdrawResponse> {
+    //Set defaults
+    if(!paramsRaw.assetId) {
+      paramsRaw.assetId = AddressZero
+    }
+    if(!paramsRaw.recipient) {
+      paramsRaw.recipient = this.connext.freeBalanceAddress
+    }
+
     const params = convertWithdrawParameters(`bignumber`, paramsRaw);
     let transaction: TransactionResponse | undefined;
 
