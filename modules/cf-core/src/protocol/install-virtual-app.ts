@@ -1,9 +1,8 @@
 import { MaxUint256 } from "ethers/constants";
-import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
+import { getConditionalTxCommitment, SetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
 import {
@@ -85,24 +84,13 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       virtualAppInstance.appSeqNo,
     );
 
-    const responderFreeBalanceAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(
-      responderXpub,
-    );
     const responderEphemeralAddress = xkeyKthAddress(responderXpub, virtualAppInstance.appSeqNo);
 
     // TODO: who signs a conditional tx?
-    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
-      network,
-      stateChannelWithIntermediary.multisigAddress,
-      stateChannelWithIntermediary.multisigOwners,
-      timeLockedPassThroughAppInstance.identityHash,
-      stateChannelWithIntermediary.freeBalance.identityHash,
-      network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-      encodeSingleAssetTwoPartyIntermediaryAgreementParams(
-        stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-          virtualAppInstance.identityHash,
-        ),
-      ),
+    const presignedMultisigTxForAliceIngridVirtualAppAgreement = getConditionalTxCommitment(
+      context,
+      stateChannelWithIntermediary,
+      timeLockedPassThroughAppInstance,
     );
 
     const initiatorSignatureOnAliceIngridVirtualAppAgreement = yield [
@@ -353,18 +341,10 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       timeLockedPassThroughAppInstance.appSeqNo,
     );
 
-    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
-      network,
-      stateChannelWithInitiating.multisigAddress,
-      stateChannelWithInitiating.multisigOwners,
-      timeLockedPassThroughAppInstance.identityHash,
-      stateChannelWithInitiating.freeBalance.identityHash,
-      network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-      encodeSingleAssetTwoPartyIntermediaryAgreementParams(
-        stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-          timeLockedPassThroughAppInstance.state["targetAppIdentityHash"],
-        ),
-      ),
+    const presignedMultisigTxForAliceIngridVirtualAppAgreement = getConditionalTxCommitment(
+      context,
+      stateChannelWithInitiating,
+      timeLockedPassThroughAppInstance,
     );
 
     // TODO: who signs conditional txs?
@@ -374,18 +354,10 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignatureOnAliceIngridVirtualAppAgreement,
     );
 
-    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(
-      network,
-      stateChannelWithResponding.multisigAddress,
-      stateChannelWithResponding.multisigOwners,
-      timeLockedPassThroughAppInstance.identityHash,
-      stateChannelWithResponding.freeBalance.identityHash,
-      network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-      encodeSingleAssetTwoPartyIntermediaryAgreementParams(
-        stateChannelWithResponding.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-          timeLockedPassThroughAppInstance.state["targetAppIdentityHash"],
-        ),
-      ),
+    const presignedMultisigTxForIngridBobVirtualAppAgreement = getConditionalTxCommitment(
+      context,
+      stateChannelWithResponding,
+      timeLockedPassThroughAppInstance,
     );
 
     // TODO: who signs conditional txs?
@@ -646,23 +618,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       virtualAppInstance.appSeqNo,
     );
 
-    const initiatorFreeBalanceAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(
-      initiatorXpub,
-    );
     const initiatorEphemeralAddress = xkeyKthAddress(initiatorXpub, virtualAppInstance.appSeqNo);
 
-    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(
-      network,
-      stateChannelWithIntermediary.multisigAddress,
-      stateChannelWithIntermediary.multisigOwners,
-      timeLockedPassThroughAppInstance.identityHash,
-      stateChannelWithIntermediary.freeBalance.identityHash,
-      network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-      encodeSingleAssetTwoPartyIntermediaryAgreementParams(
-        stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-          virtualAppInstance.identityHash,
-        ),
-      ),
+    const presignedMultisigTxForIngridBobVirtualAppAgreement = getConditionalTxCommitment(
+      context,
+      stateChannelWithIntermediary,
+      timeLockedPassThroughAppInstance,
     );
 
     // TODO: who signs conditional txs?
@@ -912,7 +873,7 @@ function computeInterpreterParameters(
  *       except for a TimeLockedPassThrough AppInstance that uses it inside of its own
  *       computeOutcome function.
  *
- * @param {StateChannel} stateChannelBetweenEndpoints - The StateChannel object between the endpoints
+ * @param {StateChannel} stateChannelBetweenEndpoints - The StateChannel object
  * @param {InstallVirtualAppProtocolParams} params - Parameters of the new App to be installed
  *
  * @returns {AppInstance} an AppInstance with the correct metadata
@@ -1038,12 +999,12 @@ function constructTimeLockedPassThroughAppInstance(
       switchesOutcomeAt: MaxUint256,
       defaultOutcome: virtualAppDefaultOutcome,
     },
-    /* versionNumber */ 0,
-    /* latestTimeout */ HARD_CODED_CHALLENGE_TIMEOUT,
-    /* outcomeType */ outcomeType,
-    /* twoPartyOutcomeInterpreterParams */ twoPartyOutcomeInterpreterParams,
-    /* multiAssetMultiPartyCoinTransferInterpreterParams */ multiAssetMultiPartyCoinTransferInterpreterParams,
-    /* singleAssetTwoPartyCoinTransferInterpreterParams */ singleAssetTwoPartyCoinTransferInterpreterParams,
+    0, // versionNumber
+    HARD_CODED_CHALLENGE_TIMEOUT, // latestTimeout
+    outcomeType,
+    twoPartyOutcomeInterpreterParams,
+    multiAssetMultiPartyCoinTransferInterpreterParams,
+    singleAssetTwoPartyCoinTransferInterpreterParams,
   );
 }
 
@@ -1171,23 +1132,24 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
 
   const initiatorAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(initiatorXpub);
 
-  const newStateChannelWithIntermediary = stateChannelWithIntermediary.addSingleAssetTwoPartyIntermediaryAgreement(
-    virtualAppInstance.identityHash,
-    {
+  const newStateChannelWithIntermediary =
+    stateChannelWithIntermediary.addSingleAssetTwoPartyIntermediaryAgreement(
+      virtualAppInstance.identityHash,
+      {
+        tokenAddress,
+        timeLockedPassThroughIdentityHash: timeLockedPassThroughAppInstance.identityHash,
+        capitalProvided: bigNumberify(initiatorBalanceDecrement)
+          .add(responderBalanceDecrement)
+          .toHexString(),
+        capitalProvider: intermediaryAddress,
+        virtualAppUser: initiatorAddress,
+      },
+      {
+        [initiatorAddress]: initiatorBalanceDecrement,
+        [intermediaryAddress]: responderBalanceDecrement,
+      },
       tokenAddress,
-      timeLockedPassThroughIdentityHash: timeLockedPassThroughAppInstance.identityHash,
-      capitalProvided: bigNumberify(initiatorBalanceDecrement)
-        .add(responderBalanceDecrement)
-        .toHexString(),
-      capitalProvider: intermediaryAddress,
-      virtualAppUser: initiatorAddress,
-    },
-    {
-      [initiatorAddress]: initiatorBalanceDecrement,
-      [intermediaryAddress]: responderBalanceDecrement,
-    },
-    tokenAddress,
-  );
+    );
 
   return [
     stateChannelWithAllThreeParties.addAppInstance(timeLockedPassThroughAppInstance),

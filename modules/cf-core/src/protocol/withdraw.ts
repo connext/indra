@@ -1,9 +1,9 @@
 import { MaxUint256 } from "ethers/constants";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import {
-  ConditionalTransaction,
+  getConditionalTxCommitment,
   SetStateCommitment,
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
@@ -18,7 +18,6 @@ import {
   Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
-  singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   WithdrawProtocolParams,
 } from "../types";
 import { logTime } from "../utils";
@@ -36,7 +35,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
   /**
    * Sequence 0 of the WITHDRAW_PROTOCOL looks a bit like this:
    *
-   * 1. Sign a `ConditionalTransaction` for an ETHBalanceRefund AppInstance
+   * 1. Sign a `ConditionalTxCommitment` for an ETHBalanceRefund AppInstance
    * 2. Get the countersignature, then sign the FreeBalance state update to activate
    * 3. Sign the WithdrawETHCommitment and wait for counterparty
    * 4. Countersign the uninstallation FreeBalance state update
@@ -81,9 +80,10 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const refundApp = postInstallRefundAppStateChannel.mostRecentlyInstalledAppInstance();
 
-    const conditionalTransactionData = constructConditionalTransactionForRefundApp(
-      network,
+    const conditionalTransactionData = getConditionalTxCommitment(
+      context,
       postInstallRefundAppStateChannel,
+      refundApp,
     );
 
     const responderFreeBalanceAddress = preInstallRefundAppStateChannel.getFreeBalanceAddrOf(
@@ -289,7 +289,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
   /**
    * Sequence 1 of the WITHDRAW_PROTOCOL looks very similar but the inverse:
    *
-   * 1. Countersign the received `ConditionalTransaction` from the initiator
+   * 1. Countersign the received `ConditionalTxCommitment` from the initiator
    * 2. Sign the free balance state update to install the AppInstance and send
    * 3. Countersign the WithdrawETHCommitment you receive back
    * 4. Sign and send the FreeBalance state update and wait for the countersignature
@@ -331,9 +331,10 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const refundApp = postInstallRefundAppStateChannel.mostRecentlyInstalledAppInstance();
 
-    const conditionalTransactionData = constructConditionalTransactionForRefundApp(
-      network,
+    const conditionalTransactionData = getConditionalTxCommitment(
+      context,
       postInstallRefundAppStateChannel,
+      refundApp,
     );
 
     const initiatorFreeBalanceAddress = preInstallRefundAppStateChannel.getFreeBalanceAddrOf(
@@ -574,39 +575,6 @@ function addRefundAppToStateChannel(
       [stateChannel.getFreeBalanceAddrOf(initiatorXpub)]: amount,
     },
   });
-}
-
-/**
- * Computes the ConditionalTransaction unsigned transaction pertaining to the
- * installation of the ETHBalanceRefundApp.
- *
- * Note that this app is hard-coded to the MultiAssetMultiPartyCoinTransferInterpreter.
- * You can see this by reviewing the `ETHBalanceRefundApp.sol` file
- * which has an outcome structure of LibOutcome.CoinTrasfer[].
- *
- * @param {NetworkContext} network - Metadata on the current blockchain
- * @param {StateChannel} stateChannel - The post-refund-app-installed StateChannel
- *
- * @returns {ConditionalTransaction} A ConditionalTransaction object, ready to sign.
- */
-function constructConditionalTransactionForRefundApp(
-  network: NetworkContext,
-  stateChannel: StateChannel,
-): ConditionalTransaction {
-  const appInstance = stateChannel.mostRecentlyInstalledAppInstance();
-
-  return new ConditionalTransaction(
-    network,
-    stateChannel.multisigAddress,
-    stateChannel.multisigOwners,
-    appInstance.identityHash,
-    stateChannel.freeBalance.identityHash,
-    network.SingleAssetTwoPartyCoinTransferInterpreter,
-    defaultAbiCoder.encode(
-      [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
-      [appInstance.singleAssetTwoPartyCoinTransferInterpreterParams],
-    ),
-  );
 }
 
 function constructWithdrawalCommitment(

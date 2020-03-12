@@ -8,16 +8,16 @@ import { generateRandomNetworkContext } from "../../test/machine/mocks";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { FreeBalanceClass, StateChannel } from "../models";
-import { MultisigTransaction } from "../types";
+import { Context, MultisigTransaction } from "../types";
 import { appIdentityToHash } from "../utils";
 
-import { ConditionalTransaction } from "./conditional-transaction-commitment";
+import { getConditionalTxCommitment } from "./conditional-transaction-commitment";
 
 describe("ConditionalTransaction", () => {
   let tx: MultisigTransaction;
 
   // Test network context
-  const networkContext = generateRandomNetworkContext();
+  const context= { network: generateRandomNetworkContext() } as Context;
 
   // General interaction testing values
   const interaction = {
@@ -27,10 +27,10 @@ describe("ConditionalTransaction", () => {
 
   // State channel testing values
   let stateChannel = StateChannel.setupChannel(
-    networkContext.IdentityApp,
+    context.network.IdentityApp,
     {
-      proxyFactory: networkContext.ProxyFactory,
-      multisigMastercopy: networkContext.MinimumViableMultisig,
+      proxyFactory: context.network.ProxyFactory,
+      multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(hexlify(randomBytes(20))),
     [interaction.sender, interaction.receiver],
@@ -48,19 +48,15 @@ describe("ConditionalTransaction", () => {
   const appInstance = createAppInstanceForTest(stateChannel);
 
   beforeAll(() => {
-    tx = new ConditionalTransaction(
-      networkContext,
-      stateChannel.multisigAddress,
-      stateChannel.multisigOwners,
-      appInstance.identityHash,
-      freeBalanceETH.identityHash,
-      AddressZero,
-      HashZero,
+    tx = getConditionalTxCommitment(
+      context, 
+      stateChannel,
+      appInstance,
     ).getTransactionDetails();
   });
 
   it("should be to the ConditionalTransactionDelegateTarget contract", () => {
-    expect(tx.to).toBe(networkContext.ConditionalTransactionDelegateTarget);
+    expect(tx.to).toBe(context.network.ConditionalTransactionDelegateTarget);
   });
 
   it("should have no value", () => {
@@ -88,11 +84,11 @@ describe("ConditionalTransaction", () => {
         interpreterAddress,
         interpreterParams,
       ] = calldata.args;
-      expect(appRegistryAddress).toBe(networkContext.ChallengeRegistry);
+      expect(appRegistryAddress).toBe(context.network.ChallengeRegistry);
       expect(freeBalanceAppIdentity).toBe(freeBalanceETH.identityHash);
       expect(appIdentityHash).toBe(appIdentityToHash(appInstance.identity));
-      expect(interpreterAddress).toBe(AddressZero);
-      expect(interpreterParams).toBe(HashZero);
+      expect(interpreterAddress).toBe(context.network.TwoPartyFixedOutcomeInterpreter);
+      expect(interpreterParams).toBe(appInstance.encodedInterpreterParams);
     });
   });
 });

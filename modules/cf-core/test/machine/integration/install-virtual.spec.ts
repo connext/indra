@@ -5,10 +5,10 @@ import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, Interface, parseEther, SigningKey } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
-import { ConditionalTransaction, SetStateCommitment } from "../../../src/ethereum";
+import { getConditionalTxCommitment, SetStateCommitment } from "../../../src/ethereum";
 import { AppInstance, StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
-import { encodeSingleAssetTwoPartyIntermediaryAgreementParams } from "../../../src/protocol/install-virtual-app";
+import { Context, NetworkContext } from "../../../src/types";
 import { xkeysToSortedKthSigningKeys } from "../../../src/xkeys";
 
 import {
@@ -25,6 +25,8 @@ import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "./random-signing-keys";
 
+expect.extend({ toBeEq });
+
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
 // gas needed, so we hard-code this number to ensure the tx completes
 const CREATE_PROXY_AND_SETUP_GAS = 1e6;
@@ -33,60 +35,23 @@ const CREATE_PROXY_AND_SETUP_GAS = 1e6;
 // written this test to do that yet
 const SETSTATE_COMMITMENT_GAS = 1e6;
 
-let provider: JsonRpcProvider;
-let wallet: Wallet;
-let network: NetworkContextForTestSuite;
-let appRegistry: Contract;
-
-let erc20ContractAddress: string;
-let erc20Contract: Contract;
-
-let multisigOwnerKeys: SigningKey[];
-
-let xpubs: string[];
-
-const capitalProvider = Wallet.createRandom().address;
-const virtualAppUser = Wallet.createRandom().address;
-
-expect.extend({ toBeEq });
-
-let twoPartyFixedOutcomeAppDefinition: Contract;
-
-let proxyFactory: Contract;
-
-beforeAll(async () => {
-  jest.setTimeout(10000);
-
-  [provider, wallet, {}] = await connectToGanache();
-
-  network = global["networkContext"];
-
-  appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
-
-  erc20ContractAddress = network.DolphinCoin;
-
-  erc20Contract = new Contract(
-    erc20ContractAddress,
-    DolphinCoin.abi,
-    new JsonRpcProvider(global["ganacheURL"]),
-  );
-
-  twoPartyFixedOutcomeAppDefinition = await new ContractFactory(
-    TwoPartyFixedOutcomeApp.abi,
-    TwoPartyFixedOutcomeApp.evm.bytecode,
-    wallet,
-  ).deploy();
-
-  proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
-});
-
 describe.skip("Scenario: Install virtual app with and put on-chain", () => {
+  let context: Context;
+  let provider: JsonRpcProvider;
+  let wallet: Wallet;
+  let network: NetworkContextForTestSuite;
+  let appRegistry: Contract;
+  let erc20ContractAddress: string;
+  let erc20Contract: Contract;
+  let multisigOwnerKeys: SigningKey[];
+  let xpubs: string[];
+  const capitalProvider = Wallet.createRandom().address;
+  const virtualAppUser = Wallet.createRandom().address;
+  let twoPartyFixedOutcomeAppDefinition: Contract;
+  let proxyFactory: Contract;
   let globalChannelNonce = 0;
-
   let createProxy: () => Promise<void>;
-
   let fundWithETH: (wallet: Wallet, proxyAddress: string, amount: BigNumber) => Promise<void>;
-
   let fundWithDolphinCoin: (proxyAddress: string, amount: BigNumber) => Promise<void>;
 
   let setupChannel: (
@@ -101,6 +66,26 @@ describe.skip("Scenario: Install virtual app with and put on-chain", () => {
     targetAppInstance: AppInstance,
     stateChannel: StateChannel,
   ) => Promise<void>;
+
+  beforeAll(async () => {
+    jest.setTimeout(10000);
+    [provider, wallet, {}] = await connectToGanache();
+    network = global["networkContext"];
+    context = { network: network as NetworkContext } as Context;
+    appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
+    erc20ContractAddress = network.DolphinCoin;
+    erc20Contract = new Contract(
+      erc20ContractAddress,
+      DolphinCoin.abi,
+      new JsonRpcProvider(global["ganacheURL"]),
+    );
+    twoPartyFixedOutcomeAppDefinition = await new ContractFactory(
+      TwoPartyFixedOutcomeApp.abi,
+      TwoPartyFixedOutcomeApp.evm.bytecode,
+      wallet,
+    ).deploy();
+    proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
+  });
 
   beforeEach(async () => {
     const xprvs = getRandomExtendedPrvKeys(2);
@@ -263,14 +248,10 @@ describe.skip("Scenario: Install virtual app with and put on-chain", () => {
 
       await setStatesAndOutcomes(targetAppInstance, stateChannel);
 
-      const commitment = new ConditionalTransaction(
-        network, // network
-        proxyAddress, // multisigAddress
-        multisigOwnerKeys.map(x => x.address), // signing
-        targetAppInstance.identityHash, // target
-        stateChannel.freeBalance.identityHash, // fb
-        network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
+      const commitment = getConditionalTxCommitment(
+        context,
+        stateChannel,
+        targetAppInstance,
       );
 
       await wallet.sendTransaction({
@@ -323,14 +304,10 @@ describe.skip("Scenario: Install virtual app with and put on-chain", () => {
 
       await setStatesAndOutcomes(targetAppInstance, stateChannel);
 
-      const commitment = new ConditionalTransaction(
-        network, // network
-        proxyAddress, // multisigAddress
-        multisigOwnerKeys.map(x => x.address), // signing
-        targetAppInstance.identityHash, // target
-        stateChannel.freeBalance.identityHash, // fb
-        network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
+      const commitment = getConditionalTxCommitment(
+        context,
+        stateChannel,
+        targetAppInstance,
       );
 
       await wallet.sendTransaction({

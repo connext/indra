@@ -1,17 +1,16 @@
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
-  multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
   NetworkContext,
   OutcomeType,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { defaultAbiCoder, Interface, keccak256, parseEther } from "ethers/utils";
+import { Interface, keccak256, parseEther } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
 import {
-  ConditionalTransaction,
+  getConditionalTxCommitment,
   getSetupCommitment,
   SetStateCommitment,
 } from "../../../src/ethereum";
@@ -178,6 +177,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for (const _ of Array(identityAppInstance.timeout)) {
         await provider.send("evm_mine", []);
       }
@@ -192,17 +192,10 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         stateChannel.freeBalance.encodedLatestState,
       );
 
-      const conditionalTransaction = new ConditionalTransaction(
-        network,
-        stateChannel.multisigAddress,
-        stateChannel.multisigOwners,
-        identityAppInstance.identityHash,
-        stateChannel.freeBalance.identityHash,
-        network.MultiAssetMultiPartyCoinTransferInterpreter,
-        defaultAbiCoder.encode(
-          [multiAssetMultiPartyCoinTransferInterpreterParamsEncoding],
-          [identityAppInstance.multiAssetMultiPartyCoinTransferInterpreterParams!],
-        ),
+      const conditionalTransaction = getConditionalTxCommitment(
+        context,
+        stateChannel,
+        identityAppInstance,
       );
 
       const multisigDelegateCallTx = conditionalTransaction.getSignedTransaction([
