@@ -110,7 +110,8 @@ describe("Fast Signed Transfer", () => {
 
     let initialSenderAppInstanceId: string = "";
     let initialReceiverAppInstanceId: string = "";
-    for (let i = 0; i < 10; i++) {
+    const n = 5;
+    for (let i = 0; i < n; i++) {
       const paymentId = hexlify(randomBytes(32));
       const { transferAppInstanceId } = (await clientA.conditionalTransfer({
         amount: transferAmount.toString(),
@@ -142,7 +143,7 @@ describe("Fast Signed Transfer", () => {
         initialReceiverAppInstanceId = res.appId;
       }
       expect(res.appId).to.be.eq(initialReceiverAppInstanceId);
-      await delay(1000);
+      await delay(3000); // TODO: wait on something more explicit..?
     }
     await delay(5000);
 
@@ -153,6 +154,6 @@ describe("Fast Signed Transfer", () => {
     const coinTransfers = transferAppState.coinTransfers.map(bigNumberifyObj);
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
     expect(coinTransfers[1][0]).eq(clientB.freeBalanceAddress);
-    expect(coinTransfers[1][1]).eq(10);
+    expect(coinTransfers[1][1]).eq(n);
   });
 });
