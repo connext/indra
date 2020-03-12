@@ -8,7 +8,7 @@ import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsXpub } from "../util";
-import { WithdrawCommitment } from "../commitment/commitment.entity";
+import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 

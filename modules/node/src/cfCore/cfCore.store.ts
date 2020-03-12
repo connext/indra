@@ -11,11 +11,13 @@ import {
 
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
+import { WithdrawCommitmentRepository } from "../withdrawCommitment/withdrawCommitment.repository";
+// eslint-disable-next-line max-len
 import {
   ConditionalTransactionCommitmentRepository,
-  SetStateCommitmentRepository,
-  WithdrawCommitmentRepository,
-} from "../commitment/commitment.repository";
+  convertConditionalCommitmentToJson,
+} from "../conditionalCommitment/conditionalCommitment.repository";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
@@ -217,11 +219,18 @@ export class CFCoreStore implements IStoreService {
     return this.setStateCommitmentRepository.saveLatestSetStateCommitment(app, commitment);
   }
 
-  getConditionalTransactionCommitment(
+  async getConditionalTransactionCommitment(
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    return this.conditionalTransactionCommitmentRepository.getConditionalTransactionCommitment(
+    const commitment = await this.conditionalTransactionCommitmentRepository.getConditionalTransactionCommitment(
       appIdentityHash,
+    );
+    if (!commitment) {
+      return undefined;
+    }
+    return convertConditionalCommitmentToJson(
+      commitment,
+      await this.configService.getContractAddresses(),
     );
   }
 
@@ -235,7 +244,7 @@ export class CFCoreStore implements IStoreService {
         `Could not find appid for conditional transaction commitment. AppId: ${appIdentityHash}`,
       );
     }
-    return this.conditionalTransactionCommitmentRepository.saveConditionalTransactionCommitment(
+    await this.conditionalTransactionCommitmentRepository.saveConditionalTransactionCommitment(
       app,
       commitment,
     );
