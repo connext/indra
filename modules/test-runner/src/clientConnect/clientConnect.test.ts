@@ -2,8 +2,8 @@ import { AddressZero, One } from "ethers/constants";
 
 import { createClient, expect, env, sendOnchainValue } from "../util";
 import { Wallet } from "ethers";
-import { ConnextStore, MemoryStorage } from "@connext/store";
-import { ClientOptions } from "@connext/types";
+import { ConnextStore } from "@connext/store";
+import { ClientOptions, MEMORYSTORAGE } from "@connext/types";
 import { Logger } from "../util/logger";
 import { connect } from "@connext/client";
 
@@ -20,7 +20,7 @@ describe("Client Connect", () => {
     expect(coinBalanceRefunds.length).to.be.eq(2);
     client.messaging.disconnect();
 
-    const store = new ConnextStore(new MemoryStorage());
+    const store = new ConnextStore(MEMORYSTORAGE);
     const clientOpts: ClientOptions = {
       ethProviderUrl: env.ethProviderUrl,
       loggerService: new Logger("TestRunner", env.logLevel),
@@ -53,7 +53,7 @@ describe("Client Connect", () => {
     await sendOnchainValue(client.multisigAddress, One);
     await sendOnchainValue(client.multisigAddress, One, client.config.contractAddresses.Token);
 
-    const store = new ConnextStore(new MemoryStorage());
+    const store = new ConnextStore(MEMORYSTORAGE);
     const clientOpts: ClientOptions = {
       ethProviderUrl: env.ethProviderUrl,
       loggerService: new Logger("TestRunner", env.logLevel),
