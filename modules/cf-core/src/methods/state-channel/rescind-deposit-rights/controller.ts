@@ -1,4 +1,6 @@
+import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
@@ -7,8 +9,6 @@ import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import { uninstallBalanceRefundApp } from "../deposit/operation";
-import { BigNumber } from "ethers/utils";
-import { Contract } from "ethers";
 
 export default class RescindDepositRightsController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_rescindDepositRights)

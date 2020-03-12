@@ -1,7 +1,7 @@
 import {
   IConnextClient,
   DefaultApp,
-  RECIEVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
   UPDATE_STATE_EVENT,
 } from "@connext/types";
 import * as lolex from "lolex";
@@ -214,7 +214,7 @@ describe("Async transfer offline tests", () => {
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise(resolve =>
-      receiverClient.once(RECIEVE_TRANSFER_FINISHED_EVENT, () => {
+      receiverClient.once(RECEIVE_TRANSFER_FINISHED_EVENT, () => {
         resolve();
       }),
     );
@@ -277,7 +277,7 @@ describe("Async transfer offline tests", () => {
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise((resolve: Function) =>
-      receiverClient.once(RECIEVE_TRANSFER_FINISHED_EVENT, () => {
+      receiverClient.once(RECEIVE_TRANSFER_FINISHED_EVENT, () => {
         resolve();
       }),
     );

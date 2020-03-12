@@ -1,23 +1,26 @@
-import { ILoggerService, nullLogger } from "@connext/types";
+import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS, ILoggerService, nullLogger } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
-import { createRpcRouter } from "./api";
+import { createRpcRouter } from "./methods";
 import AutoNonceWallet from "./auto-nonce-wallet";
+import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
-import { Opcode, Protocol, ProtocolMessage, ProtocolRunner } from "./machine";
-import { StateChannel } from "./models";
-import { getFreeBalanceAddress } from "./models/free-balance";
+import { Opcode, Protocol, ProtocolRunner } from "./machine";
+import { getFreeBalanceAddress, StateChannel } from "./models";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { NetworkContext, CFCoreTypes, NodeMessageWrappedProtocolMessage } from "./types";
+import {
+  CFCoreTypes,
+  NetworkContext,
+  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
+} from "./types";
 import { timeout } from "./utils";
-import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
-import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS } from "@connext/types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the

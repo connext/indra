@@ -2,6 +2,8 @@ import { CoinTransfer } from "../";
 import { BigNumber } from "ethers/utils";
 import { multiAssetMultiPartyCoinTransferEncoding } from "../contracts";
 
+export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
+
 export type SimpleSwapAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[][];
 };

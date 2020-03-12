@@ -4,7 +4,7 @@ import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { AppIdentity, MultisigOperation, MultisigTransaction, NetworkContext } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
-import { appIdentityToHash } from "./utils/app-identity";
+import { appIdentityToHash } from "./utils";
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 

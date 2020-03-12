@@ -7,6 +7,7 @@ import "./deposit/depositOffline.test";
 import "./deposit/depositRights.test";
 import "./flows/transfer.test";
 import "./flows/multiclientTransfer.test";
+import "./flows/multiclientFastSignedTransfer.test";
 import "./getAppRegistry/getAppRegistry.test";
 import "./getStateChannel/getStateChannel.test";
 import "./rebalance/collateral.test";

@@ -1,11 +1,11 @@
-import { CoinBalanceRefundApp } from "@connext/apps";
 import {
   ChannelAppSequences,
-  StateChannelJSON,
   maxBN,
   RebalanceProfileBigNumber,
   stringify,
   GetConfigResponse,
+  CoinBalanceRefundApp,
+  StateChannelJSON,
 } from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -22,7 +22,6 @@ import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { MessagingClientProviderId } from "../constants";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
@@ -223,17 +222,13 @@ export class ChannelService {
     minimumRequiredCollateral: BigNumber = Zero,
   ): Promise<TransactionResponse | undefined> {
     const normalizedAssetId = getAddress(assetId);
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
-
-    if (!channel) {
-      throw new Error(`Channel does not exist for user ${userPubId}`);
-    }
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
     let rebalancingTargets = await this.getDataFromRebalancingService(userPubId, assetId);
     if (!rebalancingTargets) {
       this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
-      rebalancingTargets = await this.getRebalanceProfileForChannelAndAsset(
+      rebalancingTargets = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
         userPubId,
         normalizedAssetId,
       );
@@ -486,12 +481,9 @@ export class ChannelService {
     userPublicIdentifier: string,
     userSequenceNumber: number,
   ): Promise<ChannelAppSequences> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(
-        `Could not find channel associated with: ${userPublicIdentifier} in verifyAppSequenceNumber`,
-      );
-    }
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
     const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
     const [, appJson] = sc.appInstances.reduce((prev, curr) => {
       const [, prevJson] = prev;

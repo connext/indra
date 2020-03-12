@@ -1,14 +1,18 @@
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { SetStateCommitment } from "../ethereum";
-import { appIdentityToHash, ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
-import { Context, ProposeInstallProtocolParams, ProtocolMessage } from "../types";
+import { appIdentityToHash, SetStateCommitment } from "../ethereum";
+import { Opcode, Protocol, xkeyKthAddress } from "../machine";
 import { AppInstanceProposal, StateChannel } from "../models";
+import {
+  Context,
+  ProposeInstallProtocolParams,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+} from "../types";
+import { logTime } from "../utils";
 
-import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
-import { assertIsValidSignature } from "./utils/signature-validator";
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
@@ -16,6 +20,10 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { message, network, stateChannelsMap } = context;
+    const log = context.log.newContext("CF-ProposeProtocol");
+    const start = Date.now();
+    let substart;
+    log.debug(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -103,26 +111,35 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
+    substart = Date.now();
     const m2 = yield [IO_SEND_AND_WAIT, m1];
+    logTime(log, substart, `Received responder's m2`);
 
     const {
       customData: { signature: responderSignatureOnInitialState },
     } = m2! as ProtocolMessage;
 
+    substart = Date.now();
     assertIsValidSignature(
       xkeyKthAddress(responderXpub, appInstanceProposal.appSeqNo),
       setStateCommitment,
       responderSignatureOnInitialState,
     );
+    logTime(log, substart, `Validated responder's sig on initial state`);
 
     context.stateChannelsMap.set(
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { message, network, stateChannelsMap } = context;
+    const log = context.log.newContext("CF-ProposeProtocol");
+    const start = Date.now();
+    let substart;
+    log.debug(`Response started`);
 
     const { params, processID } = message;
 
@@ -195,11 +212,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
+    substart = Date.now();
     assertIsValidSignature(
       xkeyKthAddress(initiatorXpub, appInstanceProposal.appSeqNo),
       setStateCommitment,
       initiatorSignatureOnInitialState,
     );
+    logTime(log, substart, `Validated initiator's sig on initial state`);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -226,5 +245,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.multisigAddress,
       postProtocolStateChannel,
     );
+    logTime(log, start, `Finished responding`);
   },
 };

@@ -1,32 +1,38 @@
-import { handleRejectProposalMessage } from "./message-handling/handle-node-message";
-import { handleReceivedProtocolMessage } from "./message-handling/handle-protocol-message";
+import { PROTOCOL_MESSAGE_EVENT, REJECT_INSTALL_EVENT } from "@connext/types";
+import { handleRejectProposalMessage, handleReceivedProtocolMessage } from "../message-handling";
+import { RequestHandler } from "../request-handler";
+import RpcRouter from "../rpc-router";
+
+import {
+  GetInstalledAppInstancesController,
+  GetAppInstanceController,
+  GetFreeBalanceStateController,
+  GetAppInstanceStateController,
+  GetTokenIndexedFreeBalancesController,
+  InstallVirtualAppInstanceController,
+  InstallAppInstanceController,
+  ProposeInstallAppInstanceController,
+  RejectInstallController,
+  TakeActionController,
+  UninstallVirtualController,
+  UninstallController,
+  UpdateStateController,
+} from "./app-instance";
+import {
+  GetProposedAppInstancesController,
+  GetProposedAppInstanceController,
+} from "./proposed-app-instance";
 import {
   CreateChannelController,
   DepositController,
   GetAllChannelAddressesController,
-  GetAppInstanceController,
-  GetAppInstanceStateController,
-  GetFreeBalanceStateController,
-  GetInstalledAppInstancesController,
-  GetProposedAppInstanceController,
-  GetProposedAppInstancesController,
   GetStateChannelController,
   GetStateDepositHolderAddressController,
-  GetTokenIndexedFreeBalancesController,
-  InstallAppInstanceController,
-  InstallVirtualAppInstanceController,
-  ProposeInstallAppInstanceController,
-  RejectInstallController,
-  RescindDepositRightsController,
   RequestDepositRightsController,
-  TakeActionController,
-  UninstallController,
-  UninstallVirtualController,
-  UpdateStateController,
-} from "./methods";
-import { RequestHandler } from "./request-handler";
-import RpcRouter from "./rpc-router";
-import { PROTOCOL_MESSAGE_EVENT, REJECT_INSTALL_EVENT } from "@connext/types";
+  RescindDepositRightsController,
+  WithdrawCommitmentController,
+  WithdrawController,
+} from "./state-channel";
 
 const controllers = [
   /**

@@ -8,7 +8,7 @@ import {
 import { BaseProvider } from "ethers/providers";
 import { Signature } from "ethers/utils";
 
-import { Opcode } from "./machine/enums";
+import { Opcode } from "./machine";
 import { StateChannel } from "./models";
 
 export abstract class EthereumCommitment {

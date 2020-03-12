@@ -28,6 +28,7 @@ import { FastSignedTransferStatus } from "../fastSignedTransfer/fastSignedTransf
 import { WithdrawRepository } from "../withdraw/withdraw.repository"
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { FastSignedTransferService } from "../fastSignedTransfer/fastSignedTransfer.service";
 
 @Injectable()
 export class AppActionsService {
@@ -35,6 +36,8 @@ export class AppActionsService {
     private readonly log: LoggerService,
     private readonly transferService: LinkedTransferService,
     private readonly withdrawService: WithdrawService,
+    private readonly linkedTransferService: LinkedTransferService,
+    private readonly fastSignedTransferService: FastSignedTransferService,
     private readonly cfCoreService: CFCoreService,
     private readonly withdrawRepository: WithdrawRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
@@ -87,7 +90,7 @@ export class AppActionsService {
   ): Promise<void> {
     switch (action.actionType) {
       case FastSignedTransferActionType.CREATE: {
-        await this.transferService.saveFastSignedTransfer(
+        await this.linkedTransferService.saveFastSignedTransfer(
           from,
           AddressZero, // TODO
           bigNumberify(action.amount),
@@ -108,19 +111,7 @@ export class AppActionsService {
         await this.fastSignedTransferRepository.save(transfer);
 
         // unlock sender payment, if successful mark as reclaimed
-        this.log.debug(`Received unlock for receiver payment, unlocking sender payment`);
-        const senderAppAction = {
-          actionType: FastSignedTransferActionType.UNLOCK,
-          amount: transfer.amount,
-          data: action.data,
-          paymentId: action.paymentId,
-          recipientXpub: transfer.receiverChannel.userPublicIdentifier,
-          signature: action.signature,
-          signer: transfer.signer,
-        } as FastSignedTransferAppActionBigNumber;
-        await this.cfCoreService.takeAction(transfer.senderAppInstanceId, senderAppAction);
-        transfer.status = FastSignedTransferStatus.RECLAIMED;
-        await this.fastSignedTransferRepository.save(transfer);
+        await this.fastSignedTransferService.reclaimFastSignedTransfer(transfer);
       }
     }
   }
@@ -157,7 +148,7 @@ export class AppActionsService {
     // that case.
     transfer = await this.linkedTransferRepository.markAsRedeemed(
       transfer,
-      await this.channelRepository.findByUserPublicIdentifier(from),
+      await this.channelRepository.findByUserPublicIdentifierOrThrow(from),
     );
     this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
   }

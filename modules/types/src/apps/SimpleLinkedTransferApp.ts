@@ -2,6 +2,8 @@ import { CoinTransfer } from "../";
 import { BigNumber } from "ethers/utils";
 import { singleAssetTwoPartyCoinTransferEncoding } from "../contracts";
 
+export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
+
 export type SimpleLinkedTransferAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[];
   linkedHash: string;

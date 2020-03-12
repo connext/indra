@@ -1,5 +1,3 @@
-import { SimpleLinkedTransferApp } from "@connext/apps";
-
 import {
   DepositConfirmationMessage,
   ResolveLinkedTransferResponseBigNumber,
@@ -8,6 +6,7 @@ import {
   DepositFailedMessage,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleLinkedTransferAppState,
+  SimpleLinkedTransferApp,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -297,10 +296,9 @@ export class LinkedTransferService {
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
-    }
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
     return await this.linkedTransferRepository.findReclaimable(channel);
   }
 }

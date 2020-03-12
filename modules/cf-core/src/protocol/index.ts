@@ -10,24 +10,6 @@ import { UNINSTALL_PROTOCOL } from "./uninstall";
 import { UNINSTALL_VIRTUAL_APP_PROTOCOL } from "./uninstall-virtual-app";
 import { UPDATE_PROTOCOL } from "./update";
 
-const protocolsByName = {
-  [Protocol.Install]: INSTALL_PROTOCOL,
-  [Protocol.InstallVirtualApp]: INSTALL_VIRTUAL_APP_PROTOCOL,
-  [Protocol.Propose]: PROPOSE_PROTOCOL,
-  [Protocol.Setup]: SETUP_PROTOCOL,
-  [Protocol.TakeAction]: TAKE_ACTION_PROTOCOL,
-  [Protocol.Uninstall]: UNINSTALL_PROTOCOL,
-  [Protocol.UninstallVirtualApp]: UNINSTALL_VIRTUAL_APP_PROTOCOL,
-  [Protocol.Update]: UPDATE_PROTOCOL,
-};
-
-export function getProtocolFromName(protocolName: Protocol): ProtocolExecutionFlow {
-  if (!(protocolName in protocolsByName)) {
-    throw Error(`Received invalid protocol type ${protocolName}`);
-  }
-  return protocolsByName[protocolName];
-}
-
 export {
   INSTALL_PROTOCOL,
   INSTALL_VIRTUAL_APP_PROTOCOL,
@@ -37,3 +19,5 @@ export {
   UPDATE_PROTOCOL,
   PROPOSE_PROTOCOL
 };
+export { getProtocolFromName } from "./get-protocol-from-name";
+export { UNASSIGNED_SEQ_NO } from "./utils";

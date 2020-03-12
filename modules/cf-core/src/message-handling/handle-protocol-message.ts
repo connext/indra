@@ -1,31 +1,4 @@
 import {
-  InstallProtocolParams,
-  InstallVirtualAppProtocolParams,
-  Protocol,
-  SetupProtocolParams,
-  TakeActionProtocolParams,
-  UninstallProtocolParams,
-  UninstallVirtualAppProtocolParams,
-  UpdateProtocolParams,
-  WithdrawProtocolParams,
-} from "../machine";
-import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
-import { StateChannel } from "../models";
-import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
-import { RequestHandler } from "../request-handler";
-import RpcRouter from "../rpc-router";
-import {
-  EventEmittedMessage,
-  NetworkContext,
-  NodeMessageWrappedProtocolMessage,
-  ProposeInstallProtocolParams,
-  ProtocolParameters,
-  SolidityValueType,
-  WithdrawStartedMessage,
-} from "../types";
-import { bigNumberifyJson } from "../utils";
-import { Store } from "../store";
-import {
   PROPOSE_INSTALL_EVENT,
   INSTALL_EVENT,
   UNINSTALL_EVENT,
@@ -35,6 +8,32 @@ import {
   INSTALL_VIRTUAL_EVENT,
   UNINSTALL_VIRTUAL_EVENT,
 } from "@connext/types";
+
+import { Protocol } from "../machine";
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods";
+import { StateChannel } from "../models";
+import { UNASSIGNED_SEQ_NO } from "../protocol";
+import { RequestHandler } from "../request-handler";
+import RpcRouter from "../rpc-router";
+import {
+  EventEmittedMessage,
+  InstallProtocolParams,
+  InstallVirtualAppProtocolParams,
+  NetworkContext,
+  NodeMessageWrappedProtocolMessage,
+  ProposeInstallProtocolParams,
+  ProtocolParameters,
+  SetupProtocolParams,
+  SolidityValueType,
+  TakeActionProtocolParams,
+  UninstallProtocolParams,
+  UninstallVirtualAppProtocolParams,
+  UpdateProtocolParams,
+  WithdrawProtocolParams,
+  WithdrawStartedMessage,
+} from "../types";
+import { bigNumberifyJson } from "../utils";
+import { Store } from "../store";
 
 /**
  * Forwards all received NodeMessages that are for the machine's internal

@@ -2,11 +2,10 @@ import {
   OutcomeType,
   SimpleLinkedTransferAppStateEncoding,
   SimpleLinkedTransferAppActionEncoding,
+  SimpleLinkedTransferApp,
 } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
-
-export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
 
 export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
   actionEncoding: SimpleLinkedTransferAppActionEncoding,

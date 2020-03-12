@@ -8,17 +8,17 @@ import {
   convert,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
-import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
+import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
-import { CFCore, CFCoreTypes } from "../util/cfCore";
+import { CFCoreTypes } from "../util/cfCore";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
+import { CFCoreService } from "../cfCore/cfCore.service";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -29,6 +29,8 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
     private readonly withdrawService: WithdrawService,
+    private readonly cfCoreService: CFCoreService,
+    private readonly onchainTransactionRepository: OnchainTransactionRepository,
     log: LoggerService,
     messaging: IMessagingService,
   ) {
@@ -101,7 +103,9 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
-    const onchainTx = await this.withdrawService.getLatestWithdrawal(pubId);
+    const onchainTx = await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+      pubId,
+    );
     // TODO: conversions needed?
     return onchainTx;
   }
@@ -150,17 +154,37 @@ class ChannelMessaging extends AbstractMessagingProvider {
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, ChannelRepository, ChannelService, WithdrawService, LoggerService, MessagingProviderId],
+  inject: [
+    AuthService,
+    LoggerService,
+    MessagingProviderId,
+    ChannelService,
+    CFCoreService,
+    ChannelRepository,
+    OnchainTransactionRepository,
+    WithdrawService,
+  ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,
-    channelRepo: ChannelRepository,
-    channelService: ChannelService,
-    withdrawService: WithdrawService,
     log: LoggerService,
     messaging: IMessagingService,
+    channelService: ChannelService,
+    cfCore: CFCoreService,
+    channelRepo: ChannelRepository,
+    onchain: OnchainTransactionRepository,
+    withdrawService: WithdrawService,
   ): Promise<void> => {
-    const channel = new ChannelMessaging(authService, channelRepo, channelService, withdrawService, log, messaging);
+    const channel = new ChannelMessaging(
+      authService,
+      channelRepo,
+      channelService,
+      withdrawService,
+      cfCore,
+      onchain,
+      log,
+      messaging,
+    );
     await channel.setupSubscriptions();
   },
 };

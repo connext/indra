@@ -1,29 +1,25 @@
 import {
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  SimpleTwoPartySwapApp,
   AppRegistry as RegistryOfApps,
   commonAppProposalValidation,
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
-  FastSignedTransferApp,
   validateFastSignedTransferApp,
   WithdrawApp,
   validateWithdrawApp,
+  CoinBalanceRefundApp,
+  SimpleLinkedTransferApp,
+  SimpleTwoPartySwapApp,
+  FastSignedTransferApp,
 } from "@connext/apps";
 import {
   AppInstanceJson,
-  CoinTransfer,
-  CoinTransferBigNumber,
-  stringify,
-  bigNumberifyObj,
   SimpleLinkedTransferAppStateBigNumber,
   WithdrawAppStateBigNumber,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -36,7 +32,6 @@ import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service"
 import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
-import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
