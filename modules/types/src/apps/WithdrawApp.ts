@@ -4,6 +4,8 @@ import { singleAssetTwoPartyCoinTransferEncoding } from "../contracts";
 import { Address } from "../basic";
 import { TransactionResponse } from "ethers/providers";
 
+export const WithdrawApp = "WithdrawApp";
+
 // Contract types
 export type WithdrawAppState<T = string> = {
   transfers: CoinTransfer<T>[];

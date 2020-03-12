@@ -1,8 +1,6 @@
-import { OutcomeType, WithdrawAppStateEncoding, WithdrawAppActionEncoding } from "@connext/types";
+import { OutcomeType, WithdrawAppStateEncoding, WithdrawAppActionEncoding, WithdrawApp } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
-
-export const WithdrawApp = "WithdrawApp";
 
 export const WithdrawAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,
