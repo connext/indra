@@ -18,7 +18,7 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   virtualAppAgreementEncoding,
 } from "../types";
-import { appIdentityToHash, bigNumberifyJson } from "../utils";
+import { appIdentityToHash, bigNumberifyJson, prettyPrintObject } from "../utils";
 
 /**
  * Representation of an AppInstance.
@@ -261,7 +261,7 @@ export class AppInstance {
       throw Error(
         `Attempted to setState on an app with an invalid state object.
           - appInstanceIdentityHash = ${this.identityHash}
-          - newState = ${newState}
+          - newState = ${prettyPrintObject(newState)}
           - encodingExpected = ${this.appInterface.stateEncoding}
           Error: ${e.message}`,
       );

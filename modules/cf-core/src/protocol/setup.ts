@@ -78,8 +78,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 33 ms
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-
-    context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
     logTime(log, start, `Finished initiating`);
   },
 
@@ -132,8 +130,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
     logTime(log, start, `Finished responding`);
   },
 };

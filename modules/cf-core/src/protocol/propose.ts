@@ -5,6 +5,7 @@ import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, AppInstanceProposal, StateChannel } from "../models";
 import {
   Context,
+  Commitment,
   Opcode,
   ProposeInstallProtocolParams,
   Protocol,
@@ -17,11 +18,12 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature } from "./utils";
 
 const protocol = Protocol.Propose;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { SetState } = Commitment;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, network, stateChannelsMap } = context;
+    const { message, network, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart;
@@ -44,8 +46,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
     } = params as ProposeInstallProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
-      ? stateChannelsMap.get(multisigAddress)!
+    let preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
+    preProtocolStateChannel = preProtocolStateChannel
+      ? preProtocolStateChannel
       : StateChannel.createEmptyChannel(
           multisigAddress,
           { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
@@ -135,15 +138,18 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Validated responder's sig on initial state`);
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
+    // add signatures to commitment and save
+    setStateCommitment.signatures = [
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState,
+    ];
+
+    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
     logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, network, stateChannelsMap } = context;
+    const { message, network, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart;
@@ -170,8 +176,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
-      ? stateChannelsMap.get(multisigAddress)!
+    let preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
+    preProtocolStateChannel = preProtocolStateChannel
+      ? preProtocolStateChannel
       : StateChannel.createEmptyChannel(
           multisigAddress,
           { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
@@ -242,6 +249,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal.appSeqNo,
     ];
 
+    setStateCommitment.signatures = [
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState,
+    ];
+
+    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+
     yield [
       IO_SEND,
       {
@@ -254,11 +268,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
     logTime(log, start, `Finished responding`);
   },
 };

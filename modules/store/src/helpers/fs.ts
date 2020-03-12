@@ -1,13 +1,14 @@
 import fs from "fs";
 
-import { EMPTY_STRINGIFIED_DATA } from "./constants";
-
 export const FILE_EXISTS = 1;
 export const FILE_DOESNT_EXIST = 0;
 
 export function fsRead(path: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    fs.readFile(path, (err, data) => {
+    if (!fs.existsSync(path)) {
+      resolve(undefined);
+    }
+    fs.readFile(path, "utf-8", (err, data) => {
       if (err) {
         return reject(err);
       }
@@ -88,9 +89,7 @@ export function checkFile(path: string): Promise<number> {
 
 export async function safeFsRead(path: string): Promise<any> {
   if ((await checkFile(path)) === FILE_DOESNT_EXIST) {
-    const data = EMPTY_STRINGIFIED_DATA;
-    await fsWrite(path, data);
-    return data;
+    return Promise.resolve(undefined);
   }
   return fsRead(path);
 }
@@ -101,8 +100,12 @@ export async function isFile(path: string): Promise<boolean> {
 }
 
 export async function isDirectory(path: string): Promise<boolean> {
-  const fileStat = await fsStat(path);
-  return fileStat.isDirectory();
+  try {
+    const fileStat = await fsStat(path);
+    return fileStat.isDirectory();
+  } catch (e) {
+    return false;
+  }
 }
 
 export async function createDirectory(path: string): Promise<void> {
@@ -113,13 +116,16 @@ export async function createDirectory(path: string): Promise<void> {
 }
 
 export function isDirectorySync(path: string): boolean {
-  fs.lstatSync;
-  return fs.lstatSync(path).isDirectory();
+  try {
+    return fs.lstatSync(path).isDirectory();
+  } catch (e) {
+    return false;
+  }
 }
 
 export function createDirectorySync(path: string): void {
   if (!fs.existsSync(path)) {
-    return fs.mkdirSync(path);
+    return fs.mkdirSync(path, { recursive: true });
   }
   return;
 }

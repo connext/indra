@@ -13,13 +13,11 @@ export async function uninstallVirtualAppInstanceFromChannel(
   intermediaryXpub: string,
   appInstanceId: string,
 ): Promise<void> {
-  const stateChannel = await store.getChannelFromAppInstanceID(appInstanceId);
+  const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
   const appInstance = stateChannel.getAppInstance(appInstanceId);
 
-  const currentChannels = await store.getStateChannelsMap();
-
-  await protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, currentChannels, {
+  await protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, {
     initiatorXpub,
     responderXpub,
     intermediaryXpub,

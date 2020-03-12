@@ -242,7 +242,7 @@ export class StateChannel {
     return FreeBalanceClass.fromAppInstance(this.freeBalance);
   }
 
-  private build(args: {
+  private build = (args: {
     multisigAddress?: string;
     addresses?: CriticalStateChannelAddresses;
     userNeuteredExtendedKeys?: string[];
@@ -255,7 +255,7 @@ export class StateChannel {
     freeBalanceAppInstance?: AppInstance;
     monotonicNumProposedApps?: number;
     schemaVersion?: number;
-  }) {
+  }) => {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
       args.addresses || this.addresses,
@@ -268,7 +268,7 @@ export class StateChannel {
       args.monotonicNumProposedApps || this.monotonicNumProposedApps,
       args.schemaVersion || this.schemaVersion,
     );
-  }
+  };
 
   public incrementFreeBalance(increments: TokenIndexedCoinTransferMap) {
     return this.build({
@@ -369,7 +369,7 @@ export class StateChannel {
     });
   }
 
-  public removeProposal(appInstanceId: string) {
+  public removeProposal = (appInstanceId: string) => {
     const proposedAppInstances = new Map<string, AppInstanceProposal>(
       this.proposedAppInstances.entries(),
     );
@@ -379,7 +379,7 @@ export class StateChannel {
     return this.build({
       proposedAppInstances,
     });
-  }
+  };
 
   public addAppInstance(appInstance: AppInstance) {
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());

@@ -13,3 +13,9 @@ export const EMPTY_DATA = {};
 export const EMPTY_STRINGIFIED_DATA = safeJsonStringify(EMPTY_DATA);
 
 export const ASYNC_STORAGE_TEST_KEY = "__is_async_storage_test";
+
+export const CHANNEL_KEY = "channel";
+export const SET_STATE_COMMITMENT_KEY = "setstate_commitment";
+export const CONDITIONAL_COMMITMENT_KEY = "conditional_commitment";
+export const WITHDRAWAL_COMMITMENT_KEY = "withdrawal_commitment";
+export const COMMITMENT_KEY = "_commitment"; // included in all commitments

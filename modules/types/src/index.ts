@@ -3,6 +3,7 @@ export * from "./apps";
 export * from "./basic";
 export * from "./bn";
 export * from "./cfCore";
+export * from "./challenge";
 export * from "./channel";
 export * from "./channelProvider";
 export * from "./client";

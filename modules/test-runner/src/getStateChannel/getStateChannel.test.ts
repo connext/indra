@@ -1,10 +1,4 @@
-import {
-  ConnextClientStorePrefix,
-  IConnextClient,
-  StateChannelJSON,
-  StateSchemaVersion,
-  StorePair,
-} from "@connext/types";
+import { IConnextClient, StateChannelJSON, StateSchemaVersion } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { createClient, ETH_AMOUNT_SM, expect } from "../util";
@@ -35,7 +29,7 @@ describe("Get State Channel", () => {
   });
 
   it("Store does not contain state channel", async () => {
-    clientA.store.reset!();
+    clientA.store.clear();
     await expect(clientA.getStateChannel()).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
@@ -63,43 +57,44 @@ describe("Get State Channel", () => {
 
   it.skip("Store contains state channel on wrong multisig address", async () => {
     const wrongAddress: string = "0xe8f67a5b66B01b301dF0ED1fC91F6F29B78ccf8C";
-    const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
-    const value: any = await clientA.store.get(path);
+    const channel = await clientA.store.getStateChannel(clientA.multisigAddress);
+    expect(channel).to.be.ok;
+    expect(channel!.multisigAddress).to.be.eq(
+      (await clientA.getStateChannel()).data.multisigAddress,
+    );
 
-    expect(value.multisigAddress).to.be.eq((await clientA.getStateChannel()).data.multisigAddress);
-
-    value.multisigAddress = wrongAddress;
-    const pair: StorePair[] = [{ path, value }];
-    await clientA.store.set(pair);
+    (channel as any).multisigAddress = wrongAddress;
+    expect(channel!.multisigAddress).to.be.eq(wrongAddress);
+    await clientA.store.saveStateChannel(channel!);
 
     // Expect to error in case we keep this test
     await expect(clientA.getStateChannel()).to.be.rejectedWith("");
   });
 
   it.skip("State channel under multisig key has no proxy factory address", async () => {
-    const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
-    const value: any = await clientA.store.get(path);
+    const channel = await clientA.store.getStateChannel(clientA.multisigAddress);
 
-    expect(value.addresses.proxyFactory).to.be.eq(
+    expect(channel).to.be.ok;
+    expect(channel!.addresses.proxyFactory).to.be.eq(
       (await clientA.getStateChannel()).data.addresses.proxyFactory,
     );
 
-    value.addresses.proxyFactory = null;
-    const pair: StorePair[] = [{ path, value }];
-    await clientA.store.set(pair);
+    (channel as any).addresses.proxyFactory = null;
+    expect(channel!.addresses.proxyFactory).to.not.be.ok;
+    await clientA.store.saveStateChannel(channel!);
 
     await expect(clientA.getStateChannel()).to.be.rejected;
   });
 
   it.skip("State channel under multisig key has freeBalanceAppInstance", async () => {
-    const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
-    const value: any = await clientA.store.get(path);
+    const channel = await clientA.store.getStateChannel(clientA.multisigAddress);
+    expect(channel).to.be.ok;
 
     // expect(value.freeBalanceAppInstance).to.be.eqDefined();
 
-    value.freeBalanceAppInstance = null;
-    const pair: StorePair[] = [{ path, value }];
-    await clientA.store.set(pair);
+    (channel as any).freeBalanceAppInstance = null;
+    expect(channel!.freeBalanceAppInstance).to.not.be.ok;
+    await clientA.store.saveStateChannel(channel!);
 
     await expect(clientA.getStateChannel()).to.be.rejected;
   });

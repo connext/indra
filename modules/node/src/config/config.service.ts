@@ -1,5 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import { ContractAddresses, SwapRate } from "@connext/types";
+import { CF_PATH, ContractAddresses, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -7,6 +7,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+import { fromMnemonic } from "ethers/utils/hdnode";
 
 type PostgresConfig = {
   database: string;
@@ -82,7 +83,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
-    const testnetTokenConfig = this.get("INDRA_TESTNET_TOKEN_CONFIG")
+    const testnetTokenConfig: TokenConfig[] = this.get("INDRA_TESTNET_TOKEN_CONFIG")
       ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
       : [];
     const currentChainId = (await this.getEthNetwork()).chainId;
@@ -215,7 +216,12 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  async onModuleInit(): Promise<void> {
+  getPublicIdentifier(): string {
+    const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
+    return hdNode.neuter().extendedKey;
+  }
+
+  onModuleInit(): void {
     const wallet = Wallet.fromMnemonic(this.getMnemonic());
     this.wallet = wallet.connect(this.getEthProvider());
   }

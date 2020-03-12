@@ -2,7 +2,7 @@ import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, formatEther, getAddress } from "ethers/utils";
 
-import { stringify, withdrawalKey } from "../lib";
+import { stringify } from "../lib";
 import {
   BigNumber,
   CFCoreTypes,
@@ -10,11 +10,11 @@ import {
   ProtocolTypes,
   WithdrawalResponse,
   WithdrawParameters,
+  chan_setUserWithdrawal,
 } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { chan_storeSet } from "@connext/types";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: WithdrawParameters): Promise<WithdrawalResponse> {
@@ -59,10 +59,8 @@ export class WithdrawalController extends AbstractController {
         this.log.debug(`Details of submitted withdrawal: ${stringify(withdrawResponse)}`);
         const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store
-        await this.connext.channelProvider.send(chan_storeSet, {
-          pairs: [
-            { path: withdrawalKey(this.connext.publicIdentifier), value: { tx: minTx, retry: 0 } },
-          ],
+        await this.connext.channelProvider.send(chan_setUserWithdrawal, {
+          withdrawalObject: { tx: minTx, retry: 0 },
         });
 
         transaction = await this.node.withdraw(minTx);

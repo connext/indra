@@ -10,6 +10,7 @@ import { AppInstance, StateChannel } from "../models";
 import {
   coinBalanceRefundStateEncoding,
   Context,
+  Commitment,
   NetworkContext,
   Opcode,
   OutcomeType,
@@ -24,7 +25,7 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature } from "./utils";
 
 const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
-const { Install, Update, Withdraw } = Protocol;
+const { Withdraw } = Protocol;
 /**
  * @description This exchange is described at the following URL:
  * https://specs.counterfactual.com/11-withdraw-protocol *
@@ -51,7 +52,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
   0 /* Initiating */: async function*(context: Context) {
     const {
-      stateChannelsMap,
+      store,
       message: { params, processID },
       network,
     } = context;
@@ -68,7 +69,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       tokenAddress,
     } = params as WithdrawProtocolParams;
 
-    const preInstallRefundAppStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preInstallRefundAppStateChannel = await store.getStateChannel(multisigAddress);
 
     const postInstallRefundAppStateChannel = addRefundAppToStateChannel(
       preInstallRefundAppStateChannel,
@@ -123,20 +124,15 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Verified responder's sig on the conditional tx`);
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+    conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
-
-    context.stateChannelsMap.set(
-      postInstallRefundAppStateChannel.multisigAddress,
-      postInstallRefundAppStateChannel,
-    );
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Install, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedConditionalTransaction,
+      Commitment.Conditional, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      conditionalTransactionData,
       refundApp.identityHash,
     ];
 
@@ -156,15 +152,15 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedFreeBalanceStateUpdate,
+      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      freeBalanceUpdateData,
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
@@ -214,11 +210,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       {},
     );
 
-    context.stateChannelsMap.set(
-      postUninstallRefundAppStateChannel.multisigAddress,
-      postUninstallRefundAppStateChannel,
-    );
-
     const uninstallRefundAppCommitment = getSetStateCommitment(
       context,
       postUninstallRefundAppStateChannel.freeBalance,
@@ -252,25 +243,30 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
         },
         seq: UNASSIGNED_SEQ_NO,
       },
-    ];
+    ] as [Opcode, ProtocolMessage];
     logTime(log, substart, `Received responder's confirmation that they got our sigs`);
 
-    const signedWithdrawalCommitment = withdrawCommitment.getSignedTransaction([
+    withdrawCommitment.signatures = [
       mySignatureOnWithdrawalCommitment,
       counterpartySignatureOnWithdrawalCommitment,
-    ]);
-
-    yield [WRITE_COMMITMENT, Withdraw, signedWithdrawalCommitment, multisigAddress];
-
-    const signedUninstallCommitment = uninstallRefundAppCommitment.getSignedTransaction([
-      mySignatureOnUninstallCommitment,
-      counterpartySignatureOnUninstallCommitment,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedUninstallCommitment,
+      Commitment.Withdraw,
+      withdrawCommitment.getSignedTransaction(),
+      multisigAddress,
+    ];
+
+    uninstallRefundAppCommitment.signatures = [
+      mySignatureOnUninstallCommitment,
+      counterpartySignatureOnUninstallCommitment,
+    ];
+
+    yield [
+      WRITE_COMMITMENT,
+      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
@@ -293,7 +289,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
   1 /* Responding */: async function*(context: Context) {
     const {
-      stateChannelsMap,
+      store,
       message: { params, processID, customData },
       network,
     } = context;
@@ -313,7 +309,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       tokenAddress,
     } = params as WithdrawProtocolParams;
 
-    const preInstallRefundAppStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preInstallRefundAppStateChannel = await store.getStateChannel(multisigAddress);
 
     const postInstallRefundAppStateChannel = addRefundAppToStateChannel(
       preInstallRefundAppStateChannel,
@@ -345,20 +341,15 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     // free balance address signs conditional transaction data
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+    conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
-
-    context.stateChannelsMap.set(
-      postInstallRefundAppStateChannel.multisigAddress,
-      postInstallRefundAppStateChannel,
-    );
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Install, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedConditionalTransaction,
+      Commitment.Conditional, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      conditionalTransactionData,
       refundApp.identityHash,
     ];
 
@@ -400,15 +391,15 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Verified initiator's sig on balance update`);
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedFreeBalanceStateUpdate,
+      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      freeBalanceUpdateData,
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
@@ -429,21 +420,21 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     // free balance address signs withdraw commitment
     const mySignatureOnWithdrawalCommitment = yield [OP_SIGN, withdrawCommitment];
 
-    const signedWithdrawalCommitment = withdrawCommitment.getSignedTransaction([
+    withdrawCommitment.signatures = [
       mySignatureOnWithdrawalCommitment,
       counterpartySignatureOnWithdrawalCommitment,
-    ]);
+    ];
 
-    yield [WRITE_COMMITMENT, Withdraw, signedWithdrawalCommitment, multisigAddress];
+    yield [
+      WRITE_COMMITMENT,
+      Commitment.Withdraw,
+      withdrawCommitment.getSignedTransaction(),
+      multisigAddress,
+    ];
 
     const postUninstallRefundAppStateChannel = postInstallRefundAppStateChannel.uninstallApp(
       refundApp.identityHash,
       {},
-    );
-
-    context.stateChannelsMap.set(
-      postUninstallRefundAppStateChannel.multisigAddress,
-      postUninstallRefundAppStateChannel,
     );
 
     const uninstallRefundAppCommitment = getSetStateCommitment(
@@ -483,15 +474,15 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Verified initator's sig on uninstall commitment`);
 
-    const signedUninstallCommitment = uninstallRefundAppCommitment.getSignedTransaction([
+    uninstallRefundAppCommitment.signatures = [
       mySignatureOnUninstallCommitment,
       counterpartySignatureOnUninstallCommitment,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedUninstallCommitment,
+      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 

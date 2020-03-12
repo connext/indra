@@ -32,25 +32,25 @@ import {
   Transfer,
 } from "./node";
 import { ProtocolTypes } from "./protocol";
-import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
+import { IBackupServiceAPI, StoreType, IStoreService, WithdrawalMonitorObject } from "./store";
 import { CFCoreTypes } from "./cfCore";
 import { SwapParameters } from "./apps";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
-  asyncStorage?: IAsyncStorage;
   backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
   keyGen?: KeyGen;
+  mnemonic?: string;
+  xpub?: string;
+  store?: IStoreService;
+  storeType?: StoreType;
   logger?: ILogger;
   loggerService?: ILoggerService;
   logLevel?: number;
   messaging?: IMessagingService;
-  mnemonic?: string;
   nodeUrl?: string; // ws:// or nats:// urls are supported
-  store?: Store;
-  xpub?: string;
 }
 
 export interface IConnextClient {
@@ -69,7 +69,7 @@ export interface IConnextClient {
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
-  store: Store;
+  store: IStoreService;
 
   ////////////////////////////////////////
   // Methods
@@ -148,7 +148,10 @@ export interface IConnextClient {
   getAppInstances(): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
   getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
-  getProposedAppInstances(): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;
+  getLatestNodeSubmittedWithdrawal(): Promise<WithdrawalMonitorObject>;
+  getProposedAppInstances(
+    multisigAddress?: string,
+  ): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;
   getProposedAppInstance(
     appInstanceId: string,
   ): Promise<ProtocolTypes.GetProposedAppInstanceResult | undefined>;

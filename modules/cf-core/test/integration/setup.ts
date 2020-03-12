@@ -3,7 +3,6 @@ import { Wallet } from "ethers";
 import { JsonRpcProvider, Provider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
-import { v4 as generateUUID } from "uuid";
 
 import { Node } from "../../src";
 import { computeRandomExtendedPrvKey } from "../../src/xkeys";
@@ -26,18 +25,17 @@ export interface SetupContext {
   [nodeName: string]: NodeContext;
 }
 
-export async function setupWithMemoryMessagingAndSlowStore(
+export async function setupWithMemoryMessagingAndStore(
   global: any,
   nodeCPresent: boolean = false,
   newExtendedPrvKeys: boolean = false,
 ): Promise<SetupContext> {
-  const storeDelay = 2; // milliseconds (tests timeout if too high)
   return setup(
     global,
     nodeCPresent,
     newExtendedPrvKeys,
     new MemoryMessagingService(),
-    new MemoryStoreServiceFactory(storeDelay),
+    new MemoryStoreServiceFactory(),
   );
 }
 
@@ -46,9 +44,7 @@ export async function setup(
   nodeCPresent: boolean = false,
   newExtendedPrvKey: boolean = false,
   messagingService: CFCoreTypes.IMessagingService = new MemoryMessagingService(),
-  storeServiceFactory: {
-    createStoreService?(storeServiceKey: string): CFCoreTypes.IStoreService;
-  } = new MemoryStoreServiceFactory(),
+  storeServiceFactory = new MemoryStoreServiceFactory(),
 ): Promise<SetupContext> {
   const setupContext: SetupContext = {};
 
@@ -70,7 +66,7 @@ export async function setup(
   const lockService = new MemoryLockService();
 
   const hdNodeA = fromExtendedKey(extendedPrvKeyA).derivePath(CF_PATH);
-  const storeServiceA = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
+  const storeServiceA = storeServiceFactory.createStoreService();
   const nodeA = await Node.create(
     messagingService,
     storeServiceA,
@@ -88,7 +84,7 @@ export async function setup(
   };
 
   const hdNodeB = fromExtendedKey(extendedPrvKeyB).derivePath(CF_PATH);
-  const storeServiceB = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
+  const storeServiceB = storeServiceFactory.createStoreService();
   const nodeB = await Node.create(
     messagingService,
     storeServiceB,
@@ -107,7 +103,7 @@ export async function setup(
   let nodeC: Node;
   if (nodeCPresent) {
     const hdNodeC = fromExtendedKey(C_EXTENDED_PRIVATE_KEY).derivePath(CF_PATH);
-    const storeServiceC = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
+    const storeServiceC = storeServiceFactory.createStoreService();
     nodeC = await Node.create(
       messagingService,
       storeServiceC,

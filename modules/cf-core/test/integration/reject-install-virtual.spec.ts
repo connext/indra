@@ -32,13 +32,13 @@ describe.skip("Node method follows spec - rejectInstallVirtual", () => {
       "Virtual AppInstance with Node C. Node C rejects proposal. Node A confirms rejection",
     () => {
       it("sends proposal with non-null initial state", async done => {
-        await createChannel(nodeA, nodeB);
-        await createChannel(nodeB, nodeC);
+        const multisigAB = await createChannel(nodeA, nodeB);
+        const multisigBC = await createChannel(nodeB, nodeC);
 
         let appInstanceId: string;
 
         nodeA.on(REJECT_INSTALL_EVENT, async (msg: RejectInstallVirtualMessage) => {
-          expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
+          expect((await getProposedAppInstances(nodeA, multisigAB)).length).toEqual(0);
           assertNodeMessage(msg, {
             from: nodeC.publicIdentifier,
             data: {
@@ -52,7 +52,7 @@ describe.skip("Node method follows spec - rejectInstallVirtual", () => {
         nodeC.once(
           "PROPOSE_INSTALL_EVENT",
           async ({ data: { params, appInstanceId } }: ProposeMessage) => {
-            const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
+            const [proposedAppInstanceC] = await getProposedAppInstances(nodeC, multisigBC);
             appInstanceId = proposedAppInstanceC.identityHash;
 
             confirmProposedAppInstance(params, proposedAppInstanceC);
@@ -61,13 +61,13 @@ describe.skip("Node method follows spec - rejectInstallVirtual", () => {
 
             const rejectReq = constructRejectInstallRpc(appInstanceId);
             await nodeC.rpcRouter.dispatch(rejectReq);
-            expect((await getProposedAppInstances(nodeC)).length).toEqual(0);
+            expect((await getProposedAppInstances(nodeC, multisigBC)).length).toEqual(0);
           },
         );
 
         const { params } = await makeVirtualProposeCall(nodeA, nodeC, TicTacToeApp);
 
-        const [proposedAppInstanceA] = await getProposedAppInstances(nodeA);
+        const [proposedAppInstanceA] = await getProposedAppInstances(nodeA, multisigAB);
 
         confirmProposedAppInstance(params, proposedAppInstanceA);
       });

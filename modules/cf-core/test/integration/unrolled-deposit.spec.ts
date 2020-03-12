@@ -40,15 +40,15 @@ describe(`Node method follows spec - install balance refund`, () => {
 
   it(`install app with ETH, sending ETH should increase free balance`, async done => {
     nodeB.on(`INSTALL_EVENT`, async () => {
-      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
-      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
+      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
+      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
       expect((appInstanceNodeA.latestState as CoinBalanceRefundState).recipient).toBe(
         xkeyKthAddress(nodeA.publicIdentifier, 0),
       );
 
-      const proposedAppsA = await getProposedAppInstances(nodeA);
+      const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
       expect(proposedAppsA.length).toBe(0);
 
       const [preSendBalA, preSendBalB] = await getBalances(
@@ -90,15 +90,15 @@ describe(`Node method follows spec - install balance refund`, () => {
     const erc20TokenAddress = global[`networkContext`].DolphinCoin;
 
     nodeB.on(`INSTALL_EVENT`, async () => {
-      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
-      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
+      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
+      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
       expect((appInstanceNodeA.latestState as CoinBalanceRefundState).recipient).toBe(
         xkeyKthAddress(nodeA.publicIdentifier, 0),
       );
 
-      const proposedAppsA = await getProposedAppInstances(nodeA);
+      const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
       expect(proposedAppsA.length).toBe(0);
 
       const [preSendBalA, preSendBalB] = await getBalances(
@@ -135,15 +135,15 @@ describe(`Node method follows spec - install balance refund`, () => {
     let installedCount = 0;
     nodeB.on(`INSTALL_EVENT`, async () => {
       installedCount += 1;
-      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
-      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
+      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
+      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
       expect((appInstanceNodeA.latestState as CoinBalanceRefundState).recipient).toBe(
         xkeyKthAddress(nodeA.publicIdentifier, 0),
       );
 
-      const proposedAppsA = await getProposedAppInstances(nodeA);
+      const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
       expect(proposedAppsA.length).toBe(0);
 
       // wait for both apps to install
@@ -246,8 +246,8 @@ describe(`Node method follows spec - install balance refund`, () => {
 
   it(`install does not error if already installed`, async done => {
     nodeB.on(`INSTALL_EVENT`, async () => {
-      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
-      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
+      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
+      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
       expect((appInstanceNodeA.latestState as CoinBalanceRefundState).recipient).toBe(
@@ -260,20 +260,20 @@ describe(`Node method follows spec - install balance refund`, () => {
   });
 
   it(`uninstall does error if caller is not recipient`, async done => {
-    await requestDepositRights(nodeA, multisigAddress);
-    nodeB.once(INSTALL_EVENT, async () => {
+    nodeB.once(INSTALL_EVENT, async data => {
       await expect(rescindDepositRights(nodeB, multisigAddress)).rejects.toThrowError(
         NOT_YOUR_BALANCE_REFUND_APP,
       );
       done();
     });
+    await requestDepositRights(nodeA, multisigAddress);
   });
 
   it(`can uninstall with no changes`, async done => {
     nodeB.on(`INSTALL_EVENT`, async () => {
       await rescindDepositRights(nodeA, multisigAddress);
-      const appInstancesNodeA = await getInstalledAppInstances(nodeA);
-      const appInstancesNodeB = await getInstalledAppInstances(nodeB);
+      const appInstancesNodeA = await getInstalledAppInstances(nodeA, multisigAddress);
+      const appInstancesNodeB = await getInstalledAppInstances(nodeB, multisigAddress);
       expect(appInstancesNodeA.length).toBe(0);
       expect(appInstancesNodeB.length).toBe(0);
       done();
@@ -284,8 +284,8 @@ describe(`Node method follows spec - install balance refund`, () => {
 
   it(`uninstall does not error if not installed`, async () => {
     await rescindDepositRights(nodeA, multisigAddress);
-    const appInstancesNodeA = await getInstalledAppInstances(nodeA);
-    const appInstancesNodeB = await getInstalledAppInstances(nodeB);
+    const appInstancesNodeA = await getInstalledAppInstances(nodeA, multisigAddress);
+    const appInstancesNodeB = await getInstalledAppInstances(nodeB, multisigAddress);
     expect(appInstancesNodeA.length).toBe(0);
     expect(appInstancesNodeB.length).toBe(0);
   });

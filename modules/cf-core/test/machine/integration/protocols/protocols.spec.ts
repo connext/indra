@@ -39,35 +39,33 @@ describe("Three mininodes", () => {
 
     await tr.setup();
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(
-      Protocol.InstallVirtualApp,
-      tr.mininodeA.scm,
-      {
-        initiatorXpub: tr.mininodeA.xpub,
-        intermediaryXpub: tr.mininodeB.xpub,
-        responderXpub: tr.mininodeC.xpub,
-        defaultTimeout: 100,
-        appInterface: {
-          addr: appWithAction.address,
-          stateEncoding: "tuple(uint256 counter)",
-          actionEncoding: "tuple(uint8 actionType, uint256 increment)",
-        },
-        initialState: {
-          counter: 0,
-        },
-        appSeqNo: 0,
-        initiatorBalanceDecrement: bigNumberify(0),
-        responderBalanceDecrement: bigNumberify(0),
-        tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-        outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.InstallVirtualApp, {
+      initiatorXpub: tr.mininodeA.xpub,
+      intermediaryXpub: tr.mininodeB.xpub,
+      responderXpub: tr.mininodeC.xpub,
+      defaultTimeout: 100,
+      appInterface: {
+        addr: appWithAction.address,
+        stateEncoding: "tuple(uint256 counter)",
+        actionEncoding: "tuple(uint8 actionType, uint256 increment)",
       },
-    );
+      initialState: {
+        counter: 0,
+      },
+      appSeqNo: 0,
+      initiatorBalanceDecrement: bigNumberify(0),
+      responderBalanceDecrement: bigNumberify(0),
+      tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+    });
 
-    const [virtualAppInstance] = [...tr.mininodeA.scm.get(tr.multisigAC)!.appInstances.values()];
+    const [virtualAppInstance] = [
+      ...(await tr.mininodeA.store.getStateChannel(tr.multisigAC))!.appInstances.values(),
+    ];
 
     expect(virtualAppInstance.isVirtualApp);
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Update, tr.mininodeA.scm, {
+    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Update, {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeC.xpub,
       multisigAddress: tr.multisigAC,
@@ -77,7 +75,7 @@ describe("Three mininodes", () => {
       },
     });
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.TakeAction, tr.mininodeA.scm, {
+    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.TakeAction, {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeC.xpub,
       multisigAddress: tr.multisigAC,
@@ -88,21 +86,17 @@ describe("Three mininodes", () => {
       },
     });
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(
-      Protocol.UninstallVirtualApp,
-      tr.mininodeA.scm,
-      {
-        initiatorXpub: tr.mininodeA.xpub,
-        intermediaryXpub: tr.mininodeB.xpub,
-        responderXpub: tr.mininodeC.xpub,
-        targetAppIdentityHash: virtualAppInstance.identityHash,
-        targetOutcome: await virtualAppInstance.computeOutcome(
-          {
-            counter: 2,
-          },
-          appWithAction.provider as BaseProvider,
-        ),
-      },
-    );
+    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, {
+      initiatorXpub: tr.mininodeA.xpub,
+      intermediaryXpub: tr.mininodeB.xpub,
+      responderXpub: tr.mininodeC.xpub,
+      targetAppIdentityHash: virtualAppInstance.identityHash,
+      targetOutcome: await virtualAppInstance.computeOutcome(
+        {
+          counter: 2,
+        },
+        appWithAction.provider as BaseProvider,
+      ),
+    });
   });
 });

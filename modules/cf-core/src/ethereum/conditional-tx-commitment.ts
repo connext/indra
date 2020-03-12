@@ -1,9 +1,15 @@
 import { AddressZero } from "ethers/constants";
-import { Interface } from "ethers/utils";
+import { Interface, Signature } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { AppInstance, StateChannel } from "../models";
-import { Context, MultisigOperation, NetworkContext, OutcomeType } from "../types";
+import {
+  ConditionalTransactionCommitmentJSON,
+  Context,
+  MultisigOperation,
+  NetworkContext,
+  OutcomeType,
+} from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
@@ -28,6 +34,7 @@ export const getConditionalTxCommitment = (
       ? context.network.TwoPartyFixedOutcomeInterpreter
       : AddressZero,
     appInstance.encodedInterpreterParams,
+    /* sigs? */
   );
 
 // class to represent an unsigned multisignature wallet transaction
@@ -41,11 +48,38 @@ export class ConditionalTxCommitment extends MultisigCommitment {
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
     public readonly interpreterParams: string,
+    participantSignatures: Signature[] = [],
   ) {
-    super(multisig, multisigOwners);
     if (interpreterAddr === AddressZero) {
       throw Error("The outcome type in this application logic contract is not supported yet.");
     }
+    super(multisig, multisigOwners, participantSignatures);
+  }
+
+  toJson(): ConditionalTransactionCommitmentJSON {
+    return {
+      appIdentityHash: this.appIdentityHash,
+      freeBalanceAppIdentityHash: this.freeBalanceAppIdentityHash,
+      interpreterAddr: this.interpreterAddr,
+      interpreterParams: this.interpreterParams,
+      multisigAddress: this.multisigAddress,
+      multisigOwners: this.multisigOwners,
+      networkContext: this.networkContext,
+      signatures: this.signatures,
+    };
+  }
+
+  public static fromJson(json: ConditionalTransactionCommitmentJSON) {
+    return new ConditionalTxCommitment(
+      json.networkContext,
+      json.multisigAddress,
+      json.multisigOwners,
+      json.appIdentityHash,
+      json.freeBalanceAppIdentityHash,
+      json.interpreterAddr,
+      json.interpreterParams,
+      json.signatures,
+    );
   }
 
   /**
@@ -53,7 +87,7 @@ export class ConditionalTxCommitment extends MultisigCommitment {
    * encodes them into a bytes array for the data field of the transaction.
    *
    * @returns The (to, value, data, op) data required by MultisigCommitment
-   * @memberof ConditionalTransaction
+   * @memberof ConditionalTxCommitment
    */
   public getTransactionDetails() {
     return {

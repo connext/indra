@@ -7,8 +7,8 @@ import {
   CFCoreTypes,
   Context,
   EthereumCommitment,
-  NetworkContext,
   SignedStateHashUpdate,
+  SetStateCommitmentJSON,
 } from "../types";
 import { appIdentityToHash, sortSignaturesBySignerAddress } from "../utils";
 
@@ -27,13 +27,28 @@ export const getSetStateCommitment = (
 
 export class SetStateCommitment extends EthereumCommitment {
   constructor(
-    public readonly networkContext: NetworkContext,
+    public readonly challengeRegistryAddress: string,
     public readonly appIdentity: AppIdentity,
-    public readonly hashedAppState: string,
-    public readonly appVersionNumber: number,
+    public readonly appStateHash: string,
+    public readonly versionNumber: number, // app nonce
     public readonly timeout: number,
+    public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
+    private participantSignatures: Signature[] = [],
   ) {
     super();
+  }
+
+  get signatures(): Signature[] {
+    return this.participantSignatures;
+  }
+
+  set signatures(sigs: Signature[]) {
+    if (sigs.length < 2) {
+      throw new Error(
+        `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
+      );
+    }
+    this.participantSignatures = sigs;
   }
 
   public hashToSign(): string {
@@ -43,31 +58,68 @@ export class SetStateCommitment extends EthereumCommitment {
         [
           "0x19",
           appIdentityToHash(this.appIdentity),
-          this.appVersionNumber,
+          this.versionNumber,
           this.timeout,
-          this.hashedAppState,
+          this.appStateHash,
         ],
       ),
     );
   }
 
-  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
+  public getSignedTransaction(): CFCoreTypes.MinimalTransaction {
+    this.assertSignatures();
     return {
-      to: this.networkContext.ChallengeRegistry,
+      to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.functions.setState.encode([
-        this.appIdentity,
-        this.getSignedStateHashUpdate(sigs),
-      ]),
+      data: iface.functions.setState.encode([this.appIdentity, this.getSignedStateHashUpdate()]),
     };
   }
 
-  private getSignedStateHashUpdate(signatures: Signature[]): SignedStateHashUpdate {
+  public toJson(): SetStateCommitmentJSON {
     return {
-      appStateHash: this.hashedAppState,
-      versionNumber: this.appVersionNumber,
+      appIdentityHash: this.appIdentityHash,
+      appIdentity: this.appIdentity,
+      appStateHash: this.appStateHash,
+      challengeRegistryAddress: this.challengeRegistryAddress,
+      signatures: this.signatures,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(this.hashToSign(), signatures).map(joinSignature),
+      versionNumber: this.versionNumber,
     };
+  }
+
+  public static fromJson(json: SetStateCommitmentJSON) {
+    return new SetStateCommitment(
+      json.challengeRegistryAddress,
+      json.appIdentity,
+      json.appStateHash,
+      json.versionNumber,
+      json.timeout,
+      json.appIdentityHash,
+      json.signatures,
+    );
+  }
+
+  private getSignedStateHashUpdate(): SignedStateHashUpdate {
+    this.assertSignatures();
+    return {
+      appStateHash: this.appStateHash,
+      versionNumber: this.versionNumber,
+      timeout: this.timeout,
+      signatures: sortSignaturesBySignerAddress(this.hashToSign(), this.signatures).map(
+        joinSignature,
+      ),
+    };
+  }
+
+  private assertSignatures() {
+    if (!this.signatures || this.signatures.length === 0) {
+      throw new Error(`No signatures detected`);
+    }
+
+    if (this.signatures.length < 2) {
+      throw new Error(
+        `Incorrect number of signatures supplied. Expected at least 2, got ${this.signatures.length}`,
+      );
+    }
   }
 }

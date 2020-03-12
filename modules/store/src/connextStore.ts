@@ -1,71 +1,178 @@
 import {
+  AppInstanceJson,
+  ConditionalTransactionCommitmentJSON,
+  IStoreService,
+  ProtocolTypes,
+  STORE_SCHEMA_VERSION,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  StoreType,
+  StoreTypes,
+  WithdrawalMonitorObject,
+} from "@connext/types";
+
+import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
-  IAsyncStorage,
   IBackupServiceAPI,
-  PATH_CHANNEL,
-  PATH_PROPOSED_APP_INSTANCE_ID,
   StoreFactoryOptions,
-  StorePair,
 } from "./helpers";
-import InternalStore from "./internalStore";
+import {
+  FileStorage,
+  KeyValueStorage,
+  MemoryStorage,
+  WrappedAsyncStorage,
+  WrappedLocalStorage,
+} from "./wrappers";
 
-export class ConnextStore {
-  private internalStore: InternalStore;
+export class ConnextStore implements IStoreService {
+  private internalStore: IStoreService;
 
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
 
-  constructor(storage: Storage | IAsyncStorage, opts?: StoreFactoryOptions) {
-    let asyncStorageKey: string;
+  private schemaVersion: number = STORE_SCHEMA_VERSION;
 
-    if (opts) {
-      this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
-      this.separator = opts.separator || DEFAULT_STORE_SEPARATOR;
-      this.backupService = opts.backupService || null;
+  constructor(storageType: StoreType, opts: StoreFactoryOptions = {}) {
+    this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
+    this.separator = opts.separator || DEFAULT_STORE_SEPARATOR;
+    this.backupService = opts.backupService || null;
 
-      asyncStorageKey = opts.asyncStorageKey;
+    // set internal storage
+    switch (storageType.toUpperCase()) {
+      case StoreTypes.LOCALSTORAGE:
+        this.internalStore = new KeyValueStorage(
+          new WrappedLocalStorage(this.prefix, this.separator, this.backupService),
+        );
+        break;
+
+      case StoreTypes.ASYNCSTORAGE:
+        if (!opts.asyncStorage) {
+          throw new Error(`Must pass in a reference to an 'IAsyncStorage' representation`);
+        }
+        this.internalStore = new KeyValueStorage(
+          new WrappedAsyncStorage(
+            opts.asyncStorage,
+            this.prefix,
+            this.separator,
+            opts.asyncStorageKey,
+            this.backupService,
+          ),
+        );
+        break;
+
+      case StoreTypes.FILESTORAGE:
+        this.internalStore = new KeyValueStorage(
+          new FileStorage(
+            this.prefix,
+            this.separator === DEFAULT_STORE_SEPARATOR ? "-" : this.separator,
+            opts.fileExt,
+            opts.fileDir,
+            this.backupService,
+          ),
+        );
+        break;
+
+      case StoreTypes.MEMORYSTORAGE:
+        this.internalStore = new MemoryStorage();
+        break;
+
+      default:
+        throw new Error(`Unable to create test store of type: ${storageType}`);
     }
+  }
 
-    this.internalStore = new InternalStore(storage, this.channelPrefix, asyncStorageKey);
+  getSchemaVersion(): number {
+    return this.schemaVersion;
   }
 
   get channelPrefix(): string {
     return `${this.prefix}${this.separator}`;
   }
 
-  public async get(path: string): Promise<any> {
-    if (path.endsWith(PATH_CHANNEL)) {
-      return this.internalStore.getChannels();
-    }
-    return this.internalStore.getItem(`${path}`);
+  getAllChannels(): Promise<StateChannelJSON[]> {
+    throw this.internalStore.getAllChannels();
   }
 
-  public async set(pairs: StorePair[], shouldBackup?: boolean): Promise<void> {
-    for (const pair of pairs) {
-      await this.internalStore.setItem(pair.path, pair.value);
-
-      if (
-        shouldBackup &&
-        this.backupService &&
-        pair.path.match(/\/xpub.*\/channel\/0x[0-9a-fA-F]{40}/) &&
-        pair.value.freeBalanceAppInstance
-      ) {
-        await this.backupService.backup(pair);
-      }
-    }
+  getStateChannel(multisigAddress: string): Promise<StateChannelJSON> {
+    return this.internalStore.getStateChannel(multisigAddress);
   }
 
-  public async reset(): Promise<void> {
-    await this.internalStore.clear();
+  getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON> {
+    return this.internalStore.getStateChannelByOwners(owners);
   }
 
-  public async restore(): Promise<StorePair[]> {
-    if (this.backupService) {
-      return await this.backupService.restore();
+  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON> {
+    return this.internalStore.getStateChannelByAppInstanceId(appInstanceId);
+  }
+
+  saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+    return this.internalStore.saveStateChannel(stateChannel);
+  }
+
+  getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
+    return this.internalStore.getAppInstance(appInstanceId);
+  }
+
+  saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    return this.internalStore.saveAppInstance(multisigAddress, appInstance);
+  }
+
+  getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON> {
+    return this.internalStore.getLatestSetStateCommitment(appIdentityHash);
+  }
+
+  saveLatestSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    return this.internalStore.saveLatestSetStateCommitment(appIdentityHash, commitment);
+  }
+
+  getWithdrawalCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
+    return this.internalStore.getWithdrawalCommitment(multisigAddress);
+  }
+
+  saveWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void> {
+    return this.internalStore.saveWithdrawalCommitment(multisigAddress, commitment);
+  }
+
+  getConditionalTransactionCommitment(
+    appIdentityHash: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    return this.internalStore.getConditionalTransactionCommitment(appIdentityHash);
+  }
+
+  saveConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    return this.internalStore.saveConditionalTransactionCommitment(appIdentityHash, commitment);
+  }
+
+  clear(): Promise<void> {
+    return this.internalStore.clear();
+  }
+
+  restore(): Promise<void> {
+    return this.internalStore.restore();
+  }
+
+  getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
+    if (!this.internalStore.getUserWithdrawal) {
+      throw new Error("Method not implemented.");
     }
-    await this.reset();
-    return [];
+    return this.internalStore.getUserWithdrawal!();
+  }
+
+  setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    if (!this.internalStore.setUserWithdrawal) {
+      throw new Error("Method not implemented.");
+    }
+    return this.internalStore.setUserWithdrawal!(withdrawalObject);
   }
 }

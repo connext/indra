@@ -44,9 +44,9 @@ describe.skip("Node method follows spec - proposeInstallVirtual", () => {
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
         nodeA.once("INSTALL_VIRTUAL_EVENT", async (msg: InstallVirtualMessage) => {
-          const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
+          const [virtualAppNodeA] = await getInstalledAppInstances(nodeA, multisigAddressAB);
 
-          const [virtualAppNodeC] = await getInstalledAppInstances(nodeC);
+          const [virtualAppNodeC] = await getInstalledAppInstances(nodeC, multisigAddressBC);
 
           expect(virtualAppNodeA).toEqual(virtualAppNodeC);
 
@@ -69,7 +69,7 @@ describe.skip("Node method follows spec - proposeInstallVirtual", () => {
           const {
             data: { params, appInstanceId },
           } = msg;
-          const [proposedAppNodeC] = await getProposedAppInstances(nodeC);
+          const [proposedAppNodeC] = await getProposedAppInstances(nodeC, multisigAddressBC);
 
           confirmProposedAppInstance(params, proposedAppNodeC, true);
 
@@ -81,14 +81,14 @@ describe.skip("Node method follows spec - proposeInstallVirtual", () => {
         const proposal = makeVirtualProposal(nodeA, nodeC, TicTacToeApp);
         const { params } = await proposal;
 
-        const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
+        const [proposedAppNodeA] = await getProposedAppInstances(nodeA, multisigAddressAB);
 
         confirmProposedAppInstance(params, proposedAppNodeA);
       });
     },
   );
 
-  describe("Node A makes a virtual proposal through intermediary B to install a virtual app instance with c", () => {
+  describe.skip("Node A makes a virtual proposal through intermediary B to install a virtual app instance with c", () => {
     let nodeA: Node;
     let nodeB: Node;
     let nodeC: Node;
@@ -134,7 +134,7 @@ describe.skip("Node method follows spec - proposeInstallVirtual", () => {
       const { params } = await makeVirtualProposal(nodeA, nodeC, TicTacToeApp);
       expect(bigNumberifyJson(params.initiatorDeposit).gt(Zero)).toBeTruthy();
 
-      const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
+      const [proposedAppNodeA] = await getProposedAppInstances(nodeA, multisigAddressAB);
 
       confirmProposedAppInstance(params, proposedAppNodeA);
     });
@@ -159,7 +159,7 @@ describe.skip("Node method follows spec - proposeInstallVirtual", () => {
       const { params } = await makeVirtualProposal(nodeA, nodeC, TicTacToeApp);
       expect(bigNumberifyJson(params.initiatorDeposit).gt(Zero)).toBeTruthy();
 
-      const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
+      const [proposedAppNodeA] = await getProposedAppInstances(nodeA, multisigAddressAB);
 
       confirmProposedAppInstance(params, proposedAppNodeA);
     });

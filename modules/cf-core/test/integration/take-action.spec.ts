@@ -60,8 +60,8 @@ describe("Node method follows spec - takeAction", () => {
       });
 
       it("can take action", async done => {
-        await createChannel(nodeA, nodeB);
-        const [appInstanceId] = await installApp(nodeA, nodeB, TicTacToeApp);
+        const multisigAddress = await createChannel(nodeA, nodeB);
+        const [appInstanceId] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
         const expectedNewState = {
           board: [

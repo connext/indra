@@ -7,6 +7,7 @@ import { getConditionalTxCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
+  Commitment,
   InstallProtocolParams,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   Opcode,
@@ -23,7 +24,8 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature } from "./utils";
 
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
-const { Update, Install } = Protocol;
+const { Install } = Protocol;
+const { Conditional, SetState } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -44,7 +46,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
   0 /* Initiating */: async function*(context: Context) {
     const {
-      stateChannelsMap,
+      store,
       message: { params, processID },
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
@@ -62,7 +64,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorXpub,
     } = params as InstallProtocolParams;
 
-    const stateChannelBefore = stateChannelsMap.get(multisigAddress)!;
+    const stateChannelBefore = await store.getStateChannel(multisigAddress);
 
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
@@ -126,14 +128,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Validated responder's sig on conditional tx`);
 
-    const signedConditionalTransaction = conditionalTxCommitment.getSignedTransaction([
+    conditionalTxCommitment.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
+    ];
 
-    context.stateChannelsMap.set(stateChannelAfter.multisigAddress, stateChannelAfter);
-
-    yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
+    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
 
@@ -149,15 +149,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // always use free balance key to sign free balance update
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    // add signatures to commitment
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update,
-      signedFreeBalanceStateUpdate,
+      SetState,
+      freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
     ];
 
@@ -191,7 +192,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
   1 /* Responding */: async function*(context: Context) {
     const {
-      stateChannelsMap,
+      store,
       message: {
         params,
         processID,
@@ -216,7 +217,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress,
     } = params as InstallProtocolParams;
 
-    const stateChannelBefore = stateChannelsMap.get(multisigAddress)!;
+    const stateChannelBefore = await store.getStateChannel(multisigAddress);
 
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
@@ -258,14 +259,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitment];
 
-    const signedConditionalTransaction = conditionalTxCommitment.getSignedTransaction([
+    conditionalTxCommitment.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
+    ];
 
-    context.stateChannelsMap.set(stateChannelAfter.multisigAddress, stateChannelAfter);
-
-    yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
+    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
 
@@ -298,15 +297,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Validated initiator's sig on free balance update`);
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    // add signature
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update,
-      signedFreeBalanceStateUpdate,
+      SetState,
+      freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
     ];
 

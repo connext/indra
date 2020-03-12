@@ -1,9 +1,9 @@
+import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { HDNode } from "ethers/utils";
 
 import { Node } from "../../src/node";
-import { MemoryStoreService } from "../services/memory-store-service";
 import mockMessagingService from "../services/mock-messaging-service";
 
 describe("Node", () => {

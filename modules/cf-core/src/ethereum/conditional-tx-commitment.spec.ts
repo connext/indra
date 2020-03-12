@@ -1,23 +1,42 @@
+import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { WeiPerEther } from "ethers/constants";
-import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
+import {
+  getAddress,
+  hexlify,
+  Interface,
+  randomBytes,
+  TransactionDescription,
+  SigningKey,
+} from "ethers/utils";
 
-import { createAppInstanceForTest } from "../../test/unit/utils";
-import { getRandomExtendedPubKey } from "../../test/machine/integration/random-signing-keys";
+import {
+  getRandomExtendedPubKey,
+  getRandomHDNodes,
+} from "../../test/machine/integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../test/machine/mocks";
+import { createAppInstanceForTest } from "../../test/unit/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { FreeBalanceClass, StateChannel } from "../models";
+import { Store } from "../store";
 import { Context, MultisigTransaction } from "../types";
 import { appIdentityToHash } from "../utils";
 
-import { getConditionalTxCommitment } from "./conditional-tx-commitment";
+import {
+  getConditionalTxCommitment,
+  ConditionalTransactionCommitment,
+} from "./conditional-tx-commitment";
 
-describe("ConditionalTransaction", () => {
+describe("ConditionalTransactionCommitment", () => {
   let tx: MultisigTransaction;
+  let commitment: ConditionalTransactionCommitment;
 
   // Test network context
   const context= { network: generateRandomNetworkContext() } as Context;
+
+  // signing keys
+  const hdNodes = getRandomHDNodes(2);
 
   // General interaction testing values
   const interaction = {
@@ -48,11 +67,12 @@ describe("ConditionalTransaction", () => {
   const appInstance = createAppInstanceForTest(stateChannel);
 
   beforeAll(() => {
-    tx = getConditionalTxCommitment(
+    commitment = getConditionalTxCommitment(
       context, 
       stateChannel,
       appInstance,
-    ).getTransactionDetails();
+    );
+    tx = commitment.getTransactionDetails();
   });
 
   it("should be to the ConditionalTransactionDelegateTarget contract", () => {
@@ -61,6 +81,22 @@ describe("ConditionalTransaction", () => {
 
   it("should have no value", () => {
     expect(tx.value).toBe(0);
+  });
+
+  describe("storage", () => {
+    it("should be stored correctly", async () => {
+      const store = new Store(new MemoryStoreService());
+      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
+      const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
+      expect(retrieved).toMatchObject(commitment);
+      commitment.signatures = [
+        new SigningKey(hdNodes[0]).signDigest(randomBytes(20)),
+        new SigningKey(hdNodes[1]).signDigest(randomBytes(20)),
+      ];
+      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
+      const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
+      expect(signed).toMatchObject(commitment);
+    });
   });
 
   describe("the calldata", () => {

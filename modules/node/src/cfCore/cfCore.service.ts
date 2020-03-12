@@ -460,8 +460,7 @@ export class CFCoreService {
     return appInstance as AppInstanceJson;
   }
 
-  async getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult> {
-    // check the app is actually installed, or returned undefined
+  async getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult | undefined> {
     const stateResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: ProtocolTypes.chan_getState,

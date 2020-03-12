@@ -1,3 +1,4 @@
+import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { OutcomeType } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
@@ -14,6 +15,7 @@ import { toBeEq } from "../bignumber-jest-matcher";
 import { connectToGanache } from "../connect-ganache";
 import { MessageRouter } from "../message-router";
 import { MiniNode } from "../mininode";
+import { Store } from "../../../../src/store";
 
 expect.extend({ toBeEq });
 
@@ -47,9 +49,9 @@ export class TestRunner {
       wallet,
     ).deploy();
 
-    this.mininodeA = new MiniNode(network, provider);
-    this.mininodeB = new MiniNode(network, provider);
-    this.mininodeC = new MiniNode(network, provider);
+    this.mininodeA = new MiniNode(network, provider, new Store(new MemoryStoreService()));
+    this.mininodeB = new MiniNode(network, provider, new Store(new MemoryStoreService()));
+    this.mininodeC = new MiniNode(network, provider, new Store(new MemoryStoreService()));
 
     this.multisigAB = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
@@ -86,28 +88,29 @@ export class TestRunner {
   state channel maps accordingly
   */
   async setup() {
+    await this.mininodeA.protocolRunner.runSetupProtocol({
+      initiatorXpub: this.mininodeA.xpub,
+      responderXpub: this.mininodeB.xpub,
+      multisigAddress: this.multisigAB,
+    });
+
+    await this.mininodeA.store.getStateChannel(this.multisigAB);
     this.mininodeA.scm.set(
       this.multisigAB,
-      (
-        await this.mininodeA.protocolRunner.runSetupProtocol({
-          initiatorXpub: this.mininodeA.xpub,
-          responderXpub: this.mininodeB.xpub,
-          multisigAddress: this.multisigAB,
-        })
-      ).get(this.multisigAB)!,
+      await this.mininodeA.store.getStateChannel(this.multisigAB),
     );
 
     await this.mr.waitForAllPendingPromises();
 
+    await this.mininodeB.protocolRunner.runSetupProtocol({
+      initiatorXpub: this.mininodeB.xpub,
+      responderXpub: this.mininodeC.xpub,
+      multisigAddress: this.multisigBC,
+    });
+
     this.mininodeB.scm.set(
       this.multisigBC,
-      (
-        await this.mininodeB.protocolRunner.runSetupProtocol({
-          initiatorXpub: this.mininodeB.xpub,
-          responderXpub: this.mininodeC.xpub,
-          multisigAddress: this.multisigBC,
-        })
-      ).get(this.multisigBC)!,
+      await this.mininodeB.store.getStateChannel(this.multisigBC),
     );
 
     await this.mr.waitForAllPendingPromises();
@@ -119,37 +122,35 @@ export class TestRunner {
   */
   async unsafeFund() {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
-      const sc = mininode.scm.get(this.multisigAB)!;
-      mininode.scm.set(
-        this.multisigAB,
-        sc.incrementFreeBalance({
-          [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-            [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
-            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-          },
-          [TestRunner.TEST_TOKEN_ADDRESS]: {
-            [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
-            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-          },
-        }),
-      );
+      const sc = await mininode.store.getStateChannel(this.multisigAB)!;
+      const updatedBalance = sc.incrementFreeBalance({
+        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
+          [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
+          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+        },
+        [TestRunner.TEST_TOKEN_ADDRESS]: {
+          [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
+          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+        },
+      });
+      await mininode.store.saveStateChannel(updatedBalance);
+      mininode.scm.set(this.multisigAB, updatedBalance);
     }
 
     for (const mininode of [this.mininodeB, this.mininodeC]) {
-      const sc = mininode.scm.get(this.multisigBC)!;
-      mininode.scm.set(
-        this.multisigBC,
-        sc.incrementFreeBalance({
-          [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-            [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
-          },
-          [TestRunner.TEST_TOKEN_ADDRESS]: {
-            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-            [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
-          },
-        }),
-      );
+      const sc = await mininode.store.getStateChannel(this.multisigBC)!;
+      const updatedSc = sc.incrementFreeBalance({
+        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
+          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+          [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
+        },
+        [TestRunner.TEST_TOKEN_ADDRESS]: {
+          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+          [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
+        },
+      });
+      await mininode.store.saveStateChannel(updatedSc);
+      mininode.scm.set(this.multisigBC, updatedSc);
     }
   }
 
@@ -186,27 +187,23 @@ export class TestRunner {
       ],
     }[outcomeType];
 
-    await this.mininodeA.protocolRunner.initiateProtocol(
-      Protocol.InstallVirtualApp,
-      this.mininodeA.scm,
-      {
-        outcomeType,
-        tokenAddress,
-        initialState,
-        initiatorXpub: this.mininodeA.xpub,
-        intermediaryXpub: this.mininodeB.xpub,
-        responderXpub: this.mininodeC.xpub,
-        initiatorBalanceDecrement: One,
-        responderBalanceDecrement: One,
-        appSeqNo: 1,
-        appInterface: {
-          stateEncoding,
-          addr: this.identityApp.address,
-          actionEncoding: undefined,
-        },
-        defaultTimeout: 40,
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.InstallVirtualApp, {
+      outcomeType,
+      tokenAddress,
+      initialState,
+      initiatorXpub: this.mininodeA.xpub,
+      intermediaryXpub: this.mininodeB.xpub,
+      responderXpub: this.mininodeC.xpub,
+      initiatorBalanceDecrement: One,
+      responderBalanceDecrement: One,
+      appSeqNo: 1,
+      appInterface: {
+        stateEncoding,
+        addr: this.identityApp.address,
+        actionEncoding: undefined,
       },
-    );
+      defaultTimeout: 40,
+    });
   }
 
   async installEqualDeposits(outcomeType: OutcomeType, tokenAddress: string) {
@@ -247,7 +244,7 @@ export class TestRunner {
       xkeyKthAddress(this.mininodeB.xpub, 1),
     ]);
 
-    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, this.mininodeA.scm, {
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
       appInterface: {
         stateEncoding,
         addr: this.identityApp.address,
@@ -311,7 +308,7 @@ export class TestRunner {
       xkeyKthAddress(this.mininodeB.xpub, 1),
     ]);
 
-    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, this.mininodeA.scm, {
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
       participants,
       outcomeType,
       initialState,
@@ -334,33 +331,29 @@ export class TestRunner {
   }
 
   async uninstallVirtual() {
-    const multisig = this.mininodeA.scm.get(this.multisigAC);
+    const multisig = await this.mininodeA.store.getStateChannel(this.multisigAC);
     if (!multisig) {
       throw new Error(`uninstallVirtual: Couldn't find multisig for ${this.multisigAC}`);
     }
     const [virtualAppInstance] = [...multisig.appInstances.values()];
 
-    await this.mininodeA.protocolRunner.initiateProtocol(
-      Protocol.UninstallVirtualApp,
-      this.mininodeA.scm,
-      {
-        // todo(xuanji): this should be computed by the protocol
-        targetOutcome: await virtualAppInstance.computeOutcome(
-          virtualAppInstance.latestState,
-          this.provider,
-        ),
-        initiatorXpub: this.mininodeA.xpub,
-        intermediaryXpub: this.mininodeB.xpub,
-        responderXpub: this.mininodeC.xpub,
-        targetAppIdentityHash: virtualAppInstance.identityHash,
-      },
-    );
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, {
+      // todo(xuanji): this should be computed by the protocol
+      targetOutcome: await virtualAppInstance.computeOutcome(
+        virtualAppInstance.latestState,
+        this.provider,
+      ),
+      initiatorXpub: this.mininodeA.xpub,
+      intermediaryXpub: this.mininodeB.xpub,
+      responderXpub: this.mininodeC.xpub,
+      targetAppIdentityHash: virtualAppInstance.identityHash,
+    });
 
     await this.mr.waitForAllPendingPromises();
   }
 
   async uninstall() {
-    const multisig = this.mininodeA.scm.get(this.multisigAB);
+    const multisig = await this.mininodeA.store.getStateChannel(this.multisigAB);
     if (!multisig) {
       throw new Error(`uninstall: Couldn't find multisig for ${this.multisigAC}`);
     }
@@ -370,7 +363,7 @@ export class TestRunner {
       return key !== this.mininodeA.scm.get(this.multisigAB)!.freeBalance.identityHash;
     });
 
-    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Uninstall, this.mininodeA.scm, {
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Uninstall, {
       appIdentityHash: key,
       initiatorXpub: this.mininodeA.xpub,
       responderXpub: this.mininodeB.xpub,

@@ -34,8 +34,8 @@ describe("Node method follows spec - rejectInstall", () => {
 
       await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
-      expect(await getInstalledAppInstances(nodeA)).toEqual([]);
-      expect(await getInstalledAppInstances(nodeB)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
 
       let proposedAppId: string;
       nodeA.on(REJECT_INSTALL_EVENT, async (msg: RejectProposalMessage) => {
@@ -46,31 +46,34 @@ describe("Node method follows spec - rejectInstall", () => {
             appInstanceId: proposedAppId,
           },
         });
-        expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
-        expect((await getProposedAppInstances(nodeB)).length).toEqual(0);
+        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(0);
+        expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(0);
         done();
       });
 
       // node B then decides to reject the proposal
       nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         const rejectReq = constructRejectInstallRpc(msg.data.appInstanceId);
-        expect((await getProposedAppInstances(nodeA)).length).toEqual(1);
-        expect((await getProposedAppInstances(nodeB)).length).toEqual(1);
+        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
+        expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(1);
         proposedAppId = msg.data.appInstanceId;
         await nodeB.rpcRouter.dispatch(rejectReq);
       });
 
       const { params, appInstanceId } = await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
 
-      await confirmProposedAppInstance(params, await getAppInstanceProposal(nodeA, appInstanceId));
+      confirmProposedAppInstance(
+        params,
+        await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
+      );
     });
     it("Node A installs, node a rejects", async done => {
       const multisigAddress = await createChannel(nodeA, nodeB);
 
       await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
-      expect(await getInstalledAppInstances(nodeA)).toEqual([]);
-      expect(await getInstalledAppInstances(nodeB)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
 
       let proposedAppId: string;
       nodeB.on(REJECT_INSTALL_EVENT, async (msg: RejectProposalMessage) => {
@@ -81,23 +84,26 @@ describe("Node method follows spec - rejectInstall", () => {
             appInstanceId: proposedAppId,
           },
         });
-        expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
-        expect((await getProposedAppInstances(nodeB)).length).toEqual(0);
+        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(0);
+        expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(0);
         done();
       });
 
       // node A then decides to reject the proposal
       nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         const rejectReq = constructRejectInstallRpc(msg.data.appInstanceId);
-        expect((await getProposedAppInstances(nodeA)).length).toEqual(1);
-        expect((await getProposedAppInstances(nodeB)).length).toEqual(1);
+        expect((await getProposedAppInstances(nodeA, multisigAddress)).length).toEqual(1);
+        expect((await getProposedAppInstances(nodeB, multisigAddress)).length).toEqual(1);
         proposedAppId = msg.data.appInstanceId;
         await nodeA.rpcRouter.dispatch(rejectReq);
       });
 
       const { params, appInstanceId } = await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
 
-      await confirmProposedAppInstance(params, await getAppInstanceProposal(nodeA, appInstanceId));
+      confirmProposedAppInstance(
+        params,
+        await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
+      );
     });
   });
 });

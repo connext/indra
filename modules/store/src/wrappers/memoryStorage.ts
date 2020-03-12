@@ -1,44 +1,136 @@
-import { IAsyncStorage, reduceChannelsMap, ChannelsMap } from "../helpers";
+import {
+  SetStateCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,
+  ProtocolTypes,
+  AppInstanceJson,
+  StateChannelJSON,
+  IStoreService,
+  STORE_SCHEMA_VERSION,
+  IBackupServiceAPI,
+  WithdrawalMonitorObject,
+} from "@connext/types";
 
-export class MemoryStorage implements IAsyncStorage {
-  private store: Map<string, any> = new Map();
-  private delay: number;
+export class MemoryStorage implements IStoreService {
+  private schemaVersion: number = STORE_SCHEMA_VERSION;
+  private channels: Map<string, StateChannelJSON> = new Map();
+  private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
+  private conditionalTransactionCommitment: Map<
+    string,
+    ConditionalTransactionCommitmentJSON
+  > = new Map();
+  private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
+  private extendedPrivKey: string = "";
+  private appInstances: Map<string, AppInstanceJson> = new Map();
+  private userWithdrawals: WithdrawalMonitorObject | undefined = undefined;
 
-  constructor(delay: number = 0) {
-    this.delay = delay;
+  constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
+
+  getSchemaVersion(): number {
+    return this.schemaVersion;
   }
 
-  handleDelay(): Promise<void> {
-    return new Promise(res => setTimeout(() => res(), this.delay));
+  async getAllChannels(): Promise<StateChannelJSON[]> {
+    return [...this.channels.values()];
   }
 
-  async getItem(key: string): Promise<string | null> {
-    await this.handleDelay();
-    if (this.store.has(key)) {
-      return this.store.get(key);
+  async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
+    return this.channels.get(multisigAddress);
+  }
+
+  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
+    return [...this.channels.values()].find(
+      channel => channel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString(),
+    );
+  }
+
+  async getStateChannelByAppInstanceId(
+    appInstanceId: string,
+  ): Promise<StateChannelJSON | undefined> {
+    return [...this.channels.values()].find(channel => {
+      return (
+        channel.proposedAppInstances.find(([app]) => app === appInstanceId) ||
+        channel.appInstances.find(([app]) => app === appInstanceId) ||
+        (channel.freeBalanceAppInstance &&
+          channel.freeBalanceAppInstance.identityHash === appInstanceId)
+      );
+    });
+  }
+
+  async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+    this.channels.set(stateChannel.multisigAddress, stateChannel);
+  }
+
+  async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
+    return this.appInstances.get(appInstanceId);
+  }
+
+  async saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    const channel = this.channels.get(multisigAddress);
+    if (!channel) {
+      throw new Error(`Channel not found: ${multisigAddress}`);
     }
-    return null;
-  }
-  async setItem(key: string, data: any): Promise<void> {
-    await this.handleDelay();
-    this.store.set(key, data);
+    this.appInstances.set(appInstance.identityHash, appInstance);
   }
 
-  async removeItem(key: string): Promise<void> {
-    await this.handleDelay();
-    this.store.delete(key);
+  async getLatestSetStateCommitment(
+    appInstanceId: string,
+  ): Promise<SetStateCommitmentJSON | undefined> {
+    return this.setStateCommitments.get(appInstanceId);
+  }
+
+  async saveLatestSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    this.setStateCommitments.set(appInstanceId, commitment);
+  }
+
+  async getConditionalTransactionCommitment(
+    appInstanceId: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    return this.conditionalTransactionCommitment.get(appInstanceId);
+  }
+
+  async saveConditionalTransactionCommitment(
+    appInstanceId: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    this.conditionalTransactionCommitment.set(appInstanceId, commitment);
+  }
+
+  async getWithdrawalCommitment(
+    multisigAddress: string,
+  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+    return this.withdrawals.get(multisigAddress);
+  }
+
+  async saveWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void> {
+    this.withdrawals.set(multisigAddress, commitment);
+  }
+
+  async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
+    return this.userWithdrawals;
+  }
+
+  async setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    this.userWithdrawals = withdrawalObject;
   }
 
   async clear(): Promise<void> {
-    this.store = new Map();
+    this.channels = new Map();
+    this.withdrawals = new Map();
+    this.appInstances = new Map();
+    this.userWithdrawals = undefined;
   }
 
-  async getChannels(): Promise<ChannelsMap> {
-    const channelsObj = reduceChannelsMap(Object.entries(this.store));
-    return channelsObj;
-  }
-
-  async getAllKeys(): Promise<string[]> {
-    return Array.from(this.store.keys());
+  async restore(): Promise<void> {
+    await this.clear();
+    if (!this.backupService) {
+      throw new Error(`No backup provided, store cleared`);
+    }
+    throw new Error(`Method not implemented for MemoryStorage`)
   }
 }

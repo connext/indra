@@ -24,7 +24,7 @@ export default class UninstallController extends NodeController {
     const { store } = requestHandler;
     const { appInstanceId } = params;
 
-    const sc = await store.getChannelFromAppInstanceID(appInstanceId);
+    const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     return [sc.multisigAddress, appInstanceId];
   }
@@ -40,7 +40,7 @@ export default class UninstallController extends NodeController {
       throw Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
     }
 
-    const sc = await store.getChannelFromAppInstanceID(appInstanceId);
+    const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     if (sc.freeBalance.identityHash === appInstanceId) {
       throw Error(CANNOT_UNINSTALL_FREE_BALANCE(sc.multisigAddress));
@@ -64,7 +64,7 @@ export default class UninstallController extends NodeController {
       throw Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
     }
 
-    const stateChannel = await store.getChannelFromAppInstanceID(appInstanceId);
+    const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     if (!stateChannel.hasAppInstance(appInstanceId)) {
       throw Error(APP_ALREADY_UNINSTALLED(appInstanceId));

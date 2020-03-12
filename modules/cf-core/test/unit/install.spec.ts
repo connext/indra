@@ -1,3 +1,4 @@
+import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
@@ -9,8 +10,12 @@ import { BaseProvider } from "ethers/providers";
 import { hexlify, randomBytes, HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
+import {
+  NO_APP_INSTANCE_ID_TO_INSTALL,
+  NO_MULTISIG_FOR_APP_INSTANCE_ID,
+  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+} from "../../src/errors";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src/errors";
 import { ProtocolRunner } from "../../src/machine";
 import { install } from "../../src/methods/app-instance/install/operation";
 import { StateChannel } from "../../src/models";
@@ -19,7 +24,6 @@ import { Protocol } from "../../src/types";
 import { xkeysToSortedKthAddresses } from "../../src/xkeys";
 
 import { getRandomExtendedPubKeys } from "../machine/integration/random-signing-keys";
-import { MemoryStoreService } from "../services/memory-store-service";
 
 import { createAppInstanceProposalForTest } from "./utils";
 
@@ -37,10 +41,11 @@ describe("Can handle correct & incorrect installs", () => {
   let initiatorIdentifier: string;
 
   beforeAll(() => {
-    store = new Store(new MemoryStoreService(), "install.spec.ts-test-store");
+    store = new Store(new MemoryStoreService());
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as BaseProvider,
+      store,
       nullLogger,
     );
     initiatorIdentifier = HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
@@ -61,7 +66,7 @@ describe("Can handle correct & incorrect installs", () => {
   it("fails to install without the AppInstance being proposed first", async () => {
     await expect(
       install(store, protocolRunner, { appInstanceId: HashZero }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_MULTISIG_FOR_APP_INSTANCE_ID);
+    ).rejects.toThrowError(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(HashZero));
   });
 
   it("fails to install without the AppInstanceId being in a channel", async () => {
@@ -74,7 +79,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenThrow(
+    when(mockedStore.getStateChannelFromAppInstanceID(appInstanceId)).thenThrow(
       Error(NO_MULTISIG_FOR_APP_INSTANCE_ID),
     );
 
@@ -119,14 +124,12 @@ describe("Can handle correct & incorrect installs", () => {
 
     when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenResolve(stateChannel);
+    when(mockedStore.getStateChannelFromAppInstanceID(appInstanceId)).thenResolve(stateChannel);
 
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the
     // expected multisigAddress in it.
-    when(
-      mockedProtocolRunner.initiateProtocol(Protocol.Install, anything(), anything()),
-    ).thenResolve(new Map([[multisigAddress, stateChannel]]));
+    when(mockedProtocolRunner.initiateProtocol(Protocol.Install, anything())).thenResolve();
 
     // The AppInstanceProposal that's returned is the one that was installed, which
     // is the same one as the one that was proposed

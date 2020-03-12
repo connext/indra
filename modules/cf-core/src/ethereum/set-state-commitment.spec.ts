@@ -5,14 +5,16 @@ import {
   keccak256,
   solidityPack,
   TransactionDescription,
+  SigningKey,
 } from "ethers/utils";
 
 import { createAppInstanceForTest } from "../../test/unit/utils";
+import { getRandomHDNodes } from "../../test/machine/integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../test/machine/mocks";
 
 import { ChallengeRegistry } from "../contracts";
-import { appIdentityToHash } from "../utils";
 import { Context } from "../types";
+import { appIdentityToHash } from "../utils";
 
 import { getSetStateCommitment, SetStateCommitment } from "./set-state-commitment";
 
@@ -29,17 +31,21 @@ describe("Set State Commitment", () => {
 
   const appInstance = createAppInstanceForTest();
 
+  const hdNodes = getRandomHDNodes(2);
+
   beforeAll(() => {
     commitment = getSetStateCommitment(
       context,
       appInstance,
     );
+    commitment.signatures = [
+      new SigningKey(hdNodes[0].privateKey).signDigest(commitment.hashToSign()),
+      new SigningKey(hdNodes[1].privateKey).signDigest(commitment.hashToSign()),
+    ];
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
     //       directly to the app registry?
-    tx = commitment.getSignedTransaction([
-      /* NOTE: Passing in no signatures for test only */
-    ]);
+    tx = commitment.getSignedTransaction();
   });
 
   it("should be to ChallengeRegistry", () => {

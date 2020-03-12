@@ -3,7 +3,8 @@ import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { ProtocolTypes } from "./protocol";
-import { Store, StorePair } from "./store";
+import { IStoreService, WithdrawalMonitorObject } from "./store";
+import { StateChannelJSON } from "./state";
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -37,16 +38,17 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // STORE METHODS
-  get(path: string): Promise<any>;
-  set(pairs: StorePair[], allowDelete?: Boolean): Promise<void>;
-  restoreState(path: string): Promise<void>;
+  getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
+  setUserWithdrawal(withdrawal: WithdrawalMonitorObject): Promise<void>;
+  restoreState(state?: StateChannelJSON): Promise<void>;
 }
 
 export const chan_config = "chan_config";
 export const chan_nodeAuth = "chan_nodeAuth";
 export const chan_restoreState = "chan_restoreState";
-export const chan_storeGet = "chan_storeGet";
-export const chan_storeSet = "chan_storeSet";
+export const chan_setUserWithdrawal = "chan_setUserWithdrawal";
+export const chan_getUserWithdrawal = "chan_getUserWithdrawal";
+export const chan_setStateChannel = "chan_setStateChannel";
 
 // TODO: merge ConnextRpcMethods and RpcMethodNames???
 
@@ -54,8 +56,9 @@ export const ConnextRpcMethods = {
   [chan_config]: chan_config,
   [chan_nodeAuth]: chan_nodeAuth,
   [chan_restoreState]: chan_restoreState,
-  [chan_storeGet]: chan_storeGet,
-  [chan_storeSet]: chan_storeSet,
+  [chan_getUserWithdrawal]: chan_getUserWithdrawal,
+  [chan_setUserWithdrawal]: chan_setUserWithdrawal,
+  [chan_setStateChannel]: chan_setStateChannel,
 };
 export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
 
@@ -81,7 +84,7 @@ export interface CFChannelProviderOptions {
   nodeConfig: any;
   nodeUrl: string;
   xpub: string;
-  store: Store;
+  store: IStoreService;
 }
 
 export type JsonRpcRequest = {

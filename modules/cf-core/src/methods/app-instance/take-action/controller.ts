@@ -67,7 +67,7 @@ export default class TakeActionController extends NodeController {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, action } = params;
 
-    const sc = await store.getChannelFromAppInstanceID(appInstanceId);
+    const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
@@ -115,22 +115,16 @@ async function runTakeActionProtocol(
   responderXpub: string,
   action: SolidityValueType,
 ) {
-  const stateChannel = await store.getChannelFromAppInstanceID(appIdentityHash);
-
-  let stateChannelsMap: Map<string, StateChannel>;
+  const stateChannel = await store.getStateChannelFromAppInstanceID(appIdentityHash);
 
   try {
-    stateChannelsMap = await protocolRunner.initiateProtocol(
-      Protocol.TakeAction,
-      new Map<string, StateChannel>([[stateChannel.multisigAddress, stateChannel]]),
-      {
-        initiatorXpub,
-        responderXpub,
-        appIdentityHash,
-        action,
-        multisigAddress: stateChannel.multisigAddress,
-      },
-    );
+    await protocolRunner.initiateProtocol(Protocol.TakeAction, {
+      initiatorXpub,
+      responderXpub,
+      appIdentityHash,
+      action,
+      multisigAddress: stateChannel.multisigAddress,
+    });
   } catch (e) {
     if (e.toString().indexOf(`VM Exception`) !== -1) {
       // TODO: Fetch the revert reason

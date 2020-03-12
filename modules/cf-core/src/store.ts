@@ -1,86 +1,44 @@
-import { CriticalStateChannelAddresses, AppInstanceJson, StateChannelJSON } from "@connext/types";
+import { CriticalStateChannelAddresses, AppInstanceJson } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
-import { solidityKeccak256 } from "ethers/utils";
 
-import {
-  DB_NAMESPACE_ALL_COMMITMENTS,
-  DB_NAMESPACE_CHANNEL,
-  DB_NAMESPACE_WITHDRAWALS,
-} from "./db-schema";
 import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
   NO_MULTISIG_FOR_COUNTERPARTIES,
+  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
 } from "./errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { CFCoreTypes, SolidityValueType } from "./types";
 import { getCreate2MultisigAddress } from "./utils";
+import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
 /**
  * A simple ORM around StateChannels and AppInstances stored using the
  * StoreService.
  */
 export class Store {
-  constructor(
-    private readonly storeService: CFCoreTypes.IStoreService,
-    private readonly storeKeyPrefix: string,
-  ) {}
+  constructor(private readonly storeService: CFCoreTypes.IStoreService) {}
 
-  public static async getMultisigAddressWithCounterpartyFromMap(
-    stateChannelsMap: Map<string, StateChannel>,
+  public async getMultisigAddressWithCounterparty(
     owners: string[],
     proxyFactory: string,
     multisigMastercopy: string,
     provider?: BaseProvider,
   ): Promise<string> {
-    for (const stateChannel of stateChannelsMap.values()) {
-      if (stateChannel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString()) {
-        return stateChannel.multisigAddress;
+    try {
+      const stateChannel = await this.getStateChannelByOwners(owners);
+      return stateChannel.multisigAddress;
+    } catch (e) {
+      if (provider) {
+        return await getCreate2MultisigAddress(
+          owners,
+          { proxyFactory, multisigMastercopy },
+          provider,
+        );
       }
     }
-    if (provider) {
-      return await getCreate2MultisigAddress(
-        owners,
-        { proxyFactory, multisigMastercopy },
-        provider,
-      );
-    }
     throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
-  }
-
-  public async getMultisigAddressWithCounterparty(
-    owners: string[],
-    proxyFactoryAddress: string,
-    minimumViableMultisigAddress: string,
-    provider?: BaseProvider,
-  ) {
-    const stateChannelsMap = await this.getStateChannelsMap();
-    return await Store.getMultisigAddressWithCounterpartyFromMap(
-      stateChannelsMap,
-      owners,
-      proxyFactoryAddress,
-      minimumViableMultisigAddress,
-      provider,
-    );
-  }
-
-  /**
-   * Returns an object with the keys being the multisig addresses and the
-   * values being `StateChannel` instances.
-   */
-  public async getStateChannelsMap(): Promise<Map<string, StateChannel>> {
-    const channelsJSON = ((await this.storeService.get(
-      `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}`,
-    )) || {}) as {
-      [multisigAddress: string]: StateChannelJSON;
-    };
-
-    return new Map(
-      Object.values(channelsJSON)
-        .map(StateChannel.fromJson)
-        .map(sc => [sc.multisigAddress, sc]),
-    );
   }
 
   /**
@@ -88,12 +46,38 @@ export class Store {
    * @param multisigAddress
    */
   public async getStateChannel(multisigAddress: string): Promise<StateChannel> {
-    const stateChannelJson = await this.storeService.get(
-      `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${multisigAddress}`,
-    );
+    const stateChannelJson = await this.storeService.getStateChannel(multisigAddress);
 
     if (!stateChannelJson) {
       throw Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+
+    return StateChannel.fromJson(stateChannelJson);
+  }
+
+  /**
+   * Returns the StateChannel instance with the specified multisig address.
+   * @param multisigAddress
+   */
+  public async getStateChannelIfExists(multisigAddress: string): Promise<StateChannel | undefined> {
+    const stateChannelJson = await this.storeService.getStateChannel(multisigAddress);
+
+    if (!stateChannelJson) {
+      return undefined;
+    }
+
+    return StateChannel.fromJson(stateChannelJson);
+  }
+
+  /**
+   * Returns the StateChannel instance with the specified multisig address.
+   * @param multisigAddress
+   */
+  public async getStateChannelByOwners(owners: string[]): Promise<StateChannel> {
+    const stateChannelJson = await this.storeService.getStateChannelByOwners(owners.sort());
+
+    if (!stateChannelJson) {
+      throw Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(owners.toString()));
     }
 
     const channel = StateChannel.fromJson(stateChannelJson);
@@ -101,12 +85,28 @@ export class Store {
   }
 
   /**
+   * @param appInstanceId
+   */
+  public async getStateChannelFromAppInstanceID(appInstanceId: string): Promise<StateChannel> {
+    const stateChannelJson = await this.storeService.getStateChannelByAppInstanceId(appInstanceId);
+
+    if (!stateChannelJson) {
+      throw Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+    }
+
+    const channel = StateChannel.fromJson(stateChannelJson);
+    return channel;
+  }
+
+  public async getAllChannels(): Promise<StateChannel[]> {
+    return (await this.storeService.getAllChannels()).map(StateChannel.fromJson);
+  }
+
+  /**
    * Checks if a StateChannel is in the store
    */
   public async hasStateChannel(multisigAddress: string): Promise<boolean> {
-    return !!(await this.storeService.get(
-      `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${multisigAddress}`,
-    ));
+    return !!(await this.storeService.getStateChannel(multisigAddress));
   }
 
   /**
@@ -115,16 +115,10 @@ export class Store {
    * @param appInstanceId
    */
   public async getMultisigAddressFromAppInstance(appInstanceId: string): Promise<string> {
-    for (const sc of (await this.getStateChannelsMap()).values()) {
-      if (
-        sc.proposedAppInstances.has(appInstanceId) ||
-        sc.appInstances.has(appInstanceId) ||
-        (sc.hasFreeBalance && sc.freeBalance.identityHash === appInstanceId)
-      ) {
-        return sc.multisigAddress;
-      }
+    const stateChannel = await this.storeService.getStateChannelByAppInstanceId(appInstanceId);
+    if (stateChannel) {
+      return stateChannel.multisigAddress;
     }
-
     throw new Error(NO_MULTISIG_FOR_APP_INSTANCE_ID);
   }
 
@@ -133,12 +127,7 @@ export class Store {
    * @param stateChannel
    */
   public async saveStateChannel(stateChannel: StateChannel) {
-    await this.storeService.set([
-      {
-        path: `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${stateChannel.multisigAddress}`,
-        value: stateChannel.toJson(),
-      },
-    ]);
+    await this.storeService.saveStateChannel(stateChannel.toJson());
   }
 
   /**
@@ -146,50 +135,33 @@ export class Store {
    * @param appInstance
    */
   public async saveAppInstanceState(appInstanceId: string, newState: SolidityValueType) {
-    const channel = await this.getChannelFromAppInstanceID(appInstanceId);
-    const updatedChannel = await channel.setState(appInstanceId, newState);
+    const channel = await this.getStateChannelFromAppInstanceID(appInstanceId);
+    const updatedChannel = channel.setState(appInstanceId, newState);
     await this.saveStateChannel(updatedChannel);
   }
 
   /**
    * Returns a list of proposed `AppInstanceProposals`s.
    */
-  public async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
-    const chanArray = multisigAddress
-      ? [await this.getStateChannel(multisigAddress)]
-      : [...(await this.getStateChannelsMap()).values()];
-    return chanArray.reduce(
-      (lst, sc) => [...lst, ...sc.proposedAppInstances.values()],
-      [] as AppInstanceProposal[],
-    );
+  // TODO: make sure this isn't being called to get all channels
+  public async getProposedAppInstances(multisigAddress: string): Promise<AppInstanceProposal[]> {
+    const sc = await this.getStateChannel(multisigAddress);
+    return [...sc.proposedAppInstances.values()];
   }
 
   /**
    * Returns a list of proposed `AppInstanceJson`s.
    */
-  public async getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]> {
-    const chanArray = multisigAddress
-      ? [await this.getStateChannel(multisigAddress)]
-      : [...(await this.getStateChannelsMap()).values()];
-    return chanArray.reduce((acc: AppInstanceJson[], channel: StateChannel) => {
-      acc.push(
-        ...Array.from(channel.appInstances.values()).map(appInstance => appInstance.toJson()),
-      );
-      return acc;
-    }, []);
+  public async getAppInstances(multisigAddress: string): Promise<AppInstanceJson[]> {
+    const sc = await this.getStateChannel(multisigAddress);
+    return [...sc.appInstances.values()].map(appInstance => appInstance.toJson());
   }
 
   /**
    * Returns the proposed AppInstance with the specified appInstanceId.
    */
   public async getAppInstanceProposal(appInstanceId: string): Promise<AppInstanceProposal> {
-    const multisigAddress = await this.getMultisigAddressFromAppInstance(appInstanceId);
-
-    if (!multisigAddress) {
-      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId));
-    }
-
-    const stateChannel = await this.getStateChannel(multisigAddress);
+    const stateChannel = await this.getStateChannelFromAppInstanceID(appInstanceId);
 
     if (!stateChannel.proposedAppInstances.has(appInstanceId)) {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId));
@@ -198,51 +170,62 @@ export class Store {
     return stateChannel.proposedAppInstances.get(appInstanceId)!;
   }
 
-  /**
-   * @param appInstanceId
-   */
-  public async getChannelFromAppInstanceID(appInstanceId: string): Promise<StateChannel> {
-    return await this.getStateChannel(await this.getMultisigAddressFromAppInstance(appInstanceId));
-  }
-
   public async getWithdrawalCommitment(
     multisigAddress: string,
   ): Promise<CFCoreTypes.MinimalTransaction> {
-    return this.storeService.get(
-      [this.storeKeyPrefix, DB_NAMESPACE_WITHDRAWALS, multisigAddress].join("/"),
-    );
+    const withdrawalCommitment = await this.storeService.getWithdrawalCommitment(multisigAddress);
+    if (!withdrawalCommitment) {
+      throw new Error("Could not find withdrawal commitment");
+    }
+    return withdrawalCommitment;
   }
 
   public async storeWithdrawalCommitment(
     multisigAddress: string,
     commitment: CFCoreTypes.MinimalTransaction,
   ) {
-    return this.storeService.set([
-      {
-        path: [this.storeKeyPrefix, DB_NAMESPACE_WITHDRAWALS, multisigAddress].join("/"),
-        value: commitment,
-      },
-    ]);
+    return this.storeService.saveWithdrawalCommitment(multisigAddress, commitment);
   }
 
-  public async setCommitment(args: any[], commitment: CFCoreTypes.MinimalTransaction) {
-    return this.storeService.set([
-      {
-        path: [
-          this.storeKeyPrefix,
-          DB_NAMESPACE_ALL_COMMITMENTS,
-          solidityKeccak256(
-            ["address", "uint256", "bytes"],
-            [commitment.to, commitment.value, commitment.data],
-          ),
-        ].join("/"),
-        value: args.concat([commitment]),
-      },
-    ]);
+  public async getLatestSetStateCommitment(
+    appInstanceId: string,
+  ): Promise<SetStateCommitment | undefined> {
+    const json = await this.storeService.getLatestSetStateCommitment(appInstanceId);
+    if (!json) {
+      return undefined;
+    }
+    return SetStateCommitment.fromJson(json);
+  }
+
+  public async saveLatestSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitment,
+  ): Promise<void> {
+    return this.storeService.saveLatestSetStateCommitment(appInstanceId, commitment.toJson());
+  }
+
+  public async getConditionalTransactionCommitment(
+    appInstanceId: string,
+  ): Promise<ConditionalTransactionCommitment | undefined> {
+    const json = await this.storeService.getConditionalTransactionCommitment(appInstanceId);
+    if (!json) {
+      return undefined;
+    }
+    return ConditionalTransactionCommitment.fromJson(json);
+  }
+
+  public async saveConditionalTransactionCommitment(
+    appInstanceId: string,
+    commitment: ConditionalTransactionCommitment, // ConditionalTransactionJSON,
+  ): Promise<void> {
+    return this.storeService.saveConditionalTransactionCommitment(
+      appInstanceId,
+      commitment.toJson(),
+    );
   }
 
   public async getAppInstance(appInstanceId: string): Promise<AppInstance> {
-    const channel = await this.getChannelFromAppInstanceID(appInstanceId);
+    const channel = await this.getStateChannelFromAppInstanceID(appInstanceId);
     return channel.getAppInstance(appInstanceId);
   }
 

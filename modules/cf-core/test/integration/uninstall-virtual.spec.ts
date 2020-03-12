@@ -67,7 +67,7 @@ describe.skip("Node method follows spec - uninstall virtual", () => {
             },
           });
 
-          expect(await getInstalledAppInstances(nodeC)).toEqual([]);
+          expect(await getInstalledAppInstances(nodeC, multisigAddressBC)).toEqual([]);
 
           done();
         });
@@ -76,7 +76,7 @@ describe.skip("Node method follows spec - uninstall virtual", () => {
           constructUninstallVirtualRpc(appInstanceId, nodeB.publicIdentifier),
         );
 
-        expect(await getInstalledAppInstances(nodeA)).toEqual([]);
+        expect(await getInstalledAppInstances(nodeA, multisigAddressAB)).toEqual([]);
       });
     },
   );

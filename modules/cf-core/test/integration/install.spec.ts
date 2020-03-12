@@ -79,12 +79,12 @@ describe("Node method follows spec - install", () => {
         // });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {
-          const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
-          const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
+          const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
+          const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
           expect(appInstanceNodeA).toBeDefined();
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
 
-          const proposedAppsA = await getProposedAppInstances(nodeA);
+          const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
           expect(proposedAppsA.length).toBe(0);
 
           [postInstallETHBalanceNodeA, postInstallETHBalanceNodeB] = await getBalances(
@@ -151,8 +151,8 @@ describe("Node method follows spec - install", () => {
         });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {
-          const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
-          const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
+          const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
+          const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
 
           [postInstallERC20BalanceNodeA, postInstallERC20BalanceNodeB] = await getBalances(

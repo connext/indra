@@ -233,8 +233,9 @@ export async function getAppInstance(node: Node, appInstanceId: string): Promise
 export async function getAppInstanceProposal(
   node: Node,
   appInstanceId: string,
+  multisigAddress: string,
 ): Promise<AppInstanceProposal> {
-  const candidates = (await getProposedAppInstances(node)).filter(
+  const candidates = (await getProposedAppInstances(node, multisigAddress)).filter(
     proposal => proposal.identityHash === appInstanceId,
   );
 
@@ -285,22 +286,28 @@ export async function getTokenIndexedFreeBalanceStates(
   return result as CFCoreTypes.GetTokenIndexedFreeBalanceStatesResult;
 }
 
-export async function getInstalledAppInstances(node: Node): Promise<AppInstanceJson[]> {
+export async function getInstalledAppInstances(
+  node: Node,
+  multisigAddress: string,
+): Promise<AppInstanceJson[]> {
   const rpc = {
     id: Date.now(),
     methodName: ProtocolTypes.chan_getAppInstances,
-    parameters: {} as CFCoreTypes.GetAppInstancesParams,
+    parameters: { multisigAddress } as CFCoreTypes.GetAppInstancesParams,
   };
   const response = (await node.rpcRouter.dispatch(rpc)) as JsonRpcResponse;
   const result = response.result.result as CFCoreTypes.GetAppInstancesResult;
   return result.appInstances;
 }
 
-export async function getProposedAppInstances(node: Node): Promise<AppInstanceProposal[]> {
+export async function getProposedAppInstances(
+  node: Node,
+  multisigAddress: string,
+): Promise<AppInstanceProposal[]> {
   const rpc = {
     id: Date.now(),
     methodName: ProtocolTypes.chan_getProposedAppInstances,
-    parameters: {} as CFCoreTypes.GetProposedAppInstancesParams,
+    parameters: { multisigAddress } as CFCoreTypes.GetProposedAppInstancesParams,
   };
   const response = (await node.rpcRouter.dispatch(rpc)) as JsonRpcResponse;
   const result = response.result.result as CFCoreTypes.GetProposedAppInstancesResult;
@@ -620,9 +627,9 @@ export function constructTakeActionRpc(appInstanceId: string, action: any): Rpc 
   };
 }
 
-export function constructGetAppsRpc(): Rpc {
+export function constructGetAppsRpc(multisigAddress: string): Rpc {
   return {
-    parameters: {},
+    parameters: { multisigAddress } as CFCoreTypes.GetAppInstancesParams,
     id: Date.now(),
     methodName: ProtocolTypes.chan_getAppInstances,
   };
@@ -672,6 +679,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
       [nodeA.publicIdentifier, nodeB.publicIdentifier],
       0,
     );
+
     nodeB.once(CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertNodeMessage(
         msg,
@@ -685,7 +693,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
         },
         [`data.multisigAddress`],
       );
-      expect(await getInstalledAppInstances(nodeB)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeB, msg.data.multisigAddress)).toEqual([]);
       resolve(msg.data.multisigAddress);
     });
 
@@ -706,9 +714,12 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
 
     // trigger channel creation but only resolve with the multisig address
     // as acknowledged by the node
-    await getMultisigCreationAddress(nodeA, [nodeA.publicIdentifier, nodeB.publicIdentifier]);
+    const multisigAddress = await getMultisigCreationAddress(nodeA, [
+      nodeA.publicIdentifier,
+      nodeB.publicIdentifier,
+    ]);
 
-    expect(await getInstalledAppInstances(nodeA)).toEqual([]);
+    expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
   });
 }
 
@@ -716,6 +727,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
 export async function installApp(
   nodeA: Node,
   nodeB: Node,
+  multisigAddress: string,
   appDefinition: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
@@ -750,7 +762,7 @@ export async function installApp(
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeA, appInstanceId),
+        await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
       );
 
       nodeA.once(`INSTALL_EVENT`, async (msg: InstallMessage) => {
@@ -1111,8 +1123,9 @@ export function uninstallApp(node: Node, counterparty: Node, appId: string): Pro
   });
 }
 
-export async function getApps(node: Node): Promise<AppInstanceJson[]> {
-  return (await node.rpcRouter.dispatch(constructGetAppsRpc())).result.result.appInstances;
+export async function getApps(node: Node, multisigAddress: string): Promise<AppInstanceJson[]> {
+  return (await node.rpcRouter.dispatch(constructGetAppsRpc(multisigAddress))).result.result
+    .appInstances;
 }
 
 export async function getBalances(

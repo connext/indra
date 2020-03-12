@@ -19,6 +19,10 @@ export default class GetAppInstancesController extends NodeController {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 
+    if (!multisigAddress) {
+      throw new Error("Multisig address must be provided");
+    }
+
     return {
       appInstances: await store.getAppInstances(multisigAddress),
     };

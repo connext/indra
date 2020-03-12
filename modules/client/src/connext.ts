@@ -4,10 +4,12 @@ import {
   AppInstanceProposal,
   IChannelProvider,
   LINKED_TRANSFER_TO_RECIPIENT,
-  ILoggerService,
-  chan_storeGet,
-  chan_storeSet,
+  chan_getUserWithdrawal,
+  chan_setUserWithdrawal,
+  chan_setStateChannel,
   chan_restoreState,
+  IStoreService,
+  ILoggerService,
   LinkedTransferToRecipientResponse,
   LINKED_TRANSFER,
   ConditionalTransferParameters,
@@ -62,7 +64,6 @@ import {
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
-  Store,
   SwapParameters,
   Transfer,
   TransferParameters,
@@ -92,7 +93,7 @@ export class ConnextClient implements IConnextClient {
   public nodePublicIdentifier: string;
   public publicIdentifier: string;
   public signerAddress: Address;
-  public store: Store;
+  public store: IStoreService;
   public token: Contract;
 
   private opts: InternalClientOptions;
@@ -175,8 +176,6 @@ export class ConnextClient implements IConnextClient {
 
   /**
    * Checks if the coin balance refund app is installed.
-   *
-   * NOTE: should probably take assetId into account
    */
   public getBalanceRefundApp = async (
     assetId: string = AddressZero,
@@ -325,6 +324,9 @@ export class ConnextClient implements IConnextClient {
     params: CheckDepositRightsParameters,
   ): Promise<CheckDepositRightsResponse> => {
     const refundApp = await this.getBalanceRefundApp(params.assetId);
+    if (!refundApp) {
+      throw new Error(`No balance refund app installed for ${params.assetId}`);
+    }
     const multisigBalance =
       !refundApp.latestState["tokenAddress"] &&
       refundApp.latestState["tokenAddress"] !== AddressZero
@@ -416,8 +418,7 @@ export class ConnextClient implements IConnextClient {
   public getLatestNodeSubmittedWithdrawal = async (): Promise<
     { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
   > => {
-    const path = withdrawalKey(this.publicIdentifier);
-    const value = await this.channelProvider.send(chan_storeGet, { path });
+    const value = await this.channelProvider.send(chan_getUserWithdrawal, {});
 
     if (!value || value === "undefined") {
       return undefined;
@@ -448,8 +449,8 @@ export class ConnextClient implements IConnextClient {
           async (blockNumber: number): Promise<void> => {
             const found = await this.checkForUserWithdrawal(blockNumber);
             if (found) {
-              await this.channelProvider.send(chan_storeSet, {
-                pairs: [{ path: withdrawalKey(this.publicIdentifier), value: undefined }],
+              await this.channelProvider.send(chan_setUserWithdrawal, {
+                withdrawalObject: undefined,
               });
               this.ethProvider.removeAllListeners("block");
               resolve();
@@ -473,23 +474,20 @@ export class ConnextClient implements IConnextClient {
   // Restore State
 
   public restoreState = async (): Promise<void> => {
-    const path = `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`;
-    let state;
     try {
-      state = await this.channelProvider.send(chan_restoreState, { path });
+      await this.channelProvider.send(chan_restoreState, {});
       this.log.info(`Found state to restore from store's backup`);
-      this.log.debug(`Restored state: ${stringify(state.path)}`);
     } catch (e) {
-      state = await this.node.restoreState(this.publicIdentifier);
+      const state = await this.node.restoreState(this.publicIdentifier);
       if (!state) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
       this.log.debug(`Found state to restore from node`);
       this.log.debug(`Restored state: ${stringify(state)}`);
+      await this.channelProvider.send(chan_setStateChannel, {
+        state,
+      });
     }
-    await this.channelProvider.send(chan_storeSet, {
-      pairs: [{ path, value: state }],
-    });
     await this.restart();
   };
 
@@ -603,14 +601,14 @@ export class ConnextClient implements IConnextClient {
     multisigAddress?: string,
   ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined> => {
     return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstances, {
-      multisigAddress,
+      multisigAddress: multisigAddress || this.multisigAddress,
     } as CFCoreTypes.GetProposedAppInstancesParams);
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstances, {
+    return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstance, {
       appInstanceId,
     } as CFCoreTypes.GetProposedAppInstanceParams);
   };
@@ -1023,8 +1021,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   public resubmitActiveWithdrawal = async (): Promise<void> => {
-    const path = withdrawalKey(this.publicIdentifier);
-    const withdrawal = await this.channelProvider.send(chan_storeGet, { path });
+    const withdrawal = await this.channelProvider.send(chan_getUserWithdrawal, {});
 
     if (!withdrawal || withdrawal === "undefined") {
       // No active withdrawal, nothing to do
@@ -1048,13 +1045,8 @@ export class ConnextClient implements IConnextClient {
     if (this.matchTx(tx, withdrawal.tx)) {
       // the withdrawal in our store matches latest submitted tx,
       // clear value in store and return
-      await this.channelProvider.send(chan_storeSet, {
-        pairs: [
-          {
-            path: withdrawalKey(this.publicIdentifier),
-            value: undefined,
-          },
-        ],
+      await this.channelProvider.send(chan_setUserWithdrawal, {
+        withdrawalObject: undefined,
       });
       return;
     }
@@ -1075,13 +1067,8 @@ export class ConnextClient implements IConnextClient {
     let { retry } = val;
     const { tx } = val;
     retry += 1;
-    await this.channelProvider.send(chan_storeSet, {
-      pairs: [
-        {
-          path: withdrawalKey(this.publicIdentifier),
-          value: { retry, tx },
-        },
-      ],
+    await this.channelProvider.send(chan_setUserWithdrawal, {
+      withdrawalObject: { retry, tx },
     });
     if (retry >= MAX_WITHDRAWAL_RETRIES) {
       const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;

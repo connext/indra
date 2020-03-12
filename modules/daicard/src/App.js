@@ -6,6 +6,7 @@ import {
   RECEIVE_TRANSFER_FINISHED_EVENT,
   RECEIVE_TRANSFER_STARTED_EVENT,
   RECEIVE_TRANSFER_FAILED_EVENT,
+  StoreTypes,
 } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
@@ -235,9 +236,9 @@ class App extends React.Component {
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
-        store = new ConnextStore(window.localStorage, { backupService });
+        store = new ConnextStore(StoreTypes.LOCALSTORAGE, { backupService });
       } else {
-        store = new ConnextStore(window.localStorage);
+        store = new ConnextStore(StoreTypes.LOCALSTORAGE);
       }
 
       // If store has double prefixes, flush and restore

@@ -1,10 +1,15 @@
 import { connect } from "@connext/client";
-import { ConnextStore, MemoryStorage } from "@connext/store";
-import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
+import { ConnextStore } from "@connext/store";
+import {
+  ClientOptions,
+  IChannelProvider,
+  IConnextClient,
+  MEMORYSTORAGE,
+  LOCALSTORAGE,
+} from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
-import localStorage from "localStorage";
 
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
@@ -21,7 +26,7 @@ export const createClient = async (
   opts: Partial<ClientOptions | any> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const store = opts.store || new ConnextStore(new MemoryStorage());
+  const store = opts.store || new ConnextStore(MEMORYSTORAGE)
   const mnemonic = opts.mnemonic || Wallet.createRandom().mnemonic;
   const log = new Logger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
@@ -78,9 +83,9 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     ...opts,
     ...urlOptions,
     loggerService: new Logger("TestRunner", env.logLevel, true),
-    store: new ConnextStore(localStorage), // TODO: replace with polyfilled window.localStorage
+    store: new ConnextStore(LOCALSTORAGE), // TODO: replace with polyfilled window.localStorage
   };
-  if (network === "mainnet") {
+  if (network === "mainnet" || network === "rinkeby") {
     clientOpts = {
       mnemonic: Wallet.createRandom().mnemonic,
       ...clientOpts,

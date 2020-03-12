@@ -1,7 +1,7 @@
 import { v4 as generateUUID } from "uuid";
 
 import { Node } from "../../src";
-import { NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src/errors";
+import { NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID } from "../../src/errors";
 
 import { NetworkContextForTestSuite } from "../contracts";
 
@@ -22,16 +22,17 @@ describe("Node method follows spec - getAppInstances", () => {
   });
 
   it("returns the right response for getting the state of a non-existent AppInstance", async () => {
-    const getStateReq = constructGetStateRpc(generateUUID());
+    const appId = generateUUID();
+    const getStateReq = constructGetStateRpc(appId);
     await expect(nodeA.rpcRouter.dispatch(getStateReq)).rejects.toThrowError(
-      NO_MULTISIG_FOR_APP_INSTANCE_ID,
+      NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appId),
     );
   });
 
   it("returns the right state for an installed AppInstance", async () => {
-    await createChannel(nodeA, nodeB);
+    const multisigAddress = await createChannel(nodeA, nodeB);
 
-    const [appInstanceId, params] = await installApp(nodeA, nodeB, TicTacToeApp);
+    const [appInstanceId, params] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
     const state = await getState(nodeA, appInstanceId);
 

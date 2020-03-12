@@ -11,7 +11,7 @@ import {
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../errors";
-import { StateChannel } from "../models";
+
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import {
@@ -52,17 +52,11 @@ export async function handleReceivedProtocolMessage(
 
   if (seq === UNASSIGNED_SEQ_NO) return;
 
-  const preProtocolStateChannelsMap = await store.getStateChannelsMap();
-
-  const postProtocolStateChannelsMap = await protocolRunner.runProtocolWithMessage(
-    data,
-    preProtocolStateChannelsMap,
-  );
+  await protocolRunner.runProtocolWithMessage(data);
 
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
     params!,
-    postProtocolStateChannelsMap,
     networkContext,
     store,
     publicIdentifier,
@@ -86,7 +80,9 @@ export async function handleReceivedProtocolMessage(
       }
       if (proposal) {
         await store.saveStateChannel(
-          (await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId),
+          (await store.getStateChannelFromAppInstanceID(appInstanceId)).removeProposal(
+            appInstanceId,
+          ),
         );
       }
     }
@@ -104,7 +100,6 @@ function emitOutgoingNodeMessage(router: RpcRouter, msg: EventEmittedMessage) {
 async function getOutgoingEventDataFromProtocol(
   protocol: Protocol,
   params: ProtocolParameters,
-  stateChannelsMap: Map<string, StateChannel>,
   networkContext: NetworkContext,
   store: Store,
   publicIdentifier: string,
@@ -128,9 +123,9 @@ async function getOutgoingEventDataFromProtocol(
             ...emittedParams,
             proposedToIdentifier: responderXpub,
           },
-          appInstanceId: stateChannelsMap
-            .get((params as ProposeInstallProtocolParams).multisigAddress)!
-            .mostRecentlyProposedAppInstance().identityHash,
+          appInstanceId: (
+            await store.getStateChannel(multisigAddress)
+          ).mostRecentlyProposedAppInstance().identityHash,
         },
       };
     case Protocol.Install:
@@ -141,9 +136,9 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appInstanceId: stateChannelsMap
-              .get((params as InstallProtocolParams).multisigAddress)!
-              .mostRecentlyInstalledAppInstance().identityHash,
+            appInstanceId: (
+              await store.getStateChannel((params as InstallProtocolParams).multisigAddress)
+            ).mostRecentlyInstalledAppInstance().identityHash,
           },
         },
       };
@@ -159,7 +154,8 @@ async function getOutgoingEventDataFromProtocol(
         type: CREATE_CHANNEL_EVENT,
         data: getSetupEventData(
           params as SetupProtocolParams,
-          stateChannelsMap.get((params as SetupProtocolParams).multisigAddress)!.multisigOwners,
+          (await store.getStateChannel((params as SetupProtocolParams).multisigAddress))!
+            .multisigOwners,
         ),
       };
     case Protocol.Withdraw:
@@ -178,11 +174,11 @@ async function getOutgoingEventDataFromProtocol(
         type: UPDATE_STATE_EVENT,
         data: getStateUpdateEventData(
           params as UpdateProtocolParams,
-          stateChannelsMap
-            .get((params as TakeActionProtocolParams | UpdateProtocolParams).multisigAddress)!
-            .getAppInstance(
+          (
+            await store.getAppInstance(
               (params as TakeActionProtocolParams | UpdateProtocolParams).appIdentityHash,
-            )!.state,
+            )
+          ).state,
         ),
       };
     case Protocol.InstallVirtualApp:
@@ -209,18 +205,14 @@ async function getOutgoingEventDataFromProtocol(
         networkContext.MinimumViableMultisig,
         isIntermediary ? networkContext.provider : undefined,
       );
-      if (stateChannelsMap.has(virtualChannel)) {
+      if (await store.hasStateChannel(virtualChannel)) {
         return {
           ...baseEvent,
           type: INSTALL_VIRTUAL_EVENT,
           data: {
-            // TODO: It is weird that `params` is in the event data, we should
-            // remove it, but after telling all consumers about this change
-            params: {
-              appInstanceId: stateChannelsMap
-                .get(virtualChannel)!
-                .mostRecentlyInstalledAppInstance().identityHash,
-            },
+            appInstanceId: (
+              await store.getStateChannel(virtualChannel)
+            ).mostRecentlyInstalledAppInstance().identityHash,
           },
         };
       }
@@ -365,6 +357,7 @@ async function getQueueNamesListByProtocolName(
           await multisigAddressFor([responderXpub, initiatorXpub]),
         ];
       }
+      break;
 
     /**
      * Queue on the multisig addresses of both direct channels involved,
@@ -393,6 +386,7 @@ async function getQueueNamesListByProtocolName(
           targetAppIdentityHash,
         ];
       }
+      break;
 
     // NOTE: This file is only reachable if a protocol message is sent
     // from an initiator to an intermediary, an intermediary to
@@ -401,6 +395,7 @@ async function getQueueNamesListByProtocolName(
     // that case.
 
     default:
-      throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
+      break;
   }
+  throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
 }

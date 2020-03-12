@@ -57,17 +57,18 @@ describe("set state on free balance", () => {
     const freeBalanceETH = stateChannel.freeBalance;
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       freeBalanceETH.identity,
       freeBalanceETH.hashOfLatestState,
       freeBalanceETH.versionNumber,
       freeBalanceETH.timeout,
     );
-
-    const setStateTx = setStateCommitment.getSignedTransaction([
+    setStateCommitment.signatures = [
       multisigOwnerKeys[0].signDigest(setStateCommitment.hashToSign()),
       multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign()),
-    ]);
+    ];
+
+    const setStateTx = setStateCommitment.getSignedTransaction();
 
     await wallet.sendTransaction({
       ...setStateTx,
@@ -76,7 +77,7 @@ describe("set state on free balance", () => {
 
     const contractAppState = await appRegistry.appChallenges(freeBalanceETH.identityHash);
 
-    expect(contractAppState.versionNumber).toBeEq(setStateCommitment.appVersionNumber);
+    expect(contractAppState.versionNumber).toBeEq(setStateCommitment.versionNumber);
 
     done();
   });

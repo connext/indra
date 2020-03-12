@@ -9,7 +9,7 @@ import {
   INodeApiClient,
   KeyGen,
   Network,
-  Store,
+  IStoreService,
 } from "@connext/types";
 
 // This type is only ever used inside the client,
@@ -24,7 +24,7 @@ export type InternalClientOptions = {
   messaging: IMessagingService;
   network: Network;
   node: INodeApiClient;
-  store: Store;
+  store: IStoreService;
   token: Contract;
   xpub: string;
 };
@@ -39,6 +39,7 @@ export {
   CFChannelProviderOptions,
   CFCoreChannel,
   CFCoreTypes,
+  chan_setUserWithdrawal,
   ChannelAppSequences,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,

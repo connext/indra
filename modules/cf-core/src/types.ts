@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { Signature } from "ethers/utils";
 
-import { StateChannel } from "./models";
+import { Store } from "./store";
 
 export enum Opcode {
   // Called at the end of execution before the return value to store a commitment
@@ -63,10 +63,10 @@ export type Instruction = Function | Opcode;
 
 // Arguments passed to a protocol execulion flow
 export interface Context {
+  store: Store;
   log: ILoggerService;
   message: ProtocolMessage;
   network: NetworkContext;
-  stateChannelsMap: Map<string, StateChannel>;
 }
 
 export type TakeActionProtocolParams = {
@@ -86,6 +86,8 @@ export {
   CFCoreTypes,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
+  Commitment,
+  ConditionalTransactionCommitmentJSON,
   CreateChannelMessage,
   DepositConfirmationMessage,
   DepositFailedMessage,
@@ -112,6 +114,7 @@ export {
   ProtocolTypes,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
+  SetStateCommitmentJSON,
   SetupProtocolParams,
   SignedStateHashUpdate,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
