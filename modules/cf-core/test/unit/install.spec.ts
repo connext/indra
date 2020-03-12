@@ -10,13 +10,10 @@ import { BaseProvider } from "ethers/providers";
 import { hexlify, randomBytes, HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
-import {
-  NO_APP_INSTANCE_ID_TO_INSTALL,
-  NO_MULTISIG_FOR_APP_INSTANCE_ID,
-  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
-} from "../../src";
+import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { Protocol, ProtocolRunner, xkeysToSortedKthAddresses } from "../../src/machine";
+import { NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID } from "../../src/methods";
 import { install } from "../../src/methods/app-instance/install/operation";
 import { StateChannel } from "../../src/models";
 import { Store } from "../../src/store";

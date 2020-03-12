@@ -34,7 +34,7 @@
   "devDependencies": {
     "@babel/core": "7.8.4",
     "@babel/plugin-proposal-object-rest-spread": "7.8.3",
-    "@connext/store": "4.2.0",
+    "@connext/store": "5.1.1",
     "@types/chai": "4.2.9",
     "@types/dotenv-safe": "8.1.0",
     "@types/jest": "25.1.2",

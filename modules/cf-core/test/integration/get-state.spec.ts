@@ -1,11 +1,12 @@
 import { v4 as generateUUID } from "uuid";
 
-import { Node, NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID } from "../../src";
+import { Node } from "../../src";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
 import { initialEmptyTTTState } from "./tic-tac-toe";
 import { constructGetStateRpc, createChannel, getState, installApp } from "./utils";
+import { NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID } from "../../src/methods";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 

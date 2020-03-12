@@ -58,7 +58,6 @@ export interface Context {
   message: ProtocolMessage;
   network: NetworkContext;
   provider: BaseProvider;
-  stateChannelsMap: Map<string, StateChannel>;
 }
 
 export type TakeActionProtocolParams = {
