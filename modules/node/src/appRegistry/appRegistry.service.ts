@@ -222,7 +222,7 @@ export class AppRegistryService implements OnModuleInit {
         const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
         const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`)
-        await this.withdrawService.saveUserWithdrawal(
+        await this.withdrawService.saveWithdrawal(
           appInstanceId,
           bigNumberify(proposeInstallParams.initiatorDeposit),
           proposeInstallParams.initiatorDepositTokenAddress,

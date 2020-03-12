@@ -1,5 +1,5 @@
 import {
-  SupportedApplication
+  SupportedApplication, convertWithrawAppState
 } from "@connext/apps";
 import{
   FastSignedTransferApp,
@@ -160,7 +160,20 @@ export class AppActionsService {
     let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstanceId);
     withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(withdraw, action.signature);
 
+    const stateBigNumber = convertWithrawAppState("bignumber", state);
+    const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
+    if (!appInstance) {
+        throw new Error(`No channel exists for multisigAddress ${appInstance.multisigAddress}`);
+    }
+
+    const commitment = await this.cfCoreService.createWithdrawCommitment({
+      amount: stateBigNumber.transfers[0].amount,
+      assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+      recipient: this.cfCoreService.cfCore.freeBalanceAddress
+    }, appInstance.multisigAddress)
+    const tx = commitment.getSignedTransaction(stateBigNumber.signatures)
+
     this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstanceId}`)
-    await this.withdrawService.submitWithdrawForNode(appInstanceId, action.signature, state);
+    await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
   }
 }
