@@ -105,8 +105,6 @@ export interface IStoreService {
   saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
-  // getAppProposals(multisigAddress: string): Promise<AppInstanceJson[]>;
-  // saveAppProposal(appProposal: AppInstanceJson): Promise<void>;
   getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
   saveLatestSetStateCommitment(
     appIdentityHash: string,
@@ -131,8 +129,8 @@ export interface IStoreService {
 }
 
 export interface IClientStore extends IStoreService {
-  setUserWithdrawal?(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
-  getUserWithdrawal?(): Promise<WithdrawalMonitorObject>;
+  setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
 }
 
 // Used to monitor node submitted withdrawals on behalf of user
