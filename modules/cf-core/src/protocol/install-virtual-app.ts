@@ -1,3 +1,4 @@
+/* eslint-disable require-yield */
 import { MaxUint256 } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
@@ -55,6 +56,7 @@ const { Conditional, SetState } = Commitment;
 export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
+    /**
     const {
       message: { params, processID },
       store,
@@ -294,10 +296,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         stateChannelWithRespondingAndIntermediary,
       ],
     ];
+    */
   },
 
   1 /* Intermediary */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
+    /**
     const { message: m1, store, network } = context;
 
     const {
@@ -596,10 +600,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_STATE_CHANNEL,
       [stateChannelBetweenVirtualAppUsers, stateChannelWithResponding, stateChannelWithInitiating],
     ];
+    */
   },
 
   2 /* Responding */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
+    /**
     const { message: m2, store, network, provider } = context;
 
     const {
@@ -821,6 +827,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         stateChannelWithInitiating,
       ],
     ];
+  */
   },
 };
 
@@ -1065,6 +1072,7 @@ async function getOrCreateStateChannelWithUsers(
   );
 }
 
+/**
 async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   params: InstallVirtualAppProtocolParams,
   store: Store,
@@ -1406,3 +1414,4 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
     timeLockedPassThroughAppInstance,
   ];
 }
+*/

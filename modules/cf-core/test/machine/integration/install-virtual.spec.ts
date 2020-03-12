@@ -252,15 +252,15 @@ describe.skip("Scenario: Install virtual app with and put on-chain", () => {
         timeLockedPassThroughIdentityHash: HashZero,
       };
 
-      stateChannel = stateChannel.addSingleAssetTwoPartyIntermediaryAgreement(
-        targetAppInstance.identityHash,
-        agreement,
-        {
-          [multisigOwnerKeys[0].address]: parseEther("5"),
-          [multisigOwnerKeys[1].address]: parseEther("5"),
-        },
-        erc20Contract.address,
-      );
+      // stateChannel = stateChannel.addSingleAssetTwoPartyIntermediaryAgreement(
+      //   targetAppInstance.identityHash,
+      //   agreement,
+      //   {
+      //     [multisigOwnerKeys[0].address]: parseEther("5"),
+      //     [multisigOwnerKeys[1].address]: parseEther("5"),
+      //   },
+      //   erc20Contract.address,
+      // );
 
       await setStatesAndOutcomes(targetAppInstance, stateChannel);
 
@@ -313,15 +313,15 @@ describe.skip("Scenario: Install virtual app with and put on-chain", () => {
         timeLockedPassThroughIdentityHash: HashZero,
       };
 
-      stateChannel = stateChannel.addSingleAssetTwoPartyIntermediaryAgreement(
-        targetAppInstance.identityHash,
-        agreement,
-        {
-          [multisigOwnerKeys[0].address]: parseEther("5"),
-          [multisigOwnerKeys[1].address]: parseEther("5"),
-        },
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      );
+      // stateChannel = stateChannel.addSingleAssetTwoPartyIntermediaryAgreement(
+      //   targetAppInstance.identityHash,
+      //   agreement,
+      //   {
+      //     [multisigOwnerKeys[0].address]: parseEther("5"),
+      //     [multisigOwnerKeys[1].address]: parseEther("5"),
+      //   },
+      //   CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      // );
 
       await setStatesAndOutcomes(targetAppInstance, stateChannel);
 
