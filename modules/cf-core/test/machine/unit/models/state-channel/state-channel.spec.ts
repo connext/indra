@@ -66,10 +66,6 @@ describe("StateChannel", () => {
       expect(json.multisigAddress).toEqual(multisigAddress);
     });
 
-    it("should have a singleAssetTwoPartyIntermediaryAgreements array", () => {
-      expect(json.singleAssetTwoPartyIntermediaryAgreements).toEqual([]);
-    });
-
     it("should have the correct critical state channel addresses", () => {
       expect(json.addresses.proxyFactory).toEqual(sc.addresses.proxyFactory);
       expect(sc.addresses.proxyFactory).toEqual(ProxyFactory);
@@ -127,12 +123,6 @@ describe("StateChannel", () => {
 
     it("should not change the multisig address", () => {
       expect(rehydrated.multisigAddress).toEqual(sc.multisigAddress);
-    });
-
-    it("should have a singleAssetTwoPartyIntermediaryAgreements array", () => {
-      expect(rehydrated.singleAssetTwoPartyIntermediaryAgreements).toEqual(
-        sc.singleAssetTwoPartyIntermediaryAgreements,
-      );
     });
   });
 });

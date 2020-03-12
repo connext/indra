@@ -73,10 +73,6 @@ export class CFCoreStore implements IStoreService {
     // update all other fields
     // nonce
     channel.monotonicNumProposedApps = stateChannel.monotonicNumProposedApps;
-    /////////////////////////////
-    // single asset two party intermediary agreements
-    channel.singleAssetTwoPartyIntermediaryAgreements =
-      stateChannel.singleAssetTwoPartyIntermediaryAgreements || [];
 
     /////////////////////////////
     // free balance

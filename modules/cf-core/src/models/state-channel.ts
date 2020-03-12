@@ -51,10 +51,6 @@ export class StateChannel {
       AppInstanceProposal
     >([]),
     readonly appInstances: ReadonlyMap<string, AppInstance> = new Map<string, AppInstance>([]),
-    readonly singleAssetTwoPartyIntermediaryAgreements: ReadonlyMap<
-      string,
-      SingleAssetTwoPartyIntermediaryAgreement
-    > = new Map<string, SingleAssetTwoPartyIntermediaryAgreement>([]),
     private readonly freeBalanceAppInstance?: AppInstance,
     private readonly monotonicNumProposedApps: number = 0,
     public readonly schemaVersion: number = StateSchemaVersion,
@@ -257,10 +253,6 @@ export class StateChannel {
     userNeuteredExtendedKeys?: string[];
     appInstances?: ReadonlyMap<string, AppInstance>;
     proposedAppInstances?: ReadonlyMap<string, AppInstanceProposal>;
-    singleAssetTwoPartyIntermediaryAgreements?: ReadonlyMap<
-      string,
-      SingleAssetTwoPartyIntermediaryAgreement
-    >;
     freeBalanceAppInstance?: AppInstance;
     monotonicNumProposedApps?: number;
     schemaVersion?: number;
@@ -271,8 +263,6 @@ export class StateChannel {
       args.userNeuteredExtendedKeys || this.userNeuteredExtendedKeys,
       args.proposedAppInstances || this.proposedAppInstances,
       args.appInstances || this.appInstances,
-      args.singleAssetTwoPartyIntermediaryAgreements ||
-        this.singleAssetTwoPartyIntermediaryAgreements,
       args.freeBalanceAppInstance || this.freeBalanceAppInstance,
       args.monotonicNumProposedApps || this.monotonicNumProposedApps,
       args.schemaVersion || this.schemaVersion,
@@ -336,7 +326,6 @@ export class StateChannel {
       userNeuteredExtendedKeys,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>([]),
-      new Map<string, SingleAssetTwoPartyIntermediaryAgreement>(),
       createFreeBalance(
         userNeuteredExtendedKeys,
         freeBalanceAppAddress,
@@ -357,7 +346,6 @@ export class StateChannel {
       userNeuteredExtendedKeys,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>(),
-      new Map<string, SingleAssetTwoPartyIntermediaryAgreement>(),
       // Note that this FreeBalance is undefined because a channel technically
       // does not have a FreeBalance before the `setup` protocol gets run
       undefined,
@@ -423,48 +411,6 @@ export class StateChannel {
     });
   }
 
-  public addSingleAssetTwoPartyIntermediaryAgreement(
-    targetIdentityHash: string,
-    agreement: SingleAssetTwoPartyIntermediaryAgreement,
-    decrements: CoinTransferMap,
-    tokenAddress: string,
-  ) {
-    // Add to singleAssetTwoPartyIntermediaryAgreements
-
-    const evaaInstances = new Map<string, SingleAssetTwoPartyIntermediaryAgreement>(
-      this.singleAssetTwoPartyIntermediaryAgreements.entries(),
-    );
-
-    evaaInstances.set(targetIdentityHash, agreement);
-
-    return this.build({
-      singleAssetTwoPartyIntermediaryAgreements: evaaInstances,
-    }).addActiveAppAndIncrementFreeBalance(targetIdentityHash, {
-      [tokenAddress]: flip(decrements),
-    });
-  }
-
-  public removeSingleAssetTwoPartyIntermediaryAgreement(
-    targetIdentityHash: string,
-    increments: { [addr: string]: BigNumber },
-    tokenAddress: string,
-  ) {
-    const singleAssetTwoPartyIntermediaryAgreements = new Map<
-      string,
-      SingleAssetTwoPartyIntermediaryAgreement
-    >(this.singleAssetTwoPartyIntermediaryAgreements.entries());
-
-    if (!singleAssetTwoPartyIntermediaryAgreements.delete(targetIdentityHash)) {
-      throw Error(`cannot find agreement with target hash ${targetIdentityHash}`);
-    }
-
-    return this.build({
-      singleAssetTwoPartyIntermediaryAgreements,
-    }).removeActiveAppAndIncrementFreeBalance(targetIdentityHash, {
-      [tokenAddress]: increments,
-    });
-  }
-
   public installApp(appInstance: AppInstance, tokenIndexedDecrements: TokenIndexedCoinTransferMap) {
     // Verify appInstance has expected signingkeys
 
@@ -524,18 +470,6 @@ export class StateChannel {
     }).removeActiveAppAndIncrementFreeBalance(appInstanceIdentityHash, tokenIndexedIncrements);
   }
 
-  public getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-    key: string,
-  ): SingleAssetTwoPartyIntermediaryAgreement {
-    const ret = this.singleAssetTwoPartyIntermediaryAgreements.get(key);
-
-    if (!ret) {
-      throw Error(`Could not find any eth virtual app agreements with virtual app ${key}`);
-    }
-
-    return ret;
-  }
-
   toJson(): StateChannelJSON {
     return {
       multisigAddress: this.multisigAddress,
@@ -555,9 +489,6 @@ export class StateChannel {
         ? this.freeBalanceAppInstance.toJson()
         : undefined,
       monotonicNumProposedApps: this.monotonicNumProposedApps,
-      singleAssetTwoPartyIntermediaryAgreements: [
-        ...this.singleAssetTwoPartyIntermediaryAgreements.entries(),
-      ],
       schemaVersion: this.schemaVersion,
     };
   }
@@ -596,7 +527,6 @@ export class StateChannel {
             return [appInstanceEntry[0], AppInstance.fromJson(appInstanceEntry[1])];
           }),
         ),
-        new Map(json.singleAssetTwoPartyIntermediaryAgreements || []),
         json.freeBalanceAppInstance ? AppInstance.fromJson(json.freeBalanceAppInstance) : undefined,
         json.monotonicNumProposedApps,
         json.schemaVersion,
