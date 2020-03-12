@@ -4,7 +4,7 @@ import { BigNumber } from "ethers/utils";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import {
   getConditionalTxCommitment,
-  SetStateCommitment,
+  getSetStateCommitment,
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
 } from "../ethereum";
@@ -142,12 +142,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       refundApp.identityHash,
     ];
 
-    const freeBalanceUpdateData = new SetStateCommitment(
-      network,
-      postInstallRefundAppStateChannel.freeBalance.identity,
-      postInstallRefundAppStateChannel.freeBalance.hashOfLatestState,
-      postInstallRefundAppStateChannel.freeBalance.versionNumber,
-      postInstallRefundAppStateChannel.freeBalance.timeout,
+    const freeBalanceUpdateData = getSetStateCommitment(
+      context,
+      postInstallRefundAppStateChannel.freeBalance,
     );
 
     // always use free balance address to sign free balance app updates
@@ -224,12 +221,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postUninstallRefundAppStateChannel,
     );
 
-    const uninstallRefundAppCommitment = new SetStateCommitment(
-      network,
-      postUninstallRefundAppStateChannel.freeBalance.identity,
-      postUninstallRefundAppStateChannel.freeBalance.hashOfLatestState,
-      postUninstallRefundAppStateChannel.freeBalance.versionNumber,
-      postUninstallRefundAppStateChannel.freeBalance.timeout,
+    const uninstallRefundAppCommitment = getSetStateCommitment(
+      context,
+      postUninstallRefundAppStateChannel.freeBalance,
     );
 
     // ephemeral key signs refund app
@@ -370,12 +364,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       refundApp.identityHash,
     ];
 
-    const freeBalanceUpdateData = new SetStateCommitment(
-      network,
-      postInstallRefundAppStateChannel.freeBalance.identity,
-      postInstallRefundAppStateChannel.freeBalance.hashOfLatestState,
-      postInstallRefundAppStateChannel.freeBalance.versionNumber,
-      postInstallRefundAppStateChannel.freeBalance.timeout,
+    const freeBalanceUpdateData = getSetStateCommitment(
+      context,
+      postInstallRefundAppStateChannel.freeBalance,
     );
 
     // always use fb address to sign free balance updates
@@ -457,12 +448,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postUninstallRefundAppStateChannel,
     );
 
-    const uninstallRefundAppCommitment = new SetStateCommitment(
-      network,
-      postUninstallRefundAppStateChannel.freeBalance.identity,
-      postUninstallRefundAppStateChannel.freeBalance.hashOfLatestState,
-      postUninstallRefundAppStateChannel.freeBalance.versionNumber,
-      postUninstallRefundAppStateChannel.freeBalance.timeout,
+    const uninstallRefundAppCommitment = getSetStateCommitment(
+      context,
+      postUninstallRefundAppStateChannel.freeBalance,
     );
 
     const mySignatureOnUninstallCommitment = yield [

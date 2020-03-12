@@ -1,5 +1,5 @@
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { SetStateCommitment } from "../ethereum";
+import { getSetStateCommitment } from "../ethereum";
 import {
   Context,
   Opcode,
@@ -24,7 +24,7 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
  */
 export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Intiating */: async function*(context: Context) {
-    const { stateChannelsMap, message, network } = context;
+    const { stateChannelsMap, message } = context;
     const log = context.log.newContext("CF-UpdateProtocol");
     const start = Date.now();
     let substart;
@@ -47,12 +47,9 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = new SetStateCommitment(
-      network,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
+    const setStateCommitment = getSetStateCommitment(
+      context,
+      appInstance,
     );
 
     const initiatorSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
@@ -89,7 +86,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { stateChannelsMap, message, network } = context;
+    const { stateChannelsMap, message } = context;
     const log = context.log.newContext("CF-UpdateProtocol");
     const start = Date.now();
     let substart;
@@ -116,12 +113,9 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = new SetStateCommitment(
-      network,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
+    const setStateCommitment = getSetStateCommitment(
+      context,
+      appInstance,
     );
 
     substart = Date.now();

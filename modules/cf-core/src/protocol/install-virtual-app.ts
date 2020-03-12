@@ -2,7 +2,7 @@ import { MaxUint256 } from "ethers/constants";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { getConditionalTxCommitment, SetStateCommitment } from "../ethereum";
+import { getConditionalTxCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
 import {
@@ -142,12 +142,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       virtualAppInstance.identityHash,
     ];
 
-    const freeBalanceAliceIngridVirtualAppAgreementActivationCommitment = new SetStateCommitment(
-      network,
-      stateChannelWithIntermediary.freeBalance.identity,
-      stateChannelWithIntermediary.freeBalance.hashOfLatestState,
-      stateChannelWithIntermediary.freeBalance.versionNumber,
-      stateChannelWithIntermediary.freeBalance.timeout,
+    const freeBalanceAliceIngridVirtualAppAgreementActivationCommitment = getSetStateCommitment(
+      context,
+      stateChannelWithIntermediary.freeBalance,
     );
 
     // always use free balance address when signing free balance
@@ -175,20 +172,14 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithIntermediary.freeBalance.identityHash,
     ];
 
-    const virtualAppSetStateCommitment = new SetStateCommitment(
-      network,
-      virtualAppInstance.identity,
-      virtualAppInstance.hashOfLatestState,
-      virtualAppInstance.versionNumber,
-      virtualAppInstance.defaultTimeout,
+    const virtualAppSetStateCommitment = getSetStateCommitment(
+      context,
+      virtualAppInstance,
     );
 
-    const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
-      timeLockedPassThroughAppInstance.identity,
-      timeLockedPassThroughAppInstance.hashOfLatestState,
-      timeLockedPassThroughAppInstance.versionNumber,
-      timeLockedPassThroughAppInstance.defaultTimeout,
+    const timeLockedPassThroughSetStateCommitment = getSetStateCommitment(
+      context,
+      timeLockedPassThroughAppInstance,
     );
 
     // TODO: who signs time locked pass through app?
@@ -394,12 +385,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnIngridBobVirtualAppAgreement,
     );
 
-    const freeBalanceIngridBobVirtualAppAgreementActivationCommitment = new SetStateCommitment(
-      network,
-      stateChannelWithResponding.freeBalance.identity,
-      stateChannelWithResponding.freeBalance.hashOfLatestState,
-      stateChannelWithResponding.freeBalance.versionNumber,
-      stateChannelWithResponding.freeBalance.timeout,
+    const freeBalanceIngridBobVirtualAppAgreementActivationCommitment = getSetStateCommitment(
+      context,
+      stateChannelWithResponding.freeBalance,
     );
 
     // free balance address always signs fb app
@@ -409,12 +397,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnIngridBobFreeBalanceAppActivation,
     );
 
-    const freeBalanceAliceIngridVirtualAppAgreementActivationCommitment = new SetStateCommitment(
-      network,
-      stateChannelWithInitiating.freeBalance.identity,
-      stateChannelWithInitiating.freeBalance.hashOfLatestState,
-      stateChannelWithInitiating.freeBalance.versionNumber,
-      stateChannelWithInitiating.freeBalance.timeout,
+    const freeBalanceAliceIngridVirtualAppAgreementActivationCommitment = getSetStateCommitment(
+      context,
+      stateChannelWithInitiating.freeBalance,
     );
 
     // free balance address always signs fb app
@@ -477,12 +462,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithResponding.freeBalance.identityHash,
     ];
 
-    const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
-      timeLockedPassThroughAppInstance.identity,
-      timeLockedPassThroughAppInstance.hashOfLatestState,
-      timeLockedPassThroughAppInstance.versionNumber,
-      timeLockedPassThroughAppInstance.defaultTimeout,
+    const timeLockedPassThroughSetStateCommitment = getSetStateCommitment(
+      context,
+      timeLockedPassThroughAppInstance,
     );
 
     assertIsValidSignature(
@@ -650,12 +632,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       virtualAppInstance.identityHash,
     ];
 
-    const freeBalanceIngridBobVirtualAppAgreementActivationCommitment = new SetStateCommitment(
-      network,
-      stateChannelWithIntermediary.freeBalance.identity,
-      stateChannelWithIntermediary.freeBalance.hashOfLatestState,
-      stateChannelWithIntermediary.freeBalance.versionNumber,
-      stateChannelWithIntermediary.freeBalance.timeout,
+    const freeBalanceIngridBobVirtualAppAgreementActivationCommitment = getSetStateCommitment(
+      context,
+      stateChannelWithIntermediary.freeBalance,
     );
 
     // always use free balance addr for fb app
@@ -703,20 +682,14 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithIntermediary.freeBalance.identityHash,
     ];
 
-    const virtualAppSetStateCommitment = new SetStateCommitment(
-      network,
-      virtualAppInstance.identity,
-      virtualAppInstance.hashOfLatestState,
-      virtualAppInstance.versionNumber,
-      virtualAppInstance.defaultTimeout,
+    const virtualAppSetStateCommitment = getSetStateCommitment(
+      context,
+      virtualAppInstance,
     );
 
-    const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
-      timeLockedPassThroughAppInstance.identity,
-      timeLockedPassThroughAppInstance.hashOfLatestState,
-      timeLockedPassThroughAppInstance.versionNumber,
-      timeLockedPassThroughAppInstance.defaultTimeout,
+    const timeLockedPassThroughSetStateCommitment = getSetStateCommitment(
+      context,
+      timeLockedPassThroughAppInstance,
     );
 
     assertIsValidSignature(

@@ -1,7 +1,7 @@
 import { BaseProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { SetStateCommitment } from "../ethereum";
+import { getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
 import {
   Context,
@@ -46,12 +46,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appToUninstall.appSeqNo);
 
-    const uninstallCommitment = new SetStateCommitment(
-      network,
-      postProtocolStateChannel.freeBalance.identity,
-      postProtocolStateChannel.freeBalance.hashOfLatestState,
-      postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout,
+    const uninstallCommitment = getSetStateCommitment(
+      context,
+      postProtocolStateChannel.freeBalance,
     );
 
     const signature = yield [OP_SIGN, uninstallCommitment, appToUninstall.appSeqNo];
@@ -113,12 +110,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appToUninstall.appSeqNo);
 
-    const uninstallCommitment = new SetStateCommitment(
-      network,
-      postProtocolStateChannel.freeBalance.identity,
-      postProtocolStateChannel.freeBalance.hashOfLatestState,
-      postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout,
+    const uninstallCommitment = getSetStateCommitment(
+      context,
+      postProtocolStateChannel.freeBalance,
     );
 
     const initiatorSignature = context.message.customData.signature;

@@ -3,7 +3,7 @@ import { BigNumber } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
-import { getConditionalTxCommitment, SetStateCommitment } from "../ethereum";
+import { getConditionalTxCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
@@ -46,7 +46,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const {
       stateChannelsMap,
       message: { params, processID },
-      network,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -136,13 +135,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
-    const freeBalanceUpdateData = new SetStateCommitment(
-      network,
-      stateChannelAfter.freeBalance.identity,
-      stateChannelAfter.freeBalance.hashOfLatestState,
-      stateChannelAfter.freeBalance.versionNumber,
-      stateChannelAfter.freeBalance.timeout,
-    );
+    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
 
     // always use free balance key to sign free balance update
     substart = Date.now();
@@ -204,7 +197,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         customData: { signature },
       },
-      network,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -275,13 +267,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
-    const freeBalanceUpdateData = new SetStateCommitment(
-      network,
-      stateChannelAfter.freeBalance.identity,
-      stateChannelAfter.freeBalance.hashOfLatestState,
-      stateChannelAfter.freeBalance.versionNumber,
-      stateChannelAfter.freeBalance.timeout,
-    );
+    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
 
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
@@ -462,8 +448,10 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {

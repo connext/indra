@@ -12,8 +12,9 @@ import { generateRandomNetworkContext } from "../../test/machine/mocks";
 
 import { ChallengeRegistry } from "../contracts";
 import { appIdentityToHash } from "../utils";
+import { Context } from "../types";
 
-import { SetStateCommitment } from "./set-state-commitment";
+import { getSetStateCommitment, SetStateCommitment } from "./set-state-commitment";
 
 /**
  * This test suite decodes a constructed SetState Commitment transaction object
@@ -24,17 +25,14 @@ describe("Set State Commitment", () => {
   let commitment: SetStateCommitment;
   let tx: CFCoreTypes.MinimalTransaction;
 
-  const networkContext = generateRandomNetworkContext();
+  const context = { network: generateRandomNetworkContext() } as Context;
 
   const appInstance = createAppInstanceForTest();
 
   beforeAll(() => {
-    commitment = new SetStateCommitment(
-      networkContext,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
+    commitment = getSetStateCommitment(
+      context,
+      appInstance,
     );
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
@@ -45,7 +43,7 @@ describe("Set State Commitment", () => {
   });
 
   it("should be to ChallengeRegistry", () => {
-    expect(tx.to).toBe(networkContext.ChallengeRegistry);
+    expect(tx.to).toBe(context.network.ChallengeRegistry);
   });
 
   it("should have no value", () => {

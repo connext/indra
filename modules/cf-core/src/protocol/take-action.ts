@@ -1,5 +1,5 @@
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { SetStateCommitment } from "../ethereum";
+import { getSetStateCommitment } from "../ethereum";
 import {
   Context,
   Opcode,
@@ -52,13 +52,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = new SetStateCommitment(
-      network,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
-    );
+    const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     const initiatorSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
@@ -126,13 +120,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = new SetStateCommitment(
-      network,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
-    );
+    const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     substart = Date.now();
     assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);

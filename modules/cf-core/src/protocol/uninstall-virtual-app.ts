@@ -1,9 +1,8 @@
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { BaseProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { SetStateCommitment } from "../ethereum";
+import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
 import {
@@ -92,18 +91,14 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       timeLockedPassThroughAppInstance.appSeqNo,
     );
 
-    const responderFreeBalanceAddress = xkeyKthAddress(responderXpub, 0);
     const responderEphemeralAddress = xkeyKthAddress(
       responderXpub,
       timeLockedPassThroughAppInstance.appSeqNo,
     );
 
-    const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
-      timeLockedPassThroughAppInstance.identity,
-      timeLockedPassThroughAppInstance.hashOfLatestState,
-      timeLockedPassThroughAppInstance.appSeqNo,
-      timeLockedPassThroughAppInstance.defaultTimeout,
+    const timeLockedPassThroughSetStateCommitment = getSetStateCommitment(
+      context,
+      timeLockedPassThroughAppInstance,
     );
 
     const initiatingSignatureOnTimeLockedPassThroughSetStateCommitment = yield [
@@ -144,12 +139,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
     );
 
-    const aliceIngridAppDisactivationCommitment = new SetStateCommitment(
-      network,
-      stateChannelWithIntermediary.freeBalance.identity,
-      stateChannelWithIntermediary.freeBalance.hashOfLatestState,
-      stateChannelWithIntermediary.freeBalance.versionNumber,
-      stateChannelWithIntermediary.freeBalance.timeout,
+    const aliceIngridAppDisactivationCommitment = getSetStateCommitment(
+      context,
+      stateChannelWithIntermediary.freeBalance,
     );
 
     // use fb address for fb app updates
@@ -239,12 +231,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       timeLockedPassThroughAppInstance.appSeqNo,
     );
 
-    const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
-      timeLockedPassThroughAppInstance.identity,
-      timeLockedPassThroughAppInstance.hashOfLatestState,
-      timeLockedPassThroughAppInstance.appSeqNo,
-      timeLockedPassThroughAppInstance.defaultTimeout,
+    const timeLockedPassThroughSetStateCommitment = getSetStateCommitment(
+      context,
+      timeLockedPassThroughAppInstance,
     );
 
     assertIsValidSignature(
@@ -300,12 +289,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatingSignatureOnAliceIngridAppDisactivationCommitment },
     } = m5;
 
-    const aliceIngridAppDisactivationCommitment = new SetStateCommitment(
-      network,
-      stateChannelWithInitiating.freeBalance.identity,
-      stateChannelWithInitiating.freeBalance.hashOfLatestState,
-      stateChannelWithInitiating.freeBalance.versionNumber,
-      stateChannelWithInitiating.freeBalance.timeout,
+    const aliceIngridAppDisactivationCommitment = getSetStateCommitment(
+      context,
+      stateChannelWithInitiating.freeBalance,
     );
 
     // use fb address for fb app
@@ -320,12 +306,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       aliceIngridAppDisactivationCommitment,
     ];
 
-    const ingridBobAppDisactivationCommitment = new SetStateCommitment(
-      network,
-      stateChannelWithResponding.freeBalance.identity,
-      stateChannelWithResponding.freeBalance.hashOfLatestState,
-      stateChannelWithResponding.freeBalance.versionNumber,
-      stateChannelWithResponding.freeBalance.timeout,
+    const ingridBobAppDisactivationCommitment = getSetStateCommitment(
+      context,
+      stateChannelWithResponding.freeBalance,
     );
 
     // use fb address for fb app
@@ -418,7 +401,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network,
     );
 
-    const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorXpub, 0);
     const initiatorEphemeralAddress = xkeyKthAddress(
       initiatorXpub,
       timeLockedPassThroughAppInstance.appSeqNo,
@@ -430,12 +412,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       timeLockedPassThroughAppInstance.appSeqNo,
     );
 
-    const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
-      timeLockedPassThroughAppInstance.identity,
-      timeLockedPassThroughAppInstance.hashOfLatestState,
-      timeLockedPassThroughAppInstance.appSeqNo,
-      timeLockedPassThroughAppInstance.defaultTimeout,
+    const timeLockedPassThroughSetStateCommitment = getSetStateCommitment(
+      context,
+      timeLockedPassThroughAppInstance,
     );
 
     assertIsValidSignature(
@@ -472,12 +451,9 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: intermediarySignatureOnIngridBobAppDisactivationCommitment },
     } = m6;
 
-    const ingridBobAppDisactivationCommitment = new SetStateCommitment(
-      network,
-      stateChannelWithIntermediary.freeBalance.identity,
-      stateChannelWithIntermediary.freeBalance.hashOfLatestState,
-      stateChannelWithIntermediary.freeBalance.versionNumber,
-      stateChannelWithIntermediary.freeBalance.timeout,
+    const ingridBobAppDisactivationCommitment = getSetStateCommitment(
+      context,
+      stateChannelWithIntermediary.freeBalance,
     );
 
     // free balance addr for free balance app
@@ -583,9 +559,10 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
     ),
   ];
 
-  const agreement = stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-    targetAppIdentityHash,
-  );
+  const agreement =
+    stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
+      targetAppIdentityHash,
+    );
 
   const { tokenAddress } = agreement;
 
@@ -684,9 +661,10 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
     ),
   ];
 
-  const agreement = stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-    targetAppIdentityHash,
-  );
+  const agreement =
+    stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
+      targetAppIdentityHash,
+    );
 
   const { tokenAddress } = agreement;
 
@@ -793,9 +771,10 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
     ),
   ];
 
-  const agreementWithInitiating = stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-    targetAppIdentityHash,
-  );
+  const agreementWithInitiating =
+    stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
+      targetAppIdentityHash,
+    );
 
   const { tokenAddress } = agreementWithInitiating;
 

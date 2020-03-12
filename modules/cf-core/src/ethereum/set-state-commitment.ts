@@ -1,9 +1,11 @@
 import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
 
 import { ChallengeRegistry } from "../contracts";
+import { AppInstance } from "../models";
 import {
   AppIdentity,
   CFCoreTypes,
+  Context,
   EthereumCommitment,
   NetworkContext,
   SignedStateHashUpdate,
@@ -11,6 +13,17 @@ import {
 import { appIdentityToHash, sortSignaturesBySignerAddress } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
+
+export const getSetStateCommitment = (
+  context: Context,
+  appInstance: AppInstance,
+) => new SetStateCommitment(
+  context.network,
+  appInstance.identity,
+  appInstance.hashOfLatestState,
+  appInstance.versionNumber,
+  appInstance.timeout,
+);
 
 export class SetStateCommitment extends EthereumCommitment {
   constructor(

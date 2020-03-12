@@ -1,8 +1,8 @@
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
-import { SetStateCommitment } from "../ethereum";
-import { AppInstanceProposal, StateChannel } from "../models";
+import { getSetStateCommitment } from "../ethereum";
+import { AppInstance, AppInstanceProposal, StateChannel } from "../models";
 import {
   Context,
   Opcode,
@@ -81,9 +81,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
-    const setStateCommitment = new SetStateCommitment(
-      network,
-      {
+    const proposedAppInstance = {
+      identity: {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
         participants: preProtocolStateChannel.getSigningKeysFor(
@@ -91,9 +90,16 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         ),
         defaultTimeout: timeout.toNumber(),
       },
-      keccak256(defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])),
-      0,
-      timeout.toNumber(),
+      hashOfLatestState: keccak256(
+        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
+      ),
+      versionNumber: 0,
+      timeout: timeout.toNumber(),
+    };
+
+    const setStateCommitment = getSetStateCommitment(
+      context,
+      proposedAppInstance as AppInstance,
     );
 
     const initiatorSignatureOnInitialState = yield [
@@ -197,9 +203,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     };
 
-    const setStateCommitment = new SetStateCommitment(
-      network,
-      {
+    const proposedAppInstance = {
+      identity: {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
         participants: preProtocolStateChannel.getSigningKeysFor(
@@ -207,9 +212,16 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         ),
         defaultTimeout: timeout.toNumber(),
       },
-      keccak256(defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])),
-      0,
-      timeout.toNumber(),
+      hashOfLatestState: keccak256(
+        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
+      ),
+      versionNumber: 0,
+      timeout: timeout.toNumber(),
+    };
+
+    const setStateCommitment = getSetStateCommitment(
+      context,
+      proposedAppInstance as AppInstance,
     );
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
