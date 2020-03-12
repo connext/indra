@@ -57,9 +57,9 @@ describe("ChallengeRegistry Challenge", () => {
   let appRegistry: Contract;
   let appDefinition: Contract;
 
-  let setState: (versionNumber: number, appState?: string) => Promise<void>;
   let latestState: () => Promise<string>;
   let latestVersionNumber: () => Promise<number>;
+  let setState: (versionNumber: number, appState?: string) => Promise<void>;
   let respondToChallenge: (state: any, action: any, actionSig: any) => Promise<any>;
 
   before(async () => {
@@ -104,13 +104,15 @@ describe("ChallengeRegistry Challenge", () => {
       });
     };
 
-    respondToChallenge = (state: any, action: any, actionSig: any) =>
-      appRegistry.functions.respondToChallenge(
+    respondToChallenge = async (state: any, action: any, actionSig: any) => {
+      await appRegistry.functions.respondToChallenge(
         appInstance.appIdentity,
-        encodeState(state),
-        encodeAction(action),
-        actionSig,
+        encodeState(state), {
+          encodedAction: encodeAction(action),
+          signature: actionSig,
+        }
       );
+    };
   });
 
   it("Can call respondToChallenge", async () => {
