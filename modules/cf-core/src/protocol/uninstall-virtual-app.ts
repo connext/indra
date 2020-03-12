@@ -69,7 +69,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     throw Error(`Virtual app protocols not supported.`);
     const {
       message: { processID, params },
-      provider,
       stateChannelsMap,
       network,
     } = context;
@@ -84,7 +83,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ] = await getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
       stateChannelsMap,
       params!,
-      provider,
       network,
     );
 
@@ -212,7 +210,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         params,
         customData: { signature: initiatingSignatureOnTimeLockedPassThroughSetStateCommitment },
       },
-      provider,
       stateChannelsMap,
       network,
     } = context;
@@ -227,7 +224,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ] = await getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
       stateChannelsMap,
       params!,
-      provider,
       network,
     );
 
@@ -405,7 +401,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
           signature2: intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
         },
       },
-      provider,
       stateChannelsMap,
       network,
     } = context;
@@ -420,7 +415,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ] = await getUpdatedStateChannelAndAppInstanceObjectsForResponding(
       stateChannelsMap,
       params!,
-      provider,
       network,
     );
 
@@ -551,7 +545,6 @@ async function getStateChannelFromMapWithOwners(
 async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
   stateChannelsMap: Map<string, StateChannel>,
   params: ProtocolParameters,
-  provider: BaseProvider,
   network: NetworkContext,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance]> {
   const {
@@ -606,11 +599,11 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
 
   const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state[
     "switchesOutcomeAt"
-  ] as BigNumber).lte(await provider.getBlockNumber());
+  ] as BigNumber).lte(await network.provider.getBlockNumber());
 
   const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(
     virtualAppHasExpired ? timeLockedPassThroughAppInstance : virtualAppInstance,
-    provider,
+    network.provider,
   );
 
   return [
@@ -653,7 +646,6 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
 async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
   stateChannelsMap: Map<string, StateChannel>,
   params: ProtocolParameters,
-  provider: BaseProvider,
   network: NetworkContext,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance]> {
   const {
@@ -706,7 +698,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
     timeLockedPassThroughAppInstance.state["targetAppIdentityHash"], // TODO: type
   );
 
-  const expectedOutcome = await virtualAppInstance.computeOutcomeWithCurrentState(provider);
+  const expectedOutcome = await virtualAppInstance.computeOutcomeWithCurrentState(network.provider);
 
   if (expectedOutcome !== targetOutcome) {
     throw Error(
@@ -716,11 +708,11 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
 
   const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state[
     "switchesOutcomeAt"
-  ] as BigNumber).lte(await provider.getBlockNumber());
+  ] as BigNumber).lte(await network.provider.getBlockNumber());
 
   const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(
     virtualAppHasExpired ? timeLockedPassThroughAppInstance : virtualAppInstance,
-    provider,
+    network.provider,
   );
 
   return [
@@ -763,7 +755,6 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
 async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
   stateChannelsMap: Map<string, StateChannel>,
   params: ProtocolParameters,
-  provider: BaseProvider,
   network: NetworkContext,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance]> {
   const {
@@ -814,7 +805,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
 
   const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state[
     "switchesOutcomeAt"
-  ] as BigNumber).lte(await provider.getBlockNumber());
+  ] as BigNumber).lte(await network.provider.getBlockNumber());
 
   // FIXME: Come up with a better abstraction for this function. In this case,
   // we want to pass in an outcome to use to compute the token indexed free
@@ -824,7 +815,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
   // so this TODO is to mark that we should improve this abstraction.
   const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(
     timeLockedPassThroughAppInstance,
-    provider,
+    network.provider,
     virtualAppHasExpired
       ? (timeLockedPassThroughAppInstance.state["defaultOutcome"] as string)
       : targetOutcome,

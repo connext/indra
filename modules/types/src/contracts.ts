@@ -32,7 +32,7 @@ export interface NetworkContext {
   TimeLockedPassThrough: string;
   TwoPartyFixedOutcomeFromVirtualAppInterpreter: string;
   TwoPartyFixedOutcomeInterpreter: string;
-  provider?: BaseProvider;
+  provider: BaseProvider;
 }
 
 // Keep in sync with above
@@ -49,12 +49,6 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
   "TwoPartyFixedOutcomeInterpreter",
 ];
-
-export interface DeployedContractNetworksFileEntry {
-  contractName: string;
-  address: string;
-  transactionHash: string;
-}
 
 ////////////////////////////////////////
 // Specific contract Interfaces

@@ -145,7 +145,7 @@ export const connect = async (
       keyGen,
       lockService: { acquireLock: node.acquireLock.bind(node) },
       messaging: messaging as any,
-      networkContext: config.contractAddresses,
+      networkContext: { ...config.contractAddresses, provider: ethProvider },
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
       store,

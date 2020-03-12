@@ -4,9 +4,7 @@
       "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F"
     },
     "SAIToken": {
-      "address": "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359",
-      "runtimeCodeHash": "0xa288eb5e119c76a1fc65ceb646ecf0a77657f66bb08038a226a37a467a43d035",
-      "txHash": "0x91b318fd3498c14a1495357d6a4e895fd29c3d915ee695a6fbc8ef72908a1aa8"
+      "address": "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359"
     },
     "ChallengeRegistry": {
       "address": "0xdD7dbCCdd42d7bFC10c2D23B8A1fa8bAaE95bc69",
@@ -104,9 +102,7 @@
       "address": "0x16655FAf612D714039F92c408407D46c5A394a6C"
     },
     "SAIToken": {
-      "address": "0xFab46E002BbF0b4509813474841E0716E6730136",
-      "runtimeCodeHash": "0x9ee358e4863490e5417fd2a4504e5547dbaea7e77677d4c797db5be5418b8d30",
-      "txHash": "0x0174127f12e41181608ba85e08ce8a1decfb4face489090c7c9aa33b1f1c5673"
+      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
     },
     "ChallengeRegistry": {
       "address": "0xBC98f4Cf15a7dDCf77b4fD7f8A6eE48E83Ded576",
@@ -200,6 +196,9 @@
     }
   },
   "6": {
+    "Token": {
+      "address": "0xc5f89a4DfB8947F90f79E3d34EC05C07B7E64265"
+    },
     "ChallengeRegistry": {
       "address": "0x4a3634c3DaF5Fc61872C1D06956dc5F69622163a",
       "runtimeCodeHash": "0x186e73eb5c494979a60077b76a168f75c8eb6b3bde1f08580cd029a322e3a637",
@@ -264,11 +263,6 @@
       "address": "0x40cd4292438642bAc4b5733ED4ec45509bf164Bb",
       "runtimeCodeHash": "0x401c9743f9b231490322bcca4301d75e5d0b39745d9fc8b90f8cd5b779852225",
       "txHash": "0x4bdba42fa5cc00add4b0774e2a4154b31207dc8d0a26d7f16e3fbd1e30cd9243"
-    },
-    "Token": {
-      "address": "0xc5f89a4DfB8947F90f79E3d34EC05C07B7E64265",
-      "runtimeCodeHash": "0xf97398131762b89df0289198fa30b8da8776d0afc8662aefc397a0b6b31ceb44",
-      "txHash": "0x3217505ee0b45b53dd492272f683d8ed68fe9453c36dc612bd1dd3c356c08afb"
     }
   },
   "4447": {

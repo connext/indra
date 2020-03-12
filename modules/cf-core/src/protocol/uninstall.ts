@@ -26,7 +26,7 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITM
  */
 export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, provider, stateChannelsMap, network } = context;
+    const { message, stateChannelsMap, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart;
@@ -41,7 +41,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = await computeStateTransition(
       params as UninstallProtocolParams,
       stateChannelsMap,
-      provider,
+      network.provider,
     );
 
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appToUninstall.appSeqNo);
@@ -93,7 +93,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, provider, stateChannelsMap, network } = context;
+    const { message, stateChannelsMap, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart;
@@ -108,7 +108,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = await computeStateTransition(
       params as UninstallProtocolParams,
       stateChannelsMap,
-      provider,
+      network.provider,
     );
 
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appToUninstall.appSeqNo);

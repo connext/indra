@@ -24,7 +24,7 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
  */
 export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { stateChannelsMap, provider, message, network } = context;
+    const { stateChannelsMap, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart;
@@ -45,7 +45,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       appIdentityHash,
       await preProtocolStateChannel
         .getAppInstance(appIdentityHash)
-        .computeStateTransition(action, provider),
+        .computeStateTransition(action, network.provider),
     );
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -94,7 +94,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { stateChannelsMap, provider, message, network } = context;
+    const { stateChannelsMap, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart;
@@ -119,7 +119,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       appIdentityHash,
       await preProtocolStateChannel
         .getAppInstance(appIdentityHash)
-        .computeStateTransition(action, provider),
+        .computeStateTransition(action, network.provider),
     );
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);

@@ -131,7 +131,6 @@ export class ProtocolRunner {
       log: this.log,
       message,
       network: this.network,
-      provider: this.provider,
       stateChannelsMap,
     };
 

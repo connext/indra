@@ -60,7 +60,6 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       message: { params, processID },
       stateChannelsMap,
       network,
-      provider,
     } = context;
 
     const { intermediaryXpub, responderXpub } = params as InstallVirtualAppProtocolParams;
@@ -75,7 +74,6 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       params as InstallVirtualAppProtocolParams,
       stateChannelsMap,
       network,
-      provider,
     );
 
     // get all signing addresses
@@ -618,7 +616,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
   2 /* Responding */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
-    const { message: m2, stateChannelsMap, network, provider } = context;
+    const { message: m2, stateChannelsMap, network } = context;
 
     const {
       params,
@@ -638,7 +636,6 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       params as InstallVirtualAppProtocolParams,
       stateChannelsMap,
       network,
-      provider,
     );
 
     const intermediaryFreeBalanceAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
@@ -1097,7 +1094,6 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   params: InstallVirtualAppProtocolParams,
   stateChannelsMap: Map<string, StateChannel>,
   network: NetworkContext,
-  provider: BaseProvider,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance, AppInstance]> {
   const {
     initiatorXpub,
@@ -1125,7 +1121,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   const timeLockedPassThroughAppInstance = await constructTimeLockedPassThroughAppInstance(
     stateChannelWithAllThreeParties,
     virtualAppInstance.identityHash,
-    await virtualAppInstance.computeOutcomeWithCurrentState(provider),
+    await virtualAppInstance.computeOutcomeWithCurrentState(network.provider),
     network,
     params,
   );
@@ -1328,7 +1324,6 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
   params: InstallVirtualAppProtocolParams,
   stateChannelsMap: Map<string, StateChannel>,
   network: NetworkContext,
-  provider: BaseProvider,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance, AppInstance]> {
   const {
     initiatorBalanceDecrement,
@@ -1356,7 +1351,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
   const timeLockedPassThroughAppInstance = await constructTimeLockedPassThroughAppInstance(
     stateChannelWithAllThreeParties,
     virtualAppInstance.identityHash,
-    await virtualAppInstance.computeOutcomeWithCurrentState(provider),
+    await virtualAppInstance.computeOutcomeWithCurrentState(network.provider),
     network,
     params,
   );

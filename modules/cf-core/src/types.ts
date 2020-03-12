@@ -5,7 +5,6 @@ import {
   ProtocolMessage,
   SolidityValueType,
 } from "@connext/types";
-import { BaseProvider } from "ethers/providers";
 import { Signature } from "ethers/utils";
 
 import { StateChannel } from "./models";
@@ -62,12 +61,11 @@ export type Middleware = {
 
 export type Instruction = Function | Opcode;
 
-/// Arguments passed to a protocol execulion flow
+// Arguments passed to a protocol execulion flow
 export interface Context {
   log: ILoggerService;
   message: ProtocolMessage;
   network: NetworkContext;
-  provider: BaseProvider;
   stateChannelsMap: Map<string, StateChannel>;
 }
 
@@ -89,7 +87,6 @@ export {
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
   CreateChannelMessage,
-  DeployedContractNetworksFileEntry,
   DepositConfirmationMessage,
   DepositFailedMessage,
   DepositStartedMessage,
