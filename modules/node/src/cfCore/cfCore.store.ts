@@ -5,6 +5,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   AppInstanceJson,
+  AppInstanceProposal,
   ProtocolTypes,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
@@ -194,8 +195,64 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.getAppInstance(appInstanceId);
   }
 
-  saveAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
-    throw new Error("Method not implemented.");
+  async saveAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
+    const {
+      identityHash,
+      latestState,
+      latestTimeout,
+      latestVersionNumber,
+      multiAssetMultiPartyCoinTransferInterpreterParams,
+      participants,
+      singleAssetTwoPartyCoinTransferInterpreterParams,
+      twoPartyOutcomeInterpreterParams,
+    } = appJson;
+    let app = await this.appInstanceRepository.findByIdentityHash(identityHash);
+    if (!app) {
+      throw new Error(`Did not find app with identity hash: ${identityHash}`);
+    }
+    if (app.type === AppType.INSTANCE && app.latestVersionNumber === latestVersionNumber) {
+      // app was not updated, return
+      return;
+    }
+    if (app.type === AppType.PROPOSAL) {
+      app.type = AppType.INSTANCE;
+      app.participants = participants;
+      app.singleAssetTwoPartyCoinTransferInterpreterParams = singleAssetTwoPartyCoinTransferInterpreterParams;
+      app.twoPartyOutcomeInterpreterParams = twoPartyOutcomeInterpreterParams;
+      app.multiAssetMultiPartyCoinTransferInterpreterParams = multiAssetMultiPartyCoinTransferInterpreterParams;
+    }
+    app.latestState = latestState;
+    app.latestTimeout = latestTimeout;
+    app.latestVersionNumber = latestVersionNumber;
+
+    // TODO: everything else should already be in from the proposal, verify this
+    return this.appInstanceRepository.saveAppInstance(multisigAddress, appJson);
+  }
+
+  removeAppInstance(appInstanceId: string): Promise<void> {
+    return this.appInstanceRepository.removeAppInstance(appInstanceId);
+  }
+
+  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal> {
+    return this.appInstanceRepository.getAppProposal(appInstanceId);
+  }
+
+  saveAppProposal(appInstanceId: string, appProposal: AppInstanceProposal): Promise<void> {
+    return this.appInstanceRepository.saveAppProposal(appInstanceId, appProposal);
+  }
+
+  removeAppProposal(appInstanceId: string): Promise<void> {
+    // should either go through `saveAppInstance` to update to `INSTANCE`
+    // type, or `removeAppInstance` to update to `UNINSTALL` type
+    throw new Error(`Method not implemented`);
+  }
+
+  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
+    return this.appInstanceRepository.getFreeBalance(multisigAddress);
+  }
+
+  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    return this.appInstanceRepository.saveFreeBalance(multisigAddress, freeBalance);
   }
 
   getLatestSetStateCommitment(

@@ -1,5 +1,6 @@
 import {
   AppInstanceJson,
+  AppInstanceProposal,
   ConditionalTransactionCommitmentJSON,
   IClientStore,
   ProtocolTypes,
@@ -9,6 +10,7 @@ import {
   StoreType,
   StoreTypes,
   WithdrawalMonitorObject,
+  WrappedStorage,
 } from "@connext/types";
 
 import {
@@ -48,12 +50,12 @@ export class ConnextStore implements IClientStore {
         break;
 
       case StoreTypes.ASYNCSTORAGE:
-        if (!opts.asyncStorage) {
-          throw new Error(`Must pass in a reference to an 'IAsyncStorage' representation`);
+        if (!opts.storage) {
+          throw new Error(`Must pass in a reference to an 'IAsyncStorage' interface`);
         }
         this.internalStore = new KeyValueStorage(
           new WrappedAsyncStorage(
-            opts.asyncStorage,
+            opts.storage,
             this.prefix,
             this.separator,
             opts.asyncStorageKey,
@@ -79,7 +81,12 @@ export class ConnextStore implements IClientStore {
         break;
 
       default:
-        throw new Error(`Unable to create test store of type: ${storageType}`);
+        if (!opts.storage) {
+          throw new Error(
+            `Missing reference to a WrappedStorage interface, cannot create store of type: ${storageType}`,
+          );
+        }
+        this.internalStore = new KeyValueStorage(opts.storage as WrappedStorage);
     }
   }
 
@@ -121,6 +128,10 @@ export class ConnextStore implements IClientStore {
 
   getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON> {
     return this.internalStore.getLatestSetStateCommitment(appIdentityHash);
+  }
+
+  removeAppInstance(appInstanceId: string): Promise<void> {
+    return this.internalStore.removeAppInstance(appInstanceId);
   }
 
   saveLatestSetStateCommitment(
@@ -168,5 +179,25 @@ export class ConnextStore implements IClientStore {
 
   setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
     return this.internalStore.setUserWithdrawal(withdrawalObject);
+  }
+
+  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
+    return this.internalStore.getAppProposal(appInstanceId);
+  }
+
+  saveAppProposal(appInstanceId: string, proposal: AppInstanceProposal): Promise<void> {
+    return this.internalStore.saveAppProposal(appInstanceId, proposal);
+  }
+
+  removeAppProposal(appInstanceId: string): Promise<void> {
+    return this.internalStore.removeAppProposal(appInstanceId);
+  }
+
+  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
+    return this.internalStore.getFreeBalance(multisigAddress);
+  }
+
+  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    return this.internalStore.saveFreeBalance(multisigAddress, freeBalance);
   }
 }

@@ -1,4 +1,5 @@
 import {
+  AppInstanceProposal,
   IClientStore,
   WrappedStorage,
   StateChannelJSON,
@@ -16,6 +17,8 @@ import {
   SET_STATE_COMMITMENT_KEY,
   WITHDRAWAL_COMMITMENT_KEY,
   CONDITIONAL_COMMITMENT_KEY,
+  PROPOSED_APP_KEY,
+  FREE_BALANCE_KEY,
 } from "../helpers";
 
 /**
@@ -57,8 +60,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.storage.restore();
   }
 
-  joinWithSeparator(...args: string[]): string {
-    return this.storage.joinWithSeparator(...args);
+  getKey(...args: string[]): string {
+    return this.storage.getKey(...args);
   }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
@@ -92,12 +95,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
-    const channelKey = this.joinWithSeparator(CHANNEL_KEY, multisigAddress);
+    const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
     return safeJsonParse(await this.getItem(channelKey));
   }
 
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
-    const channelKey = this.joinWithSeparator(CHANNEL_KEY, stateChannel.multisigAddress);
+    const channelKey = this.getKey(CHANNEL_KEY, stateChannel.multisigAddress);
     return this.setItem(channelKey, safeJsonStringify(stateChannel));
   }
 
@@ -122,10 +125,21 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.saveStateChannel(channel);
   }
 
+  async removeAppInstance(appInstanceId: string): Promise<void> {
+    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
+    const existsIndex = channel.appInstances.findIndex(([app]) => app === appInstanceId);
+    if (!existsIndex) {
+      return;
+    }
+    channel.appInstances.splice(existsIndex, 1);
+
+    return this.saveStateChannel(channel);
+  }
+
   async getLatestSetStateCommitment(
     appIdentityHash: string,
   ): Promise<SetStateCommitmentJSON | undefined> {
-    const setStateKey = this.joinWithSeparator(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
     return safeJsonParse(await this.getItem(setStateKey));
   }
 
@@ -133,14 +147,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    const setStateKey = this.joinWithSeparator(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
     return this.setItem(setStateKey, safeJsonStringify(commitment));
   }
 
   async getWithdrawalCommitment(
     multisigAddress: string,
   ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
-    const withdrawalKey = this.joinWithSeparator(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
     return safeJsonParse(await this.getItem(withdrawalKey));
   }
 
@@ -148,17 +162,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     multisigAddress: string,
     commitment: ProtocolTypes.MinimalTransaction,
   ): Promise<void> {
-    const withdrawalKey = this.joinWithSeparator(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
     return this.setItem(withdrawalKey, safeJsonStringify(commitment));
   }
 
   async getConditionalTransactionCommitment(
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    const conditionalCommitmentKey = this.joinWithSeparator(
-      CONDITIONAL_COMMITMENT_KEY,
-      appIdentityHash,
-    );
+    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
     return safeJsonParse(await this.getItem(conditionalCommitmentKey));
   }
 
@@ -166,21 +177,43 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
-    const conditionalCommitmentKey = this.joinWithSeparator(
-      CONDITIONAL_COMMITMENT_KEY,
-      appIdentityHash,
-    );
+    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
     return this.setItem(conditionalCommitmentKey, safeJsonStringify(commitment));
   }
 
   async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
-    const withdrawalKey = this.joinWithSeparator(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     return safeJsonParse(await this.getItem(withdrawalKey));
   }
 
   async setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    const withdrawalKey = this.joinWithSeparator(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     return this.setItem(withdrawalKey, safeJsonStringify(withdrawalObject));
+  }
+
+  async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
+    const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, appInstanceId);
+    return safeJsonParse(await this.getItem(proposedAppsKey));
+  }
+
+  saveAppProposal(appInstanceId: string, proposal: AppInstanceProposal): Promise<void> {
+    const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, appInstanceId);
+    return this.setItem(proposedAppsKey, safeJsonStringify(proposal));
+  }
+
+  removeAppProposal(appInstanceId: string): Promise<void> {
+    const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, appInstanceId);
+    return this.removeItem(proposedAppsKey);
+  }
+
+  async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
+    const freeBalanceKey = this.getKey(FREE_BALANCE_KEY, multisigAddress);
+    return safeJsonParse(await this.getItem(freeBalanceKey));
+  }
+
+  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    const freeBalanceKey = this.getKey(FREE_BALANCE_KEY, multisigAddress);
+    return this.setItem(freeBalanceKey, safeJsonStringify(freeBalance));
   }
 }
 

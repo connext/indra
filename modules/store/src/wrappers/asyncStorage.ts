@@ -113,7 +113,7 @@ export class WrappedAsyncStorage implements WrappedStorage {
     await Promise.all(pairs.map(pair => this.setItem(pair.path, pair.value)));
   }
 
-  joinWithSeparator(...args: string[]): string {
+  getKey(...args: string[]): string {
     let str = "";
     args.forEach(arg => {
       // dont add separator to last one

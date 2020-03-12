@@ -3,6 +3,7 @@ import {
   ConditionalTransactionCommitmentJSON,
   ProtocolTypes,
   AppInstanceJson,
+  AppInstanceProposal,
   StateChannelJSON,
   IClientStore,
   STORE_SCHEMA_VERSION,
@@ -19,9 +20,10 @@ export class MemoryStorage implements IClientStore {
     ConditionalTransactionCommitmentJSON
   > = new Map();
   private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
-  private extendedPrivKey: string = "";
+  private proposedApps: Map<string, AppInstanceProposal> = new Map();
   private appInstances: Map<string, AppInstanceJson> = new Map();
   private userWithdrawals: WithdrawalMonitorObject | undefined = undefined;
+  private freeBalances: Map<string, AppInstanceJson> = new Map();
 
   constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
 
@@ -72,6 +74,11 @@ export class MemoryStorage implements IClientStore {
     this.appInstances.set(appInstance.identityHash, appInstance);
   }
 
+  removeAppInstance(appInstanceId: string): Promise<void> {
+    this.appInstances.delete(appInstanceId);
+    return Promise.resolve();
+  }
+
   async getLatestSetStateCommitment(
     appInstanceId: string,
   ): Promise<SetStateCommitmentJSON | undefined> {
@@ -109,6 +116,35 @@ export class MemoryStorage implements IClientStore {
     commitment: ProtocolTypes.MinimalTransaction,
   ): Promise<void> {
     this.withdrawals.set(multisigAddress, commitment);
+  }
+
+  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
+    if (!this.proposedApps.has(appInstanceId)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(this.proposedApps.get(appInstanceId));
+  }
+
+  saveAppProposal(appInstanceId: string, proposal: AppInstanceProposal): Promise<void> {
+    this.proposedApps.set(appInstanceId, proposal);
+    return Promise.resolve();
+  }
+
+  removeAppProposal(appInstanceId: string): Promise<void> {
+    this.appInstances.delete(appInstanceId);
+    return Promise.resolve();
+  }
+
+  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
+    if (!this.freeBalances.has(multisigAddress)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(this.freeBalances.get(multisigAddress));
+  }
+
+  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    this.freeBalances.set(multisigAddress, freeBalance);
+    return Promise.resolve();
   }
 
   async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {

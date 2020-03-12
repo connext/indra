@@ -9,7 +9,7 @@ import {
   INodeApiClient,
   KeyGen,
   Network,
-  IStoreService,
+  IClientStore,
 } from "@connext/types";
 
 // This type is only ever used inside the client,
@@ -24,7 +24,7 @@ export type InternalClientOptions = {
   messaging: IMessagingService;
   network: Network;
   node: INodeApiClient;
-  store: IStoreService;
+  store: IClientStore;
   token: Contract;
   xpub: string;
 };

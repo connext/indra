@@ -8,7 +8,7 @@ import {
   chan_setUserWithdrawal,
   chan_setStateChannel,
   chan_restoreState,
-  IStoreService,
+  IClientStore,
   ILoggerService,
   LinkedTransferToRecipientResponse,
   LINKED_TRANSFER,
@@ -93,7 +93,7 @@ export class ConnextClient implements IConnextClient {
   public nodePublicIdentifier: string;
   public publicIdentifier: string;
   public signerAddress: Address;
-  public store: IStoreService;
+  public store: IClientStore;
   public token: Contract;
 
   private opts: InternalClientOptions;

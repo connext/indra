@@ -4,6 +4,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   AppInstanceJson,
+  AppInstanceProposal,
   ProtocolTypes,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
@@ -42,6 +43,24 @@ class MockStoreService implements CFCoreTypes.IStoreService {
     return Promise.resolve(undefined);
   }
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    return Promise.resolve();
+  }
+  removeAppInstance(appId: string): Promise<void> {
+    return Promise.resolve();
+  }
+  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
+    return Promise.resolve(undefined);
+  }
+  saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
+    return Promise.resolve();
+  }
+  removeAppProposal(appId: string): Promise<void> {
+    return Promise.resolve();
+  }
+  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
+    return Promise.resolve(undefined);
+  }
+  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
   getLatestSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {

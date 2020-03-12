@@ -177,7 +177,7 @@ describe("KeyValueStorage", () => {
       it(`${type} should work`, async () => {
         const store = createKeyValueStore(type as StoreType, { fileDir });
         const expected = `expected${type === FILESTORAGE ? "-" : "/"}string`;
-        expect(store.joinWithSeparator("expected", "string")).to.be.equal(expected);
+        expect(store.getKey("expected", "string")).to.be.equal(expected);
       });
     }
   });
