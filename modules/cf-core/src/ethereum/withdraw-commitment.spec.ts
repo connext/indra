@@ -1,15 +1,17 @@
 import { CFCoreTypes } from "@connext/types";
+import { AddressZero } from "ethers/constants";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 
-import { WithdrawETHCommitment } from "./withdraw-eth-commitment";
+import { StateChannel } from "../models";
+import { getWithdrawCommitment, WithdrawCommitment } from "./withdraw-commitment";
 
 /**
- * This test suite decodes a constructed WithdrawETHCommitment transaction object
+ * This test suite decodes a constructed WithdrawCommitment transaction object
  * to the specifications defined here:
  * https://specs.counterfactual.com/11-withdraw-protocol
  */
-describe("Withdraw ETH Commitment", () => {
-  let commitment: WithdrawETHCommitment;
+describe("Withdraw Commitment", () => {
+  let commitment: WithdrawCommitment;
   let tx: CFCoreTypes.MinimalTransaction;
 
   const multisigAddress = getAddress(hexlify(randomBytes(20)));
@@ -21,7 +23,12 @@ describe("Withdraw ETH Commitment", () => {
   const value = bigNumberify(Math.round(10000 * Math.random()));
 
   beforeAll(() => {
-    commitment = new WithdrawETHCommitment(multisigAddress, multisigOwners, to, value);
+    commitment = getWithdrawCommitment(
+      { multisigAddress, multisigOwners } as StateChannel,
+      value,
+      AddressZero,
+      to,
+    );
     tx = commitment.getTransactionDetails();
   });
 
@@ -33,3 +40,4 @@ describe("Withdraw ETH Commitment", () => {
     expect(tx.value).toEqual(value);
   });
 });
+

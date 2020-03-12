@@ -23,7 +23,7 @@ export const getSetupCommitment = (context: Context, stateChannel: StateChannel)
     stateChannel.freeBalance.identity,
   );
 
-class SetupCommitment extends MultisigCommitment {
+export class SetupCommitment extends MultisigCommitment {
   public constructor(
     public readonly networkContext: NetworkContext,
     public readonly multisigAddress: string,

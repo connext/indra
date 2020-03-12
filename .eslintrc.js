@@ -2,7 +2,7 @@ module.exports = {
   rules: {
     "@typescript-eslint/no-unused-expressions": ["off"],
     "comma-dangle": ["error", "always-multiline"],
-    "max-len": ["warn", { code: 100, ignoreStrings: true, ignoreTemplateLiterals: true }],
+    "max-len": ["warn", { code: 100, ignoreTemplateLiterals: true }],
     "no-async-promise-executor": ["off"],
     "no-empty-pattern": ["off"],
     "no-undef": ["error"],

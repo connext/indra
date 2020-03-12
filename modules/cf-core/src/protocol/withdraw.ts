@@ -1,12 +1,10 @@
 import { MaxUint256 } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
+import { UNASSIGNED_SEQ_NO } from "../constants";
 import {
   getConditionalTxCommitment,
   getSetStateCommitment,
-  WithdrawERC20Commitment,
-  WithdrawETHCommitment,
+  getWithdrawCommitment,
 } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
 import {
@@ -171,11 +169,11 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // free balance address signs withdrawal transaction data
-    const withdrawCommitment = constructWithdrawalCommitment(
+    const withdrawCommitment = getWithdrawCommitment(
       postInstallRefundAppStateChannel,
-      recipient,
       amount,
       tokenAddress,
+      recipient,
     );
 
     // free balance address signs withdrawal transaction data
@@ -414,11 +412,11 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
-    const withdrawCommitment = constructWithdrawalCommitment(
+    const withdrawCommitment = getWithdrawCommitment(
       postInstallRefundAppStateChannel,
-      recipient,
       amount,
       tokenAddress,
+      recipient,
     );
 
     // free balance address signs withdraw commitment
@@ -563,27 +561,4 @@ function addRefundAppToStateChannel(
       [stateChannel.getFreeBalanceAddrOf(initiatorXpub)]: amount,
     },
   });
-}
-
-function constructWithdrawalCommitment(
-  postInstallRefundAppStateChannel: StateChannel,
-  recipient: string,
-  amount: BigNumber,
-  tokenAddress: string,
-) {
-  if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
-    return new WithdrawETHCommitment(
-      postInstallRefundAppStateChannel.multisigAddress,
-      postInstallRefundAppStateChannel.multisigOwners,
-      recipient,
-      amount,
-    );
-  }
-  return new WithdrawERC20Commitment(
-    postInstallRefundAppStateChannel.multisigAddress,
-    postInstallRefundAppStateChannel.multisigOwners,
-    recipient,
-    amount,
-    tokenAddress,
-  );
 }

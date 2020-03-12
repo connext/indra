@@ -1,4 +1,4 @@
-import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
+import { WeiPerEther } from "ethers/constants";
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { createAppInstanceForTest } from "../../test/unit/utils";
@@ -11,7 +11,7 @@ import { FreeBalanceClass, StateChannel } from "../models";
 import { Context, MultisigTransaction } from "../types";
 import { appIdentityToHash } from "../utils";
 
-import { getConditionalTxCommitment } from "./conditional-transaction-commitment";
+import { getConditionalTxCommitment } from "./conditional-tx-commitment";
 
 describe("ConditionalTransaction", () => {
   let tx: MultisigTransaction;

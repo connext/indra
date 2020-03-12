@@ -32,7 +32,7 @@ export const getConditionalTxCommitment = (
 
 // class to represent an unsigned multisignature wallet transaction
 // to the ConditionalTransactionDelegateTarget contract.
-class ConditionalTxCommitment extends MultisigCommitment {
+export class ConditionalTxCommitment extends MultisigCommitment {
   constructor(
     public readonly networkContext: NetworkContext,
     public readonly multisig: string,
