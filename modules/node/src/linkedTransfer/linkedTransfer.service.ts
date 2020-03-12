@@ -214,7 +214,7 @@ export class LinkedTransferService {
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      userPubId,
+      channel,
       initialState,
       transfer.amount,
       transfer.assetId,
@@ -292,7 +292,12 @@ export class LinkedTransferService {
     // mark as reclaimed so the listener doesnt try to reclaim again
     await this.linkedTransferRepository.markAsReclaimed(transfer);
     await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-    await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
+    await this.messagingClient
+      .emit(
+        `${this.cfCoreService.cfCore.publicIdentifier}.transfer.${transfer.paymentId}.reclaimed`,
+        {},
+      )
+      .toPromise();
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {

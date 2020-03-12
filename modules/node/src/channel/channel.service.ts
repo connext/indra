@@ -175,7 +175,7 @@ export class ChannelService {
     tx.wait().then(txReceipt => {
       this.messagingClient
         .emit(
-          `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.reclaim.${channel.multisigAddress}`,
+          `${this.cfCoreService.cfCore.publicIdentifier}.channel.${channel.multisigAddress}.reclaim`,
           {
             amount: amount.toString(),
             assetId,

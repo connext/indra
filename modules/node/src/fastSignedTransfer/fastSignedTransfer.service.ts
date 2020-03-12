@@ -264,7 +264,7 @@ export class FastSignedTransferService {
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      channel.userPublicIdentifier,
+      channel,
       initialState,
       transfer.amount,
       transfer.assetId,

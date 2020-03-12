@@ -244,18 +244,6 @@ export class ConnextClient implements IConnextClient {
     return res;
   };
 
-  public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
-    recipient: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }> => {
-    return await this.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
-      recipient,
-      encryptedPreImage,
-      linkedHash,
-    );
-  };
-
   public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
     return this.channelProvider.config;
   };

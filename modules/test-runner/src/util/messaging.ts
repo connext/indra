@@ -30,6 +30,7 @@ type DetailedMessageCounter = MessageCounter & {
 };
 
 export type TestMessagingConfig = {
+  nodeUrl: string;
   messagingConfig: MessagingConfig;
   protocolDefaults: {
     [protocol: string]: DetailedMessageCounter;
@@ -104,8 +105,9 @@ const zeroCounter = (): MessageCounter => {
 
 const defaultOpts = (): TestMessagingConfig => {
   return {
+    nodeUrl: env.nodeUrl,
     messagingConfig: {
-      messagingUrl: env.nodeUrl,
+      messagingUrl: env.natsUrl,
     },
     protocolDefaults: {
       install: defaultCount(),
@@ -137,6 +139,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     const defaults = defaultOpts();
     // create options
     this.options = {
+      nodeUrl: opts.nodeUrl || defaults.nodeUrl,
       messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
       count: combineObjects(opts.count, defaults.count),
       protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
@@ -152,18 +155,16 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       xpub: string,
       getSignature: (nonce: string) => Promise<string>,
     ): Promise<string> => {
-      const messagingUrl = this.options.messagingConfig.messagingUrl as string;
       try {
-        let url = messagingUrl.split("//")[1];
-        const nonce = await axios.get(`https://${url}/getNonce`, {
+        const nonce = await axios.get(`${this.options.nodeUrl}/getNonce`, {
           params: {
             userPublicIdentifier: xpub,
           },
         });
         const sig = await getSignature(nonce);
-        const bearerToken: string = await axios.post(`https://${url}/verifyNonce`, {
+        const bearerToken: string = await axios.post(`${this.options.nodeUrl}/verifyNonce`, {
           sig,
-          xpub,
+          userPublicIdentifier: xpub,
         } as VerifyNonceDtoType);
         return bearerToken;
       } catch (e) {
@@ -172,7 +173,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     };
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
-    this.connection = new MessagingService(this.options.messagingConfig, "indra", () =>
+    this.connection = new MessagingService(this.options.messagingConfig, xpub, () =>
       getBearerToken(xpub, getSignature),
     );
     this.protocolDefaults = this.options.protocolDefaults;

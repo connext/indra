@@ -78,11 +78,11 @@ export class LinkedTransferController extends AbstractController {
       transferMeta: {
         encryptedPreImage,
       },
-    } as CreateTransferEventData<typeof LINKED_TRANSFER_TO_RECIPIENT>;
+    } as CreateTransferEventData<"LINKED_TRANSFER_TO_RECIPIENT">;
     // publish encrypted secret for receiver
     await this.connext.messaging.publish(
-      `transfer.send-async.${recipient}`,
-      stringify({ ...eventData, encryptedPreImage }),
+      `${this.connext.publicIdentifier}.transfer.linked.to.${recipient}`,
+      stringify(eventData),
     );
 
     this.connext.emit(CREATE_TRANSFER, eventData);

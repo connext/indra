@@ -1,6 +1,7 @@
-import { VerifyNonceDtoType } from "@connext/types"
+import { VerifyNonceDtoType } from "@connext/types";
 
 export class VerifyNonceDto implements VerifyNonceDtoType {
-    sig: string;
-    xpub: string;
+  sig: string;
+  userPublicIdentifier: string;
+  adminToken?: string;
 }

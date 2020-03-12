@@ -3,7 +3,12 @@ import {
   SupportedApplication,
   validateSimpleLinkedTransferApp,
 } from "@connext/apps";
-import { ILoggerService, CoinBalanceRefundApp, SimpleLinkedTransferApp } from "@connext/types";
+import {
+  ILoggerService,
+  CoinBalanceRefundApp,
+  SimpleLinkedTransferApp,
+  CreateTransferEventData,
+} from "@connext/types";
 
 import { ConnextClient } from "./connext";
 import { stringify } from "./lib";
@@ -185,7 +190,7 @@ export class ConnextListener extends ConnextEventEmitter {
           },
         } = msg;
         await this.connext.messaging.publish(
-          `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
+          `${this.connext.publicIdentifier}.app-instance.${appInstance.identityHash}.install`,
           stringify(appInstance),
         );
       },
@@ -195,7 +200,7 @@ export class ConnextListener extends ConnextEventEmitter {
       const result = data.result.result;
       this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
       this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
+        `${this.connext.publicIdentifier}.app-instance.${result.appInstanceId}.uninstall`,
         stringify(result),
       );
     });
@@ -209,7 +214,7 @@ export class ConnextListener extends ConnextEventEmitter {
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
-    const subject = `online.${this.connext.publicIdentifier}`;
+    const subject = `${this.connext.publicIdentifier}.online`;
     await this.connext.messaging.subscribe(
       subject,
       async (msg: any): Promise<any> => {
@@ -229,7 +234,7 @@ export class ConnextListener extends ConnextEventEmitter {
   };
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
-    const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
+    const subject = `*.transfer.linked.to.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (msg: any) => {
       this.log.debug(`Received message for ${subject} subscription`);
       if (!msg.paymentId && !msg.data) {
@@ -240,7 +245,12 @@ export class ConnextListener extends ConnextEventEmitter {
         data = JSON.parse(data);
       }
       this.log.debug(`Message data: ${stringify(data)}`);
-      const { paymentId, encryptedPreImage, amount, assetId } = data;
+      const {
+        paymentId,
+        transferMeta: { encryptedPreImage },
+        amount,
+        assetId,
+      }: CreateTransferEventData<"LINKED_TRANSFER_TO_RECIPIENT"> = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }
@@ -264,13 +274,9 @@ export class ConnextListener extends ConnextEventEmitter {
       );
       switch (registryAppInfo.name) {
         case CoinBalanceRefundApp: {
-          this.log.debug(
-            `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-          );
-          await this.connext.messaging.publish(
-            `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-            stringify(params),
-          );
+          const subject = `${this.connext.publicIdentifier}.app-instance.proposal.accept.${this.connext.multisigAddress}.${appInstanceId}`;
+          this.log.debug(`Sending acceptance message to: ${subject}`);
+          await this.connext.messaging.publish(subject, stringify(params));
           return;
         }
         case SimpleLinkedTransferApp: {

@@ -2,23 +2,19 @@ import { Controller, Get, Post, Body, Param } from "@nestjs/common";
 
 import { VerifyNonceDto } from "./auth.dto";
 import { AuthService } from "./auth.service";
-import { RpcException } from "@nestjs/microservices";
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get("getNonce")
+  @Get("nonce/:userPublicIdentifier")
   async getNonce(@Param() userPublicIdentifier: string): Promise<string> {
-    if (!userPublicIdentifier) {
-      throw new RpcException(`No address found in data: ${userPublicIdentifier}`);
-    }
     return this.authService.getNonce(userPublicIdentifier);
   }
 
-  @Post("verifyNonce")
+  @Post("nonce")
   async verifyNonce(@Body() verifyNonceDto: VerifyNonceDto): Promise<string> {
-    let { sig, xpub } = verifyNonceDto;
-    return this.authService.verifyAndVend(sig, xpub);
+    let { sig, userPublicIdentifier, adminToken } = verifyNonceDto;
+    return this.authService.verifyAndVend(sig, userPublicIdentifier, adminToken);
   }
 }

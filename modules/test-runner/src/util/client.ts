@@ -29,6 +29,7 @@ export const createClient = async (
     loggerService: new Logger("CreateClient", env.logLevel, true, opts.id),
     mnemonic,
     nodeUrl: env.nodeUrl,
+    natsUrl: env.natsUrl,
     store,
     ...opts,
   };

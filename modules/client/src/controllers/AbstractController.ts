@@ -1,4 +1,9 @@
-import { CFCoreTypes, IChannelProvider, ILoggerService, REJECT_INSTALL_EVENT } from "@connext/types";
+import {
+  CFCoreTypes,
+  IChannelProvider,
+  ILoggerService,
+  REJECT_INSTALL_EVENT,
+} from "@connext/types";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
@@ -54,13 +59,9 @@ export abstract class AbstractController {
         new Promise((res: () => any, rej: () => any): void => {
           boundResolve = this.resolveInstall.bind(null, res, rej, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
-          this.log.debug(
-            `subscribing to indra.node.${this.connext.nodePublicIdentifier}.install.${this.connext.multisigAddress}`,
-          );
-          this.connext.messaging.subscribe(
-            `indra.node.${this.connext.nodePublicIdentifier}.install.${appInstanceId}`,
-            boundResolve,
-          );
+          const installSubject = `indra.node.${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`;
+          this.log.debug(`subscribing to ${installSubject}`);
+          this.connext.messaging.subscribe(installSubject, boundResolve);
           this.listener.on(REJECT_INSTALL_EVENT, boundReject);
         }),
       ]);
@@ -94,9 +95,8 @@ export abstract class AbstractController {
             this.listener.on(REJECT_INSTALL_EVENT, boundReject);
 
             // set up proposal accepted nats subscriptions
-            this.log.debug(
-              `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-            );
+            const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.*.proposal.accept`;
+            this.log.debug(`subscribing to ${subject}`);
 
             // it is not clear whether the `proposalAccepted` (indicating
             // the responder is done with the protocol), or the
@@ -113,10 +113,7 @@ export abstract class AbstractController {
             };
             const [proposeResult] = await Promise.all([
               this.connext.proposeInstallApp(params),
-              this.connext.messaging.subscribe(
-                `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-                resolveIfProposed,
-              ),
+              this.connext.messaging.subscribe(subject, resolveIfProposed),
             ]);
             appId = proposeResult.appInstanceId;
             resolveIfProposed();

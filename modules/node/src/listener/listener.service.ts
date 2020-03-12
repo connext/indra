@@ -194,16 +194,9 @@ export default class ListenerService implements OnModuleInit {
     );
 
     this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_uninstall as any, (data: any) => {
-      this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(
-          data.result.result,
-        )} at subject indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${
-          data.result.result.appInstanceId
-        }`,
-      );
       this.messagingClient
         .emit(
-          `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
+          `${this.cfCoreService.cfCore.publicIdentifier}.app-instance.${data.result.result.appInstanceId}.uninstall`,
           data.result.result,
         )
         .toPromise();

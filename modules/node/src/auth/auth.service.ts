@@ -5,6 +5,7 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
+import { ConfigService } from "../config/config.service";
 
 import { isXpub } from "../util";
 import { MessagingAuthProviderId } from "../constants";
@@ -21,8 +22,9 @@ export function getAuthAddressFromXpub(xpub: string): string {
 export class AuthService {
   private nonces: { [key: string]: { nonce: string; expiry: number } } = {};
   constructor(
-    private readonly channelRepo: ChannelRepository,
     @Inject(MessagingAuthProviderId) private readonly messagingAuthService: MessagingAuthService,
+    private readonly configService: ConfigService,
+    private readonly channelRepo: ChannelRepository,
   ) {}
 
   // FIXME-- fix this client api contract error...
@@ -38,7 +40,16 @@ export class AuthService {
     return nonce;
   }
 
-  async verifyAndVend(signedNonce: string, userPublicIdentifier: string): Promise<string> {
+  async verifyAndVend(
+    signedNonce: string,
+    userPublicIdentifier: string,
+    adminToken?: string,
+  ): Promise<string> {
+    const indraAdminToken = this.configService.get("INDRA_ADMIN_TOKEN");
+    if (indraAdminToken && adminToken === indraAdminToken) {
+      return this.vendAdminToken(userPublicIdentifier);
+    }
+
     const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
     logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
@@ -53,21 +64,17 @@ export class AuthService {
 
     // TODO -- ARJUN: Change client to subscribe to app-registry/config.
     // Try to get latest published OR move everything under xpub route.
-    const permissions = {
+    let permissions = {
       publish: {
         allow: [`${userPublicIdentifier}.>`],
-        // deny: [],
       },
       subscribe: {
-        allow: [`${userPublicIdentifier}.>`, `app-registry.>`, `swap-rate.>`, `config.>`],
-        // deny: [],
+        allow: [`>`],
       },
       // response: {
       // TODO: consider some sane ttl to safeguard DDOS
       // },
     };
-
-    // if(userPublicIdentifier = config.)
 
     const jwt = this.messagingAuthService.vend(userPublicIdentifier, nonceTTL, permissions);
     return jwt;

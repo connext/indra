@@ -1,6 +1,7 @@
 import { SupportedApplication } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
+import axios, { AxiosResponse } from "axios";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
@@ -38,6 +39,7 @@ export class NodeApiClient implements INodeApiClient {
   private _userPublicIdentifier: string | undefined;
   private _nodePublicIdentifier: string | undefined;
   private _channelProvider: IChannelProvider | undefined;
+  private nodeUrl: string;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging as MessagingService;
@@ -45,6 +47,7 @@ export class NodeApiClient implements INodeApiClient {
     this._userPublicIdentifier = opts.userPublicIdentifier;
     this._nodePublicIdentifier = opts.nodePublicIdentifier;
     this._channelProvider = opts.channelProvider;
+    this.nodeUrl = opts.nodeUrl;
   }
 
   ////////////////////////////////////////
@@ -109,7 +112,8 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async config(): Promise<GetConfigResponse> {
-    return (await this.send("config.get")) as GetConfigResponse;
+    const response: AxiosResponse<GetConfigResponse> = await axios.get(`${this.nodeUrl}/config`);
+    return response.data;
   }
 
   public async createChannel(): Promise<CreateChannelResponse> {
@@ -179,18 +183,6 @@ export class NodeApiClient implements INodeApiClient {
   public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
     return await this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
       assetId: makeChecksumOrEthAddress(assetId),
-    });
-  }
-
-  public async setRecipientAndEncryptedPreImageForLinkedTransfer(
-    recipientPublicIdentifier: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }> {
-    return await this.send(`${this.userPublicIdentifier}.transfer.set-recipient`, {
-      encryptedPreImage,
-      linkedHash,
-      recipientPublicIdentifier,
     });
   }
 

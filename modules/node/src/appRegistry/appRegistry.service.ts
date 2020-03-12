@@ -28,6 +28,7 @@ import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service"
 import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { Channel } from "../channel/channel.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -58,8 +59,9 @@ export class AppRegistryService implements OnModuleInit {
     let appInstance: AppInstanceJson;
 
     // if error, reject install
+    let installerChannel: Channel;
     try {
-      const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
+      installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
       registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
@@ -74,7 +76,7 @@ export class AppRegistryService implements OnModuleInit {
         this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
         await this.messagingClient
           .emit(
-            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${installerChannel.multisigAddress}`,
+            `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`,
             proposeInstallParams,
           )
           .toPromise();
@@ -119,7 +121,7 @@ export class AppRegistryService implements OnModuleInit {
 
     await this.messagingClient
       .emit(
-        `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
+        `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`,
         appInstance,
       )
       .toPromise();

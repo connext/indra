@@ -72,7 +72,7 @@ export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
 
 export interface VerifyNonceDtoType {
   sig: string;
-  xpub: string;
+  userPublicIdentifier: string;
 }
 
 export interface PendingAsyncTransfer {
@@ -110,6 +110,7 @@ export interface FetchedLinkedTransfer {
 }
 
 export interface NodeInitializationParameters {
+  nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
   userPublicIdentifier?: string;
@@ -147,13 +148,8 @@ export interface INodeApiClient {
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
-  subscribeToSwapRates(from: string, to: string, callback: any): void;
-  unsubscribeFromSwapRates(from: string, to: string): void;
+  subscribeToSwapRates(from: string, to: string, callback: any): Promise<void>;
+  unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
   // TODO: fix types
   verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
-  setRecipientAndEncryptedPreImageForLinkedTransfer(
-    recipient: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }>;
 }

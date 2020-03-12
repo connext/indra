@@ -24,6 +24,7 @@ import {
   RejectProposalMessage,
   xpubToAddress,
 } from "../util";
+import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 
@@ -226,19 +227,16 @@ export class CFCoreService {
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
           boundReject = this.rejectInstallTransfer.bind(null, rej);
-          this.log.debug(
-            `Subscribing to: indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
-          );
-          await this.messagingProvider.subscribe(
-            `indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
-            res,
-          );
+          const subject = `${params.proposedToIdentifier}.channel.${multisigAddress}.app-instance.*.proposal.accept`;
+          this.log.debug(`Subscribing to: ${subject}`);
+          await this.messagingProvider.subscribe(subject, res);
           this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
           this.log.debug(`waiting for client to publish proposal results`);
         },
       );
+      this.log.debug(`client to published proposal results`);
       return proposeRes;
     } catch (e) {
       this.log.error(`Error installing app: ${e.message}`, e.stack);
@@ -249,7 +247,7 @@ export class CFCoreService {
   }
 
   async proposeAndWaitForInstallApp(
-    userPubId: string,
+    channel: Channel,
     initialState: any,
     initiatorDeposit: BigNumber,
     initiatorDepositTokenAddress: string,
@@ -279,23 +277,25 @@ export class CFCoreService {
       initiatorDepositTokenAddress,
       meta,
       outcomeType,
-      proposedToIdentifier: userPubId,
+      proposedToIdentifier: channel.userPublicIdentifier,
       responderDeposit,
       responderDepositTokenAddress,
       timeout: Zero,
     };
 
-    const proposeRes = await this.proposeInstallApp(params);
-
+    let proposeRes: ProtocolTypes.ProposeInstallResult;
     try {
-      await new Promise((res: () => any, rej: (msg: string) => any): void => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
-        this.messagingProvider.subscribe(
-          `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
-          this.resolveInstallTransfer.bind(null, res),
-        );
-        this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
-      });
+      await new Promise(
+        async (res: () => any, rej: (msg: string) => any): Promise<void> => {
+          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          this.messagingProvider.subscribe(
+            `${channel.userPublicIdentifier}.channel.${channel.multisigAddress}.app-instance.*.install`,
+            this.resolveInstallTransfer.bind(null, res),
+          );
+          this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
+          proposeRes = await this.proposeInstallApp(params);
+        },
+      );
       this.log.info(`App was installed successfully: ${proposeRes.appInstanceId}`);
       this.log.debug(`App install result: ${stringify(proposeRes)}`);
       return proposeRes;
@@ -303,7 +303,7 @@ export class CFCoreService {
       this.log.error(`Error installing app: ${e.message}`, e.stack);
       return undefined;
     } finally {
-      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, userPubId);
+      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, channel);
     }
   }
 
@@ -498,8 +498,10 @@ export class CFCoreService {
     return rej(`Install failed. Event data: ${stringify(msg)}`);
   };
 
-  private cleanupInstallListeners = (boundReject: any, appId: string, userPubId: string): void => {
-    this.messagingProvider.unsubscribe(`indra.client.${userPubId}.install.${appId}`);
+  private cleanupInstallListeners = (boundReject: any, appId: string, channel: Channel): void => {
+    this.messagingProvider.unsubscribe(
+      `${channel.userPublicIdentifier}.channel.${channel.multisigAddress}.app-instance.*.install`,
+    );
     this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
   };
 
@@ -509,7 +511,7 @@ export class CFCoreService {
     userPubId: string,
   ): void => {
     this.messagingProvider.unsubscribe(
-      `indra.client.${userPubId}.proposalAccepted.${multisigAddress}`,
+      `${userPubId}.channel.${multisigAddress}.app-instance.*.proposal.accept`,
     );
     this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
   };

@@ -11,6 +11,7 @@ import {
   CoinBalanceRefundState,
   ILoggerService,
 } from "@connext/types";
+import axios, { AxiosResponse } from "axios";
 import { Contract, providers, Wallet } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
@@ -37,8 +38,6 @@ import {
   INodeApiClient,
 } from "./types";
 
-const axios = require("axios").default;
-
 //TODO --ARJUN : Keep nodeUrl and messagingUrl separate
 const createMessagingService = async (
   logger: ILoggerService,
@@ -51,7 +50,7 @@ const createMessagingService = async (
     logger,
   };
   // create a messaging service client
-  const messaging = new MessagingService(config, "indra", () =>
+  const messaging = new MessagingService(config, xpub, () =>
     getBearerToken(logger, messagingUrl, xpub, getSignature),
   );
   await messaging.connect();
@@ -60,23 +59,23 @@ const createMessagingService = async (
 
 const getBearerToken = async (
   log: ILoggerService,
-  messagingUrl: string,
+  nodeUrl: string,
   xpub: string,
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<string> => {
   try {
-    let url = messagingUrl.split("//")[1];
-    const nonce = await axios.get(`https://${url}/getNonce`, {
+    const nonceRepsonse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/nonce`, {
       params: {
         userPublicIdentifier: xpub,
       },
     });
+    const nonce = nonceRepsonse.data;
     const sig = await getSignature(nonce);
-    const bearerToken: string = await axios.post(`https://${url}/verifyNonce`, {
+    const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth/nonce`, {
       sig,
-      xpub,
+      userPublicIdentifier: xpub,
     } as VerifyNonceDtoType);
-    return bearerToken;
+    return verifyResponse.data;
   } catch (e) {
     log.error(`Error getting bearer token: ${e}`);
     return e;
@@ -100,6 +99,7 @@ export const connect = async (
     logLevel,
     mnemonic,
     nodeUrl,
+    natsUrl,
   } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
@@ -132,7 +132,7 @@ export const connect = async (
       // TODO nonce generation needs to be added to rpc methods for channelProvider to work
       messaging = await createMessagingService(
         log,
-        channelProvider.config.nodeUrl,
+        natsUrl,
         channelProvider.config.userPublicIdentifier,
         async nonce => {
           return "";
@@ -143,7 +143,7 @@ export const connect = async (
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ channelProvider, logger: log, messaging });
+    node = new NodeApiClient({ channelProvider, logger: log, messaging, nodeUrl });
     config = await node.config();
 
     // set pubids + channelProvider
@@ -175,16 +175,17 @@ export const connect = async (
       return wallet.signMessage(nonce);
     };
 
-    log.debug(`Creating messaging service client ${nodeUrl}`);
+    log.debug(`Creating messaging service client ${natsUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(log, nodeUrl, xpub, getSignature);
+      messaging = await createMessagingService(log, natsUrl, xpub, getSignature);
     } else {
       await messaging.connect();
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ logger: log, messaging });
+    node = new NodeApiClient({ logger: log, messaging, nodeUrl });
     config = await node.config();
+    console.log('config: ', config);
 
     // ensure that node and user xpub are different
     if (config.nodePublicIdentifier === xpub) {
@@ -218,6 +219,7 @@ export const connect = async (
 
   // setup multisigAddress + assign to channelProvider
   const myChannel = await node.getChannel();
+  console.log('myChannel: ', myChannel);
 
   let multisigAddress: string;
   if (!myChannel) {
