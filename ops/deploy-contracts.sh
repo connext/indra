@@ -29,7 +29,7 @@ name=${project}_contract_deployer
 
 chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $ETH_PROVIDER | jq .result | tr -d '"'`"
 
-if [[ -z "$chainId" ]]
+if [[ -z "$chainId" || "$chainId" == "null" ]]
 then
   if [[ "$ETH_PROVIDER" == "$localProvider" ]]
   then chainId="$ganacheId"
