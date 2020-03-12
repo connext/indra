@@ -1,13 +1,9 @@
-import { ILoggerService, AppInstanceJson, WithdrawAppState, BigNumber, WithdrawParameters } from "@connext/types";
+import { ILoggerService, AppInstanceJson, WithdrawAppState, BigNumber, WithdrawApp, CoinBalanceRefundApp, SimpleLinkedTransferApp } from "@connext/types";
 import {
   commonAppProposalValidation,
   SupportedApplication,
   validateSimpleLinkedTransferApp,
   validateWithdrawApp,
-  WithdrawApp,
-  convertWithdrawParameters,
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp
 } from "@connext/apps";
 
 import { ConnextClient } from "./connext";

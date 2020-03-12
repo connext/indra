@@ -4,14 +4,14 @@ import {
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
   validateFastSignedTransferApp,
-  WithdrawApp,
   validateWithdrawApp,
+} from "@connext/apps";
+import { 
   CoinBalanceRefundApp,
   SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
   FastSignedTransferApp,
-} from "@connext/apps";
-import {
+  WithdrawApp,
   AppInstanceJson,
   SimpleLinkedTransferAppStateBigNumber,
   WithdrawAppStateBigNumber,

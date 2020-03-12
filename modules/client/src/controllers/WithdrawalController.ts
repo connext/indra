@@ -1,16 +1,16 @@
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { bigNumberify, formatEther, getAddress, AbiCoder, recoverAddress } from "ethers/utils";
+import { formatEther } from "ethers/utils";
 
 import { stringify, withdrawalKey, xpubToAddress } from "../lib";
 import {
   BigNumber,
   CFCoreTypes
 } from "../types";
-import { convertWithdrawParameters, WithdrawApp } from "@connext/apps";
+import { convertWithdrawParameters } from "@connext/apps";
 
 import { AbstractController } from "./AbstractController";
-import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, UPDATE_STATE_EVENT, AppInstanceJson, WithdrawResponse, WithdrawParameters, WithdrawAppState, WithdrawAppAction, DefaultApp, UpdateStateMessage, WithdrawAppStateBigNumber } from "@connext/types";
+import { chan_storeSet, EventNames, WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_CONFIRMED_EVENT, AppInstanceJson, WithdrawResponse, WithdrawParameters, WithdrawAppState, WithdrawAppAction, WithdrawApp } from "@connext/types";
 import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
 
 export class WithdrawalController extends AbstractController {

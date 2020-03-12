@@ -1,5 +1,6 @@
 import { Injectable, HttpService, Inject } from "@nestjs/common";
-import { convertWithrawAppState, WithdrawApp } from "@connext/apps"
+import { convertWithrawAppState } from "@connext/apps";
+import { WithdrawApp } from "@connext/types";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";

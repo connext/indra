@@ -1,10 +1,10 @@
 import {
-  SupportedApplication,
+  SupportedApplication
+} from "@connext/apps";
+import{
   FastSignedTransferApp,
   SimpleLinkedTransferApp,
-  WithdrawApp
-} from "@connext/apps";
-import {
+  WithdrawApp,
   SimpleLinkedTransferAppState,
   FastSignedTransferAppState,
   SimpleLinkedTransferAppAction,
@@ -12,7 +12,6 @@ import {
   FastSignedTransferActionType,
   WithdrawAppState,
   WithdrawAppAction,
-  FastSignedTransferAppActionBigNumber,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";

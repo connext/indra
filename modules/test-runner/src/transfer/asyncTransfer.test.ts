@@ -98,7 +98,7 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
-    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero, true);
+    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero);
     /*
       // @ts-ignore
       this.timeout(1200000);

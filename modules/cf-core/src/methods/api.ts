@@ -30,8 +30,6 @@ import {
   GetStateDepositHolderAddressController,
   RequestDepositRightsController,
   RescindDepositRightsController,
-  WithdrawCommitmentController,
-  WithdrawController,
 } from "./state-channel";
 
 const controllers = [
