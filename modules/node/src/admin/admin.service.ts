@@ -14,6 +14,7 @@ import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { LoggerService } from "../logger/logger.service";
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { ChannelRepository } from "../channel/channel.repository";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -27,6 +28,7 @@ export class AdminService {
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
+    private readonly channelRepository: ChannelRepository,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {
@@ -40,17 +42,22 @@ export class AdminService {
   async getStateChannelByUserPublicIdentifier(
     userPublicIdentifier: string,
   ): Promise<StateChannelJSON> {
-    return await this.channelService.getStateChannel(userPublicIdentifier);
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
+    const res = await this.cfCoreService.getStateChannel(channel.multisigAddress);
+    return res.data;
   }
 
   /**  Get channels by multisig */
   async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
-    return await this.channelService.getStateChannelByMultisig(multisigAddress);
+    const res = await this.cfCoreService.getStateChannel(multisigAddress);
+    return res.data;
   }
 
   /** Get all channels */
   async getAllChannels(): Promise<Channel[]> {
-    return await this.channelService.getAllChannels();
+    return await this.channelRepository.findAll();
   }
 
   /** Get all transfers */
