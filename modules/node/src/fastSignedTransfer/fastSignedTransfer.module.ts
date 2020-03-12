@@ -34,4 +34,4 @@ import { fastSignedTransferProviderFactory } from "./fastSignedTransfer.provider
   ],
   providers: [FastSignedTransferService, fastSignedTransferProviderFactory],
 })
-export class FastSignedTransferTransferModule {}
+export class FastSignedTransferModule {}

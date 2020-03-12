@@ -12,6 +12,7 @@ import { TransferModule } from "../transfer/transfer.module";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
 import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
+import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransfer.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -25,6 +26,7 @@ import { AppActionsService } from "./appActions.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
+    FastSignedTransferModule,
     LinkedTransferModule,
     LoggerModule,
     MessagingModule,
