@@ -28,7 +28,7 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: instantiate", () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === ASYNCSTORAGE || type === MEMORYSTORAGE) {
+      if (type === MEMORYSTORAGE) {
         continue;
       }
       it(`should work for ${type}`, async () => {
@@ -50,7 +50,7 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: should be able to remove an item", async () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === ASYNCSTORAGE || type === MEMORYSTORAGE) {
+      if (type === MEMORYSTORAGE) {
         continue;
       }
       it(`should work for ${type}`, async () => {
@@ -73,8 +73,7 @@ describe("KeyValueStorage", () => {
     await store.clear();
   });
 
-  // TODO: fix async storage build with mocha, does not like the
-  // `react-native` dependency
+  // TODO: fix test
   it.skip("happy case: AsyncStorage should include a single key matching asyncStorageKey", async () => {
     const store = createKeyValueStore(ASYNCSTORAGE, { asyncStorageKey });
 
@@ -160,7 +159,7 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: set & get the same path consecutively", async () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === ASYNCSTORAGE || type === MEMORYSTORAGE) {
+      if (type === MEMORYSTORAGE) {
         continue;
       }
       it(`${type} should work`, async () => {
@@ -172,7 +171,7 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: should join strings correctly", () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === ASYNCSTORAGE || type === MEMORYSTORAGE) {
+      if (type === MEMORYSTORAGE) {
         continue;
       }
       it(`${type} should work`, async () => {

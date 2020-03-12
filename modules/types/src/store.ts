@@ -17,6 +17,12 @@ export interface AsyncStorageData {
   [key: string]: any;
 }
 
+export interface IAsyncStorage {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+  removeItem(key: string): Promise<void>;
+}
+
 // storage types
 export const ASYNCSTORAGE = "ASYNCSTORAGE";
 export const FILESTORAGE = "FILESTORAGE";
@@ -37,6 +43,7 @@ export interface FileStorageOptions {
 }
 
 export interface StoreFactoryOptions extends FileStorageOptions {
+  asyncStorage?: IAsyncStorage;
   prefix?: string;
   separator?: string;
   asyncStorageKey?: string;

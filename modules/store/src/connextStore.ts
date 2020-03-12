@@ -48,8 +48,12 @@ export class ConnextStore implements IStoreService {
         break;
 
       case StoreTypes.ASYNCSTORAGE:
+        if (!opts.asyncStorage) {
+          throw new Error(`Must pass in a reference to an 'IAsyncStorage' representation`);
+        }
         this.internalStore = new KeyValueStorage(
           new WrappedAsyncStorage(
+            opts.asyncStorage,
             this.prefix,
             this.separator,
             opts.asyncStorageKey,

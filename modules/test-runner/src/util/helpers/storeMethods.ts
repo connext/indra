@@ -1,4 +1,10 @@
-import { ConnextStore, KeyValueStorage, WrappedLocalStorage, FileStorage } from "@connext/store";
+import {
+  ConnextStore,
+  KeyValueStorage,
+  WrappedLocalStorage,
+  FileStorage,
+  WrappedAsyncStorage,
+} from "@connext/store";
 import {
   StoreFactoryOptions,
   StorePair,
@@ -10,7 +16,7 @@ import {
   FILESTORAGE,
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
-// import MockAsyncStorage from "mock-async-storage";
+import MockAsyncStorage from "mock-async-storage";
 import uuid from "uuid";
 
 import { expect } from "../";
@@ -20,10 +26,14 @@ export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" 
 export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions = {}) {
   switch (type) {
     case ASYNCSTORAGE:
-      // return new KeyValueStorage(
-      //   new MockAsyncWrappedStorage(opts.prefix, opts.separator, opts.asyncStorageKey),
-      // );
-      throw new Error(`Fix react native error with build!`);
+      return new KeyValueStorage(
+        new WrappedAsyncStorage(
+          new MockAsyncStorage(),
+          opts.prefix,
+          opts.separator,
+          opts.asyncStorageKey,
+        ),
+      );
     case LOCALSTORAGE:
       return new KeyValueStorage(new WrappedLocalStorage(opts.prefix, opts.separator));
     case FILESTORAGE:
@@ -41,12 +51,7 @@ export function createConnextStore(type: StoreType, opts: StoreFactoryOptions = 
   }
 
   if (type === ASYNCSTORAGE) {
-    throw new Error(`Fix react native error with build!`);
-    // const store = new KeyValueStorage(
-    //   new MockAsyncWrappedStorage(opts.prefix, opts.separator, opts.asyncStorageKey),
-    // );
-    // expect(store).to.be.instanceOf(KeyValueStorage);
-    // return store as any; // still implements IStoreService
+    opts.asyncStorage = new MockAsyncStorage();
   }
 
   const store = new ConnextStore(type, opts);

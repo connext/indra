@@ -1,19 +1,10 @@
 import { expect, MockBackupService, createConnextStore, env } from "../util";
-import {
-  StoreTypes,
-  ASYNCSTORAGE,
-  StoreType,
-  StateChannelJSON,
-  MEMORYSTORAGE,
-} from "@connext/types";
+import { StoreTypes, StoreType, StateChannelJSON, MEMORYSTORAGE } from "@connext/types";
 
 describe("ConnextStore", () => {
   const fileDir = env.storeDir;
   describe("getStateChannel", async () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === ASYNCSTORAGE) {
-        continue;
-      }
       it(`${type} should work`, async () => {
         const store = createConnextStore(type as StoreType, { fileDir });
         const multisigAddress = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
@@ -30,10 +21,6 @@ describe("ConnextStore", () => {
 
   describe("clear", () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === ASYNCSTORAGE) {
-        continue;
-      }
-
       it(`${type} should work`, async () => {
         const store = createConnextStore(type as StoreType, { fileDir });
         const multisigAddress = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
@@ -48,10 +35,6 @@ describe("ConnextStore", () => {
 
   describe("restore", () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === ASYNCSTORAGE) {
-        continue;
-      }
-
       it(`${type} should restore empty state when not provided with a backup service`, async () => {
         const store = createConnextStore(type as StoreType, { fileDir });
         const multisigAddress = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";

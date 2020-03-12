@@ -19,7 +19,6 @@
     "@connext/types": "5.1.1",
     "ethers": "4.0.45",
     "pisa-client": "0.1.4-connext-beta.1",
-    "@react-native-community/async-storage": "1.8.1",
     "uuid": "3.4.0"
   },
   "devDependencies": {

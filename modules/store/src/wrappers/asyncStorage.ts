@@ -9,22 +9,20 @@ import {
   CHANNEL_KEY,
   COMMITMENT_KEY,
 } from "../helpers";
-import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
-// import AsyncStorage from "@react-native-community/async-storage";
+import { IAsyncStorage, IBackupServiceAPI, WrappedStorage } from "@connext/types";
 
 export class WrappedAsyncStorage implements WrappedStorage {
-  private asyncStorage: any; // AsyncStorageStatic;
   private data: AsyncStorageData = {};
   private initializing: boolean = false;
   private initCallbacks: InitCallback[] = [];
 
   constructor(
+    private readonly asyncStorage: IAsyncStorage,
     private readonly prefix: string = DEFAULT_STORE_PREFIX,
     private readonly separator: string = DEFAULT_STORE_SEPARATOR,
     private readonly asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY,
     private readonly backupService?: IBackupServiceAPI,
   ) {
-    this.asyncStorage = {}; // AsyncStorage;
     this.loadData();
   }
 
@@ -92,15 +90,18 @@ export class WrappedAsyncStorage implements WrappedStorage {
 
   async getKeys(): Promise<string[]> {
     const relevantKeys = Object.keys(this.data).filter(key => key.startsWith(this.prefix));
-    return relevantKeys.map(key => key.split(`${this.prefix}${this.separator}`)[1]);
+    return relevantKeys.map(key => key.replace(`${this.prefix}${this.separator}`, ""));
   }
 
   async getEntries(): Promise<[string, any][]> {
-    return Object.entries(this.data).filter(([name, _]) => name.startsWith(this.prefix));
+    return Object.entries(this.data)
+      .filter(([name, _]) => name.startsWith(this.prefix))
+      .map(([name, _]) => [name.replace(`${this.prefix}${this.separator}`, ""), _]);
   }
 
-  clear(): Promise<void> {
-    return this.asyncStorage.removeItem(this.asyncStorageKey);
+  async clear(): Promise<void> {
+    this.data = {};
+    await this.asyncStorage.removeItem(this.asyncStorageKey);
   }
 
   async restore(): Promise<void> {
