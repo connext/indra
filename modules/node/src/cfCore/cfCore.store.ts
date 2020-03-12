@@ -265,14 +265,6 @@ export class CFCoreStore implements IStoreService {
     return this.withdrawCommitmentRepository.saveWithdrawalCommitment(channel, commitment);
   }
 
-  getExtendedPrvKey(): Promise<string> {
-    throw new Error("Method not implemented.");
-  }
-
-  saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
   clear(): Promise<void> {
     throw new Error("Method not implemented.");
   }

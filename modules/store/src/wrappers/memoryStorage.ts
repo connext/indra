@@ -111,14 +111,6 @@ export class MemoryStorage implements IStoreService {
     this.withdrawals.set(multisigAddress, commitment);
   }
 
-  async getExtendedPrvKey(): Promise<string> {
-    return this.extendedPrivKey;
-  }
-
-  async saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
-    this.extendedPrivKey = extendedPrvKey;
-  }
-
   async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
     return this.userWithdrawals;
   }

@@ -154,16 +154,6 @@ export class ConnextStore implements IStoreService {
     return this.internalStore.saveConditionalTransactionCommitment(appIdentityHash, commitment);
   }
 
-  // TODO: delete
-  getExtendedPrvKey(): Promise<string> {
-    throw new Error("Method not implemented.");
-  }
-
-  // TODO: delete
-  saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
   clear(): Promise<void> {
     return this.internalStore.clear();
   }

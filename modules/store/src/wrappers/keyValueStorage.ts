@@ -182,16 +182,6 @@ export class KeyValueStorage implements WrappedStorage, IStoreService {
     const withdrawalKey = this.joinWithSeparator(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     return this.setItem(withdrawalKey, safeJsonStringify(withdrawalObject));
   }
-
-  // TODO: delete
-  getExtendedPrvKey(): Promise<string> {
-    throw new Error("Method not implemented.");
-  }
-
-  // TODO: delete
-  saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
 }
 
 export default KeyValueStorage;
