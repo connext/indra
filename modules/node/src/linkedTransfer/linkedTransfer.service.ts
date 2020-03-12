@@ -296,10 +296,9 @@ export class LinkedTransferService {
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
-    }
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
     return await this.linkedTransferRepository.findReclaimable(channel);
   }
 }

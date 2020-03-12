@@ -10,6 +10,8 @@ import {
   FastSignedTransferActionType,
   ResolveFastSignedTransferResponse,
   FastSignedTransferApp,
+  FastSignedTransferAppState,
+  FastSignedTransferAppAction,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -274,5 +276,43 @@ export class FastSignedTransferService {
     );
 
     return receiverAppInstallRes.appInstanceId;
+  }
+
+  // TODO: i like this pattern of passing in the full domain object rather than having the service layer assemble the objects
+  async reclaimFastSignedTransfer(transfer: FastSignedTransfer): Promise<void> {
+    if (transfer.status !== FastSignedTransferStatus.REDEEMED) {
+      throw new Error(
+        `Transfer with id ${transfer.paymentId} has not been redeemed, status: ${transfer.status}`,
+      );
+    }
+
+    // unlock sender payment, if successful mark as reclaimed
+    this.log.debug(`Received unlock for receiver payment, unlocking sender payment`);
+    const senderAppAction = {
+      actionType: FastSignedTransferActionType.UNLOCK,
+      amount: transfer.amount,
+      data: transfer.data,
+      paymentId: transfer.paymentId,
+      recipientXpub: transfer.receiverChannel.userPublicIdentifier,
+      signature: transfer.signature,
+      signer: transfer.signer,
+    } as FastSignedTransferAppActionBigNumber;
+    await this.cfCoreService.takeAction(transfer.senderAppInstanceId, senderAppAction);
+
+    // mark as reclaimed so the listener doesnt try to reclaim again
+    await this.fastSignedTransferRespository.markAsReclaimed(transfer);
+    await this.messagingClient
+      .emit(`transfer.fast-signed.${transfer.paymentId}.reclaimed`, {})
+      .toPromise();
+    this.log.debug(`Unlocked payment`);
+  }
+
+  async getFastSignedTransfersForReclaim(
+    userPublicIdentifier: string,
+  ): Promise<FastSignedTransfer[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
+    return await this.fastSignedTransferRespository.findReclaimable(channel);
   }
 }
