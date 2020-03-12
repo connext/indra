@@ -5,8 +5,8 @@ import {
   chan_setStateChannel,
   chan_restoreState,
   IChannelProvider,
+  IClientStore,
   ConnextEventEmitter,
-  IStoreService,
   StateChannelJSON,
   WithdrawalMonitorObject,
 } from "@connext/types";
@@ -61,12 +61,12 @@ export const createCFChannelProvider = async ({
 export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public cfCore: CFCore;
-  public store: IStoreService;
+  public store: IClientStore;
 
   // TODO: replace this when signing keys are added!
   public wallet: Wallet;
 
-  constructor(cfCore: CFCore, store: IStoreService, authKey: any) {
+  constructor(cfCore: CFCore, store: IClientStore, authKey: any) {
     super();
     this.cfCore = cfCore;
     this.wallet = authKey ? new Wallet(authKey) : null;

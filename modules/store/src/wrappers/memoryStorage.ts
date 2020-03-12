@@ -4,13 +4,13 @@ import {
   ProtocolTypes,
   AppInstanceJson,
   StateChannelJSON,
-  IStoreService,
+  IClientStore,
   STORE_SCHEMA_VERSION,
   IBackupServiceAPI,
   WithdrawalMonitorObject,
 } from "@connext/types";
 
-export class MemoryStorage implements IStoreService {
+export class MemoryStorage implements IClientStore {
   private schemaVersion: number = STORE_SCHEMA_VERSION;
   private channels: Map<string, StateChannelJSON> = new Map();
   private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
@@ -131,6 +131,6 @@ export class MemoryStorage implements IStoreService {
     if (!this.backupService) {
       throw new Error(`No backup provided, store cleared`);
     }
-    throw new Error(`Method not implemented for MemoryStorage`)
+    throw new Error(`Method not implemented for MemoryStorage`);
   }
 }

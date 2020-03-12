@@ -1,7 +1,7 @@
 import {
   AppInstanceJson,
   ConditionalTransactionCommitmentJSON,
-  IStoreService,
+  IClientStore,
   ProtocolTypes,
   STORE_SCHEMA_VERSION,
   SetStateCommitmentJSON,
@@ -25,8 +25,8 @@ import {
   WrappedLocalStorage,
 } from "./wrappers";
 
-export class ConnextStore implements IStoreService {
-  private internalStore: IStoreService;
+export class ConnextStore implements IClientStore {
+  private internalStore: IClientStore;
 
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
@@ -163,16 +163,10 @@ export class ConnextStore implements IStoreService {
   }
 
   getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
-    if (!this.internalStore.getUserWithdrawal) {
-      throw new Error("Method not implemented.");
-    }
-    return this.internalStore.getUserWithdrawal!();
+    return this.internalStore.getUserWithdrawal();
   }
 
   setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    if (!this.internalStore.setUserWithdrawal) {
-      throw new Error("Method not implemented.");
-    }
-    return this.internalStore.setUserWithdrawal!(withdrawalObject);
+    return this.internalStore.setUserWithdrawal(withdrawalObject);
   }
 }

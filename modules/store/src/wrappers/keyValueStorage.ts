@@ -1,5 +1,5 @@
 import {
-  IStoreService,
+  IClientStore,
   WrappedStorage,
   StateChannelJSON,
   AppInstanceJson,
@@ -21,7 +21,7 @@ import {
 /**
  * This class wraps a general key value storage service to become an `IStoreService`
  */
-export class KeyValueStorage implements WrappedStorage, IStoreService {
+export class KeyValueStorage implements WrappedStorage, IClientStore {
   private schemaVersion: number = STORE_SCHEMA_VERSION;
   constructor(private readonly storage: WrappedStorage) {}
 

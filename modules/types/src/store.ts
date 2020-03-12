@@ -128,7 +128,9 @@ export interface IStoreService {
   ): Promise<void>;
   clear(): Promise<void>;
   restore(): Promise<void>;
-  // used client side ONLY
+}
+
+export interface IClientStore extends IStoreService {
   setUserWithdrawal?(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   getUserWithdrawal?(): Promise<WithdrawalMonitorObject>;
 }
