@@ -74,7 +74,7 @@ export class ConnextListener extends ConnextEventEmitter {
       this.log.info(`Deposit transaction: ${msg.data.txHash}`);
       this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
-    INSTALL_EVENT: async (msg: InstallMessage): Promise<void> => {
+    INSTALL_EVENT: (msg: InstallMessage): void => {
       this.emitAndLog(INSTALL_EVENT, msg.data);
     },
     // TODO: make cf return app instance id and app def?
@@ -103,7 +103,7 @@ export class ConnextListener extends ConnextEventEmitter {
       if (!registryAppInfo) {
         throw new Error(`Could not find registry info for app ${params.appDefinition}`);
       }
-      this.handleAppProposal(params, appInstanceId, from, registryAppInfo);
+      await this.handleAppProposal(params, appInstanceId, from, registryAppInfo);
       this.log.info(`Done processing propose install event ${time()}`);
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
@@ -190,22 +190,10 @@ export class ConnextListener extends ConnextEventEmitter {
       this.channelProvider.on(event, callback);
     });
 
-    // TODO why is this here? Can we delete?
-    this.channelProvider.on(
-      ProtocolTypes.chan_install,
-      async (data: any): Promise<void> => {
-      const appInstance: AppInstanceJson = data.result.result;
-        await this.connext.messaging.publish(
-          `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
-          stringify(appInstance),
-        );
-      },
-    );
-
-    this.channelProvider.on(ProtocolTypes.chan_uninstall, (data: any): any => {
+    this.channelProvider.on(ProtocolTypes.chan_uninstall, async (data: any): Promise<any> => {
       const result = data.result.result;
       this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
-      this.connext.messaging.publish(
+      await this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
         stringify(result),
       );
@@ -294,6 +282,11 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       await this.connext.installApp(appInstanceId);
       await this.runPostInstallTasks(appInstanceId, registryAppInfo);
+      const appInstance = this.connext.getAppInstanceDetails(appInstanceId)
+      await this.connext.messaging.publish(
+        `indra.client.${this.connext.publicIdentifier}.install.${appInstanceId}`,
+        stringify(appInstance),
+      );
     } catch (e) {
       this.log.error(`Caught error: ${e.toString()}`);
       await this.connext.rejectInstallApp(appInstanceId);
