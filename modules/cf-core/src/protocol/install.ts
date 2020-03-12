@@ -20,7 +20,7 @@ import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods";
 
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
 const { Install } = Protocol;
 const { Conditional, SetState } = Commitment;
 
@@ -130,7 +130,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ];
 
-    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
+    yield [PERSIST_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -159,7 +159,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
@@ -267,7 +267,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ];
 
-    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
+    yield [PERSIST_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -313,7 +313,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,

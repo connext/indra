@@ -14,7 +14,7 @@ import {
 } from "./utils";
 
 const protocol = Protocol.Uninstall;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
 /**
@@ -76,7 +76,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     uninstallCommitment.signatures = [signature, responderSignature];
 
-    yield [WRITE_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -122,7 +122,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     uninstallCommitment.signatures = [responderSignature, initiatorSignature];
 
-    yield [WRITE_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 

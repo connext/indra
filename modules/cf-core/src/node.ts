@@ -227,7 +227,7 @@ export class Node {
     });
 
     protocolRunner.register(
-      Opcode.WRITE_COMMITMENT,
+      Opcode.PERSIST_COMMITMENT,
       async (
         args: [
           Commitment,

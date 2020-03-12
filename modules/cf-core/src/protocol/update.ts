@@ -6,7 +6,7 @@ import { logTime } from "../utils";
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Update;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
 /**
@@ -74,7 +74,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
     logTime(log, start, `Finished Initiating`);
@@ -124,7 +124,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 

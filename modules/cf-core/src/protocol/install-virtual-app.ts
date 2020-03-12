@@ -44,7 +44,7 @@ export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
 
 const protocol = Protocol.InstallVirtualApp;
 
-const { OP_SIGN, WRITE_COMMITMENT, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, PERSIST_COMMITMENT, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 
 const { Conditional, SetState } = Commitment;
 
@@ -152,7 +152,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       Conditional, // TODO: Figure out how to map this to save to DB correctly
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
       virtualAppInstance.identityHash,
@@ -186,7 +186,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
       stateChannelWithIntermediary.freeBalance.identityHash,
@@ -270,7 +270,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       timeLockedPassThroughSetStateCommitment,
       timeLockedPassThroughAppInstance.identityHash,
@@ -282,7 +282,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       virtualAppSetStateCommitment,
       virtualAppInstance.identityHash,
@@ -459,7 +459,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       Conditional,
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
       timeLockedPassThroughAppInstance.identityHash,
@@ -498,7 +498,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithResponding.freeBalance.identityHash,
@@ -529,7 +529,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithResponding.freeBalance.identityHash,
@@ -576,7 +576,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       timeLockedPassThroughSetStateCommitment,
       timeLockedPassThroughAppInstance.identityHash,
@@ -676,7 +676,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       Conditional, // TODO: Figure out how to map this to save to DB correctly
       presignedMultisigTxForIngridBobVirtualAppAgreement,
       virtualAppInstance.identityHash,
@@ -731,7 +731,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithIntermediary.freeBalance.identityHash,
@@ -789,7 +789,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       timeLockedPassThroughSetStateCommitment,
       timeLockedPassThroughAppInstance.identityHash,
@@ -800,7 +800,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnVirtualAppSetStateCommitment,
     ];
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       virtualAppSetStateCommitment,
       virtualAppInstance.identityHash,

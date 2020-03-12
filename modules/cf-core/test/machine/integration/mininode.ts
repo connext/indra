@@ -42,7 +42,7 @@ export class MiniNode {
     this.protocolRunner = new ProtocolRunner(networkContext, provider, store, nullLogger);
     this.scm = new Map<string, StateChannel>();
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.hdNode));
-    this.protocolRunner.register(Opcode.WRITE_COMMITMENT, () => {});
+    this.protocolRunner.register(Opcode.PERSIST_COMMITMENT, () => {});
     this.protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
       const [stateChannels] = args;
       for (const stateChannel of stateChannels) {

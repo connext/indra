@@ -47,7 +47,7 @@ const {
   IO_SEND_AND_WAIT,
   IO_SEND,
   PERSIST_STATE_CHANNEL,
-  // WRITE_COMMITMENT // TODO: add calls to WRITE_COMMITMENT after sigs collected
+  // PERSIST_COMMITMENT // TODO: add calls to PERSIST_COMMITMENT after sigs collected
 } = Opcode;
 
 /**

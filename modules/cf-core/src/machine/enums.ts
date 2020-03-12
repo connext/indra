@@ -2,11 +2,6 @@ export { Commitment, Protocol } from "../types";
 
 enum Opcode {
   /**
-   * Called at the end of execution before the return value to store a commitment
-   */
-  WRITE_COMMITMENT,
-
-  /**
    * Requests a signature on the hash of previously generated EthereumCommitments.
    */
   OP_SIGN,
@@ -22,10 +17,26 @@ enum Opcode {
   IO_SEND_AND_WAIT,
 
   /**
-   * Middleware hook to write the state channel to store. Used to lock channel
-   * between protocols.
+   * Middleware hook to write the state channel to store. Used during the setup
+   * protocol to persist the initial structure of the channel
    */
   PERSIST_STATE_CHANNEL,
+
+  /**
+   * Middleware hook to write the app instances to store.
+   */
+  PERSIST_APP_INSTANCE,
+
+  /**
+   * Middleware hook to write the free balance app to store.
+   */
+  PERSIST_FREE_BALANCE,
+
+  /**
+   * Called at the end of execution before the return value to store a
+   * commitment
+   */
+  PERSIST_COMMITMENT,
 }
 
 export { Opcode };

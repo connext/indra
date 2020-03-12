@@ -15,7 +15,7 @@ import { logTime } from "../utils";
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Propose;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
@@ -135,7 +135,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -239,7 +239,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
 
     yield [
       IO_SEND,
