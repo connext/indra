@@ -16,7 +16,11 @@ import {
   WITHDRAWAL_FAILED,
 } from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, MethodNames } from "../../../types";
+import {
+  MethodNames,
+  WithdrawParams,
+  WithdrawResult,
+} from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { xkeyKthAddress } from "../../../xkeys";
 
@@ -30,7 +34,7 @@ export default class WithdrawController extends NodeController {
 
   public static async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams,
+    params: WithdrawParams,
   ): Promise<string[]> {
     const { store, publicIdentifier, networkContext } = requestHandler;
 
@@ -56,7 +60,7 @@ export default class WithdrawController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams,
+    params: WithdrawParams,
   ): Promise<void> {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
@@ -84,8 +88,8 @@ export default class WithdrawController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams,
-  ): Promise<CFCoreTypes.WithdrawResult> {
+    params: WithdrawParams,
+  ): Promise<WithdrawResult> {
     const {
       store,
       provider,

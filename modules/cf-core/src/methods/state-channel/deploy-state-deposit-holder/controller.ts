@@ -15,7 +15,12 @@ import {
 import { MinimumViableMultisig, ProxyFactory } from "../../../contracts";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { NetworkContext, CFCoreTypes, MethodNames } from "../../../types";
+import {
+  DeployStateDepositHolderParams,
+  DeployStateDepositHolderResult,
+  MethodNames,
+  NetworkContext,
+} from "../../../types";
 import { getCreate2MultisigAddress, prettyPrintObject, sleep } from "../../../utils";
 import { sortAddresses, xkeysToSortedKthAddresses } from "../../../xkeys";
 
@@ -31,7 +36,7 @@ export default class DeployStateDepositHolderController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.DeployStateDepositHolderParams,
+    params: DeployStateDepositHolderParams,
   ): Promise<void> {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
@@ -59,8 +64,8 @@ export default class DeployStateDepositHolderController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.DeployStateDepositHolderParams,
-  ): Promise<CFCoreTypes.DeployStateDepositHolderResult> {
+    params: DeployStateDepositHolderParams,
+  ): Promise<DeployStateDepositHolderResult> {
     const { multisigAddress, retryCount } = params;
     const { log, networkContext, store, provider, wallet } = requestHandler;
 

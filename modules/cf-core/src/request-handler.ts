@@ -9,10 +9,14 @@ import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
 import {
-  CFCoreTypes,
+  IMessagingService,
+  MethodName,
+  MethodRequest,
+  MethodResponse,
   NetworkContext,
   NODE_EVENTS,
   NodeEvent,
+  NodeMessage,
   NodeMessageWrappedProtocolMessage,
 } from "./types";
 import { bigNumberifyJson, logTime } from "./utils";
@@ -32,7 +36,7 @@ export class RequestHandler {
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
     readonly store: Store,
-    readonly messagingService: CFCoreTypes.IMessagingService,
+    readonly messagingService: IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
     readonly provider: BaseProvider,
@@ -57,11 +61,11 @@ export class RequestHandler {
    * @param req
    */
   public async callMethod(
-    method: CFCoreTypes.MethodName,
-    req: CFCoreTypes.MethodRequest,
-  ): Promise<CFCoreTypes.MethodResponse> {
+    method: MethodName,
+    req: MethodRequest,
+  ): Promise<MethodResponse> {
     const start = Date.now();
-    const result: CFCoreTypes.MethodResponse = {
+    const result: MethodResponse = {
       type: req.type,
       requestId: req.requestId,
       result: await this.methods.get(method)(this, req.params),
@@ -76,8 +80,8 @@ export class RequestHandler {
   private mapPublicApiMethods() {
     for (const methodName in methodNameToImplementation) {
       this.methods.set(methodName, methodNameToImplementation[methodName]);
-      this.incoming.on(methodName, async (req: CFCoreTypes.MethodRequest) => {
-        const res: CFCoreTypes.MethodResponse = {
+      this.incoming.on(methodName, async (req: MethodRequest) => {
+        const res: MethodResponse = {
           type: req.type,
           requestId: req.requestId,
           result: await this.methods.get(methodName)(this, bigNumberifyJson(req.params)),
@@ -103,7 +107,7 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: NodeEvent, msg: CFCoreTypes.NodeMessage) {
+  public async callEvent(event: NodeEvent, msg: NodeMessage) {
     const start = Date.now();
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);

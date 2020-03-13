@@ -9,14 +9,14 @@ import {
   STATE_OBJECT_NOT_ENCODABLE,
 } from "../../../errors";
 import { ProtocolRunner } from "../../../machine";
-import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
 import {
-  CFCoreTypes,
-  Protocol,
   MethodNames,
+  Protocol,
   SolidityValueType,
+  TakeActionParams,
+  TakeActionResult,
   UpdateStateMessage,
 } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
@@ -29,7 +29,7 @@ export default class TakeActionController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.TakeActionParams,
+    params: TakeActionParams,
   ): Promise<string[]> {
     const multisigAddress = await requestHandler.store.getMultisigAddressFromAppInstance(
       params.appInstanceId,
@@ -39,7 +39,7 @@ export default class TakeActionController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.TakeActionParams,
+    params: TakeActionParams,
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, action } = params;
@@ -62,8 +62,8 @@ export default class TakeActionController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.TakeActionParams,
-  ): Promise<CFCoreTypes.TakeActionResult> {
+    params: TakeActionParams,
+  ): Promise<TakeActionResult> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, action } = params;
 
@@ -90,7 +90,7 @@ export default class TakeActionController extends NodeController {
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.TakeActionParams,
+    params: TakeActionParams,
   ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
     const { appInstanceId, action } = params;

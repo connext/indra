@@ -1,15 +1,17 @@
-import { CFCoreTypes } from "@connext/types";
+import {
+  IMessagingService,
+  NodeMessage,
+} from "@connext/types";
 import { EventEmitter } from "events";
 
-export class MemoryMessagingService implements CFCoreTypes.IMessagingService {
+export class MemoryMessagingService implements IMessagingService {
   private readonly eventEmitter: EventEmitter = new EventEmitter();
-  constructor() {}
 
-  async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
+  async send(to: string, msg: NodeMessage): Promise<void> {
     this.eventEmitter.emit(to, msg);
   }
 
-  onReceive(address: string, callback: (msg: CFCoreTypes.NodeMessage) => void) {
+  onReceive(address: string, callback: (msg: NodeMessage) => void) {
     this.eventEmitter.on(address, msg => {
       callback(msg);
     });

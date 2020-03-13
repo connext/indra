@@ -9,7 +9,14 @@ import {
 } from "../../../errors";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, Protocol, MethodNames } from "../../../types";
+import {
+  MethodNames,
+  MethodParams,
+  MethodResult,
+  ProposeInstallParams,
+  ProposeInstallResult,
+  Protocol,
+} from "../../../types";
 import { xkeyKthAddress } from "../../../xkeys";
 
 import { NodeController } from "../../controller";
@@ -24,12 +31,12 @@ export default class ProposeInstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_proposeInstall)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams,
-  ) => Promise<CFCoreTypes.MethodResult> = super.executeMethod;
+    params: MethodParams,
+  ) => Promise<MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.ProposeInstallParams,
+    params: ProposeInstallParams,
   ): Promise<string[]> {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { proposedToIdentifier } = params;
@@ -55,7 +62,7 @@ export default class ProposeInstallController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.ProposeInstallParams,
+    params: ProposeInstallParams,
   ): Promise<void> {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { initialState } = params;
@@ -102,8 +109,8 @@ export default class ProposeInstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.ProposeInstallParams,
-  ): Promise<CFCoreTypes.ProposeInstallResult> {
+    params: ProposeInstallParams,
+  ): Promise<ProposeInstallResult> {
     const { networkContext, protocolRunner, publicIdentifier, store } = requestHandler;
 
     const { proposedToIdentifier } = params;

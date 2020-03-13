@@ -7,7 +7,12 @@ import {
   USE_RESCIND_DEPOSIT_RIGHTS,
 } from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, MethodNames } from "../../../types";
+import {
+  MethodNames,
+  UninstallParams,
+  UninstallResult,
+  UninstallVirtualParams,
+} from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 
@@ -19,7 +24,7 @@ export default class UninstallController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams,
+    params: UninstallVirtualParams,
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
@@ -31,7 +36,7 @@ export default class UninstallController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallParams,
+    params: UninstallParams,
   ) {
     const { store, networkContext } = requestHandler;
     const { appInstanceId } = params;
@@ -55,8 +60,8 @@ export default class UninstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallParams,
-  ): Promise<CFCoreTypes.UninstallResult> {
+    params: UninstallParams,
+  ): Promise<UninstallResult> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
     const { appInstanceId } = params;
 

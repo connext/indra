@@ -1,11 +1,14 @@
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, Protocol } from "../../../types";
+import {
+  Protocol,
+  WithdrawParams,
+} from "../../../types";
 
 export async function runWithdrawProtocol(
   requestHandler: RequestHandler,
-  params: CFCoreTypes.WithdrawParams,
+  params: WithdrawParams,
 ) {
   const { publicIdentifier, protocolRunner, store } = requestHandler;
   const { multisigAddress, amount } = params;

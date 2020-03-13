@@ -1,7 +1,7 @@
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { AppInstanceProposal } from "../../../models";
 import { Store } from "../../../store";
-import { NetworkContext, CFCoreTypes } from "../../../types";
+import { NetworkContext, ProposeInstallParams } from "../../../types";
 import { appIdentityToHash } from "../../../utils";
 
 /**
@@ -15,7 +15,7 @@ export async function createProposedAppInstance(
   myIdentifier: string,
   store: Store,
   networkContext: NetworkContext,
-  params: CFCoreTypes.ProposeInstallParams,
+  params: ProposeInstallParams,
 ): Promise<string> {
   const {
     abiEncodings,

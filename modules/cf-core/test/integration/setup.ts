@@ -1,4 +1,4 @@
-import { CF_PATH, CFCoreTypes } from "@connext/types";
+import { CF_PATH, IMessagingService, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
 import { JsonRpcProvider, Provider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
@@ -18,7 +18,7 @@ import {
 
 export interface NodeContext {
   node: Node;
-  store: CFCoreTypes.IStoreService;
+  store: IStoreService;
 }
 
 export interface SetupContext {
@@ -43,7 +43,7 @@ export async function setup(
   global: any,
   nodeCPresent: boolean = false,
   newExtendedPrvKey: boolean = false,
-  messagingService: CFCoreTypes.IMessagingService = new MemoryMessagingService(),
+  messagingService: IMessagingService = new MemoryMessagingService(),
   storeServiceFactory = new MemoryStoreServiceFactory(),
 ): Promise<SetupContext> {
   const setupContext: SetupContext = {};

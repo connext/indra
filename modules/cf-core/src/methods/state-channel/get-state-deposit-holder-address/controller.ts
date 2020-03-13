@@ -2,7 +2,11 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { NO_NETWORK_PROVIDER_CREATE2 } from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, MethodNames } from "../../../types";
+import {
+  GetStateDepositHolderAddressParams,
+  GetStateDepositHolderAddressResult,
+  MethodNames,
+} from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetStateDepositHolderAddressController extends NodeController {
@@ -11,8 +15,8 @@ export default class GetStateDepositHolderAddressController extends NodeControll
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetStateDepositHolderAddressParams,
-  ): Promise<CFCoreTypes.GetStateDepositHolderAddressResult> {
+    params: GetStateDepositHolderAddressParams,
+  ): Promise<GetStateDepositHolderAddressResult> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
     if (!networkContext.provider) {

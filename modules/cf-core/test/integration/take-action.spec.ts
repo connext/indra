@@ -1,4 +1,4 @@
-import { CFCoreTypes, UpdateStateMessage, UPDATE_STATE_EVENT } from "@connext/types";
+import { UPDATE_STATE_EVENT, UpdateStateEventData, UpdateStateMessage } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 
 import { Node } from "../../src";
@@ -22,7 +22,7 @@ const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 function confirmMessages(
   initiator: Node,
   responder: Node,
-  expectedData: CFCoreTypes.UpdateStateEventData,
+  expectedData: UpdateStateEventData,
 ) {
   const expected = {
     from: initiator.publicIdentifier,

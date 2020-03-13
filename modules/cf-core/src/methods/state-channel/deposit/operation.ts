@@ -11,10 +11,10 @@ import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import {
   AppInterface,
-  CFCoreTypes,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
   DepositFailedMessage,
+  DepositParams,
   InstallProtocolParams,
   NetworkContext,
   OutcomeType,
@@ -33,7 +33,7 @@ interface DepositContext {
 
 export async function installBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: CFCoreTypes.DepositParams,
+  params: DepositParams,
 ) {
   const { publicIdentifier, protocolRunner, networkContext, store, provider } = requestHandler;
 
@@ -81,7 +81,7 @@ export async function installBalanceRefundApp(
 
 export async function makeDeposit(
   requestHandler: RequestHandler,
-  params: CFCoreTypes.DepositParams,
+  params: DepositParams,
 ): Promise<string | undefined> {
   const { multisigAddress, amount, tokenAddress } = params;
   const { provider, blocksNeededForConfirmation, outgoing, publicIdentifier } = requestHandler;
@@ -153,7 +153,7 @@ export async function makeDeposit(
 
 export async function uninstallBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: CFCoreTypes.DepositParams,
+  params: DepositParams,
   blockNumberToUseIfNecessary?: number,
 ) {
   const { publicIdentifier, store, protocolRunner, networkContext } = requestHandler;
@@ -197,7 +197,7 @@ export async function uninstallBalanceRefundApp(
 }
 
 async function getDepositContext(
-  params: CFCoreTypes.DepositParams,
+  params: DepositParams,
   publicIdentifier: string,
   provider: BaseProvider,
   networkContext: NetworkContext,

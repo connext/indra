@@ -2,12 +2,12 @@ import Queue, { Task } from "p-queue";
 
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { addToManyQueues } from "./methods";
-import { CFCoreTypes } from "./types";
+import { ILockService } from "./types";
 
 class QueueWithLockingServiceConnection extends Queue {
   constructor(
     private readonly lockName,
-    private readonly lockingService: CFCoreTypes.ILockService,
+    private readonly lockingService: ILockService,
     ...args: any[]
   ) {
     super(...args);
@@ -29,7 +29,7 @@ export default class ProcessQueue {
     QueueWithLockingServiceConnection | Queue
   >();
 
-  constructor(private readonly lockingService?: CFCoreTypes.ILockService) {}
+  constructor(private readonly lockingService?: ILockService) {}
 
   addTask(lockNames: string[], task: Task<any>) {
     return addToManyQueues(lockNames.map(this.getOrCreateLockQueue.bind(this)), task);

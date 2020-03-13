@@ -4,13 +4,16 @@ import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { Memoize } from "typescript-memoize";
 
-import { CFCoreTypes } from "./types";
+import {
+  IPrivateKeyGenerator,
+  IStoreService,
+} from "./types";
 
 export class PrivateKeysGetter {
   private appInstanceIdentityHashToPrivateKey: Map<string, string> = new Map();
   private readonly privateKeys: Set<string> = new Set();
 
-  constructor(private readonly privateKeyGenerator: CFCoreTypes.IPrivateKeyGenerator) {}
+  constructor(private readonly privateKeyGenerator: IPrivateKeyGenerator) {}
 
   @Memoize()
   public async getPrivateKey(appInstanceIdentityHash: string): Promise<string> {
@@ -51,8 +54,8 @@ export class PrivateKeysGetter {
 }
 
 export async function getPrivateKeysGeneratorAndXPubOrThrow(
-  storeService: CFCoreTypes.IStoreService,
-  privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
+  storeService: IStoreService,
+  privateKeyGenerator?: IPrivateKeyGenerator,
   publicExtendedKey?: string,
 ): Promise<[PrivateKeysGetter, string]> {
   if (!privateKeyGenerator) {
@@ -71,7 +74,7 @@ export async function getPrivateKeysGeneratorAndXPubOrThrow(
 // "Counterfactual" derivation path.
 export function generatePrivateKeyGeneratorAndXPubPair(
   extendedPrvKey: string,
-): [CFCoreTypes.IPrivateKeyGenerator, string] {
+): [IPrivateKeyGenerator, string] {
   const hdNode = fromExtendedKey(extendedPrvKey).derivePath(CF_PATH);
 
   return [

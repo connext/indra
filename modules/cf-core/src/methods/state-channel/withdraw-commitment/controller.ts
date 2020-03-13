@@ -8,7 +8,11 @@ import {
   INVALID_MASTERCOPY_ADDRESS,
 } from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, MethodNames } from "../../../types";
+import {
+  MethodNames,
+  WithdrawCommitmentParams,
+  WithdrawCommitmentResult,
+} from "../../../types";
 import { runWithdrawProtocol } from "../withdraw/operation";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { xkeyKthAddress } from "../../../xkeys";
@@ -25,14 +29,14 @@ export default class WithdrawCommitmentController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams,
+    params: WithdrawCommitmentParams,
   ): Promise<string[]> {
     return WithdrawController.getRequiredLockNames(requestHandler, params);
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams,
+    params: WithdrawCommitmentParams,
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
@@ -69,8 +73,8 @@ export default class WithdrawCommitmentController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams,
-  ): Promise<CFCoreTypes.WithdrawCommitmentResult> {
+    params: WithdrawCommitmentParams,
+  ): Promise<WithdrawCommitmentResult> {
     const { store, publicIdentifier } = requestHandler;
 
     const { multisigAddress, recipient } = params;

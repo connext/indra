@@ -2,13 +2,18 @@ import { REJECT_INSTALL_EVENT } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, MethodNames, RejectProposalMessage } from "../../../types";
+import {
+  MethodNames,
+  RejectInstallParams,
+  RejectInstallResult,
+  RejectProposalMessage,
+} from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class RejectInstallController extends NodeController {
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RejectInstallParams,
+    params: RejectInstallParams,
   ): Promise<string[]> {
     const { appInstanceId } = params;
 
@@ -18,8 +23,8 @@ export default class RejectInstallController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_rejectInstall)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RejectInstallParams,
-  ): Promise<CFCoreTypes.RejectInstallResult> {
+    params: RejectInstallParams,
+  ): Promise<RejectInstallResult> {
     const { store, messagingService, publicIdentifier } = requestHandler;
 
     const { appInstanceId } = params;

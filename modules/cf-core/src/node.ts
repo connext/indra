@@ -23,12 +23,21 @@ import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import {
-  CFCoreTypes,
   Commitment,
+  EventName,
+  ILockService,
+  IMessagingService,
+  IPrivateKeyGenerator,
+  IStoreService,
+  MethodName,
+  MethodRequest,
+  MethodResponse,
   NetworkContext,
+  NodeMessage,
   NodeMessageWrappedProtocolMessage,
   Opcode,
   ProtocolMessage,
+  RpcMethodName,
 } from "./types";
 import { timeout } from "./utils";
 import { Store } from "./store";
@@ -67,14 +76,14 @@ export class Node {
   private store!: Store;
 
   static async create(
-    messagingService: CFCoreTypes.IMessagingService,
-    storeService: CFCoreTypes.IStoreService,
+    messagingService: IMessagingService,
+    storeService: IStoreService,
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: BaseProvider,
-    lockService?: CFCoreTypes.ILockService,
+    lockService?: ILockService,
     publicExtendedKey?: string,
-    privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
+    privateKeyGenerator?: IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
   ): Promise<Node> {
@@ -103,14 +112,14 @@ export class Node {
   private constructor(
     private readonly publicExtendedKey: string,
     private readonly privateKeyGetter: PrivateKeysGetter,
-    private readonly messagingService: CFCoreTypes.IMessagingService,
-    private readonly storeService: CFCoreTypes.IStoreService,
+    private readonly messagingService: IMessagingService,
+    private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
     private readonly provider: BaseProvider,
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     public readonly log: ILoggerService = nullLogger,
-    private readonly lockService?: CFCoreTypes.ILockService,
+    private readonly lockService?: ILockService,
   ) {
     this.log = log.newContext("CF-Node");
     this.networkContext.provider = this.provider;
@@ -333,7 +342,7 @@ export class Node {
    * @param event
    * @param callback
    */
-  on(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback: (res: any) => void) {
+  on(event: EventName | RpcMethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribe(event, async (res: any) => callback(res));
   }
 
@@ -344,7 +353,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  off(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback?: (res: any) => void) {
+  off(event: EventName | RpcMethodName, callback?: (res: any) => void) {
     this.rpcRouter.unsubscribe(event, callback ? async (res: any) => callback(res) : undefined);
   }
 
@@ -356,7 +365,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  once(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback: (res: any) => void) {
+  once(event: EventName | RpcMethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribeOnce(event, async (res: any) => callback(res));
   }
 
@@ -365,7 +374,7 @@ export class Node {
    * @param event
    * @param req
    */
-  emit(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, req: CFCoreTypes.MethodRequest) {
+  emit(event: EventName | RpcMethodName, req: MethodRequest) {
     this.rpcRouter.emit(event, req);
   }
 
@@ -375,9 +384,9 @@ export class Node {
    * @param req
    */
   async call(
-    method: CFCoreTypes.MethodName,
-    req: CFCoreTypes.MethodRequest,
-  ): Promise<CFCoreTypes.MethodResponse> {
+    method: MethodName,
+    req: MethodRequest,
+  ): Promise<MethodResponse> {
     return this.requestHandler.callMethod(method, req);
   }
 
@@ -388,7 +397,7 @@ export class Node {
    * subscribed (i.e. consumers of the Node).
    */
   private registerMessagingConnection() {
-    this.messagingService.onReceive(this.publicIdentifier, async (msg: CFCoreTypes.NodeMessage) => {
+    this.messagingService.onReceive(this.publicIdentifier, async (msg: NodeMessage) => {
       await this.handleReceivedMessage(msg);
       this.rpcRouter.emit(msg.type, msg, "outgoing");
     });
@@ -410,12 +419,12 @@ export class Node {
    *     _does have_ an _ioSendDeferral_, in which case the message is dispatched
    *     solely to the deffered promise's resolve callback.
    */
-  private async handleReceivedMessage(msg: CFCoreTypes.NodeMessage) {
+  private async handleReceivedMessage(msg: NodeMessage) {
     if (!Object.values(NODE_EVENTS).includes(msg.type)) {
       console.error(`Received message with unknown event type: ${msg.type}`);
     }
 
-    const isProtocolMessage = (msg: CFCoreTypes.NodeMessage) => msg.type === PROTOCOL_MESSAGE_EVENT;
+    const isProtocolMessage = (msg: NodeMessage) => msg.type === PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: NodeMessageWrappedProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);

@@ -9,7 +9,7 @@ import {
   NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
 } from "./errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
-import { CFCoreTypes } from "./types";
+import { IStoreService, MinimalTransaction } from "./types";
 import { getCreate2MultisigAddress } from "./utils";
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
@@ -18,7 +18,7 @@ import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum
  * StoreService.
  */
 export class Store {
-  constructor(private readonly storeService: CFCoreTypes.IStoreService) {}
+  constructor(private readonly storeService: IStoreService) {}
 
   public async getMultisigAddressWithCounterparty(
     owners: string[],
@@ -196,7 +196,7 @@ export class Store {
 
   public async getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<CFCoreTypes.MinimalTransaction> {
+  ): Promise<MinimalTransaction> {
     const withdrawalCommitment = await this.storeService.getWithdrawalCommitment(multisigAddress);
     if (!withdrawalCommitment) {
       throw new Error("Could not find withdrawal commitment");
@@ -206,7 +206,7 @@ export class Store {
 
   public async storeWithdrawalCommitment(
     multisigAddress: string,
-    commitment: CFCoreTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ) {
     return this.storeService.saveWithdrawalCommitment(multisigAddress, commitment);
   }

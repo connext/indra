@@ -17,7 +17,7 @@ import {
   assertNodeMessage,
   deposit,
 } from "./utils";
-import { CFCoreTypes } from "@connext/types";
+import { DepositParams } from "@connext/types";
 
 expect.extend({ toBeEq });
 
@@ -25,7 +25,7 @@ expect.extend({ toBeEq });
 function confirmDepositMessages(
   initiator: Node,
   responder: Node,
-  params: CFCoreTypes.DepositParams,
+  params: DepositParams,
 ) {
   const startedMsg = {
     from: initiator.publicIdentifier,

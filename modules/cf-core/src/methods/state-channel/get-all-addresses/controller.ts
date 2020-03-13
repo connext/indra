@@ -1,7 +1,10 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, MethodNames } from "../../../types";
+import {
+  GetChannelAddressesResult,
+  MethodNames,
+} from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetAllChannelAddressesController extends NodeController {
@@ -10,7 +13,7 @@ export default class GetAllChannelAddressesController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-  ): Promise<CFCoreTypes.GetChannelAddressesResult> {
+  ): Promise<GetChannelAddressesResult> {
     return {
       multisigAddresses: [
         ...(await requestHandler.store.getAllChannels()).map(sc => sc.multisigAddress),

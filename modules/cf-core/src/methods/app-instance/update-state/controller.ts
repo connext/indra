@@ -10,7 +10,13 @@ import { ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import { CFCoreTypes, Protocol, MethodNames, SolidityValueType } from "../../../types";
+import {
+  MethodNames,
+  Protocol,
+  SolidityValueType,
+  UpdateStateParams,
+  UpdateStateResult,
+} from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 
@@ -20,14 +26,14 @@ export default class UpdateStateController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UpdateStateParams,
+    params: UpdateStateParams,
   ): Promise<string[]> {
     return [params.appInstanceId];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UpdateStateParams,
+    params: UpdateStateParams,
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, newState } = params;
@@ -50,8 +56,8 @@ export default class UpdateStateController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UpdateStateParams,
-  ): Promise<CFCoreTypes.UpdateStateResult> {
+    params: UpdateStateParams,
+  ): Promise<UpdateStateResult> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, newState } = params;
 

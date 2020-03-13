@@ -26,7 +26,7 @@ import {
   assertNodeMessage,
 } from "./utils";
 import { WithdrawConfirmationMessage } from "../../src/types";
-import { CFCoreTypes } from "@connext/types";
+import { WithdrawParams } from "@connext/types";
 
 expect.extend({ toBeEq, toBeLt });
 
@@ -34,7 +34,7 @@ expect.extend({ toBeEq, toBeLt });
 function confirmWithdrawalMessages(
   initiator: Node,
   responder: Node,
-  params: CFCoreTypes.WithdrawParams,
+  params: WithdrawParams,
 ) {
   // initiator messages
   initiator.once(WITHDRAWAL_CONFIRMED_EVENT, (msg: WithdrawConfirmationMessage) => {
@@ -122,7 +122,7 @@ describe("Node method follows spec - withdraw", () => {
       recipient,
     );
 
-    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as CFCoreTypes.WithdrawParams);
+    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as WithdrawParams);
 
     const {
       result: {
@@ -169,7 +169,7 @@ describe("Node method follows spec - withdraw", () => {
 
     const withdrawReq = constructWithdrawRpc(multisigAddress, One, erc20ContractAddress, recipient);
 
-    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as CFCoreTypes.WithdrawParams);
+    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as WithdrawParams);
 
     await nodeA.rpcRouter.dispatch(withdrawReq);
 
@@ -211,7 +211,7 @@ describe("Node method follows spec - withdraw", () => {
     confirmWithdrawalMessages(
       nodeA,
       nodeB,
-      withdrawCommitmentReq.parameters as CFCoreTypes.WithdrawParams,
+      withdrawCommitmentReq.parameters as WithdrawParams,
     );
 
     const {
