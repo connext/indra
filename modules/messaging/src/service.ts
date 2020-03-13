@@ -65,7 +65,7 @@ export class MessagingService implements IMessagingService {
       if (err || !msg || !msg.data) {
         this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
       } else {
-        const data = typeof msg.data === `string` ? JSON.parse(msg).data : msg.data;
+        const data = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
         this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
         callback(data as CFCoreTypes.NodeMessage);
       }
@@ -74,7 +74,7 @@ export class MessagingService implements IMessagingService {
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
-    this.service!.publish(this.prependKey(`${to}.${msg.from}`), msg);
+    this.service!.publish(this.prependKey(`${to}.${msg.from}`), stringify(msg));
   }
 
   ////////////////////////////////////////
