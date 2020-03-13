@@ -280,28 +280,26 @@ export class CFCoreService {
       timeout: Zero,
     };
     
-    let proposeRes: CFCoreTypes.ProposeInstallResult;
+    const proposeRes = await this.proposeInstallApp(params);
+
     try {
-      await new Promise(async (res: () => any, rej: (msg: string) => any): Promise<void> => {
+      await new Promise((res: () => any, rej: (msg: string) => any): void => {
         boundReject = this.rejectInstallTransfer.bind(null, rej);
         this.messagingProvider.subscribe(
-          `indra.client.${userPubId}.install.*`,
-          this.resolveInstallTransfer.bind(null, res)
+          `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
+          this.resolveInstallTransfer.bind(null, res),
         );
         this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
-        proposeRes = await this.proposeInstallApp(params);
       });
+      this.log.info(`App was installed successfully: ${proposeRes.appInstanceId}`);
+      this.log.debug(`App install result: ${stringify(proposeRes)}`);
+      return proposeRes;
     } catch (e) {
       this.log.error(`Error installing app: ${e.message}`, e.stack);
       return undefined;
     } finally {
-      this.cleanupInstallListeners(
-        boundReject,
-        proposeRes.appInstanceId,
-        userPubId
-      );
+      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, userPubId);
     }
-    return proposeRes;
   }
 
   async installApp(appInstanceId: string): Promise<CFCoreTypes.InstallResult> {
