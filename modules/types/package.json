@@ -10,19 +10,15 @@
   "files": ["dist", "src"],
   "scripts": {
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -b . && ./node_modules/.bin/rollup -c",
-    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
-    "test": "./node_modules/.bin/jest"
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
     "ethers": "4.0.45",
     "eventemitter3": "4.0.0"
   },
   "devDependencies": {
-    "@types/jest": "25.1.2",
-    "jest": "25.1.0",
-    "rollup": "1.31.1",
+    "rollup": "2.0.5",
     "rollup-plugin-typescript2": "0.26.0",
-    "ts-jest": "25.2.0",
-    "typescript": "3.7.5"
+    "typescript": "3.8.3"
   }
 }
