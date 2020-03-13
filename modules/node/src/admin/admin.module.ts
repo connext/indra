@@ -10,6 +10,7 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { TransferModule } from "../transfer/transfer.module";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { ChannelRepository } from "../channel/channel.repository";
 
 import { adminProviderFactory } from "./admin.provider";
 import { AdminService } from "./admin.service";
@@ -25,7 +26,7 @@ import { AdminService } from "./admin.service";
     LoggerModule,
     MessagingModule,
     TransferModule,
-    TypeOrmModule.forFeature([CFCoreRecordRepository, LinkedTransferRepository]),
+    TypeOrmModule.forFeature([CFCoreRecordRepository, LinkedTransferRepository, ChannelRepository]),
   ],
   providers: [AdminService, adminProviderFactory],
 })

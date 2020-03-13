@@ -2,7 +2,6 @@ import { IMessagingService } from "@connext/messaging";
 import {
   Transfer,
   replaceBN,
-  PendingAsyncTransfer,
   ResolveFastSignedTransferResponse,
   PendingFastSignedTransfer,
 } from "@connext/types";
