@@ -1,5 +1,5 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, DecString, HexString, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
 import { OutcomeType } from "./contracts";
 
 export enum Protocol {
@@ -18,8 +18,8 @@ export type InstallProtocolParams = {
   responderXpub: Xpub;
   responderDepositTokenAddress: Address;
   multisigAddress: Address;
-  initiatorBalanceDecrement: DecString;
-  responderBalanceDecrement: DecString;
+  initiatorBalanceDecrement: BigNumber;
+  responderBalanceDecrement: BigNumber;
   participants: string[];
   initialState: SolidityValueType;
   appInterface: AppInterface;
@@ -34,17 +34,17 @@ export type InstallProtocolParams = {
   disableLimit: boolean;
 };
 
-export type ProposeProtocolParams = {
+export type ProposeInstallProtocolParams = {
   multisigAddress: string;
   initiatorXpub: string;
   responderXpub: string;
   appDefinition: string;
   abiEncodings: AppABIEncodings;
-  initiatorDeposit: DecString;
+  initiatorDeposit: BigNumber;
   initiatorDepositTokenAddress?: string;
-  responderDeposit: DecString;
+  responderDeposit: BigNumber;
   responderDepositTokenAddress?: string;
-  timeout: HexString;
+  timeout: BigNumber;
   initialState: SolidityValueType;
   outcomeType: OutcomeType;
   meta?: Object;
@@ -85,13 +85,13 @@ export type WithdrawProtocolParams = {
   responderXpub: string;
   multisigAddress: string;
   recipient: string;
-  amount: DecString;
+  amount: BigNumber;
   tokenAddress: string;
 };
 
 export type ProtocolParameters =
   | InstallProtocolParams
-  | ProposeProtocolParams
+  | ProposeInstallProtocolParams
   | SetupProtocolParams
   | TakeActionProtocolParams
   | UninstallProtocolParams

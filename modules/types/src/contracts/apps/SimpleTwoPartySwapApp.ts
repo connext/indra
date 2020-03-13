@@ -1,4 +1,4 @@
-import { Address, HexString } from "../../basic";
+import { Address, BigNumber, HexString } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import { multiAssetMultiPartyCoinTransferEncoding, tidy } from "../misc";
@@ -20,7 +20,7 @@ export const SimpleSwapAppStateEncoding = tidy(`tuple(
 // Off-chain app types
 
 export interface SwapParameters {
-  amount: HexString;
+  amount: BigNumber;
   swapRate: HexString;
   toAssetId: Address;
   fromAssetId: Address;

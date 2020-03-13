@@ -1,8 +1,8 @@
-import { Address, HexString, Xpub } from "../../basic";
+import { defaultAbiCoder } from "ethers/utils";
+import { Address, BigNumber, HexString, Xpub } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import {
-  abiCoder,
   singleAssetTwoPartyCoinTransferEncoding,
   tidy,
 } from "../misc";
@@ -21,14 +21,14 @@ export enum FastSignedTransferActionType {
 
 export type FastSignedTransferAppState = {
   recipientXpub: Xpub;
-  amount: HexString;
+  amount: BigNumber;
   signer: Address;
   paymentId: HexString;
   coinTransfers: [CoinTransfer, CoinTransfer];
-  turnNum: number;
+  turnNum: BigNumber;
 };
 
-const FastSignedTransferAppStateEncoding = tidy(`tuple(
+export const FastSignedTransferAppStateEncoding = tidy(`tuple(
   string recipientXpub,
   uint256 amount,
   address signer,
@@ -39,15 +39,15 @@ const FastSignedTransferAppStateEncoding = tidy(`tuple(
 
 export const decodeFastSignedTransferAppState =
   (encoded: HexString): FastSignedTransferAppState =>
-    abiCoder.decode([FastSignedTransferAppStateEncoding], encoded)[0];
+    defaultAbiCoder.decode([FastSignedTransferAppStateEncoding], encoded)[0];
 
 export const encodeFastSignedTransferAppState =
   (decoded: FastSignedTransferAppState): HexString =>
-    abiCoder.encode([FastSignedTransferAppStateEncoding], [decoded]);
+    defaultAbiCoder.encode([FastSignedTransferAppStateEncoding], [decoded]);
 
 export type FastSignedTransferAppAction = {
   recipientXpub: Xpub;
-  amount: HexString;
+  amount: BigNumber;
   signer: Address;
   paymentId: HexString;
   data: HexString;
@@ -55,7 +55,7 @@ export type FastSignedTransferAppAction = {
   actionType: FastSignedTransferActionType;
 };
 
-const FastSignedTransferAppActionEncoding = tidy(`tuple(
+export const FastSignedTransferAppActionEncoding = tidy(`tuple(
   string recipientXpub,
   uint256 amount,
   address signer,
@@ -67,11 +67,11 @@ const FastSignedTransferAppActionEncoding = tidy(`tuple(
 
 export const decodeFastSignedTransferAppAction =
   (encoded: HexString): FastSignedTransferAppAction =>
-    abiCoder.decode([FastSignedTransferAppActionEncoding], encoded)[0];
+    defaultAbiCoder.decode([FastSignedTransferAppActionEncoding], encoded)[0];
 
 export const encodeFastSignedTransferAppAction =
   (decoded: FastSignedTransferAppAction): HexString =>
-    abiCoder.encode([FastSignedTransferAppActionEncoding], [decoded]);
+    defaultAbiCoder.encode([FastSignedTransferAppActionEncoding], [decoded]);
 
 ////////////////////////////////////////
 // Off-chain app types
@@ -79,7 +79,7 @@ export const encodeFastSignedTransferAppAction =
 export type FastSignedTransferParameters = {
   conditionType: typeof FAST_SIGNED_TRANSFER;
   recipient: string; // xpub?
-  amount: HexString;
+  amount: BigNumber;
   assetId?: Address;
   paymentId: HexString;
   maxAllocation?: HexString;
@@ -102,7 +102,7 @@ export type ResolveFastSignedTransferResponse = {
   appId: string;
   sender: string;
   paymentId: string;
-  amount: HexString;
+  amount: BigNumber;
   assetId: string;
   signer: string;
   meta?: object;

@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { DecString, SolidityValueType } from "./basic";
+import { BigNumber, SolidityValueType } from "./basic";
 import { MethodName } from "./methods";
 
 export class ConnextEventEmitter extends EventEmitter<
@@ -65,7 +65,7 @@ export const WITHDRAWAL_FAILED_EVENT = "WITHDRAWAL_FAILED_EVENT";
 export const WITHDRAWAL_STARTED_EVENT = "WITHDRAWAL_STARTED_EVENT";
 
 export type WithdrawEventData = {
-  amount: DecString;
+  amount: BigNumber;
 };
 
 ////////////////////////////////////////

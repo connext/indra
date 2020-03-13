@@ -1,7 +1,7 @@
 import {
   AppInstanceJson,
   AppInstanceProposal,
-  ConditionalTxCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,
   IBackupServiceAPI,
   IClientStore,
   MinimalTransaction,
@@ -17,7 +17,7 @@ export class MemoryStorage implements IClientStore {
   private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
   private conditionalTxCommitment: Map<
     string,
-    ConditionalTxCommitmentJSON
+    ConditionalTransactionCommitmentJSON
   > = new Map();
   private withdrawals: Map<string, MinimalTransaction> = new Map();
   private proposedApps: Map<string, AppInstanceProposal> = new Map();
@@ -92,15 +92,15 @@ export class MemoryStorage implements IClientStore {
     this.setStateCommitments.set(appInstanceId, commitment);
   }
 
-  async getConditionalTxCommitment(
+  async getConditionalTransactionCommitment(
     appInstanceId: string,
-  ): Promise<ConditionalTxCommitmentJSON | undefined> {
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
     return this.conditionalTxCommitment.get(appInstanceId);
   }
 
-  async saveConditionalTxCommitment(
+  async saveConditionalTransactionCommitment(
     appInstanceId: string,
-    commitment: ConditionalTxCommitmentJSON,
+    commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     this.conditionalTxCommitment.set(appInstanceId, commitment);
   }

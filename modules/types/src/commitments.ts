@@ -1,6 +1,6 @@
 import { Signature } from "ethers/utils";
 
-import { Address, DecString, HexString } from "./basic";
+import { Address, BigNumberish, HexString } from "./basic";
 import { AppIdentity, NetworkContext } from "./contracts";
 
 // This is used instead of the ethers `Transaction` because that type
@@ -8,7 +8,7 @@ import { AppIdentity, NetworkContext } from "./contracts";
 // arguments are not known at the time of creating a transaction.
 export type MinimalTransaction = {
   to: string;
-  value: DecString;
+  value: BigNumberish;
   data: string;
 };
 
@@ -25,11 +25,11 @@ export type SetStateCommitmentJSON = {
   readonly appStateHash: HexString;
   readonly challengeRegistryAddress: Address;
   readonly signatures: Signature[];
-  readonly timeout: HexString;
-  readonly versionNumber: HexString;
+  readonly timeout: number;
+  readonly versionNumber: number;
 };
 
-export type ConditionalTxCommitmentJSON = {
+export type ConditionalTransactionCommitmentJSON = {
   readonly appIdentityHash: HexString;
   readonly freeBalanceAppIdentityHash: HexString;
   readonly interpreterAddr: Address;

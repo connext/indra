@@ -1,7 +1,7 @@
 import {
   AppInstanceJson,
   AppInstanceProposal,
-  ConditionalTxCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,
   IClientStore,
   MinimalTransaction,
   SetStateCommitmentJSON,
@@ -152,17 +152,17 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.saveWithdrawalCommitment(multisigAddress, commitment);
   }
 
-  getConditionalTxCommitment(
+  getConditionalTransactionCommitment(
     appIdentityHash: string,
-  ): Promise<ConditionalTxCommitmentJSON | undefined> {
-    return this.internalStore.getConditionalTxCommitment(appIdentityHash);
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    return this.internalStore.getConditionalTransactionCommitment(appIdentityHash);
   }
 
-  saveConditionalTxCommitment(
+  saveConditionalTransactionCommitment(
     appIdentityHash: string,
-    commitment: ConditionalTxCommitmentJSON,
+    commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
-    return this.internalStore.saveConditionalTxCommitment(appIdentityHash, commitment);
+    return this.internalStore.saveConditionalTransactionCommitment(appIdentityHash, commitment);
   }
 
   clear(): Promise<void> {

@@ -1,4 +1,4 @@
-import { Address, HexString } from "../basic";
+import { Address, BigNumber, HexString } from "../basic";
 import { tidy } from "./misc";
 
 ////////////////////////////////////////
@@ -11,7 +11,7 @@ export type CoinBalanceRefundAppState = {
   tokenAddress: Address;
 };
 
-export const CoinBalanceRefundAppStateEncoding = tidy(`tuple(
+export const coinBalanceRefundAppStateEncoding = tidy(`tuple(
   address recipient,
   address multisig,
   uint256 threshold,
@@ -32,7 +32,7 @@ type TimeLockedPassthroughAppState = {
 // keep synced w contracts/funding/interpreters/MultiAssetMultiPartyCoinTransferInterpreter.sol
 
 export type MultiAssetMultiPartyCoinTransferInterpreterParams = {
-  limit: HexString[];
+  limit: BigNumber[];
   tokenAddresses: Address[];
 };
 
@@ -45,8 +45,8 @@ export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding = tidy(`t
 // keep synced w contracts/funding/interpreters/SingleAssetTwoPartyCoinTransferInterpreter.sol
 
 export type SingleAssetTwoPartyCoinTransferInterpreterParams = {
-  limit: HexString;
-  tokenAddresses: Address;
+  limit: BigNumber;
+  tokenAddress: Address;
 };
 
 export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = tidy(`tuple(
@@ -59,7 +59,7 @@ export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = tidy(`tu
 
 export type TwoPartyFixedOutcomeInterpreterParams = {
   playerAddrs: [Address, Address];
-  amount: HexString;
+  amount: BigNumber;
   tokenAddress: Address;
 };
 
@@ -73,7 +73,7 @@ export const twoPartyFixedOutcomeInterpreterParamsEncoding = tidy(`tuple(
 // keep synced w contracts/funding/libs/LibOutcome.sol
 
 export type CoinTransfer = {
-  amount: HexString;
+  amount: BigNumber;
   to: Address;
 };
 

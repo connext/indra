@@ -1,7 +1,7 @@
 import { StateChannelJSON } from "./state";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import {
-  ConditionalTxCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
@@ -112,12 +112,12 @@ export interface IStoreService {
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
-  getConditionalTxCommitment(
+  getConditionalTransactionCommitment(
     appIdentityHash: string,
-  ): Promise<ConditionalTxCommitmentJSON | undefined>;
-  saveConditionalTxCommitment(
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
+  saveConditionalTransactionCommitment(
     appIdentityHash: string,
-    commitment: ConditionalTxCommitmentJSON,
+    commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
   getWithdrawalCommitment(
     multisigAddress: string,
