@@ -153,58 +153,6 @@ export class TestRunner {
     }
   }
 
-  async installVirtualEqualDeposits(outcomeType: OutcomeType, tokenAddress: string) {
-    const stateEncoding = {
-      [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
-      [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[2]",
-      [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[][]",
-    }[outcomeType];
-
-    const initialState = {
-      [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
-      [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
-        {
-          to: xkeyKthAddress(this.mininodeA.xpub, 0),
-          amount: Two,
-        },
-        {
-          to: xkeyKthAddress(this.mininodeC.xpub, 0),
-          amount: Zero,
-        },
-      ],
-      [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
-        [
-          {
-            to: xkeyKthAddress(this.mininodeA.xpub, 0),
-            amount: Two,
-          },
-          {
-            to: xkeyKthAddress(this.mininodeC.xpub, 0),
-            amount: Zero,
-          },
-        ],
-      ],
-    }[outcomeType];
-
-    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.InstallVirtualApp, {
-      outcomeType,
-      tokenAddress,
-      initialState,
-      initiatorXpub: this.mininodeA.xpub,
-      intermediaryXpub: this.mininodeB.xpub,
-      responderXpub: this.mininodeC.xpub,
-      initiatorBalanceDecrement: One,
-      responderBalanceDecrement: One,
-      appSeqNo: 1,
-      appInterface: {
-        stateEncoding,
-        addr: this.identityApp.address,
-        actionEncoding: undefined,
-      },
-      defaultTimeout: 40,
-    });
-  }
-
   async installEqualDeposits(outcomeType: OutcomeType, tokenAddress: string) {
     const stateEncoding = {
       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
@@ -327,28 +275,6 @@ export class TestRunner {
       responderDepositTokenAddress: tokenAddressB,
       disableLimit: false,
     });
-  }
-
-  async uninstallVirtual() {
-    const multisig = await this.mininodeA.store.getStateChannel(this.multisigAC);
-    if (!multisig) {
-      throw new Error(`uninstallVirtual: Couldn't find multisig for ${this.multisigAC}`);
-    }
-    const [virtualAppInstance] = [...multisig.appInstances.values()];
-
-    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, {
-      // todo(xuanji): this should be computed by the protocol
-      targetOutcome: await virtualAppInstance.computeOutcome(
-        virtualAppInstance.latestState,
-        this.provider,
-      ),
-      initiatorXpub: this.mininodeA.xpub,
-      intermediaryXpub: this.mininodeB.xpub,
-      responderXpub: this.mininodeC.xpub,
-      targetAppIdentityHash: virtualAppInstance.identityHash,
-    });
-
-    await this.mr.waitForAllPendingPromises();
   }
 
   async uninstall() {

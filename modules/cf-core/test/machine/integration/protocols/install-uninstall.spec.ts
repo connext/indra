@@ -75,30 +75,3 @@ describe("Install-then-uninstall in a direct channel", () => {
     }
   }
 });
-
-describe.skip("Install-then-uninstall of a virtual app", () => {
-  for (const outcomeType of [
-    OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  ]) {
-    for (const tokenAddress of [CONVENTION_FOR_ETH_TOKEN_ADDRESS, TestRunner.TEST_TOKEN_ADDRESS]) {
-      it(`${outcomeType}/${tokenAddress}`, async () => {
-        const tr = new TestRunner();
-        await tr.connectToGanache();
-
-        await tr.setup();
-        await tr.unsafeFund();
-
-        await tr.installVirtualEqualDeposits(outcomeType, tokenAddress);
-
-        tr.assertFB(Participant.A, tokenAddress, Zero);
-        tr.assertFB(Participant.C, tokenAddress, Zero);
-
-        await tr.uninstallVirtual();
-
-        tr.assertFB(Participant.A, tokenAddress, Two);
-        tr.assertFB(Participant.C, tokenAddress, Zero);
-      });
-    }
-  }
-});

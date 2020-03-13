@@ -85,10 +85,6 @@ describe("StateChannel::uninstallApp", () => {
       app = sc2.getAppInstance(appIdentityHash)!;
     });
 
-    it("should not be a virtual app", () => {
-      expect(app.isVirtualApp).toBe(false);
-    });
-
     // TODO: moar tests pl0x
   });
 });

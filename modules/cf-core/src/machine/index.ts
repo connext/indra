@@ -5,7 +5,6 @@ import { ProtocolRunner } from "./protocol-runner";
 import {
   Context,
   InstallProtocolParams,
-  InstallVirtualAppProtocolParams,
   Instruction,
   Middleware,
   ProtocolExecutionFlow,
@@ -13,7 +12,6 @@ import {
   SetupProtocolParams,
   TakeActionProtocolParams,
   UninstallProtocolParams,
-  UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
   WithdrawProtocolParams,
 } from "../types";
@@ -42,8 +40,6 @@ export {
   UninstallProtocolParams,
   WithdrawProtocolParams,
   TakeActionProtocolParams,
-  InstallVirtualAppProtocolParams,
-  UninstallVirtualAppProtocolParams,
   xkeyKthAddress,
   xkeysToSortedKthAddresses,
   xkeysToSortedKthSigningKeys,

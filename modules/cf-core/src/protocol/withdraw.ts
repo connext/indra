@@ -542,7 +542,6 @@ function addRefundAppToStateChannel(
       stateEncoding: coinBalanceRefundStateEncoding,
       actionEncoding: undefined,
     },
-    false,
     stateChannel.numProposedApps,
     {
       recipient,

@@ -694,20 +694,6 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  public installVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.InstallVirtualResult> => {
-    // check the app isnt actually installed
-    const alreadyInstalled = await this.appInstalled(appInstanceId);
-    if (alreadyInstalled) {
-      throw new Error(alreadyInstalled);
-    }
-    return await this.channelProvider.send(ProtocolTypes.chan_installVirtual, {
-      appInstanceId,
-      intermediaryIdentifier: this.nodePublicIdentifier,
-    } as CFCoreTypes.InstallVirtualParams);
-  };
-
   public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
     // check the app isnt actually installed
     const alreadyInstalled = await this.appInstalled(appInstanceId);
@@ -729,22 +715,6 @@ export class ConnextClient implements IConnextClient {
     return await this.channelProvider.send(ProtocolTypes.chan_uninstall, {
       appInstanceId,
     } as CFCoreTypes.UninstallParams);
-  };
-
-  public uninstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
-    // check the app is actually installed
-    const err = await this.appNotInstalled(appInstanceId);
-    if (err) {
-      this.log.error(err);
-      throw new Error(err);
-    }
-
-    return await this.channelProvider.send(ProtocolTypes.chan_uninstallVirtual, {
-      appInstanceId,
-      intermediaryIdentifier: this.nodePublicIdentifier,
-    } as CFCoreTypes.UninstallVirtualParams);
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {

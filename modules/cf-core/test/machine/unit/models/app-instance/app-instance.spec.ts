@@ -19,7 +19,6 @@ describe("AppInstance", () => {
         stateEncoding: "tuple(address foo, uint256 bar)",
         actionEncoding: undefined,
       },
-      false,
       Math.ceil(Math.random() * 2e10),
       { foo: getAddress(hexlify(randomBytes(20))), bar: 0 },
       /* versionNumber */ 999,

@@ -20,7 +20,7 @@ export default class UninstallController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams,
+    params: CFCoreTypes.UninstallParams,
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;

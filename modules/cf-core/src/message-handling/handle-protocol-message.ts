@@ -5,8 +5,6 @@ import {
   CREATE_CHANNEL_EVENT,
   WITHDRAWAL_STARTED_EVENT,
   UPDATE_STATE_EVENT,
-  INSTALL_VIRTUAL_EVENT,
-  UNINSTALL_VIRTUAL_EVENT,
 } from "@connext/types";
 import { Protocol } from "../machine";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
@@ -17,7 +15,6 @@ import RpcRouter from "../rpc-router";
 import {
   EventEmittedMessage,
   InstallProtocolParams,
-  InstallVirtualAppProtocolParams,
   NetworkContext,
   NodeMessageWrappedProtocolMessage,
   ProposeInstallProtocolParams,
@@ -26,7 +23,6 @@ import {
   SolidityValueType,
   TakeActionProtocolParams,
   UninstallProtocolParams,
-  UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
   WithdrawProtocolParams,
   WithdrawStartedMessage,
@@ -61,10 +57,7 @@ export async function handleReceivedProtocolMessage(
     publicIdentifier,
   );
 
-  if (
-    outgoingEventData &&
-    (protocol === Protocol.Install || protocol === Protocol.InstallVirtualApp)
-  ) {
+  if (outgoingEventData && protocol === Protocol.Install) {
     const appInstanceId =
       outgoingEventData!.data["appInstanceId"] ||
       (outgoingEventData!.data as any).params["appInstanceId"];
@@ -180,48 +173,6 @@ async function getOutgoingEventDataFromProtocol(
           ).state,
         ),
       };
-    case Protocol.InstallVirtualApp:
-      const {
-        initiatorXpub: initiator,
-        intermediaryXpub,
-        responderXpub: responder,
-      } = params as InstallVirtualAppProtocolParams;
-      // channels for responders and initiators of virtual protocols are
-      // persisted at the end of the `propose` protocol. channels with the
-      // intermediary should *already exist*
-      // HOWEVER -- if this *is* the intermediary, it will not have any
-      // channels between the responder and the initiator in its store
-      // since it is not involved in the `propose` protocol. in this case,
-      // you should allow the generation of the multisig in the store. Note that
-      // the intermediary will very likely *not* have this in their store, so
-      // there will not be any outgoing data for the protocol, so no install
-      // virtual event will be emitted on the node
-      const isIntermediary = publicIdentifier === intermediaryXpub;
-
-      const virtualChannel = await store.getMultisigAddressWithCounterparty(
-        [responder, initiator],
-        networkContext.ProxyFactory,
-        networkContext.MinimumViableMultisig,
-        isIntermediary ? networkContext.provider : undefined,
-      );
-      if (await store.hasStateChannel(virtualChannel)) {
-        return {
-          ...baseEvent,
-          type: INSTALL_VIRTUAL_EVENT,
-          data: {
-            appInstanceId: (
-              await store.getStateChannel(virtualChannel)
-            ).mostRecentlyInstalledAppInstance().identityHash,
-          },
-        };
-      }
-      return;
-    case Protocol.UninstallVirtualApp:
-      return {
-        ...baseEvent,
-        type: UNINSTALL_VIRTUAL_EVENT,
-        data: getUninstallVirtualAppEventData(params as UninstallVirtualAppProtocolParams),
-      };
     default:
       throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
   }
@@ -235,13 +186,6 @@ function getStateUpdateEventData(
   // so use any cast
   const { appIdentityHash: appInstanceId, action } = params as any;
   return { newState, appInstanceId, action };
-}
-
-function getUninstallVirtualAppEventData({
-  intermediaryXpub: intermediaryIdentifier,
-  targetAppIdentityHash: appInstanceId,
-}: UninstallVirtualAppProtocolParams) {
-  return { appInstanceId, intermediaryIdentifier };
 }
 
 function getUninstallEventData({ appIdentityHash: appInstanceId }: UninstallProtocolParams) {
@@ -265,136 +209,4 @@ function getSetupEventData(
   owners: string[],
 ) {
   return { multisigAddress, owners, counterpartyXpub };
-}
-
-/**
- * Produces an array of queues that the client must halt execution on
- * for some particular protocol and its set of parameters/
- *
- * @param {string} protocol - string name of the protocol
- * @param {ProtocolParameters} params - parameters relevant for the protocol
- * @param {Store} store - the store the client is connected to
- * @param {RequestHandler} requestHandler - the request handler object of the client
- *
- * @returns {Promise<string[]>} - list of the names of the queues
- */
-async function getQueueNamesListByProtocolName(
-  protocol: string,
-  params: ProtocolParameters,
-  requestHandler: RequestHandler,
-): Promise<string[]> {
-  const { networkContext, provider, publicIdentifier, store } = requestHandler;
-
-  async function multisigAddressFor(xpubs: string[]) {
-    // allow generated multisig for setup protocol only!
-
-    // in propose, you may need to generate a multisig address for
-    // initiator and responder if it is a virtual app. but in the `install`
-    // step, these channels should have been persisted with end participants,
-    // and previously exist for intermediaries.
-    const allowed = protocol === Protocol.Setup;
-    return await store.getMultisigAddressWithCounterparty(
-      xpubs,
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
-      allowed ? provider : undefined,
-    );
-  }
-
-  switch (protocol) {
-    /**
-     * Queue on the multisig address of the direct channel.
-     */
-    case Protocol.Install:
-    case Protocol.Setup:
-    case Protocol.Withdraw:
-    case Protocol.Propose:
-      const { multisigAddress } = params as
-        | InstallProtocolParams
-        | SetupProtocolParams
-        | WithdrawProtocolParams;
-
-      return [multisigAddress];
-
-    /**
-     * Queue on the appInstanceId of the AppInstance.
-     */
-    case Protocol.TakeAction:
-    case Protocol.Update:
-      const { appIdentityHash } = params as TakeActionProtocolParams | UpdateProtocolParams;
-
-      return [appIdentityHash];
-
-    case Protocol.Uninstall:
-      const {
-        multisigAddress: addr,
-        appIdentityHash: appInstanceId,
-      } = params as UninstallProtocolParams;
-
-      return [addr, appInstanceId];
-
-    /**
-     * Queue on the multisig addresses of both direct channels involved.
-     */
-    case Protocol.InstallVirtualApp:
-      const {
-        initiatorXpub,
-        intermediaryXpub,
-        responderXpub,
-      } = params as InstallVirtualAppProtocolParams;
-
-      if (publicIdentifier === intermediaryXpub) {
-        return [
-          await multisigAddressFor([initiatorXpub, intermediaryXpub]),
-          await multisigAddressFor([responderXpub, intermediaryXpub]),
-        ];
-      }
-
-      if (publicIdentifier === responderXpub) {
-        return [
-          await multisigAddressFor([responderXpub, intermediaryXpub]),
-          await multisigAddressFor([responderXpub, initiatorXpub]),
-        ];
-      }
-      break;
-
-    /**
-     * Queue on the multisig addresses of both direct channels involved,
-     * as well as on the app itself
-     */
-    case Protocol.UninstallVirtualApp:
-      const {
-        initiatorXpub: initiator,
-        intermediaryXpub: intermediary,
-        responderXpub: responder,
-        targetAppIdentityHash,
-      } = params as UninstallVirtualAppProtocolParams;
-
-      if (publicIdentifier === intermediary) {
-        return [
-          await multisigAddressFor([initiator, intermediary]),
-          await multisigAddressFor([responder, intermediary]),
-          targetAppIdentityHash,
-        ];
-      }
-
-      if (publicIdentifier === responder) {
-        return [
-          await multisigAddressFor([responder, intermediary]),
-          await multisigAddressFor([responder, initiator]),
-          targetAppIdentityHash,
-        ];
-      }
-      break;
-
-    // NOTE: This file is only reachable if a protocol message is sent
-    // from an initiator to an intermediary, an intermediary to
-    // a responder, or an initiator to a responder. It is never possible
-    // for the publicIdentifier to be the initiatorXpub, so we ignore
-    // that case.
-
-    default:
-      break;
-  }
-  throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
 }

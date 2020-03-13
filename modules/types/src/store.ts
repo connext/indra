@@ -62,9 +62,6 @@ export interface StoreFactoryOptions extends FileStorageOptions {
   backupService?: IBackupServiceAPI;
 }
 
-// TODO: delete
-
-
 export interface IBackupServiceAPI {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;

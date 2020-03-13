@@ -19,7 +19,6 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     appSeqNo: app.appSeqNo,
     defaultTimeout: bigNumberify(app.timeout).toNumber(),
     identityHash: app.identityHash,
-    isVirtualApp: false, // hardcode
     latestState: app.latestState,
     latestTimeout: app.latestTimeout,
     latestVersionNumber: app.latestVersionNumber,

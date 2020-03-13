@@ -1,10 +1,9 @@
 import { OutcomeType } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
-import { BaseProvider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { Protocol } from "../../../../src/machine";
+import { Protocol, xkeyKthAddress } from "../../../../src/machine";
 import { AppWithAction } from "../../../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { connectToGanache } from "../connect-ganache";
@@ -32,15 +31,14 @@ beforeAll(async () => {
 });
 
 describe("Three mininodes", () => {
-  it.skip("Can run all the protocols", async () => {
+  it("Can run all the protocols", async () => {
     const tr = new TestRunner();
     await tr.connectToGanache();
 
     await tr.setup();
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.InstallVirtualApp, {
+    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
       initiatorXpub: tr.mininodeA.xpub,
-      intermediaryXpub: tr.mininodeB.xpub,
       responderXpub: tr.mininodeC.xpub,
       defaultTimeout: 100,
       appInterface: {
@@ -54,21 +52,23 @@ describe("Three mininodes", () => {
       appSeqNo: 0,
       initiatorBalanceDecrement: bigNumberify(0),
       responderBalanceDecrement: bigNumberify(0),
-      tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      initiatorDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      responderDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+      participants: [xkeyKthAddress(tr.mininodeA.xpub), xkeyKthAddress(tr.mininodeC.xpub)],
+      multisigAddress: tr.multisigAC,
+      disableLimit: false,
     });
 
-    const [virtualAppInstance] = [
+    const [appInstance] = [
       ...(await tr.mininodeA.store.getStateChannel(tr.multisigAC))!.appInstances.values(),
     ];
-
-    expect(virtualAppInstance.isVirtualApp);
 
     await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Update, {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeC.xpub,
       multisigAddress: tr.multisigAC,
-      appIdentityHash: virtualAppInstance.identityHash,
+      appIdentityHash: appInstance.identityHash,
       newState: {
         counter: 1,
       },
@@ -78,24 +78,18 @@ describe("Three mininodes", () => {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeC.xpub,
       multisigAddress: tr.multisigAC,
-      appIdentityHash: virtualAppInstance.identityHash,
+      appIdentityHash: appInstance.identityHash,
       action: {
         actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
         increment: 1,
       },
     });
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, {
+    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Uninstall, {
       initiatorXpub: tr.mininodeA.xpub,
-      intermediaryXpub: tr.mininodeB.xpub,
       responderXpub: tr.mininodeC.xpub,
-      targetAppIdentityHash: virtualAppInstance.identityHash,
-      targetOutcome: await virtualAppInstance.computeOutcome(
-        {
-          counter: 2,
-        },
-        appWithAction.provider as BaseProvider,
-      ),
+      appIdentityHash: appInstance.identityHash,
+      multisigAddress: tr.multisigAC,
     });
   });
 });

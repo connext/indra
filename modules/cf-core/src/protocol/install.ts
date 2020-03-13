@@ -409,7 +409,6 @@ function computeStateChannelTransition(
     /* participants */ participants,
     /* defaultTimeout */ defaultTimeout,
     /* appInterface */ appInterface,
-    /* isVirtualApp */ false,
     /* appSeqNo */ appSeqNo,
     /* latestState */ initialState,
     /* latestVersionNumber */ 0,

@@ -9,7 +9,6 @@ import { BaseProvider } from "ethers/providers";
 import { Signature } from "ethers/utils";
 
 import { Opcode } from "./machine";
-import { StateChannel } from "./models";
 import { Store } from "./store";
 
 export abstract class EthereumCommitment {
@@ -88,8 +87,6 @@ export {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   InstallMessage,
   InstallProtocolParams,
-  InstallVirtualAppProtocolParams,
-  InstallVirtualMessage,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
@@ -104,7 +101,6 @@ export {
   ProtocolMessage,
   ProtocolParameters,
   ProtocolTypes,
-  RejectInstallVirtualMessage,
   RejectProposalMessage,
   SetStateCommitmentJSON,
   SetupProtocolParams,
@@ -117,11 +113,8 @@ export {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   UninstallMessage,
   UninstallProtocolParams,
-  UninstallVirtualAppProtocolParams,
-  UninstallVirtualMessage,
   UpdateProtocolParams,
   UpdateStateMessage,
-  virtualAppAgreementEncoding,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
   WithdrawProtocolParams,

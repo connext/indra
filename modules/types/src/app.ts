@@ -1,12 +1,10 @@
 import { Address, BigNumber, BigNumberish, SolidityValueType } from "./basic";
-import { CFCoreChannel } from "./channel";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "./contracts";
-import { CFCoreTypes } from "./cfCore";
 
 ////////////////////////////////////
 ////// App Instances
@@ -60,7 +58,6 @@ export type AppInstanceJson = {
   participants: string[];
   defaultTimeout: number;
   appInterface: AppInterface;
-  isVirtualApp: boolean;
   appSeqNo: number;
   latestState: SolidityValueType;
   latestVersionNumber: number;

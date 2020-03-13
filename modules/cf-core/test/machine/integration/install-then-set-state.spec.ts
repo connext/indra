@@ -10,7 +10,11 @@ import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, Interface, keccak256, parseEther } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
-import { ConditionalTransactionCommitment, SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
+import {
+  ConditionalTransactionCommitment,
+  SetStateCommitment,
+  SetupCommitment,
+} from "../../../src/ethereum";
 import { xkeysToSortedKthSigningKeys } from "../../../src/machine/xkeys";
 import { AppInstance, StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
@@ -102,7 +106,6 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
           stateEncoding: "tuple(address to, uint256 amount)[][]",
           actionEncoding: undefined,
         },
-        false,
         stateChannel.numProposedApps,
         [
           // ETH token index

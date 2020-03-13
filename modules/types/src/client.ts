@@ -158,11 +158,9 @@ export interface IConnextClient {
   proposeInstallApp(
     params: ProtocolTypes.ProposeInstallParams,
   ): Promise<ProtocolTypes.ProposeInstallResult>;
-  installVirtualApp(appInstanceId: string): Promise<ProtocolTypes.InstallVirtualResult>;
   installApp(appInstanceId: string): Promise<ProtocolTypes.InstallResult>;
   rejectInstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
   takeAction(appInstanceId: string, action: any): Promise<ProtocolTypes.TakeActionResult>;
   updateState(appInstanceId: string, newState: any): Promise<ProtocolTypes.UpdateStateResult>;
   uninstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
-  uninstallVirtualApp(appInstanceId: string): Promise<ProtocolTypes.UninstallVirtualResult>;
 }

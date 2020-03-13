@@ -6,12 +6,10 @@ import { StateChannelJSON } from "./state";
 
 export enum Protocol {
   Install = "install",
-  InstallVirtualApp = "install-virtual-app",
   Setup = "setup",
   Propose = "propose",
   TakeAction = "takeAction",
   Uninstall = "uninstall",
-  UninstallVirtualApp = "uninstall-virtual-app",
   Update = "update",
   Withdraw = "withdraw",
 }
@@ -66,23 +64,6 @@ export type InstallProtocolParams = {
   disableLimit: boolean;
 };
 
-export type InstallVirtualAppProtocolParams = {
-  initiatorXpub: string;
-  responderXpub: string;
-  intermediaryXpub: string;
-  defaultTimeout: number;
-  appInterface: AppInterface;
-  initialState: SolidityValueType;
-  // initiator and respondor must fund the installed virtual app with the same
-  // token type `tokenAddress`, but may use different amounts
-  initiatorBalanceDecrement: BigNumber;
-  responderBalanceDecrement: BigNumber;
-  tokenAddress: string; // TODO: why only one token allowed in virtual?
-  appSeqNo: number;
-  // outcomeType returned by the app instance, as defined by the app definition `appInterface`
-  outcomeType: OutcomeType;
-};
-
 export type ProposeInstallProtocolParams = {
   multisigAddress: string;
   initiatorXpub: string;
@@ -113,14 +94,6 @@ export type UninstallProtocolParams = {
   blockNumberToUseIfNecessary?: number;
 };
 
-export type UninstallVirtualAppProtocolParams = {
-  initiatorXpub: string;
-  responderXpub: string;
-  intermediaryXpub: string;
-  targetAppIdentityHash: string;
-  targetOutcome: string;
-};
-
 export type UpdateProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
@@ -140,11 +113,9 @@ export type WithdrawProtocolParams = {
 
 export type ProtocolParameters =
   | InstallProtocolParams
-  | InstallVirtualAppProtocolParams
   | ProposeInstallProtocolParams
   | SetupProtocolParams
   | UninstallProtocolParams
-  | UninstallVirtualAppProtocolParams
   | UpdateProtocolParams
   | WithdrawProtocolParams;
 
@@ -198,13 +169,11 @@ export namespace ProtocolTypes {
   export const chan_getStateChannel = "chan_getStateChannel";
   export const chan_install = "chan_install";
   export const chan_requestDepositRights = "chan_requestDepositRights";
-  export const chan_installVirtual = "chan_installVirtual";
   export const chan_proposeInstall = "chan_proposeInstall";
   export const chan_rejectInstall = "chan_rejectInstall";
   export const chan_updateState = "chan_updateState";
   export const chan_takeAction = "chan_takeAction";
   export const chan_uninstall = "chan_uninstall";
-  export const chan_uninstallVirtual = "chan_uninstallVirtual";
   export const chan_rescindDepositRights = "chan_rescindDepositRights";
   export const chan_withdraw = "chan_withdraw";
   export const chan_withdrawCommitment = "chan_withdrawCommitment";
@@ -225,13 +194,11 @@ export namespace ProtocolTypes {
     [chan_getStateChannel]: chan_getStateChannel,
     [chan_install]: chan_install,
     [chan_requestDepositRights]: chan_requestDepositRights,
-    [chan_installVirtual]: chan_installVirtual,
     [chan_proposeInstall]: chan_proposeInstall,
     [chan_rejectInstall]: chan_rejectInstall,
     [chan_updateState]: chan_updateState,
     [chan_takeAction]: chan_takeAction,
     [chan_uninstall]: chan_uninstall,
-    [chan_uninstallVirtual]: chan_uninstallVirtual,
     [chan_rescindDepositRights]: chan_rescindDepositRights,
     [chan_withdraw]: chan_withdraw,
     [chan_withdrawCommitment]: chan_withdrawCommitment,
@@ -388,12 +355,6 @@ export namespace ProtocolTypes {
     appInstance: AppInstanceJson;
   };
 
-  export type InstallVirtualParams = InstallParams & {
-    intermediaryIdentifier: string;
-  };
-
-  export type InstallVirtualResult = InstallResult;
-
   export type ProposeInstallParams = {
     appDefinition: string;
     abiEncodings: AppABIEncodings;
@@ -407,12 +368,6 @@ export namespace ProtocolTypes {
     outcomeType: OutcomeType;
     meta?: Object;
   };
-
-  export type ProposeInstallVirtualParams = ProposeInstallParams & {
-    intermediaryIdentifier: string;
-  };
-
-  export type ProposeInstallVirtualResult = ProposeInstallResult;
 
   export type ProposeInstallResult = {
     appInstanceId: string;
@@ -443,12 +398,6 @@ export namespace ProtocolTypes {
   };
 
   export type UninstallResult = {};
-
-  export type UninstallVirtualParams = UninstallParams & {
-    intermediaryIdentifier: string;
-  };
-
-  export type UninstallVirtualResult = UninstallResult;
 
   export type UpdateStateParams = {
     appInstanceId: string;
@@ -481,10 +430,8 @@ export namespace ProtocolTypes {
     | GetAppInstancesParams
     | GetProposedAppInstancesParams
     | ProposeInstallParams
-    | ProposeInstallVirtualParams
     | RejectInstallParams
     | InstallParams
-    | InstallVirtualParams
     | GetStateParams
     | GetAppInstanceDetailsParams
     | TakeActionParams
@@ -496,10 +443,8 @@ export namespace ProtocolTypes {
     | GetAppInstancesResult
     | GetProposedAppInstancesResult
     | ProposeInstallResult
-    | ProposeInstallVirtualResult
     | RejectInstallResult
     | InstallResult
-    | InstallVirtualResult
     | GetStateResult
     | GetAppInstanceDetailsResult
     | TakeActionResult

@@ -4,12 +4,10 @@ import {
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
-  INSTALL_VIRTUAL_EVENT,
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
-  UNINSTALL_VIRTUAL_EVENT,
   UPDATE_STATE_EVENT,
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
@@ -32,12 +30,10 @@ import {
   DepositFailedMessage,
   DepositStartedMessage,
   InstallMessage,
-  InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
   UninstallMessage,
-  UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
@@ -99,10 +95,6 @@ export default class ListenerService implements OnModuleInit {
       INSTALL_EVENT: async (data: InstallMessage): Promise<void> => {
         this.logEvent(INSTALL_EVENT, data);
       },
-      // TODO: make cf return app instance id and app def?
-      INSTALL_VIRTUAL_EVENT: async (data: InstallVirtualMessage): Promise<void> => {
-        this.logEvent(INSTALL_VIRTUAL_EVENT, data);
-      },
       PROPOSE_INSTALL_EVENT: (data: ProposeMessage): void => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           this.log.debug(`Received proposal from our own node. Doing nothing.`);
@@ -145,9 +137,6 @@ export default class ListenerService implements OnModuleInit {
           }
           throw e;
         }
-      },
-      UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
-        this.logEvent(UNINSTALL_VIRTUAL_EVENT, data);
       },
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {

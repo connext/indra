@@ -6,13 +6,11 @@ import {
   ContractABI,
   CreateChannelMessage,
   InstallMessage,
-  InstallVirtualMessage,
   OutcomeType,
   ProposeMessage,
   ProtocolTypes,
   SolidityValueType,
   UninstallMessage,
-  UninstallVirtualMessage,
   CREATE_CHANNEL_EVENT,
   UNINSTALL_EVENT,
 } from "@connext/types";
@@ -529,48 +527,6 @@ export function constructAppProposalRpc(
   };
 }
 
-export function constructInstallVirtualRpc(
-  appInstanceId: string,
-  intermediaryIdentifier: string,
-): Rpc {
-  return {
-    parameters: {
-      appInstanceId,
-      intermediaryIdentifier,
-    } as CFCoreTypes.InstallVirtualParams,
-    id: Date.now(),
-    methodName: ProtocolTypes.chan_installVirtual,
-  };
-}
-
-export function constructVirtualProposalRpc(
-  proposedToIdentifier: string,
-  appDefinition: string,
-  abiEncodings: AppABIEncodings,
-  initialState: SolidityValueType = {},
-  initiatorDeposit: BigNumber = Zero,
-  initiatorDepositTokenAddress = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-  responderDeposit: BigNumber = Zero,
-  responderDepositTokenAddress = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-): Rpc {
-  const installProposalParams = constructAppProposalRpc(
-    proposedToIdentifier,
-    appDefinition,
-    abiEncodings,
-    initialState,
-    initiatorDeposit,
-    initiatorDepositTokenAddress,
-    responderDeposit,
-    responderDepositTokenAddress,
-  ).parameters as CFCoreTypes.ProposeInstallParams;
-
-  return {
-    parameters: installProposalParams,
-    id: Date.now(),
-    methodName: ProtocolTypes.chan_proposeInstall,
-  };
-}
-
 /**
  * @param proposalParams The parameters of the installation proposal.
  * @param appInstanceProposal The proposed app instance contained in the Node.
@@ -642,20 +598,6 @@ export function constructUninstallRpc(appInstanceId: string): Rpc {
     } as CFCoreTypes.UninstallParams,
     id: Date.now(),
     methodName: ProtocolTypes.chan_uninstall,
-  };
-}
-
-export function constructUninstallVirtualRpc(
-  appInstanceId: string,
-  intermediaryIdentifier: string,
-): Rpc {
-  return {
-    parameters: {
-      appInstanceId,
-      intermediaryIdentifier,
-    } as CFCoreTypes.UninstallVirtualParams,
-    id: Date.now(),
-    methodName: ProtocolTypes.chan_uninstallVirtual,
   };
 }
 
@@ -786,56 +728,6 @@ export async function installApp(
   });
 }
 
-export async function installVirtualApp(
-  nodeA: Node,
-  nodeB: Node,
-  nodeC: Node,
-  appDefinition: string,
-  initialState?: SolidityValueType,
-  assetId?: string,
-  initiatorDeposit?: BigNumber,
-  responderDeposit?: BigNumber,
-): Promise<string> {
-  nodeC.on(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
-    const { appInstanceId, params } = await proposal;
-    const {
-      data: { appInstanceId: eventAppInstanceId },
-    } = msg;
-    if (eventAppInstanceId === appInstanceId) {
-      assertProposeMessage(nodeA.publicIdentifier, msg, params);
-      await nodeC.rpcRouter.dispatch(
-        constructInstallVirtualRpc(appInstanceId, nodeB.publicIdentifier),
-      );
-    }
-  });
-
-  // await in listener bc event is emitted before
-  // promise officially resolves
-  const proposal = makeVirtualProposal(
-    nodeA,
-    nodeC,
-    appDefinition,
-    initialState,
-    assetId,
-    initiatorDeposit,
-    responderDeposit,
-  );
-
-  return new Promise((resolve: (appInstanceId: string) => void) =>
-    nodeA.on(`INSTALL_VIRTUAL_EVENT`, async (msg: InstallVirtualMessage) => {
-      const { appInstanceId } = await proposal;
-      if (msg.data.params.appInstanceId === appInstanceId) {
-        assertNodeMessage(msg, {
-          from: nodeC.publicIdentifier,
-          type: `INSTALL_VIRTUAL_EVENT`,
-          data: { params: { appInstanceId } },
-        });
-        resolve(appInstanceId);
-      }
-    }),
-  );
-}
-
 export async function confirmChannelCreation(
   nodeA: Node,
   nodeB: Node,
@@ -868,84 +760,8 @@ export async function getState(nodeA: Node, appInstanceId: string): Promise<Soli
   return (getStateResult.result.result as CFCoreTypes.GetStateResult).state;
 }
 
-export async function makeVirtualProposal(
-  nodeA: Node,
-  nodeC: Node,
-  appDefinition: string,
-  initialState?: SolidityValueType,
-  assetId?: string,
-  initiatorDeposit?: BigNumber,
-  responderDeposit?: BigNumber,
-): Promise<{
-  appInstanceId: string;
-  params: ProposeInstallProtocolParams;
-}> {
-  const appContext = getAppContext(appDefinition, initialState);
-
-  const virtualProposalRpc = constructVirtualProposalRpc(
-    nodeC.publicIdentifier,
-    appContext.appDefinition,
-    appContext.abiEncodings,
-    appContext.initialState,
-    initiatorDeposit || One,
-    assetId || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-    responderDeposit || Zero,
-    assetId || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-  );
-
-  const params = virtualProposalRpc.parameters as ProposeInstallProtocolParams;
-
-  const {
-    result: {
-      result: { appInstanceId },
-    },
-  } = await nodeA.rpcRouter.dispatch({
-    parameters: params,
-    methodName: ProtocolTypes.chan_proposeInstall,
-    id: Date.now(),
-  });
-
-  return { appInstanceId, params };
-}
-
-export async function installTTTVirtual(
-  node: Node,
-  appInstanceId: string,
-  intermediaryIdentifier: string,
-) {
-  return await node.rpcRouter.dispatch(
-    constructInstallVirtualRpc(appInstanceId, intermediaryIdentifier),
-  );
-}
-
 export async function makeInstallCall(node: Node, appInstanceId: string) {
   return await node.rpcRouter.dispatch(constructInstallRpc(appInstanceId));
-}
-
-export async function makeVirtualProposeCall(
-  nodeA: Node,
-  nodeC: Node,
-  appDefinition: string,
-  initialState?: SolidityValueType,
-): Promise<{
-  appInstanceId: string;
-  params: CFCoreTypes.ProposeInstallVirtualParams;
-}> {
-  const appContext = getAppContext(appDefinition, initialState);
-
-  const virtualProposalRpc = constructVirtualProposalRpc(
-    nodeC.publicIdentifier,
-    appContext.appDefinition,
-    appContext.abiEncodings,
-    appContext.initialState,
-  );
-
-  const response = await nodeA.rpcRouter.dispatch(virtualProposalRpc);
-
-  return {
-    appInstanceId: (response.result as CFCoreTypes.ProposeInstallVirtualResult).appInstanceId,
-    params: virtualProposalRpc.parameters as CFCoreTypes.ProposeInstallVirtualParams,
-  };
 }
 
 export function makeProposeCall(
@@ -1088,21 +904,6 @@ export function getAppContext(
     default:
       throw new Error(`Proposing the specified app is not supported: ${appDefinition}`);
   }
-}
-
-export async function uninstallVirtualApp(
-  node: Node,
-  counterparty: Node,
-  intermediaryPubId: string,
-  appId: string,
-): Promise<string> {
-  const rpc = constructUninstallVirtualRpc(appId, intermediaryPubId);
-  return new Promise(async resolve => {
-    counterparty.once(`UNINSTALL_VIRTUAL_EVENT`, (msg: UninstallVirtualMessage) => {
-      resolve(msg.data.appInstanceId);
-    });
-    await node.rpcRouter.dispatch(rpc);
-  });
 }
 
 export async function takeAppAction(node: Node, appId: string, action: any) {
