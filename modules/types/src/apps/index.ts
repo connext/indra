@@ -14,27 +14,41 @@ import {
   FastSignedTransferResponse,
   ResolveFastSignedTransferParameters,
   FAST_SIGNED_TRANSFER,
+  ResolveFastSignedTransferResponse,
 } from "./FastSignedTransfer";
+import {
+  HashLockTransferParameters,
+  HashLockTransferResponse,
+  ResolveHashLockTransferParameters,
+  ResolveHashLockTransferResponse,
+} from "./HashLockTransferApp";
 export * from "./CoinBalanceRefundApp";
 export * from "./FastSignedTransfer";
+export * from "./HashLockTransferApp";
 export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleTwoPartySwapApp";
 
 export type ConditionalTransferParameters =
   | LinkedTransferParameters
   | LinkedTransferToRecipientParameters
-  | FastSignedTransferParameters;
+  | FastSignedTransferParameters
+  | HashLockTransferParameters;
 
 export type ConditionalTransferResponse =
   | LinkedTransferResponse
   | LinkedTransferToRecipientResponse
-  | FastSignedTransferResponse;
+  | FastSignedTransferResponse
+  | HashLockTransferResponse;
 
 export type ResolveConditionParameters =
   | ResolveLinkedTransferParameters
   | ResolveLinkedTransferToRecipientParameters
-  | ResolveFastSignedTransferParameters;
-export type ResolveConditionResponse = ResolveLinkedTransferResponse;
+  | ResolveFastSignedTransferParameters
+  | ResolveHashLockTransferParameters;
+export type ResolveConditionResponse =
+  | ResolveLinkedTransferResponse
+  | ResolveFastSignedTransferResponse
+  | ResolveHashLockTransferResponse;
 
 export type ConditionalTransferTypes =
   | typeof LINKED_TRANSFER
