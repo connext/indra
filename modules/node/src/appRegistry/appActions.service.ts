@@ -90,9 +90,10 @@ export class AppActionsService {
   ): Promise<void> {
     switch (action.actionType) {
       case FastSignedTransferActionType.CREATE: {
+        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
         await this.linkedTransferService.saveFastSignedTransfer(
           from,
-          AddressZero, // TODO
+          appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress, // TODO
           bigNumberify(action.amount),
           appInstanceId,
           action.signer,
