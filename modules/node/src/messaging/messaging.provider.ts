@@ -1,4 +1,5 @@
 import { MessagingService } from "@connext/messaging";
+// import { getMessagingPrefix } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { ClientProxy, ClientProxyFactory, Transport } from "@nestjs/microservices";
 
@@ -19,9 +20,11 @@ export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>
     const getBearerToken = async (): Promise<string> => {
       return auth.vendAdminToken(config.getPublicIdentifier());
     };
+    const network = await config.getEthNetwork();
     const messagingService = new MessagingService(
       config.getMessagingConfig(),
-      "indra",
+      // getMessagingPrefix(network.chainId),
+      `INDRA.${network.chainId}`,
       getBearerToken,
     );
     await messagingService.connect();
