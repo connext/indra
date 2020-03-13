@@ -1,18 +1,19 @@
-import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
 import { AppRegistry } from "./app";
+import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
+import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
+import { IChannelProvider } from "./channelProvider";
+import { MinimalTransaction } from "./commitments";
 import {
   NetworkContext,
   ResolveLinkedTransferResponse,
   ResolveFastSignedTransferResponse,
 } from "./contracts";
-import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
-import { IChannelProvider } from "./channelProvider";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
-import { ProtocolTypes } from "./protocol";
+import { DepositResult } from "./methods";
 
 ////////////////////////////////////
-///////// NODE RESPONSE TYPES
+// NODE RESPONSE TYPES
 
 export type ContractAddresses = NetworkContext & {
   Token: string;
@@ -68,7 +69,7 @@ export type CreateChannelResponse = {
 };
 
 // TODO: why was this changed?
-export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
+export type RequestCollateralResponse = DepositResult | undefined;
 
 ////////////////////////////////////
 // NODE API CLIENT
@@ -139,7 +140,7 @@ export interface INodeApiClient {
   getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  withdraw(tx: ProtocolTypes.MinimalTransaction): Promise<TransactionResponse>;
+  withdraw(tx: MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;

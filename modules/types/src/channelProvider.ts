@@ -1,10 +1,10 @@
-import { CFCoreTypes } from "./cfCore";
 import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
-import { ProtocolTypes } from "./protocol";
+import { MethodName } from "./methods";
 import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
+import { ILockService } from "./lock";
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -62,7 +62,7 @@ export const ConnextRpcMethods = {
 };
 export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
 
-export type ChannelProviderRpcMethod = ConnextRpcMethod | CFCoreTypes.RpcMethodName;
+export type ChannelProviderRpcMethod = ConnextRpcMethod | MethodName;
 
 export type ChannelProviderConfig = {
   freeBalanceAddress: string;
@@ -76,8 +76,8 @@ export type ChannelProviderConfig = {
 
 export interface CFChannelProviderOptions {
   ethProvider: any;
-  keyGen: ProtocolTypes.IPrivateKeyGenerator;
-  lockService?: ProtocolTypes.ILockService;
+  keyGen(s: string): Promise<string>;
+  lockService?: ILockService;
   logger?: ILoggerService;
   messaging: any;
   networkContext: NetworkContext;

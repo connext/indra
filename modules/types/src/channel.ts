@@ -1,6 +1,6 @@
 import { AppInstanceJson } from "./app";
 import { Address, BigNumber, TransactionResponse } from "./basic";
-import { ProtocolTypes } from "./protocol";
+import { GetFreeBalanceStateResult } from "./methods";
 
 ////////////////////////////////////
 ////// CHANNEL TYPES
@@ -41,7 +41,7 @@ export type ChannelState<T = string> = {
   apps: AppInstanceJson[]; // result of getApps()
   // TODO: CF types should all be generic, this will be
   // a BigNumber
-  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
+  freeBalance: GetFreeBalanceStateResult;
 };
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 

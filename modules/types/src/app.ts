@@ -9,13 +9,6 @@ import {
 ////////////////////////////////////
 ////// App Instances
 
-export enum PersistAppType {
-  Proposal = "proposal",
-  Instance = "instance", // install / update
-  Reject = "reject",
-  Uninstall = "uninstall",
-}
-
 export type AppInterface = {
   addr: Address;
   stateEncoding: ABIEncoding;
@@ -61,7 +54,6 @@ export type AppInstanceJson = {
   participants: string[];
   defaultTimeout: number;
   appInterface: AppInterface;
-  isVirtualApp: boolean;
   appSeqNo: number;
   latestState: SolidityValueType;
   latestVersionNumber: number;

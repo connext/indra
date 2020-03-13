@@ -1,5 +1,5 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { BigNumber, SolidityValueType } from "./basic";
+import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
 import { OutcomeType } from "./contracts";
 
 export enum Protocol {

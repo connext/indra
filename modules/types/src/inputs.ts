@@ -1,11 +1,14 @@
 import { Address, BigNumber } from "./basic";
 import { AssetAmount } from "./channel";
-import { ProtocolTypes } from "./protocol";
+import {
+  DepositResult,
+  RequestDepositRightsResult,
+} from "./methods";
 
 /////////////////////////////////
-///////// CLIENT INPUT TYPES
+// Client input types
 
-////// Deposit types
+// Deposit types
 // TODO: we should have a way to deposit multiple things
 export type DepositParameters<T = string> = Omit<AssetAmount<T>, "assetId"> & {
   assetId?: Address; // if not supplied, assume it is eth
@@ -14,7 +17,7 @@ export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 
 export type RequestDepositRightsParameters = Omit<DepositParameters, "amount">;
 
-export type RequestDepositRightsResponse = ProtocolTypes.RequestDepositRightsResult;
+export type RequestDepositRightsResponse = RequestDepositRightsResult;
 
 export type CheckDepositRightsParameters = RequestDepositRightsParameters;
 
@@ -27,7 +30,7 @@ export type CheckDepositRightsResponse<T = string> = {
 
 export type RescindDepositRightsParameters = RequestDepositRightsParameters;
 
-export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
+export type RescindDepositRightsResponse = DepositResult;
 
 ////// Withdraw types
 export type WithdrawParameters<T = string> = DepositParameters<T> & {

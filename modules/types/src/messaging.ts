@@ -1,7 +1,20 @@
 import { BigNumber, TransactionReceipt } from "./basic";
-import { EventName } from "./events";
+import {
+  EventName,
+  UninstallEventData,
+  UpdateStateEventData,
+} from "./events";
 import { ILoggerService } from "./logger";
-import { ProtocolMessage, ProtocolTypes } from "./protocol";
+import {
+  CreateChannelResult,
+  DepositParams,
+  InstallParams,
+  MethodRequest,
+  MethodResponse,
+  ProposeInstallParams,
+  WithdrawParams,
+} from "./methods";
+import { Protocol, ProtocolParameters } from "./protocol";
 
 ////////////////////////////////////////
 // Message Metadata & Wrappers
@@ -107,16 +120,16 @@ export interface NodeMessageWrappedProtocolMessage extends NodeMessage {
 }
 
 export interface CreateChannelMessage extends NodeMessage {
-  data: ProtocolTypes.CreateChannelResult;
+  data: CreateChannelResult;
 }
 
 export interface DepositConfirmationMessage extends NodeMessage {
-  data: ProtocolTypes.DepositParams;
+  data: DepositParams;
 }
 
 export interface DepositFailedMessage extends NodeMessage {
   data: {
-    params: ProtocolTypes.DepositParams;
+    params: DepositParams;
     errors: string[];
   };
 }
@@ -130,25 +143,16 @@ export interface DepositStartedMessage extends NodeMessage {
 
 export interface InstallMessage extends NodeMessage {
   data: {
-    params: ProtocolTypes.InstallParams;
-  };
-}
-
-export interface InstallVirtualMessage extends NodeMessage {
-  // TODO: update this to include the intermediares
-  data: {
-    params: ProtocolTypes.InstallParams;
+    params: InstallParams;
   };
 }
 
 export interface ProposeMessage extends NodeMessage {
   data: {
-    params: ProtocolTypes.ProposeInstallParams;
+    params: ProposeInstallParams;
     appInstanceId: string;
   };
 }
-
-export interface RejectInstallVirtualMessage extends RejectProposalMessage {}
 
 export interface RejectProposalMessage extends NodeMessage {
   data: {
@@ -157,16 +161,11 @@ export interface RejectProposalMessage extends NodeMessage {
 }
 
 export interface UninstallMessage extends NodeMessage {
-  data: ProtocolTypes.UninstallEventData;
-}
-
-export interface UninstallVirtualMessage extends NodeMessage {
-  // TODO: update this to include the intermediares
-  data: ProtocolTypes.UninstallVirtualParams;
+  data: UninstallEventData;
 }
 
 export interface UpdateStateMessage extends NodeMessage {
-  data: ProtocolTypes.UpdateStateEventData;
+  data: UpdateStateEventData;
 }
 
 export interface WithdrawConfirmationMessage extends NodeMessage {
@@ -181,21 +180,18 @@ export interface WithdrawFailedMessage extends NodeMessage {
 
 export interface WithdrawStartedMessage extends NodeMessage {
   data: {
-    params: ProtocolTypes.WithdrawParams;
+    params: WithdrawParams;
     txHash?: string; // not included in responder events
   };
 }
 
 export type EventEmittedMessage =
   | RejectProposalMessage
-  | RejectInstallVirtualMessage
   | WithdrawConfirmationMessage
   | WithdrawStartedMessage
   | WithdrawFailedMessage
-  | UninstallVirtualMessage
   | UninstallMessage
   | UpdateStateMessage
-  | InstallVirtualMessage
   | InstallMessage
   | ProposeMessage
   | DepositConfirmationMessage

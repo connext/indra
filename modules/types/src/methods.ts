@@ -1,4 +1,9 @@
-import { Address, BigNumber, Xpub } from "./basic";
+import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
+
+import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
+import { OutcomeType } from "./contracts";
+import { StateChannelJSON } from "./state";
+import { MinimalTransaction } from "./commitments";
 
 ////////////////////////////////////////
 export const chan_create = "chan_create";
@@ -170,6 +175,10 @@ export type InstallParams = {
   appInstanceId: string;
 };
 
+export type InstallResult = {
+  appInstance: AppInstanceJson;
+};
+
 ////////////////////////////////////////
 export const chan_requestDepositRights = "chan_requestDepositRights";
 
@@ -287,7 +296,7 @@ export type WithdrawCommitmentResult = {
 };
 
 ////////////////////////////////////////
-export const RpcMethodNames = {
+export const MethodNames = {
   [chan_create]: chan_create,
   [chan_deployStateDepositHolder]: chan_deployStateDepositHolder,
   [chan_deposit]: chan_deposit,
@@ -312,7 +321,7 @@ export const RpcMethodNames = {
   [chan_withdraw]: chan_withdraw,
   [chan_withdrawCommitment]: chan_withdrawCommitment,
 };
-export type RpcMethodName = keyof typeof RpcMethodNames;
+export type MethodName = keyof typeof MethodNames;
 
 export type MethodParams =
   | GetAppInstancesParams
@@ -341,6 +350,11 @@ export type MethodResult =
   | CreateChannelResult
   | GetChannelAddressesResult
   | DeployStateDepositHolderResult;
+
+export type MethodMessage = {
+  type: MethodName;
+  requestId: string;
+};
 
 export type MethodRequest = MethodMessage & {
   params: MethodParams;

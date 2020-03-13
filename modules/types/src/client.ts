@@ -12,7 +12,7 @@ import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { BigNumber } from "./basic";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
-import { ConnextEvent } from "./events";
+import { EventName } from "./events";
 import {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -32,9 +32,25 @@ import {
   RequestCollateralResponse,
   Transfer,
 } from "./node";
-import { ProtocolTypes } from "./protocol";
+import {
+  DeployStateDepositHolderResult,
+  DepositResult,
+  GetAppInstanceDetailsResult,
+  GetFreeBalanceStateResult,
+  GetProposedAppInstanceResult,
+  GetProposedAppInstancesResult,
+  GetStateChannelResult,
+  GetStateResult,
+  InstallResult,
+  ProposeInstallParams,
+  ProposeInstallResult,
+  RequestDepositRightsResult,
+  MethodName,
+  TakeActionResult,
+  UninstallResult,
+  UpdateStateResult,
+} from "./methods";
 import { IBackupServiceAPI, IClientStore, StoreType, WithdrawalMonitorObject } from "./store";
-import { CFCoreTypes } from "./cfCore";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
@@ -78,11 +94,11 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
-  once(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
-  emit(event: ConnextEvent | CFCoreTypes.RpcMethodName, data: any): boolean;
+  on(event: EventName | MethodName, callback: (...args: any[]) => void): void;
+  once(event: EventName | MethodName, callback: (...args: any[]) => void): void;
+  emit(event: EventName | MethodName, data: any): boolean;
   removeListener(
-    event: ConnextEvent | CFCoreTypes.RpcMethodName,
+    event: EventName | MethodName,
     callback: (...args: any[]) => void,
   ): void;
 
@@ -98,7 +114,7 @@ export interface IConnextClient {
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   requestDepositRights(
     params: RequestDepositRightsParameters,
-  ): Promise<ProtocolTypes.RequestDepositRightsResult>;
+  ): Promise<RequestDepositRightsResult>;
   rescindDepositRights(
     params: RescindDepositRightsParameters,
   ): Promise<RescindDepositRightsResponse>;
@@ -137,32 +153,30 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
-  deployMultisig(): Promise<ProtocolTypes.DeployStateDepositHolderResult>;
-  getStateChannel(): Promise<ProtocolTypes.GetStateChannelResult>;
+  deployMultisig(): Promise<DeployStateDepositHolderResult>;
+  getStateChannel(): Promise<GetStateChannelResult>;
   providerDeposit(
     amount: BigNumber,
     assetId: string,
     notifyCounterparty: boolean,
-  ): Promise<ProtocolTypes.DepositResult>;
-  getFreeBalance(assetId?: string): Promise<ProtocolTypes.GetFreeBalanceStateResult>;
+  ): Promise<DepositResult>;
+  getFreeBalance(assetId?: string): Promise<GetFreeBalanceStateResult>;
   getAppInstances(): Promise<AppInstanceJson[]>;
-  getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
-  getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
+  getAppInstanceDetails(appInstanceId: string): Promise<GetAppInstanceDetailsResult>;
+  getAppState(appInstanceId: string): Promise<GetStateResult>;
   getLatestNodeSubmittedWithdrawal(): Promise<WithdrawalMonitorObject>;
   getProposedAppInstances(
     multisigAddress?: string,
-  ): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;
+  ): Promise<GetProposedAppInstancesResult | undefined>;
   getProposedAppInstance(
     appInstanceId: string,
-  ): Promise<ProtocolTypes.GetProposedAppInstanceResult | undefined>;
+  ): Promise<GetProposedAppInstanceResult | undefined>;
   proposeInstallApp(
-    params: ProtocolTypes.ProposeInstallParams,
-  ): Promise<ProtocolTypes.ProposeInstallResult>;
-  installVirtualApp(appInstanceId: string): Promise<ProtocolTypes.InstallVirtualResult>;
-  installApp(appInstanceId: string): Promise<ProtocolTypes.InstallResult>;
-  rejectInstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
-  takeAction(appInstanceId: string, action: any): Promise<ProtocolTypes.TakeActionResult>;
-  updateState(appInstanceId: string, newState: any): Promise<ProtocolTypes.UpdateStateResult>;
-  uninstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
-  uninstallVirtualApp(appInstanceId: string): Promise<ProtocolTypes.UninstallVirtualResult>;
+    params: ProposeInstallParams,
+  ): Promise<ProposeInstallResult>;
+  installApp(appInstanceId: string): Promise<InstallResult>;
+  rejectInstallApp(appInstanceId: string): Promise<UninstallResult>;
+  takeAction(appInstanceId: string, action: any): Promise<TakeActionResult>;
+  updateState(appInstanceId: string, newState: any): Promise<UpdateStateResult>;
+  uninstallApp(appInstanceId: string): Promise<UninstallResult>;
 }
