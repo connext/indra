@@ -24,7 +24,7 @@ import { AddressZero, One, Zero } from "ethers/constants";
 import { createClient, fundChannel, expect } from "../util";
 import { xkeyKthAddress } from "@connext/cf-core";
 
-describe("Fast Signed Transfer", () => {
+describe.skip("Fast Signed Transfer", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
 
