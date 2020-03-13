@@ -17,6 +17,7 @@ import {
   ResolveFastSignedTransferResponse,
 } from "./FastSignedTransfer";
 import {
+  HASHLOCK_TRANSFER,
   HashLockTransferParameters,
   HashLockTransferResponse,
   ResolveHashLockTransferParameters,
@@ -53,4 +54,5 @@ export type ResolveConditionResponse =
 export type ConditionalTransferTypes =
   | typeof LINKED_TRANSFER
   | typeof LINKED_TRANSFER_TO_RECIPIENT
-  | typeof FAST_SIGNED_TRANSFER;
+  | typeof FAST_SIGNED_TRANSFER
+  | typeof HASHLOCK_TRANSFER;

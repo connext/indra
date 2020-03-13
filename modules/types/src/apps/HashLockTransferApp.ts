@@ -13,22 +13,19 @@ export const HASHLOCK_TRANSFER = "HASHLOCK_TRANSFER";
 export type HashLockTransferParameters<T = string> = {
   conditionType: typeof HASHLOCK_TRANSFER;
   amount: T;
-  assetId?: string;
-  paymentId: string;
   preImage: string;
+  assetId?: string;
   meta?: object;
 };
 
 // Client Controller Response
 export type HashLockTransferResponse = {
-  paymentId: string;
-  preImage: string;
-  meta?: object;
+  appId: string;
 };
 
 // Client Resolve Params
 export type ResolveHashLockTransferParameters = {
-  paymentId: string;
+  conditionType: typeof HASHLOCK_TRANSFER;
   preImage: string;
 };
 
@@ -36,7 +33,6 @@ export type ResolveHashLockTransferParameters = {
 export type ResolveHashLockTransferResponse<T = string> = {
   appId: string;
   sender: string;
-  paymentId: string;
   amount: T;
   assetId: string;
   meta?: object;
@@ -58,11 +54,10 @@ export const HashLockTransferAppActionEncoding = `tuple(bytes32 preImage)`;
 // ABI Encoding TS Types
 export type HashLockTransferAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[];
-  linkedHash: string;
-  amount: T;
-  assetId: string;
-  paymentId: string;
+  lockHash: string;
   preImage: string;
+  turnNum: T;
+  finalized: boolean;
 };
 export type HashLockTransferAppStateBigNumber = HashLockTransferAppState<BigNumber>;
 export type HashLockTransferAppAction = {

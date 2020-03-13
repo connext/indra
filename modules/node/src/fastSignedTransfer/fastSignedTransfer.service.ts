@@ -10,8 +10,6 @@ import {
   FastSignedTransferActionType,
   ResolveFastSignedTransferResponse,
   FastSignedTransferApp,
-  FastSignedTransferAppState,
-  FastSignedTransferAppAction,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
