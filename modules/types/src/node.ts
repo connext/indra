@@ -52,7 +52,7 @@ export type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
   nodePublicIdentifier: string;
-  messaging: MessagingConfig;
+  messagingUrl: string[];
   supportedTokenAddresses: string[];
 };
 

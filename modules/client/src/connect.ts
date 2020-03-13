@@ -10,7 +10,6 @@ import {
   VerifyNonceDtoType,
   CoinBalanceRefundState,
   ILoggerService,
-  delay,
   // getMessagingPrefix,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
@@ -42,7 +41,7 @@ import {
 
 const createMessagingService = async (
   logger: ILoggerService,
-  natsUrl: string,
+  natsUrl: string[],
   nodeUrl: string,
   xpub: string,
   chainId: number,
@@ -99,7 +98,6 @@ export const connect = async (
     logLevel,
     mnemonic,
     nodeUrl,
-    natsUrl,
   } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
@@ -127,12 +125,14 @@ export const connect = async (
     }
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
+    config = await NodeApiClient.config(nodeUrl);
+
     log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
     if (!messaging) {
       // TODO nonce generation needs to be added to rpc methods for channelProvider to work
       messaging = await createMessagingService(
         log,
-        natsUrl,
+        config.messagingUrl,
         nodeUrl,
         channelProvider.config.userPublicIdentifier,
         network.chainId,
@@ -146,7 +146,6 @@ export const connect = async (
 
     // create a new node api instance
     node = new NodeApiClient({ channelProvider, logger: log, messaging, nodeUrl });
-    config = await node.config();
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
@@ -177,11 +176,13 @@ export const connect = async (
       return wallet.signMessage(nonce);
     };
 
-    log.debug(`Creating messaging service client ${natsUrl}`);
+    config = await NodeApiClient.config(nodeUrl);
+
+    log.debug(`Creating messaging service client ${config.messagingUrl}`);
     if (!messaging) {
       messaging = await createMessagingService(
         log,
-        natsUrl,
+        config.messagingUrl,
         nodeUrl,
         xpub,
         network.chainId,

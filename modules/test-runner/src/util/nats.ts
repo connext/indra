@@ -5,7 +5,7 @@ export let natsClient: Client | undefined = undefined;
 
 export const connectNats = async (): Promise<Client> => {
   if (!natsClient) {
-    natsClient = await connect({ servers: [env.nodeUrl] });
+    natsClient = await connect({ servers: [env.natsUrl] });
   }
   return natsClient;
 };

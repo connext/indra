@@ -32,10 +32,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     super(log, messaging);
   }
 
-  async getConfig(): Promise<GetConfigResponse> {
-    return await this.channelService.getConfig();
-  }
-
   async getChannel(pubId: string): Promise<GetChannelResponse> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(pubId);
     return channel as GetChannelResponse;
@@ -153,9 +149,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
       "*.channel.latestWithdrawal",
       this.authService.parseXpub(this.getLatestWithdrawal.bind(this)),
     );
-
-    // should move this at some point, this will probably move to be an HTTP endpoint
-    await super.connectRequestReponse("config.get", this.getConfig.bind(this));
   }
 }
 

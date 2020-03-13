@@ -49,6 +49,11 @@ export class NodeApiClient implements INodeApiClient {
     this.nodeUrl = opts.nodeUrl;
   }
 
+  public static async config(nodeUrl: string): Promise<GetConfigResponse> {
+    const response: AxiosResponse<GetConfigResponse> = await axios.get(`${nodeUrl}/config`);
+    return response.data;
+  }
+
   ////////////////////////////////////////
   // GETTERS/SETTERS
   get channelProvider(): IChannelProvider | undefined {
@@ -100,7 +105,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async appRegistry(): Promise<AppRegistry> {
-    const response: AxiosResponse<AppRegistry> = await axios.get(`${this.nodeUrl}/config`);
+    const response: AxiosResponse<AppRegistry> = await axios.get(`${this.nodeUrl}/app-registry`);
     return response.data;
   }
 

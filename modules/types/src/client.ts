@@ -48,7 +48,6 @@ export interface ClientOptions {
   logLevel?: number;
   messaging?: IMessagingService;
   mnemonic?: string;
-  natsUrl?: string;
   nodeUrl?: string; // HTTP endpoint
   store?: Store;
   xpub?: string;

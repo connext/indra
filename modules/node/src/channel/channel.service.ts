@@ -60,16 +60,6 @@ export class ChannelService {
     this.log.setContext("ChannelService");
   }
 
-  async getConfig(): Promise<GetConfigResponse> {
-    return {
-      contractAddresses: await this.configService.getContractAddresses(),
-      ethNetwork: await this.configService.getEthNetwork(),
-      messaging: this.configService.getMessagingConfig(),
-      nodePublicIdentifier: this.cfCoreService.cfCore.publicIdentifier,
-      supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
-    };
-  }
-
   /**
    * Returns all channel records.
    * @param available available value of channel
