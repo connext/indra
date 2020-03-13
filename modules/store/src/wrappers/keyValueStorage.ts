@@ -5,7 +5,7 @@ import {
   StateChannelJSON,
   AppInstanceJson,
   SetStateCommitmentJSON,
-  ProtocolTypes,
+  MinimalTransaction,
   ConditionalTransactionCommitmentJSON,
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
@@ -153,14 +153,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
     return safeJsonParse(await this.getItem(withdrawalKey));
   }
 
   async saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
     return this.setItem(withdrawalKey, safeJsonStringify(commitment));

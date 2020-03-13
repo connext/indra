@@ -1,5 +1,5 @@
 import {
-  CFCoreTypes,
+  NodeMessage,
   ILoggerService,
   IMessagingService,
   MessagingConfig,
@@ -37,11 +37,11 @@ export class NatsMessagingService implements IMessagingService {
   }
 
   ////////////////////////////////////////
-  // CFCoreTypes.IMessagingService Methods
+  // IMessagingService Methods
 
   async onReceive(
     subject: string,
-    callback: (msg: CFCoreTypes.NodeMessage) => void,
+    callback: (msg: NodeMessage) => void,
   ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
@@ -52,13 +52,13 @@ export class NatsMessagingService implements IMessagingService {
         } else {
           const data = typeof msg.data === `string` ? JSON.parse(msg).data : msg.data;
           this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-          callback(data as CFCoreTypes.NodeMessage);
+          callback(data as NodeMessage);
         }
       },
     );
   }
 
-  async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
+  async send(to: string, msg: NodeMessage): Promise<void> {
     this.assertConnected();
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
     this.connection!.publish(this.prependKey(`${to}.${msg.from}`), msg);
@@ -83,7 +83,7 @@ export class NatsMessagingService implements IMessagingService {
 
   async subscribe(
     subject: string,
-    callback: (msg: CFCoreTypes.NodeMessage) => void,
+    callback: (msg: NodeMessage) => void,
   ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
@@ -94,7 +94,7 @@ export class NatsMessagingService implements IMessagingService {
         } else {
           const data = typeof msg === `string` ? JSON.parse(msg) : msg;
           this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
-          callback(data as CFCoreTypes.NodeMessage);
+          callback(data as NodeMessage);
         }
       },
     );

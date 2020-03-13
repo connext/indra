@@ -3,10 +3,10 @@ import {
   AppInstanceProposal,
   ConditionalTransactionCommitmentJSON,
   IClientStore,
-  ProtocolTypes,
-  STORE_SCHEMA_VERSION,
+  MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
+  STORE_SCHEMA_VERSION,
   StoreType,
   StoreTypes,
   WithdrawalMonitorObject,
@@ -141,13 +141,13 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.saveLatestSetStateCommitment(appIdentityHash, commitment);
   }
 
-  getWithdrawalCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
+  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.internalStore.getWithdrawalCommitment(multisigAddress);
   }
 
   saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     return this.internalStore.saveWithdrawalCommitment(multisigAddress, commitment);
   }

@@ -1,13 +1,13 @@
 import {
-  SetStateCommitmentJSON,
-  ConditionalTransactionCommitmentJSON,
-  ProtocolTypes,
   AppInstanceJson,
   AppInstanceProposal,
-  StateChannelJSON,
-  IClientStore,
-  STORE_SCHEMA_VERSION,
+  ConditionalTransactionCommitmentJSON,
   IBackupServiceAPI,
+  IClientStore,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
 } from "@connext/types";
 
@@ -19,7 +19,7 @@ export class MemoryStorage implements IClientStore {
     string,
     ConditionalTransactionCommitmentJSON
   > = new Map();
-  private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
+  private withdrawals: Map<string, MinimalTransaction> = new Map();
   private proposedApps: Map<string, AppInstanceProposal> = new Map();
   private appInstances: Map<string, AppInstanceJson> = new Map();
   private userWithdrawals: WithdrawalMonitorObject | undefined = undefined;
@@ -107,13 +107,13 @@ export class MemoryStorage implements IClientStore {
 
   async getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     return this.withdrawals.get(multisigAddress);
   }
 
   async saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     this.withdrawals.set(multisigAddress, commitment);
   }
