@@ -1,26 +1,43 @@
-import { DecString } from "../../basic";
+import { Address, DecString, HexString } from "../../basic";
 
 import { CoinTransfer } from "../funding";
-import { singleAssetTwoPartyCoinTransferEncoding } from "../misc";
+import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
 
 export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
+export const LINKED_TRANSFER = "LINKED_TRANSFER";
+export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
+
+////////////////////////////////////////
+// keep synced w contracts/app/SimpleLinkedTransferApp.sol
 
 export type SimpleLinkedTransferAppState = {
   coinTransfers: CoinTransfer[];
-  linkedHash: string;
-  amount: string;
-  assetId: string;
-  paymentId: string;
-  preImage: string;
+  linkedHash: HexString;
+  amount: DecString;
+  assetId: Address;
+  paymentId: HexString;
+  preImage: HexString;
 };
+
+export const SimpleLinkedTransferAppStateEncoding = tidy(`tuple(
+  ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
+  bytes32 linkedHash,
+  uint256 amount,
+  address assetId,
+  bytes32 paymentId,
+  bytes32 preImage
+)`);
 
 export type SimpleLinkedTransferAppAction = {
-  preImage: string;
+  preImage: HexString;
 };
 
-////// Transfer types
-export const LINKED_TRANSFER = "LINKED_TRANSFER";
-export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
+export const SimpleLinkedTransferAppActionEncoding = tidy(`tuple(
+  bytes32 preImage
+)`);
+
+////////////////////////////////////////
+// Off-chain app types
 
 // linked transfer types
 export type LinkedTransferParameters = {
@@ -72,16 +89,3 @@ export type ResolveLinkedTransferResponse = {
   assetId: string;
   meta?: object;
 };
-
-export const SimpleLinkedTransferAppStateEncoding = `
-  tuple(
-    ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-    bytes32 linkedHash,
-    uint256 amount,
-    address assetId,
-    bytes32 paymentId,
-    bytes32 preImage
-  )
-`;
-
-export const SimpleLinkedTransferAppActionEncoding = `tuple(bytes32 preImage)`;

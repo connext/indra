@@ -49,8 +49,10 @@ export type SingleAssetTwoPartyCoinTransferInterpreterParams = {
   tokenAddresses: Address;
 };
 
-export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding =
-  "tuple(uint256 limit, address tokenAddress)";
+export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = tidy(`tuple(
+  uint256 limit,
+  address tokenAddress
+)`);
 
 ////////////////////////////////////////
 // keep synced w contracts/funding/interpreters/TwoPartyFixedOutcomeInterpreter.sol
@@ -62,15 +64,17 @@ export type TwoPartyFixedOutcomeInterpreterParams = {
 };
 
 // TODO: tokenAddress?!
-export const twoPartyFixedOutcomeInterpreterParamsEncoding =
-  "tuple(address[2] playerAddrs, uint256 amount)";
+export const twoPartyFixedOutcomeInterpreterParamsEncoding = tidy(`tuple(
+  address[2] playerAddrs,
+  uint256 amount
+)`);
 
 ////////////////////////////////////////
 // keep synced w contracts/funding/libs/LibOutcome.sol
 
 export type CoinTransfer = {
-  to: Address;
   amount: DecString;
+  to: Address;
 };
 
 export enum TwoPartyFixedOutcome {

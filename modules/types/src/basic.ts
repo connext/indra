@@ -11,10 +11,10 @@ export { BigNumberish, Network, Transaction } from "ethers/utils";
 
 // special strings
 export type ABIEncoding = string; // eg "tuple(address to, uint256 amount)"
-export type Address = string; // eg HexString of length 42
+export type Address = string; // aka HexString of length 42
 export type DecString = string; // eg "3.14" (implied to be e18 int)
 export type HexString = string; // eg "0xabc123"
-export type IntString = string; // eg "314"
+export type Xpub = string; // eg "xpub6AbC...123" (str length = 111)
 
 export type BigNumber = ethersBN;
 export const BigNumber = ethersBN;

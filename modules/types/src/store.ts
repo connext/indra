@@ -1,7 +1,7 @@
 import { StateChannelJSON } from "./state";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import { CFCoreTypes } from "./cfCore";
-import { SetStateCommitmentJSON, ConditionalTransactionCommitmentJSON } from "./challenge";
+import { SetStateCommitmentJSON, ConditionalTransactionCommitmentJSON } from "./commitments";
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";

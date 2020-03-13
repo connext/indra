@@ -3,7 +3,6 @@ import {
   ILoggerService,
   NetworkContext,
   ProtocolMessage,
-  SolidityValueType,
 } from "@connext/types";
 import { Signature } from "ethers/utils";
 
@@ -24,6 +23,10 @@ export enum Opcode {
   PERSIST_FREE_BALANCE,
   // Called at the end of execution before the return value to store a commitment
   PERSIST_COMMITMENT,
+}
+
+export interface IPrivateKeyGenerator {
+  (s: string): Promise<string>;
 }
 
 export abstract class EthereumCommitment {
@@ -72,14 +75,6 @@ export interface Context {
   message: ProtocolMessage;
   network: NetworkContext;
 }
-
-export type TakeActionProtocolParams = {
-  initiatorXpub: string;
-  responderXpub: string;
-  multisigAddress: string;
-  appIdentityHash: string;
-  action: SolidityValueType;
-};
 
 export {
   AppABIEncodings,

@@ -71,7 +71,7 @@ export type CreateChannelResponse = {
 export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
 
 ////////////////////////////////////
-///////// NODE API CLIENT
+// NODE API CLIENT
 
 export interface PendingAsyncTransfer {
   assetId: string;

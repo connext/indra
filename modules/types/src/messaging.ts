@@ -6,6 +6,34 @@ import { ProtocolMessage, ProtocolTypes } from "./protocol";
 ////////////////////////////////////////
 // Message Metadata & Wrappers
 
+export type ProtocolMessage = {
+  processID: string;
+  protocol: Protocol;
+  params?: ProtocolParameters;
+  toXpub: string;
+  seq: number;
+  // customData: Additional data which depends on the protocol (or even the specific message
+  // number in a protocol) lives here. Includes signatures
+  customData: { [key: string]: any };
+};
+
+export enum ErrorType {
+  ERROR = "error",
+}
+
+export type Error = {
+  type: ErrorType;
+  requestId?: string;
+  data: {
+    errorName: string;
+    message?: string;
+    appInstanceId?: string;
+    extra?: { [k: string]: string | number | boolean | object };
+  };
+};
+
+export type Message = MethodRequest | MethodResponse | Event | Error;
+
 // The message type for Nodes to communicate with each other.
 export type NodeMessage = {
   from: string;

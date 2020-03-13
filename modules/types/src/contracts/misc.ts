@@ -1,7 +1,7 @@
 import { Address, BaseProvider } from "../basic";
 
 export const tidy = (str: string): string =>
-  `${str.replace(/\\n +/, "").replace(/ +/, " ")}`;
+  `${str.replace(/\\n/, "").replace(/ +/, " ")}`;
 
 ////////////////////////////////////////
 // Generic contract ops & network config
@@ -64,15 +64,25 @@ export type SingleAssetTwoPartyIntermediaryAgreement = {
   tokenAddress: string;
 };
 
-export const virtualAppAgreementEncoding =
-  "tuple(uint256 capitalProvided, address capitalProvider, address virtualAppUser, address tokenAddress)";
+export const virtualAppAgreementEncoding = tidy(`tuple(
+  uint256 capitalProvided,
+  address capitalProvider,
+  address virtualAppUser,
+  address tokenAddress
+)`);
 
 //////////////////////////////////////// 
 // Mixins, etc
 
-export const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[2]`;
+export const singleAssetTwoPartyCoinTransferEncoding = tidy(`tuple(
+  address to,
+  uint256 amount
+)[2]`);
 
-export const multiAssetMultiPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[][]`;
+export const multiAssetMultiPartyCoinTransferEncoding = tidy(`tuple(
+  address to,
+  uint256 amount
+)[][]`);
 
 export enum OutcomeType {
   // uint8

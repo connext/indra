@@ -1,20 +1,69 @@
-import { DecString, IntString } from "../../basic";
+import { Address, DecString, HexString, Xpub } from "../../basic";
 
 import { CoinTransfer } from "../funding";
-import { singleAssetTwoPartyCoinTransferEncoding } from "../misc";
+import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
 
 export const FAST_SIGNED_TRANSFER = "FAST_SIGNED_TRANSFER";
-
 export const FastSignedTransferApp = "FastSignedTransferApp";
+
+////////////////////////////////////////
+// keep synced w contracts/app/FastSignedTransferApp.sol
+
+export enum FastSignedTransferActionType {
+  CREATE = 0,
+  UNLOCK = 1,
+  REJECT = 2,
+}
+
+export type FastSignedTransferAppState = {
+  recipientXpub: Xpub;
+  amount: DecString;
+  signer: Address;
+  paymentId: HexString;
+  coinTransfers: [CoinTransfer, CoinTransfer];
+  turnNum: HexString;
+};
+
+export const FastSignedTransferAppStateEncoding = tidy(`tuple(
+  string recipientXpub,
+  uint256 amount,
+  address signer,
+  bytes32 paymentId,
+  ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
+  uint256 turnNum
+)`);
+
+export type FastSignedTransferAppAction = {
+  recipientXpub: Xpub;
+  amount: DecString;
+  signer: Address;
+  paymentId: HexString;
+  data: HexString;
+  signature: string;
+  actionType: FastSignedTransferActionType;
+};
+
+export const FastSignedTransferAppActionEncoding = tidy(`tuple(
+  string recipientXpub,
+  uint256 amount,
+  address signer,
+  bytes32 paymentId,
+  bytes32 data,
+  bytes signature,
+  uint256 actionType
+)`);
+
+////////////////////////////////////////
+// Off-chain app types
 
 export type FastSignedTransferParameters = {
   conditionType: typeof FAST_SIGNED_TRANSFER;
-  recipient: string;
+  recipient: string; // xpub?
   amount: DecString;
-  assetId?: string;
-  paymentId: string;
-  maxAllocation?: IntString;
-  signer: string;
+  assetId?: Address;
+  paymentId: HexString;
+  maxAllocation?: HexString;
+  signer: string; // address?
   meta?: object;
 };
 
@@ -38,51 +87,3 @@ export type ResolveFastSignedTransferResponse = {
   signer: string;
   meta?: object;
 };
-
-export enum FastSignedTransferActionType {
-  CREATE,
-  UNLOCK,
-  REJECT,
-}
-
-export type FastSignedTransferAppState = {
-  recipientXpub: string;
-  amount: DecString;
-  signer: string;
-  paymentId: string;
-  coinTransfers: [CoinTransfer, CoinTransfer];
-  turnNum: IntString;
-};
-
-export type FastSignedTransferAppAction = {
-  recipientXpub: string;
-  amount: DecString;
-  signer: string;
-  paymentId: string;
-  data: string;
-  signature: string;
-  actionType: FastSignedTransferActionType;
-};
-
-export const FastSignedTransferAppStateEncoding = `
-  tuple(
-    string recipientXpub,
-    uint256 amount,
-    address signer,
-    bytes32 paymentId,
-    ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-    uint256 turnNum
-  )
-`;
-
-export const FastSignedTransferAppActionEncoding = `
-  tuple(
-    string recipientXpub,
-    uint256 amount,
-    address signer,
-    bytes32 paymentId,
-    bytes32 data,
-    bytes signature,
-    uint256 actionType
-  )
-`;

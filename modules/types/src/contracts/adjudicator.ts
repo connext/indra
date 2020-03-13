@@ -1,4 +1,4 @@
-import { Address, DecString, HexString } from "../basic";
+import { Address, HexString } from "../basic";
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/libs/LibStateChannelApp.sol
@@ -11,11 +11,11 @@ enum ChallengeStatus {
 }
 
 // A minimal structure that uniquely identifies a single instance of an App
-type AppIdentity = {
-  channelNonce: DecString;
+export type AppIdentity = {
+  channelNonce: HexString;
   participants: Address[];
   appDefinition: Address[];
-  defaultTimeout: DecString;
+  defaultTimeout: HexString;
 };
 
 // A structure representing the state of a CounterfactualApp instance from the POV of the blockchain
@@ -24,8 +24,8 @@ type AppIdentity = {
 type AppChallenge = {
   latestSubmitter: Address;
   appStateHash: HexString;
-  challengeCounter: DecString;
-  versionNumber: DecString;
-  finalizesAt: DecString;
+  challengeCounter: HexString;
+  versionNumber: HexString;
+  finalizesAt: HexString;
   status: ChallengeStatus;
 };

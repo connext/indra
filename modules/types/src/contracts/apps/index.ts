@@ -15,6 +15,7 @@ import {
   ResolveFastSignedTransferParameters,
   FAST_SIGNED_TRANSFER,
 } from "./FastSignedTransfer";
+
 export * from "./FastSignedTransfer";
 export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleTwoPartySwapApp";

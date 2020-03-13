@@ -1,5 +1,4 @@
 import EventEmitter from "eventemitter3";
-import { CFCoreTypes } from "./cfCore";
 import {
   LINKED_TRANSFER,
   LINKED_TRANSFER_TO_RECIPIENT,
@@ -7,28 +6,96 @@ import {
   ConditionalTransferTypes,
 } from "./contracts";
 
+export class ConnextEventEmitter extends EventEmitter<
+  string | ConnextEvent | CFCoreTypes.RpcMethodName
+> {}
+
+////////////////////////////////////////
 export const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
+
+export type CreateMultisigEventData = {
+  owners: string[];
+  multisigAddress: string;
+};
+
+////////////////////////////////////////
 export const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
+
+////////////////////////////////////////
 export const DEPOSIT_FAILED_EVENT = "DEPOSIT_FAILED_EVENT";
+
+////////////////////////////////////////
 export const DEPOSIT_STARTED_EVENT = "DEPOSIT_STARTED_EVENT";
+
+////////////////////////////////////////
 export const INSTALL_EVENT = "INSTALL_EVENT";
+
+export type InstallEventData = {
+  appInstanceId: string;
+};
+
+////////////////////////////////////////
 export const INSTALL_VIRTUAL_EVENT = "INSTALL_VIRTUAL_EVENT";
+
+////////////////////////////////////////
 export const REJECT_INSTALL_EVENT = "REJECT_INSTALL_EVENT";
+
+export type RejectInstallEventData = {
+  appInstance: AppInstanceProposal;
+};
+
+////////////////////////////////////////
 export const UNINSTALL_EVENT = "UNINSTALL_EVENT";
+
+export type UninstallEventData = {
+  appInstanceId: string;
+};
+
+////////////////////////////////////////
 export const UNINSTALL_VIRTUAL_EVENT = "UNINSTALL_VIRTUAL_EVENT";
+
+////////////////////////////////////////
 export const UPDATE_STATE_EVENT = "UPDATE_STATE_EVENT";
+
+export type UpdateStateEventData = {
+  appInstanceId: string;
+  newState: SolidityValueType;
+  action?: SolidityValueType;
+};
+
+////////////////////////////////////////
 export const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
+
+////////////////////////////////////////
 export const WITHDRAWAL_FAILED_EVENT = "WITHDRAWAL_FAILED_EVENT";
+
+////////////////////////////////////////
 export const WITHDRAWAL_STARTED_EVENT = "WITHDRAWAL_STARTED_EVENT";
+
+export type WithdrawEventData = {
+  amount: BigNumber;
+};
+
+////////////////////////////////////////
 export const PROPOSE_INSTALL_EVENT = "PROPOSE_INSTALL_EVENT";
+
+////////////////////////////////////////
 export const PROTOCOL_MESSAGE_EVENT = "PROTOCOL_MESSAGE_EVENT";
+
+////////////////////////////////////////
 export const RECEIVE_TRANSFER_FAILED_EVENT = "RECEIVE_TRANSFER_FAILED_EVENT";
+
+////////////////////////////////////////
 export const RECEIVE_TRANSFER_FINISHED_EVENT = "RECEIVE_TRANSFER_FINISHED_EVENT";
+
+////////////////////////////////////////
 export const RECEIVE_TRANSFER_STARTED_EVENT = "RECEIVE_TRANSFER_STARTED_EVENT";
+
+////////////////////////////////////////
 export const CREATE_TRANSFER = "CREATE_TRANSFER";
 
-// TODO: should really be named "ProtocolEventNames"
-export const EventNames = {
+////////////////////////////////////////
+export const ProtocolEvents = {
   [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
   [DEPOSIT_CONFIRMED_EVENT]: DEPOSIT_CONFIRMED_EVENT,
   [DEPOSIT_FAILED_EVENT]: DEPOSIT_FAILED_EVENT,
@@ -45,16 +112,28 @@ export const EventNames = {
   [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
 };
-export type EventName = keyof typeof EventNames;
+export type ProtocolEvent = keyof typeof ProtocolEvents;
 
 export const ConnextEvents = {
-  ...EventNames,
+  ...ProtocolEvents,
   [RECEIVE_TRANSFER_FAILED_EVENT]: RECEIVE_TRANSFER_FAILED_EVENT,
   [RECEIVE_TRANSFER_FINISHED_EVENT]: RECEIVE_TRANSFER_FINISHED_EVENT,
   [RECEIVE_TRANSFER_STARTED_EVENT]: RECEIVE_TRANSFER_STARTED_EVENT,
   [CREATE_TRANSFER]: CREATE_TRANSFER,
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
+
+export type EventData =
+  | InstallEventData
+  | RejectInstallEventData
+  | UpdateStateEventData
+  | UninstallEventData
+  | CreateMultisigEventData;
+
+export type Event = {
+  type: EventName;
+  data: EventData;
+};
 
 export type CreatedLinkedTransferMeta = {};
 export type CreatedLinkedTransferToRecipientMeta = {
@@ -92,10 +171,3 @@ export type CreateTransferEventData<T extends ConditionalTransferTypes | undefin
     ? CreatedFastSignedTransferMeta
     : undefined;
 };
-
-export class ConnextEventEmitter extends EventEmitter<
-  string | ConnextEvent | CFCoreTypes.RpcMethodName
-> {}
-
-export type NodeEvent = EventName;
-export const NODE_EVENTS = EventNames;
