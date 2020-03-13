@@ -2,7 +2,7 @@ import { PersistAppType } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../error";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, AppInstanceProposal } from "../models";
 import {

@@ -2,13 +2,13 @@ import { MaxUint256 } from "ethers/constants";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import {
-  getConditionalTxCommitment,
+  getConditionalTransactionCommitment,
   getSetStateCommitment,
   getWithdrawCommitment,
 } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
 import {
-  coinBalanceRefundStateEncoding,
+  coinBalanceRefundAppStateEncoding,
   Context,
   Commitment,
   NetworkContext,
@@ -34,7 +34,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
   /**
    * Sequence 0 of the WITHDRAW_PROTOCOL looks a bit like this:
    *
-   * 1. Sign a `ConditionalTxCommitment` for an ETHBalanceRefund AppInstance
+   * 1. Sign a `ConditionalTransactionCommitment` for an ETHBalanceRefund AppInstance
    * 2. Get the countersignature, then sign the FreeBalance state update to activate
    * 3. Sign the WithdrawETHCommitment and wait for counterparty
    * 4. Countersign the uninstallation FreeBalance state update
@@ -79,7 +79,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const refundApp = postInstallRefundAppStateChannel.mostRecentlyInstalledAppInstance();
 
-    const conditionalTransactionData = getConditionalTxCommitment(
+    const conditionalTransactionData = getConditionalTransactionCommitment(
       context,
       postInstallRefundAppStateChannel,
       refundApp,
@@ -277,7 +277,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
   /**
    * Sequence 1 of the WITHDRAW_PROTOCOL looks very similar but the inverse:
    *
-   * 1. Countersign the received `ConditionalTxCommitment` from the initiator
+   * 1. Countersign the received `ConditionalTransactionCommitment` from the initiator
    * 2. Sign the free balance state update to install the AppInstance and send
    * 3. Countersign the WithdrawETHCommitment you receive back
    * 4. Sign and send the FreeBalance state update and wait for the countersignature
@@ -319,7 +319,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const refundApp = postInstallRefundAppStateChannel.mostRecentlyInstalledAppInstance();
 
-    const conditionalTransactionData = getConditionalTxCommitment(
+    const conditionalTransactionData = getConditionalTransactionCommitment(
       context,
       postInstallRefundAppStateChannel,
       refundApp,
@@ -529,10 +529,9 @@ function addRefundAppToStateChannel(
     defaultTimeout,
     {
       addr: network.CoinBalanceRefundApp,
-      stateEncoding: coinBalanceRefundStateEncoding,
+      stateEncoding: coinBalanceRefundAppStateEncoding,
       actionEncoding: undefined,
     },
-    false,
     stateChannel.numProposedApps,
     {
       recipient,

@@ -1,10 +1,8 @@
 import {
   CriticalStateChannelAddresses,
-  SingleAssetTwoPartyIntermediaryAgreement,
   StateChannelJSON,
   StateSchemaVersion,
 } from "@connext/types";
-import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { Store } from "../store";
@@ -15,12 +13,11 @@ import { xkeyKthAddress } from "../xkeys";
 import { AppInstanceProposal } from "./app-instance-proposal";
 import { AppInstance } from "./app-instance";
 import {
-  CoinTransferMap,
   createFreeBalance,
   FreeBalanceClass,
   TokenIndexedCoinTransferMap,
 } from "./free-balance";
-import { flip, flipTokenIndexedBalances, sortAddresses } from "./utils";
+import { flipTokenIndexedBalances, sortAddresses } from "./utils";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,

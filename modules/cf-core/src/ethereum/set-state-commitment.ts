@@ -18,7 +18,7 @@ export const getSetStateCommitment = (
   context: Context,
   appInstance: AppInstance,
 ) => new SetStateCommitment(
-  context.network,
+  context.network.ChallengeRegistry,
   appInstance.identity,
   appInstance.hashOfLatestState,
   appInstance.versionNumber,

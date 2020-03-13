@@ -24,13 +24,13 @@ import { Context, MultisigTransaction } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import {
-  getConditionalTxCommitment,
-  ConditionalTxCommitment,
+  getConditionalTransactionCommitment,
+  ConditionalTransactionCommitment,
 } from "./conditional-tx-commitment";
 
-describe("ConditionalTxCommitment", () => {
+describe("ConditionalTransactionCommitment", () => {
   let tx: MultisigTransaction;
-  let commitment: ConditionalTxCommitment;
+  let commitment: ConditionalTransactionCommitment;
 
   // Test network context
   const context= { network: generateRandomNetworkContext() } as Context;
@@ -67,7 +67,7 @@ describe("ConditionalTxCommitment", () => {
   const appInstance = createAppInstanceForTest(stateChannel);
 
   beforeAll(() => {
-    commitment = getConditionalTxCommitment(
+    commitment = getConditionalTransactionCommitment(
       context, 
       stateChannel,
       appInstance,
@@ -86,15 +86,15 @@ describe("ConditionalTxCommitment", () => {
   describe("storage", () => {
     it("should be stored correctly", async () => {
       const store = new Store(new MemoryStoreService());
-      await store.saveConditionalTxCommitment(commitment.appIdentityHash, commitment);
-      const retrieved = await store.getConditionalTxCommitment(commitment.appIdentityHash);
+      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
+      const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
       commitment.signatures = [
         new SigningKey(hdNodes[0]).signDigest(randomBytes(20)),
         new SigningKey(hdNodes[1]).signDigest(randomBytes(20)),
       ];
-      await store.saveConditionalTxCommitment(commitment.appIdentityHash, commitment);
-      const signed = await store.getConditionalTxCommitment(commitment.appIdentityHash);
+      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
+      const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(signed).toMatchObject(commitment);
     });
   });

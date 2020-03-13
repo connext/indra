@@ -11,7 +11,7 @@ import {
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { IStoreService, MinimalTransaction } from "./types";
 import { getCreate2MultisigAddress } from "./utils";
-import { SetStateCommitment, ConditionalTxCommitment } from "./ethereum";
+import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
 /**
  * A simple ORM around StateChannels and AppInstances stored using the
@@ -228,21 +228,21 @@ export class Store {
     return this.storeService.saveLatestSetStateCommitment(appInstanceId, commitment.toJson());
   }
 
-  public async getConditionalTxCommitment(
+  public async getConditionalTransactionCommitment(
     appInstanceId: string,
-  ): Promise<ConditionalTxCommitment | undefined> {
-    const json = await this.storeService.getConditionalTxCommitment(appInstanceId);
+  ): Promise<ConditionalTransactionCommitment | undefined> {
+    const json = await this.storeService.getConditionalTransactionCommitment(appInstanceId);
     if (!json) {
       return undefined;
     }
-    return ConditionalTxCommitment.fromJson(json);
+    return ConditionalTransactionCommitment.fromJson(json);
   }
 
-  public async saveConditionalTxCommitment(
+  public async saveConditionalTransactionCommitment(
     appInstanceId: string,
-    commitment: ConditionalTxCommitment, // ConditionalTransactionJSON,
+    commitment: ConditionalTransactionCommitment, // ConditionalTransactionJSON,
   ): Promise<void> {
-    return this.storeService.saveConditionalTxCommitment(
+    return this.storeService.saveConditionalTransactionCommitment(
       appInstanceId,
       commitment.toJson(),
     );
@@ -251,5 +251,29 @@ export class Store {
   public async getAppInstance(appInstanceId: string): Promise<AppInstance> {
     const channel = await this.getStateChannelFromAppInstanceID(appInstanceId);
     return channel.getAppInstance(appInstanceId);
+  }
+
+  public async getOrCreateStateChannelBetweenVirtualAppParticipants(
+    multisigAddress: string,
+    addresses: CriticalStateChannelAddresses,
+    initiatorXpub: string,
+    responderXpub: string,
+  ): Promise<StateChannel> {
+    try {
+      return await this.getStateChannel(multisigAddress);
+    } catch (e) {
+      if (e.toString().includes(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress))) {
+        const stateChannel = StateChannel.createEmptyChannel(multisigAddress, addresses, [
+          initiatorXpub,
+          responderXpub,
+        ]);
+
+        await this.saveStateChannel(stateChannel);
+
+        return stateChannel;
+      }
+
+      throw Error(e);
+    }
   }
 }

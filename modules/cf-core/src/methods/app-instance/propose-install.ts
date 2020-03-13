@@ -44,15 +44,6 @@ export class ProposeInstallAppInstanceController extends NodeController {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { proposedToIdentifier } = params;
 
-    // no way to determine if this is a virtual or regular app being
-    // proposed. because it may be a virtual app, and the function defaults
-    // to pulling from the store, assume it is okay to use a generated
-    // multisig
-
-    // in practice, the only time it should *not* find the multisig
-    // address in the store is if its a virtual app being proposed between
-    // two new respondents. Unfortunately, we cannot affirm this before
-    // generating the queues
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
@@ -192,18 +183,6 @@ export async function createProposedAppInstance(
     timeout,
   } = params;
 
-  // no way to determine if this is a virtual or regular app being
-  // proposed. because it may be a virtual app, and the function defaults
-  // to pulling from the store, assume it is okay to use a generated
-  // multisig.
-
-  // if the generated multisig address is wrong (because proxy has been
-  // redeployed), then there will be a state channel added to the store
-  // under the wrong multisig address, with *no* free balance app instance
-  // and this is where the app instance will be stored. the only time this
-  // should come up in practice (because it defaults to pulling multisig
-  // address from the store) is when it's a virtual app between a *new*
-  // initiator and responder pair.
   const multisigAddress = await store.getMultisigAddressWithCounterparty(
     [myIdentifier, proposedToIdentifier],
     networkContext.ProxyFactory,

@@ -4,6 +4,7 @@ import {
   DEPOSIT_FAILED_EVENT,
 } from "@connext/types";
 import { Contract } from "ethers";
+import { Zero } from "ethers/constants";
 import { BaseProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
@@ -26,8 +27,8 @@ import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import {
   AppInterface,
-  CoinBalanceRefundState,
-  coinBalanceRefundStateEncoding,
+  CoinBalanceRefundAppState,
+  coinBalanceRefundAppStateEncoding,
   DepositConfirmationMessage,
   DepositFailedMessage,
   DepositParams,
@@ -210,8 +211,8 @@ export async function installBalanceRefundApp(
     initiatorXpub: publicIdentifier,
     responderXpub: peerAddress,
     multisigAddress: stateChannel.multisigAddress,
-    initiatorBalanceDecrement: "0x00",
-    responderBalanceDecrement: "0x00",
+    initiatorBalanceDecrement: Zero,
+    responderBalanceDecrement: Zero,
     participants: stateChannel.getNextSigningKeys(),
     appInterface: depositContext.appInterface,
     // this is the block-time equivalent of 7 days
@@ -365,13 +366,13 @@ async function getDepositContext(
     tokenAddress,
     recipient: xkeyKthAddress(publicIdentifier, 0),
     multisig: multisigAddress,
-  } as CoinBalanceRefundState;
+  } as CoinBalanceRefundAppState;
 
   return {
     initialState,
     appInterface: {
       addr: networkContext.CoinBalanceRefundApp,
-      stateEncoding: coinBalanceRefundStateEncoding,
+      stateEncoding: coinBalanceRefundAppStateEncoding,
       actionEncoding: undefined,
     },
   };

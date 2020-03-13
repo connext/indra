@@ -41,7 +41,7 @@ import {
 import { timeout } from "./utils";
 import { Store } from "./store";
 import {
-  ConditionalTxCommitment,
+  ConditionalTransactionCommitment,
   MultisigCommitment,
   SetStateCommitment,
 } from "./ethereum";
@@ -279,9 +279,9 @@ export class Node {
 
           case Commitment.Conditional:
             const [appId] = res;
-            await store.saveConditionalTxCommitment(
+            await store.saveConditionalTransactionCommitment(
               appId,
-              commitment as ConditionalTxCommitment,
+              commitment as ConditionalTransactionCommitment,
             );
             break;
 

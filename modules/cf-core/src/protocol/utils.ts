@@ -8,7 +8,7 @@ import {
   TokenIndexedCoinTransferMap,
 } from "../models";
 import {
-  CoinBalanceRefundState,
+  CoinBalanceRefundAppState,
   EthereumCommitment,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
@@ -124,7 +124,7 @@ async function handleRefundAppOutcomeSpecialCase(
     // if blockNumberToUseIfNecessary is not specified, wait for nonzero balance refund or error
     if (amount.gt(0) || blockNumberSpecifiedAndElapsed) {
       return {
-        [(appInstance.state as CoinBalanceRefundState).tokenAddress]: {
+        [(appInstance.state as CoinBalanceRefundAppState).tokenAddress]: {
           [to]: amount,
         },
       };

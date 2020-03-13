@@ -15,12 +15,12 @@ import { MultisigCommitment } from "./multisig-commitment";
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
-export const getConditionalTxCommitment = (
+export const getConditionalTransactionCommitment = (
   context: Context,
   stateChannel: StateChannel,
   appInstance: AppInstance,
-): ConditionalTxCommitment =>
-  new ConditionalTxCommitment(
+): ConditionalTransactionCommitment =>
+  new ConditionalTransactionCommitment(
     context.network,
     stateChannel.multisigAddress,
     stateChannel.multisigOwners,
@@ -39,7 +39,7 @@ export const getConditionalTxCommitment = (
 
 // class to represent an unsigned multisignature wallet transaction
 // to the ConditionalTransactionDelegateTarget contract.
-export class ConditionalTxCommitment extends MultisigCommitment {
+export class ConditionalTransactionCommitment extends MultisigCommitment {
   constructor(
     public readonly networkContext: NetworkContext,
     public readonly multisig: string,
@@ -50,10 +50,10 @@ export class ConditionalTxCommitment extends MultisigCommitment {
     public readonly interpreterParams: string,
     participantSignatures: Signature[] = [],
   ) {
+    super(multisig, multisigOwners, participantSignatures);
     if (interpreterAddr === AddressZero) {
       throw Error("The outcome type in this application logic contract is not supported yet.");
     }
-    super(multisig, multisigOwners, participantSignatures);
   }
 
   toJson(): ConditionalTransactionCommitmentJSON {
@@ -70,7 +70,7 @@ export class ConditionalTxCommitment extends MultisigCommitment {
   }
 
   public static fromJson(json: ConditionalTransactionCommitmentJSON) {
-    return new ConditionalTxCommitment(
+    return new ConditionalTransactionCommitment(
       json.networkContext,
       json.multisigAddress,
       json.multisigOwners,
@@ -87,7 +87,7 @@ export class ConditionalTxCommitment extends MultisigCommitment {
    * encodes them into a bytes array for the data field of the transaction.
    *
    * @returns The (to, value, data, op) data required by MultisigCommitment
-   * @memberof ConditionalTxCommitment
+   * @memberof ConditionalTransactionCommitment
    */
   public getTransactionDetails() {
     return {

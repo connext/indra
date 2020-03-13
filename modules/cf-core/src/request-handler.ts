@@ -9,13 +9,13 @@ import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
 import {
+  EventName,
+  EventNames,
   IMessagingService,
   MethodName,
   MethodRequest,
   MethodResponse,
   NetworkContext,
-  NODE_EVENTS,
-  NodeEvent,
   NodeMessage,
   NodeMessageWrappedProtocolMessage,
 } from "./types";
@@ -96,7 +96,7 @@ export class RequestHandler {
    * These are the events being listened on to detect requests from peer Nodes.
    */
   private mapEventHandlers() {
-    for (const eventName of Object.values(NODE_EVENTS)) {
+    for (const eventName of Object.values(EventNames)) {
       this.events.set(eventName, eventNameToImplementation[eventName]);
     }
   }
@@ -107,7 +107,7 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: NodeEvent, msg: NodeMessage) {
+  public async callEvent(event: EventName, msg: NodeMessage) {
     const start = Date.now();
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);
@@ -142,7 +142,7 @@ export class RequestHandler {
     this.router.emit(event, msg);
   }
 
-  public async isLegacyEvent(event: NodeEvent) {
+  public async isLegacyEvent(event: EventName) {
     return this.events.has(event);
   }
 

@@ -4,7 +4,7 @@ import { BigNumber } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
-import { getConditionalTxCommitment, getSetStateCommitment } from "../ethereum";
+import { getConditionalTransactionCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
@@ -95,7 +95,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
 
-    const conditionalTxCommitment = getConditionalTxCommitment(
+    const conditionalTxCommitment = getConditionalTransactionCommitment(
       context,
       stateChannelAfter,
       newAppInstance,
@@ -257,7 +257,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
 
-    const conditionalTxCommitment = getConditionalTxCommitment(
+    const conditionalTxCommitment = getConditionalTransactionCommitment(
       context,
       stateChannelAfter,
       newAppInstance,
