@@ -7,6 +7,11 @@ import { ProtocolMessage, ProtocolTypes } from "./protocol";
 // Message Metadata & Wrappers
 
 // The message type for Nodes to communicate with each other.
+
+export const CF_CORE_MESSAGING_PREFIX = "INDRA";
+
+export const getMessagingPrefix = (chainId: number) => `${CF_CORE_MESSAGING_PREFIX}.${chainId}`;
+
 export type NodeMessage = {
   from: string;
   type: EventName;
