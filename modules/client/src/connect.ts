@@ -10,6 +10,8 @@ import {
   VerifyNonceDtoType,
   CoinBalanceRefundState,
   ILoggerService,
+  delay,
+  // getMessagingPrefix,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { Contract, providers, Wallet } from "ethers";
@@ -38,20 +40,22 @@ import {
   INodeApiClient,
 } from "./types";
 
-//TODO --ARJUN : Keep nodeUrl and messagingUrl separate
 const createMessagingService = async (
   logger: ILoggerService,
-  messagingUrl: string,
+  natsUrl: string,
+  nodeUrl: string,
   xpub: string,
+  chainId: number,
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<MessagingService> => {
   const config: MessagingConfig = {
-    messagingUrl,
+    messagingUrl: natsUrl,
     logger,
   };
   // create a messaging service client
-  const messaging = new MessagingService(config, xpub, () =>
-    getBearerToken(logger, messagingUrl, xpub, getSignature),
+  // do not specify a prefix so that clients can publish to node
+  const messaging = new MessagingService(config, `INDRA.${chainId}`, () =>
+    getBearerToken(logger, nodeUrl, xpub, getSignature),
   );
   await messaging.connect();
   return messaging;
@@ -64,14 +68,10 @@ const getBearerToken = async (
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<string> => {
   try {
-    const nonceRepsonse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/nonce`, {
-      params: {
-        userPublicIdentifier: xpub,
-      },
-    });
+    const nonceRepsonse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${xpub}`);
     const nonce = nonceRepsonse.data;
     const sig = await getSignature(nonce);
-    const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth/nonce`, {
+    const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth`, {
       sig,
       userPublicIdentifier: xpub,
     } as VerifyNonceDtoType);
@@ -133,7 +133,9 @@ export const connect = async (
       messaging = await createMessagingService(
         log,
         natsUrl,
+        nodeUrl,
         channelProvider.config.userPublicIdentifier,
+        network.chainId,
         async nonce => {
           return "";
         },
@@ -177,7 +179,14 @@ export const connect = async (
 
     log.debug(`Creating messaging service client ${natsUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(log, natsUrl, xpub, getSignature);
+      messaging = await createMessagingService(
+        log,
+        natsUrl,
+        nodeUrl,
+        xpub,
+        network.chainId,
+        getSignature,
+      );
     } else {
       await messaging.connect();
     }
@@ -185,7 +194,6 @@ export const connect = async (
     // create a new node api instance
     node = new NodeApiClient({ logger: log, messaging, nodeUrl });
     config = await node.config();
-    console.log('config: ', config);
 
     // ensure that node and user xpub are different
     if (config.nodePublicIdentifier === xpub) {
@@ -219,7 +227,6 @@ export const connect = async (
 
   // setup multisigAddress + assign to channelProvider
   const myChannel = await node.getChannel();
-  console.log('myChannel: ', myChannel);
 
   let multisigAddress: string;
   if (!myChannel) {
@@ -288,7 +295,7 @@ export const connect = async (
           return chan && chan.available;
         };
         while (!(await channelIsAvailable())) {
-          await new Promise((res: any): any => setTimeout((): void => res(), 100));
+          await new Promise((res: any): any => setTimeout((): void => res(), 1000));
         }
         resolve();
       },
