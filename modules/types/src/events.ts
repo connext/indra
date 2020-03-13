@@ -1,5 +1,11 @@
 import EventEmitter from "eventemitter3";
 import { CFCoreTypes } from "./cfCore";
+import {
+  LINKED_TRANSFER,
+  LINKED_TRANSFER_TO_RECIPIENT,
+  FAST_SIGNED_TRANSFER,
+  ConditionalTransferTypes,
+} from "./apps";
 
 export const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 export const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
@@ -19,11 +25,7 @@ export const PROTOCOL_MESSAGE_EVENT = "PROTOCOL_MESSAGE_EVENT";
 export const RECEIVE_TRANSFER_FAILED_EVENT = "RECEIVE_TRANSFER_FAILED_EVENT";
 export const RECEIVE_TRANSFER_FINISHED_EVENT = "RECEIVE_TRANSFER_FINISHED_EVENT";
 export const RECEIVE_TRANSFER_STARTED_EVENT = "RECEIVE_TRANSFER_STARTED_EVENT";
-
-// TODO: remove when deprecated
-export const RECIEVE_TRANSFER_FAILED_EVENT = "RECIEVE_TRANSFER_FAILED_EVENT";
-export const RECIEVE_TRANSFER_FINISHED_EVENT = "RECIEVE_TRANSFER_FINISHED_EVENT";
-export const RECIEVE_TRANSFER_STARTED_EVENT = "RECIEVE_TRANSFER_STARTED_EVENT";
+export const CREATE_TRANSFER = "CREATE_TRANSFER";
 
 // TODO: should really be named "ProtocolEventNames"
 export const EventNames = {
@@ -50,12 +52,46 @@ export const ConnextEvents = {
   [RECEIVE_TRANSFER_FAILED_EVENT]: RECEIVE_TRANSFER_FAILED_EVENT,
   [RECEIVE_TRANSFER_FINISHED_EVENT]: RECEIVE_TRANSFER_FINISHED_EVENT,
   [RECEIVE_TRANSFER_STARTED_EVENT]: RECEIVE_TRANSFER_STARTED_EVENT,
-  // TODO: remove when deprecated
-  [RECIEVE_TRANSFER_FAILED_EVENT]: RECIEVE_TRANSFER_FAILED_EVENT,
-  [RECIEVE_TRANSFER_FINISHED_EVENT]: RECIEVE_TRANSFER_FINISHED_EVENT,
-  [RECIEVE_TRANSFER_STARTED_EVENT]: RECIEVE_TRANSFER_STARTED_EVENT,
+  [CREATE_TRANSFER]: CREATE_TRANSFER,
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
+
+export type CreatedLinkedTransferMeta = {};
+export type CreatedLinkedTransferToRecipientMeta = {
+  encryptedPreImage: string;
+};
+export type CreatedFastSignedTransferMeta = {
+  signer: string;
+};
+
+export type ReceiveTransferFinishedEventData<
+  T extends ConditionalTransferTypes | undefined = undefined
+> = {
+  amount: string;
+  assetId: string;
+  paymentId: string;
+  sender: string;
+  recipient?: string;
+  meta: any;
+  type: T;
+};
+
+export type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = undefined> = {
+  amount: string;
+  assetId: string;
+  paymentId: string;
+  sender: string;
+  recipient?: string;
+  meta: any;
+  type: T;
+  transferMeta: T extends typeof LINKED_TRANSFER
+    ? CreatedLinkedTransferMeta
+    : T extends typeof LINKED_TRANSFER_TO_RECIPIENT
+    ? CreatedLinkedTransferToRecipientMeta
+    : T extends typeof FAST_SIGNED_TRANSFER
+    ? CreatedFastSignedTransferMeta
+    : undefined;
+};
 
 export class ConnextEventEmitter extends EventEmitter<
   string | ConnextEvent | CFCoreTypes.RpcMethodName

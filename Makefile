@@ -19,6 +19,7 @@ cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(p
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
+apps=$(cwd)/modules/apps
 cf-core=$(cwd)/modules/cf-core
 channel-provider=$(cwd)/modules/channel-provider
 client=$(cwd)/modules/client
@@ -34,6 +35,7 @@ ssh-action=$(cwd)/ops/ssh-action
 store=$(cwd)/modules/store
 tests=$(cwd)/modules/test-runner
 types=$(cwd)/modules/types
+apps=$(cwd)/modules/apps
 
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
@@ -291,14 +293,14 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 ########################################
 # JS & bundles
 
-client: cf-core contracts types crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+client: cf-core contracts types apps crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(docker_run) "cd modules/cf-core && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))
@@ -326,7 +328,7 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node: cf-core contracts types apps messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -344,6 +346,11 @@ test-runner-js: node-modules client $(shell find $(tests)/src $(tests)/ops $(fin
 types: node-modules $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+apps: node-modules cf-core types $(shell find $(apps)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################

@@ -1,9 +1,11 @@
-import { asyncTransferAsset, AssetOptions, ETH_AMOUNT_SM } from "../util";
 import { AddressZero } from "ethers/constants";
 import { connect } from "@connext/client";
 import { ConnextStore, FileStorage } from "@connext/store";
+import { connectNats } from "../util/nats";
+import { Logger, env, asyncTransferAsset, AssetOptions, ETH_AMOUNT_SM } from "../util";
 
 export default async () => {
+  const log = new Logger("Flamegraph", env.logLevel);
   const clientA = await connect({
     mnemonic:
       "harsh cancel view follow approve digital tool cram physical easily lend cinnamon betray scene round",
@@ -19,7 +21,8 @@ export default async () => {
     store: new ConnextStore(new FileStorage()),
   });
   const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-  console.log("transferring asset");
-  await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
-  console.log("done");
+  const nats = await connectNats();
+  log.info("transferring asset");
+  await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+  log.info("done");
 };

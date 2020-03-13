@@ -1,7 +1,7 @@
 import { ProtocolTypes } from "@connext/types";
+import { jsonRpcDeserialize } from "rpc-server";
 
-import { jsonRpcDeserialize, Node } from "../../src";
-
+import { Node } from "../../src";
 import { setup, SetupContext } from "./setup";
 
 describe(`Node method follows spec - getStateDepositHolderAddress`, () => {

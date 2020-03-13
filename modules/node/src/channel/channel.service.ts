@@ -1,11 +1,14 @@
 import {
   ChannelAppSequences,
   StateChannelJSON,
-  CoinBalanceRefundApp,
   maxBN,
   RebalanceProfileBigNumber,
+  stringify,
+  GetConfigResponse,
+  CoinBalanceRefundApp,
 } from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -13,6 +16,7 @@ import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
@@ -21,12 +25,11 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { stringify, xpubToAddress } from "../util";
+import { xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
-import { ClientProxy } from "@nestjs/microservices";
 
 type RebalancingTargetsResponse<T = string> = {
   assetId: string;
@@ -47,13 +50,24 @@ export class ChannelService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelRepository: ChannelRepository,
     private readonly configService: ConfigService,
+    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
-    private readonly onchainTransactionService: OnchainTransactionService,
+    private readonly appRegistryRepository: AppRegistryRepository,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ChannelService");
+  }
+
+  async getConfig(): Promise<GetConfigResponse> {
+    return {
+      contractAddresses: await this.configService.getContractAddresses(),
+      ethNetwork: await this.configService.getEthNetwork(),
+      messaging: this.configService.getMessagingConfig(),
+      nodePublicIdentifier: this.cfCoreService.cfCore.publicIdentifier,
+      supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
+    };
   }
 
   /**
@@ -191,12 +205,16 @@ export class ChannelService {
       tokenAddress: assetId,
     };
 
+    const ethNetwork = await this.configService.getEthNetwork();
     const {
       actionEncoding,
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = await this.configService.getDefaultAppByName(CoinBalanceRefundApp);
+    } = await this.appRegistryRepository.findByNameAndNetwork(
+      CoinBalanceRefundApp,
+      ethNetwork.chainId,
+    );
 
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
@@ -265,7 +283,7 @@ export class ChannelService {
       throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
     }
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
-      // if minimum amount is supplier, override upper bound
+      // if minimum amount is larger, override upper bound
       const collateralNeeded: BigNumber = maxBN([
         upperBoundCollateralize,
         minimumRequiredCollateral,

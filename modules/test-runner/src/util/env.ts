@@ -16,4 +16,3 @@ export const env = {
   storeDir: process.env.STORE_DIR || "",
   adminToken: process.env.INDRA_ADMIN_TOKEN || "foo",
 };
-// console.log(`Starting tests in env: ${JSON.stringify(env, null, 2)}`);

@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "4.3.0",
+  "version": "5.1.1",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
@@ -11,7 +11,7 @@
     "src"
   ],
   "scripts": {
-    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -b . && rollup -c",
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -b .",
     "build:ts": "node_modules/.bin/tsc -b .",
     "build:rollup": "rollup -c",
     "build:watch": "node_modules/.bin/tsc -b . && rollup -c -w",
@@ -20,8 +20,8 @@
     "test:coverage": "jest --runInBand --detectOpenHandles --bail --coverage"
   },
   "dependencies": {
-    "@connext/contracts": "1.0.4",
-    "@connext/types": "4.3.0",
+    "@connext/contracts": "1.0.5",
+    "@connext/types": "5.1.1",
     "ethers": "4.0.45",
     "@openzeppelin/contracts": "2.5.0",
     "eventemitter3": "4.0.0",

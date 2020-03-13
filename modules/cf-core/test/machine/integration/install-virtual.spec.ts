@@ -79,7 +79,7 @@ beforeAll(async () => {
   proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 });
 
-describe("Scenario: Install virtual app with and put on-chain", () => {
+describe.skip("Scenario: Install virtual app with and put on-chain", () => {
   let globalChannelNonce = 0;
 
   let createProxy: () => Promise<void>;

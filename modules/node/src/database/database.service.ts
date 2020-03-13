@@ -10,12 +10,10 @@ import {
   AnonymizedOnchainTransaction,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import {
-  LinkedTransfer,
-  PeerToPeerTransfer,
-  Transfer,
-  AnonymizedTransfer,
-} from "../transfer/transfer.entity";
+import { Transfer } from "../transfer/transfer.entity";
+import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
+import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
+import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -31,6 +29,7 @@ import { EditViewTable1578621554000 } from "../../migrations/1578621554000-edit-
 import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-network-to-chain-id";
 import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
 import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
+import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
 
 export const entities = [
   AppRegistry,
@@ -38,11 +37,11 @@ export const entities = [
   CFCoreRecord,
   RebalanceProfile,
   LinkedTransfer,
-  PeerToPeerTransfer,
   OnchainTransaction,
   Transfer,
   AnonymizedOnchainTransaction,
   AnonymizedTransfer,
+  FastSignedTransfer,
 ];
 
 export const migrations = [
@@ -59,6 +58,7 @@ export const migrations = [
   NetworkToChainId1579686361011,
   AddAnonymizedViewTables1581090243171,
   RebalancingProfile1581796200880,
+  fastSignedTransfer1583682931763,
 ];
 
 @Injectable()

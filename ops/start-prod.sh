@@ -99,7 +99,7 @@ fi
 
 ethprovider_image="$registry${project}_ethprovider:$version"
 database_image="$registry${project}_database:$version"
-logdna_image="logdna/logspout:1.2.0"
+logdna_image="logdna/logspout:v1.2.0"
 nats_image="nats:2.0.0-linux"
 node_image="$registry${project}_node:$version"
 proxy_image="$registry${project}_proxy:$version"

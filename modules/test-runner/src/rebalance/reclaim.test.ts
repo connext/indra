@@ -2,12 +2,12 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
-import { after, before, describe } from "mocha";
+import { before, describe, after } from "mocha";
 import { Client } from "ts-nats";
 
-import { createClient, fundChannel, asyncTransferAsset, expect, delay } from "../util";
+import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
-import { connectNats } from "../util/nats";
+import { connectNats, closeNats } from "../util/nats";
 
 describe("Reclaim", () => {
   let clientA: IConnextClient;
@@ -30,6 +30,10 @@ describe("Reclaim", () => {
   afterEach(async () => {
     await clientA.messaging.disconnect();
     await clientB.messaging.disconnect();
+  });
+
+  after(() => {
+    closeNats();
   });
 
   it("happy case: node should reclaim ETH with async transfer", async () => {
@@ -59,6 +63,7 @@ describe("Reclaim", () => {
       clientB,
       bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(One),
       AddressZero,
+      nats,
     );
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
@@ -113,6 +118,7 @@ describe("Reclaim", () => {
       clientB,
       bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(One),
       tokenAddress,
+      nats,
     );
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim

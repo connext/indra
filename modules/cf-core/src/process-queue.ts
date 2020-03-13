@@ -1,8 +1,8 @@
 import Queue, { Task } from "p-queue";
 
-import { addToManyQueues } from "./methods/queued-execution";
-import { CFCoreTypes } from "./types";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
+import { addToManyQueues } from "./methods";
+import { CFCoreTypes } from "./types";
 
 class QueueWithLockingServiceConnection extends Queue {
   constructor(

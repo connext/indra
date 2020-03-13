@@ -20,8 +20,9 @@ import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
+import { JsonRpcResponse, Rpc } from "rpc-server";
 
-import { JsonRpcResponse, Node, Rpc } from "../../src";
+import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
 import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../../src/machine";

@@ -1,5 +1,5 @@
 import { Wallet } from "ethers";
-import { computeAddress, SigningKey } from "ethers/utils";
+import { SigningKey } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic, HDNode } from "ethers/utils/hdnode";
 import memoize from "memoizee";
 

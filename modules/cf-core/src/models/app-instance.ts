@@ -4,7 +4,7 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
-import { appIdentityToHash } from "../ethereum/utils/app-identity";
+import { appIdentityToHash } from "../ethereum";
 import {
   AppIdentity,
   AppInstanceJson,
@@ -55,9 +55,9 @@ export class AppInstance {
     public readonly defaultTimeout: number,
     public readonly appInterface: AppInterface,
     public readonly isVirtualApp: boolean,
-    public readonly appSeqNo: number,
+    public readonly appSeqNo: number, // channel nonce at app proposal
     public readonly latestState: any,
-    public readonly latestVersionNumber: number,
+    public readonly latestVersionNumber: number, // app nonce
     public readonly latestTimeout: number,
     public readonly outcomeType: OutcomeType,
     private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,

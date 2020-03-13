@@ -2,7 +2,7 @@ import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { getFreeBalanceAppInterface, merge } from "../ethereum/utils/free-balance-app";
+import { getFreeBalanceAppInterface, merge } from "../ethereum";
 import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../machine/xkeys";
 import { OutcomeType } from "../types";
 import { prettyPrintObject } from "../utils";

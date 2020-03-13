@@ -1,7 +1,5 @@
 import { AddressZero } from "ethers/constants";
 
-export { CF_PATH } from "@connext/types";
-
 // Adds indentation, white space, and line break characters to the return-value
 // JSON text to make it easier to read
 export const JSON_STRINGIFY_SPACE = 2;

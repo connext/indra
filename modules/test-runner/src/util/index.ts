@@ -15,6 +15,8 @@ export * from "./constants";
 export * from "./db";
 export * from "./env";
 export * from "./ethprovider";
+export * from "./logger";
 export * from "./messaging";
 export * from "./misc";
+export * from "./nats";
 export * from "./types";

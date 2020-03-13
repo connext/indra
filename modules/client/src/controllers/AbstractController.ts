@@ -25,9 +25,13 @@ export abstract class AbstractController {
     this.ethProvider = connext.ethProvider;
   }
 
+  /**
+   * @returns {string} appInstanceId - Installed app's appInstanceId
+   */
   proposeAndInstallLedgerApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<string> => {
+    // 163 ms
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
@@ -41,6 +45,7 @@ export abstract class AbstractController {
     let boundReject: (reason?: any) => void;
 
     try {
+      // 1676 ms TODO: why does this step take so long?
       const res = await Promise.race([
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -61,7 +66,7 @@ export abstract class AbstractController {
       ]);
 
       this.log.info(`Installed app with id: ${appInstanceId}`);
-      this.log.debug(`Installed app details: ${stringify(res as object)}`);
+      // this.log.debug(`Installed app details: ${stringify(res as object)}`);
       return appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
@@ -106,7 +111,7 @@ export abstract class AbstractController {
                 proposed = true;
               }
             };
-            const [proposeResult, _] = await Promise.all([
+            const [proposeResult] = await Promise.all([
               this.connext.proposeInstallApp(params),
               this.connext.messaging.subscribe(
                 `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,

@@ -1,5 +1,6 @@
+import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
-import { ILoggerService } from "@connext/types";
+import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
@@ -19,7 +20,6 @@ import {
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
-  SupportedApplication,
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";
@@ -86,7 +86,7 @@ export class NodeApiClient implements INodeApiClient {
     timeout: number,
   ): Promise<any> {
     const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
-    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    // this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
       retVal = await callback();
@@ -94,7 +94,7 @@ export class NodeApiClient implements INodeApiClient {
       this.log.error(`Failed to execute callback while lock is held: ${e.stack || e.message}`);
     } finally {
       await this.send(`lock.release.${lockName}`, { lockValue });
-      this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
+      // this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
   }
@@ -164,14 +164,16 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async resolveLinkedTransfer(
-    paymentId: string,
-    linkedHash: string,
-    meta: object = {},
-  ): Promise<ResolveLinkedTransferResponse> {
+  public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
     return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
-      linkedHash,
-      meta,
+      paymentId,
+    });
+  }
+
+  public async resolveFastSignedTransfer(
+    paymentId: string,
+  ): Promise<ResolveFastSignedTransferResponse> {
+    return await this.send(`transfer.resolve-fast-signed.${this.userPublicIdentifier}`, {
       paymentId,
     });
   }
@@ -335,7 +337,7 @@ export class NodeApiClient implements INodeApiClient {
     }
     const { err, response } = msg.data;
     if (err || error || msg.data.err) {
-      throw new Error(`Error sending request. Message: ${stringify(msg)}`);
+      throw new Error(`Error sending request to subject ${subject}. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     logTime(

@@ -1,9 +1,9 @@
-import { ILoggerService } from "@connext/types";
+import { DEPOSIT_CONFIRMED_EVENT, PROTOCOL_MESSAGE_EVENT, ILoggerService } from "@connext/types";
 import { Signer } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
-import { eventNameToImplementation, methodNameToImplementation } from "./api";
+import { eventNameToImplementation, methodNameToImplementation } from "./methods";
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
@@ -16,7 +16,6 @@ import {
   NodeMessageWrappedProtocolMessage,
 } from "./types";
 import { bigNumberifyJson, logTime } from "./utils";
-import { DEPOSIT_CONFIRMED_EVENT, PROTOCOL_MESSAGE_EVENT } from "@connext/types";
 
 /**
  * This class registers handlers for requests to get or set some information
