@@ -229,8 +229,8 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.saveAppInstance(multisigAddress, appJson);
   }
 
-  removeAppInstance(appInstanceId: string): Promise<void> {
-    return this.appInstanceRepository.removeAppInstance(appInstanceId);
+  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+    throw new Error(`Method not implemented`);
   }
 
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal> {
@@ -241,7 +241,7 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.saveAppProposal(appInstanceId, appProposal);
   }
 
-  removeAppProposal(appInstanceId: string): Promise<void> {
+  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
     // should either go through `saveAppInstance` to update to `INSTANCE`
     // type, or `removeAppInstance` to update to `UNINSTALL` type
     throw new Error(`Method not implemented`);
@@ -316,6 +316,17 @@ export class CFCoreStore implements IStoreService {
       throw new Error(`No channel found for withdrawal commitment, multisig: ${multisigAddress}`);
     }
     return this.withdrawCommitmentRepository.saveWithdrawalCommitment(channel, commitment);
+  }
+
+  getSetupCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
+    throw new Error(`Method not implemented`);
+  }
+
+  saveSetupCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void> {
+    throw new Error(`Method not implemented`);
   }
 
   clear(): Promise<void> {
