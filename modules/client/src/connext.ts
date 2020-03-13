@@ -356,12 +356,15 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: TransferParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
+    if(!params.paymentId) {
+      params.paymentId = hexlify(randomBytes(32));
+    }
     return this.linkedTransferController.linkedTransferToRecipient({
       amount: params.amount,
       assetId: params.assetId,
       conditionType: LINKED_TRANSFER_TO_RECIPIENT,
       meta: params.meta,
-      paymentId: hexlify(randomBytes(32)),
+      paymentId: params.paymentId,
       preImage: hexlify(randomBytes(32)),
       recipient: params.recipient,
     }) as Promise<LinkedTransferToRecipientResponse>;
