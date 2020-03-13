@@ -1,6 +1,7 @@
 import { MessagingAuthService } from "@connext/messaging";
+// import { getMessagingPrefix } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
-import { arrayify, hexlify, randomBytes, verifyMessage } from "ethers/utils";
+import { hexlify, randomBytes, verifyMessage } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
@@ -10,7 +11,6 @@ import { ConfigService } from "../config/config.service";
 import { isXpub } from "../util";
 import { MessagingAuthProviderId } from "../constants";
 
-const logger = new LoggerService("AuthService");
 const nonceLen = 16;
 const nonceTTL = 24 * 60 * 60 * 1000; // 1 day
 
@@ -24,8 +24,11 @@ export class AuthService {
   constructor(
     @Inject(MessagingAuthProviderId) private readonly messagingAuthService: MessagingAuthService,
     private readonly configService: ConfigService,
+    private readonly log: LoggerService,
     private readonly channelRepo: ChannelRepository,
-  ) {}
+  ) {
+    this.log.setContext("AuthService");
+  }
 
   // FIXME-- fix this client api contract error...
   // TODO-- get ops/start_prod.sh placeholders filled out
@@ -34,7 +37,7 @@ export class AuthService {
     const expiry = Date.now() + nonceTTL;
     // FIXME-- store nonce in redis instead of here...
     this.nonces[userPublicIdentifier] = { expiry, nonce };
-    logger.debug(
+    this.log.debug(
       `getNonce: Gave xpub ${userPublicIdentifier} a nonce that expires at ${expiry}: ${nonce}`,
     );
     return nonce;
@@ -47,11 +50,12 @@ export class AuthService {
   ): Promise<string> {
     const indraAdminToken = this.configService.get("INDRA_ADMIN_TOKEN");
     if (indraAdminToken && adminToken === indraAdminToken) {
+      this.log.warn(`Vending admin token to ${userPublicIdentifier}`);
       return this.vendAdminToken(userPublicIdentifier);
     }
 
     const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
-    logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
+    this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
     const addr = verifyMessage(nonce, signedNonce);
@@ -62,11 +66,12 @@ export class AuthService {
       throw new Error(`verification failed... nonce expired for xpub: ${userPublicIdentifier}`);
     }
 
-    // TODO -- ARJUN: Change client to subscribe to app-registry/config.
+    const network = await this.configService.getEthNetwork();
+
     // Try to get latest published OR move everything under xpub route.
     let permissions = {
       publish: {
-        allow: [`${userPublicIdentifier}.>`],
+        allow: [`${userPublicIdentifier}.>`, `INDRA.${network.chainId}.>`],
       },
       subscribe: {
         allow: [`>`],
