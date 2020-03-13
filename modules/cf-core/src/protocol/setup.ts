@@ -8,7 +8,7 @@ import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Setup;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = Commitment;
+const { Setup } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -75,7 +75,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 33 ms
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-    yield [PERSIST_COMMITMENT, SetState, setupCommitment, stateChannel.freeBalance.identityHash];
+    yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
     logTime(log, start, `Finished initiating`);
   },
 
@@ -120,7 +120,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-    yield [PERSIST_COMMITMENT, SetState, setupCommitment, stateChannel.freeBalance.identityHash];
+    yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
 
     yield [
       IO_SEND,

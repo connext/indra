@@ -13,7 +13,7 @@ import {
 
 export class MemoryStorage implements IClientStore {
   private schemaVersion: number = STORE_SCHEMA_VERSION;
-  private channels: Map<string, StateChannelJSON> = new Map();
+  channels: Map<string, StateChannelJSON> = new Map();
   private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
   private conditionalTransactionCommitment: Map<
     string,
@@ -24,6 +24,7 @@ export class MemoryStorage implements IClientStore {
   private appInstances: Map<string, AppInstanceJson> = new Map();
   private userWithdrawals: WithdrawalMonitorObject | undefined = undefined;
   private freeBalances: Map<string, AppInstanceJson> = new Map();
+  private setupCommitments: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
 
   constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
 
@@ -36,7 +37,15 @@ export class MemoryStorage implements IClientStore {
   }
 
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
-    return this.channels.get(multisigAddress);
+    if (!this.channels.has(multisigAddress)) {
+      return undefined;
+    }
+    return {
+      ...this.channels.get(multisigAddress),
+      appInstances: [...this.appInstances.entries()],
+      proposedAppInstances: [...this.proposedApps.entries()],
+      freeBalanceAppInstance: this.freeBalances.get(multisigAddress),
+    };
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
@@ -59,6 +68,9 @@ export class MemoryStorage implements IClientStore {
   }
 
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+    if (stateChannel.freeBalanceAppInstance) {
+      this.saveFreeBalance(stateChannel.multisigAddress, stateChannel.freeBalanceAppInstance);
+    }
     this.channels.set(stateChannel.multisigAddress, stateChannel);
   }
 
@@ -71,12 +83,32 @@ export class MemoryStorage implements IClientStore {
     if (!channel) {
       throw new Error(`Channel not found: ${multisigAddress}`);
     }
+    // add app
+    channel.appInstances.push([appInstance.identityHash, appInstance]);
     this.appInstances.set(appInstance.identityHash, appInstance);
   }
 
-  removeAppInstance(appInstanceId: string): Promise<void> {
+  async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
     this.appInstances.delete(appInstanceId);
-    return Promise.resolve();
+    this.channels.set(channel.multisigAddress, {
+      ...channel,
+      appInstances: channel.appInstances.filter(([appId]) => appId !== appInstanceId),
+    });
+  }
+
+  async getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+    return this.setupCommitments.get(multisigAddress);
+  }
+
+  async saveSetupCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void> {
+    this.setupCommitments.set(multisigAddress, commitment);
+    return;
   }
 
   async getLatestSetStateCommitment(
@@ -125,14 +157,25 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve(this.proposedApps.get(appInstanceId));
   }
 
-  saveAppProposal(appInstanceId: string, proposal: AppInstanceProposal): Promise<void> {
-    this.proposedApps.set(appInstanceId, proposal);
+  saveAppProposal(multisigAddress: string, proposal: AppInstanceProposal): Promise<void> {
+    const channel = this.channels.get(multisigAddress);
+    if (!channel) {
+      throw new Error(`Channel not found: ${multisigAddress}`);
+    }
+    channel.proposedAppInstances.push([proposal.identityHash, proposal]);
+    this.proposedApps.set(proposal.identityHash, proposal);
     return Promise.resolve();
   }
 
-  removeAppProposal(appInstanceId: string): Promise<void> {
-    this.appInstances.delete(appInstanceId);
-    return Promise.resolve();
+  async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    this.proposedApps.delete(appInstanceId);
+    this.channels.set(channel.multisigAddress, {
+      ...channel,
+      proposedAppInstances: channel.proposedAppInstances.filter(
+        ([appId]) => appId !== appInstanceId,
+      ),
+    });
   }
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {

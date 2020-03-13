@@ -18,19 +18,15 @@ enum Opcode {
 
   /**
    * Middleware hook to write the state channel to store. Used during the setup
-   * protocol to persist the initial structure of the channel
+   * protocol to persist the initial structure/state of the channel
    */
   PERSIST_STATE_CHANNEL,
 
   /**
-   * Middleware hook to write the app instances to store.
+   * Middleware hook to write the app instances to store. Will also update
+   * free balance app
    */
   PERSIST_APP_INSTANCE,
-
-  /**
-   * Middleware hook to write the free balance app to store.
-   */
-  PERSIST_FREE_BALANCE,
 
   /**
    * Called at the end of execution before the return value to store a

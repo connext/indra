@@ -251,10 +251,18 @@ export class Node {
         const [commitmentType, commitment, ...res] = args;
 
         switch (commitmentType) {
-          case Commitment.Withdraw:
+          case Commitment.Setup:
             const [multisigAddress] = res;
-            await store.storeWithdrawalCommitment(
+            await store.saveSetupCommitment(
               multisigAddress,
+              commitment as ProtocolTypes.MinimalTransaction,
+            );
+            break;
+
+          case Commitment.Withdraw:
+            const [multisig] = res;
+            await store.saveWithdrawalCommitment(
+              multisig,
               commitment as ProtocolTypes.MinimalTransaction,
             );
             break;
@@ -282,42 +290,37 @@ export class Node {
       },
     );
 
-    protocolRunner.register(Opcode.PERSIST_FREE_BALANCE, async (args: [StateChannel]) => {
-      const { store } = this.requestHandler;
-      const [stateChannel] = args;
-
-      await this.store.saveStateChannel(stateChannel);
-
-      await store.saveFreeBalance(stateChannel.multisigAddress, stateChannel.freeBalance);
-    });
-
     protocolRunner.register(
       Opcode.PERSIST_APP_INSTANCE,
       async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
         const { store } = this.requestHandler;
-        const [type, channel, app] = args;
+        const [type, postProtocolChannel, app] = args;
 
-        await this.store.saveStateChannel(channel);
+        // always persist the free balance
+        // this will error if channel does not exist
+        await store.saveFreeBalance(postProtocolChannel);
 
         switch (type) {
           case PersistAppType.Proposal:
-            await store.saveAppProposal(channel.multisigAddress, app as AppInstanceProposal);
+            await store.saveAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            break;
+          case PersistAppType.Reject:
+            await store.removeAppProposal(postProtocolChannel, app as AppInstanceProposal);
             break;
 
           case PersistAppType.Instance:
-            await store.saveAppInstance(channel.multisigAddress, app as AppInstance);
+            if (app.identityHash === postProtocolChannel.freeBalance.identityHash) {
+              break;
+            }
+            await store.saveAppInstance(postProtocolChannel, app as AppInstance);
             break;
 
           case PersistAppType.Uninstall:
-            await store.removeAppInstance(app.identityHash);
-            break;
-
-          case PersistAppType.Reject:
-            await store.removeAppProposal(app.identityHash);
+            await store.removeAppInstance(postProtocolChannel, app as AppInstance);
             break;
 
           default:
-            throw new Error(`todooo`);
+            throw new Error(`Unrecognized app persistence call: ${type}`);
         }
       },
     );

@@ -2,6 +2,7 @@ import { StateChannelJSON } from "./state";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import { CFCoreTypes } from "./cfCore";
 import { SetStateCommitmentJSON, ConditionalTransactionCommitmentJSON } from "./challenge";
+import { ProtocolTypes } from "./protocol";
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
@@ -95,12 +96,19 @@ export interface IStoreService {
   saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
-  removeAppInstance(appInstanceId: string): Promise<void>;
+  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void>;
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined>;
   saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void>;
-  removeAppProposal(appInstanceId: string): Promise<void>;
+  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void>;
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
   saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
+  getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<ProtocolTypes.MinimalTransaction | undefined>;
+  saveSetupCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void>;
   getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
   saveLatestSetStateCommitment(
     appIdentityHash: string,

@@ -13,7 +13,7 @@ import { anything, instance, mock, when } from "ts-mockito";
 import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { Protocol, ProtocolRunner, xkeysToSortedKthAddresses } from "../../src/machine";
-import { NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID } from "../../src/methods";
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../../src/methods";
 import { install } from "../../src/methods/app-instance/install/operation";
 import { StateChannel } from "../../src/models";
 import { Store } from "../../src/store";
@@ -60,7 +60,7 @@ describe("Can handle correct & incorrect installs", () => {
   it("fails to install without the AppInstance being proposed first", async () => {
     await expect(
       install(store, protocolRunner, { appInstanceId: HashZero }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(HashZero));
+    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(HashZero));
   });
 
   it("fails to install without the AppInstanceId being in a channel", async () => {

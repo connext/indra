@@ -130,8 +130,21 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getLatestSetStateCommitment(appIdentityHash);
   }
 
-  removeAppInstance(appInstanceId: string): Promise<void> {
-    return this.internalStore.removeAppInstance(appInstanceId);
+  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+    return this.internalStore.removeAppInstance(multisigAddress, appInstanceId);
+  }
+
+  getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+    return this.internalStore.getSetupCommitment(multisigAddress);
+  }
+
+  saveSetupCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void> {
+    return this.internalStore.saveSetupCommitment(multisigAddress, commitment);
   }
 
   saveLatestSetStateCommitment(
@@ -189,8 +202,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.saveAppProposal(appInstanceId, proposal);
   }
 
-  removeAppProposal(appInstanceId: string): Promise<void> {
-    return this.internalStore.removeAppProposal(appInstanceId);
+  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+    return this.internalStore.removeAppProposal(multisigAddress, appInstanceId);
   }
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {

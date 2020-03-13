@@ -71,11 +71,10 @@ export async function handleReceivedProtocolMessage(
         }
       }
       if (proposal) {
-        await store.saveStateChannel(
-          (await store.getStateChannelFromAppInstanceID(appInstanceId)).removeProposal(
-            appInstanceId,
-          ),
-        );
+        const channel = (
+          await store.getStateChannelFromAppInstanceID(appInstanceId)
+        ).removeProposal(proposal.identityHash);
+        await store.removeAppProposal(channel, proposal);
       }
     }
   }

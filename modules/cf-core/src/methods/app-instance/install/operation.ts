@@ -44,9 +44,7 @@ export async function install(
     disableLimit: false,
   });
 
-  await store.saveStateChannel(
-    (await store.getStateChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId),
-  );
+  await store.removeAppProposal(stateChannel.removeProposal(appInstanceId), proposal);
 
   return proposal;
 }

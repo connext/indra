@@ -132,7 +132,7 @@ export class TestRunner {
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
         },
       });
-      await mininode.store.saveStateChannel(updatedBalance);
+      await mininode.store.saveFreeBalance(updatedBalance);
       mininode.scm.set(this.multisigAB, updatedBalance);
     }
 
@@ -148,7 +148,7 @@ export class TestRunner {
           [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
         },
       });
-      await mininode.store.saveStateChannel(updatedSc);
+      await mininode.store.saveFreeBalance(updatedSc);
       mininode.scm.set(this.multisigBC, updatedSc);
     }
   }

@@ -21,14 +21,7 @@ import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods";
 
-const {
-  OP_SIGN,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
-  PERSIST_FREE_BALANCE,
-} = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
 const { Install } = Protocol;
 const { Conditional, SetState } = Commitment;
 
@@ -177,8 +170,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
     ];
-
-    yield [PERSIST_FREE_BALANCE, postProtocolStateChannel];
 
     yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
 
@@ -338,8 +329,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
     ];
-
-    yield [PERSIST_FREE_BALANCE, postProtocolStateChannel];
 
     yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
 

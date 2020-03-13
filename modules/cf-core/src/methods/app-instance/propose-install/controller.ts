@@ -1,17 +1,11 @@
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
-import { Protocol, xkeyKthAddress } from "../../../machine";
-import { StateChannel } from "../../../models";
+import { Protocol } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
-import {
-  INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
-  NULL_INITIAL_STATE_FOR_PROPOSAL,
-} from "../../errors";
+import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -56,7 +50,6 @@ export default class ProposeInstallController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<void> {
-    const { networkContext, publicIdentifier, store } = requestHandler;
     const { initialState } = params;
 
     if (!initialState) {
@@ -64,36 +57,15 @@ export default class ProposeInstallController extends NodeController {
     }
 
     const {
-      proposedToIdentifier,
       initiatorDepositTokenAddress: initiatorDepositTokenAddressParam,
       responderDepositTokenAddress: responderDepositTokenAddressParam,
     } = params;
-
-    const myIdentifier = publicIdentifier;
-
-    // see comment in `getRequiredLockNames`
-    const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      [publicIdentifier, proposedToIdentifier],
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
-      networkContext.provider,
-    );
 
     const initiatorDepositTokenAddress =
       initiatorDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     const responderDepositTokenAddress =
       responderDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
-
-    const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
-      multisigAddress,
-      {
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
-      myIdentifier,
-      proposedToIdentifier,
-    );
 
     params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
     params.responderDepositTokenAddress = responderDepositTokenAddress;
@@ -127,30 +99,5 @@ export default class ProposeInstallController extends NodeController {
         await store.getStateChannel(multisigAddress)
       ).mostRecentlyProposedAppInstance().identityHash,
     };
-  }
-}
-
-function assertSufficientFundsWithinFreeBalance(
-  channel: StateChannel,
-  publicIdentifier: string,
-  tokenAddress: string,
-  depositAmount: BigNumber,
-): void {
-  if (!channel.hasFreeBalance) return;
-
-  const freeBalanceForToken =
-    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
-    Zero;
-
-  if (freeBalanceForToken.lt(depositAmount)) {
-    throw Error(
-      INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
-        publicIdentifier,
-        channel.multisigAddress,
-        tokenAddress,
-        freeBalanceForToken,
-        depositAmount,
-      ),
-    );
   }
 }

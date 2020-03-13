@@ -39,7 +39,7 @@ describe("Three mininodes", () => {
 
     await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
       initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeC.xpub,
+      responderXpub: tr.mininodeB.xpub,
       defaultTimeout: 100,
       appInterface: {
         addr: appWithAction.address,
@@ -49,25 +49,29 @@ describe("Three mininodes", () => {
       initialState: {
         counter: 0,
       },
-      appSeqNo: 0,
+      appSeqNo: 1,
       initiatorBalanceDecrement: bigNumberify(0),
       responderBalanceDecrement: bigNumberify(0),
       initiatorDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       responderDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      participants: [xkeyKthAddress(tr.mininodeA.xpub), xkeyKthAddress(tr.mininodeC.xpub)],
-      multisigAddress: tr.multisigAC,
+      participants: [
+        xkeyKthAddress(tr.mininodeA.xpub, 1),
+        xkeyKthAddress(tr.mininodeB.xpub, 1),
+      ].sort(),
+      multisigAddress: tr.multisigAB,
       disableLimit: false,
     });
 
-    const [appInstance] = [
-      ...(await tr.mininodeA.store.getStateChannel(tr.multisigAC))!.appInstances.values(),
-    ];
+    const postInstallChannel = await tr.mininodeA.store.getStateChannel(tr.multisigAB);
+    expect(postInstallChannel).toBeDefined;
+
+    const [appInstance] = [...postInstallChannel.appInstances.values()];
 
     await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Update, {
       initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeC.xpub,
-      multisigAddress: tr.multisigAC,
+      responderXpub: tr.mininodeB.xpub,
+      multisigAddress: tr.multisigAB,
       appIdentityHash: appInstance.identityHash,
       newState: {
         counter: 1,
@@ -76,8 +80,8 @@ describe("Three mininodes", () => {
 
     await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.TakeAction, {
       initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeC.xpub,
-      multisigAddress: tr.multisigAC,
+      responderXpub: tr.mininodeB.xpub,
+      multisigAddress: tr.multisigAB,
       appIdentityHash: appInstance.identityHash,
       action: {
         actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
@@ -87,9 +91,9 @@ describe("Three mininodes", () => {
 
     await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Uninstall, {
       initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeC.xpub,
+      responderXpub: tr.mininodeB.xpub,
       appIdentityHash: appInstance.identityHash,
-      multisigAddress: tr.multisigAC,
+      multisigAddress: tr.multisigAB,
     });
   });
 });

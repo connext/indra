@@ -233,9 +233,8 @@ export async function getAppInstanceProposal(
   appInstanceId: string,
   multisigAddress: string,
 ): Promise<AppInstanceProposal> {
-  const candidates = (await getProposedAppInstances(node, multisigAddress)).filter(
-    proposal => proposal.identityHash === appInstanceId,
-  );
+  const proposals = await getProposedAppInstances(node, multisigAddress);
+  const candidates = proposals.filter(proposal => proposal.identityHash === appInstanceId);
 
   if (candidates.length === 0) {
     throw new Error(`Could not find proposal`);
@@ -702,6 +701,10 @@ export async function installApp(
       } = msg;
 
       // Sanity-check
+      confirmProposedAppInstance(
+        installationProposalRpc.parameters,
+        await getAppInstanceProposal(nodeB, appInstanceId, multisigAddress),
+      );
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
         await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),

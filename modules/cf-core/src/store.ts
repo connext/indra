@@ -7,10 +7,11 @@ import {
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
   NO_MULTISIG_FOR_COUNTERPARTIES,
   NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+  NO_STATE_CHANNEL_FOR_OWNERS,
 } from "./methods";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { CFCoreTypes } from "./types";
-import { getCreate2MultisigAddress } from "./utils";
+import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
 /**
@@ -77,7 +78,7 @@ export class Store {
     const stateChannelJson = await this.storeService.getStateChannelByOwners(owners.sort());
 
     if (!stateChannelJson) {
-      throw Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(owners.toString()));
+      throw Error(NO_STATE_CHANNEL_FOR_OWNERS(owners.toString()));
     }
 
     const channel = StateChannel.fromJson(stateChannelJson);
@@ -127,15 +128,33 @@ export class Store {
    * @param stateChannel
    */
   public async saveStateChannel(stateChannel: StateChannel) {
+    // make sure state channel does not already exist
+    const existing = await this.getStateChannelIfExists(stateChannel.multisigAddress);
+    if (existing) {
+      throw new Error(
+        `Should only call 'saveStateChannel' during setup protocol, found state channel: ${prettyPrintObject(
+          existing,
+        )}`,
+      );
+    }
     await this.storeService.saveStateChannel(stateChannel.toJson());
+  }
+
+  private async assertChannelExists(multisigAddress: string) {
+    // make sure state channel does not already exist
+    const existing = await this.getStateChannelIfExists(multisigAddress);
+    if (!existing) {
+      throw new Error(`Setup protocol has not been run`);
+    }
   }
 
   /**
    * This persists the state of the free balance
    * @param appInstance
    */
-  public async saveFreeBalance(multisigAddress: string, freeBalance: AppInstance) {
-    await this.storeService.saveFreeBalance(multisigAddress, freeBalance.toJson());
+  public async saveFreeBalance(channel: StateChannel) {
+    await this.assertChannelExists(channel.multisigAddress);
+    await this.storeService.saveFreeBalance(channel.multisigAddress, channel.freeBalance.toJson());
   }
 
   /**
@@ -153,29 +172,63 @@ export class Store {
   /**
    * This persists the state of an app proposal
    */
-  public async saveAppProposal(multisigAddress: string, proposal: AppInstanceProposal) {
-    await this.storeService.saveAppProposal(multisigAddress, proposal);
+  public async saveAppProposal(channel: StateChannel, proposal: AppInstanceProposal) {
+    await this.assertChannelExists(channel.multisigAddress);
+    if (proposal.identityHash === channel.freeBalance.identityHash) {
+      throw new Error(`Free balance does not go through proposal flow`);
+    }
+    if (!channel.hasAppProposal(proposal.identityHash)) {
+      throw new Error(`Post protocol channel does not have proposal, did 'propose' protocol fail?`);
+    }
+    // the nonce will be updated on proposal, so make sure to save the
+    // state channel here as well
+    await this.storeService.saveStateChannel(channel.toJson());
+    await this.storeService.saveAppProposal(channel.multisigAddress, proposal);
   }
 
   /**
    * This persists the state of an app instance
    */
-  public async removeAppProposal(appId: string) {
-    await this.storeService.removeAppProposal(appId);
+  public async removeAppProposal(channel: StateChannel, app: AppInstanceProposal) {
+    await this.assertChannelExists(channel.multisigAddress);
+    if (channel.hasAppProposal(app.identityHash)) {
+      throw new Error(`Post protocol channel still has proposal, did protocol fail?`);
+    }
+    await this.storeService.removeAppProposal(channel.multisigAddress, app.identityHash);
   }
 
   /**
    * This persists the state of an app instance
    */
-  public async saveAppInstance(multisigAddress: string, app: AppInstance) {
-    await this.storeService.saveAppInstance(multisigAddress, app.toJson());
+  public async saveAppInstance(channel: StateChannel, app: AppInstance) {
+    await this.assertChannelExists(channel.multisigAddress);
+    if (channel.hasAppProposal(app.identityHash)) {
+      throw new Error(`Post protocol channel still has proposal, did 'install' protocol fail?`);
+    }
+    if (app.identityHash === channel.freeBalance.identityHash) {
+      throw new Error(`Save free balance using 'saveFreeBalance'`);
+    }
+    // make sure that it has app instance in channel object
+    if (!channel.hasAppInstance(app.identityHash)) {
+      throw new Error(`Post protocol channel does not have instance, did 'install' protocol fail?`);
+    }
+    // check if proposal must be removed
+    if (await this.storeService.getAppProposal(app.identityHash)) {
+      // proposal does exist in the store, remove it
+      await this.storeService.removeAppProposal(channel.multisigAddress, app.identityHash);
+    }
+    await this.storeService.saveAppInstance(channel.multisigAddress, app.toJson());
   }
 
   /**
    * This persists the state of an app instance
    */
-  public async removeAppInstance(appId: string) {
-    await this.storeService.removeAppInstance(appId);
+  public async removeAppInstance(channel: StateChannel, app: AppInstance) {
+    // make sure that it has app instance in channel object
+    if (channel.hasAppInstance(app.identityHash)) {
+      throw new Error(`Post protocol channel still has instance, did 'uninstall' protocol fail?`);
+    }
+    await this.storeService.removeAppInstance(channel.multisigAddress, app.identityHash);
   }
 
   /**
@@ -204,11 +257,28 @@ export class Store {
     return withdrawalCommitment;
   }
 
-  public async storeWithdrawalCommitment(
+  public async saveWithdrawalCommitment(
     multisigAddress: string,
     commitment: CFCoreTypes.MinimalTransaction,
   ) {
     return this.storeService.saveWithdrawalCommitment(multisigAddress, commitment);
+  }
+
+  public async getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<CFCoreTypes.MinimalTransaction> {
+    const withdrawalCommitment = await this.storeService.getSetupCommitment(multisigAddress);
+    if (!withdrawalCommitment) {
+      throw new Error("Could not find setup commitment");
+    }
+    return withdrawalCommitment;
+  }
+
+  public async saveSetupCommitment(
+    multisigAddress: string,
+    commitment: CFCoreTypes.MinimalTransaction,
+  ) {
+    return this.storeService.saveSetupCommitment(multisigAddress, commitment);
   }
 
   public async getLatestSetStateCommitment(
@@ -251,29 +321,5 @@ export class Store {
   public async getAppInstance(appInstanceId: string): Promise<AppInstance> {
     const channel = await this.getStateChannelFromAppInstanceID(appInstanceId);
     return channel.getAppInstance(appInstanceId);
-  }
-
-  public async getOrCreateStateChannelBetweenVirtualAppParticipants(
-    multisigAddress: string,
-    addresses: CriticalStateChannelAddresses,
-    initiatorXpub: string,
-    responderXpub: string,
-  ): Promise<StateChannel> {
-    try {
-      return await this.getStateChannel(multisigAddress);
-    } catch (e) {
-      if (e.toString().includes(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress))) {
-        const stateChannel = StateChannel.createEmptyChannel(multisigAddress, addresses, [
-          initiatorXpub,
-          responderXpub,
-        ]);
-
-        await this.saveStateChannel(stateChannel);
-
-        return stateChannel;
-      }
-
-      throw Error(e);
-    }
   }
 }

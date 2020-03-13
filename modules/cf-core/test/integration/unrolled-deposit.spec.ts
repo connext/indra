@@ -17,7 +17,8 @@ import {
   transferERC20Tokens,
 } from "./utils";
 import { xkeyKthAddress } from "../../src/machine";
-import { INSTALL_EVENT } from "@connext/types";
+import { INSTALL_EVENT, ProposeMessage } from "@connext/types";
+import { prettyPrintObject } from "../../src/utils";
 
 expect.extend({ toBeLt, toBeEq });
 
@@ -212,7 +213,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       AddressZero,
     );
 
-    await new Promise(async res => {
+    const proposeEth: ProposeMessage = await new Promise(async res => {
       nodeB.once(`PROPOSE_INSTALL_EVENT`, data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
@@ -230,7 +231,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       erc20TokenAddress,
     );
 
-    await new Promise(async res => {
+    const proposeTokens: ProposeMessage = await new Promise(async res => {
       nodeB.once(`PROPOSE_INSTALL_EVENT`, data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
@@ -238,6 +239,7 @@ describe(`Node method follows spec - install balance refund`, () => {
         parameters,
       });
     });
+    expect(proposeTokens.data.appInstanceId === proposeEth.data.appInstanceId).toBe(false);
 
     await requestDepositRights(nodeA, multisigAddress, erc20TokenAddress);
   });

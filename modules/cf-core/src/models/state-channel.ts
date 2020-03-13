@@ -80,6 +80,7 @@ export class StateChannel {
 
   public getAppInstance(appInstanceIdentityHash: string): AppInstance {
     if (this.hasFreeBalance && appInstanceIdentityHash === this.freeBalance.identityHash) {
+      console.log(`[channel] returning free balance app`);
       return this.freeBalance;
     }
     if (!this.appInstances.has(appInstanceIdentityHash)) {
@@ -90,6 +91,10 @@ export class StateChannel {
 
   public hasAppInstance(appInstanceId: string): boolean {
     return this.appInstances.has(appInstanceId);
+  }
+
+  public hasAppProposal(appInstanceId: string): boolean {
+    return this.proposedAppInstances.has(appInstanceId);
   }
 
   public hasAppInstanceOfKind(address: string): boolean {
@@ -401,6 +406,7 @@ export class StateChannel {
 
   public setState(appInstanceIdentityHash: string, state: SolidityValueType) {
     const appInstance = this.getAppInstance(appInstanceIdentityHash);
+    console.log(`[channel] found appInstance`, appInstance);
 
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 

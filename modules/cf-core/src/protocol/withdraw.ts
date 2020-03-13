@@ -1,3 +1,4 @@
+import { PersistAppType } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
@@ -24,7 +25,7 @@ import { logTime } from "../utils";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
-const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
+const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
 const { Withdraw } = Protocol;
 /**
  * @description This exchange is described at the following URL:
@@ -79,6 +80,13 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const refundApp = postInstallRefundAppStateChannel.mostRecentlyInstalledAppInstance();
 
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Instance,
+      postInstallRefundAppStateChannel,
+      refundApp,
+    ];
+
     const conditionalTransactionData = constructConditionalTransactionForRefundApp(
       network,
       postInstallRefundAppStateChannel,
@@ -130,7 +138,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.Conditional, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
+      Commitment.Conditional,
       conditionalTransactionData,
       refundApp.identityHash,
     ];
@@ -212,6 +220,13 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       {},
     );
 
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Uninstall,
+      postUninstallRefundAppStateChannel,
+      refundApp,
+    ];
+
     const uninstallRefundAppCommitment = new SetStateCommitment(
       network.ChallengeRegistry,
       postUninstallRefundAppStateChannel.freeBalance.identity,
@@ -275,7 +290,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_STATE_CHANNEL, [postUninstallRefundAppStateChannel]];
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -323,6 +337,13 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const refundApp = postInstallRefundAppStateChannel.mostRecentlyInstalledAppInstance();
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Instance,
+      postInstallRefundAppStateChannel,
+      refundApp,
+    ];
 
     const conditionalTransactionData = constructConditionalTransactionForRefundApp(
       network,
@@ -444,6 +465,13 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       {},
     );
 
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Uninstall,
+      postUninstallRefundAppStateChannel,
+      refundApp,
+    ];
+
     const uninstallRefundAppCommitment = new SetStateCommitment(
       network.ChallengeRegistry,
       postUninstallRefundAppStateChannel.freeBalance.identity,
@@ -495,8 +523,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
-
-    yield [PERSIST_STATE_CHANNEL, [postUninstallRefundAppStateChannel]];
 
     yield [
       IO_SEND,

@@ -28,7 +28,7 @@ export default class RejectInstallController extends NodeController {
 
     const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
-    await store.saveStateChannel(stateChannel.removeProposal(appInstanceId));
+    await store.removeAppProposal(stateChannel.removeProposal(appInstanceId), appInstanceProposal);
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,

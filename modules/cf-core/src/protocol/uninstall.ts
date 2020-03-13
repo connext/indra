@@ -1,3 +1,4 @@
+import { PersistAppType } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 
 import { SetStateCommitment } from "../ethereum";
@@ -14,7 +15,7 @@ import {
 } from "./utils";
 
 const protocol = Protocol.Uninstall;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
 /**
@@ -78,7 +79,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Uninstall,
+      postProtocolStateChannel,
+      appToUninstall,
+    ];
 
     logTime(log, start, `Finished Initiating`);
   },
@@ -124,7 +130,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Uninstall,
+      postProtocolStateChannel,
+      appToUninstall,
+    ];
 
     yield [
       IO_SEND,

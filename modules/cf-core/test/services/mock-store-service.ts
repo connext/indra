@@ -45,7 +45,7 @@ class MockStoreService implements CFCoreTypes.IStoreService {
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
-  removeAppInstance(appId: string): Promise<void> {
+  removeAppInstance(multisigAddress: string, appId: string): Promise<void> {
     return Promise.resolve();
   }
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
@@ -54,13 +54,22 @@ class MockStoreService implements CFCoreTypes.IStoreService {
   saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
     return Promise.resolve();
   }
-  removeAppProposal(appId: string): Promise<void> {
+  removeAppProposal(multisigAddress: string, appId: string): Promise<void> {
     return Promise.resolve();
   }
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
     return Promise.resolve(undefined);
   }
   saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    return Promise.resolve();
+  }
+  getSetupCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+    return Promise.resolve(undefined);
+  }
+  saveSetupCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void> {
     return Promise.resolve();
   }
   getLatestSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {

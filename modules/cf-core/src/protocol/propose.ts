@@ -4,7 +4,7 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { xkeyKthAddress, Commitment, Opcode, Protocol, appIdentityToHash } from "../machine";
 import { SetStateCommitment } from "../ethereum";
-import { AppInstanceProposal, StateChannel } from "../models";
+import { AppInstanceProposal } from "../models";
 import {
   Context,
   ProposeInstallProtocolParams,
@@ -45,10 +45,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
     } = params as ProposeInstallProtocolParams;
 
-    const preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
-    if (!preProtocolStateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
-    }
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -172,10 +169,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    const preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
-    if (!preProtocolStateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
-    }
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -233,6 +227,19 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal.appSeqNo,
     ];
 
+    yield [
+      IO_SEND,
+      {
+        protocol,
+        processID,
+        seq: UNASSIGNED_SEQ_NO,
+        toXpub: initiatorXpub,
+        customData: {
+          signature: responderSignatureOnInitialState,
+        },
+      } as ProtocolMessage,
+    ];
+
     setStateCommitment.signatures = [
       initiatorSignatureOnInitialState,
       responderSignatureOnInitialState,
@@ -246,19 +253,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       PersistAppType.Proposal,
       postProtocolStateChannel,
       appInstanceProposal,
-    ];
-
-    yield [
-      IO_SEND,
-      {
-        protocol,
-        processID,
-        seq: UNASSIGNED_SEQ_NO,
-        toXpub: initiatorXpub,
-        customData: {
-          signature: responderSignatureOnInitialState,
-        },
-      } as ProtocolMessage,
     ];
     logTime(log, start, `Finished responding`);
   },

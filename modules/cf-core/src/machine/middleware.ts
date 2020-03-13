@@ -8,7 +8,6 @@ export class MiddlewareContainer {
     [Opcode.OP_SIGN]: [],
     [Opcode.PERSIST_COMMITMENT]: [],
     [Opcode.PERSIST_STATE_CHANNEL]: [],
-    [Opcode.PERSIST_FREE_BALANCE]: [],
     [Opcode.PERSIST_APP_INSTANCE]: [],
   };
 

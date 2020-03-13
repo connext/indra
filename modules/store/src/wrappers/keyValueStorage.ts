@@ -19,6 +19,7 @@ import {
   CONDITIONAL_COMMITMENT_KEY,
   PROPOSED_APP_KEY,
   FREE_BALANCE_KEY,
+  SETUP_COMMITMENT_KEY,
 } from "../helpers";
 
 /**
@@ -125,8 +126,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.saveStateChannel(channel);
   }
 
-  async removeAppInstance(appInstanceId: string): Promise<void> {
-    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
+  async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+    const channel = await this.getStateChannelByAppInstanceId(multisigAddress);
     const existsIndex = channel.appInstances.findIndex(([app]) => app === appInstanceId);
     if (!existsIndex) {
       return;
@@ -181,6 +182,21 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(conditionalCommitmentKey, safeJsonStringify(commitment));
   }
 
+  async getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    return safeJsonParse(await this.getItem(setupCommitmentKey));
+  }
+
+  saveSetupCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void> {
+    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    return this.setItem(setupCommitmentKey, safeJsonStringify(commitment));
+  }
+
   async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     return safeJsonParse(await this.getItem(withdrawalKey));
@@ -201,7 +217,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(proposedAppsKey, safeJsonStringify(proposal));
   }
 
-  removeAppProposal(appInstanceId: string): Promise<void> {
+  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
     const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, appInstanceId);
     return this.removeItem(proposedAppsKey);
   }
