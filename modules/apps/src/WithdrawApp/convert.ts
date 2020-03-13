@@ -5,12 +5,14 @@ import {
     WithdrawAppState,
     WithdrawParameters,
     makeChecksumOrEthAddress,
+    convertCoinTransfersToObjIfNeeded
   } from "@connext/types";
 
 export function convertWithrawAppState<To extends NumericTypeName>(
   to: To,
   obj: WithdrawAppState<any>,
 ): WithdrawAppState<NumericTypes[To]> {
+  obj.transfers = convertCoinTransfersToObjIfNeeded(obj.transfers);
   return {
     ...obj,
     transfers: [

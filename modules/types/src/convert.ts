@@ -94,6 +94,23 @@ export function makeChecksumOrEthAddress(address: string | undefined): string {
   return makeChecksum(address);
 }
 
+export function convertCoinTransfersToObjIfNeeded(transfers: any): CoinTransfer[] {
+  if(typeof transfers[0].amount != "undefined") {
+    return transfers;
+  } else {
+    return [
+      {
+        to: transfers[0][0],
+        amount: transfers[0][1],
+      },
+      {
+        to: transfers[1][0],
+        amount: transfers[1][1],
+      }
+    ]
+  }
+}
+
 type GenericAmountObject<T> = any & {
   amount: T;
 };
