@@ -1,4 +1,2 @@
-import GetProposedAppInstancesController from "./get-all/controller";
-import GetProposedAppInstanceController from "./get/controller";
-
-export { GetProposedAppInstancesController, GetProposedAppInstanceController };
+export { GetProposedAppInstancesController } from "./get-all";
+export { GetProposedAppInstanceController } from "./get";
