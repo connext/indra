@@ -1,11 +1,10 @@
-import { SupportedApplication } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
-import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
+import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify, delay } from "./lib";
 import {
   AppRegistry,
   CFCoreTypes,
@@ -100,15 +99,9 @@ export class NodeApiClient implements INodeApiClient {
     return retVal;
   }
 
-  public async appRegistry(
-    appDetails?:
-      | {
-          name: SupportedApplication;
-          chainId: number;
-        }
-      | { appDefinitionAddress: string },
-  ): Promise<AppRegistry> {
-    return (await this.send("app-registry", { data: appDetails })) as AppRegistry;
+  public async appRegistry(): Promise<AppRegistry> {
+    const response: AxiosResponse<AppRegistry> = await axios.get(`${this.nodeUrl}/config`);
+    return response.data;
   }
 
   public async config(): Promise<GetConfigResponse> {
@@ -248,7 +241,6 @@ export class NodeApiClient implements INodeApiClient {
   private async send(subject: string, data?: any): Promise<any | undefined> {
     let error;
     for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
-      const timeout = new Promise((resolve: any): any => setTimeout(resolve, NATS_TIMEOUT));
       try {
         return await this.sendAttempt(subject, data);
       } catch (e) {
@@ -260,7 +252,7 @@ export class NodeApiClient implements INodeApiClient {
           await this.messaging.disconnect();
           await this.messaging.connect();
           if (attempt + 1 <= NATS_ATTEMPTS) {
-            await timeout; // Wait at least a NATS_TIMEOUT before retrying
+            await delay(NATS_TIMEOUT); // Wait at least a NATS_TIMEOUT before retrying
           }
         } else {
           throw e;
@@ -285,13 +277,14 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       throw new Error(`${sendFailed}: ${e.message}`);
     }
-    let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
-    if (!msg.data) {
+    const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+    let error = msg ? (parsedData ? (parsedData.response ? parsedData.response.err : "") : "") : "";
+    if (!parsedData) {
       this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
       return undefined;
     }
-    const { err, response } = msg.data;
-    if (err || error || msg.data.err) {
+    const { err, response } = parsedData;
+    if (err || error || parsedData.err) {
       throw new Error(`Error sending request to subject ${subject}. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
