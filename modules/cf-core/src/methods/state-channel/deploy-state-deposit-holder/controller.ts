@@ -15,7 +15,7 @@ import {
 import { MinimumViableMultisig, ProxyFactory } from "../../../contracts";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { NetworkContext, CFCoreTypes, ProtocolTypes } from "../../../types";
+import { NetworkContext, CFCoreTypes, MethodNames } from "../../../types";
 import { getCreate2MultisigAddress, prettyPrintObject, sleep } from "../../../utils";
 import { sortAddresses, xkeysToSortedKthAddresses } from "../../../xkeys";
 
@@ -26,7 +26,7 @@ import { NodeController } from "../../controller";
 const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 
 export default class DeployStateDepositHolderController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_deployStateDepositHolder)
+  @jsonRpcMethod(MethodNames.chan_deployStateDepositHolder)
   public executeMethod = super.executeMethod;
 
   protected async beforeExecution(

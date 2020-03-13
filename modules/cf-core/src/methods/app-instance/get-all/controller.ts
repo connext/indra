@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { GetAppInstancesParams, GetAppInstancesResult, MethodNames } from "../../../types";
 import { NodeController } from "../../controller";
 
 /**
@@ -9,13 +9,13 @@ import { NodeController } from "../../controller";
  * this Node.
  */
 export default class GetAppInstancesController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_getAppInstances)
+  @jsonRpcMethod(MethodNames.chan_getAppInstances)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetAppInstancesParams,
-  ): Promise<CFCoreTypes.GetAppInstancesResult> {
+    params: GetAppInstancesParams,
+  ): Promise<GetAppInstancesResult> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 

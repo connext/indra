@@ -1,25 +1,15 @@
 import {
-  CFCoreTypes,
-  ConditionalTransactionCommitmentJSON,
-  SetStateCommitmentJSON,
-  StateChannelJSON,
   AppInstanceJson,
   AppInstanceProposal,
-  ProtocolTypes,
+  ConditionalTransactionCommitmentJSON,
+  IStoreService,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
 
-class MockStoreServiceOld implements CFCoreTypes.IStoreServiceOld {
-  get() {
-    return Promise.resolve(true);
-  }
-
-  set() {
-    return Promise.resolve();
-  }
-}
-
-class MockStoreService implements CFCoreTypes.IStoreService {
+class MockStoreService implements IStoreService {
   getSchemaVersion(): number {
     return STORE_SCHEMA_VERSION;
   }
@@ -86,12 +76,12 @@ class MockStoreService implements CFCoreTypes.IStoreService {
   }
   getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     return Promise.resolve(undefined);
   }
   saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     return Promise.resolve();
   }

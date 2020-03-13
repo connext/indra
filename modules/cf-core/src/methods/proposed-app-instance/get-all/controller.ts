@@ -1,11 +1,11 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, MethodNames } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetProposedAppInstancesController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_getProposedAppInstances)
+  @jsonRpcMethod(MethodNames.chan_getProposedAppInstances)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: CFCoreTypes.GetProposedAppInstancesParams,

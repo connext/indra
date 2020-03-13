@@ -17,7 +17,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { DepositConfirmationMessage, CFCoreTypes, ProtocolTypes } from "../../../types";
+import { DepositConfirmationMessage, CFCoreTypes, MethodNames } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 
 import { NodeController } from "../../controller";
@@ -25,7 +25,7 @@ import { NodeController } from "../../controller";
 import { installBalanceRefundApp, makeDeposit, uninstallBalanceRefundApp } from "./operation";
 
 export default class DepositController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_deposit)
+  @jsonRpcMethod(MethodNames.chan_deposit)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: CFCoreTypes.MethodParams,

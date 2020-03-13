@@ -1,11 +1,11 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, MethodNames } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetStateChannelController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_getStateChannel)
+  @jsonRpcMethod(MethodNames.chan_getStateChannel)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(

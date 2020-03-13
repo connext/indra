@@ -2,17 +2,21 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import {
+  GetFreeBalanceStateParams,
+  GetFreeBalanceStateResult,
+  MethodNames,
+} from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetFreeBalanceController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_getFreeBalanceState)
+  @jsonRpcMethod(MethodNames.chan_getFreeBalanceState)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetFreeBalanceStateParams,
-  ): Promise<CFCoreTypes.GetFreeBalanceStateResult> {
+    params: GetFreeBalanceStateParams,
+  ): Promise<GetFreeBalanceStateResult> {
     const { store } = requestHandler;
     const { multisigAddress, tokenAddress: tokenAddressParam } = params;
 

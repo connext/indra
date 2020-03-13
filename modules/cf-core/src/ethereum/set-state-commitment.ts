@@ -4,7 +4,7 @@ import { ChallengeRegistry } from "../contracts";
 import { AppInstance } from "../models";
 import {
   AppIdentity,
-  CFCoreTypes,
+  MinimalTransaction,
   Context,
   EthereumCommitment,
   SignedStateHashUpdate,
@@ -66,7 +66,7 @@ export class SetStateCommitment extends EthereumCommitment {
     );
   }
 
-  public getSignedTransaction(): CFCoreTypes.MinimalTransaction {
+  public getSignedTransaction(): MinimalTransaction {
     this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,

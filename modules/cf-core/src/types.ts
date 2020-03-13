@@ -1,5 +1,4 @@
 import {
-  CFCoreTypes,
   ILoggerService,
   NetworkContext,
   ProtocolMessage,
@@ -30,18 +29,10 @@ export interface IPrivateKeyGenerator {
 }
 
 export abstract class EthereumCommitment {
-  // todo(xuanji): EthereumCommitment was designed under the assumption that
-  // `hashToSign` returns the same hash for different signers. However, in the
-  // install-virtual-app protocol, the hash that the intermediary signs is
-  // different from the one the other participants sign. The optional
-  // `signerIsIntermediary` flag is a hack that is only used by the
-  // `install-virtual-app protocol`. `intermediarySignature` in `transaction`
-  // is the same kind of hack.
-  public abstract hashToSign(signerIsIntermediary?: boolean): string;
+  public abstract hashToSign(): string;
   public abstract getSignedTransaction(
     signatures: Signature[],
-    intermediarySignature?: Signature,
-  ): CFCoreTypes.MinimalTransaction;
+  ): MinimalTransaction;
 }
 
 export enum MultisigOperation {
@@ -54,7 +45,7 @@ export enum MultisigOperation {
   Create = 2,
 }
 
-export type MultisigTransaction = CFCoreTypes.MinimalTransaction & {
+export type MultisigTransaction = MinimalTransaction & {
   operation: MultisigOperation;
 };
 
@@ -82,7 +73,6 @@ export {
   AppInstanceJson,
   AppInstanceProposal,
   AppInterface,
-  CFCoreTypes,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
   Commitment,
@@ -102,6 +92,7 @@ export {
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
   NetworkContext,
   NODE_EVENTS,
+  MinimalTransaction,
   NodeEvent,
   NodeMessageWrappedProtocolMessage,
   OutcomeType,
@@ -110,7 +101,6 @@ export {
   Protocol,
   ProtocolMessage,
   ProtocolParameters,
-  ProtocolTypes,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
   SetStateCommitmentJSON,
@@ -128,7 +118,6 @@ export {
   UninstallVirtualMessage,
   UpdateProtocolParams,
   UpdateStateMessage,
-  virtualAppAgreementEncoding,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
   WithdrawProtocolParams,

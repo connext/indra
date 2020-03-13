@@ -1,4 +1,4 @@
-import { CFCoreTypes } from "@connext/types";
+import { MinimalTransaction } from "@connext/types";
 import {
   bigNumberify,
   Interface,
@@ -25,7 +25,7 @@ import { getSetStateCommitment, SetStateCommitment } from "./set-state-commitmen
  */
 describe("Set State Commitment", () => {
   let commitment: SetStateCommitment;
-  let tx: CFCoreTypes.MinimalTransaction;
+  let tx: MinimalTransaction;
 
   const context = { network: generateRandomNetworkContext() } as Context;
 

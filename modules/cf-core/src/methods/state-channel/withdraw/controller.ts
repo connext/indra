@@ -16,7 +16,7 @@ import {
   WITHDRAWAL_FAILED,
 } from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, MethodNames } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { xkeyKthAddress } from "../../../xkeys";
 
@@ -25,7 +25,7 @@ import { NodeController } from "../../controller";
 import { runWithdrawProtocol } from "./operation";
 
 export default class WithdrawController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_withdraw)
+  @jsonRpcMethod(MethodNames.chan_withdraw)
   public executeMethod = super.executeMethod;
 
   public static async getRequiredLockNames(

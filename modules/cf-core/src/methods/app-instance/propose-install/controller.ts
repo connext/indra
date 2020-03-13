@@ -9,7 +9,7 @@ import {
 } from "../../../errors";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, Protocol, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, Protocol, MethodNames } from "../../../types";
 import { xkeyKthAddress } from "../../../xkeys";
 
 import { NodeController } from "../../controller";
@@ -21,7 +21,7 @@ import { NodeController } from "../../controller";
  * @returns The AppInstanceId for the proposed AppInstance
  */
 export default class ProposeInstallController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_proposeInstall)
+  @jsonRpcMethod(MethodNames.chan_proposeInstall)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: CFCoreTypes.MethodParams,

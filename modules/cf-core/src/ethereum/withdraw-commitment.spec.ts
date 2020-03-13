@@ -1,4 +1,4 @@
-import { CFCoreTypes } from "@connext/types";
+import { MinimalTransaction } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 
@@ -12,7 +12,7 @@ import { getWithdrawCommitment, WithdrawCommitment } from "./withdraw-commitment
  */
 describe("Withdraw Commitment", () => {
   let commitment: WithdrawCommitment;
-  let tx: CFCoreTypes.MinimalTransaction;
+  let tx: MinimalTransaction;
 
   const multisigAddress = getAddress(hexlify(randomBytes(20)));
   const multisigOwners = [

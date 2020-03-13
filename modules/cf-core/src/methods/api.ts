@@ -70,7 +70,7 @@ const controllers = [
 
 /**
  * Converts the array of connected controllers into a map of
- * ProtocolTypes.MethodNames to the _executeMethod_ method of a controller.
+ * MethodNames to the _executeMethod_ method of a controller.
  *
  * Throws a runtime error when package is imported if multiple
  * controllers overlap (should be caught by compiler anyway).

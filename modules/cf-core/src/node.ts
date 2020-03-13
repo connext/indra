@@ -3,7 +3,7 @@ import {
   NODE_EVENTS,
   ILoggerService,
   nullLogger,
-  ProtocolTypes,
+  MinimalTransaction,
   AppInstanceProposal,
   PersistAppType,
 } from "@connext/types";
@@ -244,7 +244,7 @@ export class Node {
       async (
         args: [
           Commitment,
-          MultisigCommitment | SetStateCommitment | ProtocolTypes.MinimalTransaction,
+          MultisigCommitment | SetStateCommitment | MinimalTransaction,
           string,
         ],
       ) => {
@@ -257,7 +257,7 @@ export class Node {
             const [multisigAddress] = res;
             await store.storeWithdrawalCommitment(
               multisigAddress,
-              commitment as ProtocolTypes.MinimalTransaction,
+              commitment as MinimalTransaction,
             );
             break;
 

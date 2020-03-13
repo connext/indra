@@ -2,7 +2,7 @@ import { REJECT_INSTALL_EVENT } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes, RejectProposalMessage } from "../../../types";
+import { CFCoreTypes, MethodNames, RejectProposalMessage } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class RejectInstallController extends NodeController {
@@ -15,7 +15,7 @@ export default class RejectInstallController extends NodeController {
     return [appInstanceId];
   }
 
-  @jsonRpcMethod(ProtocolTypes.chan_rejectInstall)
+  @jsonRpcMethod(MethodNames.chan_rejectInstall)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: CFCoreTypes.RejectInstallParams,

@@ -4,7 +4,7 @@ import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../src";
 import { NOT_YOUR_BALANCE_REFUND_APP } from "../../src/errors";
-import { CoinBalanceRefundState, ProtocolTypes } from "../../src/types";
+import { CoinBalanceRefundState, MethodNames } from "../../src/types";
 import { xkeyKthAddress } from "../../src/xkeys";
 
 import { toBeLt, toBeEq } from "../machine/integration/bignumber-jest-matcher";
@@ -218,7 +218,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       nodeB.once(`PROPOSE_INSTALL_EVENT`, data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: ProtocolTypes.chan_proposeInstall,
+        methodName: MethodNames.chan_proposeInstall,
         parameters,
       });
     });
@@ -236,7 +236,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       nodeB.once(`PROPOSE_INSTALL_EVENT`, data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: ProtocolTypes.chan_proposeInstall,
+        methodName: MethodNames.chan_proposeInstall,
         parameters,
       });
     });

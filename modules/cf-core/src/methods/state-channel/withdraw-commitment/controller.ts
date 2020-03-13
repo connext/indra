@@ -8,7 +8,7 @@ import {
   INVALID_MASTERCOPY_ADDRESS,
 } from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, MethodNames } from "../../../types";
 import { runWithdrawProtocol } from "../withdraw/operation";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { xkeyKthAddress } from "../../../xkeys";
@@ -20,7 +20,7 @@ import WithdrawController from "../withdraw/controller";
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.
 export default class WithdrawCommitmentController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_withdrawCommitment)
+  @jsonRpcMethod(MethodNames.chan_withdrawCommitment)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

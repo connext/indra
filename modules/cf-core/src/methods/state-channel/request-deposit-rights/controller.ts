@@ -11,7 +11,7 @@ import {
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, MethodNames } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { xkeyKthAddress } from "../../../xkeys";
 
@@ -20,7 +20,7 @@ import { installBalanceRefundApp, uninstallBalanceRefundApp } from "../deposit/o
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export default class RequestDepositRightsController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_requestDepositRights)
+  @jsonRpcMethod(MethodNames.chan_requestDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: CFCoreTypes.MethodParams,

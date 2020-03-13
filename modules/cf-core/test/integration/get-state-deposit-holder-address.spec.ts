@@ -1,4 +1,4 @@
-import { ProtocolTypes } from "@connext/types";
+import { MethodNames } from "@connext/types";
 import { jsonRpcDeserialize } from "rpc-server";
 
 import { Node } from "../../src";
@@ -24,7 +24,7 @@ describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
     } = await nodeA.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
-        method: ProtocolTypes.chan_getStateDepositHolderAddress,
+        method: MethodNames.chan_getStateDepositHolderAddress,
         params: { owners },
         jsonrpc: `2.0`,
       }),

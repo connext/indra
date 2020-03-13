@@ -15,7 +15,7 @@ import { Store } from "../../../store";
 import {
   CFCoreTypes,
   Protocol,
-  ProtocolTypes,
+  MethodNames,
   SolidityValueType,
   UpdateStateMessage,
 } from "../../../types";
@@ -24,7 +24,7 @@ import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 
 export default class TakeActionController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_takeAction)
+  @jsonRpcMethod(MethodNames.chan_takeAction)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

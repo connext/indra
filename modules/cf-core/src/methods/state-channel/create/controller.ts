@@ -2,7 +2,7 @@ import { CREATE_CHANNEL_EVENT } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CreateChannelMessage, CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CreateChannelMessage, CFCoreTypes, MethodNames } from "../../../types";
 import { xkeysToSortedKthAddresses } from "../../../xkeys";
 
 import { NodeController } from "../../controller";
@@ -19,14 +19,14 @@ import { NodeController } from "../../controller";
  * to whoever subscribed to the `CREATE_CHANNEL_EVENT` event on the Node.
  */
 export default class CreateChannelController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_create)
+  @jsonRpcMethod(MethodNames.chan_create)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: CFCoreTypes.CreateChannelParams,
   ): Promise<string[]> {
-    return [`${ProtocolTypes.chan_create}:${params.owners.sort().toString()}`];
+    return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
   }
 
   protected async executeMethodImplementation(

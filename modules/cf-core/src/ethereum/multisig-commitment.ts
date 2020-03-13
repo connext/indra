@@ -1,7 +1,7 @@
 import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
 
 import { MinimumViableMultisig } from "../contracts";
-import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
+import { MinimalTransaction, EthereumCommitment, MultisigTransaction } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
 // A commitment to make MinimumViableMultisig perform a message call
@@ -27,7 +27,7 @@ export abstract class MultisigCommitment extends EthereumCommitment {
     this.participantSignatures = sigs;
   }
 
-  public getSignedTransaction(): CFCoreTypes.MinimalTransaction {
+  public getSignedTransaction(): MinimalTransaction {
     this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
 

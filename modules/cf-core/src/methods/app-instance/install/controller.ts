@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, MethodNames } from "../../../types";
 import { NodeController } from "../../controller";
 
 import { install } from "./operation";
@@ -12,7 +12,7 @@ import { install } from "./operation";
  * @param params
  */
 export default class InstallController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_install)
+  @jsonRpcMethod(MethodNames.chan_install)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

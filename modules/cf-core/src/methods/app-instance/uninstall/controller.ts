@@ -7,14 +7,14 @@ import {
   USE_RESCIND_DEPOSIT_RIGHTS,
 } from "../../../errors";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, MethodNames } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 
 import { uninstallAppInstanceFromChannel } from "./operation";
 
 export default class UninstallController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_uninstall)
+  @jsonRpcMethod(MethodNames.chan_uninstall)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

@@ -2,19 +2,40 @@ import {
   AppABIEncodings,
   AppInstanceJson,
   AppInstanceProposal,
-  CFCoreTypes,
   ContractABI,
-  CreateChannelMessage,
-  InstallMessage,
-  InstallVirtualMessage,
-  OutcomeType,
-  ProposeMessage,
-  ProtocolTypes,
-  SolidityValueType,
-  UninstallMessage,
-  UninstallVirtualMessage,
   CREATE_CHANNEL_EVENT,
+  CreateChannelMessage,
+  CreateChannelResult,
+  DeployStateDepositHolderParams,
+  DeployStateDepositHolderResult,
+  GetAppInstancesParams,
+  GetAppInstancesResult,
+  GetFreeBalanceStateResult,
+  GetProposedAppInstancesParams,
+  GetProposedAppInstancesResult,
+  GetStateResult,
+  GetTokenIndexedFreeBalanceStatesResult,
+  InstallMessage,
+  InstallParams,
+  InstallVirtualMessage,
+  InstallVirtualParams,
+  MethodNames,
+  MethodParams,
+  OutcomeType,
+  ProposeInstallParams,
+  ProposeInstallResult,
+  ProposeInstallVirtualParams,
+  ProposeInstallVirtualResult,
+  ProposeMessage,
+  RejectInstallParams,
+  SolidityValueType,
+  TakeActionParams,
   UNINSTALL_EVENT,
+  UninstallMessage,
+  UninstallParams,
+  UninstallVirtualMessage,
+  UninstallVirtualParams,
+  WithdrawParams,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
@@ -70,7 +91,7 @@ export function constructRequestDepositRightsRpcCall(
 ) {
   return {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_requestDepositRights,
+    methodName: MethodNames.chan_requestDepositRights,
     parameters: {
       multisigAddress,
       tokenAddress,
@@ -94,7 +115,7 @@ export function constructRescindDepositRightsRpcCall(
 ) {
   return {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_rescindDepositRights,
+    methodName: MethodNames.chan_rescindDepositRights,
     parameters: {
       multisigAddress,
       tokenAddress,
@@ -187,7 +208,7 @@ export async function getMultisigCreationAddress(node: Node, xpubs: string[]): P
 export function constructChannelCreationRpc(owners: string[]) {
   return {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_create,
+    methodName: MethodNames.chan_create,
     parameters: {
       owners,
     },
@@ -207,7 +228,7 @@ export async function getChannelAddresses(node: Node): Promise<Set<string>> {
     },
   } = await node.rpcRouter.dispatch({
     id: Date.now(),
-    methodName: ProtocolTypes.chan_getChannelAddresses,
+    methodName: MethodNames.chan_getChannelAddresses,
     parameters: {},
   });
 
@@ -221,7 +242,7 @@ export async function getAppInstance(node: Node, appInstanceId: string): Promise
     },
   } = await node.rpcRouter.dispatch({
     id: Date.now(),
-    methodName: ProtocolTypes.chan_getAppInstance,
+    methodName: MethodNames.chan_getAppInstance,
     parameters: {
       appInstanceId,
     },
@@ -254,12 +275,12 @@ export async function getFreeBalanceState(
   node: Node,
   multisigAddress: string,
   tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-): Promise<CFCoreTypes.GetFreeBalanceStateResult> {
+): Promise<GetFreeBalanceStateResult> {
   const {
     result: { result },
   } = await node.rpcRouter.dispatch({
     id: Date.now(),
-    methodName: ProtocolTypes.chan_getFreeBalanceState,
+    methodName: MethodNames.chan_getFreeBalanceState,
     parameters: {
       multisigAddress,
       tokenAddress,
@@ -272,18 +293,18 @@ export async function getFreeBalanceState(
 export async function getTokenIndexedFreeBalanceStates(
   node: Node,
   multisigAddress: string,
-): Promise<CFCoreTypes.GetTokenIndexedFreeBalanceStatesResult> {
+): Promise<GetTokenIndexedFreeBalanceStatesResult> {
   const {
     result: { result },
   } = await node.rpcRouter.dispatch({
     id: Date.now(),
-    methodName: ProtocolTypes.chan_getTokenIndexedFreeBalanceStates,
+    methodName: MethodNames.chan_getTokenIndexedFreeBalanceStates,
     parameters: {
       multisigAddress,
     },
   });
 
-  return result as CFCoreTypes.GetTokenIndexedFreeBalanceStatesResult;
+  return result as GetTokenIndexedFreeBalanceStatesResult;
 }
 
 export async function getInstalledAppInstances(
@@ -292,11 +313,11 @@ export async function getInstalledAppInstances(
 ): Promise<AppInstanceJson[]> {
   const rpc = {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_getAppInstances,
-    parameters: { multisigAddress } as CFCoreTypes.GetAppInstancesParams,
+    methodName: MethodNames.chan_getAppInstances,
+    parameters: { multisigAddress } as GetAppInstancesParams,
   };
   const response = (await node.rpcRouter.dispatch(rpc)) as JsonRpcResponse;
-  const result = response.result.result as CFCoreTypes.GetAppInstancesResult;
+  const result = response.result.result as GetAppInstancesResult;
   return result.appInstances;
 }
 
@@ -306,11 +327,11 @@ export async function getProposedAppInstances(
 ): Promise<AppInstanceProposal[]> {
   const rpc = {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_getProposedAppInstances,
-    parameters: { multisigAddress } as CFCoreTypes.GetProposedAppInstancesParams,
+    methodName: MethodNames.chan_getProposedAppInstances,
+    parameters: { multisigAddress } as GetProposedAppInstancesParams,
   };
   const response = (await node.rpcRouter.dispatch(rpc)) as JsonRpcResponse;
-  const result = response.result.result as CFCoreTypes.GetProposedAppInstancesResult;
+  const result = response.result.result as GetProposedAppInstancesResult;
   return result.appInstances;
 }
 
@@ -319,7 +340,7 @@ export async function getProposeCoinBalanceRefundAppParams(
   balanceRefundRecipientIdentifer: string,
   proposedToIdentifier: string,
   tokenAddress: string = AddressZero,
-): Promise<CFCoreTypes.ProposeInstallParams> {
+): Promise<ProposeInstallParams> {
   const provider = new JsonRpcProvider(global[`ganacheURL`]);
   let threshold: BigNumber;
   if (tokenAddress === AddressZero) {
@@ -376,7 +397,7 @@ export async function deposit(
 
     node.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: ProtocolTypes.chan_proposeInstall,
+      methodName: MethodNames.chan_proposeInstall,
       parameters: proposeParams,
     });
   });
@@ -417,13 +438,13 @@ export async function deposit(
 
 export async function deployStateDepositHolder(node: Node, multisigAddress: string) {
   const response = await node.rpcRouter.dispatch({
-    methodName: ProtocolTypes.chan_deployStateDepositHolder,
+    methodName: MethodNames.chan_deployStateDepositHolder,
     parameters: {
       multisigAddress,
-    } as CFCoreTypes.DeployStateDepositHolderParams,
+    } as DeployStateDepositHolderParams,
   });
 
-  const result = response.result.result as CFCoreTypes.DeployStateDepositHolderResult;
+  const result = response.result.result as DeployStateDepositHolderResult;
 
   return result.transactionHash;
 }
@@ -435,7 +456,7 @@ export function constructDepositRpc(
 ): Rpc {
   return {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_deposit,
+    methodName: MethodNames.chan_deposit,
     parameters: deBigNumberifyJson({
       multisigAddress,
       amount,
@@ -457,7 +478,7 @@ export function constructWithdrawCommitmentRpc(
     recipient,
   );
 
-  withdrawCommitmentReq.methodName = ProtocolTypes.chan_withdrawCommitment;
+  withdrawCommitmentReq.methodName = MethodNames.chan_withdrawCommitment;
 
   return withdrawCommitmentReq;
 }
@@ -470,33 +491,33 @@ export function constructWithdrawRpc(
 ): Rpc {
   return {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_withdraw,
+    methodName: MethodNames.chan_withdraw,
     parameters: deBigNumberifyJson({
       tokenAddress,
       multisigAddress,
       amount,
       recipient,
-    }) as CFCoreTypes.WithdrawParams,
+    }) as WithdrawParams,
   };
 }
 
 export function constructInstallRpc(appInstanceId: string): Rpc {
   return {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_install,
+    methodName: MethodNames.chan_install,
     parameters: {
       appInstanceId,
-    } as CFCoreTypes.InstallParams,
+    } as InstallParams,
   };
 }
 
 export function constructRejectInstallRpc(appInstanceId: string): Rpc {
   return {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_rejectInstall,
+    methodName: MethodNames.chan_rejectInstall,
     parameters: {
       appInstanceId,
-    } as CFCoreTypes.RejectInstallParams,
+    } as RejectInstallParams,
   };
 }
 
@@ -513,7 +534,7 @@ export function constructAppProposalRpc(
   const { outcomeType } = getAppContext(appDefinition, initialState);
   return {
     id: Date.now(),
-    methodName: ProtocolTypes.chan_proposeInstall,
+    methodName: MethodNames.chan_proposeInstall,
     parameters: deBigNumberifyJson({
       proposedToIdentifier,
       initiatorDeposit,
@@ -525,7 +546,7 @@ export function constructAppProposalRpc(
       abiEncodings,
       outcomeType,
       timeout: One,
-    } as CFCoreTypes.ProposeInstallParams),
+    } as ProposeInstallParams),
   };
 }
 
@@ -537,9 +558,9 @@ export function constructInstallVirtualRpc(
     parameters: {
       appInstanceId,
       intermediaryIdentifier,
-    } as CFCoreTypes.InstallVirtualParams,
+    } as InstallVirtualParams,
     id: Date.now(),
-    methodName: ProtocolTypes.chan_installVirtual,
+    methodName: MethodNames.chan_installVirtual,
   };
 }
 
@@ -562,12 +583,12 @@ export function constructVirtualProposalRpc(
     initiatorDepositTokenAddress,
     responderDeposit,
     responderDepositTokenAddress,
-  ).parameters as CFCoreTypes.ProposeInstallParams;
+  ).parameters as ProposeInstallParams;
 
   return {
     parameters: installProposalParams,
     id: Date.now(),
-    methodName: ProtocolTypes.chan_proposeInstall,
+    methodName: MethodNames.chan_proposeInstall,
   };
 }
 
@@ -576,11 +597,11 @@ export function constructVirtualProposalRpc(
  * @param appInstanceProposal The proposed app instance contained in the Node.
  */
 export function confirmProposedAppInstance(
-  methodParams: CFCoreTypes.MethodParams,
+  methodParams: MethodParams,
   appInstanceProposal: AppInstanceProposal,
   nonInitiatingNode: boolean = false,
 ) {
-  const proposalParams = methodParams as CFCoreTypes.ProposeInstallParams;
+  const proposalParams = methodParams as ProposeInstallParams;
   expect(proposalParams.abiEncodings).toEqual(appInstanceProposal.abiEncodings);
   expect(proposalParams.appDefinition).toEqual(appInstanceProposal.appDefinition);
 
@@ -612,7 +633,7 @@ export function constructGetStateRpc(appInstanceId: string): Rpc {
       appInstanceId,
     },
     id: Date.now(),
-    methodName: ProtocolTypes.chan_getState,
+    methodName: MethodNames.chan_getState,
   };
 }
 
@@ -621,17 +642,17 @@ export function constructTakeActionRpc(appInstanceId: string, action: any): Rpc 
     parameters: deBigNumberifyJson({
       appInstanceId,
       action,
-    } as CFCoreTypes.TakeActionParams),
+    } as TakeActionParams),
     id: Date.now(),
-    methodName: ProtocolTypes.chan_takeAction,
+    methodName: MethodNames.chan_takeAction,
   };
 }
 
 export function constructGetAppsRpc(multisigAddress: string): Rpc {
   return {
-    parameters: { multisigAddress } as CFCoreTypes.GetAppInstancesParams,
+    parameters: { multisigAddress } as GetAppInstancesParams,
     id: Date.now(),
-    methodName: ProtocolTypes.chan_getAppInstances,
+    methodName: MethodNames.chan_getAppInstances,
   };
 }
 
@@ -639,9 +660,9 @@ export function constructUninstallRpc(appInstanceId: string): Rpc {
   return {
     parameters: {
       appInstanceId,
-    } as CFCoreTypes.UninstallParams,
+    } as UninstallParams,
     id: Date.now(),
-    methodName: ProtocolTypes.chan_uninstall,
+    methodName: MethodNames.chan_uninstall,
   };
 }
 
@@ -653,9 +674,9 @@ export function constructUninstallVirtualRpc(
     parameters: {
       appInstanceId,
       intermediaryIdentifier,
-    } as CFCoreTypes.UninstallVirtualParams,
+    } as UninstallVirtualParams,
     id: Date.now(),
-    methodName: ProtocolTypes.chan_uninstallVirtual,
+    methodName: MethodNames.chan_uninstallVirtual,
   };
 }
 
@@ -781,7 +802,7 @@ export async function installApp(
 
     const response = await nodeA.rpcRouter.dispatch(installationProposalRpc);
 
-    const { appInstanceId } = response.result.result as CFCoreTypes.ProposeInstallResult;
+    const { appInstanceId } = response.result.result as ProposeInstallResult;
     return appInstanceId;
   });
 }
@@ -840,7 +861,7 @@ export async function confirmChannelCreation(
   nodeA: Node,
   nodeB: Node,
   ownersFreeBalanceAddress: string[],
-  data: CFCoreTypes.CreateChannelResult,
+  data: CreateChannelResult,
 ) {
   const openChannelsNodeA = await getChannelAddresses(nodeA);
   const openChannelsNodeB = await getChannelAddresses(nodeB);
@@ -865,7 +886,7 @@ export async function confirmAppInstanceInstallation(
 export async function getState(nodeA: Node, appInstanceId: string): Promise<SolidityValueType> {
   const getStateReq = constructGetStateRpc(appInstanceId);
   const getStateResult = await nodeA.rpcRouter.dispatch(getStateReq);
-  return (getStateResult.result.result as CFCoreTypes.GetStateResult).state;
+  return (getStateResult.result.result as GetStateResult).state;
 }
 
 export async function makeVirtualProposal(
@@ -901,7 +922,7 @@ export async function makeVirtualProposal(
     },
   } = await nodeA.rpcRouter.dispatch({
     parameters: params,
-    methodName: ProtocolTypes.chan_proposeInstall,
+    methodName: MethodNames.chan_proposeInstall,
     id: Date.now(),
   });
 
@@ -929,7 +950,7 @@ export async function makeVirtualProposeCall(
   initialState?: SolidityValueType,
 ): Promise<{
   appInstanceId: string;
-  params: CFCoreTypes.ProposeInstallVirtualParams;
+  params: ProposeInstallVirtualParams;
 }> {
   const appContext = getAppContext(appDefinition, initialState);
 
@@ -943,8 +964,8 @@ export async function makeVirtualProposeCall(
   const response = await nodeA.rpcRouter.dispatch(virtualProposalRpc);
 
   return {
-    appInstanceId: (response.result as CFCoreTypes.ProposeInstallVirtualResult).appInstanceId,
-    params: virtualProposalRpc.parameters as CFCoreTypes.ProposeInstallVirtualParams,
+    appInstanceId: (response.result as ProposeInstallVirtualResult).appInstanceId,
+    params: virtualProposalRpc.parameters as ProposeInstallVirtualParams,
   };
 }
 

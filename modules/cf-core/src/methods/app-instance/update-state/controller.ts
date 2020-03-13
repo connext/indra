@@ -10,12 +10,12 @@ import { ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import { CFCoreTypes, Protocol, ProtocolTypes, SolidityValueType } from "../../../types";
+import { CFCoreTypes, Protocol, MethodNames, SolidityValueType } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 
 export default class UpdateStateController extends NodeController {
-  @jsonRpcMethod(ProtocolTypes.chan_updateState)
+  @jsonRpcMethod(MethodNames.chan_updateState)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

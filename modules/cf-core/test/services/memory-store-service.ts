@@ -1,7 +1,7 @@
 import { MemoryStorage } from "@connext/store";
-import { CFCoreTypes } from "@connext/types";
+import { IStoreServiceOld } from "@connext/types";
 
-export class MemoryStoreServiceOld implements CFCoreTypes.IStoreServiceOld {
+export class MemoryStoreServiceOld implements IStoreServiceOld {
   private readonly store: Map<string, any> = new Map();
   constructor(private readonly delay: number = 0) {}
   async get(path: string): Promise<any> {
