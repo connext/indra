@@ -64,7 +64,7 @@ contract LightningHTLCTransferApp is CounterfactualApp {
         AppState memory state = abi.decode(encodedState, (AppState));
         // TODO: whats the protection against passing a different hash?
 
-        bytes32 generatedHash = sha256(state.preimage);
+        bytes32 generatedHash = sha256(abi.encode(state.preimage));
 
         LibOutcome.CoinTransfer[2] memory transfers;
         if (generatedHash == state.lockHash && state.finalized) {
