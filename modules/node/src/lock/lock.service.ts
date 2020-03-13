@@ -34,10 +34,7 @@ export class LockService {
             // return
           } catch (e) {
             // TODO: check exception... if the lock failed
-            this.log.error(
-              `Failed to execute callback while lock is held: ${e.message}`,
-              e.stack,
-            );
+            this.log.error(`Failed to execute callback while lock is held: ${e.message}`, e.stack);
           } finally {
             // unlock
             this.log.debug(`Releasing lock for ${lock.resource} with secret ${lock.value}`);
