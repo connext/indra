@@ -193,6 +193,7 @@ export class WithdrawService {
     assetId: string,
     channel: Channel
   ): Promise<void> {
+    this.log.debug(`Creating proposal for node withdraw`)
 
     const commitment = await this.cfCoreService.createWithdrawCommitment(
       {
@@ -219,43 +220,27 @@ export class WithdrawService {
       finalized: false
     };
 
-    const {
-      actionEncoding,
-      appDefinitionAddress: appDefinition,
-      stateEncoding,
-      outcomeType,
-    } = await this.appRegistryRepository.findByNameAndNetwork(WithdrawApp, (await this.configService.getEthNetwork()).chainId)
-
-    const params: CFCoreTypes.ProposeInstallParams = {
-      abiEncodings: {
-        actionEncoding,
-        stateEncoding,
-      },
-      appDefinition,
-      initialState,
-      initiatorDeposit: amount,
-      initiatorDepositTokenAddress: assetId,
-      outcomeType,
-      proposedToIdentifier: channel.userPublicIdentifier,
-      responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
-      timeout: Zero,
-    };
-
     // propose install + wait for client confirmation
-    const { appInstanceId } = await this.cfCoreService.proposeAndWaitForAccepted(params, channel.multisigAddress);
+    const { appInstanceId } = await this.cfCoreService.proposeAndWaitForInstallApp(
+      channel.userPublicIdentifier,
+      initialState,
+      amount,
+      assetId,
+      Zero,
+      assetId,
+      WithdrawApp
+    );
 
     await this.saveWithdrawal(
       appInstanceId,
-      bigNumberify(params.initiatorDeposit),
-      params.initiatorDepositTokenAddress,
+      bigNumberify(amount),
+      assetId,
       initialState.transfers[0].to,
       initialState.data,
       initialState.signatures[0],
       initialState.signatures[1],
       channel.multisigAddress,
     )
-
     return;
   }
 }

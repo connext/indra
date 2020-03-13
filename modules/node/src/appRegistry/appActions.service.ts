@@ -12,6 +12,7 @@ import{
   FastSignedTransferActionType,
   WithdrawAppState,
   WithdrawAppAction,
+  stringify,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";
@@ -158,6 +159,9 @@ export class AppActionsService {
     state: WithdrawAppState,
   ): Promise<void> {
     let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstanceId);
+    if(!withdraw) {
+      throw new Error(`No withdraw entity found for this appInstanceId: ${appInstanceId}`)
+    }
     withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(withdraw, action.signature);
 
     const stateBigNumber = convertWithrawAppState("bignumber", state);

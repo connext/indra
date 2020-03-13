@@ -33,5 +33,6 @@ export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
 export type TransferParameters<T = string> = DepositParameters<T> & {
   recipient: Address;
   meta?: object;
+  paymentId?: string;
 };
 export type TransferParametersBigNumber = TransferParameters<BigNumber>;

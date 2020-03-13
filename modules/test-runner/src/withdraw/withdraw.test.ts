@@ -18,7 +18,7 @@ import {
 
 const { xpubToAddress } = utils;
 
-describe.only("Withdrawal", () => {
+describe("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
 
@@ -42,7 +42,7 @@ describe.only("Withdrawal", () => {
   it("client tries to withdraw more than it has in free balance", async () => {
     await fundChannel(client, ZERO_ZERO_ZERO_ONE_ETH);
     await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).to.be.rejectedWith(
-      `Value (${ZERO_ZERO_ONE_ETH}) is not less than or equal to ${ZERO_ZERO_ZERO_ONE_ETH}`,
+      `Install failed.`,
     );
   });
 
@@ -50,7 +50,7 @@ describe.only("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
-    ).to.be.rejectedWith(`Value (${NEGATIVE_ZERO_ZERO_ONE_ETH}) is not greater than or equal to 0`);
+    ).to.be.rejectedWith(`invalid BigNumber value`);
   });
 
   it("client tries to withdraw to an invalid recipient address", async () => {
@@ -58,7 +58,7 @@ describe.only("Withdrawal", () => {
     const recipient = "0xabc";
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient),
-    ).to.be.rejectedWith(`Value \"${recipient}\" is not a valid eth address`);
+    ).to.be.rejectedWith(`invalid address`);
   });
 
   it("client tries to withdraw with invalid assetId", async () => {
@@ -72,7 +72,16 @@ describe.only("Withdrawal", () => {
         assetId,
         recipient: Wallet.createRandom().address,
       }),
-    ).to.be.rejectedWith(`Value \"${assetId}\" is not a valid eth address`);
+    ).to.be.rejectedWith(`invalid address`);
+  });
+
+  it("client successfully withdraws tokens and eth concurrently", async () => {
+    await fundChannel(client, ZERO_ZERO_TWO_ETH);
+    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
+    // withdraw (dont await first for concurrency). Note: don't withdraw same assetId twice bc 
+    // utils compare initial and final balance only
+    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to

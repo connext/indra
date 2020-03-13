@@ -63,7 +63,7 @@ export class WithdrawalController extends AbstractController {
     } as WithdrawParameters<BigNumber>)
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(generatedCommitment);
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(generatedCommitment.hashToSign());
     await this.connext.takeAction(appInstance.identityHash, {signature: counterpartySignatureOnWithdrawCommitment} as WithdrawAppAction);
     await this.connext.uninstallApp(appInstance.identityHash);
   }
