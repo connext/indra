@@ -23,6 +23,13 @@ export enum Commitment {
   Withdraw = "withdraw",
 }
 
+export enum PersistAppType {
+  Proposal = "proposal",
+  Instance = "instance", // install / update
+  Reject = "reject",
+  Uninstall = "uninstall",
+}
+
 export type ProtocolMessage = {
   processID: string;
   protocol: Protocol;

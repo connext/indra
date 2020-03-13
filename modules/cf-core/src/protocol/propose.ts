@@ -1,3 +1,4 @@
+import { PersistAppType } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
@@ -13,9 +14,10 @@ import {
 import { logTime } from "../utils";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../methods";
 
 const protocol = Protocol.Propose;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
 const { SetState } = Commitment;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
@@ -43,14 +45,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
     } = params as ProposeInstallProtocolParams;
 
-    let preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
-    preProtocolStateChannel = preProtocolStateChannel
-      ? preProtocolStateChannel
-      : StateChannel.createEmptyChannel(
-          multisigAddress,
-          { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
-          [initiatorXpub, responderXpub],
-        );
+    const preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
+    if (!preProtocolStateChannel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -78,8 +76,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
-
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
     const setStateCommitment = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -136,6 +132,15 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+
+    // will also save the app array into the state channel
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Proposal,
+      postProtocolStateChannel,
+      appInstanceProposal,
+    ];
+
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -167,14 +172,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    let preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
-    preProtocolStateChannel = preProtocolStateChannel
-      ? preProtocolStateChannel
-      : StateChannel.createEmptyChannel(
-          multisigAddress,
-          { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
-          [initiatorXpub, responderXpub],
-        );
+    const preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
+    if (!preProtocolStateChannel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -226,8 +227,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Validated initiator's sig on initial state`);
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
-
     const responderSignatureOnInitialState = yield [
       OP_SIGN,
       setStateCommitment,
@@ -240,6 +239,14 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+
+    // will also save the app array into the state channel
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Proposal,
+      postProtocolStateChannel,
+      appInstanceProposal,
+    ];
 
     yield [
       IO_SEND,

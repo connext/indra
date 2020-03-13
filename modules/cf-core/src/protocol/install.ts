@@ -1,3 +1,4 @@
+import { PersistAppType } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -20,7 +21,14 @@ import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods";
 
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
+const {
+  OP_SIGN,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_APP_INSTANCE,
+  PERSIST_COMMITMENT,
+  PERSIST_FREE_BALANCE,
+} = Opcode;
 const { Install } = Protocol;
 const { Conditional, SetState } = Commitment;
 
@@ -130,7 +138,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ];
 
-    yield [PERSIST_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      Conditional,
+      conditionalTransactionData,
+      newAppInstance.identityHash,
+    ];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -165,7 +178,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    yield [PERSIST_FREE_BALANCE, postProtocolStateChannel];
+
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
 
     substart = Date.now();
     yield [
@@ -267,7 +282,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ];
 
-    yield [PERSIST_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      Conditional,
+      conditionalTransactionData,
+      newAppInstance.identityHash,
+    ];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -319,7 +339,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    yield [PERSIST_FREE_BALANCE, postProtocolStateChannel];
+
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
 
     const m4 = {
       processID,

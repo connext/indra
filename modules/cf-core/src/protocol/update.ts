@@ -1,3 +1,4 @@
+import { PersistAppType } from "@connext/types";
 import { SetStateCommitment } from "../ethereum";
 import { Context, ProtocolMessage, ProtocolExecutionFlow, UpdateProtocolParams } from "../types";
 import { Opcode, Protocol, xkeyKthAddress, Commitment } from "../machine";
@@ -6,7 +7,7 @@ import { logTime } from "../utils";
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Update;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
 /**
@@ -76,7 +77,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -126,7 +127,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
 
     yield [
       IO_SEND,

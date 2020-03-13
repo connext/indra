@@ -4,6 +4,8 @@ import {
   ILoggerService,
   nullLogger,
   ProtocolTypes,
+  AppInstanceProposal,
+  PersistAppType,
 } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
@@ -15,7 +17,7 @@ import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import { Opcode, Commitment, ProtocolRunner } from "./machine";
-import { getFreeBalanceAddress, StateChannel } from "./models";
+import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
@@ -226,6 +228,15 @@ export class Node {
       return (msg as NodeMessageWrappedProtocolMessage).data;
     });
 
+    protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
+      const { store } = this.requestHandler;
+      const [stateChannels] = args;
+
+      for (const stateChannel of stateChannels) {
+        await store.saveStateChannel(stateChannel);
+      }
+    });
+
     protocolRunner.register(
       Opcode.PERSIST_COMMITMENT,
       async (
@@ -271,14 +282,45 @@ export class Node {
       },
     );
 
-    protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
+    protocolRunner.register(Opcode.PERSIST_FREE_BALANCE, async (args: [StateChannel]) => {
       const { store } = this.requestHandler;
-      const [stateChannels] = args;
+      const [stateChannel] = args;
 
-      for (const stateChannel of stateChannels) {
-        await store.saveStateChannel(stateChannel);
-      }
+      await this.store.saveStateChannel(stateChannel);
+
+      await store.saveFreeBalance(stateChannel.multisigAddress, stateChannel.freeBalance);
     });
+
+    protocolRunner.register(
+      Opcode.PERSIST_APP_INSTANCE,
+      async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
+        const { store } = this.requestHandler;
+        const [type, channel, app] = args;
+
+        await this.store.saveStateChannel(channel);
+
+        switch (type) {
+          case PersistAppType.Proposal:
+            await store.saveAppProposal(channel.multisigAddress, app as AppInstanceProposal);
+            break;
+
+          case PersistAppType.Instance:
+            await store.saveAppInstance(channel.multisigAddress, app as AppInstance);
+            break;
+
+          case PersistAppType.Uninstall:
+            await store.removeAppInstance(app.identityHash);
+            break;
+
+          case PersistAppType.Reject:
+            await store.removeAppProposal(app.identityHash);
+            break;
+
+          default:
+            throw new Error(`todooo`);
+        }
+      },
+    );
 
     return protocolRunner;
   }
