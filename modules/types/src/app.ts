@@ -1,4 +1,4 @@
-import { ABIEncoding, Address, BigNumber, HexString, SolidityValueType, Xpub } from "./basic";
+import { ABIEncoding, Address, DecString, HexString, SolidityValueType, Xpub } from "./basic";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,
@@ -7,7 +7,7 @@ import {
 } from "./contracts";
 
 ////////////////////////////////////
-////// App Instances
+// App Instances
 
 export type AppInterface = {
   addr: Address;
@@ -31,11 +31,11 @@ export type AppInstanceInfo = {
   identityHash: HexString;
   appDefinition: Address;
   abiEncodings: AppABIEncodings;
-  initiatorDeposit: BigNumber;
+  initiatorDeposit: DecString;
   initiatorDepositTokenAddress: Address;
-  responderDeposit: BigNumber;
+  responderDeposit: DecString;
   responderDepositTokenAddress: Address;
-  timeout: BigNumber;
+  timeout: HexString;
   proposedByIdentifier: Xpub;
   proposedToIdentifier: Xpub;
   intermediaryIdentifier?: Xpub;
@@ -51,7 +51,7 @@ export type AppInstanceInfo = {
 export type AppInstanceJson = {
   identityHash: HexString;
   multisigAddress: Address;
-  participants: string[];
+  participants: Xpub[];
   defaultTimeout: number;
   appInterface: AppInterface;
   appSeqNo: number;
@@ -70,19 +70,19 @@ export type AppInstanceJson = {
 
 export type AppInstanceProposal = {
   abiEncodings: AppABIEncodings;
-  appDefinition: string;
+  appDefinition: Address;
   appSeqNo: number;
-  identityHash: string;
+  identityHash: HexString;
   initialState: SolidityValueType;
-  initiatorDeposit: string;
-  initiatorDepositTokenAddress: string;
-  intermediaryIdentifier?: string;
+  initiatorDeposit: DecString;
+  initiatorDepositTokenAddress: Address;
+  intermediaryIdentifier?: Xpub;
   outcomeType: OutcomeType;
   proposedByIdentifier: Xpub;
   proposedToIdentifier: Xpub;
-  responderDeposit: string;
+  responderDeposit: DecString;
   responderDepositTokenAddress: Address;
-  timeout: string;
+  timeout: HexString;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?:
     TwoPartyFixedOutcomeInterpreterParams;
@@ -93,7 +93,7 @@ export type AppInstanceProposal = {
 };
 
 ////////////////////////////////////
-////// App Registry
+// App Registry
 
 export type DefaultApp = {
   actionEncoding?: ABIEncoding;
@@ -102,7 +102,7 @@ export type DefaultApp = {
   name: string;
   chainId: number;
   outcomeType: OutcomeType;
-  stateEncoding: string;
+  stateEncoding: ABIEncoding;
 };
 
 export type AppRegistry = DefaultApp[];

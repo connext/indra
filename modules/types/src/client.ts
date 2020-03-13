@@ -1,5 +1,8 @@
 import { providers } from "ethers";
+import { TransactionResponse } from "ethers/providers";
 
+import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
+import { Address, DecString, Xpub } from "./basic";
 import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -8,26 +11,15 @@ import {
   ResolveLinkedTransferResponse,
   SwapParameters,
 } from "./contracts";
-import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { BigNumber } from "./basic";
-import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { EventName } from "./events";
-import {
-  CheckDepositRightsParameters,
-  CheckDepositRightsResponse,
-  DepositParameters,
-  RequestDepositRightsParameters,
-  RescindDepositRightsParameters,
-  RescindDepositRightsResponse,
-  WithdrawParameters,
-  TransferParameters,
-} from "./inputs";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
-  CreateChannelResponse,
+  RebalanceProfile,
   GetChannelResponse,
+  CreateChannelResponse,
+  ChannelAppSequences,
   GetConfigResponse,
   RequestCollateralResponse,
   Transfer,
@@ -51,6 +43,56 @@ import {
   UpdateStateResult,
 } from "./methods";
 import { IBackupServiceAPI, IClientStore, StoreType, WithdrawalMonitorObject } from "./store";
+
+export type ChannelState = {
+  apps: AppInstanceJson[]; // result of getApps()
+  freeBalance: GetFreeBalanceStateResult;
+};
+
+/////////////////////////////////
+// Client input types
+
+export type AssetAmount = {
+  amount: DecString;
+  assetId: Address;
+};
+
+export type DepositParameters = {
+  amount: DecString;
+  assetId: Address;
+};
+
+export type RequestDepositRightsParameters = {
+  assetId: Address;
+}
+
+export type RequestDepositRightsResponse = RequestDepositRightsResult;
+export type CheckDepositRightsParameters = RequestDepositRightsParameters;
+export type CheckDepositRightsResponse = {
+  assetId: Address;
+  multisigBalance: DecString;
+  recipient: Address;
+  threshold: DecString;
+};
+
+export type RescindDepositRightsParameters = RequestDepositRightsParameters;
+export type RescindDepositRightsResponse = DepositResult;
+
+// Withdraw types
+export type WithdrawParameters = DepositParameters & {
+  userSubmitted?: boolean;
+  recipient?: Address; // if not provided, will default to signer addr
+};
+
+// Generic transfer types
+export type TransferParameters = DepositParameters & {
+  recipient: Address;
+  meta?: object;
+};
+
+export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };
+
+/////////////////////////////////
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
@@ -77,11 +119,11 @@ export interface IConnextClient {
   config: GetConfigResponse;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
-  freeBalanceAddress: string;
-  multisigAddress: string;
-  nodePublicIdentifier: string;
-  publicIdentifier: string;
-  signerAddress: string;
+  freeBalanceAddress: Address;
+  multisigAddress: Address;
+  nodePublicIdentifier: Xpub;
+  publicIdentifier: Xpub;
+  signerAddress: Address;
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
@@ -105,7 +147,7 @@ export interface IConnextClient {
   ///////////////////////////////////
   // CORE CHANNEL METHODS
   deposit(params: DepositParameters): Promise<ChannelState>;
-  swap(params: SwapParameters): Promise<CFCoreChannel>;
+  swap(params: SwapParameters): Promise<GetChannelResponse>;
   transfer(params: TransferParameters): Promise<any>;
   withdraw(params: WithdrawParameters): Promise<ChannelState>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
@@ -156,7 +198,7 @@ export interface IConnextClient {
   deployMultisig(): Promise<DeployStateDepositHolderResult>;
   getStateChannel(): Promise<GetStateChannelResult>;
   providerDeposit(
-    amount: BigNumber,
+    amount: DecString,
     assetId: string,
     notifyCounterparty: boolean,
   ): Promise<DepositResult>;

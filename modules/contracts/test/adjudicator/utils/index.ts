@@ -1,8 +1,7 @@
-import { AppIdentity } from "@connext/types";
+import { AppIdentity, hexMath } from "@connext/types";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import {
-  BigNumber,
   BigNumberish,
   defaultAbiCoder,
   joinSignature,
@@ -91,7 +90,7 @@ export function sortSignaturesBySignerAddress(
   ret.sort((sigA, sigB) => {
     const addrA = recoverAddress(digest, signaturesToBytes(sigA));
     const addrB = recoverAddress(digest, signaturesToBytes(sigB));
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
+    return hexMath.lt(addrA, addrB) ? -1 : 1;
   });
   return ret;
 }

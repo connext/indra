@@ -1,4 +1,4 @@
-import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
+import { Address, DecString, SolidityValueType, Xpub } from "./basic";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
 import { OutcomeType } from "./contracts";
@@ -35,12 +35,12 @@ export const chan_deposit = "chan_deposit";
 
 export type DepositParams = {
   multisigAddress: string;
-  amount: BigNumber;
+  amount: DecString;
   tokenAddress?: string;
 };
 
 export type DepositResult = {
-  multisigBalance: BigNumber;
+  multisigBalance: DecString;
   tokenAddress: string;
   transactionHash: string;
 };
@@ -108,7 +108,7 @@ export type GetFreeBalanceStateParams = {
 };
 
 export type GetFreeBalanceStateResult = {
-  [s: string]: BigNumber;
+  [s: string]: DecString;
 };
 
 ////////////////////////////////////////
@@ -120,7 +120,7 @@ export type GetTokenIndexedFreeBalanceStatesParams = {
 
 export type GetTokenIndexedFreeBalanceStatesResult = {
   [tokenAddress: string]: {
-    [s: string]: BigNumber;
+    [s: string]: DecString;
   };
 };
 
@@ -189,7 +189,7 @@ export type RequestDepositRightsParams = {
 
 export type RequestDepositRightsResult = {
   freeBalance: {
-    [s: string]: BigNumber;
+    [s: string]: DecString;
   };
   recipient: string;
   tokenAddress: string;
@@ -201,11 +201,11 @@ export const chan_proposeInstall = "chan_proposeInstall";
 export type ProposeInstallParams = {
   appDefinition: string;
   abiEncodings: AppABIEncodings;
-  initiatorDeposit: BigNumber;
+  initiatorDeposit: DecString;
   initiatorDepositTokenAddress?: string;
-  responderDeposit: BigNumber;
+  responderDeposit: DecString;
   responderDepositTokenAddress?: string;
-  timeout: BigNumber;
+  timeout: DecString;
   initialState: SolidityValueType;
   proposedToIdentifier: string;
   outcomeType: OutcomeType;
@@ -267,7 +267,7 @@ export type RescindDepositRightsParams = {
 };
 
 export type RescindDepositRightsResult = {
-  multisigBalance: BigNumber;
+  multisigBalance: DecString;
   tokenAddress: string;
 };
 
@@ -277,7 +277,7 @@ export const chan_withdraw = "chan_withdraw";
 export type WithdrawParams = {
   multisigAddress: string;
   recipient?: string;
-  amount: BigNumber;
+  amount: DecString;
   tokenAddress?: string;
 };
 

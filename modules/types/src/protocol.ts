@@ -1,5 +1,5 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
+import { Address, DecString, HexString, SolidityValueType, Xpub } from "./basic";
 import { OutcomeType } from "./contracts";
 
 export enum Protocol {
@@ -18,8 +18,8 @@ export type InstallProtocolParams = {
   responderXpub: Xpub;
   responderDepositTokenAddress: Address;
   multisigAddress: Address;
-  initiatorBalanceDecrement: BigNumber;
-  responderBalanceDecrement: BigNumber;
+  initiatorBalanceDecrement: DecString;
+  responderBalanceDecrement: DecString;
   participants: string[];
   initialState: SolidityValueType;
   appInterface: AppInterface;
@@ -40,11 +40,11 @@ export type ProposeProtocolParams = {
   responderXpub: string;
   appDefinition: string;
   abiEncodings: AppABIEncodings;
-  initiatorDeposit: BigNumber;
+  initiatorDeposit: DecString;
   initiatorDepositTokenAddress?: string;
-  responderDeposit: BigNumber;
+  responderDeposit: DecString;
   responderDepositTokenAddress?: string;
-  timeout: BigNumber;
+  timeout: HexString;
   initialState: SolidityValueType;
   outcomeType: OutcomeType;
   meta?: Object;
@@ -85,7 +85,7 @@ export type WithdrawProtocolParams = {
   responderXpub: string;
   multisigAddress: string;
   recipient: string;
-  amount: BigNumber;
+  amount: DecString;
   tokenAddress: string;
 };
 

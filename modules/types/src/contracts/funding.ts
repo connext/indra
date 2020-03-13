@@ -1,4 +1,4 @@
-import { Address, DecString, HexString } from "../basic";
+import { Address, HexString } from "../basic";
 import { tidy } from "./misc";
 
 ////////////////////////////////////////
@@ -7,7 +7,7 @@ import { tidy } from "./misc";
 export type CoinBalanceRefundAppState = {
   recipient: Address;
   multisig: Address;
-  threshold: DecString;
+  threshold: HexString;
   tokenAddress: Address;
 };
 
@@ -24,7 +24,7 @@ export const CoinBalanceRefundAppStateEncoding = tidy(`tuple(
 type TimeLockedPassthroughAppState = {
   challengeRegistryAddress: Address;
   targetAppIdentityHash: HexString;
-  switchesOutcomeAt: DecString;
+  switchesOutcomeAt: HexString;
   defaultOutcome: HexString | any;
 };
 
@@ -32,7 +32,7 @@ type TimeLockedPassthroughAppState = {
 // keep synced w contracts/funding/interpreters/MultiAssetMultiPartyCoinTransferInterpreter.sol
 
 export type MultiAssetMultiPartyCoinTransferInterpreterParams = {
-  limit: DecString[];
+  limit: HexString[];
   tokenAddresses: Address[];
 };
 
@@ -45,7 +45,7 @@ export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding = tidy(`t
 // keep synced w contracts/funding/interpreters/SingleAssetTwoPartyCoinTransferInterpreter.sol
 
 export type SingleAssetTwoPartyCoinTransferInterpreterParams = {
-  limit: DecString;
+  limit: HexString;
   tokenAddresses: Address;
 };
 
@@ -59,7 +59,7 @@ export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = tidy(`tu
 
 export type TwoPartyFixedOutcomeInterpreterParams = {
   playerAddrs: [Address, Address];
-  amount: DecString;
+  amount: HexString;
   tokenAddress: Address;
 };
 
@@ -73,7 +73,7 @@ export const twoPartyFixedOutcomeInterpreterParamsEncoding = tidy(`tuple(
 // keep synced w contracts/funding/libs/LibOutcome.sol
 
 export type CoinTransfer = {
-  amount: DecString;
+  amount: HexString;
   to: Address;
 };
 
@@ -97,5 +97,5 @@ export enum MultisigOperation {
 type FreeBalanceAppState = {
   tokenAddresses: Address[];
   balances: CoinTransfer[][];
-  activeApps: HexString[];  // DecString[]?
+  activeApps: HexString[];
 };

@@ -1,3 +1,4 @@
+import { DecString } from "./basic";
 import {
   LINKED_TRANSFER,
   LINKED_TRANSFER_TO_RECIPIENT,
@@ -5,10 +6,17 @@ import {
   ConditionalTransferTypes,
 } from "./contracts";
 
+export type TransferAction = {
+  finalize: boolean;
+  transferAmount: DecString;
+};
+
 export type CreatedLinkedTransferMeta = {};
+
 export type CreatedLinkedTransferToRecipientMeta = {
   encryptedPreImage: string;
 };
+
 export type CreatedFastSignedTransferMeta = {
   signer: string;
 };

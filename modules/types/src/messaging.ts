@@ -1,4 +1,4 @@
-import { BigNumber, TransactionReceipt } from "./basic";
+import { DecString, TransactionReceipt } from "./basic";
 import {
   EventName,
   UninstallEventData,
@@ -136,7 +136,7 @@ export interface DepositFailedMessage extends NodeMessage {
 
 export interface DepositStartedMessage extends NodeMessage {
   data: {
-    value: BigNumber;
+    value: DecString;
     txHash: string;
   };
 }

@@ -1,4 +1,4 @@
-import { Address, DecString } from "../../basic";
+import { Address, HexString } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import { multiAssetMultiPartyCoinTransferEncoding, tidy } from "../misc";
@@ -20,8 +20,8 @@ export const SimpleSwapAppStateEncoding = tidy(`tuple(
 // Off-chain app types
 
 export interface SwapParameters {
-  amount: DecString;
-  swapRate: DecString;
+  amount: HexString;
+  swapRate: HexString;
   toAssetId: Address;
   fromAssetId: Address;
 }
@@ -38,7 +38,7 @@ export const PriceOracleTypes = {
 export type PriceOracleType = keyof typeof PriceOracleTypes;
 
 export type SwapRate = AllowedSwap & {
-  rate: DecString;
+  rate: HexString;
   priceOracleType: PriceOracleType;
   blockNumber?: number;
 };

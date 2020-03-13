@@ -1,4 +1,4 @@
-import { Address, DecString, HexString } from "../../basic";
+import { Address, HexString } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
@@ -13,7 +13,7 @@ export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
 export type SimpleLinkedTransferAppState = {
   coinTransfers: CoinTransfer[];
   linkedHash: HexString;
-  amount: DecString;
+  amount: HexString;
   assetId: Address;
   paymentId: HexString;
   preImage: HexString;
@@ -76,7 +76,7 @@ export type ResolveLinkedTransferToRecipientParameters = Omit<
   ResolveLinkedTransferParameters,
   "recipient" | "conditionType"
 > & {
-  amount: DecString;
+  amount: HexString;
   assetId: string;
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
 };
@@ -85,7 +85,7 @@ export type ResolveLinkedTransferResponse = {
   appId: string;
   sender: string;
   paymentId: string;
-  amount: DecString;
+  amount: HexString;
   assetId: string;
   meta?: object;
 };

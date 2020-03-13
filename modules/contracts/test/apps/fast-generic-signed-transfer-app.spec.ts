@@ -1,46 +1,37 @@
+import {
+  hexMath,
+  decodeFastSignedTransferAppState,
+  encodeFastSignedTransferAppState,
+  encodeFastSignedTransferAppAction,
+  FastSignedTransferAppAction,
+  FastSignedTransferAppState,
+  FastSignedTransferActionType,
+} from "@connext/types";
+import { waffle } from "@nomiclabs/buidler";
 import { expect, use } from "chai";
 import { solidity, deployContract } from "ethereum-waffle";
-import { waffle } from "@nomiclabs/buidler";
 import { Contract } from "ethers";
-import { defaultAbiCoder, bigNumberify } from "ethers/utils";
 
 import FastSignedTransferApp from "../../build/FastSignedTransferApp.json";
 
 import { mkAddress, mkHash, mkXpub, mkSig } from "../utils";
-import { Zero, One, AddressZero, HashZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import {
-  FastSignedTransferAppActionBigNumber,
-  FastSignedTransferAppStateBigNumber,
-  FastSignedTransferAppStateEncoding,
-  FastSignedTransferAppActionEncoding,
-  FastSignedTransferActionType,
 } from "@connext/types";
 
 use(solidity);
 
-const decodeAppState = (encodedAppState: string): FastSignedTransferAppStateBigNumber[] =>
-  defaultAbiCoder.decode([FastSignedTransferAppStateEncoding], encodedAppState);
-
-const encodeAppState = (state: FastSignedTransferAppStateBigNumber): string => {
-  return defaultAbiCoder.encode([FastSignedTransferAppStateEncoding], [state]);
-};
-
-const encodeAppAction = (action: FastSignedTransferAppActionBigNumber): string => {
-  return defaultAbiCoder.encode([FastSignedTransferAppActionEncoding], [action]);
-};
-
 describe("FastGenericSignedTransferApp", () => {
   let transferApp: Contract;
 
-  async function computeOutcome(state: FastSignedTransferAppStateBigNumber): Promise<string> {
-    return await transferApp.functions.computeOutcome(encodeAppState(state));
-  }
-
   async function takeAction(
-    state: FastSignedTransferAppStateBigNumber,
-    action: FastSignedTransferAppActionBigNumber,
+    state: FastSignedTransferAppState,
+    action: FastSignedTransferAppAction,
   ): Promise<string> {
-    return await transferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    return await transferApp.functions.applyAction(
+      encodeFastSignedTransferAppState(state),
+      encodeFastSignedTransferAppAction(action),
+    );
   }
 
   beforeEach(async () => {
@@ -52,61 +43,61 @@ describe("FastGenericSignedTransferApp", () => {
   it("happy case: sender creates locked tranfers", async () => {
     const sender = mkAddress("0xa");
     const receiver = mkAddress("0xb");
-    const preState: FastSignedTransferAppStateBigNumber = {
+    const preState: FastSignedTransferAppState = {
       coinTransfers: [
         {
-          amount: bigNumberify(10),
+          amount: "0x0a",
           to: sender,
         },
         {
-          amount: Zero,
+          amount: "0x00",
           to: receiver,
         },
       ],
-      amount: Zero,
+      amount: "0x00",
       paymentId: HashZero,
       recipientXpub: "",
       signer: AddressZero,
-      turnNum: Zero,
+      turnNum: 0,
     };
 
-    const action: FastSignedTransferAppActionBigNumber = {
+    const action: FastSignedTransferAppAction = {
       actionType: FastSignedTransferActionType.CREATE,
-      amount: One,
+      amount: "0x01",
       recipientXpub: mkXpub("xpubB"),
       signer: mkAddress("0xC"),
       paymentId: mkHash("0xa"),
-      signature: mkSig("0x0"),
-      data: mkHash("0x0"),
+      signature: mkSig("0x00"),
+      data: mkHash("0x00"),
     };
 
     const ret = await takeAction(preState, action);
-    const decoded = decodeAppState(ret);
-    const destructured = decoded[0];
+    const decoded = decodeFastSignedTransferAppState(ret);
 
     // coin transfers decrement from sender
     expect({
-      to: destructured.coinTransfers[0].to.toLowerCase(),
-      amount: destructured.coinTransfers[0].amount.toHexString(),
+      to: decoded.coinTransfers[0].to.toLowerCase(),
+      amount: decoded.coinTransfers[0].amount,
     }).to.deep.eq({
       to: preState.coinTransfers[0].to.toLowerCase(),
-      amount: preState.coinTransfers[0].amount.sub(action.amount).toHexString(),
+      amount: hexMath.sub(preState.coinTransfers[0].amount, action.amount),
     });
+
     // coin transfers does not increment receiver until unlocked
     expect({
-      to: destructured.coinTransfers[1].to.toLowerCase(),
-      amount: destructured.coinTransfers[1].amount.toHexString(),
+      to: decoded.coinTransfers[1].to.toLowerCase(),
+      amount: decoded.coinTransfers[1].amount,
     }).to.deep.eq({
       to: preState.coinTransfers[1].to.toLowerCase(),
-      amount: preState.coinTransfers[1].amount.toHexString(),
+      amount: preState.coinTransfers[1].amount,
     });
 
     // locked payment added to state
     expect({
-      amount: destructured.amount,
-      paymentId: destructured.paymentId,
-      recipientXpub: destructured.recipientXpub,
-      signer: destructured.signer,
+      amount: decoded.amount,
+      paymentId: decoded.paymentId,
+      recipientXpub: decoded.recipientXpub,
+      signer: decoded.signer,
     }).to.deep.contain({
       amount: action.amount,
       paymentId: action.paymentId,
@@ -115,7 +106,7 @@ describe("FastGenericSignedTransferApp", () => {
     });
 
     // turn num incremented
-    expect(destructured.turnNum).to.eq(1);
+    expect(decoded.turnNum).to.eq("0x01");
   });
 
   it("happy case: receiver unlocks tranfers", () => {});

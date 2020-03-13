@@ -1,6 +1,5 @@
 import { AppRegistry } from "./app";
-import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
-import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
+import { Address, DecString, Network, Transaction, TransactionResponse, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import { MinimalTransaction } from "./commitments";
 import {
@@ -11,6 +10,23 @@ import {
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
 import { DepositResult } from "./methods";
+
+////////////////////////////////////
+// Misc
+
+export type RebalanceProfile = {
+  assetId: Address;
+  upperBoundCollateralize: DecString;
+  lowerBoundCollateralize: DecString;
+  upperBoundReclaim: DecString;
+  lowerBoundReclaim: DecString;
+};
+
+// used to verify channel is in sequence
+export type ChannelAppSequences = {
+  userSequenceNumber: number;
+  nodeSequenceNumber: number;
+};
 
 ////////////////////////////////////
 // NODE RESPONSE TYPES
@@ -26,17 +42,14 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
-// TODO: is this the type that is actually returned?
-// i think you get status, etc.
-export type Transfer<T = string> = {
+export type Transfer = {
   paymentId: string;
-  amount: T;
+  amount: DecString;
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier: string;
   meta: any;
 };
-export type TransferBigNumber = Transfer<BigNumber>;
 
 // nats stuff
 type successResponse = {
@@ -60,7 +73,14 @@ export type GetConfigResponse = {
   supportedTokenAddresses: string[];
 };
 
-export type GetChannelResponse = CFCoreChannel;
+export type GetChannelResponse = {
+  id: number;
+  nodePublicIdentifier: Xpub;
+  userPublicIdentifier: Xpub;
+  multisigAddress: Address;
+  available: boolean;
+  collateralizationInFlight: boolean;
+};
 
 // returns the transaction hash of the multisig deployment
 // TODO: this will likely change

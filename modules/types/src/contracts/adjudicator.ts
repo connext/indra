@@ -12,20 +12,20 @@ enum ChallengeStatus {
 
 // A minimal structure that uniquely identifies a single instance of an App
 export type AppIdentity = {
-  channelNonce: HexString;
+  channelNonce: number;
   participants: Address[];
-  appDefinition: Address[];
-  defaultTimeout: HexString;
+  appDefinition: Address;
+  defaultTimeout: number;
 };
 
 // A structure representing the state of a CounterfactualApp instance from the POV of the blockchain
 // NOTE: AppChallenge is the overall state of a channelized app instance,
 // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
-type AppChallenge = {
+export type AppChallenge = {
   latestSubmitter: Address;
   appStateHash: HexString;
-  challengeCounter: HexString;
-  versionNumber: HexString;
-  finalizesAt: HexString;
+  challengeCounter: number;
+  versionNumber: number;
+  finalizesAt: number;
   status: ChallengeStatus;
 };

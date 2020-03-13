@@ -1,6 +1,6 @@
 import { Signature } from "ethers/utils";
 
-import { Address, BigNumberish, HexString } from "./basic";
+import { Address, DecString, HexString } from "./basic";
 import { AppIdentity, NetworkContext } from "./contracts";
 
 // This is used instead of the ethers `Transaction` because that type
@@ -8,7 +8,7 @@ import { AppIdentity, NetworkContext } from "./contracts";
 // arguments are not known at the time of creating a transaction.
 export type MinimalTransaction = {
   to: string;
-  value: BigNumberish;
+  value: DecString;
   data: string;
 };
 
