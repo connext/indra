@@ -6,8 +6,16 @@ import {
   FastSignedTransferActionType,
   FastSignedTransferApp,
   SimpleLinkedTransferApp,
+  HashLockTransferApp,
+  HashLockTransferAppState,
+  HashLockTransferAppAction,
 } from "@connext/types";
-import { SupportedApplication } from "@connext/apps";
+import {
+  SupportedApplication,
+  AppState,
+  AppAction,
+  convertHashLockTransferAppState,
+} from "@connext/apps";
 import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
@@ -39,8 +47,8 @@ export class AppActionsService {
   async handleAppAction(
     appName: SupportedApplication,
     appInstanceId: string,
-    newState: SimpleLinkedTransferAppState | FastSignedTransferAppState,
-    action: SimpleLinkedTransferAppAction | FastSignedTransferAppAction,
+    newState: AppState,
+    action: AppAction,
     from: string,
   ): Promise<void> {
     switch (appName) {
@@ -60,6 +68,14 @@ export class AppActionsService {
           from,
         );
         break;
+      }
+      case HashLockTransferApp: {
+        await this.handleHashLockTransferAppAction(
+          appInstanceId,
+          newState as HashLockTransferAppState,
+          action as HashLockTransferAppAction,
+          from,
+        );
       }
     }
   }
@@ -133,5 +149,24 @@ export class AppActionsService {
       await this.channelRepository.findByUserPublicIdentifierOrThrow(from),
     );
     this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+  }
+
+  private async handleHashLockTransferAppAction(
+    appInstanceId: string,
+    newState: HashLockTransferAppState,
+    action: HashLockTransferAppAction,
+    from: string,
+  ): Promise<void> {
+    const apps = await this.cfCoreService.getHashLockTransferAppByLockHash(newState.lockHash);
+    const senderApp = apps.find(app => {
+      const state = convertHashLockTransferAppState(
+        "bignumber",
+        app.latestState as HashLockTransferAppState,
+      );
+      return state.coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress;
+    });
+    await this.cfCoreService.takeAction(senderApp.identityHash, {
+      preImage: action.preImage,
+    } as HashLockTransferAppAction);
   }
 }

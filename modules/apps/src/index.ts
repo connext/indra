@@ -46,13 +46,13 @@ export const AppRegistry: AppRegistryType = [
   HashLockTransferAppRegistryInfo,
 ];
 
-export type AppAction<T> =
+export type AppAction<T = string> =
   | FastSignedTransferAppAction<T>
   | SimpleLinkedTransferAppAction
   | HashLockTransferAppAction;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
-export type AppState<T> =
+export type AppState<T = string> =
   | FastSignedTransferAppState<T>
   | SimpleLinkedTransferAppState<T>
   | SimpleSwapAppState<T>
