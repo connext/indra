@@ -3,7 +3,7 @@ import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { ProtocolTypes } from "./protocol";
-import { IStoreService, WithdrawalMonitorObject } from "./store";
+import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
 
 export interface IChannelProvider extends ConnextEventEmitter {
@@ -84,7 +84,7 @@ export interface CFChannelProviderOptions {
   nodeConfig: any;
   nodeUrl: string;
   xpub: string;
-  store: IStoreService;
+  store: IClientStore;
 }
 
 export type JsonRpcRequest = {

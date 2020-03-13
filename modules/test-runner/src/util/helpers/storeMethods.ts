@@ -51,7 +51,7 @@ export function createConnextStore(type: StoreType, opts: StoreFactoryOptions = 
   }
 
   if (type === ASYNCSTORAGE) {
-    opts.asyncStorage = new MockAsyncStorage();
+    opts.storage = new MockAsyncStorage();
   }
 
   const store = new ConnextStore(type, opts);

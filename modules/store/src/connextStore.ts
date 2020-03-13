@@ -1,7 +1,8 @@
 import {
   AppInstanceJson,
+  AppInstanceProposal,
   ConditionalTransactionCommitmentJSON,
-  IStoreService,
+  IClientStore,
   ProtocolTypes,
   STORE_SCHEMA_VERSION,
   SetStateCommitmentJSON,
@@ -9,6 +10,7 @@ import {
   StoreType,
   StoreTypes,
   WithdrawalMonitorObject,
+  WrappedStorage,
 } from "@connext/types";
 
 import {
@@ -25,8 +27,8 @@ import {
   WrappedLocalStorage,
 } from "./wrappers";
 
-export class ConnextStore implements IStoreService {
-  private internalStore: IStoreService;
+export class ConnextStore implements IClientStore {
+  private internalStore: IClientStore;
 
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
@@ -48,12 +50,12 @@ export class ConnextStore implements IStoreService {
         break;
 
       case StoreTypes.ASYNCSTORAGE:
-        if (!opts.asyncStorage) {
-          throw new Error(`Must pass in a reference to an 'IAsyncStorage' representation`);
+        if (!opts.storage) {
+          throw new Error(`Must pass in a reference to an 'IAsyncStorage' interface`);
         }
         this.internalStore = new KeyValueStorage(
           new WrappedAsyncStorage(
-            opts.asyncStorage,
+            opts.storage,
             this.prefix,
             this.separator,
             opts.asyncStorageKey,
@@ -79,7 +81,12 @@ export class ConnextStore implements IStoreService {
         break;
 
       default:
-        throw new Error(`Unable to create test store of type: ${storageType}`);
+        if (!opts.storage) {
+          throw new Error(
+            `Missing reference to a WrappedStorage interface, cannot create store of type: ${storageType}`,
+          );
+        }
+        this.internalStore = new KeyValueStorage(opts.storage as WrappedStorage);
     }
   }
 
@@ -123,6 +130,10 @@ export class ConnextStore implements IStoreService {
     return this.internalStore.getLatestSetStateCommitment(appIdentityHash);
   }
 
+  removeAppInstance(appInstanceId: string): Promise<void> {
+    return this.internalStore.removeAppInstance(appInstanceId);
+  }
+
   saveLatestSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
@@ -163,16 +174,30 @@ export class ConnextStore implements IStoreService {
   }
 
   getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
-    if (!this.internalStore.getUserWithdrawal) {
-      throw new Error("Method not implemented.");
-    }
-    return this.internalStore.getUserWithdrawal!();
+    return this.internalStore.getUserWithdrawal();
   }
 
   setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    if (!this.internalStore.setUserWithdrawal) {
-      throw new Error("Method not implemented.");
-    }
-    return this.internalStore.setUserWithdrawal!(withdrawalObject);
+    return this.internalStore.setUserWithdrawal(withdrawalObject);
+  }
+
+  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
+    return this.internalStore.getAppProposal(appInstanceId);
+  }
+
+  saveAppProposal(appInstanceId: string, proposal: AppInstanceProposal): Promise<void> {
+    return this.internalStore.saveAppProposal(appInstanceId, proposal);
+  }
+
+  removeAppProposal(appInstanceId: string): Promise<void> {
+    return this.internalStore.removeAppProposal(appInstanceId);
+  }
+
+  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
+    return this.internalStore.getFreeBalance(multisigAddress);
+  }
+
+  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    return this.internalStore.saveFreeBalance(multisigAddress, freeBalance);
   }
 }

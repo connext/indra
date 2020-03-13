@@ -1,4 +1,6 @@
+import { PersistAppType } from "@connext/types";
 import { UNASSIGNED_SEQ_NO } from "../constants";
+
 import { getSetStateCommitment } from "../ethereum";
 import {
   Context,
@@ -9,14 +11,13 @@ import {
   ProtocolMessage,
   TakeActionProtocolParams,
 } from "../types";
-
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
 const protocol = Protocol.TakeAction;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
 /**
@@ -84,9 +85,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // add signatures and write commitment to store
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -134,9 +135,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // add signatures and write commitment to store
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
 
     yield [
       IO_SEND,

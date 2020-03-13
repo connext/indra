@@ -38,7 +38,7 @@ describe("Deposits", () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should deposit ETH", async () => {
+  it.only("happy case: client should deposit ETH", async () => {
     const expected = {
       node: Zero,
       client: ONE,

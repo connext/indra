@@ -49,9 +49,6 @@ export class Channel {
   )
   appInstances!: AppInstance[];
 
-  @Column("json")
-  singleAssetTwoPartyIntermediaryAgreements!: [string, SingleAssetTwoPartyIntermediaryAgreement][];
-
   @Column("integer")
   monotonicNumProposedApps!: number;
 

@@ -1,3 +1,4 @@
+/* eslint-disable require-yield */
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
@@ -46,7 +47,7 @@ export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
 
 const protocol = Protocol.InstallVirtualApp;
 
-const { OP_SIGN, WRITE_COMMITMENT, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, PERSIST_COMMITMENT, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 
 const { Conditional, SetState } = Commitment;
 
@@ -58,7 +59,13 @@ const { Conditional, SetState } = Commitment;
 export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
-    const { message: { params, processID }, store, network } = context;
+    /**
+    const {
+      message: { params, processID },
+      store,
+      network,
+      provider,
+    } = context;
 
     const { intermediaryXpub, responderXpub } = params as InstallVirtualAppProtocolParams;
 
@@ -137,7 +144,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       Conditional, // TODO: Figure out how to map this to save to DB correctly
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
       virtualAppInstance.identityHash,
@@ -168,7 +175,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
       stateChannelWithIntermediary.freeBalance.identityHash,
@@ -246,7 +253,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       timeLockedPassThroughSetStateCommitment,
       timeLockedPassThroughAppInstance.identityHash,
@@ -258,7 +265,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       virtualAppSetStateCommitment,
       virtualAppInstance.identityHash,
@@ -272,10 +279,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         stateChannelWithRespondingAndIntermediary,
       ],
     ];
+    */
   },
 
   1 /* Intermediary */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
+    /**
     const { message: m1, store, network } = context;
 
     const {
@@ -411,7 +420,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       Conditional,
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
       timeLockedPassThroughAppInstance.identityHash,
@@ -450,7 +459,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithResponding.freeBalance.identityHash,
@@ -478,7 +487,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithResponding.freeBalance.identityHash,
@@ -525,7 +534,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       timeLockedPassThroughSetStateCommitment,
       timeLockedPassThroughAppInstance.identityHash,
@@ -549,11 +558,13 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_STATE_CHANNEL,
       [stateChannelBetweenVirtualAppUsers, stateChannelWithResponding, stateChannelWithInitiating],
     ];
+    */
   },
 
   2 /* Responding */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
-    const { message: m2, store, network } = context;
+    /**
+    const { message: m2, store, network, provider } = context;
 
     const {
       params,
@@ -611,7 +622,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       Conditional, // TODO: Figure out how to map this to save to DB correctly
       presignedMultisigTxForIngridBobVirtualAppAgreement,
       virtualAppInstance.identityHash,
@@ -663,7 +674,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithIntermediary.freeBalance.identityHash,
@@ -715,7 +726,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       timeLockedPassThroughSetStateCommitment,
       timeLockedPassThroughAppInstance.identityHash,
@@ -726,7 +737,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnVirtualAppSetStateCommitment,
     ];
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       virtualAppSetStateCommitment,
       virtualAppInstance.identityHash,
@@ -753,6 +764,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         stateChannelWithInitiating,
       ],
     ];
+  */
   },
 };
 
@@ -997,6 +1009,7 @@ async function getOrCreateStateChannelWithUsers(
   );
 }
 
+/**
 async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   params: InstallVirtualAppProtocolParams,
   store: Store,
@@ -1337,3 +1350,4 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
     timeLockedPassThroughAppInstance,
   ];
 }
+*/

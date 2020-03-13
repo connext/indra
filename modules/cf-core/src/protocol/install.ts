@@ -1,3 +1,4 @@
+import { PersistAppType } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -23,7 +24,14 @@ import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
+const {
+  OP_SIGN,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_APP_INSTANCE,
+  PERSIST_COMMITMENT,
+  PERSIST_FREE_BALANCE,
+} = Opcode;
 const { Install } = Protocol;
 const { Conditional, SetState } = Commitment;
 
@@ -133,7 +141,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ];
 
-    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      Conditional,
+      conditionalTxCommitment,
+      newAppInstance.identityHash,
+    ];
 
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
 
@@ -156,13 +169,15 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_STATE_CHANNEL, [stateChannelAfter]];
+    yield [PERSIST_FREE_BALANCE, stateChannelAfter];
+
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
 
     substart = Date.now();
     yield [
@@ -264,7 +279,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ];
 
-    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      Conditional,
+      conditionalTxCommitment,
+      newAppInstance.identityHash,
+    ];
 
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
 
@@ -304,13 +324,15 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       SetState,
       freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_STATE_CHANNEL, [stateChannelAfter]];
+    yield [PERSIST_FREE_BALANCE, stateChannelAfter];
+
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
 
     const m4 = {
       processID,

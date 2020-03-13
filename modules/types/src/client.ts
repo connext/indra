@@ -33,7 +33,7 @@ import {
   Transfer,
 } from "./node";
 import { ProtocolTypes } from "./protocol";
-import { IBackupServiceAPI, StoreType, IStoreService, WithdrawalMonitorObject } from "./store";
+import { IBackupServiceAPI, IClientStore, StoreType, WithdrawalMonitorObject } from "./store";
 import { CFCoreTypes } from "./cfCore";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
@@ -44,7 +44,7 @@ export interface ClientOptions {
   keyGen?: KeyGen;
   mnemonic?: string;
   xpub?: string;
-  store?: IStoreService;
+  store?: IClientStore;
   storeType?: StoreType;
   logger?: ILogger;
   loggerService?: ILoggerService;
@@ -69,7 +69,7 @@ export interface IConnextClient {
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
-  store: IStoreService;
+  store: IClientStore;
 
   ////////////////////////////////////////
   // Methods

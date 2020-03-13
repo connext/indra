@@ -8,7 +8,6 @@ export class UpdateChannelTable1583618773094 implements MigrationInterface {
       ALTER TABLE "channel"
         ADD COLUMN "schemaVersion" integer NOT NULL,
         ADD COLUMN "addresses" json NOT NULL,
-        ADD COLUMN "singleAssetTwoPartyIntermediaryAgreements" json NOT NULL,
         ADD COLUMN "monotonicNumProposedApps" integer NOT NULL;
     `);
 
@@ -42,7 +41,6 @@ export class UpdateChannelTable1583618773094 implements MigrationInterface {
       ALTER TABLE "channel"
         DROP COLUMN "schemaVersion",
         DROP COLUMN "addresses",
-        DROP COLUMN "singleAssetTwoPartyIntermediaryAgreements",
         DROP COLUMN "monotonicNumProposedApps";
     `);
     await queryRunner.query(`

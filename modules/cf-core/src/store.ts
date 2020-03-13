@@ -9,7 +9,7 @@ import {
   NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
 } from "./errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
-import { CFCoreTypes, SolidityValueType } from "./types";
+import { CFCoreTypes } from "./types";
 import { getCreate2MultisigAddress } from "./utils";
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
@@ -131,19 +131,56 @@ export class Store {
   }
 
   /**
-   * This persists the state of the given AppInstance.
+   * This persists the state of the free balance
    * @param appInstance
    */
-  public async saveAppInstanceState(appInstanceId: string, newState: SolidityValueType) {
-    const channel = await this.getStateChannelFromAppInstanceID(appInstanceId);
-    const updatedChannel = channel.setState(appInstanceId, newState);
-    await this.saveStateChannel(updatedChannel);
+  public async saveFreeBalance(multisigAddress: string, freeBalance: AppInstance) {
+    await this.storeService.saveFreeBalance(multisigAddress, freeBalance.toJson());
+  }
+
+  /**
+   * Returns the proposed AppInstance with the specified appInstanceId.
+   */
+  public async getAppInstanceProposal(appInstanceId: string): Promise<AppInstanceProposal> {
+    const proposal = await this.storeService.getAppProposal(appInstanceId);
+    if (!proposal) {
+      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId));
+    }
+
+    return proposal;
+  }
+
+  /**
+   * This persists the state of an app proposal
+   */
+  public async saveAppProposal(multisigAddress: string, proposal: AppInstanceProposal) {
+    await this.storeService.saveAppProposal(multisigAddress, proposal);
+  }
+
+  /**
+   * This persists the state of an app instance
+   */
+  public async removeAppProposal(appId: string) {
+    await this.storeService.removeAppProposal(appId);
+  }
+
+  /**
+   * This persists the state of an app instance
+   */
+  public async saveAppInstance(multisigAddress: string, app: AppInstance) {
+    await this.storeService.saveAppInstance(multisigAddress, app.toJson());
+  }
+
+  /**
+   * This persists the state of an app instance
+   */
+  public async removeAppInstance(appId: string) {
+    await this.storeService.removeAppInstance(appId);
   }
 
   /**
    * Returns a list of proposed `AppInstanceProposals`s.
    */
-  // TODO: make sure this isn't being called to get all channels
   public async getProposedAppInstances(multisigAddress: string): Promise<AppInstanceProposal[]> {
     const sc = await this.getStateChannel(multisigAddress);
     return [...sc.proposedAppInstances.values()];
@@ -155,19 +192,6 @@ export class Store {
   public async getAppInstances(multisigAddress: string): Promise<AppInstanceJson[]> {
     const sc = await this.getStateChannel(multisigAddress);
     return [...sc.appInstances.values()].map(appInstance => appInstance.toJson());
-  }
-
-  /**
-   * Returns the proposed AppInstance with the specified appInstanceId.
-   */
-  public async getAppInstanceProposal(appInstanceId: string): Promise<AppInstanceProposal> {
-    const stateChannel = await this.getStateChannelFromAppInstanceID(appInstanceId);
-
-    if (!stateChannel.proposedAppInstances.has(appInstanceId)) {
-      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId));
-    }
-
-    return stateChannel.proposedAppInstances.get(appInstanceId)!;
   }
 
   public async getWithdrawalCommitment(

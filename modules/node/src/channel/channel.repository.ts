@@ -31,7 +31,6 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
       .filter(app => app.type === AppType.PROPOSAL)
       .map(app => [app.identityHash, convertAppToProposedInstanceJSON(app)]),
     schemaVersion: channel.schemaVersion,
-    singleAssetTwoPartyIntermediaryAgreements: channel.singleAssetTwoPartyIntermediaryAgreements,
     userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier],
   };
 };

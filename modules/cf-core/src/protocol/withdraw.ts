@@ -24,7 +24,7 @@ import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
-const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
 const { Withdraw } = Protocol;
 /**
  * @description This exchange is described at the following URL:
@@ -130,8 +130,8 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
-      Commitment.Conditional, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      PERSIST_COMMITMENT,
+      Commitment.Conditional, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       conditionalTransactionData,
       refundApp.identityHash,
     ];
@@ -158,8 +158,8 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
-      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      PERSIST_COMMITMENT,
+      Commitment.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       freeBalanceUpdateData,
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
@@ -252,7 +252,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       Commitment.Withdraw,
       withdrawCommitment.getSignedTransaction(),
       multisigAddress,
@@ -264,8 +264,8 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
-      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      PERSIST_COMMITMENT,
+      Commitment.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
@@ -347,8 +347,8 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
-      Commitment.Conditional, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      PERSIST_COMMITMENT,
+      Commitment.Conditional, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       conditionalTransactionData,
       refundApp.identityHash,
     ];
@@ -397,8 +397,8 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
-      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      PERSIST_COMMITMENT,
+      Commitment.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       freeBalanceUpdateData,
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
@@ -426,7 +426,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
+      PERSIST_COMMITMENT,
       Commitment.Withdraw,
       withdrawCommitment.getSignedTransaction(),
       multisigAddress,
@@ -480,8 +480,8 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     yield [
-      WRITE_COMMITMENT,
-      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      PERSIST_COMMITMENT,
+      Commitment.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];

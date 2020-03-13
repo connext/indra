@@ -44,7 +44,7 @@ const {
   IO_SEND_AND_WAIT,
   IO_SEND,
   PERSIST_STATE_CHANNEL,
-  // WRITE_COMMITMENT // TODO: add calls to WRITE_COMMITMENT after sigs collected
+  // PERSIST_COMMITMENT // TODO: add calls to PERSIST_COMMITMENT after sigs collected
 } = Opcode;
 
 /**
@@ -66,6 +66,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
   0 /* Initiating */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
+    /**
     const {
       message: { processID, params },
       store,
@@ -177,10 +178,12 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_STATE_CHANNEL,
       [stateChannelWithIntermediary, stateChannelWithAllThreeParties, stateChannelWithResponding],
     ];
+    */
   },
 
   1 /* Intermediary */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
+    /**
     const {
       message: {
         processID,
@@ -341,10 +344,12 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } as ProtocolMessage;
 
     yield [IO_SEND, m8];
+    */
   },
 
   2 /* Responding */: async function*(context: Context) {
     throw Error(`Virtual app protocols not supported.`);
+    /**
     const {
       message: {
         processID,
@@ -455,9 +460,12 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } as ProtocolMessage;
 
     yield [IO_SEND, m7];
+    */
   },
+  
 };
 
+/**
 async function getStateChannelFromMapWithOwners(
   store: Store,
   userXpubs: string[],
@@ -530,16 +538,12 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
   );
 
   return [
-    /**
-     * Remove the agreement from the app with the intermediary
-     */
+     // Remove the agreement from the app with the intermediary
     stateChannelWithAllThreeParties.removeAppInstance(
       timeLockedPassThroughAppInstance.identityHash,
     ),
 
-    /**
-     * Remove the agreement from the app with the intermediary
-     */
+    // Remove the agreement from the app with the intermediary
     stateChannelWithIntermediary.removeSingleAssetTwoPartyIntermediaryAgreement(
       virtualAppInstance.identityHash,
       {
@@ -550,14 +554,10 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
       tokenAddress,
     ),
 
-    /**
-     * Remove the virtual app itself
-     */
+    // Remove the virtual app itself
     stateChannelWithResponding.removeAppInstance(virtualAppInstance.identityHash),
 
-    /**
-     * Remove the TimeLockedPassThrough AppInstance in the 3-way channel
-     */
+    // Remove the TimeLockedPassThrough AppInstance in the 3-way channel
     timeLockedPassThroughAppInstance.setState({
       ...timeLockedPassThroughAppInstance.state,
       switchesOutcomeAt: 0,
@@ -632,16 +632,12 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
   );
 
   return [
-    /**
-     * Remove the agreement from the app with the intermediary
-     */
+    // Remove the agreement from the app with the intermediary
     stateChannelWithAllThreeParties.removeAppInstance(
       timeLockedPassThroughAppInstance.identityHash,
     ),
 
-    /**
-     * Remove the agreement from the app with the intermediary
-     */
+    // Remove the agreement from the app with the intermediary
     stateChannelWithIntermediary.removeSingleAssetTwoPartyIntermediaryAgreement(
       virtualAppInstance.identityHash,
       {
@@ -652,14 +648,10 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
       tokenAddress,
     ),
 
-    /**
-     * Remove the virtual app itself
-     */
+    // Remove the virtual app itself
     stateChannelWithInitiating.removeAppInstance(virtualAppInstance.identityHash),
 
-    /**
-     * Remove the TimeLockedPassThrough AppInstance in the 3-way channel
-     */
+    // Remove the TimeLockedPassThrough AppInstance in the 3-way channel
     timeLockedPassThroughAppInstance.setState({
       ...timeLockedPassThroughAppInstance.state,
       switchesOutcomeAt: 0,
@@ -731,16 +723,12 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
   );
 
   return [
-    /**
-     * Remove the agreement from the 3-party app
-     */
+    // Remove the agreement from the 3-party app
     stateChannelWithAllThreeParties.removeAppInstance(
       timeLockedPassThroughAppInstance.identityHash,
     ),
 
-    /**
-     * Remove the agreement from the app with the initiating
-     */
+    // Remove the agreement from the app with the initiating
     stateChannelWithInitiating.removeSingleAssetTwoPartyIntermediaryAgreement(
       timeLockedPassThroughAppInstance.state["targetAppIdentityHash"],
       {
@@ -751,9 +739,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
       tokenAddress,
     ),
 
-    /**
-     * Remove the agreement from the app with the responding
-     */
+    // Remove the agreement from the app with the responding
     stateChannelWithResponding.removeSingleAssetTwoPartyIntermediaryAgreement(
       timeLockedPassThroughAppInstance.state["targetAppIdentityHash"],
       {
@@ -764,9 +750,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
       tokenAddress,
     ),
 
-    /**
-     * Remove the TimeLockedPassThrough AppInstance in the 3-way channel
-     */
+    //  dRemove the TimeLockedPassThrough AppInstance in the 3-way channel
     timeLockedPassThroughAppInstance.setState({
       ...timeLockedPassThroughAppInstance.state,
       switchesOutcomeAt: 0,
@@ -774,3 +758,4 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
     }),
   ];
 }
+*/
