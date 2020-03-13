@@ -5,7 +5,7 @@ import {
   LINKED_TRANSFER_TO_RECIPIENT,
   FAST_SIGNED_TRANSFER,
   ConditionalTransferTypes,
-} from "./apps";
+} from "./contracts";
 
 export const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 export const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";

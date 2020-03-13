@@ -1,22 +1,21 @@
-import { CoinTransfer } from "../";
-import { BigNumber } from "ethers/utils";
-import { multiAssetMultiPartyCoinTransferEncoding } from "../contracts";
+import { DecString } from "../../basic";
+
+import { CoinTransfer } from "../funding";
+import { multiAssetMultiPartyCoinTransferEncoding } from "../misc";
 
 export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
 
-export type SimpleSwapAppState<T = string> = {
-  coinTransfers: CoinTransfer<T>[][];
+export type SimpleSwapAppState = {
+  coinTransfers: CoinTransfer[][];
 };
-export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
 
-export interface SwapParameters<T = string> {
-  amount: T;
+export interface SwapParameters {
+  amount: DecString;
   swapRate: string;
   toAssetId: string;
   fromAssetId: string;
   // make sure they are consistent with CF stuffs
 }
-export type SwapParametersBigNumber = SwapParameters<BigNumber>;
 
 export type AllowedSwap = {
   from: string;

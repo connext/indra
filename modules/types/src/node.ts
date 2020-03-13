@@ -1,12 +1,15 @@
-import { AppRegistry } from "./app";
 import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
-import { NetworkContext } from "./contracts";
+import { AppRegistry } from "./app";
+import {
+  NetworkContext,
+  ResolveLinkedTransferResponse,
+  ResolveFastSignedTransferResponse,
+} from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
 import { ProtocolTypes } from "./protocol";
-import { ResolveLinkedTransferResponse, ResolveFastSignedTransferResponse } from "./apps";
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES

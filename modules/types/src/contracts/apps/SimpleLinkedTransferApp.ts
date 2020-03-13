@@ -1,18 +1,19 @@
-import { CoinTransfer } from "../";
-import { BigNumber } from "ethers/utils";
-import { singleAssetTwoPartyCoinTransferEncoding } from "../contracts";
+import { DecString } from "../../basic";
+
+import { CoinTransfer } from "../funding";
+import { singleAssetTwoPartyCoinTransferEncoding } from "../misc";
 
 export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
 
-export type SimpleLinkedTransferAppState<T = string> = {
-  coinTransfers: CoinTransfer<T>[];
+export type SimpleLinkedTransferAppState = {
+  coinTransfers: CoinTransfer[];
   linkedHash: string;
-  amount: T;
+  amount: string;
   assetId: string;
   paymentId: string;
   preImage: string;
 };
-export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
+
 export type SimpleLinkedTransferAppAction = {
   preImage: string;
 };
@@ -22,15 +23,14 @@ export const LINKED_TRANSFER = "LINKED_TRANSFER";
 export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
 
 // linked transfer types
-export type LinkedTransferParameters<T = string> = {
+export type LinkedTransferParameters = {
   conditionType: typeof LINKED_TRANSFER;
-  amount: T;
+  amount: string;
   assetId?: string;
   paymentId: string;
   preImage: string;
   meta?: object;
 };
-export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
 export type LinkedTransferResponse = {
   paymentId: string;
@@ -38,48 +38,40 @@ export type LinkedTransferResponse = {
   meta?: object;
 };
 
-export type LinkedTransferToRecipientParameters<T = string> = Omit<
-  LinkedTransferParameters<T>,
+export type LinkedTransferToRecipientParameters = Omit<
+  LinkedTransferParameters,
   "conditionType"
 > & {
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
   recipient: string;
 };
-export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
-  BigNumber
->;
+
 export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
   recipient: string;
 };
 
-export type ResolveLinkedTransferParameters<T = string> = Omit<
-  LinkedTransferParameters<T>,
+export type ResolveLinkedTransferParameters = Omit<
+  LinkedTransferParameters,
   "amount" | "assetId" | "meta"
 >;
-export type ResolveLinkedTransferParametersBigNumber = ResolveLinkedTransferParameters<BigNumber>;
 
-export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
-  ResolveLinkedTransferParameters<T>,
+export type ResolveLinkedTransferToRecipientParameters = Omit<
+  ResolveLinkedTransferParameters,
   "recipient" | "conditionType"
 > & {
-  amount: T;
+  amount: DecString;
   assetId: string;
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
 };
 
-export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
-  BigNumber
->;
-
-export type ResolveLinkedTransferResponse<T = string> = {
+export type ResolveLinkedTransferResponse = {
   appId: string;
   sender: string;
   paymentId: string;
-  amount: T;
+  amount: DecString;
   assetId: string;
   meta?: object;
 };
-export type ResolveLinkedTransferResponseBigNumber = ResolveLinkedTransferResponse<BigNumber>;
 
 export const SimpleLinkedTransferAppStateEncoding = `
   tuple(

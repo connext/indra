@@ -9,14 +9,15 @@ export {
 } from "ethers/providers";
 export { BigNumberish, Network, Transaction } from "ethers/utils";
 
-export type HexString = string; // eg "0xabc123"
-export type DecString = string; // eg "3.14"
+// special strings
+export type ABIEncoding = string; // eg "tuple(address to, uint256 amount)"
 export type Address = string; // eg HexString of length 42
+export type DecString = string; // eg "3.14" (implied to be e18 int)
+export type HexString = string; // eg "0xabc123"
+export type IntString = string; // eg "314"
 
 export type BigNumber = ethersBN;
 export const BigNumber = ethersBN;
-
-export type ABIEncoding = string;
 
 export interface EthSignature {
   r: string;

@@ -1,12 +1,13 @@
 import { providers } from "ethers";
 
 import {
-  ResolveLinkedTransferResponse,
-  ResolveConditionResponse,
-  ResolveConditionParameters,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
-} from "./apps";
+  ResolveConditionParameters,
+  ResolveConditionResponse,
+  ResolveLinkedTransferResponse,
+  SwapParameters,
+} from "./contracts";
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { BigNumber } from "./basic";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
@@ -34,7 +35,6 @@ import {
 import { ProtocolTypes } from "./protocol";
 import { IBackupServiceAPI, StoreType, IStoreService, WithdrawalMonitorObject } from "./store";
 import { CFCoreTypes } from "./cfCore";
-import { SwapParameters } from "./apps";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {

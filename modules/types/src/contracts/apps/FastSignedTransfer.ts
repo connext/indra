@@ -1,18 +1,19 @@
-import { CoinTransfer } from "..";
-import { singleAssetTwoPartyCoinTransferEncoding } from "../contracts";
-import { BigNumber } from "ethers/utils";
+import { DecString, IntString } from "../../basic";
+
+import { CoinTransfer } from "../funding";
+import { singleAssetTwoPartyCoinTransferEncoding } from "../misc";
 
 export const FAST_SIGNED_TRANSFER = "FAST_SIGNED_TRANSFER";
 
 export const FastSignedTransferApp = "FastSignedTransferApp";
 
-export type FastSignedTransferParameters<T = string> = {
+export type FastSignedTransferParameters = {
   conditionType: typeof FAST_SIGNED_TRANSFER;
   recipient: string;
-  amount: T;
+  amount: DecString;
   assetId?: string;
   paymentId: string;
-  maxAllocation?: T;
+  maxAllocation?: IntString;
   signer: string;
   meta?: object;
 };
@@ -28,18 +29,15 @@ export type ResolveFastSignedTransferParameters = {
   signature: string;
 };
 
-export type ResolveFastSignedTransferResponse<T = string> = {
+export type ResolveFastSignedTransferResponse = {
   appId: string;
   sender: string;
   paymentId: string;
-  amount: T;
+  amount: DecString;
   assetId: string;
   signer: string;
   meta?: object;
 };
-export type ResolveFastSignedTransferResponseBigNumber = ResolveFastSignedTransferResponse<
-  BigNumber
->;
 
 export enum FastSignedTransferActionType {
   CREATE,
@@ -47,26 +45,24 @@ export enum FastSignedTransferActionType {
   REJECT,
 }
 
-export type FastSignedTransferAppState<T = string> = {
+export type FastSignedTransferAppState = {
   recipientXpub: string;
-  amount: T;
+  amount: DecString;
   signer: string;
   paymentId: string;
-  coinTransfers: [CoinTransfer<T>, CoinTransfer<T>];
-  turnNum: T;
+  coinTransfers: [CoinTransfer, CoinTransfer];
+  turnNum: IntString;
 };
-export type FastSignedTransferAppStateBigNumber = FastSignedTransferAppState<BigNumber>;
 
-export type FastSignedTransferAppAction<T = string> = {
+export type FastSignedTransferAppAction = {
   recipientXpub: string;
-  amount: T;
+  amount: DecString;
   signer: string;
   paymentId: string;
   data: string;
   signature: string;
   actionType: FastSignedTransferActionType;
 };
-export type FastSignedTransferAppActionBigNumber = FastSignedTransferAppAction<BigNumber>;
 
 export const FastSignedTransferAppStateEncoding = `
   tuple(
