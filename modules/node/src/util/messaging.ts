@@ -33,10 +33,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
       if (msg.reply) {
         try {
           const start = Date.now();
-          const subject = msg.subject
-            .split(".")
-            .slice(0, 2)
-            .join(".");
+          const subject = msg.subject;
           const response = await processor(msg.subject, msg.data);
           const diff = Date.now() - start;
           if (diff >= 10 && diff < 100) {
