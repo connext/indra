@@ -4,13 +4,14 @@ set -e
 this_user="`id -u`:`id -g`"
 user="$1"
 cmd="$2"
+cwd="`pwd`";
 
 finish() {
     if [[ "$this_user" == "$user" ]]
     then echo "Same user, skipping permission fix"
     else
       echo "Fixing permissions for $user"
-      chown -R ${user} /root
+      find $cwd -user `id -u` -exec chown -R $user {} \;
     fi
 }
 trap finish EXIT
