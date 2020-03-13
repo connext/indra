@@ -25,12 +25,12 @@ import { appIdentityToHash } from "../utils";
 
 import {
   getConditionalTxCommitment,
-  ConditionalTransactionCommitment,
+  ConditionalTxCommitment,
 } from "./conditional-tx-commitment";
 
-describe("ConditionalTransactionCommitment", () => {
+describe("ConditionalTxCommitment", () => {
   let tx: MultisigTransaction;
-  let commitment: ConditionalTransactionCommitment;
+  let commitment: ConditionalTxCommitment;
 
   // Test network context
   const context= { network: generateRandomNetworkContext() } as Context;
@@ -86,15 +86,15 @@ describe("ConditionalTransactionCommitment", () => {
   describe("storage", () => {
     it("should be stored correctly", async () => {
       const store = new Store(new MemoryStoreService());
-      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
-      const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
+      await store.saveConditionalTxCommitment(commitment.appIdentityHash, commitment);
+      const retrieved = await store.getConditionalTxCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
       commitment.signatures = [
         new SigningKey(hdNodes[0]).signDigest(randomBytes(20)),
         new SigningKey(hdNodes[1]).signDigest(randomBytes(20)),
       ];
-      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
-      const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
+      await store.saveConditionalTxCommitment(commitment.appIdentityHash, commitment);
+      const signed = await store.getConditionalTxCommitment(commitment.appIdentityHash);
       expect(signed).toMatchObject(commitment);
     });
   });

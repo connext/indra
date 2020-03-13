@@ -14,8 +14,6 @@ class QueueWithLockingServiceConnection extends Queue {
   }
 
   // timeout should be 3 * IO_SEND_AND_WAIT to account
-  // for worst case messaging scenario in virtual install
-  // protocol (3 IO_SEND_AND_WAITs each with a 30s timer)
   async add(task: Task<any>) {
     return super.add(() =>
       this.lockingService.acquireLock(this.lockName, task, IO_SEND_AND_WAIT_TIMEOUT * 3),

@@ -1,5 +1,5 @@
 import { AppABIEncodings, OutcomeType, SolidityValueType } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
@@ -49,7 +49,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     /* twoPartyOutcomeInterpreterParams */ {
       playerAddrs: [AddressZero, AddressZero],
-      amount: Zero,
+      amount: "0x00",
       tokenAddress: AddressZero,
     },
     /* multiAssetMultiPartyCoinTransferInterpreterParams */ undefined,

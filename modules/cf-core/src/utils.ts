@@ -260,17 +260,12 @@ export const scanForCriticalAddresses = async (
   return;
 };
 
-// NOTE: will not fail if there is no free balance class. there is
-// no free balance in the case of a channel between virtual
-// participants
 export function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,
   publicIdentifier: string,
   tokenAddress: string,
   depositAmount: BigNumber,
 ): void {
-  if (!channel.hasFreeBalance) return;
-
   const freeBalanceForToken =
     channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
     Zero;

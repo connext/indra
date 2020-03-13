@@ -1,7 +1,4 @@
-import {
-  IMessagingService,
-  NodeMessage,
-} from "@connext/types";
+import { IMessagingService, NodeMessage } from "@connext/types";
 import { EventEmitter } from "events";
 
 export class MemoryMessagingService implements IMessagingService {

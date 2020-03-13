@@ -223,7 +223,6 @@ export function createFreeBalance(
     /* participants */ sortedTopLevelKeys,
     /* defaultTimeout */ freeBalanceTimeout,
     /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
-    /* isVirtualApp */ false,
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
     /* latestState */ serializeFreeBalanceState(initialState),
     /* latestVersionNumber */ 0,

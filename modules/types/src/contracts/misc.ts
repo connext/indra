@@ -46,7 +46,6 @@ export interface NetworkContext {
   ProxyFactory: Address;
   SingleAssetTwoPartyCoinTransferInterpreter: Address;
   TimeLockedPassThrough: Address;
-  TwoPartyFixedOutcomeFromVirtualAppInterpreter: Address;
   TwoPartyFixedOutcomeInterpreter: Address;
   provider: BaseProvider;
 }
@@ -62,27 +61,8 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ProxyFactory",
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
   "TwoPartyFixedOutcomeInterpreter",
 ];
-
-////////////////////////////////////////
-// For virtual apps
-
-export type SingleAssetTwoPartyIntermediaryAgreement = {
-  timeLockedPassThroughIdentityHash: string;
-  capitalProvided: string;
-  capitalProvider: string;
-  virtualAppUser: string;
-  tokenAddress: string;
-};
-
-export const virtualAppAgreementEncoding = tidy(`tuple(
-  uint256 capitalProvided,
-  address capitalProvider,
-  address virtualAppUser,
-  address tokenAddress
-)`);
 
 //////////////////////////////////////// 
 // Mixins, etc

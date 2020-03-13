@@ -6,7 +6,6 @@ import { getProtocolFromName } from "../protocol";
 import {
   Context,
   InstallProtocolParams,
-  InstallVirtualAppProtocolParams,
   Middleware,
   NetworkContext,
   Opcode,
@@ -16,7 +15,6 @@ import {
   SetupProtocolParams,
   TakeActionProtocolParams,
   UninstallProtocolParams,
-  UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
   WithdrawProtocolParams,
 } from "../types";
@@ -36,10 +34,6 @@ type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
   ? UpdateProtocolParams
   : T extends Protocol.Uninstall
   ? UninstallProtocolParams
-  : T extends Protocol.InstallVirtualApp
-  ? InstallVirtualAppProtocolParams
-  : T extends Protocol.UninstallVirtualApp
-  ? UninstallVirtualAppProtocolParams
   : T extends Protocol.TakeAction
   ? TakeActionProtocolParams
   : T extends Protocol.Withdraw
@@ -49,9 +43,6 @@ type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
   : never;
 
 function firstRecipientFromProtocolName(protocolName: Protocol) {
-  if ([Protocol.UninstallVirtualApp, Protocol.InstallVirtualApp].indexOf(protocolName) !== -1) {
-    return "intermediaryXpub";
-  }
   if (
     [
       Protocol.Update,

@@ -1,6 +1,5 @@
 import { DEPOSIT_STARTED_EVENT, DEPOSIT_FAILED_EVENT } from "@connext/types";
 import { Contract } from "ethers";
-import { Zero } from "ethers/constants";
 import { BaseProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
 
@@ -60,8 +59,8 @@ export async function installBalanceRefundApp(
     initiatorXpub: publicIdentifier,
     responderXpub: peerAddress,
     multisigAddress: stateChannel.multisigAddress,
-    initiatorBalanceDecrement: Zero,
-    responderBalanceDecrement: Zero,
+    initiatorBalanceDecrement: "0x00",
+    responderBalanceDecrement: "0x00",
     participants: stateChannel.getNextSigningKeys(),
     appInterface: depositContext.appInterface,
     // this is the block-time equivalent of 7 days

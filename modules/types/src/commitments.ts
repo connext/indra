@@ -29,7 +29,7 @@ export type SetStateCommitmentJSON = {
   readonly versionNumber: HexString;
 };
 
-export type ConditionalTransactionCommitmentJSON = {
+export type ConditionalTxCommitmentJSON = {
   readonly appIdentityHash: HexString;
   readonly freeBalanceAppIdentityHash: HexString;
   readonly interpreterAddr: Address;

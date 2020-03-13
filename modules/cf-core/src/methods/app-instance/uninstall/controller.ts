@@ -11,7 +11,6 @@ import {
   MethodNames,
   UninstallParams,
   UninstallResult,
-  UninstallVirtualParams,
 } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
@@ -24,7 +23,7 @@ export default class UninstallController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: UninstallVirtualParams,
+    params: UninstallParams,
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;

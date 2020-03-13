@@ -6,7 +6,7 @@ import {
   AppInstanceJson,
   SetStateCommitmentJSON,
   MinimalTransaction,
-  ConditionalTransactionCommitmentJSON,
+  ConditionalTxCommitmentJSON,
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
 } from "@connext/types";
@@ -166,16 +166,16 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(withdrawalKey, safeJsonStringify(commitment));
   }
 
-  async getConditionalTransactionCommitment(
+  async getConditionalTxCommitment(
     appIdentityHash: string,
-  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+  ): Promise<ConditionalTxCommitmentJSON | undefined> {
     const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
     return safeJsonParse(await this.getItem(conditionalCommitmentKey));
   }
 
-  async saveConditionalTransactionCommitment(
+  async saveConditionalTxCommitment(
     appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
+    commitment: ConditionalTxCommitmentJSON,
   ): Promise<void> {
     const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
     return this.setItem(conditionalCommitmentKey, safeJsonStringify(commitment));

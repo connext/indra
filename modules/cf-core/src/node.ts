@@ -1,6 +1,6 @@
 import {
   PROTOCOL_MESSAGE_EVENT,
-  NODE_EVENTS,
+  EventNames,
   ILoggerService,
   nullLogger,
   MinimalTransaction,
@@ -37,12 +37,11 @@ import {
   NodeMessageWrappedProtocolMessage,
   Opcode,
   ProtocolMessage,
-  RpcMethodName,
 } from "./types";
 import { timeout } from "./utils";
 import { Store } from "./store";
 import {
-  ConditionalTransactionCommitment,
+  ConditionalTxCommitment,
   MultisigCommitment,
   SetStateCommitment,
 } from "./ethereum";
@@ -280,9 +279,9 @@ export class Node {
 
           case Commitment.Conditional:
             const [appId] = res;
-            await store.saveConditionalTransactionCommitment(
+            await store.saveConditionalTxCommitment(
               appId,
-              commitment as ConditionalTransactionCommitment,
+              commitment as ConditionalTxCommitment,
             );
             break;
 
@@ -342,7 +341,7 @@ export class Node {
    * @param event
    * @param callback
    */
-  on(event: EventName | RpcMethodName, callback: (res: any) => void) {
+  on(event: EventName | MethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribe(event, async (res: any) => callback(res));
   }
 
@@ -353,7 +352,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  off(event: EventName | RpcMethodName, callback?: (res: any) => void) {
+  off(event: EventName | MethodName, callback?: (res: any) => void) {
     this.rpcRouter.unsubscribe(event, callback ? async (res: any) => callback(res) : undefined);
   }
 
@@ -365,7 +364,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  once(event: EventName | RpcMethodName, callback: (res: any) => void) {
+  once(event: EventName | MethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribeOnce(event, async (res: any) => callback(res));
   }
 
@@ -374,7 +373,7 @@ export class Node {
    * @param event
    * @param req
    */
-  emit(event: EventName | RpcMethodName, req: MethodRequest) {
+  emit(event: EventName | MethodName, req: MethodRequest) {
     this.rpcRouter.emit(event, req);
   }
 
@@ -420,7 +419,7 @@ export class Node {
    *     solely to the deffered promise's resolve callback.
    */
   private async handleReceivedMessage(msg: NodeMessage) {
-    if (!Object.values(NODE_EVENTS).includes(msg.type)) {
+    if (!Object.values(EventNames).includes(msg.type)) {
       console.error(`Received message with unknown event type: ${msg.type}`);
     }
 

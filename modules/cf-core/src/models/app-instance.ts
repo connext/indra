@@ -16,7 +16,6 @@ import {
   SolidityValueType,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  virtualAppAgreementEncoding,
 } from "../types";
 import { appIdentityToHash, bigNumberifyJson, prettyPrintObject } from "../utils";
 
@@ -30,10 +29,6 @@ import { appIdentityToHash, bigNumberifyJson, prettyPrintObject } from "../utils
 
  * @property appInterface An AppInterface object representing the logic this
  *           AppInstance relies on for verifying and proposing state updates.
-
- * @property isVirtualApp A flag indicating whether this AppInstance's state
- *           deposits come directly from a multisig or through a virtual app
- *           proxy agreement.
 
  * @property latestState The unencoded representation of the latest state.
 
@@ -53,15 +48,17 @@ export class AppInstance {
     public readonly participants: string[],
     public readonly defaultTimeout: number,
     public readonly appInterface: AppInterface,
-    public readonly isVirtualApp: boolean,
     public readonly appSeqNo: number, // channel nonce at app proposal
     public readonly latestState: any,
     public readonly latestVersionNumber: number, // app nonce
     public readonly latestTimeout: number,
     public readonly outcomeType: OutcomeType,
-    private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
-    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
-    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
+    private readonly twoPartyOutcomeInterpreterParamsInternal?:
+      TwoPartyFixedOutcomeInterpreterParams,
+    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
+      MultiAssetMultiPartyCoinTransferInterpreterParams,
+    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
+      SingleAssetTwoPartyCoinTransferInterpreterParams,
   ) {}
 
   get twoPartyOutcomeInterpreterParams() {
@@ -100,7 +97,6 @@ export class AppInstance {
       deserialized.participants,
       deserialized.defaultTimeout,
       deserialized.appInterface,
-      deserialized.isVirtualApp,
       deserialized.appSeqNo,
       deserialized.latestState,
       deserialized.latestVersionNumber,
@@ -120,7 +116,6 @@ export class AppInstance {
       participants: this.participants,
       defaultTimeout: this.defaultTimeout,
       appInterface: this.appInterface,
-      isVirtualApp: this.isVirtualApp,
       appSeqNo: this.appSeqNo,
       latestState: this.latestState,
       latestVersionNumber: this.latestVersionNumber,
@@ -163,79 +158,30 @@ export class AppInstance {
 
   @Memoize()
   public get encodedInterpreterParams() {
-    if (!this.isVirtualApp) {
-      switch (this.outcomeType) {
-        case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-          return defaultAbiCoder.encode(
-            [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
-            [this.singleAssetTwoPartyCoinTransferInterpreterParams],
-          );
-        }
-
-        case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-          return defaultAbiCoder.encode(
-            [multiAssetMultiPartyCoinTransferInterpreterParamsEncoding],
-            [this.multiAssetMultiPartyCoinTransferInterpreterParams],
-          );
-        }
-
-        case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-          return defaultAbiCoder.encode(
-            [twoPartyFixedOutcomeInterpreterParamsEncoding],
-            [this.twoPartyOutcomeInterpreterParams],
-          );
-        }
-
-        default: {
-          throw Error("The outcome type in this application logic contract is not supported yet.");
-        }
+    switch (this.outcomeType) {
+      case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
+        return defaultAbiCoder.encode(
+          [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
+          [this.singleAssetTwoPartyCoinTransferInterpreterParams],
+        );
       }
-    } else {
-      switch (this.outcomeType) {
-        case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-          // CoinTransferFromVirtualAppInterpreter.sol
-          const { limit, tokenAddress } = this.singleAssetTwoPartyCoinTransferInterpreterParams!;
-          return defaultAbiCoder.encode(
-            [
-              `tuple(uint256 capitalProvided, address payable capitalProvider, address virtualAppUser, address tokenAddress)`,
-            ],
-            [
-              {
-                tokenAddress,
-                capitalProvided: limit,
-                // FIXME: These addresses are definitely wrong
-                capitalProvider: this.participants[0],
-                virtualAppUser: this.participants[1],
-              },
-            ],
-          );
-        }
 
-        case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-          throw Error(
-            "Unimplemented Error. There is no interpreter params encoded for the (virtual app case of) MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER OutcomeType on the AppInstance model.",
-          );
-        }
+      case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
+        return defaultAbiCoder.encode(
+          [multiAssetMultiPartyCoinTransferInterpreterParamsEncoding],
+          [this.multiAssetMultiPartyCoinTransferInterpreterParams],
+        );
+      }
 
-        case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-          const { amount, playerAddrs, tokenAddress } = this.twoPartyOutcomeInterpreterParams;
-          return defaultAbiCoder.encode(
-            [virtualAppAgreementEncoding],
-            [
-              {
-                tokenAddress,
-                capitalProvided: amount,
-                // FIXME: Also definitely wrong
-                capitalProvider: playerAddrs[0],
-                virtualAppUser: playerAddrs[1],
-              },
-            ],
-          );
-        }
+      case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
+        return defaultAbiCoder.encode(
+          [twoPartyFixedOutcomeInterpreterParamsEncoding],
+          [this.twoPartyOutcomeInterpreterParams],
+        );
+      }
 
-        default: {
-          throw Error("The outcome type in this application logic contract is not supported yet.");
-        }
+      default: {
+        throw Error("The outcome type in this application logic contract is not supported yet.");
       }
     }
   }

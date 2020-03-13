@@ -1,8 +1,6 @@
-import { IMessagingService } from "@connext/types";
-
-class MockMessagingService implements IMessagingService {
+class MockMessagingService {
   async send() {}
-  onReceive() {}
+  async onReceive() {}
 }
 
 export default new MockMessagingService();
