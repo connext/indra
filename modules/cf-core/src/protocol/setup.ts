@@ -74,8 +74,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Verified responder's sig`);
 
     // 33 ms
-    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
     yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
+    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
     logTime(log, start, `Finished initiating`);
   },
 
@@ -119,8 +119,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // 49 ms
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
-    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
     yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
+    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     yield [
       IO_SEND,

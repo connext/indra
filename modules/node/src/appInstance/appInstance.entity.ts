@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToOne } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
 import { SolidityValueType, OutcomeType, AppABIEncodings } from "@connext/types";
 
@@ -9,6 +9,8 @@ export enum AppType {
   PROPOSAL = "PROPOSAL",
   INSTANCE = "INSTANCE",
   FREE_BALANCE = "FREE_BALANCE",
+  REJECTED = "REJECTED", // removed proposal
+  UNINSTALLED = "UNINSTALLED", // removed app
 }
 
 @Entity("app_instance")

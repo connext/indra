@@ -6,6 +6,7 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
 import { WithdrawCommitmentRepository } from "../withdrawCommitment/withdrawCommitment.repository";
+import { SetupCommitmentEntityRepository } from "../setupCommitment/setupCommitment.repository";
 // eslint-disable-next-line max-len
 import { ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
 import { ConfigModule } from "../config/config.module";
@@ -37,6 +38,7 @@ import { CFCoreStore } from "./cfCore.store";
       ConditionalTransactionCommitmentRepository,
       SetStateCommitmentRepository,
       WithdrawCommitmentRepository,
+      SetupCommitmentEntityRepository,
     ]),
   ],
   providers: [cfCoreProviderFactory, CFCoreService, CFCoreStore],

@@ -10,7 +10,6 @@ import {
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
 
-import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
 import { WithdrawCommitmentRepository } from "../withdrawCommitment/withdrawCommitment.repository";
@@ -22,9 +21,7 @@ import {
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
-import { OutcomeType } from "../util";
-import { Zero, AddressZero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { SetupCommitmentEntityRepository } from "../setupCommitment/setupCommitment.repository";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -36,6 +33,7 @@ export class CFCoreStore implements IStoreService {
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
     private readonly configService: ConfigService,
+    private readonly setupCommitmentRepository: SetupCommitmentEntityRepository,
   ) {}
 
   getSchemaVersion(): number {
@@ -63,6 +61,14 @@ export class CFCoreStore implements IStoreService {
     if (!channel) {
       // update fields that should only be touched on creation
       channel = new Channel();
+      const setup = await this.setupCommitmentRepository.findByMultisigAddress(
+        stateChannel.multisigAddress,
+      );
+      if (!setup) {
+        throw new Error(
+          `Could not find setup protocol commitment for channel: ${stateChannel.multisigAddress}`,
+        );
+      }
       channel.schemaVersion = this.schemaVersion;
       channel.nodePublicIdentifier = this.configService.getPublicIdentifier();
       channel.userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.filter(
@@ -71,123 +77,8 @@ export class CFCoreStore implements IStoreService {
       channel.multisigAddress = stateChannel.multisigAddress;
       channel.addresses = stateChannel.addresses;
     }
-    // update all other fields
-    // nonce
+    // update nonce
     channel.monotonicNumProposedApps = stateChannel.monotonicNumProposedApps;
-
-    /////////////////////////////
-    // free balance
-    let freeBalanceSaved = await this.appInstanceRepository.findByIdentityHash(
-      stateChannel.freeBalanceAppInstance.identityHash,
-    );
-    const { freeBalanceAppInstance: freeBalanceData } = stateChannel;
-    if (!freeBalanceSaved) {
-      freeBalanceSaved = new AppInstance();
-      freeBalanceSaved.identityHash = freeBalanceData.identityHash;
-      freeBalanceSaved.type = AppType.FREE_BALANCE;
-      freeBalanceSaved.abiEncodings = {
-        stateEncoding: freeBalanceData.appInterface.stateEncoding,
-        actionEncoding: freeBalanceData.appInterface.actionEncoding,
-      };
-      freeBalanceSaved.appDefinition = freeBalanceData.appInterface.addr;
-      freeBalanceSaved.appSeqNo = freeBalanceData.appSeqNo;
-      freeBalanceSaved.channel = channel;
-      freeBalanceSaved.outcomeType = OutcomeType[freeBalanceData.outcomeType];
-      // new instance, save initial state as latest
-      freeBalanceSaved.initialState = freeBalanceData.latestState;
-      freeBalanceSaved.participants = freeBalanceData.participants;
-      // TODO: proper way to add these since free balance does not go thorugh
-      // propose flow
-      freeBalanceSaved.initiatorDeposit = Zero;
-      freeBalanceSaved.initiatorDepositTokenAddress = AddressZero;
-      freeBalanceSaved.responderDeposit = Zero;
-      freeBalanceSaved.responderDepositTokenAddress = AddressZero;
-      freeBalanceSaved.proposedToIdentifier = channel.userPublicIdentifier;
-      freeBalanceSaved.proposedByIdentifier = channel.nodePublicIdentifier;
-      freeBalanceSaved.timeout = freeBalanceData.latestTimeout;
-
-      // interpreter params
-      freeBalanceSaved.multiAssetMultiPartyCoinTransferInterpreterParams =
-        freeBalanceData.multiAssetMultiPartyCoinTransferInterpreterParams;
-
-      freeBalanceSaved.singleAssetTwoPartyCoinTransferInterpreterParams =
-        freeBalanceData.singleAssetTwoPartyCoinTransferInterpreterParams;
-
-      freeBalanceSaved.twoPartyOutcomeInterpreterParams =
-        freeBalanceData.twoPartyOutcomeInterpreterParams;
-    }
-    freeBalanceSaved.latestState = freeBalanceData.latestState;
-    freeBalanceSaved.latestTimeout = freeBalanceData.latestTimeout;
-    freeBalanceSaved.latestVersionNumber = freeBalanceData.latestVersionNumber;
-
-    /////////////////////////////
-    // assemble proposed apps
-    const proposedApps: AppInstance[] = await Promise.all(
-      stateChannel.proposedAppInstances.map(async ([identityHash, appJson]) => {
-        let app = await this.appInstanceRepository.findByIdentityHash(identityHash);
-        if (app && app.type === AppType.PROPOSAL) {
-          return app;
-        }
-        app = new AppInstance();
-        app.identityHash = identityHash;
-        app.abiEncodings = appJson.abiEncodings;
-        app.appDefinition = appJson.appDefinition;
-        app.appSeqNo = appJson.appSeqNo;
-        app.initialState = appJson.initialState;
-        app.initiatorDeposit = bigNumberify(appJson.initiatorDeposit);
-        app.initiatorDepositTokenAddress = appJson.initiatorDepositTokenAddress;
-        app.latestState = appJson.initialState;
-        app.latestTimeout = bigNumberify(appJson.timeout).toNumber();
-        app.latestVersionNumber = 0;
-        app.responderDeposit = bigNumberify(appJson.responderDeposit);
-        app.responderDepositTokenAddress = appJson.responderDepositTokenAddress;
-        app.timeout = bigNumberify(appJson.timeout).toNumber();
-        app.proposedToIdentifier = appJson.proposedToIdentifier;
-        app.proposedByIdentifier = appJson.proposedByIdentifier;
-        app.outcomeType = appJson.outcomeType;
-        app.type = AppType.PROPOSAL;
-
-        app.channel = channel;
-        return app;
-      }),
-    );
-
-    /////////////////////////////
-    // assemble installed apps
-    const installedApps: AppInstance[] = await Promise.all(
-      stateChannel.appInstances.map(async ([identityHash, appJson]) => {
-        let app = await this.appInstanceRepository.findByIdentityHash(identityHash);
-        if (!app) {
-          throw new Error(`Did not find app with identity hash: ${identityHash}`);
-        }
-        if (
-          app.type === AppType.INSTANCE &&
-          app.latestVersionNumber === appJson.latestVersionNumber
-        ) {
-          // app was not updated, return app
-          return app;
-        }
-        if (app.type === AppType.PROPOSAL) {
-          app.type = AppType.INSTANCE;
-          app.participants = appJson.participants;
-          app.singleAssetTwoPartyCoinTransferInterpreterParams =
-            appJson.singleAssetTwoPartyCoinTransferInterpreterParams;
-          app.twoPartyOutcomeInterpreterParams = appJson.twoPartyOutcomeInterpreterParams;
-          app.multiAssetMultiPartyCoinTransferInterpreterParams =
-            appJson.multiAssetMultiPartyCoinTransferInterpreterParams;
-        }
-        app.latestState = appJson.latestState;
-        app.latestTimeout = appJson.latestTimeout;
-        app.latestVersionNumber = appJson.latestVersionNumber;
-
-        // TODO: everything else should already be in from the proposal, verify this
-        return app;
-      }),
-    );
-    channel.appInstances = [freeBalanceSaved]
-      .concat(installedApps.filter(x => !!x))
-      .concat(proposedApps.filter(x => !!x));
-
     await this.channelRepository.save(channel);
   }
 
@@ -196,63 +87,38 @@ export class CFCoreStore implements IStoreService {
   }
 
   async saveAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
-    const {
-      identityHash,
-      latestState,
-      latestTimeout,
-      latestVersionNumber,
-      multiAssetMultiPartyCoinTransferInterpreterParams,
-      participants,
-      singleAssetTwoPartyCoinTransferInterpreterParams,
-      twoPartyOutcomeInterpreterParams,
-    } = appJson;
-    let app = await this.appInstanceRepository.findByIdentityHash(identityHash);
-    if (!app) {
-      throw new Error(`Did not find app with identity hash: ${identityHash}`);
-    }
-    if (app.type === AppType.INSTANCE && app.latestVersionNumber === latestVersionNumber) {
-      // app was not updated, return
-      return;
-    }
-    if (app.type === AppType.PROPOSAL) {
-      app.type = AppType.INSTANCE;
-      app.participants = participants;
-      app.singleAssetTwoPartyCoinTransferInterpreterParams = singleAssetTwoPartyCoinTransferInterpreterParams;
-      app.twoPartyOutcomeInterpreterParams = twoPartyOutcomeInterpreterParams;
-      app.multiAssetMultiPartyCoinTransferInterpreterParams = multiAssetMultiPartyCoinTransferInterpreterParams;
-    }
-    app.latestState = latestState;
-    app.latestTimeout = latestTimeout;
-    app.latestVersionNumber = latestVersionNumber;
-
-    // TODO: everything else should already be in from the proposal, verify this
-    return this.appInstanceRepository.saveAppInstance(multisigAddress, appJson);
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    await this.appInstanceRepository.saveAppInstance(channel, appJson);
   }
 
-  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
-    throw new Error(`Method not implemented`);
+  async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+    const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
+    if (!app) {
+      throw new Error(`No app found when trying to remove. AppId: ${appInstanceId}`);
+    }
+    await this.appInstanceRepository.removeAppInstance(app);
   }
 
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal> {
     return this.appInstanceRepository.getAppProposal(appInstanceId);
   }
 
-  saveAppProposal(appInstanceId: string, appProposal: AppInstanceProposal): Promise<void> {
-    return this.appInstanceRepository.saveAppProposal(appInstanceId, appProposal);
+  async saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    return this.appInstanceRepository.saveAppProposal(channel, appProposal);
   }
 
-  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
-    // should either go through `saveAppInstance` to update to `INSTANCE`
-    // type, or `removeAppInstance` to update to `UNINSTALL` type
-    throw new Error(`Method not implemented`);
+  async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+    await this.appInstanceRepository.removeAppProposal(appInstanceId);
   }
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
     return this.appInstanceRepository.getFreeBalance(multisigAddress);
   }
 
-  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    return this.appInstanceRepository.saveFreeBalance(multisigAddress, freeBalance);
+  async saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    return this.appInstanceRepository.saveFreeBalance(channel, freeBalance);
   }
 
   getLatestSetStateCommitment(
@@ -319,14 +185,17 @@ export class CFCoreStore implements IStoreService {
   }
 
   getSetupCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
-    throw new Error(`Method not implemented`);
+    return this.setupCommitmentRepository.getCommitment(multisigAddress);
   }
 
-  saveSetupCommitment(
+  async saveSetupCommitment(
     multisigAddress: string,
     commitment: ProtocolTypes.MinimalTransaction,
   ): Promise<void> {
-    throw new Error(`Method not implemented`);
+    // there may not be a channel at the time the setup commitment is
+    // created, so add the multisig address
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    await this.setupCommitmentRepository.saveCommitment(multisigAddress, commitment, channel);
   }
 
   clear(): Promise<void> {

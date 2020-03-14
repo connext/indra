@@ -212,8 +212,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return safeJsonParse(await this.getItem(proposedAppsKey));
   }
 
-  saveAppProposal(appInstanceId: string, proposal: AppInstanceProposal): Promise<void> {
-    const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, appInstanceId);
+  saveAppProposal(multisigAddress: string, proposal: AppInstanceProposal): Promise<void> {
+    const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, proposal.identityHash);
     return this.setItem(proposedAppsKey, safeJsonStringify(proposal));
   }
 

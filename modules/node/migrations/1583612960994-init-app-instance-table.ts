@@ -4,7 +4,7 @@ export class InitAppInstanceTable1583612960994 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
     await queryRunner.query(`
       CREATE TYPE "app_instance_type_enum"
-        AS ENUM('PROPOSAL', 'INSTANCE', 'FREE_BALANCE');
+        AS ENUM('PROPOSAL', 'INSTANCE', 'FREE_BALANCE', 'REJECTED', 'UNINSTALLED');
     `);
 
     await queryRunner.query(

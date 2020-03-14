@@ -29,6 +29,14 @@ export class InitCommitmentTable1582692126872 implements MigrationInterface {
         "value" text NOT NULL,
         "data" text NOT NULL
       );
+
+      CREATE TABLE "setup_commitment_entity" (
+        "id" SERIAL PRIMARY KEY,
+        "to" text NOT NULL,
+        "value" text NOT NULL,
+        "data" text NOT NULL,
+        "multisigAddress" text NOT NULL
+      );
     `);
   }
 
@@ -37,6 +45,7 @@ export class InitCommitmentTable1582692126872 implements MigrationInterface {
       DROP TABLE "conditional_transaction_commitment_entity";
       DROP TABLE "set_state_commitment_entity";
       DROP TABLE "withdraw_commitment";
+      DROP TABLE "setup_commitment_entity";
     `);
   }
 }

@@ -8,6 +8,10 @@ export class UpdateChannelTable1583618773094 implements MigrationInterface {
       ALTER TABLE "channel"
         ADD COLUMN "schemaVersion" integer NOT NULL,
         ADD COLUMN "addresses" json NOT NULL,
+        ADD COLUMN "setupCommitmentId" integer,
+        ADD CONSTRAINT "PK_3cd3fd3cc74b86faf8bfbb679ee"
+        FOREIGN KEY ("setupCommitmentId")
+        REFERENCES "setup_commitment_entity" ("id"),
         ADD COLUMN "monotonicNumProposedApps" integer NOT NULL;
     `);
 
@@ -34,6 +38,14 @@ export class UpdateChannelTable1583618773094 implements MigrationInterface {
         FOREIGN KEY ("channelId")
         REFERENCES "channel" ("id");
     `);
+
+    await queryRunner.query(`
+      ALTER TABLE "setup_commitment_entity"
+        ADD COLUMN "channelId" integer NOT NULL,
+        ADD CONSTRAINT "PK_3ce5fd3cc74b86faf8bfbb679ee"
+        FOREIGN KEY ("channelId")
+        REFERENCES "channel" ("id");
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<any> {
@@ -41,8 +53,11 @@ export class UpdateChannelTable1583618773094 implements MigrationInterface {
       ALTER TABLE "channel"
         DROP COLUMN "schemaVersion",
         DROP COLUMN "addresses",
-        DROP COLUMN "monotonicNumProposedApps";
+        DROP COLUMN "setupCommitmentId",
+        DROP COLUMN "monotonicNumProposedApps",
+        DROP CONSTRAINT "PK_3cd3fd3cc74b86faf8bfbb679ee";
     `);
+
     await queryRunner.query(`
       ALTER TABLE "conditional_transaction_commitment_entity"
         DROP CONSTRAINT "PK_5bb6fd3cc74b86faf8bfee876dd";
@@ -54,6 +69,11 @@ export class UpdateChannelTable1583618773094 implements MigrationInterface {
     await queryRunner.query(`
       ALTER TABLE "withdraw_commitment"
         DROP CONSTRAINT "PK_5bb6fd3cc74b86faf8bfbb679ee";
+    `);
+
+    await queryRunner.query(`
+      ALTER TABLE "setup_commitment_entity"
+        DROP CONSTRAINT "PK_3ce5fd3cc74b86faf8bfbb679ee";
     `);
   }
 }

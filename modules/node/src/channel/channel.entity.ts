@@ -1,8 +1,14 @@
+import { CriticalStateChannelAddresses } from "@connext/types";
 import {
-  CriticalStateChannelAddresses,
-  SingleAssetTwoPartyIntermediaryAgreement,
-} from "@connext/types";
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  OneToOne,
+  JoinColumn,
+} from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
@@ -11,6 +17,7 @@ import { IsEthAddress, IsXpub } from "../util";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
+import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
 
 @Entity()
 export class Channel {
@@ -57,6 +64,13 @@ export class Channel {
     (withdrawalCommitment: WithdrawCommitment) => withdrawalCommitment.channel,
   )
   withdrawalCommitments!: WithdrawCommitment[];
+
+  @OneToOne(
+    (type: any) => WithdrawCommitment,
+    (commitment: SetupCommitmentEntity) => commitment.channel,
+  )
+  @JoinColumn()
+  setupCommitment!: SetupCommitmentEntity;
 
   @ManyToMany(
     (type: any) => RebalanceProfile,
