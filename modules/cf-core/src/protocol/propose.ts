@@ -128,8 +128,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
-
     // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
@@ -137,6 +135,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
     ];
+
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
 
     logTime(log, start, `Finished Initiating`);
   },
@@ -245,8 +245,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
-
     // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
@@ -254,6 +252,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
     ];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
     logTime(log, start, `Finished responding`);
   },
 };

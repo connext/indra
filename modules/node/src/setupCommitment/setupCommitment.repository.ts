@@ -16,10 +16,10 @@ export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitme
 @EntityRepository(SetupCommitmentEntity)
 export class SetupCommitmentEntityRepository extends Repository<SetupCommitmentEntity> {
   findByMultisigAddress(multisigAddress: string): Promise<SetupCommitmentEntity> {
-    return this.createQueryBuilder("setup")
-      .leftJoinAndSelect("setup.channel", "channel")
-      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
-      .getOne();
+    return this.findOne({
+      where: { multisigAddress },
+      relations: ["channel"],
+    });
   }
 
   async getCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
@@ -33,14 +33,14 @@ export class SetupCommitmentEntityRepository extends Repository<SetupCommitmentE
   async saveCommitment(
     multisigAddress: string,
     commitment: ProtocolTypes.MinimalTransaction,
-    channel: Channel | undefined,
+    channel?: Channel,
   ): Promise<SetupCommitmentEntity> {
     let commitmentEnt = await this.findByMultisigAddress(multisigAddress);
     if (!commitmentEnt) {
       commitmentEnt = new SetupCommitmentEntity();
       commitmentEnt.multisigAddress = multisigAddress;
-      commitmentEnt.channel = channel;
     }
+    commitmentEnt.channel = channel;
     commitmentEnt.to = commitment.to;
     commitmentEnt.value = bigNumberify(commitment.value);
     commitmentEnt.data = commitment.data;

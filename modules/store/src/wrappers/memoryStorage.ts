@@ -68,9 +68,6 @@ export class MemoryStorage implements IClientStore {
   }
 
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
-    if (stateChannel.freeBalanceAppInstance) {
-      this.saveFreeBalance(stateChannel.multisigAddress, stateChannel.freeBalanceAppInstance);
-    }
     this.channels.set(stateChannel.multisigAddress, stateChannel);
   }
 

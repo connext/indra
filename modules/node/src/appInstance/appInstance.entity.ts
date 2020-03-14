@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
-import { SolidityValueType, OutcomeType, AppABIEncodings } from "@connext/types";
+import { OutcomeType, SolidityValueType } from "@connext/types";
 
 import { Channel } from "../channel/channel.entity";
 import { BigNumber } from "ethers/utils";
@@ -25,8 +25,11 @@ export class AppInstance {
   @IsEthAddress()
   appDefinition!: string;
 
-  @Column("json")
-  abiEncodings!: AppABIEncodings;
+  @Column("text")
+  stateEncoding!: string;
+
+  @Column("text", { nullable: true })
+  actionEncoding!: string;
 
   @Column("integer")
   appSeqNo!: number;
@@ -86,18 +89,18 @@ export class AppInstance {
   timeout!: number;
 
   // assigned a value on installation not proposal
-  @Column("json", { nullable: true })
-  participants!: string[];
+  @Column("text", { nullable: true })
+  @IsEthAddress()
+  userParticipantAddress?: string;
+
+  // assigned a value on installation not proposal
+  @Column("text", { nullable: true })
+  @IsEthAddress()
+  nodeParticipantAddress?: string;
 
   // Interpreter-related Fields
   @Column("json", { nullable: true })
-  twoPartyOutcomeInterpreterParams?: any;
-
-  @Column("json", { nullable: true })
-  multiAssetMultiPartyCoinTransferInterpreterParams?: any;
-
-  @Column("json", { nullable: true })
-  singleAssetTwoPartyCoinTransferInterpreterParams?: any;
+  outcomeInterpreterParameters?: any;
 
   @ManyToOne(
     (type: any) => Channel,

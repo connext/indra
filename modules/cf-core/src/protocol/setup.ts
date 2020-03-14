@@ -80,7 +80,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_COMMITMENT,
       Setup,
       setupCommitment.getSignedTransaction(),
-      stateChannel.freeBalance.identityHash,
+      stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
     logTime(log, start, `Finished initiating`);
@@ -132,7 +132,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_COMMITMENT,
       Setup,
       setupCommitment.getSignedTransaction(),
-      stateChannel.freeBalance.identityHash,
+      stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 

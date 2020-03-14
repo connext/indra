@@ -6,15 +6,37 @@ import { Channel } from "../channel/channel.entity";
 import { AppInstance, AppType } from "./appInstance.entity";
 import { bigNumberify } from "ethers/utils";
 import { Zero, AddressZero } from "ethers/constants";
+import { xkeysToSortedKthAddresses, sortAddresses } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
     return undefined;
   }
+  // interpreter params
+  let multiAssetMultiPartyCoinTransferInterpreterParams = undefined;
+  let singleAssetTwoPartyCoinTransferInterpreterParams = undefined;
+  let twoPartyOutcomeInterpreterParams = undefined;
+
+  switch (OutcomeType[app.outcomeType]) {
+    case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
+      twoPartyOutcomeInterpreterParams = app.outcomeInterpreterParameters;
+      break;
+
+    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
+      multiAssetMultiPartyCoinTransferInterpreterParams = app.outcomeInterpreterParameters;
+      break;
+
+    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
+      singleAssetTwoPartyCoinTransferInterpreterParams = app.outcomeInterpreterParameters;
+      break;
+
+    default:
+      throw new Error(`Unrecognized outcome type: ${OutcomeType[app.outcomeType]}`);
+  }
   return {
     appInterface: {
-      stateEncoding: app.abiEncodings.stateEncoding,
-      actionEncoding: app.abiEncodings.actionEncoding || undefined,
+      stateEncoding: app.stateEncoding,
+      actionEncoding: app.actionEncoding || undefined,
       addr: app.appDefinition,
     },
     appSeqNo: app.appSeqNo,
@@ -25,18 +47,43 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     latestVersionNumber: app.latestVersionNumber,
     multisigAddress: channel.multisigAddress,
     outcomeType: (app.outcomeType as unknown) as number,
-    participants: app.participants,
-    multiAssetMultiPartyCoinTransferInterpreterParams:
-      app.multiAssetMultiPartyCoinTransferInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams:
-      app.singleAssetTwoPartyCoinTransferInterpreterParams,
-    twoPartyOutcomeInterpreterParams: app.twoPartyOutcomeInterpreterParams,
+    participants: sortAddresses([app.userParticipantAddress, app.nodeParticipantAddress]),
+    multiAssetMultiPartyCoinTransferInterpreterParams,
+    singleAssetTwoPartyCoinTransferInterpreterParams,
+    twoPartyOutcomeInterpreterParams,
   };
 };
 
 export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceProposal => {
+  if (!app) {
+    return undefined;
+  }
+  // interpreter params
+  let multiAssetMultiPartyCoinTransferInterpreterParams = undefined;
+  let singleAssetTwoPartyCoinTransferInterpreterParams = undefined;
+  let twoPartyOutcomeInterpreterParams = undefined;
+
+  switch (OutcomeType[app.outcomeType]) {
+    case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
+      twoPartyOutcomeInterpreterParams = app.outcomeInterpreterParameters;
+      break;
+
+    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
+      multiAssetMultiPartyCoinTransferInterpreterParams = app.outcomeInterpreterParameters;
+      break;
+
+    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
+      singleAssetTwoPartyCoinTransferInterpreterParams = app.outcomeInterpreterParameters;
+      break;
+
+    default:
+      throw new Error(`Unrecognized outcome type: ${OutcomeType[app.outcomeType]}`);
+  }
   return {
-    abiEncodings: app.abiEncodings,
+    abiEncodings: {
+      stateEncoding: app.stateEncoding,
+      actionEncoding: app.actionEncoding,
+    },
     appDefinition: app.appDefinition,
     appSeqNo: app.appSeqNo,
     identityHash: app.identityHash,
@@ -49,11 +96,9 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
     responderDeposit: app.responderDeposit.toHexString(),
     responderDepositTokenAddress: app.responderDepositTokenAddress,
     timeout: bigNumberify(app.timeout).toHexString(),
-    multiAssetMultiPartyCoinTransferInterpreterParams:
-      app.multiAssetMultiPartyCoinTransferInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams:
-      app.singleAssetTwoPartyCoinTransferInterpreterParams,
-    twoPartyOutcomeInterpreterParams: app.twoPartyOutcomeInterpreterParams,
+    multiAssetMultiPartyCoinTransferInterpreterParams,
+    singleAssetTwoPartyCoinTransferInterpreterParams,
+    twoPartyOutcomeInterpreterParams,
   };
 };
 
@@ -101,7 +146,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     }
     app.type = AppType.PROPOSAL;
     app.identityHash = appProposal.identityHash;
-    app.abiEncodings = appProposal.abiEncodings;
+    app.actionEncoding = appProposal.abiEncodings.actionEncoding;
+    app.stateEncoding = appProposal.abiEncodings.stateEncoding;
     app.appDefinition = appProposal.appDefinition;
     app.appSeqNo = appProposal.appSeqNo;
     app.initialState = appProposal.initialState;
@@ -124,8 +170,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async removeAppProposal(appInstanceId: string): Promise<AppInstance> {
     const app = await this.findByIdentityHash(appInstanceId);
-    if (!app) {
-      throw new Error(`No app proposal existed for ${appInstanceId}`)
+    if (!app || app.type !== AppType.PROPOSAL) {
+      throw new Error(`No app proposal existed for ${appInstanceId}`);
     }
     app.type = AppType.REJECTED;
     return this.save(app);
@@ -142,23 +188,28 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     return convertAppToInstanceJSON(app[0], app[0].channel);
   }
 
-  async saveFreeBalance(channel: Channel, freeBalance: AppInstanceJson): Promise<void> {
+  async saveFreeBalance(channel: Channel, freeBalance: AppInstanceJson): Promise<AppInstance> {
     let freeBalanceSaved = await this.findByIdentityHash(freeBalance.identityHash);
     if (!freeBalanceSaved) {
       freeBalanceSaved = new AppInstance();
       freeBalanceSaved.identityHash = freeBalance.identityHash;
       freeBalanceSaved.type = AppType.FREE_BALANCE;
-      freeBalanceSaved.abiEncodings = {
-        stateEncoding: freeBalance.appInterface.stateEncoding,
-        actionEncoding: freeBalance.appInterface.actionEncoding,
-      };
+      freeBalanceSaved.stateEncoding = freeBalance.appInterface.stateEncoding;
+      freeBalanceSaved.actionEncoding = freeBalance.appInterface.actionEncoding;
       freeBalanceSaved.appDefinition = freeBalance.appInterface.addr;
       freeBalanceSaved.appSeqNo = freeBalance.appSeqNo;
       freeBalanceSaved.channel = channel;
       freeBalanceSaved.outcomeType = OutcomeType[freeBalance.outcomeType];
       // new instance, save initial state as latest
       freeBalanceSaved.initialState = freeBalance.latestState;
-      freeBalanceSaved.participants = freeBalance.participants;
+      // save participants
+      const userFreeBalance = xkeysToSortedKthAddresses([channel.userPublicIdentifier])[0];
+      freeBalanceSaved.userParticipantAddress = freeBalance.participants.filter(
+        p => p === userFreeBalance,
+      )[0];
+      freeBalanceSaved.nodeParticipantAddress = freeBalance.participants.filter(
+        p => p !== userFreeBalance,
+      )[0];
       // TODO: proper way to add these since free balance does not go thorugh
       // propose flow
       freeBalanceSaved.initiatorDeposit = Zero;
@@ -174,16 +225,26 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     freeBalanceSaved.timeout = freeBalance.latestTimeout;
 
     // interpreter params
-    freeBalanceSaved.multiAssetMultiPartyCoinTransferInterpreterParams =
-      freeBalance.multiAssetMultiPartyCoinTransferInterpreterParams;
+    switch (OutcomeType[freeBalance.outcomeType]) {
+      case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
+        freeBalanceSaved.outcomeInterpreterParameters =
+          freeBalance.twoPartyOutcomeInterpreterParams;
+        break;
 
-    freeBalanceSaved.singleAssetTwoPartyCoinTransferInterpreterParams =
-      freeBalance.singleAssetTwoPartyCoinTransferInterpreterParams;
+      case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
+        freeBalanceSaved.outcomeInterpreterParameters =
+          freeBalance.multiAssetMultiPartyCoinTransferInterpreterParams;
+        break;
 
-    freeBalanceSaved.twoPartyOutcomeInterpreterParams =
-      freeBalance.twoPartyOutcomeInterpreterParams;
+      case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
+        freeBalanceSaved.outcomeInterpreterParameters =
+          freeBalance.singleAssetTwoPartyCoinTransferInterpreterParams;
+        break;
 
-    freeBalanceSaved.channel = channel;
+      default:
+        throw new Error(`Unrecognized outcome type: ${OutcomeType[freeBalance.outcomeType]}`);
+    }
+    return this.save(freeBalanceSaved);
   }
 
   async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
@@ -214,23 +275,43 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       return app;
     }
     // first time app is being upgraded from proposal to instance
-    if (app.type === AppType.PROPOSAL) {
+    if (app.type !== AppType.INSTANCE) {
       app.type = AppType.INSTANCE;
-      app.participants = participants;
-      app.singleAssetTwoPartyCoinTransferInterpreterParams = singleAssetTwoPartyCoinTransferInterpreterParams;
-      app.twoPartyOutcomeInterpreterParams = twoPartyOutcomeInterpreterParams;
-      app.multiAssetMultiPartyCoinTransferInterpreterParams = multiAssetMultiPartyCoinTransferInterpreterParams;
+      // save participants
+      const userAddr = xkeysToSortedKthAddresses([channel.userPublicIdentifier], app.appSeqNo)[0];
+      app.userParticipantAddress = participants.filter(p => p === userAddr)[0];
+      app.nodeParticipantAddress = participants.filter(p => p !== userAddr)[0];
     }
     app.latestState = latestState;
     app.latestTimeout = latestTimeout;
     app.latestVersionNumber = latestVersionNumber;
 
+    // interpreter params
+    switch (OutcomeType[app.outcomeType]) {
+      case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
+        app.outcomeInterpreterParameters = twoPartyOutcomeInterpreterParams;
+        break;
+
+      case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
+        app.outcomeInterpreterParameters = multiAssetMultiPartyCoinTransferInterpreterParams;
+        break;
+
+      case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
+        app.outcomeInterpreterParameters = singleAssetTwoPartyCoinTransferInterpreterParams;
+        break;
+
+      default:
+        throw new Error(`Unrecognized outcome type: ${OutcomeType[app.outcomeType]}`);
+    }
+
     // TODO: everything else should already be in from the proposal, verify this
-    app.channel = channel;
     return this.save(app);
   }
 
   removeAppInstance(app: AppInstance): Promise<AppInstance> {
+    if (app.type !== AppType.INSTANCE) {
+      throw new Error(`App is not of correct type`)
+    }
     app.type = AppType.UNINSTALLED;
     return this.save(app);
   }

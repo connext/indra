@@ -138,6 +138,13 @@ export class Store {
       );
     }
     await this.storeService.saveStateChannel(stateChannel.toJson());
+    if (!stateChannel.hasFreeBalance) {
+      return;
+    }
+    await this.storeService.saveFreeBalance(
+      stateChannel.multisigAddress,
+      stateChannel.freeBalance.toJson(),
+    );
   }
 
   private async assertChannelExists(multisigAddress: string) {
@@ -153,7 +160,6 @@ export class Store {
    * @param appInstance
    */
   public async saveFreeBalance(channel: StateChannel) {
-    await this.assertChannelExists(channel.multisigAddress);
     await this.storeService.saveFreeBalance(channel.multisigAddress, channel.freeBalance.toJson());
   }
 

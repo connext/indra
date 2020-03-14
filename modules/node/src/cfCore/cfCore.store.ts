@@ -58,18 +58,15 @@ export class CFCoreStore implements IStoreService {
 
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     let channel = await this.channelRepository.findByMultisigAddress(stateChannel.multisigAddress);
+    const setup = await this.setupCommitmentRepository.findByMultisigAddress(
+      stateChannel.multisigAddress,
+    );
     if (!channel) {
+      if (!setup) {
+        throw new Error(`No setup commitment found for multisig ${stateChannel.multisigAddress}`);
+      }
       // update fields that should only be touched on creation
       channel = new Channel();
-      const setup = await this.setupCommitmentRepository.findByMultisigAddress(
-        stateChannel.multisigAddress,
-      );
-      if (!setup) {
-        throw new Error(
-          `Could not find setup protocol commitment for channel: ${stateChannel.multisigAddress}`,
-        );
-      }
-      channel.setupCommitment = setup;
       channel.schemaVersion = this.schemaVersion;
       channel.nodePublicIdentifier = this.configService.getPublicIdentifier();
       channel.userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.filter(
@@ -80,7 +77,13 @@ export class CFCoreStore implements IStoreService {
     }
     // update nonce
     channel.monotonicNumProposedApps = stateChannel.monotonicNumProposedApps;
-    await this.channelRepository.save(channel);
+    const chan = await this.channelRepository.save(channel);
+    // if there was a setup commitment without a channel, resave
+    if (setup.channel) {
+      return;
+    }
+    setup.channel = chan;
+    await this.setupCommitmentRepository.save(setup);
   }
 
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
@@ -119,7 +122,7 @@ export class CFCoreStore implements IStoreService {
 
   async saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    return this.appInstanceRepository.saveFreeBalance(channel, freeBalance);
+    await this.appInstanceRepository.saveFreeBalance(channel, freeBalance);
   }
 
   getLatestSetStateCommitment(

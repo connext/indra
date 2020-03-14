@@ -69,7 +69,6 @@ export class Channel {
     (type: any) => WithdrawCommitment,
     (commitment: SetupCommitmentEntity) => commitment.channel,
   )
-  @JoinColumn()
   setupCommitment!: SetupCommitmentEntity;
 
   @ManyToMany(
