@@ -305,7 +305,6 @@ const params: CFCoreTypes.ProposeInstallVirtualParams = {
   initialState,
   initiatorDeposit: new BigNumber(1000), // wei units
   initiatorDepositTokenAddress: "0x0000...", // assetId, AddressZero for ethereum
-  intermediaryIdentifier: "xpub...", // xpub of intermediary node, returned from config endpoint
   outcomeType: appInfo.outcomeType, // CFCoreTypes.OutcomeType
   proposedToIdentifier: "0xabc...",
   responderDeposit: new BigNumber(0), // wei units

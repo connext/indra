@@ -49,7 +49,6 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
     responderDeposit: app.responderDeposit.toHexString(),
     responderDepositTokenAddress: app.responderDepositTokenAddress,
     timeout: bigNumberify(app.timeout).toHexString(),
-    intermediaryIdentifier: null, // hardcode
     multiAssetMultiPartyCoinTransferInterpreterParams:
       app.multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams:

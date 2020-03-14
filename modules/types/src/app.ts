@@ -45,7 +45,6 @@ export type AppInstanceInfo = {
   timeout: BigNumber;
   proposedByIdentifier: string; // xpub
   proposedToIdentifier: string; // xpub
-  intermediaryIdentifier?: string;
   // Interpreter-related Fields:
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
   multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
@@ -90,7 +89,6 @@ export type AppInstanceProposal = {
   initialState: SolidityValueType;
   initiatorDeposit: string;
   initiatorDepositTokenAddress: string;
-  intermediaryIdentifier?: string;
   outcomeType: OutcomeType;
   proposedByIdentifier: string;
   proposedToIdentifier: string;
