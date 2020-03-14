@@ -7,6 +7,7 @@ import { DatabaseModule } from "../database/database.module";
 import { LockModule } from "../lock/lock.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
+import { ChannelRepository } from "../channel/channel.repository";
 
 import { CFCoreController } from "./cfCore.controller";
 import { cfCoreProviderFactory } from "./cfCore.provider";
@@ -22,7 +23,7 @@ import { CFCoreService } from "./cfCore.service";
     LockModule,
     LoggerModule,
     MessagingModule,
-    TypeOrmModule.forFeature([CFCoreRecordRepository, AppRegistryRepository]),
+    TypeOrmModule.forFeature([CFCoreRecordRepository, AppRegistryRepository, ChannelRepository]),
   ],
   providers: [cfCoreProviderFactory, CFCoreService],
 })

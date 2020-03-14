@@ -4,10 +4,10 @@ import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, solidityKeccak256, soliditySha256 } from "ethers/utils";
+import { Zero } from "ethers/constants";
+import { BigNumber, defaultAbiCoder, soliditySha256 } from "ethers/utils";
 
-import LightningHTLCTransferApp from "../../build/LightningHTLCTransferApp.json";
+import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
 
 chai.use(waffle.solidity);
 

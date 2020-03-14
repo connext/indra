@@ -9,12 +9,12 @@ import {
   HASHLOCK_TRANSFER,
 } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
+import { soliditySha256 } from "ethers/utils";
 
 import { xpubToAddress } from "../lib";
 import { CFCoreTypes } from "../types";
 
 import { AbstractController } from "./AbstractController";
-import { sha256, toUtf8Bytes } from "ethers/utils";
 
 export class HashLockTransferController extends AbstractController {
   public hashLockTransfer = async (
@@ -27,7 +27,7 @@ export class HashLockTransferController extends AbstractController {
     );
 
     // install the transfer application
-    const lockHash = sha256(toUtf8Bytes(preImage));
+    const lockHash = soliditySha256(["bytes32"], [preImage]);
     console.log("lockHash: ", lockHash);
 
     const initialState: HashLockTransferAppStateBigNumber = {
@@ -89,6 +89,7 @@ export class HashLockTransferController extends AbstractController {
 
     return {
       appId,
+      preImage,
     };
   };
 }

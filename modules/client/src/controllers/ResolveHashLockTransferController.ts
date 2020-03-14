@@ -7,20 +7,11 @@ import {
   ResolveHashLockTransferResponse,
   HASHLOCK_TRANSFER,
 } from "@connext/types";
-import { sha256, toUtf8Bytes } from "ethers/utils";
+import { soliditySha256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
 
 export class ResolveHashLockTransferController extends AbstractController {
-  // properly logs error and emits a receive transfer failed event
-  private handleResolveErr = (paymentId: string, e: any): void => {
-    this.log.error(`Failed to resolve hash lock transfer ${paymentId}: ${e.stack || e.message}`);
-    this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
-      error: e.stack || e.message,
-      paymentId,
-    });
-  };
-
   public resolveHashLockTransfer = async (
     params: ResolveHashLockTransferParameters,
   ): Promise<ResolveHashLockTransferResponse> => {
@@ -28,7 +19,7 @@ export class ResolveHashLockTransferController extends AbstractController {
 
     this.log.info(`Resolving hash lock transfer with preImage ${preImage}`);
 
-    const lockHash = sha256(toUtf8Bytes(preImage));
+    const lockHash = soliditySha256(["bytes32"], [preImage]);
     this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
       lockHash,
       publicIdentifier: this.connext.publicIdentifier,
@@ -41,7 +32,10 @@ export class ResolveHashLockTransferController extends AbstractController {
       await this.connext.takeAction(resolveRes.appId, { preImage });
       await this.connext.uninstallApp(resolveRes.appId);
     } catch (e) {
-      this.handleResolveErr(lockHash, e);
+      this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
+        error: e.stack || e.message,
+        lockHash,
+      });
       throw e;
     }
 

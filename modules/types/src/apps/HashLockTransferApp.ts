@@ -21,6 +21,7 @@ export type HashLockTransferParameters<T = string> = {
 // Client Controller Response
 export type HashLockTransferResponse = {
   appId: string;
+  preImage: string;
 };
 
 // Client Resolve Params

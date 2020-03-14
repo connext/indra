@@ -48,7 +48,9 @@ export class HashLockTransferService {
     );
 
     const assetId = senderApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
-    const amount = appState.coinTransfers[1].amount;
+
+    // sender amount
+    const amount = appState.coinTransfers[0].amount;
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
@@ -79,17 +81,6 @@ export class HashLockTransferService {
                 `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
               );
               return;
-            }
-            // make sure free balance is appropriate
-            const fb = await this.cfCoreService.getFreeBalance(
-              userPubId,
-              channel.multisigAddress,
-              assetId,
-            );
-            if (fb[freeBalanceAddr].lt(amount)) {
-              return reject(
-                `Free balance associated with ${freeBalanceAddr} is less than transfer amount: ${amount}`,
-              );
             }
             resolve();
           },
@@ -130,6 +121,7 @@ export class HashLockTransferService {
       finalized: false,
     };
 
+    console.log("START INSTALLING RECEIVER APP");
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
       userPubId,
       initialState,
@@ -139,6 +131,7 @@ export class HashLockTransferService {
       assetId,
       HashLockTransferApp,
     );
+    console.log("receiverAppInstallRes: ", receiverAppInstallRes);
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
       throw new Error(`Could not install app on receiver side.`);

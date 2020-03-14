@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj, stringify } from "@connext/types";
+import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj } from "@connext/types";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 import { convertHashLockTransferAppState } from "./convert";
@@ -31,8 +31,4 @@ export const validateHashLockTransferApp = (
     initiatorTransfer,
     responderTransfer,
   );
-
-  if (!initialState.amount.eq(initiatorDeposit)) {
-    throw new Error(`Transfer amount must be the same as initiator deposit ${stringify(params)}`);
-  }
 };

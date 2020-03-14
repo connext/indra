@@ -10,7 +10,7 @@ import "../funding/libs/LibOutcome.sol";
 /// @notice This contract allows users to claim a payment locked in
 ///         the application if they provide a preimage that corresponds
 ///         to a lightning hash
-contract LightningHTLCTransferApp is CounterfactualApp {
+contract HashLockTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
 

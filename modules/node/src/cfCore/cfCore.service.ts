@@ -498,7 +498,8 @@ export class CFCoreService {
           app.latestState as HashLockTransferAppStateBigNumber,
         );
         if (appState.lockHash === lockHash) {
-          apps.push(app);
+          // TODO: FIX THIS IN CF CORE
+          apps.push({ ...app, multisigAddress: channel.multisigAddress });
         }
       }
     }

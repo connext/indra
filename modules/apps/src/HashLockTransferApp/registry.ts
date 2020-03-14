@@ -1,14 +1,14 @@
 import {
   OutcomeType,
-  SimpleLinkedTransferApp,
   HashLockTransferAppActionEncoding,
   HashLockTransferAppStateEncoding,
+  HashLockTransferApp,
 } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
 
 export const HashLockTransferAppRegistryInfo: AppRegistryInfo = {
-  name: SimpleLinkedTransferApp,
+  name: HashLockTransferApp,
   allowNodeInstall: true,
   actionEncoding: HashLockTransferAppActionEncoding,
   stateEncoding: HashLockTransferAppStateEncoding,

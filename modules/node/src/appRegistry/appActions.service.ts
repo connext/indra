@@ -1,7 +1,6 @@
 import {
   SimpleLinkedTransferAppState,
   FastSignedTransferAppState,
-  SimpleLinkedTransferAppAction,
   FastSignedTransferAppAction,
   FastSignedTransferActionType,
   FastSignedTransferApp,
@@ -158,6 +157,9 @@ export class AppActionsService {
     from: string,
   ): Promise<void> {
     const apps = await this.cfCoreService.getHashLockTransferAppByLockHash(newState.lockHash);
+
+    // find hashlock transfer app where node is receiver
+    // TODO: move to new store
     const senderApp = apps.find(app => {
       const state = convertHashLockTransferAppState(
         "bignumber",
@@ -165,8 +167,18 @@ export class AppActionsService {
       );
       return state.coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress;
     });
+    if (!senderApp) {
+      throw new Error(
+        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstanceId}`,
+      );
+    }
+
+    // take action and uninstall
     await this.cfCoreService.takeAction(senderApp.identityHash, {
       preImage: action.preImage,
     } as HashLockTransferAppAction);
+
+    await this.cfCoreService.uninstallApp(senderApp.identityHash);
+    this.log.info(`Reclaimed collateral from ${senderApp.identityHash}`);
   }
 }

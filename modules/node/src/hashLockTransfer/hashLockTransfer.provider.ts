@@ -23,15 +23,13 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
   async resolveLinkedTransfer(
     pubId: string,
-    { paymentId }: { paymentId: string },
+    { lockHash }: { lockHash: string },
   ): Promise<ResolveHashLockTransferResponse> {
-    this.log.debug(
-      `Got resolve link request with data: ${JSON.stringify(paymentId, replaceBN, 2)}`,
-    );
-    if (!paymentId) {
-      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
+    this.log.debug(`Got resolve link request with lockHash: ${lockHash}`);
+    if (!lockHash) {
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(lockHash)}`);
     }
-    const response = await this.hashLockTransferService.resolveHashLockTransfer(pubId, paymentId);
+    const response = await this.hashLockTransferService.resolveHashLockTransfer(pubId, lockHash);
     return {
       ...response,
       amount: response.amount.toString(),
