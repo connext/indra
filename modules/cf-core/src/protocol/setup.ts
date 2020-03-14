@@ -73,8 +73,15 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
+    setupCommitment.signatures = [responderSignature, initiatorSignature];
+
     // 33 ms
-    yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      Setup,
+      setupCommitment.getSignedTransaction(),
+      stateChannel.freeBalance.identityHash,
+    ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
     logTime(log, start, `Finished initiating`);
   },
@@ -119,7 +126,14 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // 49 ms
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
-    yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
+    setupCommitment.signatures = [responderSignature, initiatorSignature];
+
+    yield [
+      PERSIST_COMMITMENT,
+      Setup,
+      setupCommitment.getSignedTransaction(),
+      stateChannel.freeBalance.identityHash,
+    ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     yield [
