@@ -69,6 +69,7 @@ export class CFCoreStore implements IStoreService {
           `Could not find setup protocol commitment for channel: ${stateChannel.multisigAddress}`,
         );
       }
+      channel.setupCommitment = setup;
       channel.schemaVersion = this.schemaVersion;
       channel.nodePublicIdentifier = this.configService.getPublicIdentifier();
       channel.userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.filter(
