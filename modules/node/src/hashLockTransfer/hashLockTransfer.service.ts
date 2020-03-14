@@ -37,10 +37,13 @@ export class HashLockTransferService {
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
     // TODO: could there be more than 1? how to handle that case?
-    const [senderApp] = await this.cfCoreService.getHashLockTransferAppByLockHash(lockHash);
+    const [senderApp] = await this.cfCoreService.getHashLockTransferAppsByLockHash(lockHash);
     const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
       senderApp.multisigAddress,
     );
+    if (!senderApp) {
+      throw new Error(`No sender app installed for lockHash: ${lockHash}`);
+    }
 
     const appState = convertHashLockTransferAppState(
       "bignumber",
@@ -121,7 +124,6 @@ export class HashLockTransferService {
       finalized: false,
     };
 
-    console.log("START INSTALLING RECEIVER APP");
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
       userPubId,
       initialState,
@@ -131,7 +133,6 @@ export class HashLockTransferService {
       assetId,
       HashLockTransferApp,
     );
-    console.log("receiverAppInstallRes: ", receiverAppInstallRes);
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
       throw new Error(`Could not install app on receiver side.`);

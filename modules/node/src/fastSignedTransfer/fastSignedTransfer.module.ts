@@ -8,7 +8,6 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
-import { FastSignedTransferRepository } from "./fastSignedTransfer.repository";
 import { TransferRepository } from "../transfer/transfer.repository";
 import { AuthModule } from "../auth/auth.module";
 
@@ -25,12 +24,7 @@ import { fastSignedTransferProviderFactory } from "./fastSignedTransfer.provider
     ConfigModule,
     LoggerModule,
     MessagingModule,
-    TypeOrmModule.forFeature([
-      ChannelRepository,
-      AppRegistryRepository,
-      FastSignedTransferRepository,
-      TransferRepository,
-    ]),
+    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository, TransferRepository]),
   ],
   providers: [FastSignedTransferService, fastSignedTransferProviderFactory],
 })

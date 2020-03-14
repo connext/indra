@@ -16,10 +16,6 @@ export const validateFastSignedTransferApp = (
   );
   const initialState = convertFastSignedTransferAppState("bignumber", initialStateBadType);
 
-  initialState.coinTransfers = initialState.coinTransfers.map((transfer: CoinTransfer<BigNumber>) =>
-    bigNumberifyObj(transfer),
-  ) as any;
-
   if (initialState.paymentId !== HashZero) {
     throw new Error(`Cannot install with pre-populated paymentId`);
   }

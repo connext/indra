@@ -45,7 +45,7 @@ describe("HashLock Transfers", () => {
     closeNats();
   });
 
-  it.only("happy case: client A transfers eth to client B through node", async () => {
+  it("happy case: client A transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));

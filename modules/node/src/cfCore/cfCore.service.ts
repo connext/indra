@@ -2,6 +2,7 @@ import {
   AppActionBigNumber,
   SupportedApplication,
   convertHashLockTransferAppState,
+  convertFastSignedTransferAppState,
 } from "@connext/apps";
 import { NatsMessagingService } from "@connext/messaging";
 import {
@@ -12,6 +13,8 @@ import {
   stringify,
   HashLockTransferApp,
   HashLockTransferAppStateBigNumber,
+  FastSignedTransferApp,
+  FastSignedTransferAppState,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -483,7 +486,7 @@ export class CFCoreService {
   }
 
   // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
-  async getHashLockTransferAppByLockHash(lockHash: string): Promise<AppInstanceJson[]> {
+  async getHashLockTransferAppsByLockHash(lockHash: string): Promise<AppInstanceJson[]> {
     const channels = await this.channelRepository.findAll();
     const apps: AppInstanceJson[] = [];
     for (const channel of channels) {
@@ -498,6 +501,30 @@ export class CFCoreService {
           app.latestState as HashLockTransferAppStateBigNumber,
         );
         if (appState.lockHash === lockHash) {
+          // TODO: FIX THIS IN CF CORE
+          apps.push({ ...app, multisigAddress: channel.multisigAddress });
+        }
+      }
+    }
+    return apps;
+  }
+
+  // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
+  async getFastSignedTransferAppsByPaymentId(paymentId: string): Promise<AppInstanceJson[]> {
+    const channels = await this.channelRepository.findAll();
+    const apps: AppInstanceJson[] = [];
+    for (const channel of channels) {
+      const installed = await this.getAppInstancesByAppName(
+        channel.multisigAddress,
+        FastSignedTransferApp,
+      );
+      // found fastsigned transfer app
+      for (const app of installed) {
+        const appState = convertFastSignedTransferAppState(
+          "bignumber",
+          app.latestState as FastSignedTransferAppState,
+        );
+        if (appState.paymentId === paymentId) {
           // TODO: FIX THIS IN CF CORE
           apps.push({ ...app, multisigAddress: channel.multisigAddress });
         }

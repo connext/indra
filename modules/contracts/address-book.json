@@ -369,10 +369,10 @@
       "txHash": "0xf4a1723f71fd149ad3c6ed1a8fcbdef25d0074f9f8940cb6caad0a9b7b1e13f3"
     },
     "HashLockTransferApp": {
-      "address": "0x8273e4B8ED6c78e252a9fCa5563Adfcc75C91b2A",
+      "address": "0x8f0483125FCb9aaAEFA9209D8E9d7b9C8B9Fb90F",
       "creationCodeHash": "0x19ceb3d7348191d94191a3f6e0ce687c2e2b315bead0b9c840153fba1af2ab24",
       "runtimeCodeHash": "0xe61193df0d84d95ed8f04aa31bacee79f3e5812de977144612fa4b70f777ed42",
-      "txHash": "0xcb98955b6a80f2b5365e27aaba298fafd9041322e04a9500b471da93caf3a8f0"
+      "txHash": "0x111e93c9c310c55944ffbf12a00bd6a9c526264d69019a071d60dbcc8ba4cf01"
     }
   }
 }

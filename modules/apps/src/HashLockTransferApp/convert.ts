@@ -21,7 +21,7 @@ export function convertHashLockTransferAppState<To extends NumericTypeName>(
   obj: HashLockTransferAppState<any>,
 ): HashLockTransferAppState<NumericTypes[To]> {
   return convertFields(getType(obj.turnNum), to, ["turnNum"], {
-    ...obj,
     coinTransfers: convertCoinTransfers(to, obj.coinTransfers),
+    ...obj,
   });
 }

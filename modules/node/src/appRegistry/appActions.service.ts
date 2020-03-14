@@ -8,24 +8,24 @@ import {
   HashLockTransferApp,
   HashLockTransferAppState,
   HashLockTransferAppAction,
+  FastSignedTransferAppActionBigNumber,
 } from "@connext/types";
 import {
   SupportedApplication,
   AppState,
   AppAction,
   convertHashLockTransferAppState,
+  convertFastSignedTransferAppState,
 } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
-import { bigNumberify } from "ethers/utils";
-import { AddressZero } from "ethers/constants";
+import { soliditySha256 } from "ethers/utils";
+import { AddressZero, Zero } from "ethers/constants";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
-import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
-import { FastSignedTransferStatus } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { FastSignedTransferService } from "../fastSignedTransfer/fastSignedTransfer.service";
 
@@ -37,7 +37,6 @@ export class AppActionsService {
     private readonly fastSignedTransferService: FastSignedTransferService,
     private readonly cfCoreService: CFCoreService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
-    private readonly fastSignedTransferRepository: FastSignedTransferRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("AppRegistryService");
@@ -87,28 +86,43 @@ export class AppActionsService {
   ): Promise<void> {
     switch (action.actionType) {
       case FastSignedTransferActionType.CREATE: {
-        await this.linkedTransferService.saveFastSignedTransfer(
-          from,
-          AddressZero, // TODO
-          bigNumberify(action.amount),
-          appInstanceId,
-          action.signer,
-          action.paymentId,
-        );
         break;
       }
       case FastSignedTransferActionType.UNLOCK: {
-        // update and save transfer status
-        let transfer = await this.fastSignedTransferRepository.findByPaymentIdOrThrow(
+        const apps = await this.cfCoreService.getFastSignedTransferAppsByPaymentId(
           action.paymentId,
         );
-        transfer.signature = action.signature;
-        transfer.data = action.data;
-        transfer.status = FastSignedTransferStatus.REDEEMED;
-        await this.fastSignedTransferRepository.save(transfer);
 
-        // unlock sender payment, if successful mark as reclaimed
-        await this.fastSignedTransferService.reclaimFastSignedTransfer(transfer);
+        // find hashlock transfer app where node is receiver
+        // TODO: move to new store
+        const senderApp = apps.find(app => {
+          const state = convertFastSignedTransferAppState(
+            "bignumber",
+            app.latestState as FastSignedTransferAppState,
+          );
+          return state.coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress;
+        });
+        if (!senderApp) {
+          throw new Error(
+            `Action UNLOCK taken on FastSignedTransferApp without corresponding sender app! ${appInstanceId}`,
+          );
+        }
+        const senderAppState = convertFastSignedTransferAppState(
+          "bignumber",
+          senderApp.latestState as FastSignedTransferAppState,
+        );
+
+        const senderAppAction = {
+          actionType: FastSignedTransferActionType.UNLOCK,
+          data: action.data,
+          paymentId: action.paymentId,
+          signature: action.signature,
+          recipientXpub: senderAppState.recipientXpub, // not checked
+          amount: Zero, // not checked
+          signer: AddressZero, // not checked
+        } as FastSignedTransferAppActionBigNumber;
+        await this.cfCoreService.takeAction(senderApp.identityHash, senderAppAction);
+        this.log.info(`Unlocked transfer from ${senderApp.identityHash}`);
       }
     }
   }
@@ -156,7 +170,8 @@ export class AppActionsService {
     action: HashLockTransferAppAction,
     from: string,
   ): Promise<void> {
-    const apps = await this.cfCoreService.getHashLockTransferAppByLockHash(newState.lockHash);
+    const lockHash = soliditySha256(["bytes32"], [action.preImage]);
+    const apps = await this.cfCoreService.getHashLockTransferAppsByLockHash(lockHash);
 
     // find hashlock transfer app where node is receiver
     // TODO: move to new store

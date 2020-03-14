@@ -72,7 +72,6 @@ describe("Async Transfers", () => {
 
   it("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
     const receiverMnemonic = Wallet.createRandom().mnemonic;
-    console.log("receiverMnemonic: ", receiverMnemonic);
     const receiverXpub = HDNode.fromMnemonic(receiverMnemonic)
       .derivePath(CF_PATH)
       .neuter().extendedKey;
