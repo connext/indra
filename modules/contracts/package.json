@@ -32,13 +32,13 @@
     "@connext/types": "5.1.1",
     "ethers": "4.0.45",
     "@openzeppelin/contracts": "2.5.0",
-    "ganache-cli": "6.8.2",
+    "ganache-cli": "6.9.1",
     "solc": "0.5.11"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "1.1.2",
-    "@nomiclabs/buidler-ethers": "1.1.2",
-    "@nomiclabs/buidler-waffle": "1.1.2",
+    "@nomiclabs/buidler": "1.2.0",
+    "@nomiclabs/buidler-ethers": "1.2.0",
+    "@nomiclabs/buidler-waffle": "1.2.0",
     "@types/chai": "4.2.9",
     "@types/mocha": "7.0.1",
     "@types/node": "13.7.1",
