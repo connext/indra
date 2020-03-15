@@ -2,8 +2,16 @@ import {
   commonAppProposalValidation,
   SupportedApplication,
   validateSimpleLinkedTransferApp,
+  validateFastSignedTransferApp,
+  validateHashLockTransferApp,
 } from "@connext/apps";
-import { ILoggerService, CoinBalanceRefundApp, SimpleLinkedTransferApp } from "@connext/types";
+import {
+  ILoggerService,
+  CoinBalanceRefundApp,
+  SimpleLinkedTransferApp,
+  FastSignedTransferApp,
+  HashLockTransferApp,
+} from "@connext/types";
 
 import { ConnextClient } from "./connext";
 import { stringify } from "./lib";
@@ -95,14 +103,7 @@ export class ConnextListener extends ConnextEventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
-      // check based on supported applications
-      const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
-        return app.appDefinitionAddress === msg.data.params.appDefinition;
-      });
-      if (!registryAppInfo) {
-        throw new Error(`Could not find registry info for app ${params.appDefinition}`);
-      }
-      this.handleAppProposal(params, appInstanceId, from, registryAppInfo);
+      this.handleAppProposal(params, appInstanceId, from);
       this.log.info(`Done processing propose install event ${time()}`);
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
@@ -253,9 +254,15 @@ export class ConnextListener extends ConnextEventEmitter {
     params: ProtocolTypes.ProposeInstallParams,
     appInstanceId: string,
     from: string,
-    registryAppInfo: DefaultApp,
   ): Promise<void> => {
     try {
+      // check based on supported applications
+      const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
+        return app.appDefinitionAddress === params.appDefinition;
+      });
+      if (!registryAppInfo) {
+        throw new Error(`Could not find registry info for app ${params.appDefinition}`);
+      }
       commonAppProposalValidation(
         params,
         // types weirdness
@@ -277,9 +284,23 @@ export class ConnextListener extends ConnextEventEmitter {
           validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
+        case FastSignedTransferApp: {
+          validateFastSignedTransferApp(params, from, this.connext.publicIdentifier);
+          break;
+        }
+        case HashLockTransferApp: {
+          validateHashLockTransferApp(params, from, this.connext.publicIdentifier);
+          break;
+        }
+        default: {
+          throw new Error(
+            `Not installing app without configured validation: ${registryAppInfo.name}`,
+          );
+        }
       }
       await this.connext.installApp(appInstanceId);
     } catch (e) {
+      console.log('e: ', e);
       this.log.error(`Caught error: ${e.toString()}`);
       await this.connext.rejectInstallApp(appInstanceId);
     }

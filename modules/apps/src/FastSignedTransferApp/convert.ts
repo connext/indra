@@ -6,6 +6,7 @@ import {
   convertAmountField,
   FastSignedTransferParameters,
   FastSignedTransferAppState,
+  convertCoinTransfers,
 } from "@connext/types";
 
 export function convertFastSignedTransferParameters<To extends NumericTypeName>(
@@ -21,10 +22,7 @@ export function convertFastSignedTransferAppState<To extends NumericTypeName>(
   obj: FastSignedTransferAppState<any>,
 ): FastSignedTransferAppState<NumericTypes[To]> {
   return {
-    coinTransfers: [
-      convertAmountField(to, obj.coinTransfers[0]),
-      convertAmountField(to, obj.coinTransfers[1]),
-    ],
     ...convertAmountField(to, obj),
+    coinTransfers: convertCoinTransfers(to, obj.coinTransfers),
   };
 }

@@ -27,6 +27,7 @@ const appContracts = [
   "SimpleTransferApp",
   "SimpleTwoPartySwapApp",
   "FastSignedTransferApp",
+  "HashLockTransferApp",
 ];
 
 const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);

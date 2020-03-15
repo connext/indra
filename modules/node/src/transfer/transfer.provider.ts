@@ -47,18 +47,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
         this.log.error(`Error reclaiming linked transfer: ${stringify(e.stack || e.message)}`);
       }
     }
-
-    // eslint-disable-next-line max-len
-    const reclaimableFastSignedTransfers = await this.fastSignedTransferService.getFastSignedTransfersForReclaim(
-      pubId,
-    );
-    for (const transfer of reclaimableFastSignedTransfers) {
-      try {
-        await this.fastSignedTransferService.reclaimFastSignedTransfer(transfer);
-      } catch (e) {
-        this.log.error(`Error reclaiming fast signed transfer: ${stringify(e.stack || e.message)}`);
-      }
-    }
   }
 
   async setupSubscriptions(): Promise<void> {

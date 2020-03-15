@@ -1,4 +1,9 @@
-import { AppActionBigNumber } from "@connext/apps";
+import {
+  AppActionBigNumber,
+  SupportedApplication,
+  convertHashLockTransferAppState,
+  convertFastSignedTransferAppState,
+} from "@connext/apps";
 import { NatsMessagingService } from "@connext/messaging";
 import {
   ConnextNodeStorePrefix,
@@ -6,6 +11,10 @@ import {
   REJECT_INSTALL_EVENT,
   ProtocolTypes,
   stringify,
+  HashLockTransferApp,
+  HashLockTransferAppStateBigNumber,
+  FastSignedTransferApp,
+  FastSignedTransferAppState,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -24,6 +33,7 @@ import {
   RejectProposalMessage,
   xpubToAddress,
 } from "../util";
+import { ChannelRepository } from "../channel/channel.repository";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 
@@ -34,6 +44,7 @@ export class CFCoreService {
     private readonly configService: ConfigService,
     @Inject(MessagingProviderId) private readonly messagingProvider: NatsMessagingService,
     private readonly cfCoreRepository: CFCoreRecordRepository,
+    private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
   ) {
@@ -472,6 +483,67 @@ export class CFCoreService {
     this.log.info(`Got state for app ${appInstanceId}`);
     this.log.debug(`getAppState result: ${stringify(stateResponse)}`);
     return stateResponse.result.result as CFCoreTypes.GetStateResult;
+  }
+
+  // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
+  async getHashLockTransferAppsByLockHash(lockHash: string): Promise<AppInstanceJson[]> {
+    const channels = await this.channelRepository.findAll();
+    const apps: AppInstanceJson[] = [];
+    for (const channel of channels) {
+      const installed = await this.getAppInstancesByAppName(
+        channel.multisigAddress,
+        HashLockTransferApp,
+      );
+      // found hashlocked transfer app
+      for (const app of installed) {
+        const appState = convertHashLockTransferAppState(
+          "bignumber",
+          app.latestState as HashLockTransferAppStateBigNumber,
+        );
+        if (appState.lockHash === lockHash) {
+          // TODO: FIX THIS IN CF CORE
+          apps.push({ ...app, multisigAddress: channel.multisigAddress });
+        }
+      }
+    }
+    return apps;
+  }
+
+  // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
+  async getFastSignedTransferAppsByPaymentId(paymentId: string): Promise<AppInstanceJson[]> {
+    const channels = await this.channelRepository.findAll();
+    const apps: AppInstanceJson[] = [];
+    for (const channel of channels) {
+      const installed = await this.getAppInstancesByAppName(
+        channel.multisigAddress,
+        FastSignedTransferApp,
+      );
+      // found fastsigned transfer app
+      for (const app of installed) {
+        const appState = convertFastSignedTransferAppState(
+          "bignumber",
+          app.latestState as FastSignedTransferAppState,
+        );
+        if (appState.paymentId === paymentId) {
+          // TODO: FIX THIS IN CF CORE
+          apps.push({ ...app, multisigAddress: channel.multisigAddress });
+        }
+      }
+    }
+    return apps;
+  }
+
+  async getAppInstancesByAppName(
+    multisigAddress: string,
+    appName: SupportedApplication,
+  ): Promise<AppInstanceJson[]> {
+    const network = await this.configService.getEthNetwork();
+    const appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
+      appName,
+      network.chainId,
+    );
+    const apps = await this.getAppInstances(multisigAddress);
+    return apps.filter(app => app.appInterface.addr === appRegistry.appDefinitionAddress);
   }
 
   /**
