@@ -39,7 +39,7 @@ describe("Fast Signed Transfer", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("Should send a fast signed transfer", async () => {
+  it("Should send a fast signed transfer", async () => {
     const paymentId = hexlify(randomBytes(32));
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
