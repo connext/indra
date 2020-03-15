@@ -8,6 +8,7 @@ import {
   ResolveFastSignedTransferParameters,
   FastSignedTransferResponse,
   delay,
+  ResolveConditionResponse,
 } from "@connext/types";
 import {
   hexlify,
@@ -83,15 +84,23 @@ describe("Fast Signed Transfer", () => {
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
     const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
 
-    const res = await clientB.resolveCondition({
-      conditionType: FAST_SIGNED_TRANSFER,
-      paymentId,
-      signature,
-      data,
-    } as ResolveFastSignedTransferParameters);
+    let resolveCondition: ResolveConditionResponse;
+    await new Promise(async resolve => {
+      clientA.on("UPDATE_STATE_EVENT", data => {
+        expect(data.newState.coinTransfers[0][1]).eq(initialChannelBalance.sub(transferAmount));
+        expect(data.newState.coinTransfers[1][1]).eq(transferAmount);
+        resolve();
+      });
+      resolveCondition = await clientB.resolveCondition({
+        conditionType: FAST_SIGNED_TRANSFER,
+        paymentId,
+        signature,
+        data,
+      } as ResolveFastSignedTransferParameters);
+    });
 
-    // locked payment can resolve
-    transferApp = await clientB.getAppInstanceDetails(res.appId);
+    // locked payment resolved
+    transferApp = await clientB.getAppInstanceDetails(resolveCondition!.appId);
     transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppStateBigNumber;
     coinTransfers = transferAppState.coinTransfers.map(bigNumberifyObj);
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
