@@ -22,7 +22,7 @@ export function convertFastSignedTransferAppState<To extends NumericTypeName>(
   obj: FastSignedTransferAppState<any>,
 ): FastSignedTransferAppState<NumericTypes[To]> {
   return {
-    coinTransfers: convertCoinTransfers(to, obj.coinTransfers),
     ...convertAmountField(to, obj),
+    coinTransfers: convertCoinTransfers(to, obj.coinTransfers),
   };
 }
