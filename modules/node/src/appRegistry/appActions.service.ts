@@ -135,7 +135,7 @@ export class AppActionsService {
     let transfer = await this.linkedTransferRepository.findByPaymentIdOrThrow(newState.paymentId);
     if (appInstanceId !== transfer.receiverAppInstanceId) {
       this.log.debug(
-        `Not updating transfer preimage or marking as redeemed for sender update state events`,
+        `Not updating transfer preImage or marking as redeemed for sender update state events`,
       );
       return;
     }

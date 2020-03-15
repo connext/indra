@@ -240,7 +240,7 @@ export class LinkedTransferService {
     }
 
     const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
-    // if action has been taken on the app, then there will be a preimage
+    // if action has been taken on the app, then there will be a preImage
     // in the latest state, and you just have to uninstall
     if ((app.latestState as SimpleLinkedTransferAppState).preImage !== transfer.preImage) {
       this.log.info(`Reclaiming linked transfer ${transfer.paymentId}`);

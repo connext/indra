@@ -8,7 +8,7 @@ import "../funding/libs/LibOutcome.sol";
 
 /// @title Lightning HTLC Transfer App
 /// @notice This contract allows users to claim a payment locked in
-///         the application if they provide a preimage that corresponds
+///         the application if they provide a preImage that corresponds
 ///         to a lightning hash
 contract HashLockTransferApp is CounterfactualApp {
 
@@ -19,19 +19,19 @@ contract HashLockTransferApp is CounterfactualApp {
     * as in the SimpleTwoPartySwapApp.
     *
     * This app can also not be used to send _multiple_ hashlocked payments,
-    * only one can be redeemed with the preimage.
+    * only one can be redeemed with the preImage.
     *
     */
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
         bytes32 lockHash;
-        bytes32 preimage;
+        bytes32 preImage;
         uint256 turnNum; // even is receiver?
         bool finalized;
     }
 
     struct Action {
-        bytes32 preimage;
+        bytes32 preImage;
     }
 
     function applyAction(
@@ -49,7 +49,7 @@ contract HashLockTransferApp is CounterfactualApp {
         // TODO feels weird that the initial state and first turn have same turnNum
         require(state.turnNum % 2 == 0, "Payment must be unlocked by receiver");
 
-        state.preimage = action.preimage;
+        state.preImage = action.preImage;
         state.finalized = true;
         state.turnNum += 1;
 
@@ -64,7 +64,7 @@ contract HashLockTransferApp is CounterfactualApp {
         AppState memory state = abi.decode(encodedState, (AppState));
         // TODO: whats the protection against passing a different hash?
 
-        bytes32 generatedHash = sha256(abi.encode(state.preimage));
+        bytes32 generatedHash = sha256(abi.encode(state.preImage));
 
         LibOutcome.CoinTransfer[2] memory transfers;
         if (generatedHash == state.lockHash && state.finalized) {

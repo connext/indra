@@ -250,7 +250,7 @@ describe("Async Transfers", () => {
     ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
   });
 
-  it("Bot A tries to transfer with a preimage that is not 32 bytes", async () => {
+  it("Bot A tries to transfer with a preImage that is not 32 bytes", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     const preImage = "nope";
