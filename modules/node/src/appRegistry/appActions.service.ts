@@ -122,7 +122,7 @@ export class AppActionsService {
           signer: AddressZero, // not checked
         } as FastSignedTransferAppActionBigNumber;
         await this.cfCoreService.takeAction(senderApp.identityHash, senderAppAction);
-        this.log.info(`Unlocked transfer from ${senderApp.identityHash}`);
+        this.log.log(`Unlocked transfer from ${senderApp.identityHash}`);
       }
     }
   }
