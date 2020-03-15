@@ -26,6 +26,8 @@ import {
 } from "../util";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
+import { AppType } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 Injectable();
 export class CFCoreService {
@@ -36,6 +38,7 @@ export class CFCoreService {
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.cfCore = cfCore;
     this.log.setContext("CFCoreService");
@@ -225,17 +228,26 @@ export class CFCoreService {
     try {
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
+          let promiseCounter = 0;
+          const incrementAndResolve = () => {
+            promiseCounter += 1;
+            if (promiseCounter === 2) {
+              console.warn(`resolving`);
+              res();
+            }
+          };
           boundReject = this.rejectInstallTransfer.bind(null, rej);
           this.log.debug(
             `Subscribing to: indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
           );
           await this.messagingProvider.subscribe(
             `indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
-            res,
+            incrementAndResolve,
           );
           this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
+          incrementAndResolve();
           this.log.debug(`waiting for client to publish proposal results`);
         },
       );
@@ -330,6 +342,13 @@ export class CFCoreService {
     });
     this.log.info(`rejectInstallApp succeeded for app ${appInstanceId}`);
     this.log.debug(`rejectInstallApp result: ${stringify(rejectRes.result.result)}`);
+    // update app status
+    const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
+    if (!rejectedApp) {
+      throw new Error(`No app found after being rejected for app ${appInstanceId}`);
+    }
+    rejectedApp.type = AppType.REJECTED;
+    await this.appInstanceRepository.save(rejectedApp);
     return rejectRes.result.result as CFCoreTypes.RejectInstallResult;
   }
 
@@ -411,7 +430,9 @@ export class CFCoreService {
         app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
         app.latestState[`tokenAddress`] === tokenAddress,
     );
-    this.log.info(`Got coinBalanceRefundApps for multisig ${multisigAddress}`);
+    this.log.info(
+      `Got ${coinBalanceRefundAppArray.length} coinBalanceRefundApps for multisig ${multisigAddress}`,
+    );
     this.log.debug(`CoinBalanceRefundApps result: ${stringify(coinBalanceRefundAppArray)}`);
     if (coinBalanceRefundAppArray.length > 1) {
       throw new Error(

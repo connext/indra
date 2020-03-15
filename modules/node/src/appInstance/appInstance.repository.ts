@@ -6,7 +6,7 @@ import { Channel } from "../channel/channel.entity";
 import { AppInstance, AppType } from "./appInstance.entity";
 import { bigNumberify } from "ethers/utils";
 import { Zero, AddressZero } from "ethers/constants";
-import { xkeysToSortedKthAddresses, sortAddresses } from "../util";
+import { xkeysToSortedKthAddresses, safeJsonParse, sortAddresses } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
@@ -19,15 +19,19 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
 
   switch (OutcomeType[app.outcomeType]) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
-      twoPartyOutcomeInterpreterParams = app.outcomeInterpreterParameters;
+      twoPartyOutcomeInterpreterParams = safeJsonParse(app.outcomeInterpreterParameters);
       break;
 
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-      multiAssetMultiPartyCoinTransferInterpreterParams = app.outcomeInterpreterParameters;
+      multiAssetMultiPartyCoinTransferInterpreterParams = safeJsonParse(
+        app.outcomeInterpreterParameters,
+      );
       break;
 
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-      singleAssetTwoPartyCoinTransferInterpreterParams = app.outcomeInterpreterParameters;
+      singleAssetTwoPartyCoinTransferInterpreterParams = safeJsonParse(
+        app.outcomeInterpreterParameters,
+      );
       break;
 
     default:
@@ -65,15 +69,19 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
 
   switch (OutcomeType[app.outcomeType]) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
-      twoPartyOutcomeInterpreterParams = app.outcomeInterpreterParameters;
+      twoPartyOutcomeInterpreterParams = safeJsonParse(app.outcomeInterpreterParameters);
       break;
 
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
-      multiAssetMultiPartyCoinTransferInterpreterParams = app.outcomeInterpreterParameters;
+      multiAssetMultiPartyCoinTransferInterpreterParams = safeJsonParse(
+        app.outcomeInterpreterParameters,
+      );
       break;
 
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
-      singleAssetTwoPartyCoinTransferInterpreterParams = app.outcomeInterpreterParameters;
+      singleAssetTwoPartyCoinTransferInterpreterParams = safeJsonParse(
+        app.outcomeInterpreterParameters,
+      );
       break;
 
     default:
@@ -310,7 +318,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   removeAppInstance(app: AppInstance): Promise<AppInstance> {
     if (app.type !== AppType.INSTANCE) {
-      throw new Error(`App is not of correct type`)
+      throw new Error(`App is not of correct type`);
     }
     app.type = AppType.UNINSTALLED;
     return this.save(app);

@@ -113,7 +113,10 @@ export class CFCoreStore implements IStoreService {
   }
 
   async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
-    await this.appInstanceRepository.removeAppProposal(appInstanceId);
+    // called in protocol during install and reject protocols
+    // but we dont "remove" app proposals, they get upgraded. so
+    // simply return without editing, and set the status to `REJECTED`
+    // in the listener
   }
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {

@@ -406,7 +406,6 @@ export class StateChannel {
 
   public setState(appInstanceIdentityHash: string, state: SolidityValueType) {
     const appInstance = this.getAppInstance(appInstanceIdentityHash);
-    console.log(`[channel] found appInstance`, appInstance);
 
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 

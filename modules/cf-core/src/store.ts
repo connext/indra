@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, AppInstanceJson } from "@connext/types";
+import { AppInstanceJson } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 
 import {

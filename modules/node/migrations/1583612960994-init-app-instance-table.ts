@@ -31,7 +31,7 @@ export class InitAppInstanceTable1583612960994 implements MigrationInterface {
         "userParticipantAddress" text,
         "nodeParticipantAddress" text,
         "outcomeInterpreterParameters" text,
-        "channelId" integer
+        "channelId" integer NOT NULL
       );`,
       undefined,
     );

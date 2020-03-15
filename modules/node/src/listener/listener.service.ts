@@ -43,6 +43,8 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { AppActionsService } from "../appRegistry/appActions.service";
+import { AppType } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
@@ -59,6 +61,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
+    private readonly appInstanceRepository: AppInstanceRepository,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ListenerService");
@@ -112,6 +115,17 @@ export default class ListenerService implements OnModuleInit {
       },
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         this.logEvent(REJECT_INSTALL_EVENT, data);
+
+        // update app status
+        const rejectedApp = await this.appInstanceRepository.findByIdentityHash(
+          data.data.appInstanceId,
+        );
+        if (!rejectedApp) {
+          this.log.debug(`No app found`);
+          return;
+        }
+        rejectedApp.type = AppType.REJECTED;
+        await this.appInstanceRepository.save(rejectedApp);
 
         const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
           data.data.appInstanceId,
