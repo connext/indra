@@ -124,7 +124,7 @@ export function convertCoinTransfers<To extends NumericTypeName>(
   to: To,
   transfers: CoinTransfer<any>[],
 ): CoinTransfer<NumericTypes[To]>[] {
-  if (typeof transfers[0].amount != "undefined") {
+  if (typeof transfers[0].amount !== "undefined") {
     // already an object
     return [convertAssetAmount(to, transfers[0]), convertAssetAmount(to, transfers[1])];
   } else {
