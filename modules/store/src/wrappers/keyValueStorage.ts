@@ -17,10 +17,19 @@ import {
   SET_STATE_COMMITMENT_KEY,
   WITHDRAWAL_COMMITMENT_KEY,
   CONDITIONAL_COMMITMENT_KEY,
-  PROPOSED_APP_KEY,
-  FREE_BALANCE_KEY,
   SETUP_COMMITMENT_KEY,
 } from "../helpers";
+
+function properlyConvertChannelNullVals(json: any): StateChannelJSON {
+  return {
+    ...json,
+    proposedAppInstances: json.proposedAppInstances.map(([id, proposal]) => [
+      id,
+      safeJsonParse(proposal),
+    ]),
+    appInstances: json.appInstances.map(([id, app]) => [id, safeJsonParse(app)]),
+  };
+}
 
 /**
  * This class wraps a general key value storage service to become an `IStoreService`
@@ -64,13 +73,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   getKey(...args: string[]): string {
     return this.storage.getKey(...args);
   }
-
   async getAllChannels(): Promise<StateChannelJSON[]> {
     const channelKeys = (await this.getKeys()).filter(key => key.includes(CHANNEL_KEY));
     const channels = [];
     for (const key of channelKeys) {
       const record = safeJsonParse(await this.getItem(key));
-      channels.push(record);
+      channels.push(properlyConvertChannelNullVals(record));
     }
     return channels.filter(x => !!x);
   }
@@ -97,12 +105,27 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
-    return safeJsonParse(await this.getItem(channelKey));
+    const item = await this.getItem(channelKey);
+    const chan = safeJsonParse(item);
+    if (!chan) {
+      return undefined;
+    }
+    return properlyConvertChannelNullVals(chan);
   }
 
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     const channelKey = this.getKey(CHANNEL_KEY, stateChannel.multisigAddress);
-    return this.setItem(channelKey, safeJsonStringify(stateChannel));
+    await this.setItem(
+      channelKey,
+      safeJsonStringify({
+        ...stateChannel,
+        proposedAppInstances: stateChannel.proposedAppInstances.map(([id, proposal]) => [
+          id,
+          safeJsonStringify(proposal),
+        ]),
+        appInstances: stateChannel.appInstances.map(([id, app]) => [id, safeJsonStringify(app)]),
+      }),
+    );
   }
 
   async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
@@ -110,14 +133,18 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       return undefined;
     }
-    return channel.appInstances[appInstanceId];
+    const entry = channel.appInstances.find(([id]) => id === appInstanceId);
+    return entry ? entry[1] : undefined;
   }
 
   async saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(`Can't save app instance without channel`);
+    }
     const existsIndex = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
 
-    if (existsIndex > 0) {
+    if (existsIndex >= 0) {
       channel.appInstances[existsIndex] = [appInstance.identityHash, appInstance];
     } else {
       channel.appInstances.push([appInstance.identityHash, appInstance]);
@@ -127,12 +154,56 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
-    const channel = await this.getStateChannelByAppInstanceId(multisigAddress);
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      return;
+    }
     const existsIndex = channel.appInstances.findIndex(([app]) => app === appInstanceId);
-    if (!existsIndex) {
+    if (existsIndex < 0) {
       return;
     }
     channel.appInstances.splice(existsIndex, 1);
+
+    return this.saveStateChannel(channel);
+  }
+
+  async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
+    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
+    if (!channel) {
+      return undefined;
+    }
+    const entry = channel.proposedAppInstances.find(([id]) => id === appInstanceId);
+    return entry ? entry[1] : undefined;
+  }
+
+  async saveAppProposal(multisigAddress: string, appInstance: AppInstanceProposal): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(`Can't save app proposal without channel`);
+    }
+    const existsIndex = channel.proposedAppInstances.findIndex(
+      ([app]) => app === appInstance.identityHash,
+    );
+
+    if (existsIndex >= 0) {
+      channel.proposedAppInstances[existsIndex] = [appInstance.identityHash, appInstance];
+    } else {
+      channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
+    }
+
+    return this.saveStateChannel(channel);
+  }
+
+  async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      return;
+    }
+    const existsIndex = channel.proposedAppInstances.findIndex(([app]) => app === appInstanceId);
+    if (existsIndex < 0) {
+      return;
+    }
+    channel.proposedAppInstances.splice(existsIndex, 1);
 
     return this.saveStateChannel(channel);
   }
@@ -207,29 +278,20 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(withdrawalKey, safeJsonStringify(withdrawalObject));
   }
 
-  async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
-    const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, appInstanceId);
-    return safeJsonParse(await this.getItem(proposedAppsKey));
-  }
-
-  saveAppProposal(multisigAddress: string, proposal: AppInstanceProposal): Promise<void> {
-    const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, proposal.identityHash);
-    return this.setItem(proposedAppsKey, safeJsonStringify(proposal));
-  }
-
-  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
-    const proposedAppsKey = this.getKey(PROPOSED_APP_KEY, appInstanceId);
-    return this.removeItem(proposedAppsKey);
-  }
-
   async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
-    const freeBalanceKey = this.getKey(FREE_BALANCE_KEY, multisigAddress);
-    return safeJsonParse(await this.getItem(freeBalanceKey));
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel || !channel.freeBalanceAppInstance) {
+      return undefined;
+    }
+    return channel.freeBalanceAppInstance;
   }
 
-  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    const freeBalanceKey = this.getKey(FREE_BALANCE_KEY, multisigAddress);
-    return this.setItem(freeBalanceKey, safeJsonStringify(freeBalance));
+  async saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(`Cannot save free balance without channel: ${multisigAddress}`);
+    }
+    return this.saveStateChannel({ ...channel, freeBalanceAppInstance: freeBalance });
   }
 }
 

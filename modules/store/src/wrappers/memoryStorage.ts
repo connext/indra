@@ -69,6 +69,13 @@ export class MemoryStorage implements IClientStore {
 
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     this.channels.set(stateChannel.multisigAddress, stateChannel);
+    stateChannel.appInstances.forEach(([identityHash, app]) => {
+      this.appInstances.set(identityHash, app);
+    });
+    stateChannel.proposedAppInstances.forEach(([identityHash, app]) => {
+      this.proposedApps.set(identityHash, app);
+    });
+    this.freeBalances.set(stateChannel.multisigAddress, stateChannel.freeBalanceAppInstance);
   }
 
   async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
