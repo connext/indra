@@ -3,7 +3,7 @@ import { calculateExchange, IConnextClient, SwapParameters } from "@connext/type
 import { AddressZero, Zero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
-import { expect, COLLATERAL_AMOUNT_TOKEN } from "../util";
+import { expect, COLLATERAL_AMOUNT_TOKEN, ONE_ETH } from "../util";
 import {
   AssetOptions,
   createClient,
@@ -44,7 +44,7 @@ describe("Swaps", () => {
   });
 
   it("happy case: client swaps tokens for eth successfully", async () => {
-    const input: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const input: AssetOptions = { amount: ONE_ETH, assetId: tokenAddress };
     const output: AssetOptions = { amount: ETH_AMOUNT_MD, assetId: AddressZero };
     await fundChannel(client, input.amount, input.assetId);
     await client.requestCollateral(output.assetId);
