@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class typeormSync1584356405025 implements MigrationInterface {
-  name = "typeormSync1584356405025";
+export class typeormSync1584364675207 implements MigrationInterface {
+  name = "typeormSync1584364675207";
 
-  public async up(queryRunner: QueryRunner): Promise<any> {
+  public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
       `ALTER TABLE "onchain_transaction" DROP CONSTRAINT "onchain_transaction_channelId_fkey"`,
       undefined,
@@ -18,9 +18,11 @@ export class typeormSync1584356405025 implements MigrationInterface {
     );
     await queryRunner.query(`DROP INDEX "IDX_e13899dee318fd939719e9b338"`, undefined);
     await queryRunner.query(`DROP INDEX "IDX_a5bdc94414f8e850e0c7c108c4"`, undefined);
-    await queryRunner.query(`ALTER TABLE "onchain_transaction" DROP COLUMN "reason"`, undefined);
+    await queryRunner.query(`DROP VIEW "transfer"`, undefined);
+    await queryRunner.query(`DROP VIEW "anonymized_transfer"`, undefined);
+    await queryRunner.query(`DROP VIEW "anonymized_onchain_transaction"`, undefined);
     await queryRunner.query(
-      `ALTER TABLE "onchain_transaction" ADD "reason" text NOT NULL`,
+      `ALTER TABLE "onchain_transaction" ALTER COLUMN "reason" TYPE text`,
       undefined,
     );
     await queryRunner.query(
@@ -192,7 +194,7 @@ export class typeormSync1584356405025 implements MigrationInterface {
     );
   }
 
-  public async down(queryRunner: QueryRunner): Promise<any> {
+  public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
       `DELETE FROM "typeorm_metadata" WHERE "type" = 'VIEW' AND "schema" = $1 AND "name" = $2`,
       ["public", "anonymized_onchain_transaction"],
