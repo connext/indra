@@ -6,188 +6,176 @@ import { StateChannelJSON } from "./state";
 import { MinimalTransaction } from "./commitments";
 
 ////////////////////////////////////////
-export const chan_create = "chan_create";
+const chan_create = "chan_create";
 
-export type CreateMultisigParams = {
-  owners: string[];
+type CreateChannelParams = {
+  owners: Xpub[];
 };
 
-export type CreateChannelParams = {
-  owners: string[];
-};
-
-export type CreateMultisigResult = {
+type CreateChannelResult = {
   multisigAddress: Address;
-};
-
-export type CreateChannelResult = {
-  multisigAddress: string;
-  owners: string[];
-  counterpartyXpub: Xpub;
-};
-
-export type CreateChannelTransactionResult = {
-  multisigAddress: string;
+  owners?: Xpub[];
+  counterpartyXpub?: Xpub;
 };
 
 ////////////////////////////////////////
-export const chan_deposit = "chan_deposit";
+const chan_deposit = "chan_deposit";
 
-export type DepositParams = {
+type DepositParams = {
   multisigAddress: string;
   amount: BigNumber;
   tokenAddress?: string;
 };
 
-export type DepositResult = {
+type DepositResult = {
   multisigBalance: BigNumber;
   tokenAddress: string;
   transactionHash: string;
 };
 
 ////////////////////////////////////////
-export const chan_deployStateDepositHolder = "chan_deployStateDepositHolder";
+const chan_deployStateDepositHolder = "chan_deployStateDepositHolder";
 
-export type DeployStateDepositHolderParams = {
+type DeployStateDepositHolderParams = {
   multisigAddress: string;
   retryCount?: number;
 };
 
-export type DeployStateDepositHolderResult = {
+type DeployStateDepositHolderResult = {
   transactionHash: string;
 };
 
 ////////////////////////////////////////
-export const chan_getChannelAddresses = "chan_getChannelAddresses";
+const chan_getChannelAddresses = "chan_getChannelAddresses";
 
-export type GetChannelAddressesParams = {};
+type GetChannelAddressesParams = {};
 
-export type GetChannelAddressesResult = {
+type GetChannelAddressesResult = {
   multisigAddresses: string[];
 };
 
 ////////////////////////////////////////
-export const chan_getAppInstance = "chan_getAppInstance";
+const chan_getAppInstance = "chan_getAppInstance";
 
-export type GetAppInstanceDetailsParams = {
+type GetAppInstanceDetailsParams = {
   appInstanceId: string;
 };
 
-export type GetAppInstanceDetailsResult = {
+type GetAppInstanceDetailsResult = {
   appInstance: AppInstanceJson;
 };
 
 ////////////////////////////////////////
-export const chan_getAppInstances = "chan_getAppInstances";
+const chan_getAppInstances = "chan_getAppInstances";
 
-export type GetAppInstancesParams = {
+type GetAppInstancesParams = {
   multisigAddress: string;
 };
 
-export type GetAppInstancesResult = {
+type GetAppInstancesResult = {
   appInstances: AppInstanceJson[];
 };
 
 ////////////////////////////////////////
-export const chan_getStateDepositHolderAddress = "chan_getStateDepositHolderAddress";
+const chan_getStateDepositHolderAddress = "chan_getStateDepositHolderAddress";
 
-export type GetStateDepositHolderAddressParams = {
+type GetStateDepositHolderAddressParams = {
   owners: string[];
 };
 
-export type GetStateDepositHolderAddressResult = {
+type GetStateDepositHolderAddressResult = {
   address: string;
 };
 
 ////////////////////////////////////////
-export const chan_getFreeBalanceState = "chan_getFreeBalanceState";
+const chan_getFreeBalanceState = "chan_getFreeBalanceState";
 
-export type GetFreeBalanceStateParams = {
+type GetFreeBalanceStateParams = {
   multisigAddress: string;
   tokenAddress?: string;
 };
 
-export type GetFreeBalanceStateResult = {
+type GetFreeBalanceStateResult = {
   [s: string]: BigNumber;
 };
 
 ////////////////////////////////////////
-export const chan_getTokenIndexedFreeBalanceStates = "chan_getTokenIndexedFreeBalanceStates";
+const chan_getTokenIndexedFreeBalanceStates = "chan_getTokenIndexedFreeBalanceStates";
 
-export type GetTokenIndexedFreeBalanceStatesParams = {
+type GetTokenIndexedFreeBalanceStatesParams = {
   multisigAddress: string;
 };
 
-export type GetTokenIndexedFreeBalanceStatesResult = {
+type GetTokenIndexedFreeBalanceStatesResult = {
   [tokenAddress: string]: {
     [s: string]: BigNumber;
   };
 };
 
 ////////////////////////////////////////
-export const chan_getProposedAppInstance = "chan_getProposedAppInstance";
+const chan_getProposedAppInstance = "chan_getProposedAppInstance";
 
-export type GetProposedAppInstanceParams = {
+type GetProposedAppInstanceParams = {
   appInstanceId: string;
 };
 
-export type GetProposedAppInstanceResult = {
+type GetProposedAppInstanceResult = {
   appInstance: AppInstanceProposal;
 };
 
 ////////////////////////////////////////
-export const chan_getProposedAppInstances = "chan_getProposedAppInstances";
+const chan_getProposedAppInstances = "chan_getProposedAppInstances";
 
-export type GetProposedAppInstancesParams = {
+type GetProposedAppInstancesParams = {
   multisigAddress: string;
 };
 
-export type GetProposedAppInstancesResult = {
+type GetProposedAppInstancesResult = {
   appInstances: AppInstanceProposal[];
 };
 
 ////////////////////////////////////////
-export const chan_getState = "chan_getState";
+const chan_getState = "chan_getState";
 
-export type GetStateParams = {
+type GetStateParams = {
   appInstanceId: string;
 };
 
-export type GetStateResult = {
+type GetStateResult = {
   state: SolidityValueType;
 };
 
 ////////////////////////////////////////
-export const chan_getStateChannel = "chan_getStateChannel";
+const chan_getStateChannel = "chan_getStateChannel";
 
-export type GetStateChannelParams = {
+type GetStateChannelParams = {
   multisigAddress: string;
 };
 
-export type GetStateChannelResult = {
+type GetStateChannelResult = {
   data: StateChannelJSON;
 };
 
 ////////////////////////////////////////
-export const chan_install = "chan_install";
+const chan_install = "chan_install";
 
-export type InstallParams = {
+type InstallParams = {
   appInstanceId: string;
 };
 
-export type InstallResult = {
+type InstallResult = {
   appInstance: AppInstanceJson;
 };
 
 ////////////////////////////////////////
-export const chan_requestDepositRights = "chan_requestDepositRights";
+const chan_requestDepositRights = "chan_requestDepositRights";
 
-export type RequestDepositRightsParams = {
+type RequestDepositRightsParams = {
   multisigAddress: string;
   tokenAddress?: string;
 };
 
-export type RequestDepositRightsResult = {
+type RequestDepositRightsResult = {
   freeBalance: {
     [s: string]: BigNumber;
   };
@@ -196,9 +184,9 @@ export type RequestDepositRightsResult = {
 };
 
 ////////////////////////////////////////
-export const chan_proposeInstall = "chan_proposeInstall";
+const chan_proposeInstall = "chan_proposeInstall";
 
-export type ProposeInstallParams = {
+type ProposeInstallParams = {
   appDefinition: string;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
@@ -212,90 +200,92 @@ export type ProposeInstallParams = {
   meta?: Object;
 };
 
-export type ProposeInstallResult = {
+type ProposeInstallResult = {
   appInstanceId: string;
 };
 
 ////////////////////////////////////////
-export const chan_rejectInstall = "chan_rejectInstall";
+const chan_rejectInstall = "chan_rejectInstall";
 
-export type RejectInstallParams = {
+type RejectInstallParams = {
   appInstanceId: string;
 };
 
-export type RejectInstallResult = {};
+type RejectInstallResult = {};
 
 ////////////////////////////////////////
-export const chan_updateState = "chan_updateState";
+const chan_updateState = "chan_updateState";
 
-export type UpdateStateParams = {
+type UpdateStateParams = {
   appInstanceId: string;
   newState: SolidityValueType;
 };
 
-export type UpdateStateResult = {
+type UpdateStateResult = {
   newState: SolidityValueType;
 };
 
 ////////////////////////////////////////
-export const chan_takeAction = "chan_takeAction";
+const chan_takeAction = "chan_takeAction";
 
-export type TakeActionParams = {
+type TakeActionParams = {
   appInstanceId: string;
   action: SolidityValueType;
 };
 
-export type TakeActionResult = {
+type TakeActionResult = {
   newState: SolidityValueType;
 };
 
 ////////////////////////////////////////
-export const chan_uninstall = "chan_uninstall";
+const chan_uninstall = "chan_uninstall";
 
-export type UninstallParams = {
+type UninstallParams = {
   appInstanceId: string;
 };
 
-export type UninstallResult = {};
+type UninstallResult = {};
 
 ////////////////////////////////////////
-export const chan_rescindDepositRights = "chan_rescindDepositRights";
+const chan_rescindDepositRights = "chan_rescindDepositRights";
 
-export type RescindDepositRightsParams = {
+type RescindDepositRightsParams = {
   multisigAddress: string;
   tokenAddress?: string;
 };
 
-export type RescindDepositRightsResult = {
+type RescindDepositRightsResult = {
   multisigBalance: BigNumber;
   tokenAddress: string;
 };
 
 ////////////////////////////////////////
-export const chan_withdraw = "chan_withdraw";
+const chan_withdraw = "chan_withdraw";
 
-export type WithdrawParams = {
+type WithdrawParams = {
   multisigAddress: string;
   recipient?: string;
   amount: BigNumber;
   tokenAddress?: string;
 };
 
-export type WithdrawResult = {
+type WithdrawResult = {
   recipient: string;
   txHash: string;
 };
 
 ////////////////////////////////////////
-export const chan_withdrawCommitment = "chan_withdrawCommitment";
+const chan_withdrawCommitment = "chan_withdrawCommitment";
 
-export type WithdrawCommitmentParams = WithdrawParams;
+type WithdrawCommitmentParams = WithdrawParams;
 
-export type WithdrawCommitmentResult = {
+type WithdrawCommitmentResult = {
   transaction: MinimalTransaction;
 };
 
 ////////////////////////////////////////
+// exports
+
 export const MethodNames = {
   [chan_create]: chan_create,
   [chan_deployStateDepositHolder]: chan_deployStateDepositHolder,
@@ -323,43 +313,104 @@ export const MethodNames = {
 };
 export type MethodName = keyof typeof MethodNames;
 
-export type MethodParams =
+export namespace MethodParams {
+  export type CreateChannel = CreateChannelParams;
+  export type DeployStateDepositHolder = DeployStateDepositHolderParams;
+  export type Deposit = DepositParams;
+  export type GetAppInstanceDetails = GetAppInstanceDetailsParams;
+  export type GetAppInstances = GetAppInstancesParams
+  export type GetChannelAddresses = GetChannelAddressesParams;
+  export type GetFreeBalanceState = GetFreeBalanceStateParams;
+  export type GetProposedAppInstance = GetProposedAppInstanceParams;
+  export type GetProposedAppInstances = GetProposedAppInstancesParams;
+  export type GetState = GetStateParams;
+  export type GetStateChannel = GetStateChannelParams;
+  export type GetStateDepositHolderAddress = GetStateDepositHolderAddressParams;
+  export type GetTokenIndexedFreeBalanceStates = GetTokenIndexedFreeBalanceStatesParams;
+  export type Install = InstallParams;
+  export type ProposeInstall = ProposeInstallParams;
+  export type RejectInstall = RejectInstallParams;
+  export type RequestDepositRights = RequestDepositRightsParams;
+  export type RescindDepositRights = RescindDepositRightsParams;
+  export type TakeAction = TakeActionParams;
+  export type Uninstall = UninstallParams;
+  export type UpdateState = UpdateStateParams;
+  export type Withdraw = WithdrawParams;
+  export type WithdrawCommitment = WithdrawCommitmentParams;
+}
+
+export type MethodParam =
+  | CreateChannelParams
+  | DeployStateDepositHolderParams
+  | DepositParams
+  | GetAppInstanceDetailsParams
   | GetAppInstancesParams
+  | GetChannelAddressesParams
+  | GetFreeBalanceStateParams
+  | GetProposedAppInstanceParams
   | GetProposedAppInstancesParams
+  | GetStateParams
+  | GetStateChannelParams
+  | GetStateDepositHolderAddressParams
+  | GetTokenIndexedFreeBalanceStatesParams
+  | InstallParams
   | ProposeInstallParams
   | RejectInstallParams
-  | InstallParams
-  | GetStateParams
-  | GetAppInstanceDetailsParams
+  | RequestDepositRightsParams
+  | RescindDepositRightsParams
   | TakeActionParams
   | UninstallParams
-  | CreateChannelParams
-  | GetChannelAddressesParams
-  | DeployStateDepositHolderParams;
+  | UpdateStateParams
+  | WithdrawParams
+  | WithdrawCommitmentParams;
+
+export namespace MethodResults {
+  export type CreateChannel = CreateChannelResult;
+  export type DeployStateDepositHolder = DeployStateDepositHolderResult;
+  export type Deposit = DepositResult;
+  export type GetAppInstanceDetails = GetAppInstanceDetailsResult;
+  export type GetAppInstances = GetAppInstancesResult
+  export type GetChannelAddresses = GetChannelAddressesResult;
+  export type GetFreeBalanceState = GetFreeBalanceStateResult;
+  export type GetProposedAppInstance = GetProposedAppInstanceResult;
+  export type GetProposedAppInstances = GetProposedAppInstancesResult;
+  export type GetState = GetStateResult;
+  export type GetStateChannel = GetStateChannelResult;
+  export type GetStateDepositHolderAddress = GetStateDepositHolderAddressResult;
+  export type GetTokenIndexedFreeBalanceStates = GetTokenIndexedFreeBalanceStatesResult;
+  export type Install = InstallResult;
+  export type ProposeInstall = ProposeInstallResult;
+  export type RejectInstall = RejectInstallResult;
+  export type RequestDepositRights = RequestDepositRightsResult;
+  export type RescindDepositRights = RescindDepositRightsResult;
+  export type TakeAction = TakeActionResult;
+  export type Uninstall = UninstallResult;
+  export type UpdateState = UpdateStateResult;
+  export type Withdraw = WithdrawResult;
+  export type WithdrawCommitment = WithdrawCommitmentResult;
+}
 
 export type MethodResult =
+  | CreateChannelResult
+  | DeployStateDepositHolderResult
+  | DepositResult
+  | GetAppInstanceDetailsResult
   | GetAppInstancesResult
+  | GetChannelAddressesResult
+  | GetFreeBalanceStateResult
+  | GetProposedAppInstanceResult
   | GetProposedAppInstancesResult
+  | GetStateResult
+  | GetStateChannelResult
+  | GetStateDepositHolderAddressResult
+  | GetTokenIndexedFreeBalanceStatesResult
+  | InstallResult
   | ProposeInstallResult
   | RejectInstallResult
-  | InstallResult
-  | GetStateResult
-  | GetAppInstanceDetailsResult
+  | RequestDepositRightsResult
+  | RescindDepositRightsResult
   | TakeActionResult
   | UninstallResult
-  | CreateChannelResult
-  | GetChannelAddressesResult
-  | DeployStateDepositHolderResult;
-
-export type MethodMessage = {
-  type: MethodName;
-  requestId: string;
-};
-
-export type MethodRequest = MethodMessage & {
-  params: MethodParams;
-};
-
-export type MethodResponse = MethodMessage & {
-  result: MethodResult;
-};
+  | UpdateStateResult
+  | WithdrawResult
+  | WithdrawCommitmentResult;

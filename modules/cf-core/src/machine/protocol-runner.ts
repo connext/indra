@@ -1,58 +1,27 @@
-import { ILoggerService } from "@connext/types";
+import {
+  ILoggerService,
+  ProtocolName,
+  ProtocolNames,
+  ProtocolParam,
+  ProtocolParams,
+} from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import uuid from "uuid";
 
 import { getProtocolFromName } from "../protocol";
 import {
   Context,
-  InstallProtocolParams,
   Middleware,
   NetworkContext,
   Opcode,
-  ProposeInstallProtocolParams,
-  Protocol,
   ProtocolMessage,
-  SetupProtocolParams,
-  TakeActionProtocolParams,
-  UninstallProtocolParams,
-  UpdateProtocolParams,
-  WithdrawProtocolParams,
 } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
 import { Store } from "../store";
 
-/**
-Type-level mapping from Protocol to Protocol Param
-For e.g., ParamTypeOf<Protocol.Install> = InstallProtocolParams
-This syntax is preferred according to:
-https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types
-**/
-type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
-  ? InstallProtocolParams
-  : T extends Protocol.Update
-  ? UpdateProtocolParams
-  : T extends Protocol.Uninstall
-  ? UninstallProtocolParams
-  : T extends Protocol.TakeAction
-  ? TakeActionProtocolParams
-  : T extends Protocol.Withdraw
-  ? WithdrawProtocolParams
-  : T extends Protocol.Propose
-  ? ProposeInstallProtocolParams
-  : never;
-
-function firstRecipientFromProtocolName(protocolName: Protocol) {
-  if (
-    [
-      Protocol.Update,
-      Protocol.Uninstall,
-      Protocol.TakeAction,
-      Protocol.Install,
-      Protocol.Withdraw,
-      Protocol.Propose,
-    ].indexOf(protocolName) !== -1
-  ) {
+function firstRecipientFromProtocolName(protocolName: ProtocolName) {
+  if (Object.values(ProtocolNames).includes(protocolName)) {
     return "responderXpub";
   }
   throw Error(`Unknown protocolName ${protocolName} passed to firstRecipientFromProtocolName`);
@@ -87,7 +56,7 @@ export class ProtocolRunner {
     return this.runProtocol(step, msg);
   }
 
-  public async initiateProtocol<T extends Protocol>(protocolName: T, params: ParamTypeOf<T>) {
+  public async initiateProtocol(protocolName: ProtocolName, params: ProtocolParam) {
     return this.runProtocol(getProtocolFromName(protocolName)[0], {
       params,
       protocol: protocolName,
@@ -98,8 +67,8 @@ export class ProtocolRunner {
     });
   }
 
-  public async runSetupProtocol(params: SetupProtocolParams) {
-    const protocol = Protocol.Setup;
+  public async runSetupProtocol(params: ProtocolParams.Setup) {
+    const protocol = ProtocolNames.setup;
     return this.runProtocol(getProtocolFromName(protocol)[0], {
       protocol,
       params,

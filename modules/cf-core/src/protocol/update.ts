@@ -1,15 +1,14 @@
-import { PersistAppType } from "@connext/types";
+import { ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import {
-  Context,
   Commitment,
+  Context,
   Opcode,
-  Protocol,
+  PersistAppType,
   ProtocolExecutionFlow,
   ProtocolMessage,
-  UpdateProtocolParams,
 } from "../types";
 
 import { logTime } from "../utils";
@@ -17,7 +16,7 @@ import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
-const protocol = Protocol.Update;
+const protocol = ProtocolNames.update;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
@@ -42,7 +41,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderXpub,
       newState,
-    } = params as UpdateProtocolParams;
+    } = params as ProtocolParams.Update;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
@@ -107,7 +106,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       initiatorXpub,
       newState,
-    } = params as UpdateProtocolParams;
+    } = params as ProtocolParams.Update;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 

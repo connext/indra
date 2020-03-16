@@ -1,4 +1,11 @@
 import {
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  ProtocolParams,
+} from "@connext/types";
+import {
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_STARTED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -31,15 +38,8 @@ import {
   coinBalanceRefundAppStateEncoding,
   DepositConfirmationMessage,
   DepositFailedMessage,
-  DepositParams,
-  DepositResult,
-  InstallProtocolParams,
-  MethodNames,
-  MethodParams,
-  MethodResult,
   NetworkContext,
   OutcomeType,
-  Protocol,
   SolidityValueType,
 } from "../../types";
 import { logTime, getCreate2MultisigAddress } from "../../utils";
@@ -56,21 +56,18 @@ interface DepositContext {
 
 export class DepositController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_deposit)
-  public executeMethod: (
-    requestHandler: RequestHandler,
-    params: MethodParams,
-  ) => Promise<MethodResult> = super.executeMethod;
+  public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: DepositParams,
+    params: MethodParams.Deposit,
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: DepositParams,
+    params: MethodParams.Deposit,
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress, amount, tokenAddress: tokenAddressParam } = params;
@@ -136,8 +133,8 @@ export class DepositController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: DepositParams,
-  ): Promise<DepositResult> {
+    params: MethodParams.Deposit,
+  ): Promise<MethodResults.Deposit> {
     const { outgoing, provider } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
 
@@ -184,7 +181,7 @@ export class DepositController extends NodeController {
 
 export async function installBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: DepositParams,
+  params: MethodParams.Deposit,
 ) {
   const { publicIdentifier, protocolRunner, networkContext, store, provider } = requestHandler;
 
@@ -206,7 +203,7 @@ export async function installBalanceRefundApp(
     tokenAddress!,
   );
 
-  const installProtocolParams: InstallProtocolParams = {
+  const installProtocolParams: ProtocolParams.Install = {
     initialState: depositContext.initialState,
     initiatorXpub: publicIdentifier,
     responderXpub: peerAddress,
@@ -227,12 +224,12 @@ export async function installBalanceRefundApp(
     disableLimit: true,
   };
 
-  await protocolRunner.initiateProtocol(Protocol.Install, installProtocolParams);
+  await protocolRunner.initiateProtocol(ProtocolNames.install, installProtocolParams);
 }
 
 export async function makeDeposit(
   requestHandler: RequestHandler,
-  params: DepositParams,
+  params: MethodParams.Deposit,
 ): Promise<string | undefined> {
   const { multisigAddress, amount, tokenAddress } = params;
   const { provider, blocksNeededForConfirmation, outgoing, publicIdentifier } = requestHandler;
@@ -304,7 +301,7 @@ export async function makeDeposit(
 
 export async function uninstallBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: DepositParams,
+  params: MethodParams.Deposit,
   blockNumberToUseIfNecessary?: number,
 ) {
   const { publicIdentifier, store, protocolRunner, networkContext } = requestHandler;
@@ -338,7 +335,7 @@ export async function uninstallBalanceRefundApp(
     throw new Error(NOT_YOUR_BALANCE_REFUND_APP);
   }
 
-  await protocolRunner.initiateProtocol(Protocol.Uninstall, {
+  await protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
     initiatorXpub: publicIdentifier,
     responderXpub: peerAddress,
     multisigAddress: stateChannel.multisigAddress,
@@ -348,7 +345,7 @@ export async function uninstallBalanceRefundApp(
 }
 
 async function getDepositContext(
-  params: DepositParams,
+  params: MethodParams.Deposit,
   publicIdentifier: string,
   provider: BaseProvider,
   networkContext: NetworkContext,

@@ -1,3 +1,5 @@
+import { ProtocolNames, ProtocolParams } from "@connext/types";
+
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment } from "../ethereum";
 
@@ -6,10 +8,8 @@ import {
   Context,
   Commitment,
   Opcode,
-  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
-  SetupProtocolParams,
 } from "../types";
 
 import { logTime } from "../utils";
@@ -17,7 +17,7 @@ import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
-const protocol = Protocol.Setup;
+const protocol = ProtocolNames.setup;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
@@ -36,7 +36,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { processID, params } = message;
 
-    const { multisigAddress, responderXpub, initiatorXpub } = params as SetupProtocolParams;
+    const { multisigAddress, responderXpub, initiatorXpub } = params as ProtocolParams.Setup;
 
     // 56 ms
     const stateChannel = StateChannel.setupChannel(
@@ -98,7 +98,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignature },
     } = message;
 
-    const { multisigAddress, initiatorXpub, responderXpub } = params as SetupProtocolParams;
+    const { multisigAddress, initiatorXpub, responderXpub } = params as ProtocolParams.Setup;
 
     // 73 ms
     const stateChannel = StateChannel.setupChannel(

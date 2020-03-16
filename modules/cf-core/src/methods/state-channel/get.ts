@@ -1,11 +1,7 @@
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import {
-  GetStateChannelParams,
-  GetStateChannelResult,
-  MethodNames,
-} from "../../types";
 import { NodeController } from "../controller";
 
 export class GetStateChannelController extends NodeController {
@@ -14,8 +10,8 @@ export class GetStateChannelController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: GetStateChannelParams,
-  ): Promise<GetStateChannelResult> {
+    params: MethodParams.GetStateChannel,
+  ): Promise<MethodResults.GetStateChannel> {
     return {
       data: (await requestHandler.store.getStateChannel(params.multisigAddress)).toJson(),
     };

@@ -1,7 +1,7 @@
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import { GetAppInstancesParams, GetAppInstancesResult, MethodNames } from "../../types";
 import { NodeController } from "../controller";
 
 /**
@@ -14,8 +14,8 @@ export class GetInstalledAppInstancesController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: GetAppInstancesParams,
-  ): Promise<GetAppInstancesResult> {
+    params: MethodParams.GetAppInstances,
+  ): Promise<MethodResults.GetAppInstances> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 

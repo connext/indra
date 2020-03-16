@@ -1,3 +1,4 @@
+import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
 import {
   WITHDRAWAL_STARTED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
@@ -17,12 +18,6 @@ import {
 } from "../../errors";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import {
-  MethodNames,
-  Protocol,
-  WithdrawParams,
-  WithdrawResult,
-} from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
 import { xkeyKthAddress } from "../../xkeys";
 
@@ -34,7 +29,7 @@ export class WithdrawController extends NodeController {
 
   public static async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: WithdrawParams,
+    params: MethodParams.Withdraw,
   ): Promise<string[]> {
     const { store, publicIdentifier, networkContext } = requestHandler;
 
@@ -60,7 +55,7 @@ export class WithdrawController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: WithdrawParams,
+    params: MethodParams.Withdraw,
   ): Promise<void> {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
@@ -88,8 +83,8 @@ export class WithdrawController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: WithdrawParams,
-  ): Promise<WithdrawResult> {
+    params: MethodParams.Withdraw,
+  ): Promise<MethodResults.Withdraw> {
     const {
       store,
       provider,
@@ -167,7 +162,7 @@ export class WithdrawController extends NodeController {
 
 export async function runWithdrawProtocol(
   requestHandler: RequestHandler,
-  params: WithdrawParams,
+  params: MethodParams.Withdraw,
 ) {
   const { publicIdentifier, protocolRunner, store } = requestHandler;
   const { multisigAddress, amount } = params;
@@ -182,7 +177,7 @@ export async function runWithdrawProtocol(
 
   const stateChannel = await store.getStateChannel(multisigAddress);
 
-  await protocolRunner.initiateProtocol(Protocol.Withdraw, {
+  await protocolRunner.initiateProtocol(ProtocolNames.withdraw, {
     amount,
     tokenAddress,
     recipient: params.recipient as string,

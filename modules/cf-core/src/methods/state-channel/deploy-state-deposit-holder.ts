@@ -1,3 +1,4 @@
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { ILoggerService } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -15,12 +16,7 @@ import {
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import {
-  DeployStateDepositHolderParams,
-  DeployStateDepositHolderResult,
-  MethodNames,
-  NetworkContext,
-} from "../../types";
+import { NetworkContext } from "../../types";
 import { getCreate2MultisigAddress, prettyPrintObject, sleep } from "../../utils";
 import { sortAddresses, xkeysToSortedKthAddresses } from "../../xkeys";
 
@@ -36,7 +32,7 @@ export class DeployStateDepositController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: DeployStateDepositHolderParams,
+    params: MethodParams.DeployStateDepositHolder,
   ): Promise<void> {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
@@ -64,8 +60,8 @@ export class DeployStateDepositController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: DeployStateDepositHolderParams,
-  ): Promise<DeployStateDepositHolderResult> {
+    params: MethodParams.DeployStateDepositHolder,
+  ): Promise<MethodResults.DeployStateDepositHolder> {
     const { multisigAddress, retryCount } = params;
     const { log, networkContext, store, provider, wallet } = requestHandler;
 

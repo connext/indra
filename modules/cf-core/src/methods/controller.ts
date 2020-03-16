@@ -1,18 +1,14 @@
+import { MethodName, MethodParam, MethodResult } from "@connext/types";
 import { Controller } from "rpc-server";
 
 import { RequestHandler } from "../request-handler";
-import {
-  MethodName,
-  MethodParams,
-  MethodResult,
-} from "../types";
 
 export abstract class NodeController extends Controller {
   public static readonly methodName: MethodName;
 
   public async executeMethod(
     requestHandler: RequestHandler,
-    params: MethodParams,
+    params: MethodParam,
   ): Promise<MethodResult> {
     await this.beforeExecution(requestHandler, params);
 
@@ -29,22 +25,22 @@ export abstract class NodeController extends Controller {
 
   protected abstract executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: MethodParams,
+    params: MethodParam,
   ): Promise<MethodResult>;
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: MethodParams,
+    params: MethodParam,
   ): Promise<void> {}
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: MethodParams,
+    params: MethodParam,
   ): Promise<void> {}
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: MethodParams,
+    params: MethodParam,
   ): Promise<string[]> {
     return [];
   }

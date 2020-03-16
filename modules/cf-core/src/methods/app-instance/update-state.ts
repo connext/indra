@@ -1,3 +1,4 @@
+import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -9,13 +10,7 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { Store } from "../../store";
-import {
-  MethodNames,
-  Protocol,
-  SolidityValueType,
-  UpdateStateParams,
-  UpdateStateResult,
-} from "../../types";
+import { SolidityValueType } from "../../types";
 import { getFirstElementInListNotEqualTo } from "../../utils";
 import { NodeController } from "../controller";
 
@@ -25,14 +20,14 @@ export class UpdateStateController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: UpdateStateParams,
+    params: MethodParams.UpdateState,
   ): Promise<string[]> {
     return [params.appInstanceId];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: UpdateStateParams,
+    params: MethodParams.UpdateState,
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, newState } = params;
@@ -55,8 +50,8 @@ export class UpdateStateController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: UpdateStateParams,
-  ): Promise<UpdateStateResult> {
+    params: MethodParams.UpdateState,
+  ): Promise<MethodResults.UpdateState> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, newState } = params;
 
@@ -90,7 +85,7 @@ async function runUpdateStateProtocol(
 ) {
   const stateChannel = await store.getStateChannelFromAppInstanceID(appIdentityHash);
 
-  await protocolRunner.initiateProtocol(Protocol.Update, {
+  await protocolRunner.initiateProtocol(ProtocolNames.update, {
     initiatorXpub,
     responderXpub,
     appIdentityHash,

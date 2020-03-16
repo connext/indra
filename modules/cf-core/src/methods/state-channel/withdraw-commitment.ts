@@ -1,3 +1,4 @@
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -8,11 +9,6 @@ import {
   INVALID_MASTERCOPY_ADDRESS,
 } from "../../errors";
 import { RequestHandler } from "../../request-handler";
-import {
-  MethodNames,
-  WithdrawCommitmentParams,
-  WithdrawCommitmentResult,
-} from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
 import { xkeyKthAddress } from "../../xkeys";
 
@@ -28,14 +24,14 @@ export class WithdrawCommitmentController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: WithdrawCommitmentParams,
+    params: MethodParams.WithdrawCommitment,
   ): Promise<string[]> {
     return WithdrawController.getRequiredLockNames(requestHandler, params);
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: WithdrawCommitmentParams,
+    params: MethodParams.WithdrawCommitment,
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
@@ -72,8 +68,8 @@ export class WithdrawCommitmentController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: WithdrawCommitmentParams,
-  ): Promise<WithdrawCommitmentResult> {
+    params: MethodParams.WithdrawCommitment,
+  ): Promise<MethodResults.WithdrawCommitment> {
     const { store, publicIdentifier } = requestHandler;
 
     const { multisigAddress, recipient } = params;

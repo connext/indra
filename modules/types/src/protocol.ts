@@ -2,9 +2,6 @@ import { AppInterface, AppABIEncodings } from "./app";
 import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
 import { OutcomeType } from "./contracts";
 
-////////////////////////////////////////
-const install = "install";
-
 type InstallProtocolParams = {
   initiatorXpub: Xpub;
   initiatorDepositTokenAddress: Address;
@@ -27,9 +24,6 @@ type InstallProtocolParams = {
   disableLimit: boolean;
 };
 
-////////////////////////////////////////
-const propose = "propose";
-
 type ProposeInstallProtocolParams = {
   multisigAddress: string;
   initiatorXpub: string;
@@ -46,16 +40,11 @@ type ProposeInstallProtocolParams = {
   meta?: Object;
 };
 
-////////////////////////////////////////
-const setup = "setup";
-
 type SetupProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
 };
-////////////////////////////////////////
-const takeAction = "takeAction";
 
 type TakeActionProtocolParams = {
   initiatorXpub: string;
@@ -65,9 +54,6 @@ type TakeActionProtocolParams = {
   action: SolidityValueType;
 };
 
-////////////////////////////////////////
-const uninstall = "uninstall";
-
 type UninstallProtocolParams = {
   appIdentityHash: string;
   initiatorXpub: string;
@@ -76,9 +62,6 @@ type UninstallProtocolParams = {
   blockNumberToUseIfNecessary?: number;
 };
 
-////////////////////////////////////////
-const update = "update";
-
 type UpdateProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
@@ -86,9 +69,6 @@ type UpdateProtocolParams = {
   appIdentityHash: string;
   newState: SolidityValueType;
 };
-
-////////////////////////////////////////
-const withdraw = "withdraw";
 
 type WithdrawProtocolParams = {
   initiatorXpub: string;
@@ -102,26 +82,25 @@ type WithdrawProtocolParams = {
 ////////////////////////////////////////
 // exports
 
-export const ProtocolNames = {
-  [install]: install,
-  [propose]: propose,
-  [setup]: setup,
-  [takeAction]: takeAction,
-  [uninstall]: uninstall,
-  [update]: update,
-  [withdraw]: withdraw,
+export enum ProtocolNames {
+  install = "install",
+  propose = "propose",
+  setup = "setup",
+  takeAction = "takeAction",
+  uninstall = "uninstall",
+  update = "update",
+  withdraw = "withdraw",
 };
-
 export type ProtocolName = keyof typeof ProtocolNames;
 
 export namespace ProtocolParams {
-  type install = InstallProtocolParams;
-  type propose = ProposeInstallProtocolParams;
-  type setup = SetupProtocolParams;
-  type takeAction = TakeActionProtocolParams;
-  type uninstall = UninstallProtocolParams;
-  type update = UpdateProtocolParams;
-  type withdraw = WithdrawProtocolParams;
+  export type Install = InstallProtocolParams;
+  export type Propose = ProposeInstallProtocolParams;
+  export type Setup = SetupProtocolParams;
+  export type TakeAction = TakeActionProtocolParams;
+  export type Uninstall = UninstallProtocolParams;
+  export type Update = UpdateProtocolParams;
+  export type Withdraw = WithdrawProtocolParams;
 }
 
 export type ProtocolParam =

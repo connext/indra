@@ -1,4 +1,4 @@
-import { PersistAppType } from "@connext/types";
+import { ProtocolNames, ProtocolParams } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -9,11 +9,10 @@ import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../model
 import {
   Context,
   Commitment,
-  InstallProtocolParams,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   Opcode,
   OutcomeType,
-  Protocol,
+  PersistAppType,
   ProtocolExecutionFlow,
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
@@ -24,6 +23,7 @@ import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
+const protocol = ProtocolNames.install;
 const {
   OP_SIGN,
   IO_SEND,
@@ -32,7 +32,6 @@ const {
   PERSIST_COMMITMENT,
   PERSIST_FREE_BALANCE,
 } = Opcode;
-const { Install } = Protocol;
 const { Conditional, SetState } = Commitment;
 
 /**
@@ -70,7 +69,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorBalanceDecrement,
       responderBalanceDecrement,
       initiatorXpub,
-    } = params as InstallProtocolParams;
+    } = params as ProtocolParams.Install;
 
     const stateChannelBefore = await store.getStateChannel(multisigAddress);
 
@@ -90,7 +89,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const stateChannelAfter = computeStateChannelTransition(
       stateChannelBefore,
-      params as InstallProtocolParams,
+      params as ProtocolParams.Install,
     );
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
@@ -117,7 +116,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       {
         processID,
         params,
-        protocol: Install,
+        protocol,
         toXpub: responderXpub,
         customData: {
           signature: mySignatureOnConditionalTransaction,
@@ -184,7 +183,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       IO_SEND_AND_WAIT,
       {
         processID,
-        protocol: Install,
+        protocol,
         toXpub: responderXpub,
         customData: {
           signature: mySignatureOnFreeBalanceStateUpdate,
@@ -230,7 +229,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderDepositTokenAddress,
       initiatorBalanceDecrement,
       initiatorDepositTokenAddress,
-    } = params as InstallProtocolParams;
+    } = params as ProtocolParams.Install;
 
     const stateChannelBefore = await store.getStateChannel(multisigAddress);
 
@@ -250,7 +249,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const stateChannelAfter = computeStateChannelTransition(
       stateChannelBefore,
-      params as InstallProtocolParams,
+      params as ProtocolParams.Install,
     );
 
     const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorXpub, 0);
@@ -297,7 +296,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       IO_SEND_AND_WAIT,
       {
         processID,
-        protocol: Install,
+        protocol,
         toXpub: initiatorXpub,
         customData: {
           signature: mySignatureOnConditionalTransaction,
@@ -336,7 +335,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const m4 = {
       processID,
-      protocol: Install,
+      protocol,
       toXpub: initiatorXpub,
       customData: {
         dataPersisted: true,
@@ -354,13 +353,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  * StateChannel after the protocol would be executed with correct signatures.
  *
  * @param {StateChannel} stateChannel - The pre-protocol state of the channel
- * @param {InstallProtocolParams} params - Parameters about the new AppInstance
+ * @param {ProtocolParams.Install} params - Parameters about the new AppInstance
  *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
 function computeStateChannelTransition(
   stateChannel: StateChannel,
-  params: InstallProtocolParams,
+  params: ProtocolParams.Install,
 ): StateChannel {
   const {
     initiatorBalanceDecrement,
@@ -440,7 +439,7 @@ function computeStateChannelTransition(
  *
  * Note that this is _not_ a built-in part of the protocol. Here we are _restricting_
  * all newly installed AppInstances to be either of type COIN_TRANSFER or
- * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the InstallProtocolParams
+ * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the ProtocolParams.Install
  * to indidicate the interpreterAddress and interpreterParams so the developers
  * installing apps have more control, however for now we are putting this logic
  * inside of the client (the Node) by adding an "outcomeType" variable which

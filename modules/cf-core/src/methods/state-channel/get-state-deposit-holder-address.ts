@@ -1,12 +1,8 @@
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 import { RequestHandler } from "../../request-handler";
-import {
-  GetStateDepositHolderAddressParams,
-  GetStateDepositHolderAddressResult,
-  MethodNames,
-} from "../../types";
 import { NodeController } from "../controller";
 
 export class GetStateDepositHolderAddressController extends NodeController {
@@ -15,8 +11,8 @@ export class GetStateDepositHolderAddressController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: GetStateDepositHolderAddressParams,
-  ): Promise<GetStateDepositHolderAddressResult> {
+    params: MethodParams.GetStateDepositHolderAddress,
+  ): Promise<MethodResults.GetStateDepositHolderAddress> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
     if (!networkContext.provider) {

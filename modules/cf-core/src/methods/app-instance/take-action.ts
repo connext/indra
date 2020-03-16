@@ -1,3 +1,4 @@
+import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
 import { UPDATE_STATE_EVENT } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
@@ -11,14 +12,7 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { Store } from "../../store";
-import {
-  MethodNames,
-  Protocol,
-  SolidityValueType,
-  TakeActionParams,
-  TakeActionResult,
-  UpdateStateMessage,
-} from "../../types";
+import { SolidityValueType, UpdateStateMessage } from "../../types";
 import { getFirstElementInListNotEqualTo } from "../../utils";
 
 import { NodeController } from "../controller";
@@ -29,7 +23,7 @@ export class TakeActionController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: TakeActionParams,
+    params: MethodParams.TakeAction,
   ): Promise<string[]> {
     const multisigAddress = await requestHandler.store.getMultisigAddressFromAppInstance(
       params.appInstanceId,
@@ -39,7 +33,7 @@ export class TakeActionController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: TakeActionParams,
+    params: MethodParams.TakeAction,
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, action } = params;
@@ -62,8 +56,8 @@ export class TakeActionController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: TakeActionParams,
-  ): Promise<TakeActionResult> {
+    params: MethodParams.TakeAction,
+  ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, action } = params;
 
@@ -90,7 +84,7 @@ export class TakeActionController extends NodeController {
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: TakeActionParams,
+    params: MethodParams.TakeAction,
   ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
     const { appInstanceId, action } = params;
@@ -118,7 +112,7 @@ async function runTakeActionProtocol(
   const stateChannel = await store.getStateChannelFromAppInstanceID(appIdentityHash);
 
   try {
-    await protocolRunner.initiateProtocol(Protocol.TakeAction, {
+    await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
       initiatorXpub,
       responderXpub,
       appIdentityHash,

@@ -1,3 +1,4 @@
+import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -7,10 +8,6 @@ import { RequestHandler } from "../../request-handler";
 import { Store } from "../../store";
 import {
   AppInstanceProposal,
-  InstallParams,
-  InstallResult,
-  MethodNames,
-  Protocol,
 } from "../../types";
 import { NodeController } from "../controller";
 
@@ -25,8 +22,8 @@ export class InstallAppInstanceController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: InstallParams,
-  ): Promise<string[]> {
+    params: MethodParams.Install,
+  ): Promise<string[]> { 
     const { store } = requestHandler;
     const { appInstanceId } = params;
 
@@ -37,8 +34,8 @@ export class InstallAppInstanceController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: InstallParams,
-  ): Promise<InstallResult> {
+    params: MethodParams.Install,
+  ): Promise<MethodResults.Install> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
 
     const appInstanceProposal = await install(store, protocolRunner, params, publicIdentifier);
@@ -52,7 +49,7 @@ export class InstallAppInstanceController extends NodeController {
 export async function install(
   store: Store,
   protocolRunner: ProtocolRunner,
-  params: InstallParams,
+  params: MethodParams.Install,
   initiatorXpub: string,
 ): Promise<AppInstanceProposal> {
   const { appInstanceId } = params;
@@ -65,7 +62,7 @@ export async function install(
 
   const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
-  await protocolRunner.initiateProtocol(Protocol.Install, {
+  await protocolRunner.initiateProtocol(ProtocolNames.install, {
     initiatorXpub,
     responderXpub:
       initiatorXpub === proposal.proposedToIdentifier

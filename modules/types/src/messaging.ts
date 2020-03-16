@@ -6,15 +6,26 @@ import {
 } from "./events";
 import { ILoggerService } from "./logger";
 import {
-  CreateChannelResult,
-  DepositParams,
-  InstallParams,
-  MethodRequest,
-  MethodResponse,
-  ProposeInstallParams,
-  WithdrawParams,
+  MethodName,
+  MethodResult,
+  MethodResults,
+  MethodParam,
+  MethodParams,
 } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
+
+export type MethodMessage = {
+  type: MethodName;
+  requestId: string;
+};
+
+export type MethodRequest = MethodMessage & {
+  params: MethodParam;
+};
+
+export type MethodResponse = MethodMessage & {
+  result: MethodResult;
+};
 
 ////////////////////////////////////////
 // Message Metadata & Wrappers
@@ -120,16 +131,16 @@ export interface NodeMessageWrappedProtocolMessage extends NodeMessage {
 }
 
 export interface CreateChannelMessage extends NodeMessage {
-  data: CreateChannelResult;
+  data: MethodResults.CreateChannel;
 }
 
 export interface DepositConfirmationMessage extends NodeMessage {
-  data: DepositParams;
+  data: MethodParams.Deposit;
 }
 
 export interface DepositFailedMessage extends NodeMessage {
   data: {
-    params: DepositParams;
+    params: MethodParams.Deposit;
     errors: string[];
   };
 }
@@ -143,13 +154,13 @@ export interface DepositStartedMessage extends NodeMessage {
 
 export interface InstallMessage extends NodeMessage {
   data: {
-    params: InstallParams;
+    params: MethodParams.Install;
   };
 }
 
 export interface ProposeMessage extends NodeMessage {
   data: {
-    params: ProposeInstallParams;
+    params: MethodParams.ProposeInstall;
     appInstanceId: string;
   };
 }
@@ -180,7 +191,7 @@ export interface WithdrawFailedMessage extends NodeMessage {
 
 export interface WithdrawStartedMessage extends NodeMessage {
   data: {
-    params: WithdrawParams;
+    params: MethodParams.Withdraw;
     txHash?: string; // not included in responder events
   };
 }

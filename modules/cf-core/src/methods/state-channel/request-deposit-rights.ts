@@ -1,3 +1,4 @@
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -11,13 +12,6 @@ import {
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { ERC20 } from "../../contracts";
 import { RequestHandler } from "../../request-handler";
-import {
-  MethodNames,
-  MethodParams,
-  MethodResult,
-  RequestDepositRightsParams,
-  RequestDepositRightsResult,
-} from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
 import { xkeyKthAddress } from "../../xkeys";
 
@@ -28,21 +22,18 @@ import { installBalanceRefundApp, uninstallBalanceRefundApp } from "./deposit";
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export class RequestDepositRightsController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_requestDepositRights)
-  public executeMethod: (
-    requestHandler: RequestHandler,
-    params: MethodParams,
-  ) => Promise<MethodResult> = super.executeMethod;
+  public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: RequestDepositRightsParams,
+    params: MethodParams.RequestDepositRights,
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: RequestDepositRightsParams,
+    params: MethodParams.RequestDepositRights,
   ): Promise<void> {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
@@ -70,8 +61,8 @@ export class RequestDepositRightsController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: RequestDepositRightsParams,
-  ): Promise<RequestDepositRightsResult> {
+    params: MethodParams.RequestDepositRights,
+  ): Promise<MethodResults.RequestDepositRights> {
     const { provider, store, networkContext, publicIdentifier } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
 

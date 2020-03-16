@@ -1,14 +1,9 @@
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { CREATE_CHANNEL_EVENT } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import {
-  CreateChannelMessage,
-  CreateChannelParams,
-  CreateChannelResult,
-  CreateChannelTransactionResult,
-  MethodNames,
-} from "../../types";
+import { CreateChannelMessage } from "../../types";
 import { xkeysToSortedKthAddresses } from "../../xkeys";
 
 import { NodeController } from "../controller";
@@ -30,15 +25,15 @@ export class CreateChannelController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CreateChannelParams,
+    params: MethodParams.CreateChannel,
   ): Promise<string[]> {
     return [`${MethodNames.chan_create}:${params.owners.sort().toString()}`];
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CreateChannelParams,
-  ): Promise<CreateChannelTransactionResult> {
+    params: MethodParams.CreateChannel,
+  ): Promise<MethodResults.CreateChannel> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
 
@@ -65,7 +60,7 @@ export class CreateChannelController extends NodeController {
   private async setupAndCreateChannel(
     multisigAddress: string,
     requestHandler: RequestHandler,
-    params: CreateChannelParams,
+    params: MethodParams.CreateChannel,
   ) {
     const { owners } = params;
     const { publicIdentifier, protocolRunner, outgoing } = requestHandler;
@@ -88,7 +83,7 @@ export class CreateChannelController extends NodeController {
         multisigAddress,
         owners: addressOwners,
         counterpartyXpub: responderXpub,
-      } as CreateChannelResult,
+      } as MethodResults.CreateChannel,
     };
 
     outgoing.emit(CREATE_CHANNEL_EVENT, msg);

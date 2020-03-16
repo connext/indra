@@ -1,3 +1,4 @@
+import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -9,12 +10,6 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { Store } from "../../store";
-import {
-  MethodNames,
-  Protocol,
-  UninstallParams,
-  UninstallResult,
-} from "../../types";
 import { getFirstElementInListNotEqualTo } from "../../utils";
 import { NodeController } from "../controller";
 
@@ -24,7 +19,7 @@ export class UninstallController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: UninstallParams,
+    params: MethodParams.Uninstall,
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
@@ -36,7 +31,7 @@ export class UninstallController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: UninstallParams,
+    params: MethodParams.Uninstall,
   ) {
     const { store, networkContext } = requestHandler;
     const { appInstanceId } = params;
@@ -60,8 +55,8 @@ export class UninstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: UninstallParams,
-  ): Promise<UninstallResult> {
+    params: MethodParams.Uninstall,
+  ): Promise<MethodResults.Uninstall> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
     const { appInstanceId } = params;
 
@@ -103,7 +98,7 @@ export async function uninstallAppInstanceFromChannel(
 
   const appInstance = stateChannel.getAppInstance(appInstanceId);
 
-  await protocolRunner.initiateProtocol(Protocol.Uninstall, {
+  await protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
     initiatorXpub,
     responderXpub,
     multisigAddress: stateChannel.multisigAddress,

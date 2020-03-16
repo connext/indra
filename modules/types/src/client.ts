@@ -25,28 +25,15 @@ import {
   Transfer,
 } from "./node";
 import {
-  DeployStateDepositHolderResult,
-  DepositResult,
-  GetAppInstanceDetailsResult,
-  GetFreeBalanceStateResult,
-  GetProposedAppInstanceResult,
-  GetProposedAppInstancesResult,
-  GetStateChannelResult,
-  GetStateResult,
-  InstallResult,
-  ProposeInstallParams,
-  ProposeInstallResult,
-  RequestDepositRightsResult,
+  MethodResults,
+  MethodParams,
   MethodName,
-  TakeActionResult,
-  UninstallResult,
-  UpdateStateResult,
 } from "./methods";
 import { IBackupServiceAPI, IClientStore, StoreType, WithdrawalMonitorObject } from "./store";
 
 export type ChannelState = {
   apps: AppInstanceJson[]; // result of getApps()
-  freeBalance: GetFreeBalanceStateResult;
+  freeBalance: MethodResults.GetFreeBalanceState;
 };
 
 /////////////////////////////////
@@ -66,8 +53,10 @@ export type RequestDepositRightsParameters = {
   assetId: Address;
 }
 
-export type RequestDepositRightsResponse = RequestDepositRightsResult;
-export type CheckDepositRightsParameters = RequestDepositRightsParameters;
+export type RequestDepositRightsResponse = MethodResults.RequestDepositRights;
+
+export type CheckDepositRightsParameters = MethodParams.RequestDepositRights;
+
 export type CheckDepositRightsResponse = {
   assetId: Address;
   multisigBalance: DecString;
@@ -75,17 +64,17 @@ export type CheckDepositRightsResponse = {
   threshold: DecString;
 };
 
-export type RescindDepositRightsParameters = RequestDepositRightsParameters;
-export type RescindDepositRightsResponse = DepositResult;
+export type RescindDepositRightsParameters = MethodParams.RequestDepositRights;
+export type RescindDepositRightsResponse = MethodResults.Deposit;
 
 // Withdraw types
-export type WithdrawParameters = DepositParameters & {
+export type WithdrawParameters = MethodParams.Deposit & {
   userSubmitted?: boolean;
   recipient?: Address; // if not provided, will default to signer addr
 };
 
 // Generic transfer types
-export type TransferParameters = DepositParameters & {
+export type TransferParameters = MethodParams.Deposit & {
   recipient: Address;
   meta?: object;
 };
@@ -156,7 +145,7 @@ export interface IConnextClient {
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   requestDepositRights(
     params: RequestDepositRightsParameters,
-  ): Promise<RequestDepositRightsResult>;
+  ): Promise<MethodResults.RequestDepositRights>;
   rescindDepositRights(
     params: RescindDepositRightsParameters,
   ): Promise<RescindDepositRightsResponse>;
@@ -195,30 +184,30 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
-  deployMultisig(): Promise<DeployStateDepositHolderResult>;
-  getStateChannel(): Promise<GetStateChannelResult>;
+  deployMultisig(): Promise<MethodResults.DeployStateDepositHolder>;
+  getStateChannel(): Promise<MethodResults.GetStateChannel>;
   providerDeposit(
     amount: DecString,
     assetId: string,
     notifyCounterparty: boolean,
-  ): Promise<DepositResult>;
-  getFreeBalance(assetId?: string): Promise<GetFreeBalanceStateResult>;
+  ): Promise<MethodResults.Deposit>;
+  getFreeBalance(assetId?: string): Promise<MethodResults.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
-  getAppInstanceDetails(appInstanceId: string): Promise<GetAppInstanceDetailsResult>;
-  getAppState(appInstanceId: string): Promise<GetStateResult>;
+  getAppInstanceDetails(appInstanceId: string): Promise<MethodResults.GetAppInstanceDetails>;
+  getAppState(appInstanceId: string): Promise<MethodResults.GetState>;
   getLatestNodeSubmittedWithdrawal(): Promise<WithdrawalMonitorObject>;
   getProposedAppInstances(
     multisigAddress?: string,
-  ): Promise<GetProposedAppInstancesResult | undefined>;
+  ): Promise<MethodResults.GetProposedAppInstances | undefined>;
   getProposedAppInstance(
     appInstanceId: string,
-  ): Promise<GetProposedAppInstanceResult | undefined>;
+  ): Promise<MethodResults.GetProposedAppInstance | undefined>;
   proposeInstallApp(
-    params: ProposeInstallParams,
-  ): Promise<ProposeInstallResult>;
-  installApp(appInstanceId: string): Promise<InstallResult>;
-  rejectInstallApp(appInstanceId: string): Promise<UninstallResult>;
-  takeAction(appInstanceId: string, action: any): Promise<TakeActionResult>;
-  updateState(appInstanceId: string, newState: any): Promise<UpdateStateResult>;
-  uninstallApp(appInstanceId: string): Promise<UninstallResult>;
+    params: MethodParams.ProposeInstall,
+  ): Promise<MethodResults.ProposeInstall>;
+  installApp(appInstanceId: string): Promise<MethodResults.Install>;
+  rejectInstallApp(appInstanceId: string): Promise<MethodResults.Uninstall>;
+  takeAction(appInstanceId: string, action: any): Promise<MethodResults.TakeAction>;
+  updateState(appInstanceId: string, newState: any): Promise<MethodResults.UpdateState>;
+  uninstallApp(appInstanceId: string): Promise<MethodResults.Uninstall>;
 }

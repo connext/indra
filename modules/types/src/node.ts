@@ -9,7 +9,7 @@ import {
 } from "./contracts";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
-import { DepositResult } from "./methods";
+import { MethodResults } from "./methods";
 
 ////////////////////////////////////
 // Misc
@@ -89,7 +89,7 @@ export type CreateChannelResponse = {
 };
 
 // TODO: why was this changed?
-export type RequestCollateralResponse = DepositResult | undefined;
+export type RequestCollateralResponse = MethodResults.Deposit | undefined;
 
 ////////////////////////////////////
 // NODE API CLIENT

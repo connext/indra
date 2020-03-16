@@ -1,3 +1,4 @@
+import { ProtocolNames, ProtocolParams } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -14,10 +15,8 @@ import {
   NetworkContext,
   Opcode,
   OutcomeType,
-  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
-  WithdrawProtocolParams,
 } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -25,7 +24,7 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature } from "./utils";
 
 const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
-const { Withdraw } = Protocol;
+const protocol = ProtocolNames.withdraw;
 /**
  * @description This exchange is described at the following URL:
  * https://specs.counterfactual.com/11-withdraw-protocol *
@@ -67,13 +66,13 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       recipient,
       amount,
       tokenAddress,
-    } = params as WithdrawProtocolParams;
+    } = params as ProtocolParams.Withdraw;
 
     const preInstallRefundAppStateChannel = await store.getStateChannel(multisigAddress);
 
     const postInstallRefundAppStateChannel = addRefundAppToStateChannel(
       preInstallRefundAppStateChannel,
-      params as WithdrawProtocolParams,
+      params as ProtocolParams.Withdraw,
       network,
     );
 
@@ -105,7 +104,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       {
         processID,
         params,
-        protocol: Withdraw,
+        protocol,
         toXpub: responderXpub,
         customData: {
           signature: mySignatureOnConditionalTransaction,
@@ -185,7 +184,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       IO_SEND_AND_WAIT,
       {
         processID,
-        protocol: Withdraw,
+        protocol,
         toXpub: responderXpub,
         customData: {
           signature: mySignatureOnFreeBalanceStateUpdate,
@@ -235,7 +234,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     yield [
       IO_SEND_AND_WAIT,
       {
-        protocol: Withdraw,
+        protocol,
         processID: context.message.processID,
         toXpub: responderXpub,
         customData: {
@@ -307,13 +306,13 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       recipient,
       amount,
       tokenAddress,
-    } = params as WithdrawProtocolParams;
+    } = params as ProtocolParams.Withdraw;
 
     const preInstallRefundAppStateChannel = await store.getStateChannel(multisigAddress);
 
     const postInstallRefundAppStateChannel = addRefundAppToStateChannel(
       preInstallRefundAppStateChannel,
-      params as WithdrawProtocolParams,
+      params as ProtocolParams.Withdraw,
       network,
     );
 
@@ -371,7 +370,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       IO_SEND_AND_WAIT,
       {
         processID,
-        protocol: Withdraw,
+        protocol,
         toXpub: initiatorXpub,
         customData: {
           signature: mySignatureOnConditionalTransaction,
@@ -455,7 +454,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       IO_SEND_AND_WAIT,
       {
         processID,
-        protocol: Withdraw,
+        protocol,
         toXpub: initiatorXpub,
         customData: {
           signature: mySignatureOnWithdrawalCommitment,
@@ -492,7 +491,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       IO_SEND,
       {
         processID,
-        protocol: Withdraw,
+        protocol,
         toXpub: initiatorXpub,
         customData: {
           dataPersisted: true,
@@ -509,14 +508,14 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
  * parameters also passed in with recipient and amount information.
  *
  * @param {StateChannel} stateChannel - the pre-install-refund-app StateChannel
- * @param {WithdrawProtocolParams} params - params with recipient and amount
+ * @param {ProtocolParams.Withdraw} params - params with recipient and amount
  * @param {NetworkContext} network - metadata on the addresses on the chain
  *
  * @returns {StateChannel} - the same StateChannel with an ETHBalanceRefundApp added
  */
 function addRefundAppToStateChannel(
   stateChannel: StateChannel,
-  params: WithdrawProtocolParams,
+  params: ProtocolParams.Withdraw,
   network: NetworkContext,
 ): StateChannel {
   const { recipient, amount, multisigAddress, initiatorXpub, tokenAddress } = params;

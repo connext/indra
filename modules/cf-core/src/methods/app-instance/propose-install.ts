@@ -1,3 +1,6 @@
+import {
+  MethodNames, MethodParams, MethodResults, ProtocolNames,
+} from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
@@ -10,15 +13,7 @@ import {
 import { AppInstanceProposal, StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { Store } from "../../store";
-import {
-  MethodNames,
-  MethodParams,
-  MethodResult,
-  NetworkContext,
-  ProposeInstallParams,
-  ProposeInstallResult,
-  Protocol,
-} from "../../types";
+import { NetworkContext } from "../../types";
 import { appIdentityToHash } from "../../utils";
 import { xkeyKthAddress } from "../../xkeys";
 
@@ -32,14 +27,11 @@ import { NodeController } from "../controller";
  */
 export class ProposeInstallAppInstanceController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_proposeInstall)
-  public executeMethod: (
-    requestHandler: RequestHandler,
-    params: MethodParams,
-  ) => Promise<MethodResult> = super.executeMethod;
+  public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: ProposeInstallParams,
+    params: MethodParams.ProposeInstall,
   ): Promise<string[]> {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { proposedToIdentifier } = params;
@@ -56,7 +48,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: ProposeInstallParams,
+    params: MethodParams.ProposeInstall,
   ): Promise<void> {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { initialState } = params;
@@ -103,8 +95,8 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: ProposeInstallParams,
-  ): Promise<ProposeInstallResult> {
+    params: MethodParams.ProposeInstall,
+  ): Promise<MethodResults.ProposeInstall> {
     const { networkContext, protocolRunner, publicIdentifier, store } = requestHandler;
 
     const { proposedToIdentifier } = params;
@@ -117,7 +109,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
       networkContext.provider,
     );
 
-    await protocolRunner.initiateProtocol(Protocol.Propose, {
+    await protocolRunner.initiateProtocol(ProtocolNames.propose, {
       ...params,
       multisigAddress,
       initiatorXpub: publicIdentifier,
@@ -168,7 +160,7 @@ export async function createProposedAppInstance(
   myIdentifier: string,
   store: Store,
   networkContext: NetworkContext,
-  params: ProposeInstallParams,
+  params: MethodParams.ProposeInstall,
 ): Promise<string> {
   const {
     abiEncodings,

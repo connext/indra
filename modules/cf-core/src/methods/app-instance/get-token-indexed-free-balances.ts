@@ -1,11 +1,7 @@
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import {
-  GetTokenIndexedFreeBalanceStatesParams,
-  GetTokenIndexedFreeBalanceStatesResult,
-  MethodNames,
-} from "../../types";
 import { NodeController } from "../controller";
 
 export class GetTokenIndexedFreeBalancesController extends NodeController {
@@ -14,8 +10,8 @@ export class GetTokenIndexedFreeBalancesController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: GetTokenIndexedFreeBalanceStatesParams,
-  ): Promise<GetTokenIndexedFreeBalanceStatesResult> {
+    params: MethodParams.GetTokenIndexedFreeBalanceStates,
+  ): Promise<MethodResults.GetTokenIndexedFreeBalanceStates> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 

@@ -1,4 +1,4 @@
-import { PersistAppType } from "@connext/types";
+import { ProtocolParams, ProtocolNames, PersistAppType } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
@@ -9,8 +9,6 @@ import {
   Context,
   Commitment,
   Opcode,
-  ProposeInstallProtocolParams,
-  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
 } from "../types";
@@ -19,7 +17,7 @@ import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
-const protocol = Protocol.Propose;
+const protocol = ProtocolNames.propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
 const { SetState } = Commitment;
 
@@ -46,7 +44,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
-    } = params as ProposeInstallProtocolParams;
+    } = params as ProtocolParams.Propose;
 
     const preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
     if (!preProtocolStateChannel) {
@@ -175,7 +173,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
-    } = params as ProposeInstallProtocolParams;
+    } = params as ProtocolParams.Propose;
 
     const {
       customData: { signature: initiatorSignatureOnInitialState },

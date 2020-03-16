@@ -1,10 +1,7 @@
+import { MethodNames, MethodResults } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import {
-  GetChannelAddressesResult,
-  MethodNames,
-} from "../../types";
 import { NodeController } from "../controller";
 
 export class GetAllChannelAddressesController extends NodeController {
@@ -13,7 +10,7 @@ export class GetAllChannelAddressesController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-  ): Promise<GetChannelAddressesResult> {
+  ): Promise<MethodResults.GetChannelAddresses> {
     return {
       multisigAddresses: [
         ...(await requestHandler.store.getAllChannels()).map(sc => sc.multisigAddress),

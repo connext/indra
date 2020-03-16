@@ -1,3 +1,4 @@
+import { ProtocolNames, ProtocolParams } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -8,17 +9,15 @@ import {
   Context,
   Commitment,
   Opcode,
-  Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
-  UninstallProtocolParams,
 } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
 
-const protocol = Protocol.Uninstall;
+const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
 const { SetState } = Commitment;
 
@@ -36,13 +35,13 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     log.debug(`Initiation started`);
 
     const { params, processID } = message;
-    const { responderXpub, appIdentityHash, multisigAddress } = params as UninstallProtocolParams;
+    const { responderXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const postProtocolStateChannel = await computeStateTransition(
-      params as UninstallProtocolParams,
+      params as ProtocolParams.Uninstall,
       store,
       network.provider,
     );
@@ -93,13 +92,13 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     log.debug(`Response started`);
 
     const { params, processID } = message;
-    const { initiatorXpub, appIdentityHash, multisigAddress } = params as UninstallProtocolParams;
+    const { initiatorXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
     const preProtocolStateChannel = (await store.getStateChannel(multisigAddress)) as StateChannel;
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const postProtocolStateChannel = await computeStateTransition(
-      params as UninstallProtocolParams,
+      params as ProtocolParams.Uninstall,
       store,
       network.provider,
     );
@@ -142,7 +141,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 };
 
 async function computeStateTransition(
-  params: UninstallProtocolParams,
+  params: ProtocolParams.Uninstall,
   store: Store,
   provider: BaseProvider,
 ) {
