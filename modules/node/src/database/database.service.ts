@@ -30,6 +30,7 @@ import { AddAnonymizedViewTables1581090243171 } from "../../migrations/158109024
 import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
 import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
 import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm-sync";
+import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
 
 export const entities = [
   AppRegistry,
@@ -59,6 +60,7 @@ export const migrations = [
   RebalancingProfile1581796200880,
   fastSignedTransfer1583682931763,
   typeormSync1584364675207,
+  typeormSync21584369931723,
 ];
 
 @Injectable()
