@@ -179,17 +179,25 @@ export class StateChannel {
     balanceRefundAppDefinitionAddress: string,
     tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
   ) {
-    const appInstances = this.getAppInstancesOfKind(balanceRefundAppDefinitionAddress).filter(
+    const noAppsErr = `No CoinBalanceRefund app instance of tokenAddress ${tokenAddress} exists on channel: ${this.multisigAddress}`;
+    let refundApps;
+    try {
+      refundApps = this.getAppInstancesOfKind(balanceRefundAppDefinitionAddress);
+    } catch (e) {
+      if (e.message.includes(`No AppInstance of addr`)) {
+        throw new Error(noAppsErr);
+      }
+      throw new Error(e.stack || e.message);
+    }
+    const appInstances = refundApps.filter(
       (appInstance: AppInstance) => appInstance.latestState["tokenAddress"] === tokenAddress,
     );
     if (appInstances.length === 0) {
-      throw Error(
-        `No CoinBalanceRefund app instance of tokenAddress ${tokenAddress} exists on channel: ${this.multisigAddress}`,
-      );
+      throw new Error(noAppsErr);
     }
 
     if (appInstances.length > 1) {
-      throw Error(
+      throw new Error(
         `More than 1 CoinBalanceRefund app instance of tokenAddress ${tokenAddress} exists on channel: ${this.multisigAddress}`,
       );
     }
