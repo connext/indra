@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { Transfer } from "@connext/types";
+import { Transfer, stringify } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
@@ -7,7 +7,6 @@ import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
-import { FastSignedTransferService } from "../fastSignedTransfer/fastSignedTransfer.service";
 
 import { TransferRepository } from "./transfer.repository";
 
@@ -17,7 +16,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
     log: LoggerService,
     messaging: MessagingService,
     private readonly linkedTransferService: LinkedTransferService,
-    private readonly fastSignedTransferService: FastSignedTransferService,
     private readonly transferRepository: TransferRepository,
   ) {
     super(log, messaging);
@@ -68,7 +66,6 @@ export const transferProviderFactory: FactoryProvider<Promise<void>> = {
     LoggerService,
     MessagingProviderId,
     LinkedTransferService,
-    FastSignedTransferService,
     TransferRepository,
   ],
   provide: TransferProviderId,
@@ -77,7 +74,6 @@ export const transferProviderFactory: FactoryProvider<Promise<void>> = {
     logging: LoggerService,
     messaging: MessagingService,
     linkedTransferService: LinkedTransferService,
-    fastSignedTransferService: FastSignedTransferService,
     transferRepository: TransferRepository,
   ): Promise<void> => {
     const transfer = new TransferMessaging(
@@ -85,7 +81,6 @@ export const transferProviderFactory: FactoryProvider<Promise<void>> = {
       logging,
       messaging,
       linkedTransferService,
-      fastSignedTransferService,
       transferRepository,
     );
     await transfer.setupSubscriptions();

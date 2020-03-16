@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
+import { ILoggerService, ResolveFastSignedTransferResponse, ResolveHashLockTransferResponse } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";

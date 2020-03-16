@@ -125,7 +125,7 @@ export class HashLockTransferService {
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      userPubId,
+      channel,
       initialState,
       amount,
       assetId,

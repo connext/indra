@@ -1,5 +1,5 @@
-import { IMessagingService } from "@connext/messaging";
-import { replaceBN, ResolveHashLockTransferResponse } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
+import { ResolveHashLockTransferResponse } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -14,7 +14,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     private readonly hashLockTransferService: HashLockTransferService,
   ) {
     super(log, messaging);
@@ -39,7 +39,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "transfer.resolve-hashlock.>",
-      this.authService.useUnverifiedPublicIdentifier(this.resolveLinkedTransfer.bind(this)),
+      this.authService.parseXpub(this.resolveLinkedTransfer.bind(this)),
     );
   }
 }
@@ -50,7 +50,7 @@ export const hashLockTransferProviderFactory: FactoryProvider<Promise<void>> = {
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     hashLockTransferService: HashLockTransferService,
   ): Promise<void> => {
     const transfer = new HashLockTransferMessaging(

@@ -5,6 +5,7 @@ import {
   RebalanceProfile,
   convert,
 } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
