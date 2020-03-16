@@ -7,7 +7,6 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   OneToOne,
-  JoinColumn,
 } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
@@ -15,7 +14,6 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsXpub } from "../util";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
-import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
 
@@ -89,18 +87,6 @@ export class Channel {
     (transfer: LinkedTransfer) => transfer.receiverChannel,
   )
   receiverLinkedTransfers!: LinkedTransfer[];
-
-  @OneToMany(
-    (type: any) => FastSignedTransfer,
-    (transfer: FastSignedTransfer) => transfer.senderChannel,
-  )
-  senderFastSignedTransfers!: FastSignedTransfer[];
-
-  @OneToMany(
-    (type: any) => FastSignedTransfer,
-    (transfer: FastSignedTransfer) => transfer.receiverChannel,
-  )
-  receiverFastSignedTransfers!: FastSignedTransfer[];
 
   @OneToMany(
     (type: any) => OnchainTransaction,

@@ -6,7 +6,11 @@ import { IChannelProvider } from "./channelProvider";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
 import { ProtocolTypes } from "./protocol";
-import { ResolveLinkedTransferResponse, ResolveFastSignedTransferResponse } from "./apps";
+import {
+  ResolveLinkedTransferResponse,
+  ResolveFastSignedTransferResponse,
+  ResolveHashLockTransferResponse,
+} from "./apps";
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
@@ -140,6 +144,7 @@ export interface INodeApiClient {
   fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
+  resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;

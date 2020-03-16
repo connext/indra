@@ -1,22 +1,20 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
+import { AuthModule } from "../auth/auth.module";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
-import { TransferRepository } from "../transfer/transfer.repository";
-import { AuthModule } from "../auth/auth.module";
 
-import { FastSignedTransferService } from "./fastSignedTransfer.service";
-import { fastSignedTransferProviderFactory } from "./fastSignedTransfer.provider";
+import { HashLockTransferService } from "./hashLockTransfer.service";
+import { hashLockTransferProviderFactory } from "./hashLockTransfer.provider";
 
 @Module({
   controllers: [],
-  exports: [FastSignedTransferService],
+  exports: [HashLockTransferService],
   imports: [
     AuthModule,
     CFCoreModule,
@@ -24,8 +22,8 @@ import { fastSignedTransferProviderFactory } from "./fastSignedTransfer.provider
     ConfigModule,
     LoggerModule,
     MessagingModule,
-    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository, TransferRepository]),
+    TypeOrmModule.forFeature([ChannelRepository]),
   ],
-  providers: [FastSignedTransferService, fastSignedTransferProviderFactory],
+  providers: [HashLockTransferService, hashLockTransferProviderFactory],
 })
-export class FastSignedTransferModule {}
+export class HashLockTransferModule {}

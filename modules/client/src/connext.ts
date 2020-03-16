@@ -16,6 +16,10 @@ import {
   ConditionalTransferResponse,
   FAST_SIGNED_TRANSFER,
   FastSignedTransferParameters,
+  HASHLOCK_TRANSFER,
+  ResolveLinkedTransferParameters,
+  ResolveFastSignedTransferParameters,
+  ResolveHashLockTransferParameters,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -75,6 +79,8 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { ResolveLinkedTransferController } from "./controllers/ResolveLinkedTransferController";
 import { FastSignedTransferController } from "./controllers/FastSignedTransferController";
 import { ResolveFastSignedTransferController } from "./controllers/ResolveFastSignedTransferController";
+import { HashLockTransferController } from "./controllers/HashLockTransferController";
+import { ResolveHashLockTransferController } from "./controllers/ResolveHashLockTransferController";
 
 const MAX_WITHDRAWAL_RETRIES = 3;
 
@@ -107,6 +113,8 @@ export class ConnextClient implements IConnextClient {
   private requestDepositRightsController: RequestDepositRightsController;
   private fastSignedTransferController: FastSignedTransferController;
   private resolveFastSignedTransferController: ResolveFastSignedTransferController;
+  private hashlockTransferController: HashLockTransferController;
+  private resolveHashLockTransferController: ResolveHashLockTransferController;
 
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -150,6 +158,14 @@ export class ConnextClient implements IConnextClient {
     );
     this.resolveFastSignedTransferController = new ResolveFastSignedTransferController(
       "ResolveFastSignedTransferController",
+      this,
+    );
+    this.hashlockTransferController = new HashLockTransferController(
+      "HashLockTransferController",
+      this,
+    );
+    this.resolveHashLockTransferController = new ResolveHashLockTransferController(
+      "ResolveHashLockTransferController",
       this,
     );
   }
@@ -379,16 +395,19 @@ export class ConnextClient implements IConnextClient {
     switch (params.conditionType) {
       case LINKED_TRANSFER_TO_RECIPIENT:
       case LINKED_TRANSFER: {
-        return this.resolveLinkedTransferController.resolveLinkedTransfer({
-          ...params,
-          conditionType: LINKED_TRANSFER,
-        });
+        return this.resolveLinkedTransferController.resolveLinkedTransfer(
+          params as ResolveLinkedTransferParameters,
+        );
       }
       case FAST_SIGNED_TRANSFER: {
-        return this.resolveFastSignedTransferController.resolveFastSignedTransfer({
-          ...params,
-          conditionType: FAST_SIGNED_TRANSFER,
-        });
+        return this.resolveFastSignedTransferController.resolveFastSignedTransfer(
+          params as ResolveFastSignedTransferParameters,
+        );
+      }
+      case HASHLOCK_TRANSFER: {
+        return this.resolveHashLockTransferController.resolveHashLockTransfer(
+          params as ResolveHashLockTransferParameters,
+        );
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
@@ -409,6 +428,9 @@ export class ConnextClient implements IConnextClient {
         return this.fastSignedTransferController.fastSignedTransfer(
           params as FastSignedTransferParameters,
         );
+      }
+      case HASHLOCK_TRANSFER: {
+        return this.hashlockTransferController.hashLockTransfer(params);
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);

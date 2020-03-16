@@ -1,6 +1,10 @@
 import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
-import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
+import {
+  ILoggerService,
+  ResolveFastSignedTransferResponse,
+  ResolveHashLockTransferResponse,
+} from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
@@ -175,6 +179,12 @@ export class NodeApiClient implements INodeApiClient {
   ): Promise<ResolveFastSignedTransferResponse> {
     return await this.send(`transfer.resolve-fast-signed.${this.userPublicIdentifier}`, {
       paymentId,
+    });
+  }
+
+  public async resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse> {
+    return await this.send(`transfer.resolve-hashlock.${this.userPublicIdentifier}`, {
+      lockHash,
     });
   }
 

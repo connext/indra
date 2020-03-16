@@ -17,7 +17,6 @@ import { ConditionalTransactionCommitmentEntity } from "../conditionalCommitment
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { Transfer } from "../transfer/transfer.entity";
 import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
-import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
 
@@ -54,7 +53,6 @@ export const entities = [
   ConditionalTransactionCommitmentEntity,
   SetStateCommitmentEntity,
   WithdrawCommitment,
-  FastSignedTransfer,
   SetupCommitmentEntity,
 ];
 

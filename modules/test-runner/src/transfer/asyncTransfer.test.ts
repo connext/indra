@@ -72,7 +72,6 @@ describe("Async Transfers", () => {
 
   it("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
     const receiverMnemonic = Wallet.createRandom().mnemonic;
-    console.log("receiverMnemonic: ", receiverMnemonic);
     const receiverXpub = HDNode.fromMnemonic(receiverMnemonic)
       .derivePath(CF_PATH)
       .neuter().extendedKey;
@@ -251,7 +250,7 @@ describe("Async Transfers", () => {
     ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
   });
 
-  it("Bot A tries to transfer with a preimage that is not 32 bytes", async () => {
+  it("Bot A tries to transfer with a preImage that is not 32 bytes", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     const preImage = "nope";

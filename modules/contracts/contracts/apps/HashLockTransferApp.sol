@@ -6,10 +6,11 @@ import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
 
-/// @title Simple Linked Transfer App
+/// @title Lightning HTLC Transfer App
 /// @notice This contract allows users to claim a payment locked in
-///         the application if they provide the correct preImage
-contract SimpleLinkedTransferApp is CounterfactualApp {
+///         the application if they provide a preImage that corresponds
+///         to a lightning hash
+contract HashLockTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
 
@@ -17,19 +18,16 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
     * Assume the app is funded with the money already owed to receiver,
     * as in the SimpleTwoPartySwapApp.
     *
-    * This app can also not be used to send _multiple_ linked payments,
+    * This app can also not be used to send _multiple_ hashlocked payments,
     * only one can be redeemed with the preImage.
     *
     */
-
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
-        bytes32 linkedHash;
-        // need these for computing outcome
-        uint256 amount;
-        address assetId;
-        bytes32 paymentId;
+        bytes32 lockHash;
         bytes32 preImage;
+        uint256 turnNum; // even is receiver?
+        bool finalized;
     }
 
     struct Action {
@@ -47,7 +45,13 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
         AppState memory state = abi.decode(encodedState, (AppState));
         Action memory action = abi.decode(encodedAction, (Action));
 
+        require(!state.finalized, "Cannot take action on finalized state");
+        // TODO feels weird that the initial state and first turn have same turnNum
+        require(state.turnNum % 2 == 0, "Payment must be unlocked by receiver");
+
         state.preImage = action.preImage;
+        state.finalized = true;
+        state.turnNum += 1;
 
         return abi.encode(state);
     }
@@ -60,19 +64,12 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
         AppState memory state = abi.decode(encodedState, (AppState));
         // TODO: whats the protection against passing a different hash?
 
-        bytes32 generatedHash = keccak256(
-            abi.encodePacked(
-                state.amount,
-                state.assetId,
-                state.paymentId,
-                state.preImage
-            )
-        );
+        bytes32 generatedHash = sha256(abi.encode(state.preImage));
 
         LibOutcome.CoinTransfer[2] memory transfers;
-        if (generatedHash == state.linkedHash) {
+        if (generatedHash == state.lockHash && state.finalized) {
             /**
-             * If the hash is correct, finalize the state with provided transfers.
+             * If the hash is correct, set outcome to provided transfers.
              */
             transfers = LibOutcome.CoinTransfer[2]([
                 LibOutcome.CoinTransfer(
@@ -82,13 +79,13 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
                 ),
                 LibOutcome.CoinTransfer(
                     state.coinTransfers[1].to,
-                    /* should always be full value of linked payment */
+                    /* should always be full value of transfer */
                     state.coinTransfers[0].amount
                 )
             ]);
         } else {
             /**
-             * If the hash is not correct, finalize the state with reverted transfers.
+             * If the hash is not correct, set outcome to reverted transfers.
              */
             transfers = LibOutcome.CoinTransfer[2]([
                 LibOutcome.CoinTransfer(
@@ -102,5 +99,27 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
             ]);
         }
         return abi.encode(transfers);
+    }
+
+    function getTurnTaker(
+        bytes calldata encodedState,
+        address[] calldata participants // length == 2!
+    )
+        external
+        pure
+        returns (address)
+    {
+        return participants[
+            abi.decode(encodedState, (AppState)).turnNum % 2
+        ];
+    }
+
+    function isStateTerminal(bytes calldata encodedState)
+        external
+        pure
+        returns (bool)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+        return state.finalized;
     }
 }

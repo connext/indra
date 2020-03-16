@@ -15,7 +15,6 @@ import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransf
 import { transferProviderFactory } from "./transfer.provider";
 import { TransferRepository } from "./transfer.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
-import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
 import { TransferService } from "./transfer.service";
 
 @Module({
@@ -35,7 +34,6 @@ import { TransferService } from "./transfer.service";
       AppRegistryRepository,
       LinkedTransferRepository,
       TransferRepository,
-      FastSignedTransferRepository,
     ]),
   ],
   providers: [TransferService, transferProviderFactory],
