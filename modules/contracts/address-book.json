@@ -339,10 +339,10 @@
       "txHash": "0x4749c7d4ca11996767ddea66ed39ddc5efbb00a1a06bb8b96881e88193458b26"
     },
     "SimpleLinkedTransferApp": {
-      "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8",
-      "creationCodeHash": "0xbdd51c2c732abf40b9e763b4d10f7f56dd9be37b970ad72b9e8f58455a6270a3",
-      "runtimeCodeHash": "0x1f75210aff296a90ad8b9cf7c1ebb5369914b3f315d7680580401d13057cb6be",
-      "txHash": "0xbcffb3d1ff376905051a087588c4a722069496c4e37a68497fba709a614a8ecd"
+      "address": "0x5E70a420373D6BcB1ca3D08FEeB78a2F80727B29",
+      "creationCodeHash": "0xa2f660f8bc6b24a7612fe28f212b201e9338f7c6bd3ffac0aa796c8d6c51f52e",
+      "runtimeCodeHash": "0x18378fd99a42825e53488a725ade7051bc337254129691411abf1c9d23f177f3",
+      "txHash": "0x5fb09b1cee41c361b9f55c5ab55276f7716ac675fc376428fd87ba80b563cc83"
     },
     "SimpleTransferApp": {
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a",
@@ -369,10 +369,10 @@
       "txHash": "0xeb62b35d764d8ecd882d48d766188d4c62dc273a3a7a13aa185fd5f940f956b1"
     },
     "HashLockTransferApp": {
-      "address": "0x8f0483125FCb9aaAEFA9209D8E9d7b9C8B9Fb90F",
-      "creationCodeHash": "0x19ceb3d7348191d94191a3f6e0ce687c2e2b315bead0b9c840153fba1af2ab24",
-      "runtimeCodeHash": "0xe61193df0d84d95ed8f04aa31bacee79f3e5812de977144612fa4b70f777ed42",
-      "txHash": "0x111e93c9c310c55944ffbf12a00bd6a9c526264d69019a071d60dbcc8ba4cf01"
+      "address": "0xF6CBBF2D063E05851674E8BEA0479B1B90a4f4D3",
+      "creationCodeHash": "0x38b4df6af5d1dc374fabda9d1c09d10031df54cde1f85eb9831dadd5c76cb6a3",
+      "runtimeCodeHash": "0x288377a56b131d966e095bd89153966cb88829711b247f0534f6d6596555350b",
+      "txHash": "0x72f7312f8cfb5c34f7e232370af11ad9c92ea51160c1c117b333b9e5d417d814"
     }
   }
 }
