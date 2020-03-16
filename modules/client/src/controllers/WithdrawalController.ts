@@ -1,11 +1,10 @@
-import { MethodNames, MinimalTransaction } from "@connext/types";
+import { MethodNames, MinimalTransaction, toBN } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, formatEther, getAddress } from "ethers/utils";
 
 import { stringify } from "../lib";
 import {
-  convert,
   WithdrawalResponse,
   WithdrawParameters,
   chan_setUserWithdrawal,
@@ -27,7 +26,8 @@ export class WithdrawalController extends AbstractController {
     }
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
-    const { amount, assetId, recipient, userSubmitted } = convert.Withdraw(`bignumber`, params);
+    const amount = toBN(params.amount);
+    const { assetId, recipient, userSubmitted } = params;
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.connext.freeBalanceAddress];
     validate(

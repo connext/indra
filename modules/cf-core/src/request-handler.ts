@@ -1,4 +1,4 @@
-import { DEPOSIT_CONFIRMED_EVENT, PROTOCOL_MESSAGE_EVENT, ILoggerService } from "@connext/types";
+import { EventName, EventNames, ILoggerService, IMessagingService, MethodName } from "@connext/types";
 import { Signer } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -9,10 +9,6 @@ import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
 import {
-  EventName,
-  EventNames,
-  IMessagingService,
-  MethodName,
   MethodRequest,
   MethodResponse,
   NetworkContext,
@@ -113,7 +109,7 @@ export class RequestHandler {
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
-      if (event === DEPOSIT_CONFIRMED_EVENT) {
+      if (event === EventNames.DEPOSIT_CONFIRMED_EVENT) {
         this.log.info(
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,
@@ -134,7 +130,7 @@ export class RequestHandler {
       this.log,
       start,
       `Event ${
-        event !== PROTOCOL_MESSAGE_EVENT
+        event !== EventNames.PROTOCOL_MESSAGE_EVENT
           ? event
           : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
       } was processed`,

@@ -1,4 +1,4 @@
-import { ProtocolParams, ProtocolNames, PersistAppType } from "@connext/types";
+import { CommitmentType, ProtocolParams, ProtocolNames, PersistAppType } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
@@ -7,7 +7,6 @@ import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, AppInstanceProposal } from "../models";
 import {
   Context,
-  Commitment,
   Opcode,
   ProtocolExecutionFlow,
   ProtocolMessage,
@@ -19,7 +18,7 @@ import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
-const { SetState } = Commitment;
+const { SetState } = CommitmentType;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {

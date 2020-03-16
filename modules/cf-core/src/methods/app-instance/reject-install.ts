@@ -1,5 +1,4 @@
-import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { REJECT_INSTALL_EVENT } from "@connext/types";
+import { EventNames, MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
@@ -35,7 +34,7 @@ export class RejectInstallController extends NodeController {
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,
-      type: REJECT_INSTALL_EVENT,
+      type: EventNames.REJECT_INSTALL_EVENT,
       data: {
         appInstanceId,
       },

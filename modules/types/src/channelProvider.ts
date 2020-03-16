@@ -16,7 +16,7 @@ export const ChannelMethods = enumify({
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
   chan_setStateChannel: "chan_setStateChannel",
 });
-type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
+export type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
 export type ChannelMethod = keyof typeof ChannelMethods;
 
 export interface IChannelProvider extends ConnextEventEmitter {

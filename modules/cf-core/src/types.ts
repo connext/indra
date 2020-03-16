@@ -80,7 +80,6 @@ export {
   AppInterface,
   CoinBalanceRefundAppState,
   coinBalanceRefundAppStateEncoding,
-  Commitment,
   ConditionalTransactionCommitmentJSON,
   CreateChannelMessage,
   DepositConfirmationMessage,

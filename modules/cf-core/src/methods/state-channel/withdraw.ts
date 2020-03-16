@@ -1,9 +1,4 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
-import {
-  WITHDRAWAL_STARTED_EVENT,
-  WITHDRAWAL_FAILED_EVENT,
-  WITHDRAWAL_CONFIRMED_EVENT,
-} from "@connext/types";
+import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -125,9 +120,9 @@ export class WithdrawController extends NodeController {
     try {
       txResponse = await wallet.sendTransaction(tx);
 
-      outgoing.emit(WITHDRAWAL_STARTED_EVENT, {
+      outgoing.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
         from: publicIdentifier,
-        type: WITHDRAWAL_STARTED_EVENT,
+        type: EventNames.WITHDRAWAL_STARTED_EVENT,
         data: {
           params,
           txHash: txResponse.hash,
@@ -139,15 +134,15 @@ export class WithdrawController extends NodeController {
         blocksNeededForConfirmation,
       );
 
-      outgoing.emit(WITHDRAWAL_CONFIRMED_EVENT, {
+      outgoing.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, {
         from: publicIdentifier,
-        type: WITHDRAWAL_CONFIRMED_EVENT,
+        type: EventNames.WITHDRAWAL_CONFIRMED_EVENT,
         data: { txReceipt },
       });
     } catch (e) {
-      outgoing.emit(WITHDRAWAL_FAILED_EVENT, {
+      outgoing.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
         from: publicIdentifier,
-        type: WITHDRAWAL_FAILED_EVENT,
+        type: EventNames.WITHDRAWAL_FAILED_EVENT,
         data: e.toString(),
       });
       throw Error(`${WITHDRAWAL_FAILED}: ${e.message}`);

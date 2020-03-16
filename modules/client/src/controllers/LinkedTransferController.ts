@@ -1,15 +1,12 @@
 import {
-  convertLinkedTransferToRecipientParameters,
-  convertLinkedTransferParameters,
-} from "@connext/apps";
-import {
-  ProtocolParams,
-  SimpleLinkedTransferApp,
+  CREATE_TRANSFER,
+  CreateTransferEventData,
   LINKED_TRANSFER,
   LINKED_TRANSFER_TO_RECIPIENT,
+  ProtocolParams,
+  SimpleLinkedTransferApp,
   SimpleLinkedTransferAppStateBigNumber,
-  CreateTransferEventData,
-  CREATE_TRANSFER,
+  toBN,
 } from "@connext/types";
 import { encryptWithPublicKey } from "@connext/crypto";
 import { HashZero, Zero } from "ethers/constants";
@@ -38,14 +35,14 @@ export class LinkedTransferController extends AbstractController {
     params: LinkedTransferToRecipientParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
     params.meta = params.meta && typeof params.meta === "object" ? params.meta : {};
+    const amount = toBN(params.amount);
     const {
-      amount,
       assetId,
       paymentId,
       preImage,
       recipient,
       meta,
-    } = convertLinkedTransferToRecipientParameters(`bignumber`, params);
+    } = params;
 
     validate(invalidXpub(recipient));
 
@@ -96,11 +93,8 @@ export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
     params: LinkedTransferParameters,
   ): Promise<LinkedTransferResponse> => {
-    // convert params + validate
-    const { amount, assetId, paymentId, preImage, meta } = convertLinkedTransferParameters(
-      `bignumber`,
-      params,
-    );
+    const amount = toBN(params.amount);
+    const { assetId, paymentId, preImage, meta } = params;
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];

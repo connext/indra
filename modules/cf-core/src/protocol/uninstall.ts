@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams } from "@connext/types";
+import { CommitmentType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -7,7 +7,6 @@ import { StateChannel } from "../models";
 import { Store } from "../store";
 import {
   Context,
-  Commitment,
   Opcode,
   ProtocolExecutionFlow,
   ProtocolMessage,
@@ -19,7 +18,7 @@ import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = Commitment;
+const { SetState } = CommitmentType;
 
 /**
  * @description This exchange is described at the following URL:

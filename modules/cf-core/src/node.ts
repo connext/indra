@@ -1,10 +1,12 @@
 import {
-  PROTOCOL_MESSAGE_EVENT,
+  AppInstanceProposal,
+  CommitmentType,
+  EventName,
   EventNames,
   ILoggerService,
-  nullLogger,
+  MethodName,
   MinimalTransaction,
-  AppInstanceProposal,
+  nullLogger,
   PersistAppType,
 } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
@@ -23,13 +25,10 @@ import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import {
-  Commitment,
-  EventName,
   ILockService,
   IMessagingService,
   IPrivateKeyGenerator,
   IStoreService,
-  MethodName,
   MethodRequest,
   MethodResponse,
   NetworkContext,
@@ -200,7 +199,7 @@ export class Node {
       await this.messagingService.send(to, {
         data,
         from: fromXpub,
-        type: PROTOCOL_MESSAGE_EVENT,
+        type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as NodeMessageWrappedProtocolMessage);
     });
 
@@ -217,7 +216,7 @@ export class Node {
       await this.messagingService.send(to, {
         data,
         from: this.publicIdentifier,
-        type: PROTOCOL_MESSAGE_EVENT,
+        type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as NodeMessageWrappedProtocolMessage);
 
       // 90 seconds is the default lock acquiring time time
@@ -251,7 +250,7 @@ export class Node {
       Opcode.PERSIST_COMMITMENT,
       async (
         args: [
-          Commitment,
+          CommitmentType,
           MultisigCommitment | SetStateCommitment | MinimalTransaction,
           string,
         ],
@@ -261,7 +260,7 @@ export class Node {
         const [commitmentType, commitment, ...res] = args;
 
         switch (commitmentType) {
-          case Commitment.Withdraw:
+          case CommitmentType.Withdraw:
             const [multisigAddress] = res;
             await store.storeWithdrawalCommitment(
               multisigAddress,
@@ -269,7 +268,7 @@ export class Node {
             );
             break;
 
-          case Commitment.SetState:
+          case CommitmentType.SetState:
             const [appIdentityHash] = res;
             await store.saveLatestSetStateCommitment(
               appIdentityHash,
@@ -277,7 +276,7 @@ export class Node {
             );
             break;
 
-          case Commitment.Conditional:
+          case CommitmentType.Conditional:
             const [appId] = res;
             await store.saveConditionalTransactionCommitment(
               appId,
@@ -423,7 +422,7 @@ export class Node {
       console.error(`Received message with unknown event type: ${msg.type}`);
     }
 
-    const isProtocolMessage = (msg: NodeMessage) => msg.type === PROTOCOL_MESSAGE_EVENT;
+    const isProtocolMessage = (msg: NodeMessage) => msg.type === EventNames.PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: NodeMessageWrappedProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);

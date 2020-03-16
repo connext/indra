@@ -1,14 +1,10 @@
 import {
+  EventNames,
   MethodNames,
   MethodParams,
   MethodResults,
   ProtocolNames,
   ProtocolParams,
-} from "@connext/types";
-import {
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_STARTED_EVENT,
-  DEPOSIT_FAILED_EVENT,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
@@ -157,12 +153,12 @@ export class DepositController extends NodeController {
 
     const payload: DepositConfirmationMessage = {
       from: publicIdentifier,
-      type: DEPOSIT_CONFIRMED_EVENT,
+      type: EventNames.DEPOSIT_CONFIRMED_EVENT,
       data: params,
     };
 
     await messagingService.send(counterpartyAddress, payload);
-    outgoing.emit(DEPOSIT_CONFIRMED_EVENT, payload);
+    outgoing.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, payload);
 
     const multisigBalance =
       params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
@@ -268,26 +264,26 @@ export async function makeDeposit(
       errors.push(e.toString());
       const failMsg: DepositFailedMessage = {
         from: publicIdentifier,
-        type: DEPOSIT_FAILED_EVENT,
+        type: EventNames.DEPOSIT_FAILED_EVENT,
         data: { errors, params },
       };
       if (e.toString().includes(`reject`) || e.toString().includes(`denied`)) {
-        outgoing.emit(DEPOSIT_FAILED_EVENT, failMsg);
+        outgoing.emit(EventNames.DEPOSIT_FAILED_EVENT, failMsg);
         throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
-        outgoing.emit(DEPOSIT_FAILED_EVENT, failMsg);
+        outgoing.emit(EventNames.DEPOSIT_FAILED_EVENT, failMsg);
         throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
     }
   }
 
-  outgoing.emit(DEPOSIT_STARTED_EVENT, {
+  outgoing.emit(EventNames.DEPOSIT_STARTED_EVENT, {
     from: publicIdentifier,
-    type: DEPOSIT_STARTED_EVENT,
+    type: EventNames.DEPOSIT_STARTED_EVENT,
     data: {
       value: amount,
       txHash: txResponse!.hash,

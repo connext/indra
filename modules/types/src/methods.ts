@@ -5,6 +5,7 @@ import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
 import { OutcomeType } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { MinimalTransaction } from "./commitments";
+import { enumify } from "./utils";
 
 ////////////////////////////////////////
 
@@ -264,31 +265,32 @@ type WithdrawCommitmentResult = {
 ////////////////////////////////////////
 // exports
 
-export enum MethodNames {
-  chan_create = "chan_create",
-  chan_deployStateDepositHolder = "chan_deployStateDepositHolder",
-  chan_deposit = "chan_deposit",
-  chan_getAppInstance = "chan_getAppInstance",
-  chan_getAppInstances = "chan_getAppInstances",
-  chan_getChannelAddresses = "chan_getChannelAddresses",
-  chan_getFreeBalanceState = "chan_getFreeBalanceState",
-  chan_getProposedAppInstance = "chan_getProposedAppInstance",
-  chan_getProposedAppInstances = "chan_getProposedAppInstances",
-  chan_getState = "chan_getState",
-  chan_getStateChannel = "chan_getStateChannel",
-  chan_getStateDepositHolderAddress = "chan_getStateDepositHolderAddress",
-  chan_getTokenIndexedFreeBalanceStates = "chan_getTokenIndexedFreeBalanceStates",
-  chan_install = "chan_install",
-  chan_proposeInstall = "chan_proposeInstall",
-  chan_rejectInstall = "chan_rejectInstall",
-  chan_requestDepositRights = "chan_requestDepositRights",
-  chan_rescindDepositRights = "chan_rescindDepositRights",
-  chan_takeAction = "chan_takeAction",
-  chan_uninstall = "chan_uninstall",
-  chan_updateState = "chan_updateState",
-  chan_withdraw = "chan_withdraw",
-  chan_withdrawCommitment = "chan_withdrawCommitment",
-};
+export const MethodNames = enumify({
+  chan_create: "chan_create",
+  chan_deployStateDepositHolder: "chan_deployStateDepositHolder",
+  chan_deposit: "chan_deposit",
+  chan_getAppInstance: "chan_getAppInstance",
+  chan_getAppInstances: "chan_getAppInstances",
+  chan_getChannelAddresses: "chan_getChannelAddresses",
+  chan_getFreeBalanceState: "chan_getFreeBalanceState",
+  chan_getProposedAppInstance: "chan_getProposedAppInstance",
+  chan_getProposedAppInstances: "chan_getProposedAppInstances",
+  chan_getState: "chan_getState",
+  chan_getStateChannel: "chan_getStateChannel",
+  chan_getStateDepositHolderAddress: "chan_getStateDepositHolderAddress",
+  chan_getTokenIndexedFreeBalanceStates: "chan_getTokenIndexedFreeBalanceStates",
+  chan_install: "chan_install",
+  chan_proposeInstall: "chan_proposeInstall",
+  chan_rejectInstall: "chan_rejectInstall",
+  chan_requestDepositRights: "chan_requestDepositRights",
+  chan_rescindDepositRights: "chan_rescindDepositRights",
+  chan_takeAction: "chan_takeAction",
+  chan_uninstall: "chan_uninstall",
+  chan_updateState: "chan_updateState",
+  chan_withdraw: "chan_withdraw",
+  chan_withdrawCommitment: "chan_withdrawCommitment",
+});
+type MethodNames = (typeof MethodNames)[keyof typeof MethodNames];
 export type MethodName = keyof typeof MethodNames;
 
 export namespace MethodParams {

@@ -1,5 +1,7 @@
 import {
   commonAppProposalValidation,
+  EventName,
+  EventNames,
   SupportedApplication,
   validateSimpleLinkedTransferApp,
 } from "@connext/apps";
@@ -22,34 +24,31 @@ import {
   DepositStartedMessage,
   IChannelProvider,
   InstallMessage,
-  InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
   UninstallMessage,
-  UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
   WithdrawStartedMessage,
 } from "./types";
-import {
+
+const {
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
-  INSTALL_VIRTUAL_EVENT,
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
-  UNINSTALL_VIRTUAL_EVENT,
   UPDATE_STATE_EVENT,
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
-} from "@connext/types";
+} = EventNames;
 
 // TODO: index of connext events only?
 type CallbackStruct = {
@@ -79,10 +78,6 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     INSTALL_EVENT: (msg: InstallMessage): void => {
       this.emitAndLog(INSTALL_EVENT, msg.data);
-    },
-    // TODO: make cf return app instance id and app def?
-    INSTALL_VIRTUAL_EVENT: (msg: InstallVirtualMessage): void => {
-      this.emitAndLog(INSTALL_VIRTUAL_EVENT, msg.data);
     },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
       const {
@@ -117,9 +112,6 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     UNINSTALL_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
-    },
-    UNINSTALL_VIRTUAL_EVENT: (msg: UninstallVirtualMessage): void => {
-      this.emitAndLog(UNINSTALL_VIRTUAL_EVENT, msg.data);
     },
     UPDATE_STATE_EVENT: (msg: UpdateStateMessage): void => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);

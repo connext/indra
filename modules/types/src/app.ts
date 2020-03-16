@@ -5,16 +5,18 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "./contracts";
+import { enumify } from "./utils";
 
 ////////////////////////////////////
 // App Instances
 
-export enum PersistAppType {
-  Proposal = "proposal",
-  Instance = "instance", // install / update
-  Reject = "reject",
-  Uninstall = "uninstall",
-}
+export const PersistAppType = enumify({
+  Proposal: "Proposal",
+  Instance: "Instance", // install / update
+  Reject: "Reject",
+  Uninstall: "Uninstall",
+});
+export type PersistAppType = (typeof PersistAppType)[keyof typeof PersistAppType];
 
 export type AppInterface = {
   addr: Address;

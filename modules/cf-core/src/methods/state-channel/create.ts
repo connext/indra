@@ -1,5 +1,4 @@
-import { MethodNames, MethodParams, MethodResults } from "@connext/types";
-import { CREATE_CHANNEL_EVENT } from "@connext/types";
+import { EventNames, MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
@@ -78,7 +77,7 @@ export class CreateChannelController extends NodeController {
 
     const msg: CreateChannelMessage = {
       from: publicIdentifier,
-      type: CREATE_CHANNEL_EVENT,
+      type: EventNames.CREATE_CHANNEL_EVENT,
       data: {
         multisigAddress,
         owners: addressOwners,
@@ -86,6 +85,6 @@ export class CreateChannelController extends NodeController {
       } as MethodResults.CreateChannel,
     };
 
-    outgoing.emit(CREATE_CHANNEL_EVENT, msg);
+    outgoing.emit(EventNames.CREATE_CHANNEL_EVENT, msg);
   }
 }

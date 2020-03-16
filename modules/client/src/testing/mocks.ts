@@ -103,7 +103,7 @@ export class MockNodeClientApi implements INodeApiClient {
     this.signature = undefined;
   }
 
-  resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse<string>> {
+  resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse> {
     throw new Error("Method not implemented.");
   }
 
@@ -223,7 +223,7 @@ export class MockNodeClientApi implements INodeApiClient {
     return MockNodeClientApi.returnValues.verifyAppSequenceNumber;
   }
 
-  esolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse<string>> {
+  esolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse> {
     throw new Error("Method not implemented.");
   }
 

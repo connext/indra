@@ -24,7 +24,6 @@ export class ResolveLinkedTransferController extends AbstractController {
   public resolveLinkedTransfer = async (
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
-    // convert and validate
     // because this function is only used internally, it is safe to add
     // the amount / assetId to the api params without breaking interfaces
     const { paymentId, preImage } = params;

@@ -1,9 +1,8 @@
-import { ProtocolNames, ProtocolParams } from "@connext/types";
+import { CommitmentType, ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import {
-  Commitment,
   Context,
   Opcode,
   PersistAppType,
@@ -18,7 +17,7 @@ import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.update;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = Commitment;
+const { SetState } = CommitmentType;
 
 /**
  * @description This exchange is described at the following URL:

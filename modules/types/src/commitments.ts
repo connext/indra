@@ -2,6 +2,15 @@ import { Signature } from "ethers/utils";
 
 import { Address, BigNumberish, HexString } from "./basic";
 import { AppIdentity, NetworkContext } from "./contracts";
+import { enumify } from "./utils";
+
+export const CommitmentType = enumify({
+  Conditional: "conditional",
+  SetState: "setState",
+  Setup: "setup",
+  Withdraw: "withdraw",
+});
+export type CommitmentType = (typeof CommitmentType)[keyof typeof CommitmentType];
 
 // This is used instead of the ethers `Transaction` because that type
 // requires the nonce and chain ID to be specified, when sometimes those
@@ -11,13 +20,6 @@ export type MinimalTransaction = {
   value: BigNumberish;
   data: string;
 };
-
-export enum Commitment {
-  Conditional = "conditional",
-  SetState = "setState",
-  Setup = "setup",
-  Withdraw = "withdraw",
-}
 
 export type SetStateCommitmentJSON = {
   readonly appIdentity: AppIdentity;

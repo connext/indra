@@ -1,6 +1,7 @@
 import { AppInterface, AppABIEncodings } from "./app";
 import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
 import { OutcomeType } from "./contracts";
+import { enumify } from "./utils";
 
 type InstallProtocolParams = {
   initiatorXpub: Xpub;
@@ -82,15 +83,16 @@ type WithdrawProtocolParams = {
 ////////////////////////////////////////
 // exports
 
-export enum ProtocolNames {
-  install = "install",
-  propose = "propose",
-  setup = "setup",
-  takeAction = "takeAction",
-  uninstall = "uninstall",
-  update = "update",
-  withdraw = "withdraw",
-};
+export const ProtocolNames = enumify({
+  install: "install",
+  propose: "propose",
+  setup: "setup",
+  takeAction: "takeAction",
+  uninstall: "uninstall",
+  update: "update",
+  withdraw: "withdraw",
+});
+export type ProtocolNames = (typeof ProtocolNames)[keyof typeof ProtocolNames];
 export type ProtocolName = keyof typeof ProtocolNames;
 
 export namespace ProtocolParams {

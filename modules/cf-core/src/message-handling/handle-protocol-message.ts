@@ -1,14 +1,9 @@
 import {
+  EventNames,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
-  PROPOSE_INSTALL_EVENT,
-  INSTALL_EVENT,
-  UNINSTALL_EVENT,
-  CREATE_CHANNEL_EVENT,
-  WITHDRAWAL_STARTED_EVENT,
-  UPDATE_STATE_EVENT,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -107,7 +102,7 @@ async function getOutgoingEventDataFromProtocol(
       } = params as ProtocolParams.Propose;
       return {
         ...baseEvent,
-        type: PROPOSE_INSTALL_EVENT,
+        type: EventNames.PROPOSE_INSTALL_EVENT,
         data: {
           params: {
             ...emittedParams,
@@ -121,7 +116,7 @@ async function getOutgoingEventDataFromProtocol(
     case ProtocolNames.install:
       return {
         ...baseEvent,
-        type: INSTALL_EVENT,
+        type: EventNames.INSTALL_EVENT,
         data: {
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
@@ -135,13 +130,13 @@ async function getOutgoingEventDataFromProtocol(
     case ProtocolNames.uninstall:
       return {
         ...baseEvent,
-        type: UNINSTALL_EVENT,
+        type: EventNames.UNINSTALL_EVENT,
         data: getUninstallEventData(params as ProtocolParams.Uninstall),
       };
     case ProtocolNames.setup:
       return {
         ...baseEvent,
-        type: CREATE_CHANNEL_EVENT,
+        type: EventNames.CREATE_CHANNEL_EVENT,
         data: getSetupEventData(
           params as ProtocolParams.Setup,
           (await store.getStateChannel((params as ProtocolParams.Setup).multisigAddress))!
@@ -154,14 +149,14 @@ async function getOutgoingEventDataFromProtocol(
       // determine if the withdraw is finishing or if it is starting
       return {
         ...baseEvent,
-        type: WITHDRAWAL_STARTED_EVENT,
+        type: EventNames.WITHDRAWAL_STARTED_EVENT,
         data: getWithdrawEventData(params as ProtocolParams.Withdraw),
       } as WithdrawStartedMessage;
     case ProtocolNames.takeAction:
     case ProtocolNames.update:
       return {
         ...baseEvent,
-        type: UPDATE_STATE_EVENT,
+        type: EventNames.UPDATE_STATE_EVENT,
         data: getStateUpdateEventData(
           params as ProtocolParams.Update,
           (

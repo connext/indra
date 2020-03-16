@@ -1,18 +1,18 @@
-import { convertFastSignedTransferParameters } from "@connext/apps";
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
   AppInstanceJson,
-  ProtocolTypes,
-  FastSignedTransferAppState,
-  FastSignedTransferParameters,
-  FastSignedTransferActionType,
-  FastSignedTransferAppAction,
-  minBN,
-  FastSignedTransferAppStateBigNumber,
-  FAST_SIGNED_TRANSFER,
-  CreateTransferEventData,
   CREATE_TRANSFER,
+  CreateTransferEventData,
+  FAST_SIGNED_TRANSFER,
+  FastSignedTransferActionType,
   FastSignedTransferApp,
+  FastSignedTransferAppAction,
+  FastSignedTransferAppState,
+  FastSignedTransferAppStateBigNumber,
+  FastSignedTransferParameters,
+  minBN,
+  ProtocolTypes,
+  toBN,
 } from "@connext/types";
 import { Zero, MaxUint256, HashZero, AddressZero } from "ethers/constants";
 
@@ -41,15 +41,15 @@ export class FastSignedTransferController extends AbstractController {
     this.log.info(`fastSignedTransfer called with params ${stringify(params)}`);
     params.maxAllocation = params.maxAllocation || MaxUint256.toString();
 
+    const amount = toBN(params.amount);
+    const maxAllocation = toBN(params.maxAllocation);
     const {
-      amount,
       assetId,
       paymentId,
       recipient,
-      maxAllocation,
       meta,
       signer,
-    } = convertFastSignedTransferParameters(`bignumber`, params);
+    } = params;
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];

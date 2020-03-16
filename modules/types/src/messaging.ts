@@ -1,9 +1,5 @@
 import { DecString, TransactionReceipt } from "./basic";
-import {
-  EventName,
-  UninstallEventData,
-  UpdateStateEventData,
-} from "./events";
+import { EventName, EventPayloads } from "./events";
 import { ILoggerService } from "./logger";
 import {
   MethodName,
@@ -172,11 +168,11 @@ export interface RejectProposalMessage extends NodeMessage {
 }
 
 export interface UninstallMessage extends NodeMessage {
-  data: UninstallEventData;
+  data: EventPayloads.Uninstall;
 }
 
 export interface UpdateStateMessage extends NodeMessage {
-  data: UpdateStateEventData;
+  data: EventPayloads.UpdateState;
 }
 
 export interface WithdrawConfirmationMessage extends NodeMessage {

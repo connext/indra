@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams } from "@connext/types";
+import { CommitmentType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -8,7 +8,6 @@ import { getConditionalTransactionCommitment, getSetStateCommitment } from "../e
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
-  Commitment,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   Opcode,
   OutcomeType,
@@ -32,7 +31,7 @@ const {
   PERSIST_COMMITMENT,
   PERSIST_FREE_BALANCE,
 } = Opcode;
-const { Conditional, SetState } = Commitment;
+const { Conditional, SetState } = CommitmentType;
 
 /**
  * @description This exchange is described at the following URL:

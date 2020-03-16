@@ -1,11 +1,11 @@
-import { ProtocolParams, CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp } from "@connext/types";
+import { ProtocolParams, CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp, toBN } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { stringify } from "../lib";
-import { BigNumber, ChannelState, convert, DepositParameters } from "../types";
+import { BigNumber, ChannelState, DepositParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -14,8 +14,9 @@ import { AbstractController } from "./AbstractController";
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
+    const assetId = params.assetId;
+    const amount = toBN(params.amount);
 
-    const { assetId, amount } = convert.Deposit(`bignumber`, params);
     validate(invalidAddress(assetId), notPositive(amount));
 
     // check asset balance of address

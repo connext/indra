@@ -1,5 +1,4 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
-import { UPDATE_STATE_EVENT } from "@connext/types";
+import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -93,7 +92,7 @@ export class TakeActionController extends NodeController {
 
     const msg = {
       from: publicIdentifier,
-      type: UPDATE_STATE_EVENT,
+      type: EventNames.UPDATE_STATE_EVENT,
       data: { appInstanceId, action, newState: appInstance.state },
     } as UpdateStateMessage;
 

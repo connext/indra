@@ -1,11 +1,16 @@
-export const FastSignedTransfer = "FAST_SIGNED_TRANSFER";
-export const LinkedTransfer = "LINKED_TRANSFER";
-export const LinkedTransferToRecipient = "LINKED_TRANSFER_TO_RECIPIENT";
+import { enumify } from "../../utils";
 
-export const ConditionalTransferTypes = {
+export const FastSignedTransfer = "FastSignedTransfer";
+export const LinkedTransfer = "LinkedTransfer";
+export const LinkedTransferToRecipient = "LinkedTransferToRecipient";
+
+export const ConditionalTransferTypes = enumify({
   [FastSignedTransfer]: FastSignedTransfer,
   [LinkedTransfer]: LinkedTransfer,
   [LinkedTransferToRecipient]: LinkedTransferToRecipient,
-};
+});
+
+export type ConditionalTransferTypes =
+  (typeof ConditionalTransferTypes)[keyof typeof ConditionalTransferTypes];
 
 export type ConditionalTransferType = keyof typeof ConditionalTransferTypes;

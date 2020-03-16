@@ -11,7 +11,7 @@ import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, getAddress, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -28,10 +28,8 @@ import {
   AppInstanceProposal,
   AppRegistry,
   CFCoreChannel,
-  chan_getUserWithdrawal,
-  chan_restoreState,
-  chan_setStateChannel,
-  chan_setUserWithdrawal,
+  DepositParameters,
+  ChannelMethods,
   ChannelProviderConfig,
   ChannelState,
   CheckDepositRightsParameters,
@@ -52,11 +50,8 @@ import {
   INodeApiClient,
   InternalClientOptions,
   KeyGen,
-  LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
+  ConditionalTransferTypes,
   LinkedTransferToRecipientResponse,
-  makeChecksum,
-  makeChecksumOrEthAddress,
   RebalanceProfile,
   RequestCollateralResponse,
   ResolveConditionParameters,
@@ -298,7 +293,7 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // CORE CHANNEL METHODS
 
-  public deposit = async (params: MethodParams.Deposit): Promise<ChannelState> => {
+  public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     return this.depositController.deposit(params);
   };
 
@@ -349,7 +344,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   /**
-   * Transfer currently uses the conditionalTransfer LINKED_TRANSFER_TO_RECIPIENT so that
+   * Transfer currently uses the conditionalTransfer LinkedTransferToRecipient so that
    * async payments are the default transfer.
    */
   public transfer = async (
@@ -358,7 +353,7 @@ export class ConnextClient implements IConnextClient {
     return this.linkedTransferController.linkedTransferToRecipient({
       amount: params.amount,
       assetId: params.assetId,
-      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+      conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
       meta: params.meta,
       paymentId: hexlify(randomBytes(32)),
       preImage: hexlify(randomBytes(32)),
@@ -374,11 +369,11 @@ export class ConnextClient implements IConnextClient {
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
     switch (params.conditionType) {
-      case LINKED_TRANSFER_TO_RECIPIENT:
-      case LINKED_TRANSFER: {
+      case ConditionalTransferTypes.LinkedTransferToRecipient:
+      case ConditionalTransferTypes.LinkedTransfer: {
         return this.resolveLinkedTransferController.resolveLinkedTransfer({
           ...params,
-          conditionType: LINKED_TRANSFER,
+          conditionType: ConditionalTransferTypes.LinkedTransfer,
         });
       }
       case FAST_SIGNED_TRANSFER: {
@@ -396,10 +391,10 @@ export class ConnextClient implements IConnextClient {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     switch (params.conditionType) {
-      case LINKED_TRANSFER: {
+      case ConditionalTransferResponse.LinkedTransfer: {
         return this.linkedTransferController.linkedTransfer(params);
       }
-      case LINKED_TRANSFER_TO_RECIPIENT: {
+      case ConditionalTransferTypes.LinkedTransferToRecipient: {
         return this.linkedTransferController.linkedTransferToRecipient(params);
       }
       case FAST_SIGNED_TRANSFER: {
@@ -415,7 +410,7 @@ export class ConnextClient implements IConnextClient {
   public getLatestNodeSubmittedWithdrawal = async (): Promise<
     { retry: number; tx: MinimalTransaction } | undefined
   > => {
-    const value = await this.channelProvider.send(chan_getUserWithdrawal, {});
+    const value = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
     if (!value || value === "undefined") {
       return undefined;
@@ -446,7 +441,7 @@ export class ConnextClient implements IConnextClient {
           async (blockNumber: number): Promise<void> => {
             const found = await this.checkForUserWithdrawal(blockNumber);
             if (found) {
-              await this.channelProvider.send(chan_setUserWithdrawal, {
+              await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
                 withdrawalObject: undefined,
               });
               this.ethProvider.removeAllListeners("block");
@@ -472,7 +467,7 @@ export class ConnextClient implements IConnextClient {
 
   public restoreState = async (): Promise<void> => {
     try {
-      await this.channelProvider.send(chan_restoreState, {});
+      await this.channelProvider.send(ChannelMethods.chan_restoreState, {});
       this.log.info(`Found state to restore from store's backup`);
     } catch (e) {
       const state = await this.node.restoreState(this.publicIdentifier);
@@ -481,7 +476,7 @@ export class ConnextClient implements IConnextClient {
       }
       this.log.debug(`Found state to restore from node`);
       this.log.debug(`Restored state: ${stringify(state)}`);
-      await this.channelProvider.send(chan_setStateChannel, {
+      await this.channelProvider.send(ChannelMethods.chan_setStateChannel, {
         state,
       });
     }
@@ -555,7 +550,7 @@ export class ConnextClient implements IConnextClient {
       amount,
       multisigAddress: this.multisigAddress,
       notifyCounterparty,
-      tokenAddress: makeChecksum(assetId),
+      tokenAddress: getAddress(assetId),
     } as MethodParams.Deposit);
   };
 
@@ -572,11 +567,11 @@ export class ConnextClient implements IConnextClient {
     if (typeof assetId !== "string") {
       throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
     }
-    const normalizedAssetId = makeChecksum(assetId);
+    const normalizedAssetId = getAddress(assetId);
     try {
       return await this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
         multisigAddress: this.multisigAddress,
-        tokenAddress: makeChecksum(assetId),
+        tokenAddress: getAddress(assetId),
       } as MethodParams.GetFreeBalanceState);
     } catch (e) {
       const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
@@ -741,7 +736,7 @@ export class ConnextClient implements IConnextClient {
       amount,
       multisigAddress: this.multisigAddress,
       recipient,
-      tokenAddress: makeChecksum(assetId),
+      tokenAddress: getAddress(assetId),
     } as MethodParams.Withdraw);
   };
 
@@ -765,7 +760,7 @@ export class ConnextClient implements IConnextClient {
       amount,
       multisigAddress: this.multisigAddress,
       recipient,
-      tokenAddress: makeChecksumOrEthAddress(assetId),
+      tokenAddress: getAddress(assetId),
     } as MethodParams.WithdrawCommitment);
   };
 
@@ -814,7 +809,7 @@ export class ConnextClient implements IConnextClient {
     const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
-      conditionType: LINKED_TRANSFER,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
     });
@@ -988,7 +983,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   public resubmitActiveWithdrawal = async (): Promise<void> => {
-    const withdrawal = await this.channelProvider.send(chan_getUserWithdrawal, {});
+    const withdrawal = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
     if (!withdrawal || withdrawal === "undefined") {
       // No active withdrawal, nothing to do
@@ -1012,7 +1007,7 @@ export class ConnextClient implements IConnextClient {
     if (this.matchTx(tx, withdrawal.tx)) {
       // the withdrawal in our store matches latest submitted tx,
       // clear value in store and return
-      await this.channelProvider.send(chan_setUserWithdrawal, {
+      await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
         withdrawalObject: undefined,
       });
       return;
@@ -1034,7 +1029,7 @@ export class ConnextClient implements IConnextClient {
     let { retry } = val;
     const { tx } = val;
     retry += 1;
-    await this.channelProvider.send(chan_setUserWithdrawal, {
+    await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
       withdrawalObject: { retry, tx },
     });
     if (retry >= MAX_WITHDRAWAL_RETRIES) {

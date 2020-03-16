@@ -1,12 +1,13 @@
 import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
 import {
+  ChannelMethods,
   ILoggerService,
   MinimalTransaction,
   ResolveFastSignedTransferResponse,
 } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
-import { Transaction } from "ethers/utils";
+import { getAddress, Transaction } from "ethers/utils";
 import uuid from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
@@ -17,7 +18,6 @@ import {
   GetConfigResponse,
   IChannelProvider,
   INodeApiClient,
-  makeChecksumOrEthAddress,
   NodeInitializationParameters,
   RebalanceProfile,
   PendingAsyncTransfer,
@@ -26,7 +26,6 @@ import {
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";
-import { chan_nodeAuth } from "@connext/types";
 
 // Include our access token when interacting with these subjects
 const guardedSubjects = [];
@@ -183,7 +182,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
     return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
-      assetId: makeChecksumOrEthAddress(assetId),
+      assetId: getAddress(assetId),
     });
   }
 
@@ -274,7 +273,7 @@ export class NodeApiClient implements INodeApiClient {
       if (unsignedToken.expiry < Date.now()) {
         throw new Error("Got expired authentication nonce from hub - this shouldnt happen!");
       }
-      const sig = await this.channelProvider.send(chan_nodeAuth, { message: unsignedToken.nonce });
+      const sig = await this.channelProvider.send(ChannelMethods.chan_nodeAuth, { message: unsignedToken.nonce });
       this._authToken = token = {
         expiry: unsignedToken.expiry,
         value: `${unsignedToken.nonce}:${sig}`,

@@ -1,6 +1,7 @@
 import { AbiCoder, hexlify } from "ethers/utils";
 
 import { Address, BaseProvider } from "../basic";
+import { enumify } from "../utils";
 
 export const tidy = (str: string): string =>
   `${str.replace(/\\n/, "").replace(/ +/, " ")}`;
@@ -77,11 +78,12 @@ export const multiAssetMultiPartyCoinTransferEncoding = tidy(`tuple(
   uint256 amount
 )[][]`);
 
-export enum OutcomeType {
+export const OutcomeType = enumify({
   // uint8
-  TWO_PARTY_FIXED_OUTCOME = "TWO_PARTY_FIXED_OUTCOME",
+  TWO_PARTY_FIXED_OUTCOME: "TWO_PARTY_FIXED_OUTCOME",
   // CoinTransfer[][]
-  MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER = "MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER",
+  MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: "MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER",
   // CoinTransfer[2]
-  SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER = "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER",
-}
+  SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER",
+});
+export type OutcomeType = (typeof OutcomeType)[keyof typeof OutcomeType];

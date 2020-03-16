@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams } from "@connext/types";
+import { CommitmentType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -11,7 +11,6 @@ import { AppInstance, StateChannel } from "../models";
 import {
   coinBalanceRefundAppStateEncoding,
   Context,
-  Commitment,
   NetworkContext,
   Opcode,
   OutcomeType,
@@ -130,7 +129,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.Conditional, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
+      CommitmentType.Conditional, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       conditionalTransactionData,
       refundApp.identityHash,
     ];
@@ -158,7 +157,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
+      CommitmentType.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       freeBalanceUpdateData,
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
@@ -252,7 +251,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.Withdraw,
+      CommitmentType.Withdraw,
       withdrawCommitment.getSignedTransaction(),
       multisigAddress,
     ];
@@ -264,7 +263,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
+      CommitmentType.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
@@ -347,7 +346,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.Conditional, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
+      CommitmentType.Conditional, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       conditionalTransactionData,
       refundApp.identityHash,
     ];
@@ -397,7 +396,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
+      CommitmentType.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       freeBalanceUpdateData,
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
@@ -426,7 +425,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.Withdraw,
+      CommitmentType.Withdraw,
       withdrawCommitment.getSignedTransaction(),
       multisigAddress,
     ];
@@ -480,7 +479,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Commitment.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
+      CommitmentType.SetState, // NOTE: The PERSIST_COMMITMENT API is awkward in this situation
       uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
