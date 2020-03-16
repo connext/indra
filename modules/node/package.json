@@ -46,8 +46,7 @@
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.4",
     "ts-nats": "1.2.12",
-    "typeorm": "0.2.24",
-    "uuid": "7.0.2"
+    "typeorm": "0.2.24"
   },
   "devDependencies": {
     "@connext/client": "5.2.1",
