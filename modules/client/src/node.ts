@@ -178,6 +178,12 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
+  public async resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse> {
+    return await this.send(`transfer.resolve-hashlock.${this.userPublicIdentifier}`, {
+      lockHash,
+    });
+  }
+
   public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
     return await this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
       assetId: makeChecksumOrEthAddress(assetId),

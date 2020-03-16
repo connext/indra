@@ -4,6 +4,7 @@ import {
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
   validateFastSignedTransferApp,
+  validateHashLockTransferApp,
 } from "@connext/apps";
 import {
   AppInstanceJson,
@@ -12,6 +13,7 @@ import {
   SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
   FastSignedTransferApp,
+  HashLockTransferApp,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -154,6 +156,14 @@ export class AppRegistryService implements OnModuleInit {
       }
       case FastSignedTransferApp: {
         validateFastSignedTransferApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        break;
+      }
+      case HashLockTransferApp: {
+        validateHashLockTransferApp(
           proposeInstallParams,
           from,
           this.cfCoreService.cfCore.publicIdentifier,

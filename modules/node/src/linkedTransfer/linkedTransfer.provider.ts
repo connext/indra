@@ -3,7 +3,6 @@ import {
   ResolveLinkedTransferResponse,
   Transfer,
   replaceBN,
-  stringify,
   PendingAsyncTransfer,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
@@ -68,26 +67,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     });
   }
 
-  /**
-   * Check in endpoint for client to call when it comes online to handle pending tasks
-   * @param pubId
-   */
-  async clientCheckIn(pubId: string): Promise<void> {
-    // reclaim collateral from redeemed transfers
-    const reclaimableTransfers = await this.linkedTransferService.getLinkedTransfersForReclaim(
-      pubId,
-    );
-    for (const transfer of reclaimableTransfers) {
-      try {
-        await this.linkedTransferService.reclaimLinkedTransferCollateralByPaymentId(
-          transfer.paymentId,
-        );
-      } catch (e) {
-        this.log.error(`Error reclaiming transfer: ${stringify(e.stack || e.message)}`);
-      }
-    }
-  }
-
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.fetch-linked",
@@ -100,10 +79,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "*.transfer.get-pending",
       this.authService.parseXpub(this.getPendingTransfers.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "*.client.check-in",
-      this.authService.parseXpub(this.clientCheckIn.bind(this)),
     );
   }
 }

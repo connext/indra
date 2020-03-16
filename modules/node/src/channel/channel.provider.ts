@@ -1,8 +1,6 @@
-import { MessagingService } from "@connext/messaging";
 import {
   ChannelAppSequences,
   GetChannelResponse,
-  GetConfigResponse,
   StateChannelJSON,
   RebalanceProfile,
   convert,
@@ -17,6 +15,7 @@ import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
 import { CFCoreTypes } from "../util/cfCore";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -24,10 +23,11 @@ import { ChannelService, RebalanceType } from "./channel.service";
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    private readonly channelRepository: ChannelRepository,
-    private readonly channelService: ChannelService,
     log: LoggerService,
     messaging: MessagingService,
+    private readonly channelService: ChannelService,
+    private readonly channelRepository: ChannelRepository,
+    private readonly onchainTransactionRepository: OnchainTransactionRepository,
   ) {
     super(log, messaging);
   }
@@ -102,7 +102,9 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
-    const onchainTx = await this.channelService.getLatestWithdrawal(pubId);
+    const onchainTx = await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+      pubId,
+    );
     // TODO: conversions needed?
     return onchainTx;
   }
@@ -153,16 +155,31 @@ class ChannelMessaging extends AbstractMessagingProvider {
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, ChannelRepository, ChannelService, LoggerService, MessagingProviderId],
+  inject: [
+    AuthService,
+    LoggerService,
+    MessagingProviderId,
+    ChannelService,
+    ChannelRepository,
+    OnchainTransactionRepository,
+  ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,
-    channelRepo: ChannelRepository,
-    channelService: ChannelService,
     log: LoggerService,
     messaging: MessagingService,
+    channelService: ChannelService,
+    channelRepo: ChannelRepository,
+    onchain: OnchainTransactionRepository,
   ): Promise<void> => {
-    const channel = new ChannelMessaging(authService, channelRepo, channelService, log, messaging);
+    const channel = new ChannelMessaging(
+      authService,
+      log,
+      messaging,
+      channelService,
+      channelRepo,
+      onchain,
+    );
     await channel.setupSubscriptions();
   },
 };

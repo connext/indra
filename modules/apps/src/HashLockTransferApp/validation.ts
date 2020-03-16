@@ -1,12 +1,10 @@
-import { CFCoreTypes, bigNumberifyObj, CoinTransfer, CoinTransferBigNumber } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
-import { BigNumber } from "ethers/utils";
+import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj } from "@connext/types";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
-import { convertFastSignedTransferAppState } from "./convert";
-import { HashZero } from "ethers/constants";
+import { convertHashLockTransferAppState } from "./convert";
 
-export const validateFastSignedTransferApp = (
+export const validateHashLockTransferApp = (
   params: CFCoreTypes.ProposeInstallParams,
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
@@ -14,21 +12,15 @@ export const validateFastSignedTransferApp = (
   const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
     params,
   );
-  const initialState = convertFastSignedTransferAppState("bignumber", initialStateBadType);
-
-  if (initialState.paymentId !== HashZero) {
-    throw new Error(`Cannot install with pre-populated paymentId`);
-  }
 
   const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
   const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
 
-  // initiator is sender
+  const initialState = convertHashLockTransferAppState("bignumber", initialStateBadType);
+
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
     return transfer.to === initiatorFreeBalanceAddress;
   })[0];
-
-  // responder is receiver
   const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
     return transfer.to === responderFreeBalanceAddress;
   })[0];

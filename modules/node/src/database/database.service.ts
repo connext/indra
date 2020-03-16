@@ -12,7 +12,6 @@ import {
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { Transfer } from "../transfer/transfer.entity";
 import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
-import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 
 // Import Migrations
@@ -41,7 +40,6 @@ export const entities = [
   Transfer,
   AnonymizedOnchainTransaction,
   AnonymizedTransfer,
-  FastSignedTransfer,
 ];
 
 export const migrations = [

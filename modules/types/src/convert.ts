@@ -120,6 +120,28 @@ export function convertAssetAmount<To extends NumericTypeName>(
   return convertAmountField(to, obj);
 }
 
+export function convertCoinTransfers<To extends NumericTypeName>(
+  to: To,
+  transfers: CoinTransfer<any>[],
+): CoinTransfer<NumericTypes[To]>[] {
+  if (typeof transfers[0].amount !== "undefined") {
+    // already an object
+    return [convertAssetAmount(to, transfers[0]), convertAssetAmount(to, transfers[1])];
+  } else {
+    // an array that needs to be converted into an object
+    return [
+      convertAssetAmount(to, {
+        to: transfers[0][0],
+        amount: transfers[0][1],
+      }),
+      convertAssetAmount(to, {
+        to: transfers[1][0],
+        amount: transfers[1][1],
+      }),
+    ];
+  }
+}
+
 export function convertAssetAmountWithId<To extends NumericTypeName>(
   to: To,
   obj: GenericAmountObject<any> & { assetId?: string },
