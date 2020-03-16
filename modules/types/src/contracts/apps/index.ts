@@ -1,4 +1,13 @@
 import {
+  FastSignedTransferAppAction,
+  FastSignedTransferAppState,
+  FastSignedTransferParameters,
+  FastSignedTransferResponse,
+  ResolveFastSignedTransferParameters,
+} from "./FastSignedTransfer";
+import {
+  SimpleLinkedTransferAppAction,
+  SimpleLinkedTransferAppState,
   ResolveLinkedTransferResponse,
   LinkedTransferParameters,
   LinkedTransferToRecipientParameters,
@@ -6,16 +15,10 @@ import {
   LinkedTransferToRecipientResponse,
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferToRecipientParameters,
-  LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
 } from "./SimpleLinkedTransferApp";
-import {
-  FastSignedTransferParameters,
-  FastSignedTransferResponse,
-  ResolveFastSignedTransferParameters,
-  FAST_SIGNED_TRANSFER,
-} from "./FastSignedTransfer";
+import { SimpleSwapAppState }from "./SimpleTwoPartySwapApp";
 
+export * from "./common";
 export * from "./FastSignedTransfer";
 export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleTwoPartySwapApp";
@@ -34,9 +37,14 @@ export type ResolveConditionParameters =
   | ResolveLinkedTransferParameters
   | ResolveLinkedTransferToRecipientParameters
   | ResolveFastSignedTransferParameters;
+
 export type ResolveConditionResponse = ResolveLinkedTransferResponse;
 
-export type ConditionalTransferTypes =
-  | typeof LINKED_TRANSFER
-  | typeof LINKED_TRANSFER_TO_RECIPIENT
-  | typeof FAST_SIGNED_TRANSFER;
+export type AppAction =
+  | FastSignedTransferAppAction
+  | SimpleLinkedTransferAppAction
+  | SimpleSwapAppState;
+
+export type AppState = 
+  | FastSignedTransferAppState
+  | SimpleLinkedTransferAppState;

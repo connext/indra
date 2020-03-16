@@ -1,4 +1,5 @@
 import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
+import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
 import { OutcomeType } from "./contracts";
@@ -187,14 +188,14 @@ type RequestDepositRightsResult = {
 const chan_proposeInstall = "chan_proposeInstall";
 
 type ProposeInstallParams = {
-  appDefinition: string;
+  appDefinition: Address;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress?: string;
+  initiatorDepositTokenAddress: Address;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress?: string;
+  responderDepositTokenAddress: Address;
   timeout: BigNumber;
-  initialState: SolidityValueType;
+  initialState: AppState;
   proposedToIdentifier: string;
   outcomeType: OutcomeType;
   meta?: Object;

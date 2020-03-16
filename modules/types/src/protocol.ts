@@ -31,9 +31,9 @@ type ProposeInstallProtocolParams = {
   appDefinition: string;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress?: string;
+  initiatorDepositTokenAddress: string;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress?: string;
+  responderDepositTokenAddress: string;
   timeout: BigNumber;
   initialState: SolidityValueType;
   outcomeType: OutcomeType;

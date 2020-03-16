@@ -1,14 +1,15 @@
 import {
-  CoinBalanceRefundAppStateEncoding,
+  coinBalanceRefundAppStateEncoding,
   OutcomeType,
-  CoinBalanceRefundApp,
+  CoinBalanceRefundAppName,
 } from "@connext/types";
 
-import { AppRegistryInfo } from "../shared";
+import { AppRegistryInfo } from "./shared";
 
 export const CoinBalanceRefundAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,
-  name: CoinBalanceRefundApp,
+  name: CoinBalanceRefundAppName,
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  stateEncoding: CoinBalanceRefundAppStateEncoding,
+  stateEncoding: coinBalanceRefundAppStateEncoding,
 };
+

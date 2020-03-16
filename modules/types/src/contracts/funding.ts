@@ -4,6 +4,8 @@ import { tidy } from "./misc";
 ////////////////////////////////////////
 // keep synced w contracts/funding/default-apps/CoinBalanceRefundApp.sol
 
+export const CoinBalanceRefundAppName = "CoinBalanceRefundApp";
+
 export type CoinBalanceRefundAppState = {
   recipient: Address;
   multisig: Address;

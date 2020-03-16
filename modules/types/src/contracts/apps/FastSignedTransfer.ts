@@ -7,8 +7,9 @@ import {
   tidy,
 } from "../misc";
 
-export const FAST_SIGNED_TRANSFER = "FAST_SIGNED_TRANSFER";
-export const FastSignedTransferApp = "FastSignedTransferApp";
+import { FastSignedTransfer } from "./common";
+
+export const FastSignedTransferAppName = "FastSignedTransferApp";
 
 ////////////////////////////////////////
 // keep synced w contracts/app/FastSignedTransferApp.sol
@@ -77,7 +78,7 @@ export const encodeFastSignedTransferAppAction =
 // Off-chain app types
 
 export type FastSignedTransferParameters = {
-  conditionType: typeof FAST_SIGNED_TRANSFER;
+  conditionType: typeof FastSignedTransfer;
   recipient: string; // xpub?
   amount: BigNumber;
   assetId?: Address;
@@ -92,7 +93,7 @@ export type FastSignedTransferResponse = {
 };
 
 export type ResolveFastSignedTransferParameters = {
-  conditionType: typeof FAST_SIGNED_TRANSFER;
+  conditionType: typeof FastSignedTransfer;
   paymentId: string;
   data: string;
   signature: string;

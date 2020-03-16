@@ -3,9 +3,9 @@ import { Address, BigNumber, HexString } from "../../basic";
 import { CoinTransfer } from "../funding";
 import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
 
-export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
-export const LINKED_TRANSFER = "LINKED_TRANSFER";
-export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
+import { LinkedTransfer, LinkedTransferToRecipient } from "./common";
+
+export const SimpleLinkedTransferAppName = "SimpleLinkedTransferApp";
 
 ////////////////////////////////////////
 // keep synced w contracts/app/SimpleLinkedTransferApp.sol
@@ -41,7 +41,7 @@ export const SimpleLinkedTransferAppActionEncoding = tidy(`tuple(
 
 // linked transfer types
 export type LinkedTransferParameters = {
-  conditionType: typeof LINKED_TRANSFER;
+  conditionType: typeof LinkedTransfer;
   amount: BigNumber;
   assetId?: string;
   paymentId: string;
@@ -59,7 +59,7 @@ export type LinkedTransferToRecipientParameters = Omit<
   LinkedTransferParameters,
   "conditionType"
 > & {
-  conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
+  conditionType: typeof LinkedTransferToRecipient;
   recipient: string;
 };
 
@@ -78,7 +78,7 @@ export type ResolveLinkedTransferToRecipientParameters = Omit<
 > & {
   amount: BigNumber;
   assetId: string;
-  conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
+  conditionType: typeof LinkedTransferToRecipient;
 };
 
 export type ResolveLinkedTransferResponse = {

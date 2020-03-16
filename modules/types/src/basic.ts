@@ -34,9 +34,7 @@ type SolidityABIEncoderV2Struct = {
   [x: string]: SolidityValueType;
 };
 
-// Ideally this should be a `type` not an `interface` but self-referencial
-// types is not supported: github.com/Microsoft/TypeScript/issues/6230
-interface SolidityABIEncoderV2SArray extends Array<SolidityValueType> {}
+type SolidityABIEncoderV2SArray = Array<SolidityValueType>;
 
 // The application-specific state of an app instance, to be interpreted by the
 // app developer. We just treat it as an opaque blob; however since we pass this
@@ -44,6 +42,8 @@ interface SolidityABIEncoderV2SArray extends Array<SolidityValueType> {}
 // we impose some restrictions on the type; they must be serializable both as
 // JSON and as solidity structs.
 export type SolidityValueType =
-  SolidityPrimitiveType | SolidityABIEncoderV2Struct | SolidityABIEncoderV2SArray;
+  | SolidityPrimitiveType
+  | SolidityABIEncoderV2Struct
+  | SolidityABIEncoderV2SArray;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;

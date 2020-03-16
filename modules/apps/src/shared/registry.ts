@@ -1,6 +1,19 @@
-import { OutcomeType } from "@connext/types";
+import {
+  CoinBalanceRefundAppName,
+  FastSignedTransferAppName,
+  OutcomeType,
+  SimpleLinkedTransferAppName,
+  SimpleTwoPartySwapAppName,
+} from "@connext/types";
 
-import { SupportedApplication } from "..";
+export const SupportedApplications = {
+  [CoinBalanceRefundAppName]: CoinBalanceRefundAppName,
+  [FastSignedTransferAppName]: FastSignedTransferAppName,
+  [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
+  [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
+};
+
+export type SupportedApplication = keyof typeof SupportedApplications;
 
 export type AppRegistryInfo = {
   actionEncoding?: string;
@@ -10,4 +23,4 @@ export type AppRegistryInfo = {
   stateEncoding: string;
 };
 
-export type AppRegistry = AppRegistryInfo[];
+export type AppRegistryType = AppRegistryInfo[];

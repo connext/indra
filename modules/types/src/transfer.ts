@@ -1,9 +1,9 @@
 import { DecString } from "./basic";
 import {
-  LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
-  FAST_SIGNED_TRANSFER,
-  ConditionalTransferTypes,
+  LinkedTransfer,
+  LinkedTransferToRecipient,
+  FastSignedTransfer,
+  ConditionalTransferType,
 } from "./contracts";
 
 export type TransferAction = {
@@ -22,7 +22,7 @@ export type CreatedFastSignedTransferMeta = {
 };
 
 export type ReceiveTransferFinishedEventData<
-  T extends ConditionalTransferTypes | undefined = undefined
+  T extends ConditionalTransferType | undefined = undefined
 > = {
   amount: string;
   assetId: string;
@@ -33,7 +33,7 @@ export type ReceiveTransferFinishedEventData<
   type: T;
 };
 
-export type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = undefined> = {
+export type CreateTransferEventData<T extends ConditionalTransferType | undefined = undefined> = {
   amount: string;
   assetId: string;
   paymentId: string;
@@ -41,11 +41,11 @@ export type CreateTransferEventData<T extends ConditionalTransferTypes | undefin
   recipient?: string;
   meta: any;
   type: T;
-  transferMeta: T extends typeof LINKED_TRANSFER
+  transferMeta: T extends typeof LinkedTransfer
     ? CreatedLinkedTransferMeta
-    : T extends typeof LINKED_TRANSFER_TO_RECIPIENT
+    : T extends typeof LinkedTransferToRecipient
     ? CreatedLinkedTransferToRecipientMeta
-    : T extends typeof FAST_SIGNED_TRANSFER
+    : T extends typeof FastSignedTransfer
     ? CreatedFastSignedTransferMeta
     : undefined;
 };
