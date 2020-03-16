@@ -1,12 +1,7 @@
 import {
-  chan_config,
-  chan_nodeAuth,
-  chan_restoreState,
-  chan_getUserWithdrawal,
-  chan_setUserWithdrawal,
-  chan_setStateChannel,
+  ChannelMethod,
+  ChannelMethods,
   ChannelProviderConfig,
-  ChannelProviderRpcMethod,
   ConnextEventEmitter,
   IChannelProvider,
   IRpcConnection,
@@ -32,7 +27,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config = this._config || (await this._send(chan_config));
+        const config = this._config || (await this._send(ChannelMethods.chan_config));
         if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;
@@ -50,25 +45,25 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     );
   }
 
-  public send = async (method: ChannelProviderRpcMethod, params: any = {}): Promise<any> => {
+  public send = async (method: ChannelMethod, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
-      case chan_setUserWithdrawal:
+      case ChannelMethods.chan_setUserWithdrawal:
         result = await this.setUserWithdrawal(params.withdrawalObject);
         break;
-      case chan_getUserWithdrawal:
+      case ChannelMethods.chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
         break;
-      case chan_nodeAuth:
+      case ChannelMethods.chan_nodeAuth:
         result = await this.signMessage(params.message);
         break;
-      case chan_config:
+      case ChannelMethods.chan_config:
         result = this.config;
         break;
-      case chan_restoreState:
+      case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
         break;
-      case chan_setStateChannel:
+      case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
       default:
@@ -130,34 +125,34 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// // SIGNING METHODS
 
   public signMessage = async (message: string): Promise<string> => {
-    return this._send(chan_nodeAuth, { message });
+    return this._send(ChannelMethods.chan_nodeAuth, { message });
   };
 
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 
   public getUserWithdrawal = async (): Promise<any> => {
-    return this._send(chan_getUserWithdrawal, {});
+    return this._send(ChannelMethods.chan_getUserWithdrawal, {});
   };
 
   public setUserWithdrawal = async (withdrawalObject: WithdrawalMonitorObject): Promise<void> => {
-    return this._send(chan_setUserWithdrawal, {
+    return this._send(ChannelMethods.chan_setUserWithdrawal, {
       withdrawalObject,
     });
   };
 
   public restoreState = async (): Promise<void> => {
-    return this._send(chan_restoreState, { });
+    return this._send(ChannelMethods.chan_restoreState, { });
   };
 
   public setStateChannel = async (state: StateChannelJSON): Promise<void> => {
-    return this._send(chan_setStateChannel, { state });
+    return this._send(ChannelMethods.chan_setStateChannel, { state });
   };
 
   /// ////////////////////////////////////////////
   /// // PRIVATE METHODS
 
-  private async _send(method: ChannelProviderRpcMethod, params: any = {}): Promise<any> {
+  private async _send(method: ChannelMethod, params: any = {}): Promise<any> {
     const payload = { id: Date.now(), jsonrpc: "2.0", method, params };
     const result = await this.connection.send(payload as JsonRpcRequest);
     return result;

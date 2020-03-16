@@ -4,12 +4,13 @@ import {
   Contract,
   GetConfigResponse,
   IChannelProvider,
+  IClientStore,
   ILoggerService,
   IMessagingService,
   INodeApiClient,
   KeyGen,
   Network,
-  IClientStore,
+  Xpub,
 } from "@connext/types";
 
 // This type is only ever used inside the client,
@@ -26,7 +27,7 @@ export type InternalClientOptions = {
   node: INodeApiClient;
   store: IClientStore;
   token: Contract;
-  xpub: string;
+  xpub: Xpub;
 };
 
 export {
@@ -34,11 +35,9 @@ export {
   AppInstanceInfo,
   AppInstanceJson,
   AppRegistry,
-  BigNumber,
   calculateExchange,
   CFChannelProviderOptions,
   CFCoreChannel,
-  CFCoreTypes,
   chan_setUserWithdrawal,
   ChannelAppSequences,
   ChannelProviderConfig,
@@ -47,7 +46,6 @@ export {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
   ClientOptions,
-  CoinTransferBigNumber,
   ConnextClientStorePrefix,
   ConnextEvent,
   ConnextEventEmitter,
@@ -62,14 +60,13 @@ export {
   DepositFailedMessage,
   DepositParameters,
   DepositStartedMessage,
-  fromWei,
+  fromWad,
   GetChannelResponse,
   GetConfigResponse,
   IChannelProvider,
   IConnextClient,
   INodeApiClient,
   InstallMessage,
-  InstallVirtualMessage,
   inverse,
   IRpcConnection,
   isBN,
@@ -90,8 +87,6 @@ export {
   RebalanceProfile,
   PendingAsyncTransfer,
   ProposeMessage,
-  ProtocolTypes,
-  RejectInstallVirtualMessage,
   RejectProposalMessage,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
@@ -109,11 +104,10 @@ export {
   SwapParameters,
   toBN,
   tokenToWei,
-  toWei,
+  toWad,
   Transfer,
   TransferParameters,
   UninstallMessage,
-  UninstallVirtualMessage,
   UpdateStateMessage,
   weiToToken,
   WithdrawalResponse,

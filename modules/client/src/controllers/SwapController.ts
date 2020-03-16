@@ -1,4 +1,5 @@
 import { convertSwapParameters } from "@connext/apps";
+import { ProtocolParams } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
@@ -7,7 +8,6 @@ import { xpubToAddress } from "../lib/cfCore";
 import {
   calculateExchange,
   CFCoreChannel,
-  CFCoreTypes,
   DefaultApp,
   SwapParameters,
 } from "../types";
@@ -123,7 +123,7 @@ export class SwapController extends AbstractController {
 
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
 
-    const params: CFCoreTypes.ProposeInstallParams = {
+    const params: ProtocolParams.Propose = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,

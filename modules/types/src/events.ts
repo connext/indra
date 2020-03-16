@@ -108,7 +108,15 @@ export const EventNames = {
 };
 export type EventName = keyof typeof EventNames;
 
-export type EventData =
+export namespace EventPayloads {
+  export type Install = InstallEventData
+  export type RejectInstall = RejectInstallEventData
+  export type UpdateState = UpdateStateEventData
+  export type Uninstall = UninstallEventData
+  export type CreateMultisig = CreateMultisigEventData;
+}
+
+export type EventPayload =
   | InstallEventData
   | RejectInstallEventData
   | UpdateStateEventData
@@ -117,5 +125,5 @@ export type EventData =
 
 export type Event = {
   type: EventName;
-  data: EventData;
+  data: EventPayload;
 };

@@ -1,11 +1,11 @@
-import { CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp } from "@connext/types";
+import { ProtocolParams, CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { stringify } from "../lib";
-import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
+import { BigNumber, ChannelState, convert, DepositParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -95,7 +95,7 @@ export class DepositController extends AbstractController {
       outcomeType,
     } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
 
-    const params: CFCoreTypes.ProposeInstallParams = {
+    const params: ProtocolParams.Propose = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,

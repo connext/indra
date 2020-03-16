@@ -1,13 +1,16 @@
 import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
-import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
+import {
+  ILoggerService,
+  MinimalTransaction,
+  ResolveFastSignedTransferResponse,
+} from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
-  CFCoreTypes,
   ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
@@ -152,7 +155,7 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-  public async withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse> {
+  public async withdraw(tx: MinimalTransaction): Promise<TransactionResponse> {
     return await this.send(`channel.withdraw.${this.userPublicIdentifier}`, {
       tx,
     });

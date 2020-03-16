@@ -1,12 +1,10 @@
 import {
-  chan_nodeAuth,
-  chan_getUserWithdrawal,
-  chan_setUserWithdrawal,
-  chan_setStateChannel,
-  chan_restoreState,
+  ChannelMethods,
+  ConnextEventEmitter,
+  EventName,
   IChannelProvider,
   IClientStore,
-  ConnextEventEmitter,
+  MethodName,
   StateChannelJSON,
   WithdrawalMonitorObject,
 } from "@connext/types";
@@ -17,7 +15,6 @@ import { Wallet } from "ethers";
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
   CFChannelProviderOptions,
-  CFCoreTypes,
   ChannelProviderConfig,
   IRpcConnection,
   JsonRpcRequest,
@@ -77,19 +74,19 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     const { method, params } = payload;
     let result;
     switch (method) {
-      case chan_setUserWithdrawal:
+      case ChannelMethods.chan_setUserWithdrawal:
         result = await this.storeSetUserWithdrawal(params.withdrawalObject);
         break;
-      case chan_getUserWithdrawal:
+      case ChannelMethods.chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-      case chan_nodeAuth:
+      case ChannelMethods.chan_nodeAuth:
         result = await this.walletSign(params.message);
         break;
-      case chan_restoreState:
+      case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
         break;
-      case chan_setStateChannel:
+      case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
       default:
@@ -100,7 +97,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   }
 
   public on = (
-    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    event: string | EventName | MethodName,
     listener: (...args: any[]) => void,
   ): any => {
     this.cfCore.on(event as any, listener);
@@ -108,7 +105,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   public once = (
-    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    event: string | EventName | MethodName,
     listener: (...args: any[]) => void,
   ): any => {
     this.cfCore.once(event as any, listener);

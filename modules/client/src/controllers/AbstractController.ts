@@ -1,4 +1,4 @@
-import { CFCoreTypes, IChannelProvider, ILoggerService, REJECT_INSTALL_EVENT } from "@connext/types";
+import { IChannelProvider, ILoggerService, EventNames, EventPayloads } from "@connext/types";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
@@ -29,7 +29,7 @@ export abstract class AbstractController {
    * @returns {string} appInstanceId - Installed app's appInstanceId
    */
   proposeAndInstallLedgerApp = async (
-    params: CFCoreTypes.ProposeInstallParams,
+    params: MethodParams.ProposeInstall,
   ): Promise<string> => {
     // 163 ms
     const proposeRes = await Promise.race([
@@ -39,14 +39,14 @@ export abstract class AbstractController {
         `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
       ),
     ]);
-    const { appInstanceId } = proposeRes as CFCoreTypes.ProposeInstallResult;
+    const { appInstanceId } = proposeRes as MethodResults.ProposeInstall;
 
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
     try {
       // 1676 ms TODO: why does this step take so long?
-      const res = await Promise.race([
+      await Promise.race([
         delayAndThrow(
           CF_METHOD_TIMEOUT,
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
@@ -61,7 +61,7 @@ export abstract class AbstractController {
             `indra.node.${this.connext.nodePublicIdentifier}.install.${appInstanceId}`,
             boundResolve,
           );
-          this.listener.on(REJECT_INSTALL_EVENT, boundReject);
+          this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
       ]);
 
@@ -76,7 +76,7 @@ export abstract class AbstractController {
     }
   };
 
-  proposeAndWaitForAccepted = async (params: CFCoreTypes.ProposeInstallParams): Promise<string> => {
+  proposeAndWaitForAccepted = async (params: MethodParams.ProposeInstall): Promise<string> => {
     let boundReject: (reason?: any) => void;
     let appId: string;
 
@@ -91,7 +91,7 @@ export abstract class AbstractController {
             // set up reject install event listeners
             // must be bound to properly remove listener on clean up
             boundReject = this.rejectProposal.bind(null, rej);
-            this.listener.on(REJECT_INSTALL_EVENT, boundReject);
+            this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
 
             // set up proposal accepted nats subscriptions
             this.log.debug(
@@ -174,7 +174,7 @@ export abstract class AbstractController {
 
   private rejectProposal = (
     rej: (reason?: Error) => void,
-    msg: CFCoreTypes.RejectInstallEventData,
+    msg: EventPayloads.RejectInstall,
   ): void => {
     return rej(new Error(`Proposal rejected, event data: ${stringify(msg)}`));
   };
@@ -183,13 +183,13 @@ export abstract class AbstractController {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
-    this.listener.removeCfListener(REJECT_INSTALL_EVENT, boundReject);
+    this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
 
   private cleanupProposalListeners = (boundReject: any): void => {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
     );
-    this.listener.removeCfListener(REJECT_INSTALL_EVENT, boundReject);
+    this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
 }

@@ -60,7 +60,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database node client indra-proxy test-runner-js ws-tcp-relay
+dev: client database indra-proxy node test-runner-js
 staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging ws-tcp-relay
 release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release ws-tcp-relay
 

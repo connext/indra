@@ -3,6 +3,7 @@ import "regenerator-runtime/runtime";
 
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
+  MethodResults,
   CF_PATH,
   CREATE_CHANNEL_EVENT,
   StateSchemaVersion,
@@ -24,7 +25,6 @@ import {
 } from "./lib";
 import { NodeApiClient } from "./node";
 import {
-  CFCoreTypes,
   ClientOptions,
   ConnextClientStorePrefix,
   CreateChannelMessage,
@@ -184,7 +184,7 @@ export const connect = async (
         },
       ),
     ]);
-    multisigAddress = (creationEventData as CFCoreTypes.CreateChannelResult).multisigAddress;
+    multisigAddress = (creationEventData as MethodResults.CreateChannel).multisigAddress;
   } else {
     multisigAddress = myChannel.multisigAddress;
   }

@@ -3,12 +3,17 @@ import {
   SupportedApplication,
   validateSimpleLinkedTransferApp,
 } from "@connext/apps";
-import { ILoggerService, CoinBalanceRefundApp, SimpleLinkedTransferApp } from "@connext/types";
+import {
+  CoinBalanceRefundApp,
+  ILoggerService,
+  MethodNames,
+  ProtocolParams,
+  SimpleLinkedTransferApp,
+} from "@connext/types";
 
 import { ConnextClient } from "./connext";
 import { stringify } from "./lib";
 import {
-  CFCoreTypes,
   CreateChannelMessage,
   ConnextEventEmitter,
   DefaultApp,
@@ -29,7 +34,6 @@ import {
   WithdrawStartedMessage,
 } from "./types";
 import {
-  ProtocolTypes,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -49,7 +53,7 @@ import {
 
 // TODO: index of connext events only?
 type CallbackStruct = {
-  [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
+  [index in EventName]: (data: any) => Promise<any> | void;
 };
 
 export class ConnextListener extends ConnextEventEmitter {
@@ -146,7 +150,7 @@ export class ConnextListener extends ConnextEventEmitter {
     return;
   };
 
-  public registerCfListener = (event: CFCoreTypes.EventName, cb: Function): void => {
+  public registerCfListener = (event: EventName, cb: Function): void => {
     // replace with new fn
     this.log.debug(`Registering listener for ${event}`);
     this.channelProvider.on(
@@ -158,7 +162,7 @@ export class ConnextListener extends ConnextEventEmitter {
     );
   };
 
-  public removeCfListener = (event: CFCoreTypes.EventName, cb: Function): boolean => {
+  public removeCfListener = (event: EventName, cb: Function): boolean => {
     this.log.debug(`Removing listener for ${event}`);
     try {
       this.removeListener(event, cb as any);
@@ -177,7 +181,7 @@ export class ConnextListener extends ConnextEventEmitter {
     });
 
     this.channelProvider.on(
-      ProtocolTypes.chan_install,
+      MethodNames.chan_install,
       async (msg: any): Promise<void> => {
         const {
           result: {
@@ -191,9 +195,9 @@ export class ConnextListener extends ConnextEventEmitter {
       },
     );
 
-    this.channelProvider.on(ProtocolTypes.chan_uninstall, (data: any): any => {
+    this.channelProvider.on(MethodNames.chan_uninstall, (data: any): any => {
       const result = data.result.result;
-      this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
+      this.log.debug(`Emitting MethodNames.chan_uninstall event`);
       this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
         stringify(result),
@@ -201,7 +205,7 @@ export class ConnextListener extends ConnextEventEmitter {
     });
   };
 
-  private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
+  private emitAndLog = (event: EventName, data: any): void => {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
@@ -250,7 +254,7 @@ export class ConnextListener extends ConnextEventEmitter {
   };
 
   private handleAppProposal = async (
-    params: ProtocolTypes.ProposeInstallParams,
+    params: ProtocolParams.Propose,
     appInstanceId: string,
     from: string,
     registryAppInfo: DefaultApp,

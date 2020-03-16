@@ -1,13 +1,11 @@
+import { MethodNames, MinimalTransaction } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, formatEther, getAddress } from "ethers/utils";
 
 import { stringify } from "../lib";
 import {
-  BigNumber,
-  CFCoreTypes,
   convert,
-  ProtocolTypes,
   WithdrawalResponse,
   WithdrawParameters,
   chan_setUserWithdrawal,
@@ -57,7 +55,7 @@ export class WithdrawalController extends AbstractController {
         const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
         this.log.info(`WithdrawCommitment submitted`);
         this.log.debug(`Details of submitted withdrawal: ${stringify(withdrawResponse)}`);
-        const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
+        const minTx: MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store
         await this.connext.channelProvider.send(chan_setUserWithdrawal, {
           withdrawalObject: { tx: minTx, retry: 0 },
@@ -79,11 +77,11 @@ export class WithdrawalController extends AbstractController {
           // will be 0x000.. if the multisig has already been deployed.
           this.ethProvider.waitForTransaction(deployRes.transactionHash);
         }
-        this.log.info(`Calling ${ProtocolTypes.chan_withdraw}`);
+        this.log.info(`Calling ${MethodNames.chan_withdraw}`);
         // user submitting the withdrawal
         const withdrawResponse = await this.connext.providerWithdraw(
           assetId,
-          new BigNumber(amount),
+          bigNumberify(amount),
           recipient,
         );
         this.log.info(`Node responded with transaction: ${withdrawResponse.txHash}`);

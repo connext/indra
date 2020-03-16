@@ -14,7 +14,7 @@ export const fromWad = formatEther;
 export const weiToToken = (wei: any, tokenPerEth: any) =>
   toBN(formatEther(toWad(tokenPerEth).mul(wei)).replace(/\.[0-9]*$/, ``));
 
-export const tokenToWad = (token: any, tokenPerEth: any) => toWad(token).div(toWad(tokenPerEth));
+export const tokenToWei = (token: any, tokenPerEth: any) => toWad(token).div(toWad(tokenPerEth));
 
 export const maxBN = (lobn: any) =>
   lobn.reduce((max: any, current: any) => (max.gt(current) ? max : current), Zero);

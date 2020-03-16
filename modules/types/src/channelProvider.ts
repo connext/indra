@@ -1,10 +1,23 @@
 import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
-import { MethodName } from "./methods";
+import { MethodNames } from "./methods";
 import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
 import { ILockService } from "./lock";
+import { enumify } from "./utils";
+
+export const ChannelMethods = enumify({
+  ...MethodNames,
+  chan_config: "chan_config",
+  chan_nodeAuth: "chan_nodeAuth",
+  chan_restoreState: "chan_restoreState",
+  chan_getUserWithdrawal: "chan_getUserWithdrawal",
+  chan_setUserWithdrawal: "chan_setUserWithdrawal",
+  chan_setStateChannel: "chan_setStateChannel",
+});
+type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
+export type ChannelMethod = keyof typeof ChannelMethods;
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -17,7 +30,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // Methods
 
   enable(): Promise<ChannelProviderConfig>;
-  send(method: ChannelProviderRpcMethod, params: any): Promise<any>;
+  send(method: ChannelMethod, params: any): Promise<any>;
   close(): Promise<void>;
 
   ///////////////////////////////////
@@ -42,27 +55,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
   setUserWithdrawal(withdrawal: WithdrawalMonitorObject): Promise<void>;
   restoreState(state?: StateChannelJSON): Promise<void>;
 }
-
-export const chan_config = "chan_config";
-export const chan_nodeAuth = "chan_nodeAuth";
-export const chan_restoreState = "chan_restoreState";
-export const chan_setUserWithdrawal = "chan_setUserWithdrawal";
-export const chan_getUserWithdrawal = "chan_getUserWithdrawal";
-export const chan_setStateChannel = "chan_setStateChannel";
-
-// TODO: merge ConnextRpcMethods and RpcMethodNames???
-
-export const ConnextRpcMethods = {
-  [chan_config]: chan_config,
-  [chan_nodeAuth]: chan_nodeAuth,
-  [chan_restoreState]: chan_restoreState,
-  [chan_getUserWithdrawal]: chan_getUserWithdrawal,
-  [chan_setUserWithdrawal]: chan_setUserWithdrawal,
-  [chan_setStateChannel]: chan_setStateChannel,
-};
-export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
-
-export type ChannelProviderRpcMethod = ConnextRpcMethod | MethodName;
 
 export type ChannelProviderConfig = {
   freeBalanceAddress: string;

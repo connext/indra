@@ -7,7 +7,6 @@ import { StateChannelJSON } from "./state";
 import { MinimalTransaction } from "./commitments";
 
 ////////////////////////////////////////
-const chan_create = "chan_create";
 
 type CreateChannelParams = {
   owners: Xpub[];
@@ -20,7 +19,6 @@ type CreateChannelResult = {
 };
 
 ////////////////////////////////////////
-const chan_deposit = "chan_deposit";
 
 type DepositParams = {
   multisigAddress: string;
@@ -35,7 +33,6 @@ type DepositResult = {
 };
 
 ////////////////////////////////////////
-const chan_deployStateDepositHolder = "chan_deployStateDepositHolder";
 
 type DeployStateDepositHolderParams = {
   multisigAddress: string;
@@ -47,7 +44,6 @@ type DeployStateDepositHolderResult = {
 };
 
 ////////////////////////////////////////
-const chan_getChannelAddresses = "chan_getChannelAddresses";
 
 type GetChannelAddressesParams = {};
 
@@ -56,7 +52,6 @@ type GetChannelAddressesResult = {
 };
 
 ////////////////////////////////////////
-const chan_getAppInstance = "chan_getAppInstance";
 
 type GetAppInstanceDetailsParams = {
   appInstanceId: string;
@@ -67,7 +62,6 @@ type GetAppInstanceDetailsResult = {
 };
 
 ////////////////////////////////////////
-const chan_getAppInstances = "chan_getAppInstances";
 
 type GetAppInstancesParams = {
   multisigAddress: string;
@@ -78,7 +72,6 @@ type GetAppInstancesResult = {
 };
 
 ////////////////////////////////////////
-const chan_getStateDepositHolderAddress = "chan_getStateDepositHolderAddress";
 
 type GetStateDepositHolderAddressParams = {
   owners: string[];
@@ -89,7 +82,6 @@ type GetStateDepositHolderAddressResult = {
 };
 
 ////////////////////////////////////////
-const chan_getFreeBalanceState = "chan_getFreeBalanceState";
 
 type GetFreeBalanceStateParams = {
   multisigAddress: string;
@@ -101,7 +93,6 @@ type GetFreeBalanceStateResult = {
 };
 
 ////////////////////////////////////////
-const chan_getTokenIndexedFreeBalanceStates = "chan_getTokenIndexedFreeBalanceStates";
 
 type GetTokenIndexedFreeBalanceStatesParams = {
   multisigAddress: string;
@@ -114,7 +105,6 @@ type GetTokenIndexedFreeBalanceStatesResult = {
 };
 
 ////////////////////////////////////////
-const chan_getProposedAppInstance = "chan_getProposedAppInstance";
 
 type GetProposedAppInstanceParams = {
   appInstanceId: string;
@@ -125,7 +115,6 @@ type GetProposedAppInstanceResult = {
 };
 
 ////////////////////////////////////////
-const chan_getProposedAppInstances = "chan_getProposedAppInstances";
 
 type GetProposedAppInstancesParams = {
   multisigAddress: string;
@@ -136,7 +125,6 @@ type GetProposedAppInstancesResult = {
 };
 
 ////////////////////////////////////////
-const chan_getState = "chan_getState";
 
 type GetStateParams = {
   appInstanceId: string;
@@ -147,7 +135,6 @@ type GetStateResult = {
 };
 
 ////////////////////////////////////////
-const chan_getStateChannel = "chan_getStateChannel";
 
 type GetStateChannelParams = {
   multisigAddress: string;
@@ -158,7 +145,6 @@ type GetStateChannelResult = {
 };
 
 ////////////////////////////////////////
-const chan_install = "chan_install";
 
 type InstallParams = {
   appInstanceId: string;
@@ -169,7 +155,6 @@ type InstallResult = {
 };
 
 ////////////////////////////////////////
-const chan_requestDepositRights = "chan_requestDepositRights";
 
 type RequestDepositRightsParams = {
   multisigAddress: string;
@@ -185,7 +170,6 @@ type RequestDepositRightsResult = {
 };
 
 ////////////////////////////////////////
-const chan_proposeInstall = "chan_proposeInstall";
 
 type ProposeInstallParams = {
   appDefinition: Address;
@@ -206,7 +190,6 @@ type ProposeInstallResult = {
 };
 
 ////////////////////////////////////////
-const chan_rejectInstall = "chan_rejectInstall";
 
 type RejectInstallParams = {
   appInstanceId: string;
@@ -215,7 +198,6 @@ type RejectInstallParams = {
 type RejectInstallResult = {};
 
 ////////////////////////////////////////
-const chan_updateState = "chan_updateState";
 
 type UpdateStateParams = {
   appInstanceId: string;
@@ -227,7 +209,6 @@ type UpdateStateResult = {
 };
 
 ////////////////////////////////////////
-const chan_takeAction = "chan_takeAction";
 
 type TakeActionParams = {
   appInstanceId: string;
@@ -239,7 +220,6 @@ type TakeActionResult = {
 };
 
 ////////////////////////////////////////
-const chan_uninstall = "chan_uninstall";
 
 type UninstallParams = {
   appInstanceId: string;
@@ -248,7 +228,6 @@ type UninstallParams = {
 type UninstallResult = {};
 
 ////////////////////////////////////////
-const chan_rescindDepositRights = "chan_rescindDepositRights";
 
 type RescindDepositRightsParams = {
   multisigAddress: string;
@@ -261,7 +240,6 @@ type RescindDepositRightsResult = {
 };
 
 ////////////////////////////////////////
-const chan_withdraw = "chan_withdraw";
 
 type WithdrawParams = {
   multisigAddress: string;
@@ -276,7 +254,6 @@ type WithdrawResult = {
 };
 
 ////////////////////////////////////////
-const chan_withdrawCommitment = "chan_withdrawCommitment";
 
 type WithdrawCommitmentParams = WithdrawParams;
 
@@ -287,30 +264,30 @@ type WithdrawCommitmentResult = {
 ////////////////////////////////////////
 // exports
 
-export const MethodNames = {
-  [chan_create]: chan_create,
-  [chan_deployStateDepositHolder]: chan_deployStateDepositHolder,
-  [chan_deposit]: chan_deposit,
-  [chan_getAppInstance]: chan_getAppInstance,
-  [chan_getAppInstances]: chan_getAppInstances,
-  [chan_getChannelAddresses]: chan_getChannelAddresses,
-  [chan_getFreeBalanceState]: chan_getFreeBalanceState,
-  [chan_getProposedAppInstance]: chan_getProposedAppInstance,
-  [chan_getProposedAppInstances]: chan_getProposedAppInstances,
-  [chan_getState]: chan_getState,
-  [chan_getStateChannel]: chan_getStateChannel,
-  [chan_getStateDepositHolderAddress]: chan_getStateDepositHolderAddress,
-  [chan_getTokenIndexedFreeBalanceStates]: chan_getTokenIndexedFreeBalanceStates,
-  [chan_install]: chan_install,
-  [chan_proposeInstall]: chan_proposeInstall,
-  [chan_rejectInstall]: chan_rejectInstall,
-  [chan_requestDepositRights]: chan_requestDepositRights,
-  [chan_rescindDepositRights]: chan_rescindDepositRights,
-  [chan_takeAction]: chan_takeAction,
-  [chan_uninstall]: chan_uninstall,
-  [chan_updateState]: chan_updateState,
-  [chan_withdraw]: chan_withdraw,
-  [chan_withdrawCommitment]: chan_withdrawCommitment,
+export enum MethodNames {
+  chan_create = "chan_create",
+  chan_deployStateDepositHolder = "chan_deployStateDepositHolder",
+  chan_deposit = "chan_deposit",
+  chan_getAppInstance = "chan_getAppInstance",
+  chan_getAppInstances = "chan_getAppInstances",
+  chan_getChannelAddresses = "chan_getChannelAddresses",
+  chan_getFreeBalanceState = "chan_getFreeBalanceState",
+  chan_getProposedAppInstance = "chan_getProposedAppInstance",
+  chan_getProposedAppInstances = "chan_getProposedAppInstances",
+  chan_getState = "chan_getState",
+  chan_getStateChannel = "chan_getStateChannel",
+  chan_getStateDepositHolderAddress = "chan_getStateDepositHolderAddress",
+  chan_getTokenIndexedFreeBalanceStates = "chan_getTokenIndexedFreeBalanceStates",
+  chan_install = "chan_install",
+  chan_proposeInstall = "chan_proposeInstall",
+  chan_rejectInstall = "chan_rejectInstall",
+  chan_requestDepositRights = "chan_requestDepositRights",
+  chan_rescindDepositRights = "chan_rescindDepositRights",
+  chan_takeAction = "chan_takeAction",
+  chan_uninstall = "chan_uninstall",
+  chan_updateState = "chan_updateState",
+  chan_withdraw = "chan_withdraw",
+  chan_withdrawCommitment = "chan_withdrawCommitment",
 };
 export type MethodName = keyof typeof MethodNames;
 

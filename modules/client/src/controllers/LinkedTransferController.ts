@@ -3,6 +3,7 @@ import {
   convertLinkedTransferParameters,
 } from "@connext/apps";
 import {
+  ProtocolParams,
   SimpleLinkedTransferApp,
   LINKED_TRANSFER,
   LINKED_TRANSFER_TO_RECIPIENT,
@@ -16,7 +17,6 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import {
-  CFCoreTypes,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
@@ -139,7 +139,7 @@ export class LinkedTransferController extends AbstractController {
       appDefinitionAddress: appDefinition,
       outcomeType,
     } = this.connext.getRegisteredAppDetails(SimpleLinkedTransferApp);
-    const proposeInstallParams: CFCoreTypes.ProposeInstallParams = {
+    const proposeInstallParams: ProtocolParams.Propose = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,

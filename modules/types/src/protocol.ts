@@ -24,7 +24,7 @@ type InstallProtocolParams = {
   disableLimit: boolean;
 };
 
-type ProposeInstallProtocolParams = {
+type ProposeProtocolParams = {
   multisigAddress: string;
   initiatorXpub: string;
   responderXpub: string;
@@ -95,7 +95,7 @@ export type ProtocolName = keyof typeof ProtocolNames;
 
 export namespace ProtocolParams {
   export type Install = InstallProtocolParams;
-  export type Propose = ProposeInstallProtocolParams;
+  export type Propose = ProposeProtocolParams;
   export type Setup = SetupProtocolParams;
   export type TakeAction = TakeActionProtocolParams;
   export type Uninstall = UninstallProtocolParams;
@@ -105,7 +105,7 @@ export namespace ProtocolParams {
 
 export type ProtocolParam =
   | InstallProtocolParams
-  | ProposeInstallProtocolParams
+  | ProposeProtocolParams
   | SetupProtocolParams
   | TakeActionProtocolParams
   | UninstallProtocolParams
