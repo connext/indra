@@ -291,82 +291,88 @@
       "txHash": "0xcd1574ba4e193294fe2ff06c00c2d3bf17a9d2e216aac4f3bfae5386755c8edc"
     },
     "MultiAssetMultiPartyCoinTransferInterpreter": {
-      "address": "0x2C2B9C9a4a25e24B174f26114e8926a9f2128FE4",
+      "address": "0x30753E4A8aad7F8597332E813735Def5dD395028",
       "creationCodeHash": "0x7bb6dc0dd8d0d254a75983b374b5c6858c7d83a229725c9c951873bf41d0c8a6",
       "runtimeCodeHash": "0x34a796cbe28a3a365a37cd49f69877f2b013306a7b52f1b4e01b308e941a3958",
-      "txHash": "0xc5ecdc7029ab3b2b653cd045d92180bdd87ad4104620a9378369aa925a592cd5"
+      "txHash": "0x4b891f1b936510a48f8868dd2e0e74e2950949474364256f8b57a3d1fc15b4e2"
     },
     "IdentityApp": {
-      "address": "0x8f0483125FCb9aaAEFA9209D8E9d7b9C8B9Fb90F",
+      "address": "0x9FBDa871d559710256a2502A2517b794B482Db40",
       "creationCodeHash": "0xb1ef1cdd41c76602062481b79e0f61ce1d967d011ff5ef896e5bc5ed1b6900bf",
       "runtimeCodeHash": "0xdcab8a911a2fe2edb2c32bd421035443b7b5ade940c9c0fafb7f69cc82900ac7",
-      "txHash": "0x652314508d60d63c738162baedeb355458fe57baf712a3ae31f270f47a844c99"
+      "txHash": "0xaee4912aa5d7f2dc550059c2798035f56180f0b6a50371b1ee287b73e0ce8411"
     },
     "MinimumViableMultisig": {
-      "address": "0x9FBDa871d559710256a2502A2517b794B482Db40",
+      "address": "0x2C2B9C9a4a25e24B174f26114e8926a9f2128FE4",
       "creationCodeHash": "0xc47aa6f12f37b3bc7b233d2559467c50ca4f04af503546fae15af27871cd635d",
       "runtimeCodeHash": "0xc7b758906516b85db167ed6206d288aa846b9a12ae7b2c5c49eb7895b3b91a87",
-      "txHash": "0xb7b7ed0811495102bfd58a18bcc3d8f0d8768e34f1bceb760454a32ddda86f64"
+      "txHash": "0x7981cdbe402e2e9b2ca1adb40f4cef1b0d8ab6ce766f5b5346d62f15a66c5aa6"
     },
     "ProxyFactory": {
-      "address": "0x30753E4A8aad7F8597332E813735Def5dD395028",
+      "address": "0xFB88dE099e13c3ED21F80a7a1E49f8CAEcF10df6",
       "creationCodeHash": "0x38e065bf5c2c3882a8fdfc2b0c7a7f7096c20668928103d4a85fe9482ff473b9",
       "runtimeCodeHash": "0xc75c60c9d3191312e21de8955e5ae0ee9c52a2cc0ba65b1b284d7792bc04ecf6",
-      "txHash": "0xdce6c81da0602f4aa0bf06e4bf42b67653e57adcd8a08def268b09893c2fcaef"
+      "txHash": "0xbc00b939b6397cd47a9642f7e92a2e80e5bf68198896eae8c41a7a2837bf39bb"
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
-      "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd",
+      "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254",
       "creationCodeHash": "0xacae1fa0a52f07fdd4f55a0c3263a4f7ef629080ccf35406c943bd318a0ef14d",
       "runtimeCodeHash": "0x9e0e0e5baea8baf89a543441328df1ac31e4d40db95644153feca6d30323668c",
-      "txHash": "0xb0c86b2cbe25f049dc03b6f58d5bd5250d744678bb93aa8177e7f997a4764363"
+      "txHash": "0x984d6fe7fb265b621fb163c9a03f6ce889cbd26c7b77a843edd362975dd7e250"
     },
     "TimeLockedPassThrough": {
-      "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254",
+      "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1",
       "creationCodeHash": "0x2f9cf9ff2c676523028df5d12d7632e6b137bf488c14beeb39a3deea7ba8fa83",
       "runtimeCodeHash": "0x6e085629701357f30752919f785045746960d5b16f85d2ab1dc2d7e5dc4b8223",
-      "txHash": "0x320cf04792137bc1ec6aaf9749060cff550d81f9311e32e320e019f446c0b5d7"
+      "txHash": "0xce08542a21ee9ddafd0254b96180f84ba2ab592ef466577179d9fc0ea3c29569"
     },
     "TwoPartyFixedOutcomeInterpreter": {
-      "address": "0xeec918d74c746167564401103096D45BbD494B74",
+      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",
       "creationCodeHash": "0xc6df75aaf6a672ffcccb0d0ac7f122212bcd9573001453752506212e05b66ba2",
       "runtimeCodeHash": "0xd0e87a9d06bb8a3ac9d7c66622206da16437c04851040308461111637364d761",
-      "txHash": "0x94da055239caa5da0db0f2db45db6122befbf505cd307fc2a9704891b2bc8adf"
+      "txHash": "0x265eecc1d57f2916dc8649aab638a906b13a1503fd079f8cdd13a78dcad42d89"
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
-      "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1",
+      "address": "0xeec918d74c746167564401103096D45BbD494B74",
       "creationCodeHash": "0x4c88180d1a5df5adbb999599a273b448db66c994b96738a407e8f7c30628a77a",
       "runtimeCodeHash": "0xc7642c13fe9b24ece2f08c55ad7b4cf663c8aef49b9a2d8d4ae7cf6005e5733f",
-      "txHash": "0xcf1969b2327f9d7df11c879c08d6ae2f5d729d086266e6050426a1e3944b9d3e"
+      "txHash": "0x4749c7d4ca11996767ddea66ed39ddc5efbb00a1a06bb8b96881e88193458b26"
     },
     "SimpleLinkedTransferApp": {
-      "address": "0xFB88dE099e13c3ED21F80a7a1E49f8CAEcF10df6",
+      "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8",
       "creationCodeHash": "0xbdd51c2c732abf40b9e763b4d10f7f56dd9be37b970ad72b9e8f58455a6270a3",
       "runtimeCodeHash": "0x1f75210aff296a90ad8b9cf7c1ebb5369914b3f315d7680580401d13057cb6be",
-      "txHash": "0xce94f61db0ea8751975b387f0db5620dd8e78f5f1d4822a59ef0b2cc8b686294"
+      "txHash": "0xbcffb3d1ff376905051a087588c4a722069496c4e37a68497fba709a614a8ecd"
     },
     "SimpleTransferApp": {
-      "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8",
+      "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a",
       "creationCodeHash": "0xe76f7d6fee01486dd30fca0630e140aefd06f63a6a8c1314d55521d6a24adf43",
       "runtimeCodeHash": "0x6b8a8ff24fcd080ffcf43e1a1edc19fc89000e08cbd5905c4d5fac667caad2b3",
-      "txHash": "0xa6ca1a290c965f99b4a726e594df8c0a56c1c5d398a1128540ca96387957afff"
+      "txHash": "0x5920e1248f63517c1169b32f7fa9d947a893694f6bfcf8fe1c613bebb95199d2"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a",
+      "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd",
       "creationCodeHash": "0xad9d584257f619bb2048029392b7a643b9aaf5626f11178f9b413f0fd42c26e0",
       "runtimeCodeHash": "0x6b1fb2f2c4cfd00e81cc4f76099d5192787f3ce2c5677689ccac553b85e49737",
-      "txHash": "0xfbe0c59b37515610ba4781b3539580b1f2fb0a50167640a8980a3df85cfd2bbe"
+      "txHash": "0xa400d7d6dc666a45b94df1d3bc86cf556ebe10001448430ceffbc584a8f31f32"
     },
     "Token": {
-      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",
+      "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC",
       "creationCodeHash": "0x15a50be77512dde6420d6d79ac5a273236c93850c92a2564596570aa33961e61",
       "runtimeCodeHash": "0x94ee377930298d1af932c16a0da2468327125f76c93d99ed3b650bb3cc9433ec",
-      "txHash": "0x324b96efa5b578e861f87b18a2f659962dbb1b0bb8bf49149f6394ade6d113d1"
+      "txHash": "0xc4bc6979712880e8ec27a12149e4b82eb2954eb6b16319246e838b129158da94"
     },
     "FastSignedTransferApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
-      "creationCodeHash": "0x7a9b811d397b4fd1d8784081138125021b3bd0ac45ebe30ab151342baa44aae2",
-      "runtimeCodeHash": "0xff2d01e580d263a18b213df273daac1482055180707552f9a0298c8f476385f1",
-      "txHash": "0x11e53869c65ff60b7dd997a91cb1f325cf535d59804640c85b927569721e17a6"
+      "creationCodeHash": "0xc0aa7946862fec8df434e9289ba82279054ffac8f4e1f728231663d1684a0f2e",
+      "runtimeCodeHash": "0x9f5492a90a5940a90cbce513d8787ae9d88924d39400931ea6e87a20bc17cc26",
+      "txHash": "0xeb62b35d764d8ecd882d48d766188d4c62dc273a3a7a13aa185fd5f940f956b1"
+    },
+    "HashLockTransferApp": {
+      "address": "0x8f0483125FCb9aaAEFA9209D8E9d7b9C8B9Fb90F",
+      "creationCodeHash": "0x19ceb3d7348191d94191a3f6e0ce687c2e2b315bead0b9c840153fba1af2ab24",
+      "runtimeCodeHash": "0xe61193df0d84d95ed8f04aa31bacee79f3e5812de977144612fa4b70f777ed42",
+      "txHash": "0x111e93c9c310c55944ffbf12a00bd6a9c526264d69019a071d60dbcc8ba4cf01"
     }
   }
 }

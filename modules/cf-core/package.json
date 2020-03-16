@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "5.1.1",
+  "version": "5.2.0",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@connext/contracts": "1.0.5",
-    "@connext/types": "5.1.1",
+    "@connext/types": "5.2.0",
     "ethers": "4.0.45",
     "@openzeppelin/contracts": "2.5.0",
     "eventemitter3": "4.0.0",

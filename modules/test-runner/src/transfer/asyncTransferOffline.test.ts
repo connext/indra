@@ -103,7 +103,7 @@ describe("Async transfer offline tests", () => {
    *
    * Recipient should be able to claim payment regardless.
    */
-  it("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
+  it("sender successfully installs transfer, goes offline before sending paymentId/preImage, and stays offline", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       forbiddenSubjects: [`transfer.send-async.`],

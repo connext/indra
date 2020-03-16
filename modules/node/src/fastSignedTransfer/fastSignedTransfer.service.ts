@@ -24,12 +24,7 @@ import { ConfigService } from "../config/config.service";
 import { MessagingClientProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
-
-import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
-import {
-  FastSignedTransfer,
-  FastSignedTransferStatus,
-} from "../fastSignedTransfer/fastSignedTransfer.entity";
+import { convertFastSignedTransferAppState } from "@connext/apps";
 
 const findInstalledFastSignedAppWithSpace = (
   apps: AppInstanceJson[],
@@ -54,41 +49,9 @@ export class FastSignedTransferService {
     private readonly log: LoggerService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly fastSignedTransferRespository: FastSignedTransferRepository,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("FastSignedTransferService");
-  }
-
-  async saveFastSignedTransfer(
-    senderPubId: string,
-    assetId: string,
-    amount: BigNumber,
-    appInstanceId: string,
-    signer: string,
-    paymentId: string,
-    recipientPublicIdentifier?: string,
-    meta?: object,
-  ): Promise<FastSignedTransfer> {
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      senderPubId,
-    );
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      recipientPublicIdentifier,
-    );
-
-    const transfer = new FastSignedTransfer();
-    transfer.senderAppInstanceId = appInstanceId;
-    transfer.amount = amount;
-    transfer.assetId = assetId;
-    transfer.paymentId = paymentId;
-    transfer.signer = signer;
-    transfer.meta = meta;
-    transfer.senderChannel = senderChannel;
-    transfer.receiverChannel = receiverChannel;
-    transfer.status = FastSignedTransferStatus.PENDING;
-
-    return await this.fastSignedTransferRespository.save(transfer);
   }
 
   async resolveFastSignedTransfer(
@@ -99,26 +62,27 @@ export class FastSignedTransferService {
       userPublicIdentifier,
     );
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
-    // check that we have recorded this transfer in our db
-    const transfer = await this.fastSignedTransferRespository.findByPaymentIdOrThrow(paymentId);
 
-    if (transfer.status !== FastSignedTransferStatus.PENDING) {
-      throw new Error(
-        `Transfer with paymentId ${paymentId} cannot be redeemed with status: ${transfer.status}`,
-      );
-    }
-
-    this.log.debug(`Found fast signed transfer in our database, attempting to resolve...`);
-    const apps = await this.cfCoreService.getAppInstances(receiverChannel.multisigAddress);
-    const ethNetwork = await this.configService.getEthNetwork();
-    const fastSignedTransferApp = await this.appRegistryRepository.findByNameAndNetwork(
-      FastSignedTransferApp,
-      ethNetwork.chainId,
+    // get sender app from installed apps and receiver app if it exists
+    const [installedSenderApp] = await this.cfCoreService.getFastSignedTransferAppsByPaymentId(
+      paymentId,
     );
-    let installedReceiverApp = findInstalledFastSignedAppWithSpace(
-      apps,
-      xkeyKthAddress(receiverChannel.userPublicIdentifier),
-      fastSignedTransferApp.appDefinitionAddress,
+    const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
+      installedSenderApp.multisigAddress,
+    );
+    if (!installedSenderApp) {
+      throw new Error(`Sender app not installed for paymentId ${paymentId}`);
+    }
+    const latestSenderState = convertFastSignedTransferAppState(
+      "bignumber",
+      installedSenderApp.latestState as FastSignedTransferAppStateBigNumber,
+    );
+    const transferAmount = latestSenderState.amount;
+    const transferSigner = latestSenderState.signer;
+
+    const [installedReceiverApp] = await this.cfCoreService.getAppInstancesByAppName(
+      receiverChannel.multisigAddress,
+      "FastSignedTransferApp",
     );
 
     let installedAppInstanceId: string;
@@ -126,11 +90,12 @@ export class FastSignedTransferService {
     let needsInstall: boolean = true;
     // install if needed
     if (installedReceiverApp) {
-      if (
-        (installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber).coinTransfers[0][1].gte(
-          transfer.amount,
-        )
-      ) {
+      const latestReceiverState = convertFastSignedTransferAppState(
+        "bignumber",
+        installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber,
+      );
+      const availableTransferBalance = latestReceiverState.coinTransfers[0].amount;
+      if (availableTransferBalance.gte(transferAmount)) {
         needsInstall = false;
         installedAppInstanceId = installedReceiverApp.identityHash;
       } else {
@@ -141,20 +106,21 @@ export class FastSignedTransferService {
 
     if (needsInstall) {
       this.log.debug(`Could not find app that allows transfer, installing a new one`);
-      installedAppInstanceId = await this.installFastTransferApp(receiverChannel, transfer);
+      installedAppInstanceId = await this.installFastTransferApp(
+        receiverChannel,
+        installedSenderApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        transferAmount,
+      );
     } else {
       installedAppInstanceId = installedReceiverApp.identityHash;
     }
-    transfer.receiverAppInstanceId = installedAppInstanceId;
-    transfer.receiverChannel = receiverChannel;
-    await this.fastSignedTransferRespository.save(transfer);
 
     const appAction = {
       actionType: FastSignedTransferActionType.CREATE,
-      amount: transfer.amount,
+      amount: transferAmount,
       paymentId,
       recipientXpub: receiverChannel.userPublicIdentifier,
-      signer: transfer.signer,
+      signer: transferSigner,
       signature: hexZeroPad(HashZero, 65),
       data: HashZero,
     } as FastSignedTransferAppActionBigNumber;
@@ -163,27 +129,31 @@ export class FastSignedTransferService {
 
     return {
       appId: installedAppInstanceId,
-      sender: transfer.senderChannel.userPublicIdentifier,
-      signer: transfer.signer,
-      meta: transfer.meta,
+      sender: senderChannel.userPublicIdentifier,
+      signer: transferSigner,
+      meta: {},
       paymentId,
-      amount: transfer.amount,
-      assetId: transfer.assetId,
+      amount: transferAmount,
+      assetId: installedSenderApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
     };
   }
 
   private async installFastTransferApp(
     channel: Channel,
-    transfer: FastSignedTransfer,
+    assetId: string,
+    transferAmount: BigNumber,
   ): Promise<string> {
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
-    let freeBal = await this.cfCoreService.getFreeBalance(
+    let {
+      [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalancePreCollateral,
+    } = await this.cfCoreService.getFreeBalance(
       channel.userPublicIdentifier,
       channel.multisigAddress,
-      transfer.assetId,
+      assetId,
     );
-    if (freeBal[freeBalanceAddr].lt(transfer.amount)) {
+    let depositAmount = nodeFreeBalancePreCollateral;
+    if (nodeFreeBalancePreCollateral.lt(transferAmount)) {
       // request collateral and wait for deposit to come through
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
@@ -206,17 +176,14 @@ export class FastSignedTransferService {
               );
               return;
             }
-            // make sure free balance is appropriate
-            freeBal = await this.cfCoreService.getFreeBalance(
+            let {
+              [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalancePostCollateral,
+            } = await this.cfCoreService.getFreeBalance(
               channel.userPublicIdentifier,
               channel.multisigAddress,
-              transfer.assetId,
+              assetId,
             );
-            if (freeBal[freeBalanceAddr].lt(transfer.amount)) {
-              return reject(
-                `Free balance associated with ${freeBalanceAddr} is less than transfer amount: ${transfer.amount}`,
-              );
-            }
+            depositAmount = nodeFreeBalancePostCollateral;
             resolve();
           },
         );
@@ -226,9 +193,9 @@ export class FastSignedTransferService {
         try {
           await this.channelService.rebalance(
             channel.userPublicIdentifier,
-            transfer.assetId,
+            assetId,
             RebalanceType.COLLATERALIZE,
-            transfer.amount,
+            transferAmount,
           );
         } catch (e) {
           return reject(e);
@@ -238,9 +205,8 @@ export class FastSignedTransferService {
       // request collateral normally without awaiting
       this.channelService.rebalance(
         channel.userPublicIdentifier,
-        transfer.assetId,
+        assetId,
         RebalanceType.COLLATERALIZE,
-        transfer.amount,
       );
     }
 
@@ -248,7 +214,7 @@ export class FastSignedTransferService {
       coinTransfers: [
         {
           // install full free balance into app, this will be optimized by rebalancing service
-          amount: freeBal[freeBalanceAddr],
+          amount: depositAmount,
           to: freeBalanceAddr,
         },
         {
@@ -266,10 +232,10 @@ export class FastSignedTransferService {
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel.userPublicIdentifier,
       initialState,
-      transfer.amount,
-      transfer.assetId,
+      depositAmount,
+      assetId,
       Zero,
-      transfer.assetId,
+      assetId,
       FastSignedTransferApp,
     );
 
