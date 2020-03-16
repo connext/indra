@@ -1,6 +1,6 @@
 /* global before after */
 import { utils } from "@connext/client";
-import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, toBN, CF_PATH } from "@connext/types";
+import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, CF_PATH } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
@@ -10,7 +10,6 @@ import {
   AssetOptions,
   asyncTransferAsset,
   createClient,
-  env,
   ETH_AMOUNT_LG,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
@@ -20,10 +19,7 @@ import {
   FUNDED_MNEMONICS,
   TOKEN_AMOUNT,
   requestCollateral,
-  Logger,
-  delay,
   withdrawFromChannel,
-  ZERO_ZERO_TWO_ETH,
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { connectNats, closeNats } from "../util/nats";
