@@ -2,17 +2,10 @@ import { AppInterface, AppABIEncodings } from "./app";
 import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
 import { OutcomeType } from "./contracts";
 
-export enum Protocol {
-  Install = "install",
-  Propose = "propose",
-  Setup = "setup",
-  TakeAction = "takeAction",
-  Uninstall = "uninstall",
-  Update = "update",
-  Withdraw = "withdraw",
-}
+////////////////////////////////////////
+const install = "install";
 
-export type InstallProtocolParams = {
+type InstallProtocolParams = {
   initiatorXpub: Xpub;
   initiatorDepositTokenAddress: Address;
   responderXpub: Xpub;
@@ -34,7 +27,10 @@ export type InstallProtocolParams = {
   disableLimit: boolean;
 };
 
-export type ProposeInstallProtocolParams = {
+////////////////////////////////////////
+const propose = "propose";
+
+type ProposeInstallProtocolParams = {
   multisigAddress: string;
   initiatorXpub: string;
   responderXpub: string;
@@ -50,13 +46,18 @@ export type ProposeInstallProtocolParams = {
   meta?: Object;
 };
 
-export type SetupProtocolParams = {
+////////////////////////////////////////
+const setup = "setup";
+
+type SetupProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
 };
+////////////////////////////////////////
+const takeAction = "takeAction";
 
-export type TakeActionProtocolParams = {
+type TakeActionProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
@@ -64,7 +65,10 @@ export type TakeActionProtocolParams = {
   action: SolidityValueType;
 };
 
-export type UninstallProtocolParams = {
+////////////////////////////////////////
+const uninstall = "uninstall";
+
+type UninstallProtocolParams = {
   appIdentityHash: string;
   initiatorXpub: string;
   responderXpub: string;
@@ -72,7 +76,10 @@ export type UninstallProtocolParams = {
   blockNumberToUseIfNecessary?: number;
 };
 
-export type UpdateProtocolParams = {
+////////////////////////////////////////
+const update = "update";
+
+type UpdateProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
@@ -80,7 +87,10 @@ export type UpdateProtocolParams = {
   newState: SolidityValueType;
 };
 
-export type WithdrawProtocolParams = {
+////////////////////////////////////////
+const withdraw = "withdraw";
+
+type WithdrawProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
@@ -89,7 +99,32 @@ export type WithdrawProtocolParams = {
   tokenAddress: string;
 };
 
-export type ProtocolParameters =
+////////////////////////////////////////
+// exports
+
+export const ProtocolNames = {
+  [install]: install,
+  [propose]: propose,
+  [setup]: setup,
+  [takeAction]: takeAction,
+  [uninstall]: uninstall,
+  [update]: update,
+  [withdraw]: withdraw,
+};
+
+export type ProtocolName = keyof typeof ProtocolNames;
+
+export namespace ProtocolParams {
+  type install = InstallProtocolParams;
+  type propose = ProposeInstallProtocolParams;
+  type setup = SetupProtocolParams;
+  type takeAction = TakeActionProtocolParams;
+  type uninstall = UninstallProtocolParams;
+  type update = UpdateProtocolParams;
+  type withdraw = WithdrawProtocolParams;
+}
+
+export type ProtocolParam =
   | InstallProtocolParams
   | ProposeInstallProtocolParams
   | SetupProtocolParams

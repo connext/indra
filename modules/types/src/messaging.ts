@@ -14,15 +14,15 @@ import {
   ProposeInstallParams,
   WithdrawParams,
 } from "./methods";
-import { Protocol, ProtocolParameters } from "./protocol";
+import { ProtocolName, ProtocolParam } from "./protocol";
 
 ////////////////////////////////////////
 // Message Metadata & Wrappers
 
 export type ProtocolMessage = {
   processID: string;
-  protocol: Protocol;
-  params?: ProtocolParameters;
+  protocol: ProtocolName;
+  params?: ProtocolParam;
   toXpub: string;
   seq: number;
   // customData: Additional data which depends on the protocol (or even the specific message
