@@ -38,6 +38,8 @@ import { InitCommitmentTable1582692126872 } from "../../migrations/1582692126872
 import { InitAppInstanceTable1583612960994 } from "../../migrations/1583612960994-init-app-instance-table";
 import { UpdateChannelTable1583618773094 } from "../../migrations/1583618773094-update-channel-table";
 import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
+import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm-sync";
+import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
 
 export const entities = [
   AppInstance,
@@ -74,6 +76,8 @@ export const migrations = [
   InitAppInstanceTable1583612960994,
   UpdateChannelTable1583618773094,
   fastSignedTransfer1583682931763,
+  typeormSync1584364675207,
+  typeormSync21584369931723,
 ];
 
 @Injectable()
