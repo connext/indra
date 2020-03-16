@@ -1,9 +1,67 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner, Table } from "typeorm";
+import { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions";
 
 export class typeormSync1584364675207 implements MigrationInterface {
   name = "typeormSync1584364675207";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    const options = queryRunner.connection.driver.options as PostgresConnectionOptions;
+    const typeormMetadataTable = queryRunner.connection.driver.buildTableName(
+      "typeorm_metadata",
+      options.schema,
+      options.database,
+    );
+
+    await queryRunner.createTable(
+      new Table({
+        name: typeormMetadataTable,
+        columns: [
+          {
+            name: "type",
+            type: queryRunner.connection.driver.normalizeType({
+              type: queryRunner.connection.driver.mappedDataTypes.metadataType,
+            }),
+            isNullable: false,
+          },
+          {
+            name: "database",
+            type: queryRunner.connection.driver.normalizeType({
+              type: queryRunner.connection.driver.mappedDataTypes.metadataDatabase,
+            }),
+            isNullable: true,
+          },
+          {
+            name: "schema",
+            type: queryRunner.connection.driver.normalizeType({
+              type: queryRunner.connection.driver.mappedDataTypes.metadataSchema,
+            }),
+            isNullable: true,
+          },
+          {
+            name: "table",
+            type: queryRunner.connection.driver.normalizeType({
+              type: queryRunner.connection.driver.mappedDataTypes.metadataTable,
+            }),
+            isNullable: true,
+          },
+          {
+            name: "name",
+            type: queryRunner.connection.driver.normalizeType({
+              type: queryRunner.connection.driver.mappedDataTypes.metadataName,
+            }),
+            isNullable: true,
+          },
+          {
+            name: "value",
+            type: queryRunner.connection.driver.normalizeType({
+              type: queryRunner.connection.driver.mappedDataTypes.metadataValue,
+            }),
+            isNullable: true,
+          },
+        ],
+      }),
+      true,
+    );
     await queryRunner.query(
       `ALTER TABLE "onchain_transaction" DROP CONSTRAINT "onchain_transaction_channelId_fkey"`,
       undefined,
