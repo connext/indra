@@ -13,7 +13,6 @@ export const env = {
   logLevel: parseInt(process.env.INDRA_CLIENT_LOG_LEVEL || "3", 10),
   mnemonic: process.env.INDRA_ETH_MNEMONIC || "",
   nodeUrl: process.env.INDRA_NODE_URL || "",
-  natsUrl: process.env.INDRA_NATS_URL || "",
   storeDir: process.env.STORE_DIR || "",
   adminToken: process.env.INDRA_ADMIN_TOKEN || "foo",
   natsPrivateKey: process.env.INDRA_NATS_JWT_SIGNER_PRIVATE_KEY,

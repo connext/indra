@@ -14,7 +14,6 @@ describe("Deposits", () => {
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    console.log('client.config: ', client.config);
     nodeFreeBalanceAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
   });
 

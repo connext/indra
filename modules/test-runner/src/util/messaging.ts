@@ -14,7 +14,7 @@ import { Wallet } from "ethers";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import { Logger } from "./logger";
 
-const axios = require("axios").default;
+import axios from "axios";
 
 const log = new Logger("Messaging", env.logLevel);
 
@@ -107,7 +107,8 @@ const defaultOpts = (): TestMessagingConfig => {
   return {
     nodeUrl: env.nodeUrl,
     messagingConfig: {
-      messagingUrl: env.natsUrl,
+      // TODO:
+      messagingUrl: "nats://172.17.0.1:4222",
     },
     protocolDefaults: {
       install: defaultCount(),
@@ -156,13 +157,9 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       getSignature: (nonce: string) => Promise<string>,
     ): Promise<string> => {
       try {
-        const nonce = await axios.get(`${this.options.nodeUrl}/getNonce`, {
-          params: {
-            userPublicIdentifier: xpub,
-          },
-        });
-        const sig = await getSignature(nonce);
-        const bearerToken: string = await axios.post(`${this.options.nodeUrl}/verifyNonce`, {
+        const nonce = await axios.get(`${this.options.nodeUrl}/auth/${xpub}`);
+        const sig = await getSignature(nonce.data);
+        const bearerToken: string = await axios.post(`${this.options.nodeUrl}/auth`, {
           sig,
           userPublicIdentifier: xpub,
         } as VerifyNonceDtoType);

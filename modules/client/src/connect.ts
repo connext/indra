@@ -177,12 +177,17 @@ export const connect = async (
     };
 
     config = await NodeApiClient.config(nodeUrl);
+    const messagingUrl = `nats://${nodeUrl
+      .split("//")
+      .pop()
+      .split(":")
+      .shift()}:4222`;
 
     log.debug(`Creating messaging service client ${config.messagingUrl}`);
     if (!messaging) {
       messaging = await createMessagingService(
         log,
-        config.messagingUrl,
+        [messagingUrl],
         nodeUrl,
         xpub,
         network.chainId,

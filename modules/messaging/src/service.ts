@@ -4,7 +4,6 @@ import {
   IMessagingService,
   MessagingConfig,
   nullLogger,
-  stringify,
 } from "@connext/types";
 import * as natsutil from "ts-natsutil";
 
@@ -74,7 +73,7 @@ export class MessagingService implements IMessagingService {
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
-    this.service!.publish(this.prependKey(`${to}.${msg.from}`), stringify(msg));
+    this.service!.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
 
   ////////////////////////////////////////
@@ -82,12 +81,12 @@ export class MessagingService implements IMessagingService {
 
   async publish(subject: string, data: any): Promise<void> {
     this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
-    this.service!.publish(subject, stringify(data));
+    this.service!.publish(subject, JSON.stringify(data));
   }
 
   async request(subject: string, timeout: number, data: object = {}): Promise<any> {
     this.log.debug(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
-    const response = await this.service!.request(subject, timeout, stringify(data));
+    const response = await this.service!.request(subject, timeout, JSON.stringify(data));
     this.log.debug(`Request for ${subject} returned: ${JSON.stringify(response)}`);
     return response;
   }
