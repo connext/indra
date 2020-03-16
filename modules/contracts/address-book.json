@@ -339,10 +339,10 @@
       "txHash": "0x4749c7d4ca11996767ddea66ed39ddc5efbb00a1a06bb8b96881e88193458b26"
     },
     "SimpleLinkedTransferApp": {
-      "address": "0x5E70a420373D6BcB1ca3D08FEeB78a2F80727B29",
+      "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8",
       "creationCodeHash": "0xa2f660f8bc6b24a7612fe28f212b201e9338f7c6bd3ffac0aa796c8d6c51f52e",
       "runtimeCodeHash": "0x18378fd99a42825e53488a725ade7051bc337254129691411abf1c9d23f177f3",
-      "txHash": "0x5fb09b1cee41c361b9f55c5ab55276f7716ac675fc376428fd87ba80b563cc83"
+      "txHash": "0xb6a453768a9f7bedb4050234c9c4603529230d624db793990ea81661b5ad3e98"
     },
     "SimpleTransferApp": {
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a",
@@ -369,10 +369,10 @@
       "txHash": "0xeb62b35d764d8ecd882d48d766188d4c62dc273a3a7a13aa185fd5f940f956b1"
     },
     "HashLockTransferApp": {
-      "address": "0xF6CBBF2D063E05851674E8BEA0479B1B90a4f4D3",
+      "address": "0x8f0483125FCb9aaAEFA9209D8E9d7b9C8B9Fb90F",
       "creationCodeHash": "0x38b4df6af5d1dc374fabda9d1c09d10031df54cde1f85eb9831dadd5c76cb6a3",
       "runtimeCodeHash": "0x288377a56b131d966e095bd89153966cb88829711b247f0534f6d6596555350b",
-      "txHash": "0x72f7312f8cfb5c34f7e232370af11ad9c92ea51160c1c117b333b9e5d417d814"
+      "txHash": "0xf0f316d76736259a224571bc76af48ad5ed65067c6eb278a2957000b77db553a"
     }
   }
 }
