@@ -2,11 +2,12 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
+import "../libs/LibDispute.sol";
 import "../libs/LibAppCaller.sol";
 import "./MChallengeRegistryCore.sol";
 
 
-contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallengeRegistryCore {
+contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, LibAppCaller, MChallengeRegistryCore {
 
     /// @notice Respond to a challenge with a valid action
     /// @param appIdentity an AppIdentity object pointing to the app for which there is a challenge to progress

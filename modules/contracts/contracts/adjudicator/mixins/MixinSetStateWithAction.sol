@@ -2,28 +2,15 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
+import "../libs/LibDispute.sol";
 import "../libs/LibAppCaller.sol";
 import "./MChallengeRegistryCore.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallengeRegistryCore {
+contract MixinSetStateWithAction is LibStateChannelApp, LibDispute, LibAppCaller, MChallengeRegistryCore {
 
     using SafeMath for uint256;
-
-    struct SignedAppChallengeUpdateWithAppState {
-        // NOTE: We include the full bytes of the state update,
-        //       not just the hash of it as in MixinSetState.
-        bytes appState;
-        uint256 versionNumber;
-        uint256 timeout;
-        bytes[] signatures;
-    }
-
-    struct SignedAction {
-        bytes encodedAction;
-        bytes signature;
-    }
 
     /// @notice Create a challenge regarding the latest signed state and immediately after,
     /// performs a unilateral action to update it.

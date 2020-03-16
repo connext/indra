@@ -2,20 +2,14 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
+import "../libs/LibDispute.sol";
 import "./MChallengeRegistryCore.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
+contract MixinSetState is LibStateChannelApp, LibDispute, MChallengeRegistryCore {
 
     using SafeMath for uint256;
-
-    struct SignedAppChallengeUpdate {
-        bytes32 appStateHash;
-        uint256 versionNumber;
-        uint256 timeout;
-        bytes[] signatures;
-    }
 
     /// @notice Set the instance state/AppChallenge to a given value.
     /// This value must have been signed off by all parties to the channel, that is,
