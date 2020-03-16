@@ -223,4 +223,8 @@ export class AdminService {
     }
     return output;
   }
+
+  async migrateChannelStore() {
+    
+  }
 }
