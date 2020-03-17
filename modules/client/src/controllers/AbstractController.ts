@@ -111,6 +111,7 @@ export abstract class AbstractController {
                 proposed = true;
               }
             };
+            // TODO: refactor this, its confusing as hell
             const [proposeResult] = await Promise.all([
               this.connext.proposeInstallApp(params),
               this.connext.messaging.subscribe(subject, resolveIfProposed),
