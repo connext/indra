@@ -3,6 +3,8 @@ import {
   SupportedApplication,
   convertHashLockTransferAppState,
   convertFastSignedTransferAppState,
+  WithdrawERC20Commitment,
+  WithdrawETHCommitment,
 } from "@connext/apps";
 import { NatsMessagingService } from "@connext/messaging";
 import {
@@ -37,7 +39,6 @@ import {
 import { ChannelRepository } from "../channel/channel.repository";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
 
 Injectable();
 export class CFCoreService {

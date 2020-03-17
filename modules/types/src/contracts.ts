@@ -1,5 +1,7 @@
 import { BaseProvider, BigNumber } from "./basic";
 import { CoinBalanceRefundApp } from "./apps";
+import { ProtocolTypes } from "./protocol";
+import { Signature } from "ethers/utils";
 
 ////////////////////////////////////////
 // Generic contract ops & network config
@@ -59,6 +61,26 @@ export interface DeployedContractNetworksFileEntry {
 
 ////////////////////////////////////////
 // Specific contract Interfaces
+
+// Multisig
+export interface EthereumCommitment {
+  hashToSign(): string;
+  getSignedTransaction(signatures: Signature[]): ProtocolTypes.MinimalTransaction;
+}
+
+export enum MultisigOperation {
+  Call = 0,
+  DelegateCall = 1,
+  // Gnosis Safe uses "2" for CREATE, but we don't actually
+  // make use of it in our code. Still, I put this here to be
+  // maximally explicit that we based the data structure on
+  // Gnosis's implementation of a Multisig
+  Create = 2,
+}
+
+export type MultisigTransaction = ProtocolTypes.MinimalTransaction & {
+  operation: MultisigOperation;
+};
 
 export type SingleAssetTwoPartyIntermediaryAgreement = {
   timeLockedPassThroughIdentityHash: string;

@@ -17,7 +17,7 @@ export {
   generatePrivateKeyGeneratorAndXPubPair,
   PrivateKeysGetter,
 } from "./private-keys-generator";
-export { WithdrawERC20Commitment, WithdrawETHCommitment } from "./ethereum";
+export { MultisigCommitment } from "./ethereum";
 export {
   getCreate2MultisigAddress,
   bigNumberifyJson,

@@ -4,7 +4,11 @@ import { formatEther } from "ethers/utils";
 
 import { stringify, withdrawalKey, xpubToAddress } from "../lib";
 import { BigNumber, CFCoreTypes } from "../types";
-import { convertWithdrawParameters } from "@connext/apps";
+import {
+  convertWithdrawParameters,
+  WithdrawERC20Commitment,
+  WithdrawETHCommitment,
+} from "@connext/apps";
 
 import { AbstractController } from "./AbstractController";
 import {
@@ -19,7 +23,6 @@ import {
   WithdrawAppAction,
   WithdrawApp,
 } from "@connext/types";
-import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/cf-core";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(paramsRaw: WithdrawParameters): Promise<WithdrawResponse> {
