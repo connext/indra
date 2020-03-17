@@ -1,11 +1,11 @@
-import { ProtocolParams, CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp, toBN } from "@connext/types";
+import { MethodParams, CoinBalanceRefundAppState, CoinBalanceRefundAppName, toBN } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
+import { BigNumber, formatEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { stringify } from "../lib";
-import { BigNumber, ChannelState, DepositParameters } from "../types";
+import { ChannelState, DepositParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -82,7 +82,7 @@ export class DepositController extends AbstractController {
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
         : await token.functions.balanceOf(this.connext.multisigAddress);
 
-    const initialState: CoinBalanceRefundAppStateBigNumber = {
+    const initialState: CoinBalanceRefundAppState = {
       multisig: this.connext.multisigAddress,
       recipient: this.connext.freeBalanceAddress,
       threshold,
@@ -94,9 +94,9 @@ export class DepositController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
+    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundAppName);
 
-    const params: ProtocolParams.Propose = {
+    const params: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,

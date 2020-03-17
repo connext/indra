@@ -1,13 +1,9 @@
 import {
-  FastSignedTransferAppAction,
-  FastSignedTransferAppState,
   FastSignedTransferParameters,
   FastSignedTransferResponse,
   ResolveFastSignedTransferParameters,
 } from "./FastSignedTransfer";
 import {
-  SimpleLinkedTransferAppAction,
-  SimpleLinkedTransferAppState,
   ResolveLinkedTransferResponse,
   LinkedTransferParameters,
   LinkedTransferToRecipientParameters,
@@ -16,7 +12,6 @@ import {
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferToRecipientParameters,
 } from "./SimpleLinkedTransferApp";
-import { SimpleSwapAppState }from "./SimpleTwoPartySwapApp";
 
 export * from "./common";
 export * from "./FastSignedTransfer";
@@ -39,12 +34,3 @@ export type ResolveConditionParameters =
   | ResolveFastSignedTransferParameters;
 
 export type ResolveConditionResponse = ResolveLinkedTransferResponse;
-
-export type AppAction =
-  | FastSignedTransferAppAction
-  | SimpleLinkedTransferAppAction
-  | SimpleSwapAppState;
-
-export type AppState = 
-  | FastSignedTransferAppState
-  | SimpleLinkedTransferAppState;

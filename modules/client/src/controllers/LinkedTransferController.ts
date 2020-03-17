@@ -1,11 +1,10 @@
 import {
-  CREATE_TRANSFER,
+  EventNames,
   CreateTransferEventData,
-  LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
-  ProtocolParams,
-  SimpleLinkedTransferApp,
-  SimpleLinkedTransferAppStateBigNumber,
+  ConditionalTransferTypes,
+  MethodParams,
+  SimpleLinkedTransferAppName,
+  SimpleLinkedTransferAppState,
   toBN,
 } from "@connext/types";
 import { encryptWithPublicKey } from "@connext/crypto";
@@ -61,12 +60,12 @@ export class LinkedTransferController extends AbstractController {
     // wait for linked transfer (2562 ms)
     const ret = await this.linkedTransfer({
       ...params,
-      conditionType: LINKED_TRANSFER,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
     });
 
     const eventData = {
-      type: LINKED_TRANSFER_TO_RECIPIENT,
-      amount: amount.toString(),
+      type: ConditionalTransferTypes.LinkedTransferToRecipient,
+      amount,
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,
@@ -75,14 +74,14 @@ export class LinkedTransferController extends AbstractController {
       transferMeta: {
         encryptedPreImage,
       },
-    } as CreateTransferEventData<typeof LINKED_TRANSFER_TO_RECIPIENT>;
+    } as CreateTransferEventData<typeof ConditionalTransferTypes.LinkedTransferToRecipient>;
     // publish encrypted secret for receiver
     await this.connext.messaging.publish(
       `transfer.send-async.${recipient}`,
       stringify({ ...eventData, encryptedPreImage }),
     );
 
-    this.connext.emit(CREATE_TRANSFER, eventData);
+    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     // need to flush here so that the client can exit knowing that messages are in the NATS server
     await this.connext.messaging.flush();
@@ -109,7 +108,7 @@ export class LinkedTransferController extends AbstractController {
     // install the transfer application
     const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
-    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+    const initialState: SimpleLinkedTransferAppState = {
       amount,
       assetId,
       coinTransfers: [
@@ -132,8 +131,8 @@ export class LinkedTransferController extends AbstractController {
       stateEncoding,
       appDefinitionAddress: appDefinition,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(SimpleLinkedTransferApp);
-    const proposeInstallParams: ProtocolParams.Propose = {
+    } = this.connext.getRegisteredAppDetails(SimpleLinkedTransferAppName);
+    const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -156,15 +155,15 @@ export class LinkedTransferController extends AbstractController {
     }
 
     const eventData = {
-      type: LINKED_TRANSFER,
-      amount: amount.toString(),
+      type: ConditionalTransferTypes.LinkedTransfer,
+      amount,
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,
       meta,
       transferMeta: {},
-    } as CreateTransferEventData<typeof LINKED_TRANSFER>;
-    this.connext.emit(CREATE_TRANSFER, eventData);
+    } as CreateTransferEventData<typeof ConditionalTransferTypes.LinkedTransfer>;
+    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     return {
       paymentId,

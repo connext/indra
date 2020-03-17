@@ -2,7 +2,7 @@ import { providers } from "ethers";
 import { TransactionResponse } from "ethers/providers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, DecString, Xpub } from "./basic";
+import { Address, BigNumber, Xpub } from "./basic";
 import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -12,7 +12,7 @@ import {
   SwapParameters,
 } from "./contracts";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
-import { EventName } from "./events";
+import { EventNames } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
@@ -40,12 +40,12 @@ export type ChannelState = {
 // Client input types
 
 export type AssetAmount = {
-  amount: DecString;
+  amount: BigNumber;
   assetId: Address;
 };
 
 export type DepositParameters = {
-  amount: DecString;
+  amount: BigNumber;
   assetId: Address;
 };
 
@@ -55,26 +55,26 @@ export type RequestDepositRightsParameters = {
 
 export type RequestDepositRightsResponse = MethodResults.RequestDepositRights;
 
-export type CheckDepositRightsParameters = MethodParams.RequestDepositRights;
+export type CheckDepositRightsParameters = RequestDepositRightsParameters;
 
 export type CheckDepositRightsResponse = {
   assetId: Address;
-  multisigBalance: DecString;
+  multisigBalance: BigNumber;
   recipient: Address;
-  threshold: DecString;
+  threshold: BigNumber;
 };
 
-export type RescindDepositRightsParameters = MethodParams.RequestDepositRights;
+export type RescindDepositRightsParameters = RequestDepositRightsParameters;
 export type RescindDepositRightsResponse = MethodResults.Deposit;
 
 // Withdraw types
-export type WithdrawParameters = MethodParams.Deposit & {
+export type WithdrawParameters = DepositParameters & {
   userSubmitted?: boolean;
   recipient?: Address; // if not provided, will default to signer addr
 };
 
 // Generic transfer types
-export type TransferParameters = MethodParams.Deposit & {
+export type TransferParameters = DepositParameters & {
   recipient: Address;
   meta?: object;
 };
@@ -125,11 +125,11 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: EventName | MethodName, callback: (...args: any[]) => void): void;
-  once(event: EventName | MethodName, callback: (...args: any[]) => void): void;
-  emit(event: EventName | MethodName, data: any): boolean;
+  on(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
+  once(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
+  emit(event: EventNames | MethodName, data: any): boolean;
   removeListener(
-    event: EventName | MethodName,
+    event: EventNames | MethodName,
     callback: (...args: any[]) => void,
   ): void;
 
@@ -187,7 +187,7 @@ export interface IConnextClient {
   deployMultisig(): Promise<MethodResults.DeployStateDepositHolder>;
   getStateChannel(): Promise<MethodResults.GetStateChannel>;
   providerDeposit(
-    amount: DecString,
+    amount: BigNumber,
     assetId: string,
     notifyCounterparty: boolean,
   ): Promise<MethodResults.Deposit>;

@@ -1,4 +1,4 @@
-import { MethodNames, MinimalTransaction, toBN } from "@connext/types";
+import { ChannelMethods, MethodNames, MinimalTransaction, toBN } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, formatEther, getAddress } from "ethers/utils";
@@ -7,7 +7,6 @@ import { stringify } from "../lib";
 import {
   WithdrawalResponse,
   WithdrawParameters,
-  chan_setUserWithdrawal,
 } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
@@ -57,7 +56,7 @@ export class WithdrawalController extends AbstractController {
         this.log.debug(`Details of submitted withdrawal: ${stringify(withdrawResponse)}`);
         const minTx: MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store
-        await this.connext.channelProvider.send(chan_setUserWithdrawal, {
+        await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
           withdrawalObject: { tx: minTx, retry: 0 },
         });
 

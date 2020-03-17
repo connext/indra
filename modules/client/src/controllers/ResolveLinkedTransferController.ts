@@ -1,9 +1,7 @@
 import {
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
+  EventNames,
   ReceiveTransferFinishedEventData,
-  LINKED_TRANSFER,
+  ConditionalTransferTypes,
 } from "@connext/types";
 
 import { ResolveLinkedTransferParameters, ResolveLinkedTransferResponse } from "../types";
@@ -15,7 +13,7 @@ export class ResolveLinkedTransferController extends AbstractController {
   // properly logs error and emits a receive transfer failed event
   private handleResolveErr = (paymentId: string, e: any): void => {
     this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.stack || e.message}`);
-    this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, {
       error: e.stack || e.message,
       paymentId,
     });
@@ -31,7 +29,7 @@ export class ResolveLinkedTransferController extends AbstractController {
 
     this.log.info(`Resolving link transfer with id ${params.paymentId}`);
 
-    this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, {
       paymentId,
     });
 
@@ -46,15 +44,15 @@ export class ResolveLinkedTransferController extends AbstractController {
       throw e;
     }
 
-    this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
-      type: LINKED_TRANSFER,
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
+      type: ConditionalTransferTypes.LinkedTransfer,
       amount: resolveRes.amount,
       assetId: resolveRes.assetId,
       paymentId,
       sender: resolveRes.sender,
       recipient: this.connext.publicIdentifier,
       meta: resolveRes.meta,
-    } as ReceiveTransferFinishedEventData<typeof LINKED_TRANSFER>);
+    } as ReceiveTransferFinishedEventData<typeof ConditionalTransferTypes.LinkedTransfer>);
 
     return resolveRes;
   };

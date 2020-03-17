@@ -1,10 +1,9 @@
 import {
   BigNumber,
-  CoinBalanceRefundApp,
+  CoinBalanceRefundAppName,
   CoinBalanceRefundAppState,
   MethodNames,
   MethodParams,
-  ProtocolParams,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -105,9 +104,9 @@ export class RequestDepositRightsController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
+    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundAppName);
 
-    const params: ProtocolParams.Propose = {
+    const params: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,

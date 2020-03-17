@@ -1,16 +1,15 @@
 import {
   commonAppProposalValidation,
-  EventName,
-  EventNames,
   SupportedApplication,
   validateSimpleLinkedTransferApp,
 } from "@connext/apps";
 import {
-  CoinBalanceRefundApp,
+  CoinBalanceRefundAppName,
+  EventNames,
   ILoggerService,
   MethodNames,
-  ProtocolParams,
-  SimpleLinkedTransferApp,
+  MethodParams,
+  SimpleLinkedTransferAppName,
 } from "@connext/types";
 
 import { ConnextClient } from "./connext";
@@ -36,12 +35,16 @@ import {
 
 const {
   CREATE_CHANNEL_EVENT,
+  CREATE_TRANSFER,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_STARTED_EVENT,
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
   UPDATE_STATE_EVENT,
@@ -52,7 +55,7 @@ const {
 
 // TODO: index of connext events only?
 type CallbackStruct = {
-  [index in EventName]: (data: any) => Promise<any> | void;
+  [index in EventNames]: (data: any) => Promise<any> | void;
 };
 
 export class ConnextListener extends ConnextEventEmitter {
@@ -65,6 +68,9 @@ export class ConnextListener extends ConnextEventEmitter {
   private defaultCallbacks: CallbackStruct = {
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
       this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
+    },
+    CREATE_TRANSFER: (): void => {
+      this.emitAndLog(CREATE_TRANSFER, {});
     },
     DEPOSIT_CONFIRMED_EVENT: async (msg: DepositConfirmationMessage): Promise<void> => {
       this.emitAndLog(DEPOSIT_CONFIRMED_EVENT, msg.data);
@@ -107,6 +113,15 @@ export class ConnextListener extends ConnextEventEmitter {
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
     },
+    RECEIVE_TRANSFER_FAILED_EVENT: (msg: CreateChannelMessage): void => {
+      this.emitAndLog(RECEIVE_TRANSFER_FAILED_EVENT, {});
+    },
+    RECEIVE_TRANSFER_FINISHED_EVENT: (msg: CreateChannelMessage): void => {
+      this.emitAndLog(RECEIVE_TRANSFER_FINISHED_EVENT, {});
+    },
+    RECEIVE_TRANSFER_STARTED_EVENT: (msg: CreateChannelMessage): void => {
+      this.emitAndLog(RECEIVE_TRANSFER_STARTED_EVENT, {});
+    },
     REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {
       this.emitAndLog(REJECT_INSTALL_EVENT, msg.data);
     },
@@ -142,7 +157,7 @@ export class ConnextListener extends ConnextEventEmitter {
     return;
   };
 
-  public registerCfListener = (event: EventName, cb: Function): void => {
+  public registerCfListener = (event: EventNames, cb: Function): void => {
     // replace with new fn
     this.log.debug(`Registering listener for ${event}`);
     this.channelProvider.on(
@@ -154,7 +169,7 @@ export class ConnextListener extends ConnextEventEmitter {
     );
   };
 
-  public removeCfListener = (event: EventName, cb: Function): boolean => {
+  public removeCfListener = (event: EventNames, cb: Function): boolean => {
     this.log.debug(`Removing listener for ${event}`);
     try {
       this.removeListener(event, cb as any);
@@ -197,7 +212,7 @@ export class ConnextListener extends ConnextEventEmitter {
     });
   };
 
-  private emitAndLog = (event: EventName, data: any): void => {
+  private emitAndLog = (event: EventNames, data: any): void => {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
@@ -246,7 +261,7 @@ export class ConnextListener extends ConnextEventEmitter {
   };
 
   private handleAppProposal = async (
-    params: ProtocolParams.Propose,
+    params: MethodParams.ProposeInstall,
     appInstanceId: string,
     from: string,
     registryAppInfo: DefaultApp,
@@ -259,7 +274,7 @@ export class ConnextListener extends ConnextEventEmitter {
         this.connext.config.supportedTokenAddresses,
       );
       switch (registryAppInfo.name) {
-        case CoinBalanceRefundApp: {
+        case CoinBalanceRefundAppName: {
           this.log.debug(
             `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
           );
@@ -269,7 +284,7 @@ export class ConnextListener extends ConnextEventEmitter {
           );
           return;
         }
-        case SimpleLinkedTransferApp: {
+        case SimpleLinkedTransferAppName: {
           validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }

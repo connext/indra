@@ -87,7 +87,6 @@ export {
   DepositStartedMessage,
   Event,
   EventEmittedMessage,
-  EventName,
   EventNames,
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   ILockService,

@@ -1,4 +1,4 @@
-import { DecString } from "./basic";
+import { BigNumber } from "./basic";
 import {
   LinkedTransfer,
   LinkedTransferToRecipient,
@@ -8,7 +8,7 @@ import {
 
 export type TransferAction = {
   finalize: boolean;
-  transferAmount: DecString;
+  transferAmount: BigNumber;
 };
 
 export type CreatedLinkedTransferMeta = {};
@@ -24,7 +24,7 @@ export type CreatedFastSignedTransferMeta = {
 export type ReceiveTransferFinishedEventData<
   T extends ConditionalTransferType | undefined = undefined
 > = {
-  amount: string;
+  amount: BigNumber;
   assetId: string;
   paymentId: string;
   sender: string;
@@ -34,7 +34,7 @@ export type ReceiveTransferFinishedEventData<
 };
 
 export type CreateTransferEventData<T extends ConditionalTransferType | undefined = undefined> = {
-  amount: string;
+  amount: BigNumber;
   assetId: string;
   paymentId: string;
   sender: string;

@@ -1,7 +1,6 @@
 import {
   AppInstanceProposal,
   CommitmentType,
-  EventName,
   EventNames,
   ILoggerService,
   MethodName,
@@ -340,7 +339,7 @@ export class Node {
    * @param event
    * @param callback
    */
-  on(event: EventName | MethodName, callback: (res: any) => void) {
+  on(event: EventNames | MethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribe(event, async (res: any) => callback(res));
   }
 
@@ -351,7 +350,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  off(event: EventName | MethodName, callback?: (res: any) => void) {
+  off(event: EventNames | MethodName, callback?: (res: any) => void) {
     this.rpcRouter.unsubscribe(event, callback ? async (res: any) => callback(res) : undefined);
   }
 
@@ -363,7 +362,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  once(event: EventName | MethodName, callback: (res: any) => void) {
+  once(event: EventNames | MethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribeOnce(event, async (res: any) => callback(res));
   }
 
@@ -372,7 +371,7 @@ export class Node {
    * @param event
    * @param req
    */
-  emit(event: EventName | MethodName, req: MethodRequest) {
+  emit(event: EventNames | MethodName, req: MethodRequest) {
     this.rpcRouter.emit(event, req);
   }
 

@@ -1,11 +1,26 @@
-import { SupportedApplication, AppActionBigNumber, AppStateBigNumber } from "@connext/apps";
+import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
 import {
   Address,
-  EventName,
+  AppAction,
+  AppInstanceProposal,
+  AppState,
+  ChannelMethods,
+  ConditionalTransferParameters,
+  ConditionalTransferResponse,
+  ConditionalTransferTypes,
+  EventNames,
+  FastSignedTransferParameters,
+  IClientStore,
+  ILoggerService,
   MethodNames,
   MethodParams,
   MethodResults,
+  MinimalTransaction,
+  RequestDepositRightsParameters,
+  RescindDepositRightsParameters,
+  RescindDepositRightsResponse,
+  WithdrawParameters,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -25,32 +40,22 @@ import { stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import {
   AppInstanceJson,
-  AppInstanceProposal,
   AppRegistry,
-  CFCoreChannel,
-  DepositParameters,
-  ChannelMethods,
   ChannelProviderConfig,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
   ConnextClientStorePrefix,
   CreateChannelResponse,
   DefaultApp,
-  FAST_SIGNED_TRANSFER,
-  FastSignedTransferParameters,
+  DepositParameters,
   GetChannelResponse,
   GetConfigResponse,
   IChannelProvider,
-  IClientStore,
   IConnextClient,
-  ILoggerService,
   INodeApiClient,
   InternalClientOptions,
   KeyGen,
-  ConditionalTransferTypes,
   LinkedTransferToRecipientResponse,
   RebalanceProfile,
   RequestCollateralResponse,
@@ -298,14 +303,14 @@ export class ConnextClient implements IConnextClient {
   };
 
   public requestDepositRights = async (
-    params: MethodParams.RequestDepositRights,
+    params: RequestDepositRightsParameters,
   ): Promise<MethodResults.RequestDepositRights> => {
     return await this.requestDepositRightsController.requestDepositRights(params);
   };
 
   public rescindDepositRights = async (
-    params: MethodParams.RescindDepositRights,
-  ): Promise<MethodResults.Deposit> => {
+    params: RescindDepositRightsParameters,
+  ): Promise<RescindDepositRightsResponse> => {
     return this.channelProvider.send(MethodNames.chan_rescindDepositRights, {
       multisigAddress: this.multisigAddress,
       tokenAddress: params.assetId,
@@ -338,7 +343,7 @@ export class ConnextClient implements IConnextClient {
       : undefined;
   };
 
-  public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
+  public swap = async (params: SwapParameters): Promise<GetChannelResponse> => {
     const res = await this.swapController.swap(params);
     return res;
   };
@@ -361,7 +366,7 @@ export class ConnextClient implements IConnextClient {
     }) as Promise<LinkedTransferToRecipientResponse>;
   };
 
-  public withdraw = async (params: MethodParams.Withdraw): Promise<WithdrawalResponse> => {
+  public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
     return await this.withdrawalController.withdraw(params);
   };
 
@@ -376,10 +381,10 @@ export class ConnextClient implements IConnextClient {
           conditionType: ConditionalTransferTypes.LinkedTransfer,
         });
       }
-      case FAST_SIGNED_TRANSFER: {
+      case ConditionalTransferTypes.FastSignedTransfer: {
         return this.resolveFastSignedTransferController.resolveFastSignedTransfer({
           ...params,
-          conditionType: FAST_SIGNED_TRANSFER,
+          conditionType: ConditionalTransferTypes.FastSignedTransfer,
         });
       }
       default:
@@ -391,13 +396,13 @@ export class ConnextClient implements IConnextClient {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     switch (params.conditionType) {
-      case ConditionalTransferResponse.LinkedTransfer: {
+      case ConditionalTransferTypes.LinkedTransfer: {
         return this.linkedTransferController.linkedTransfer(params);
       }
       case ConditionalTransferTypes.LinkedTransferToRecipient: {
         return this.linkedTransferController.linkedTransferToRecipient(params);
       }
-      case FAST_SIGNED_TRANSFER: {
+      case ConditionalTransferTypes.FastSignedTransfer: {
         return this.fastSignedTransferController.fastSignedTransfer(
           params as FastSignedTransferParameters,
         );
@@ -486,20 +491,20 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (event: EventName, callback: (...args: any[]) => void): ConnextListener => {
+  public on = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public once = (event: EventName, callback: (...args: any[]) => void): ConnextListener => {
+  public once = (event: EventNames, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.once(event, callback);
   };
 
-  public emit = (event: EventName, data: any): boolean => {
+  public emit = (event: EventNames, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 
   public removeListener = (
-    event: EventName,
+    event: EventNames,
     callback: (...args: any[]) => void,
   ): ConnextListener => {
     return this.listener.removeListener(event, callback);
@@ -634,7 +639,7 @@ export class ConnextClient implements IConnextClient {
 
   public takeAction = async (
     appInstanceId: string,
-    action: AppActionBigNumber,
+    action: AppAction,
   ): Promise<MethodResults.TakeAction> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
@@ -656,7 +661,7 @@ export class ConnextClient implements IConnextClient {
 
   public updateState = async (
     appInstanceId: string,
-    newState: AppStateBigNumber | any, // cast to any bc no supported apps use
+    newState: AppState | any, // cast to any bc no supported apps use
     // the update state method
   ): Promise<MethodResults.UpdateState> => {
     // check the app is actually installed

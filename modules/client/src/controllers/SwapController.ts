@@ -1,4 +1,4 @@
-import { ProtocolParams } from "@connext/types";
+import { MethodParams, SimpleSwapAppState, toBN } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
@@ -6,7 +6,7 @@ import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import {
   calculateExchange,
-  CFCoreChannel,
+  GetChannelResponse,
   DefaultApp,
   SwapParameters,
 } from "../types";
@@ -19,11 +19,11 @@ import {
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { SimpleSwapAppStateBigNumber } from "@connext/types";
+import {  } from "@connext/types";
 
 export class SwapController extends AbstractController {
-  public async swap(params: SwapParameters): Promise<CFCoreChannel> {
-    const { amount } = toBN(params.amount);
+  public async swap(params: SwapParameters): Promise<GetChannelResponse> {
+    const amount = toBN(params.amount);
     const { toAssetId, fromAssetId, swapRate } = params;
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
@@ -76,7 +76,7 @@ export class SwapController extends AbstractController {
     const newState = await this.connext.getChannel();
 
     // TODO: fix the state / types!!
-    return newState as CFCoreChannel;
+    return newState as GetChannelResponse;
   }
 
   /////////////////////////////////
@@ -103,7 +103,7 @@ export class SwapController extends AbstractController {
     // fail, causing the balances to be indexed on the wrong token
     // address key in `get-outcome-increments.ts` in cf code base
     // ideally this would be fixed at some point
-    const initialState: SimpleSwapAppStateBigNumber = {
+    const initialState: SimpleSwapAppState = {
       coinTransfers: [
         [
           {
@@ -122,7 +122,7 @@ export class SwapController extends AbstractController {
 
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
 
-    const params: ProtocolParams.Propose = {
+    const params: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,

@@ -1,4 +1,4 @@
-import { EventName, EventNames, ILoggerService, IMessagingService, MethodName } from "@connext/types";
+import { EventNames, ILoggerService, IMessagingService, MethodName } from "@connext/types";
 import { Signer } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -103,7 +103,7 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: EventName, msg: NodeMessage) {
+  public async callEvent(event: EventNames, msg: NodeMessage) {
     const start = Date.now();
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);
@@ -138,7 +138,7 @@ export class RequestHandler {
     this.router.emit(event, msg);
   }
 
-  public async isLegacyEvent(event: EventName) {
+  public async isLegacyEvent(event: EventNames) {
     return this.events.has(event);
   }
 

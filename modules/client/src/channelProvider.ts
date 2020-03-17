@@ -1,7 +1,7 @@
 import {
   ChannelMethods,
   ConnextEventEmitter,
-  EventName,
+  EventNames,
   IChannelProvider,
   IClientStore,
   MethodName,
@@ -97,7 +97,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   }
 
   public on = (
-    event: string | EventName | MethodName,
+    event: string | EventNames | MethodName,
     listener: (...args: any[]) => void,
   ): any => {
     this.cfCore.on(event as any, listener);
@@ -105,7 +105,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   public once = (
-    event: string | EventName | MethodName,
+    event: string | EventNames | MethodName,
     listener: (...args: any[]) => void,
   ): any => {
     this.cfCore.once(event as any, listener);

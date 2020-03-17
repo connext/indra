@@ -1,14 +1,12 @@
 import {
   ResolveFastSignedTransferParameters,
-  RECEIVE_TRANSFER_STARTED_EVENT,
+  EventNames,
+  ConditionalTransferTypes,
   ResolveFastSignedTransferResponse,
-  FastSignedTransferAppActionBigNumber,
+  FastSignedTransferAppAction,
   FastSignedTransferActionType,
-  FastSignedTransferAppStateBigNumber,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
+  FastSignedTransferAppState,
   ReceiveTransferFinishedEventData,
-  FAST_SIGNED_TRANSFER,
 } from "@connext/types";
 
 import { validate, invalid32ByteHexString, invalidEthSignature } from "../validation";
@@ -27,7 +25,7 @@ export class ResolveFastSignedTransferController extends AbstractController {
       invalidEthSignature(signature),
     );
 
-    this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, {
       paymentId,
     });
 
@@ -37,7 +35,7 @@ export class ResolveFastSignedTransferController extends AbstractController {
       resolveRes = await this.connext.node.resolveFastSignedTransfer(paymentId);
       const preTransferApp = await this.connext.getAppInstanceDetails(resolveRes.appId);
       const preTransferAppState = preTransferApp.appInstance
-        .latestState as FastSignedTransferAppStateBigNumber;
+        .latestState as FastSignedTransferAppState;
       const action = {
         actionType: FastSignedTransferActionType.UNLOCK,
         data,
@@ -47,10 +45,10 @@ export class ResolveFastSignedTransferController extends AbstractController {
         paymentId,
         recipientXpub: this.connext.publicIdentifier,
         signer: resolveRes.signer,
-      } as FastSignedTransferAppActionBigNumber;
+      } as FastSignedTransferAppAction;
 
       const takeActionRes = await this.connext.takeAction(resolveRes.appId, action);
-      const newState = takeActionRes.newState as FastSignedTransferAppStateBigNumber;
+      const newState = takeActionRes.newState as FastSignedTransferAppState;
       // TODO: when to uninstall
 
       if (
@@ -61,20 +59,20 @@ export class ResolveFastSignedTransferController extends AbstractController {
         throw new Error(`Transfer amount not present in coin transfer after resolution`);
       }
 
-      this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
+      this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
         paymentId,
         amount: resolveRes.amount,
         assetId: resolveRes.assetId,
         sender: resolveRes.sender,
         recipient: this.connext.publicIdentifier,
         meta: resolveRes.meta,
-        type: FAST_SIGNED_TRANSFER,
-      } as ReceiveTransferFinishedEventData<typeof FAST_SIGNED_TRANSFER>);
+        type: ConditionalTransferTypes.FastSignedTransfer,
+      } as ReceiveTransferFinishedEventData<typeof ConditionalTransferTypes.FastSignedTransfer>);
     } catch (e) {
       this.log.error(
         `Failed to resolve fast signed transfer ${paymentId}: ${e.stack || e.message}`,
       );
-      this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
+      this.connext.emit(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,
         paymentId,
       });

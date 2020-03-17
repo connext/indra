@@ -6,7 +6,7 @@ import { ChannelMethod } from "./channelProvider";
 import { enumify } from "./utils";
 
 export class ConnextEventEmitter extends EventEmitter<
-  string | EventName | ChannelMethod
+  string | EventNames | ChannelMethod
 > {}
 
 ////////////////////////////////////////
@@ -110,7 +110,6 @@ export const EventNames = enumify({
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
 });
 export type EventNames = (typeof EventNames)[keyof typeof EventNames];
-export type EventName = keyof typeof EventNames;
 
 export namespace EventPayloads {
   export type Install = InstallEventData
@@ -128,6 +127,6 @@ export type EventPayload =
   | CreateMultisigEventData;
 
 export type Event = {
-  type: EventName;
+  type: EventNames;
   data: EventPayload;
 };

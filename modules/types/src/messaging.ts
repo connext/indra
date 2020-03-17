@@ -1,5 +1,5 @@
 import { DecString, TransactionReceipt } from "./basic";
-import { EventName, EventPayloads } from "./events";
+import { EventNames, EventPayloads } from "./events";
 import { ILoggerService } from "./logger";
 import {
   MethodName,
@@ -57,7 +57,7 @@ export type Message = MethodRequest | MethodResponse | Event | Error;
 // The message type for Nodes to communicate with each other.
 export type NodeMessage = {
   from: string;
-  type: EventName;
+  type: EventNames;
 };
 
 type JsonRpcProtocolV2 = {

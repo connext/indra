@@ -1,4 +1,11 @@
-import { IChannelProvider, ILoggerService, EventNames, EventPayloads } from "@connext/types";
+import {
+  EventNames,
+  EventPayloads,
+  IChannelProvider,
+  ILoggerService,
+  MethodParams,
+  MethodResults,
+} from "@connext/types";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";

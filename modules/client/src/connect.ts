@@ -5,7 +5,7 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   MethodResults,
   CF_PATH,
-  CREATE_CHANNEL_EVENT,
+  EventNames,
   StateSchemaVersion,
   CoinBalanceRefundAppState,
 } from "@connext/types";
@@ -173,10 +173,13 @@ export const connect = async (
       delayAndThrow(30_000, "Create channel event not fired within 30s"),
       new Promise(
         async (res: any): Promise<any> => {
-          channelProvider.once(CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
-            log.debug(`Received CREATE_CHANNEL_EVENT`);
-            res(data.data);
-          });
+          channelProvider.once(
+            EventNames.CREATE_CHANNEL_EVENT,
+            (data: CreateChannelMessage): void => {
+              log.debug(`Received CREATE_CHANNEL_EVENT`);
+              res(data.data);
+            },
+          );
 
           // FYI This continues async in the background after CREATE_CHANNEL_EVENT is recieved
           const creationData = await node.createChannel();
