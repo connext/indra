@@ -1,4 +1,11 @@
-import { ILoggerService, AppInstanceJson, WithdrawAppState, BigNumber, WithdrawApp, CoinBalanceRefundApp, SimpleLinkedTransferApp } from "@connext/types";
+import {
+  ILoggerService,
+  WithdrawAppState,
+  BigNumber,
+  WithdrawApp,
+  CoinBalanceRefundApp,
+  SimpleLinkedTransferApp,
+} from "@connext/types";
 import {
   commonAppProposalValidation,
   SupportedApplication,
@@ -120,18 +127,19 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
-      const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appInstanceId)).appInstance
-      const state = msg.data.newState as WithdrawAppState<BigNumber>
+      const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appInstanceId))
+        .appInstance;
+      const state = msg.data.newState as WithdrawAppState<BigNumber>;
       const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
         return app.appDefinitionAddress === appInstance.appInterface.addr;
       });
-      if(registryAppInfo.name == WithdrawApp) {
+      if (registryAppInfo.name === WithdrawApp) {
         const params = {
           amount: state.transfers[0][1],
           recipient: state.transfers[0][0],
-          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress
-        }
-        this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
+          assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        };
+        await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
       }
     },
     WITHDRAWAL_CONFIRMED_EVENT: (msg: WithdrawConfirmationMessage): void => {
@@ -190,14 +198,17 @@ export class ConnextListener extends ConnextEventEmitter {
       this.channelProvider.on(event, callback);
     });
 
-    this.channelProvider.on(ProtocolTypes.chan_uninstall, async (data: any): Promise<any> => {
-      const result = data.result.result;
-      this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
-      await this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-        stringify(result),
-      );
-    });
+    this.channelProvider.on(
+      ProtocolTypes.chan_uninstall,
+      async (data: any): Promise<any> => {
+        const result = data.result.result;
+        this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
+        await this.connext.messaging.publish(
+          `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
+          stringify(result),
+        );
+      },
+    );
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
@@ -277,12 +288,12 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case WithdrawApp: {
-          validateWithdrawApp(params, from, this.connext.publicIdentifier)
+          validateWithdrawApp(params, from, this.connext.publicIdentifier);
         }
       }
       await this.connext.installApp(appInstanceId);
       await this.runPostInstallTasks(appInstanceId, registryAppInfo);
-      const appInstance = this.connext.getAppInstanceDetails(appInstanceId)
+      const appInstance = this.connext.getAppInstanceDetails(appInstanceId);
       await this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.install.${appInstanceId}`,
         stringify(appInstance),
@@ -296,7 +307,7 @@ export class ConnextListener extends ConnextEventEmitter {
   private runPostInstallTasks = async (
     appInstanceId: string,
     registryAppInfo: DefaultApp,
-  ): Promise<void> =>  {
+  ): Promise<void> => {
     switch (registryAppInfo.name) {
       case WithdrawApp: {
         const appInstance = (await this.connext.getAppInstanceDetails(appInstanceId)).appInstance;
@@ -304,5 +315,5 @@ export class ConnextListener extends ConnextEventEmitter {
         break;
       }
     }
-  }
+  };
 }

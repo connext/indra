@@ -1,7 +1,5 @@
+import { SupportedApplication, convertWithrawAppState } from "@connext/apps";
 import {
-  SupportedApplication, convertWithrawAppState
-} from "@connext/apps";
-import{
   FastSignedTransferApp,
   SimpleLinkedTransferApp,
   WithdrawApp,
@@ -12,11 +10,9 @@ import{
   FastSignedTransferActionType,
   WithdrawAppState,
   WithdrawAppAction,
-  stringify,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { bigNumberify } from "ethers/utils";
-import { AddressZero } from "ethers/constants";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
@@ -25,7 +21,7 @@ import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
 import { FastSignedTransferStatus } from "../fastSignedTransfer/fastSignedTransfer.entity";
-import { WithdrawRepository } from "../withdraw/withdraw.repository"
+import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { FastSignedTransferService } from "../fastSignedTransfer/fastSignedTransfer.service";
@@ -34,7 +30,6 @@ import { FastSignedTransferService } from "../fastSignedTransfer/fastSignedTrans
 export class AppActionsService {
   constructor(
     private readonly log: LoggerService,
-    private readonly transferService: LinkedTransferService,
     private readonly withdrawService: WithdrawService,
     private readonly linkedTransferService: LinkedTransferService,
     private readonly fastSignedTransferService: FastSignedTransferService,
@@ -76,8 +71,8 @@ export class AppActionsService {
         await this.handleWithdrawAppAction(
           appInstanceId,
           action as WithdrawAppAction,
-          newState as WithdrawAppState
-        )
+          newState as WithdrawAppState,
+        );
       }
     }
   }
@@ -90,7 +85,7 @@ export class AppActionsService {
   ): Promise<void> {
     switch (action.actionType) {
       case FastSignedTransferActionType.CREATE: {
-        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
+        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
         await this.linkedTransferService.saveFastSignedTransfer(
           from,
           appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress, // TODO
@@ -160,25 +155,31 @@ export class AppActionsService {
     state: WithdrawAppState,
   ): Promise<void> {
     let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstanceId);
-    if(!withdraw) {
-      throw new Error(`No withdraw entity found for this appInstanceId: ${appInstanceId}`)
+    if (!withdraw) {
+      throw new Error(`No withdraw entity found for this appInstanceId: ${appInstanceId}`);
     }
-    withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(withdraw, action.signature);
+    withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(
+      withdraw,
+      action.signature,
+    );
 
     const stateBigNumber = convertWithrawAppState("bignumber", state);
-    const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
+    const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
     if (!appInstance) {
-        throw new Error(`No channel exists for multisigAddress ${appInstance.multisigAddress}`);
+      throw new Error(`No channel exists for multisigAddress ${appInstance.multisigAddress}`);
     }
 
-    const commitment = await this.cfCoreService.createWithdrawCommitment({
-      amount: stateBigNumber.transfers[0].amount,
-      assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-      recipient: this.cfCoreService.cfCore.freeBalanceAddress
-    }, appInstance.multisigAddress)
-    const tx = commitment.getSignedTransaction(stateBigNumber.signatures)
+    const commitment = await this.cfCoreService.createWithdrawCommitment(
+      {
+        amount: stateBigNumber.transfers[0].amount,
+        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        recipient: this.cfCoreService.cfCore.freeBalanceAddress,
+      },
+      appInstance.multisigAddress,
+    );
+    const tx = commitment.getSignedTransaction(stateBigNumber.signatures);
 
-    this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstanceId}`)
+    this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstanceId}`);
     await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
   }
 }

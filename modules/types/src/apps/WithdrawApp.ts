@@ -13,11 +13,11 @@ export type WithdrawAppState<T = string> = {
   signers: string[];
   data: string;
   finalized: boolean;
-}
+};
 export type WithdrawAppStateBigNumber = WithdrawAppState<BigNumber>;
 export type WithdrawAppAction = {
   signature: string;
-}
+};
 
 // Input/output
 export type WithdrawParameters<T = string> = {
@@ -29,7 +29,7 @@ export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 
 export type WithdrawResponse = {
   transaction: TransactionResponse;
-}
+};
 
 export const WithdrawAppStateEncoding = `tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} transfers,

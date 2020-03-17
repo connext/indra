@@ -356,7 +356,7 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: TransferParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
-    if(!params.paymentId) {
+    if (!params.paymentId) {
       params.paymentId = hexlify(randomBytes(32));
     }
     return this.linkedTransferController.linkedTransferToRecipient({
@@ -374,13 +374,16 @@ export class ConnextClient implements IConnextClient {
     return await this.withdrawalController.withdraw(params);
   };
 
-  public respondToNodeWithdraw = async(appInstance: AppInstanceJson): Promise<void> => {
+  public respondToNodeWithdraw = async (appInstance: AppInstanceJson): Promise<void> => {
     return await this.withdrawalController.respondToNodeWithdraw(appInstance);
-  }
+  };
 
-  public saveWithdrawCommitmentToStore = async(params: WithdrawParameters<BigNumber>, signatures: string[]): Promise<void> => {
+  public saveWithdrawCommitmentToStore = async (
+    params: WithdrawParameters<BigNumber>,
+    signatures: string[],
+  ): Promise<void> => {
     return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
-  }
+  };
 
   public resolveCondition = async (
     params: ResolveConditionParameters,
@@ -478,9 +481,9 @@ export class ConnextClient implements IConnextClient {
       //   this.log.debug("Retrying node submission");
       //   await this.retryNodeSubmittedWithdrawal();
       // }
-      throw new Error(`Error watching for user withdrawal: ${e}`)
+      throw new Error(`Error watching for user withdrawal: ${e}`);
     }
-    return transaction
+    return transaction;
   };
 
   ////////////////////////////////////////
@@ -881,11 +884,14 @@ export class ConnextClient implements IConnextClient {
     await this.removeHangingProposalsByDefinition([
       swapAppRegistryInfo.appDefinitionAddress,
       linkedRegistryInfo.appDefinitionAddress,
-      withdrawRegistryInfo.appDefinitionAddress
+      withdrawRegistryInfo.appDefinitionAddress,
     ]);
 
     // deal with any swap apps that are installed
-    await this.uninstallAllAppsByDefintion([swapAppRegistryInfo.appDefinitionAddress, withdrawRegistryInfo.appDefinitionAddress]);
+    await this.uninstallAllAppsByDefintion([
+      swapAppRegistryInfo.appDefinitionAddress,
+      withdrawRegistryInfo.appDefinitionAddress,
+    ]);
   };
 
   /**
@@ -1022,7 +1028,9 @@ export class ConnextClient implements IConnextClient {
     return undefined;
   };
 
-  private checkForUserWithdrawal = async (inBlock: number): Promise<TransactionResponse | undefined> => {
+  private checkForUserWithdrawal = async (
+    inBlock: number,
+  ): Promise<TransactionResponse | undefined> => {
     const val = await this.getLatestWithdrawal();
     if (!val) {
       this.log.error("No transaction found in store.");

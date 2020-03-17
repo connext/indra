@@ -1,4 +1,4 @@
-import { IConnextClient, TransactionResponse } from "@connext/types";
+import { IConnextClient } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
