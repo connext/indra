@@ -54,31 +54,25 @@ const createMessagingService = async (
   // create a messaging service client
   // do not specify a prefix so that clients can publish to node
   const messaging = new MessagingService(config, `INDRA.${chainId}`, async () =>
-    getBearerToken(logger, nodeUrl, xpub, getSignature),
+    getBearerToken(nodeUrl, xpub, getSignature),
   );
   await messaging.connect();
   return messaging;
 };
 
 const getBearerToken = async (
-  log: ILoggerService,
   nodeUrl: string,
   xpub: string,
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<string> => {
-  try {
-    const nonceRepsonse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${xpub}`);
-    const nonce = nonceRepsonse.data;
-    const sig = await getSignature(nonce);
-    const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth`, {
-      sig,
-      userPublicIdentifier: xpub,
-    } as VerifyNonceDtoType);
-    return verifyResponse.data;
-  } catch (e) {
-    log.error(`Error getting bearer token: ${e}`);
-    return e;
-  }
+  const nonceRepsonse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${xpub}`);
+  const nonce = nonceRepsonse.data;
+  const sig = await getSignature(nonce);
+  const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth`, {
+    sig,
+    userPublicIdentifier: xpub,
+  } as VerifyNonceDtoType);
+  return verifyResponse.data;
 };
 
 export const connect = async (
