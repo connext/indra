@@ -1,8 +1,7 @@
 import {
   IConnextClient,
   DefaultApp,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  UPDATE_STATE_EVENT,
+  EventNames,
 } from "@connext/types";
 import * as lolex from "lolex";
 
@@ -214,7 +213,7 @@ describe("Async transfer offline tests", () => {
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise(resolve =>
-      receiverClient.once(RECEIVE_TRANSFER_FINISHED_EVENT, () => {
+      receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, () => {
         resolve();
       }),
     );
@@ -277,13 +276,13 @@ describe("Async transfer offline tests", () => {
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise((resolve: Function) =>
-      receiverClient.once(RECEIVE_TRANSFER_FINISHED_EVENT, () => {
+      receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, () => {
         resolve();
       }),
     );
     // disconnect messaging on take action event
     const actionTaken = new Promise((resolve: Function) => {
-      senderClient.once(UPDATE_STATE_EVENT, async () => {
+      senderClient.once(EventNames.UPDATE_STATE_EVENT, async () => {
         await received;
         await (senderClient.messaging as TestMessagingService).disconnect();
         // fast forward 3 min so protocols are stale on client

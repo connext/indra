@@ -2,7 +2,7 @@ import { providers } from "ethers";
 import { TransactionResponse } from "ethers/providers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, BigNumber, Xpub } from "./basic";
+import { Address, BigNumber, BigNumberish, Xpub } from "./basic";
 import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -45,7 +45,7 @@ export type AssetAmount = {
 };
 
 export type DepositParameters = {
-  amount: BigNumber;
+  amount: BigNumberish;
   assetId: Address;
 };
 

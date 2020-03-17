@@ -1,7 +1,7 @@
+import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
-import { IConnextClient } from "@connext/types";
 
 describe("Deposits", () => {
   let client: IConnextClient;

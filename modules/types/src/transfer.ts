@@ -1,10 +1,5 @@
 import { BigNumber } from "./basic";
-import {
-  LinkedTransfer,
-  LinkedTransferToRecipient,
-  FastSignedTransfer,
-  ConditionalTransferType,
-} from "./contracts";
+import { ConditionalTransferTypes } from "./contracts";
 
 export type TransferAction = {
   finalize: boolean;
@@ -22,7 +17,7 @@ export type CreatedFastSignedTransferMeta = {
 };
 
 export type ReceiveTransferFinishedEventData<
-  T extends ConditionalTransferType | undefined = undefined
+  T extends ConditionalTransferTypes | undefined = undefined
 > = {
   amount: BigNumber;
   assetId: string;
@@ -33,7 +28,7 @@ export type ReceiveTransferFinishedEventData<
   type: T;
 };
 
-export type CreateTransferEventData<T extends ConditionalTransferType | undefined = undefined> = {
+export type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = undefined> = {
   amount: BigNumber;
   assetId: string;
   paymentId: string;
@@ -41,11 +36,11 @@ export type CreateTransferEventData<T extends ConditionalTransferType | undefine
   recipient?: string;
   meta: any;
   type: T;
-  transferMeta: T extends typeof LinkedTransfer
+  transferMeta: T extends typeof ConditionalTransferTypes.LinkedTransfer
     ? CreatedLinkedTransferMeta
-    : T extends typeof LinkedTransferToRecipient
+    : T extends typeof ConditionalTransferTypes.LinkedTransferToRecipient
     ? CreatedLinkedTransferToRecipientMeta
-    : T extends typeof FastSignedTransfer
+    : T extends typeof ConditionalTransferTypes.FastSignedTransfer
     ? CreatedFastSignedTransferMeta
     : undefined;
 };

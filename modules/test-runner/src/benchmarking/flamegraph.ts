@@ -1,9 +1,10 @@
-import { AddressZero } from "ethers/constants";
 import { connect } from "@connext/client";
-import { ConnextStore, FileStorage } from "@connext/store";
+import { ConnextStore } from "@connext/store";
+import { FILESTORAGE } from "@connext/types";
+import { AddressZero } from "ethers/constants";
+
 import { connectNats } from "../util/nats";
 import { Logger, env, asyncTransferAsset, AssetOptions, ETH_AMOUNT_SM } from "../util";
-import { FILESTORAGE } from "@connext/types";
 
 export default async () => {
   const log = new Logger("Flamegraph", env.logLevel);

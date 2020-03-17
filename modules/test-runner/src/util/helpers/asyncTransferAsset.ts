@@ -1,10 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import {
-  IConnextClient,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  UNINSTALL_EVENT,
-} from "@connext/types";
+import { IConnextClient, EventNames } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
@@ -39,7 +34,7 @@ export async function asyncTransferAsset(
   const transferFinished = Promise.all([
     Promise.race([
       new Promise((resolve: Function): void => {
-        clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+        clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, data => {
           expect(data).to.deep.include({
             amount: transferAmount.toString(),
             sender: clientA.publicIdentifier,
@@ -48,13 +43,13 @@ export async function asyncTransferAsset(
         });
       }),
       new Promise((resolve: Function, reject: Function): void => {
-        clientB.once(RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
+        clientB.once(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
           reject(msg.error);
         });
       }),
     ]),
     new Promise((resolve: Function): void => {
-      clientA.once(UNINSTALL_EVENT, () => resolve());
+      clientA.once(EventNames.UNINSTALL_EVENT, () => resolve());
     }),
   ]);
 

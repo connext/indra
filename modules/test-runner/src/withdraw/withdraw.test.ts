@@ -1,5 +1,5 @@
 import { utils } from "@connext/client";
-import { IConnextClient, WITHDRAWAL_CONFIRMED_EVENT } from "@connext/types";
+import { IConnextClient, EventNames } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 
@@ -72,7 +72,7 @@ describe("Withdrawal", () => {
     const recipient = "0xabc";
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, recipient),
-    ).to.be.rejectedWith(`Value \"${recipient}\" is not a valid eth address`);
+    ).to.be.rejectedWith(`Value "${recipient}" is not a valid eth address`);
   });
 
   it("client tries to withdraw with invalid assetId", async () => {
@@ -86,7 +86,7 @@ describe("Withdrawal", () => {
         assetId,
         recipient: Wallet.createRandom().address,
       }),
-    ).to.be.rejectedWith(`Value \"${assetId}\" is not a valid eth address`);
+    ).to.be.rejectedWith(`Value "${assetId}" is not a valid eth address`);
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to
@@ -107,7 +107,7 @@ describe("Withdrawal", () => {
     });
 
     // no withdraw confirmed event thrown here...
-    client.once(WITHDRAWAL_CONFIRMED_EVENT, () => {
+    client.once(EventNames.WITHDRAWAL_CONFIRMED_EVENT, () => {
       eventsCaught += 1;
       if (eventsCaught === 2) {
         done();

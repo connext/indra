@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, toBN } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 import { before, describe, after } from "mocha";
@@ -39,10 +39,10 @@ describe("Reclaim", () => {
   it("happy case: node should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
-      lowerBoundCollateralize: "5",
-      upperBoundCollateralize: "10",
-      lowerBoundReclaim: "20",
-      upperBoundReclaim: "30",
+      lowerBoundCollateralize: toBN("5"),
+      upperBoundCollateralize: toBN("10"),
+      lowerBoundReclaim: toBN("20"),
+      upperBoundReclaim: toBN("30"),
     };
 
     // set rebalancing profile to reclaim collateral
@@ -80,7 +80,8 @@ describe("Reclaim", () => {
     });
 
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
-    // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
+    // expect this could be checked pre or post the rest of the transfer
+    // so try to pre-emptively avoid race conditions
     expect(
       freeBalancePost[nodeFreeBalanceAddress].gte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
@@ -94,10 +95,10 @@ describe("Reclaim", () => {
   it("happy case: node should reclaim tokens after async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: tokenAddress,
-      lowerBoundCollateralize: "5",
-      upperBoundCollateralize: "10",
-      lowerBoundReclaim: "20",
-      upperBoundReclaim: "30",
+      lowerBoundCollateralize: toBN("5"),
+      upperBoundCollateralize: toBN("10"),
+      lowerBoundReclaim: toBN("20"),
+      upperBoundReclaim: toBN("30"),
     };
 
     // set rebalancing profile to reclaim collateral
@@ -135,7 +136,8 @@ describe("Reclaim", () => {
     });
 
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
-    // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
+    // expect this could be checked pre or post the rest of the transfer
+    // so try to pre-emptively avoid race conditions
     expect(
       freeBalancePost[nodeFreeBalanceAddress].gte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),

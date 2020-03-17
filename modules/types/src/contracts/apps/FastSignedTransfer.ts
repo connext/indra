@@ -1,5 +1,5 @@
 import { defaultAbiCoder } from "ethers/utils";
-import { Address, BigNumber, HexString, Xpub } from "../../basic";
+import { Address, BigNumber, BigNumberish, HexString, Xpub } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import {
@@ -80,7 +80,7 @@ export const encodeFastSignedTransferAppAction =
 export type FastSignedTransferParameters = {
   conditionType: typeof FastSignedTransfer;
   recipient: string; // xpub?
-  amount: BigNumber;
+  amount: BigNumberish;
   assetId?: Address;
   paymentId: HexString;
   maxAllocation?: HexString;

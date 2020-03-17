@@ -1,8 +1,10 @@
 import {
   IConnextClient,
   ReceiveTransferFinishedEventData,
-  RECEIVE_TRANSFER_FAILED_EVENT,
+  EventNames,
+  toBN,
 } from "@connext/types";
+import { AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 import { before, after } from "mocha";
 import { Client } from "ts-nats";
@@ -71,6 +73,7 @@ describe("Full Flow: Multi-client transfer", () => {
           gatewayTransfers.received += 1;
           await gateway.transfer({
             amount: data.amount,
+            assetId: AddressZero,
             recipient: data.sender,
           });
           if (data.sender === indexerA.publicIdentifier) {
@@ -89,6 +92,7 @@ describe("Full Flow: Multi-client transfer", () => {
           indexerATransfers.received += 1;
           await indexerA.transfer({
             amount: data.amount,
+            assetId: AddressZero,
             recipient: data.sender,
           });
           expect(data.sender).to.be.equal(gateway.publicIdentifier);
@@ -102,6 +106,7 @@ describe("Full Flow: Multi-client transfer", () => {
           indexerBTransfers.received += 1;
           await indexerB.transfer({
             amount: data.amount,
+            assetId: AddressZero,
             recipient: data.sender,
           });
           expect(data.sender).to.be.equal(gateway.publicIdentifier);
@@ -111,7 +116,7 @@ describe("Full Flow: Multi-client transfer", () => {
 
       // register failure events
       const rejectIfFailed = (object: IConnextClient) => {
-        object.on(RECEIVE_TRANSFER_FAILED_EVENT, () =>
+        object.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
           rej(`Received transfer failed event from ${object.publicIdentifier}`),
         );
       };
@@ -119,8 +124,8 @@ describe("Full Flow: Multi-client transfer", () => {
       rejectIfFailed(indexerB);
       rejectIfFailed(gateway);
 
-      await gateway.transfer({ amount: "1", recipient: indexerA.publicIdentifier });
-      await gateway.transfer({ amount: "1", recipient: indexerB.publicIdentifier });
+      await gateway.transfer({ amount: toBN("1"), recipient: indexerA.publicIdentifier, assetId: AddressZero });
+      await gateway.transfer({ amount: toBN("1"), recipient: indexerB.publicIdentifier, assetId: AddressZero });
     });
     expect(gatewayTransfers.received).to.be.gt(0);
     expect(gatewayTransfers.sent).to.be.gt(0);

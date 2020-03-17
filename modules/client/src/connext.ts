@@ -20,6 +20,7 @@ import {
   RequestDepositRightsParameters,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
+  toBN,
   WithdrawParameters,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
@@ -356,7 +357,7 @@ export class ConnextClient implements IConnextClient {
     params: TransferParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
     return this.linkedTransferController.linkedTransferToRecipient({
-      amount: params.amount,
+      amount: toBN(params.amount),
       assetId: params.assetId,
       conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
       meta: params.meta,

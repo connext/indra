@@ -12,5 +12,3 @@ export const ConditionalTransferTypes = enumify({
 
 export type ConditionalTransferTypes =
   (typeof ConditionalTransferTypes)[keyof typeof ConditionalTransferTypes];
-
-export type ConditionalTransferType = keyof typeof ConditionalTransferTypes;

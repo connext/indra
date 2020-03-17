@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ConnextEventEmitter, CFCoreTypes, MessagingConfig } from "@connext/types";
+import { ConnextEventEmitter, NodeMessage, MessagingConfig } from "@connext/types";
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
@@ -189,13 +189,13 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   }
 
   ////////////////////////////////////////
-  // CFCoreTypes.IMessagingService Methods
+  // IMessagingService Methods
   async onReceive(
     subject: string,
-    callback: (msg: CFCoreTypes.NodeMessage) => void,
+    callback: (msg: NodeMessage) => void,
   ): Promise<void> {
     // return connection callback
-    return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
+    return await this.connection.onReceive(subject, async (msg: NodeMessage) => {
       this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
       // make sure that client is allowed to send message
       this.subjectForbidden(subject, "receive");
@@ -242,7 +242,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     });
   }
 
-  async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
+  async send(to: string, msg: NodeMessage): Promise<void> {
     this.emit(SEND, { subject: to, data: msg } as MessagingEventData);
     // make sure that client is allowed to send message
     this.subjectForbidden(to, "send");
@@ -340,7 +340,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   async subscribe(
     subject: string,
-    callback: (msg: CFCoreTypes.NodeMessage) => void,
+    callback: (msg: NodeMessage) => void,
   ): Promise<void> {
     return await this.connection.subscribe(subject, callback);
   }

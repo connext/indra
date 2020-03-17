@@ -1,8 +1,9 @@
-import { AssetOptions, ETH_AMOUNT_SM, env, fundChannel, Logger, requestCollateral } from "../util";
+import { connect } from "@connext/client";
+import { ConnextStore } from "@connext/store";
 import { IConnextClient, FILESTORAGE } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { ConnextStore } from "@connext/store";
-import { connect } from "@connext/client";
+
+import { AssetOptions, ETH_AMOUNT_SM, env, fundChannel, Logger, requestCollateral } from "../util";
 
 export let clientA: IConnextClient;
 export let clientB: IConnextClient;

@@ -293,9 +293,9 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 ########################################
 # JS & bundles
 
-client: cf-core contracts types apps crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+apps: node-modules cf-core types $(shell find $(apps)/src $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/client && npm run build"
+	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 cf-core: node-modules types contracts store $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
@@ -307,7 +307,12 @@ channel-provider: node-modules types $(shell find $(channel-provider)/src $(find
 	$(log_start)
 	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-	
+
+client: cf-core contracts types apps crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/client && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
 crypto: node-modules types $(shell find $(crypto)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/crypto && npm run build"
@@ -340,17 +345,12 @@ store: node-modules types $(shell find $(store)/src $(find_options))
 
 test-runner-js: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "cd modules/test-runner && npm run build-js"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-apps: node-modules cf-core types $(shell find $(apps)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################

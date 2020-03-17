@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, RECEIVE_TRANSFER_FINISHED_EVENT } from "@connext/types";
+import { IConnextClient, EventNames } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
 import {
@@ -70,7 +70,7 @@ describe("ChannelProvider", () => {
         );
       }),
       new Promise(async resolve => {
-        clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, async () => {
+        clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, async () => {
           resolve();
         });
       }),
