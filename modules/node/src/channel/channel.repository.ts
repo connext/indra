@@ -181,7 +181,6 @@ export class ChannelRepository extends Repository<Channel> {
     collateralizationInFlight: boolean,
   ): Promise<Channel> {
     channel.collateralizationInFlight = collateralizationInFlight;
-    // @ts-ignore - Type instantiation is excessively deep and possibly infinite..?
     await this.save(channel);
     return channel;
   }

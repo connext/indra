@@ -61,7 +61,6 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
 export class AppInstanceRepository extends Repository<AppInstance> {
   findByIdentityHash(identityHash: string): Promise<AppInstance | undefined> {
     return this.findOne({
-      // @ts-ignore - Type instantiation is excessively deep and possibly infinite..?
       where: { identityHash },
       relations: ["channel"],
     });
