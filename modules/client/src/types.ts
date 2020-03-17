@@ -94,7 +94,7 @@ export {
   toBN,
   tokenToWei,
   toWad,
-  Transfer,
+  TransferInfo,
   TransferParameters,
   UninstallMessage,
   UpdateStateMessage,

@@ -63,7 +63,7 @@ import {
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
   SwapParameters,
-  Transfer,
+  TransferInfo,
   TransferParameters,
   WithdrawalResponse,
 } from "./types";
@@ -256,7 +256,7 @@ export class ConnextClient implements IConnextClient {
     return this.channelProvider.config;
   };
 
-  public getLinkedTransfer = async (paymentId: string): Promise<Transfer> => {
+  public getLinkedTransfer = async (paymentId: string): Promise<TransferInfo> => {
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
@@ -291,7 +291,7 @@ export class ConnextClient implements IConnextClient {
     return await this.node.getRebalanceProfile(assetId);
   };
 
-  public getTransferHistory = async (): Promise<Transfer[]> => {
+  public getTransferHistory = async (): Promise<TransferInfo[]> => {
     return await this.node.getTransferHistory();
   };
 

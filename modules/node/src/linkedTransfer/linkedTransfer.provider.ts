@@ -1,8 +1,8 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   ResolveLinkedTransferResponse,
-  Transfer,
-  replaceBN,
+  TransferInfo,
+  stringify,
   PendingAsyncTransfer,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
@@ -14,7 +14,6 @@ import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 import { TransferRepository } from "../transfer/transfer.repository";
 
-import { LinkedTransfer } from "./linkedTransfer.entity";
 import { LinkedTransferService } from "./linkedTransfer.service";
 import { LinkedTransferRepository } from "./linkedTransfer.repository";
 
@@ -34,7 +33,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   async getLinkedTransferByPaymentId(
     pubId: string,
     data: { paymentId: string },
-  ): Promise<Transfer> {
+  ): Promise<TransferInfo> {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
@@ -47,7 +46,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     { paymentId }: { paymentId: string },
   ): Promise<ResolveLinkedTransferResponse> {
     this.log.debug(
-      `Got resolve link request with data: ${JSON.stringify(paymentId, replaceBN, 2)}`,
+      `Got resolve link request with data: ${stringify(paymentId)}`,
     );
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
@@ -55,16 +54,12 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const response = await this.linkedTransferService.resolveLinkedTransfer(pubId, paymentId);
     return {
       ...response,
-      amount: response.amount.toString(),
+      amount: response.amount,
     };
   }
 
   async getPendingTransfers(pubId: string): Promise<PendingAsyncTransfer[]> {
-    const transfers = await this.linkedTransferRepository.findPendingByRecipient(pubId);
-    return transfers.map((transfer: LinkedTransfer) => {
-      const { assetId, amount, encryptedPreImage, linkedHash, paymentId } = transfer;
-      return { amount: amount.toString(), assetId, encryptedPreImage, linkedHash, paymentId };
-    });
+    return this.linkedTransferRepository.findPendingByRecipient(pubId);
   }
 
   async setupSubscriptions(): Promise<void> {

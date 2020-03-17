@@ -1,7 +1,4 @@
-import {
-  CriticalStateChannelAddresses,
-  SingleAssetTwoPartyIntermediaryAgreement,
-} from "@connext/types";
+import { CriticalStateChannelAddresses } from "@connext/types";
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";

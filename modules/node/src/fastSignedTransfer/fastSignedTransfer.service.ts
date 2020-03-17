@@ -1,17 +1,14 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
-  DepositConfirmationMessage,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
-  DepositFailedMessage,
   AppInstanceJson,
-  FastSignedTransferAppStateBigNumber,
-  FastSignedTransferAppActionBigNumber,
+  DepositConfirmationMessage,
+  DepositFailedMessage,
+  EventNames,
   FastSignedTransferActionType,
-  ResolveFastSignedTransferResponse,
-  FastSignedTransferApp,
-  FastSignedTransferAppState,
+  FastSignedTransferAppName,
   FastSignedTransferAppAction,
+  FastSignedTransferAppState,
+  ResolveFastSignedTransferResponse,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -39,7 +36,7 @@ const findInstalledFastSignedAppWithSpace = (
   fastSignedTransferAppDefAddress: string,
 ): AppInstanceJson | undefined => {
   return apps.find(app => {
-    const latestState = app.latestState as FastSignedTransferAppStateBigNumber;
+    const latestState = app.latestState as FastSignedTransferAppState;
     return (
       app.appInterface.addr === fastSignedTransferAppDefAddress && // interface matches
       latestState.coinTransfers[1][0] === recipientFreeBalanceAddress // recipient matches
@@ -96,7 +93,7 @@ export class FastSignedTransferService {
   async resolveFastSignedTransfer(
     userPublicIdentifier: string,
     paymentId: string,
-  ): Promise<ResolveFastSignedTransferResponse<BigNumber>> {
+  ): Promise<ResolveFastSignedTransferResponse> {
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
     );
@@ -114,7 +111,7 @@ export class FastSignedTransferService {
     const apps = await this.cfCoreService.getAppInstances(receiverChannel.multisigAddress);
     const ethNetwork = await this.configService.getEthNetwork();
     const fastSignedTransferApp = await this.appRegistryRepository.findByNameAndNetwork(
-      FastSignedTransferApp,
+      FastSignedTransferAppName,
       ethNetwork.chainId,
     );
     let installedReceiverApp = findInstalledFastSignedAppWithSpace(
@@ -129,7 +126,7 @@ export class FastSignedTransferService {
     // install if needed
     if (installedReceiverApp) {
       if (
-        (installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber).coinTransfers[0][1].gte(
+        (installedReceiverApp.latestState as FastSignedTransferAppState).coinTransfers[0][1].gte(
           transfer.amount,
         )
       ) {
@@ -159,7 +156,7 @@ export class FastSignedTransferService {
       signer: transfer.signer,
       signature: hexZeroPad(HashZero, 65),
       data: HashZero,
-    } as FastSignedTransferAppActionBigNumber;
+    } as FastSignedTransferAppAction;
 
     await this.cfCoreService.takeAction(installedAppInstanceId, appAction);
 
@@ -190,7 +187,7 @@ export class FastSignedTransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          DEPOSIT_CONFIRMED_EVENT,
+          EventNames.DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
@@ -222,9 +219,12 @@ export class FastSignedTransferService {
             resolve();
           },
         );
-        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
-          return reject(JSON.stringify(msg, null, 2));
-        });
+        this.cfCoreService.cfCore.on(
+          EventNames.DEPOSIT_FAILED_EVENT,
+          (msg: DepositFailedMessage) => {
+            return reject(JSON.stringify(msg, null, 2));
+          },
+        );
         try {
           await this.channelService.rebalance(
             channel.userPublicIdentifier,
@@ -246,7 +246,7 @@ export class FastSignedTransferService {
       );
     }
 
-    const initialState: FastSignedTransferAppStateBigNumber = {
+    const initialState: FastSignedTransferAppState = {
       coinTransfers: [
         {
           // install full free balance into app, this will be optimized by rebalancing service
@@ -272,13 +272,14 @@ export class FastSignedTransferService {
       transfer.assetId,
       Zero,
       transfer.assetId,
-      FastSignedTransferApp,
+      FastSignedTransferAppName,
     );
 
     return receiverAppInstallRes.appInstanceId;
   }
 
-  // TODO: i like this pattern of passing in the full domain object rather than having the service layer assemble the objects
+  // TODO: Rahul likes this pattern of passing in the full domain object
+  // rather than having the service layer assemble the objects
   async reclaimFastSignedTransfer(transfer: FastSignedTransfer): Promise<void> {
     if (transfer.status !== FastSignedTransferStatus.REDEEMED) {
       throw new Error(
@@ -296,7 +297,7 @@ export class FastSignedTransferService {
       recipientXpub: transfer.receiverChannel.userPublicIdentifier,
       signature: transfer.signature,
       signer: transfer.signer,
-    } as FastSignedTransferAppActionBigNumber;
+    } as FastSignedTransferAppAction;
     await this.cfCoreService.takeAction(transfer.senderAppInstanceId, senderAppAction);
 
     // mark as reclaimed so the listener doesnt try to reclaim again

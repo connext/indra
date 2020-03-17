@@ -2,6 +2,7 @@ import { SupportedApplication } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
 import { ILoggerService, ResolveFastSignedTransferResponse } from "@connext/types";
 import { providers } from "ethers";
+import { Zero } from "ethers/constants";
 import { BigNumber, Transaction } from "ethers/utils";
 
 import { Logger } from "../lib";
@@ -19,7 +20,7 @@ import {
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
-  Transfer,
+  TransferInfo,
 } from "../types";
 
 type TransactionRequest = providers.TransactionRequest;
@@ -154,7 +155,7 @@ export class MockNodeClientApi implements INodeApiClient {
   public async getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]> {
     return [
       {
-        amount: "",
+        amount: Zero,
         assetId: "",
         encryptedPreImage: "",
         linkedHash: "",
@@ -163,7 +164,7 @@ export class MockNodeClientApi implements INodeApiClient {
     ];
   }
 
-  public async getTransferHistory(publicIdentifier?: string): Promise<Transfer[]> {
+  public async getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]> {
     return [];
   }
   public async getLatestWithdrawal(): Promise<Transaction> {

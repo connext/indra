@@ -1,5 +1,5 @@
 import {
-  AppRegistry as RegistryOfApps,
+  AppRegistry as RegistryOfApps, // TODO: fix collision
   commonAppProposalValidation,
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
@@ -7,11 +7,12 @@ import {
 } from "@connext/apps";
 import {
   AppInstanceJson,
-  SimpleLinkedTransferAppStateBigNumber,
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  SimpleTwoPartySwapApp,
-  FastSignedTransferApp,
+  SimpleLinkedTransferAppState,
+  CoinBalanceRefundAppName,
+  MethodParams,
+  SimpleLinkedTransferAppName,
+  SimpleTwoPartySwapAppName,
+  FastSignedTransferAppName,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -25,7 +26,6 @@ import { ConfigService } from "../config/config.service";
 import { MessagingClientProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
-import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 
@@ -51,7 +51,7 @@ export class AppRegistryService implements OnModuleInit {
 
   async validateAndInstallOrReject(
     appInstanceId: string,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     let registryAppInfo: AppRegistry;
@@ -70,7 +70,7 @@ export class AppRegistryService implements OnModuleInit {
 
       // dont install coin balance refund
       // TODO: need to validate this still
-      if (registryAppInfo.name === CoinBalanceRefundApp) {
+      if (registryAppInfo.name === CoinBalanceRefundAppName) {
         this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
         await this.messagingClient
           .emit(
@@ -127,13 +127,13 @@ export class AppRegistryService implements OnModuleInit {
 
   private async runPreInstallValidation(
     registryAppInfo: AppRegistry,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
     commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
     switch (registryAppInfo.name) {
-      case SimpleLinkedTransferApp: {
+      case SimpleLinkedTransferAppName: {
         validateSimpleLinkedTransferApp(
           proposeInstallParams,
           from,
@@ -141,7 +141,7 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-      case SimpleTwoPartySwapApp: {
+      case SimpleTwoPartySwapAppName: {
         const allowedSwaps = this.configService.getAllowedSwaps();
         const ourRate = await this.swapRateService.getOrFetchRate(
           proposeInstallParams.initiatorDepositTokenAddress,
@@ -150,7 +150,7 @@ export class AppRegistryService implements OnModuleInit {
         validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;
       }
-      case FastSignedTransferApp: {
+      case FastSignedTransferAppName: {
         validateFastSignedTransferApp(
           proposeInstallParams,
           from,
@@ -169,14 +169,14 @@ export class AppRegistryService implements OnModuleInit {
   private async runPostInstallTasks(
     registryAppInfo: AppRegistry,
     appInstanceId: string,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     switch (registryAppInfo.name) {
-      case SimpleLinkedTransferApp: {
+      case SimpleLinkedTransferAppName: {
         this.log.debug(`Saving linked transfer`);
         // eslint-disable-next-line max-len
-        const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppStateBigNumber;
+        const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppState;
 
         const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
         if (isResolving) {
@@ -202,7 +202,7 @@ export class AppRegistryService implements OnModuleInit {
         }
         break;
       }
-      case FastSignedTransferApp:
+      case FastSignedTransferAppName:
         break;
       default:
         this.log.debug(`No post-install actions configured.`);

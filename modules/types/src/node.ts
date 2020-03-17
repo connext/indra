@@ -1,5 +1,5 @@
 import { AppRegistry } from "./app";
-import { Address, DecString, Network, Transaction, TransactionResponse, Xpub } from "./basic";
+import { Address, BigNumber, Network, Transaction, TransactionResponse, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import { MinimalTransaction } from "./commitments";
 import {
@@ -16,10 +16,10 @@ import { MethodResults } from "./methods";
 
 export type RebalanceProfile = {
   assetId: Address;
-  upperBoundCollateralize: DecString;
-  lowerBoundCollateralize: DecString;
-  upperBoundReclaim: DecString;
-  lowerBoundReclaim: DecString;
+  upperBoundCollateralize: BigNumber;
+  lowerBoundCollateralize: BigNumber;
+  upperBoundReclaim: BigNumber;
+  lowerBoundReclaim: BigNumber;
 };
 
 // used to verify channel is in sequence
@@ -42,9 +42,9 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
-export type Transfer = {
+export type TransferInfo = {
   paymentId: string;
-  amount: DecString;
+  amount: BigNumber;
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier: string;
@@ -96,7 +96,7 @@ export type RequestCollateralResponse = MethodResults.Deposit | undefined;
 
 export interface PendingAsyncTransfer {
   assetId: string;
-  amount: string;
+  amount: BigNumber;
   encryptedPreImage: string;
   linkedHash: string;
   paymentId: string;
@@ -104,7 +104,7 @@ export interface PendingAsyncTransfer {
 
 export interface PendingFastSignedTransfer {
   assetId: string;
-  amount: string;
+  amount: BigNumber;
   paymentId: string;
   signer: string;
 }
@@ -119,7 +119,7 @@ enum LinkedTransferStatus {
 export interface FetchedLinkedTransfer {
   paymentId: string;
   createdAt: Date;
-  amount: string;
+  amount: BigNumber;
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier: string;
@@ -157,7 +157,7 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
   getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
-  getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
+  getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   withdraw(tx: MinimalTransaction): Promise<TransactionResponse>;

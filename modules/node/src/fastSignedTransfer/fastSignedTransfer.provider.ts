@@ -1,7 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import {
-  Transfer,
-  replaceBN,
+  TransferInfo,
+  stringify,
   ResolveFastSignedTransferResponse,
   PendingFastSignedTransfer,
 } from "@connext/types";
@@ -16,7 +16,6 @@ import { TransferRepository } from "../transfer/transfer.repository";
 
 import { FastSignedTransferService } from "./fastSignedTransfer.service";
 import { FastSignedTransferRepository } from "./fastSignedTransfer.repository";
-import { FastSignedTransfer } from "./fastSignedTransfer.entity";
 
 export class FastSignedTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -34,7 +33,7 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
   async getFastSignedTransferByPaymentId(
     pubId: string,
     data: { paymentId: string },
-  ): Promise<Transfer> {
+  ): Promise<TransferInfo> {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
@@ -47,7 +46,7 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     { paymentId }: { paymentId: string },
   ): Promise<ResolveFastSignedTransferResponse> {
     this.log.debug(
-      `Got resolve fast signed request with data: ${JSON.stringify(paymentId, replaceBN, 2)}`,
+      `Got resolve fast signed request with data: ${stringify(paymentId)}`,
     );
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
@@ -58,16 +57,12 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     );
     return {
       ...response,
-      amount: response.amount.toString(),
+      amount: response.amount,
     };
   }
 
   async getPendingTransfers(pubId: string): Promise<PendingFastSignedTransfer[]> {
-    const transfers = await this.fastSignedTransferRepository.findPendingByRecipient(pubId);
-    return transfers.map((transfer: FastSignedTransfer) => {
-      const { assetId, amount, paymentId, signer } = transfer;
-      return { amount: amount.toString(), assetId, paymentId, signer };
-    });
+    return this.fastSignedTransferRepository.findPendingByRecipient(pubId);
   }
 
   async setupSubscriptions(): Promise<void> {

@@ -6,7 +6,7 @@ import {
   StateChannelJSON,
   AppInstanceJson,
   AppInstanceProposal,
-  ProtocolTypes,
+  MinimalTransaction,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
 
@@ -303,13 +303,13 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  getWithdrawalCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
+  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.withdrawCommitmentRepository.getWithdrawalCommitmentTx(multisigAddress);
   }
 
   async saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {

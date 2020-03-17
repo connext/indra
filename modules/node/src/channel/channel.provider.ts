@@ -1,11 +1,11 @@
 import { IMessagingService } from "@connext/messaging";
 import {
+  MinimalTransaction,
+  MethodResults,
   ChannelAppSequences,
   GetChannelResponse,
   GetConfigResponse,
   StateChannelJSON,
-  RebalanceProfile,
-  convert,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
@@ -16,9 +16,10 @@ import { LoggerService } from "../logger/logger.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
-import { CFCoreTypes } from "../util/cfCore";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
+
+import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -44,7 +45,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
-  async createChannel(pubId: string): Promise<CFCoreTypes.CreateChannelResult> {
+  async createChannel(pubId: string): Promise<MethodResults.CreateChannel> {
     return await this.channelService.create(pubId);
   }
 
@@ -58,25 +59,24 @@ class ChannelMessaging extends AbstractMessagingProvider {
   async requestCollateral(
     pubId: string,
     data: { assetId?: string },
-  ): Promise<CFCoreTypes.DepositResult> {
+  ): Promise<MethodResults.Deposit> {
     // do not allow clients to specify an amount to collateralize with
     return (await (this.channelService.rebalance(
       pubId,
       getAddress(data.assetId),
       RebalanceType.COLLATERALIZE,
-    ) as unknown)) as CFCoreTypes.DepositResult;
+    ) as unknown)) as MethodResults.Deposit;
   }
 
   async withdraw(
     pubId: string,
-    data: { tx: CFCoreTypes.MinimalTransaction },
+    data: { tx: MinimalTransaction },
   ): Promise<TransactionResponse> {
     return await this.channelService.withdrawForClient(pubId, data.tx);
   }
 
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
-    const profile = convert.RebalanceProfile("bignumber", data.profile);
-    await this.channelService.addRebalanceProfileToChannel(pubId, profile);
+    await this.channelService.addRebalanceProfileToChannel(pubId, data.profile);
   }
 
   async getRebalanceProfile(
@@ -87,33 +87,11 @@ class ChannelMessaging extends AbstractMessagingProvider {
       pubId,
       data.assetId,
     );
-
-    if (!prof) {
-      return undefined;
-    }
-
-    const {
-      upperBoundReclaim,
-      lowerBoundReclaim,
-      upperBoundCollateralize,
-      lowerBoundCollateralize,
-      assetId,
-    } = prof;
-    return convert.RebalanceProfile("str", {
-      assetId,
-      lowerBoundCollateralize,
-      lowerBoundReclaim,
-      upperBoundCollateralize,
-      upperBoundReclaim,
-    });
+    return prof ? prof : undefined;
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
-    const onchainTx = await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
-      pubId,
-    );
-    // TODO: conversions needed?
-    return onchainTx;
+    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(pubId);
   }
 
   async getStatesForRestore(pubId: string): Promise<StateChannelJSON> {

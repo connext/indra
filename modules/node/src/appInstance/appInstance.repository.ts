@@ -19,7 +19,6 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     appSeqNo: app.appSeqNo,
     defaultTimeout: bigNumberify(app.timeout).toNumber(),
     identityHash: app.identityHash,
-    isVirtualApp: false, // hardcode
     latestState: app.latestState,
     latestTimeout: app.latestTimeout,
     latestVersionNumber: app.latestVersionNumber,
@@ -62,9 +61,8 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
 export class AppInstanceRepository extends Repository<AppInstance> {
   findByIdentityHash(identityHash: string): Promise<AppInstance | undefined> {
     return this.findOne({
-      where: {
-        identityHash,
-      },
+      // @ts-ignore - Type instantiation is excessively deep and possibly infinite..?
+      where: { identityHash },
       relations: ["channel"],
     });
   }

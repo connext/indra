@@ -1,11 +1,13 @@
 import {
   ChannelAppSequences,
-  maxBN,
-  RebalanceProfileBigNumber,
-  stringify,
+  CoinBalanceRefundAppName,
   GetConfigResponse,
-  CoinBalanceRefundApp,
+  maxBN,
+  MethodParams,
+  MethodResults,
+  MinimalTransaction,
   StateChannelJSON,
+  stringify,
 } from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -25,7 +27,7 @@ import { OnchainTransactionRepository } from "../onchainTransactions/onchainTran
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { xpubToAddress } from "../util";
-import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
+import { CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -81,7 +83,7 @@ export class ChannelService {
    * Starts create channel process within CF core
    * @param counterpartyPublicIdentifier
    */
-  async create(counterpartyPublicIdentifier: string): Promise<CFCoreTypes.CreateChannelResult> {
+  async create(counterpartyPublicIdentifier: string): Promise<MethodResults.CreateChannel> {
     const existing = await this.channelRepository.findByUserPublicIdentifier(
       counterpartyPublicIdentifier,
     );
@@ -97,7 +99,7 @@ export class ChannelService {
     multisigAddress: string,
     amount: BigNumber,
     assetId: string = AddressZero,
-  ): Promise<CFCoreTypes.DepositResult> {
+  ): Promise<MethodResults.Deposit> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
       throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
@@ -211,11 +213,11 @@ export class ChannelService {
       stateEncoding,
       outcomeType,
     } = await this.appRegistryRepository.findByNameAndNetwork(
-      CoinBalanceRefundApp,
+      CoinBalanceRefundAppName,
       ethNetwork.chainId,
     );
 
-    const params: CFCoreTypes.ProposeInstallParams = {
+    const params: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -342,7 +344,7 @@ export class ChannelService {
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);
     const result = this.deposit(channel.multisigAddress, amountDeposit, assetId)
-      .then(async (res: CFCoreTypes.DepositResult) => {
+      .then(async (res: MethodResults.Deposit) => {
         this.log.info(`Channel ${channel.multisigAddress} successfully collateralized`);
         this.log.debug(`Collateralization result: ${stringify(res)}`);
         return res;
@@ -409,7 +411,7 @@ export class ChannelService {
 
   async addRebalanceProfileToChannel(
     userPubId: string,
-    profile: RebalanceProfileBigNumber,
+    profile: RebalanceProfile,
   ): Promise<RebalanceProfile> {
     const {
       assetId,
@@ -520,7 +522,7 @@ export class ChannelService {
 
   async withdrawForClient(
     userPublicIdentifier: string,
-    tx: CFCoreTypes.MinimalTransaction,
+    tx: MinimalTransaction,
   ): Promise<TransactionResponse> {
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,

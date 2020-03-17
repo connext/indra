@@ -1,12 +1,10 @@
 import {
   DepositConfirmationMessage,
-  ResolveLinkedTransferResponseBigNumber,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
+  ResolveLinkedTransferResponse,
+  EventNames,
   DepositFailedMessage,
-  SimpleLinkedTransferAppStateBigNumber,
   SimpleLinkedTransferAppState,
-  SimpleLinkedTransferApp,
+  SimpleLinkedTransferAppName,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -21,7 +19,6 @@ import { ConfigService } from "../config/config.service";
 import { MessagingClientProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { xpubToAddress } from "../util";
-import { AppInstanceJson } from "../util/cfCore";
 import { Channel } from "../channel/channel.entity";
 
 import { LinkedTransferRepository } from "./linkedTransfer.repository";
@@ -114,7 +111,7 @@ export class LinkedTransferService {
   async resolveLinkedTransfer(
     userPubId: string,
     paymentId: string,
-  ): Promise<ResolveLinkedTransferResponseBigNumber> {
+  ): Promise<ResolveLinkedTransferResponse> {
     this.log.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
@@ -144,7 +141,7 @@ export class LinkedTransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          DEPOSIT_CONFIRMED_EVENT,
+          EventNames.DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
@@ -176,9 +173,12 @@ export class LinkedTransferService {
             resolve();
           },
         );
-        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
-          return reject(JSON.stringify(msg, null, 2));
-        });
+        this.cfCoreService.cfCore.on(
+          EventNames.DEPOSIT_FAILED_EVENT,
+          (msg: DepositFailedMessage) => {
+            return reject(JSON.stringify(msg, null, 2));
+          },
+        );
         try {
           await this.channelService.rebalance(
             userPubId,
@@ -195,7 +195,7 @@ export class LinkedTransferService {
       this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
     }
 
-    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+    const initialState: SimpleLinkedTransferAppState = {
       amount: amountBN,
       assetId,
       coinTransfers: [
@@ -220,7 +220,7 @@ export class LinkedTransferService {
       transfer.assetId,
       Zero,
       transfer.assetId,
-      SimpleLinkedTransferApp,
+      SimpleLinkedTransferAppName,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {

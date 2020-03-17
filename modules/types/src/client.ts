@@ -22,7 +22,7 @@ import {
   ChannelAppSequences,
   GetConfigResponse,
   RequestCollateralResponse,
-  Transfer,
+  TransferInfo,
 } from "./node";
 import {
   MethodResults,
@@ -156,7 +156,7 @@ export interface IConnextClient {
   // TODO: do we really need to expose all of these?
   isAvailable(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
-  getLinkedTransfer(paymentId: string): Promise<Transfer>;
+  getLinkedTransfer(paymentId: string): Promise<TransferInfo>;
   getAppRegistry(
     appDetails?:
       | {
@@ -172,7 +172,7 @@ export interface IConnextClient {
   unsubscribeToSwapRates(from: string, to: string): Promise<void>;
   requestCollateral(tokenAddress: string): Promise<RequestCollateralResponse | void>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile | undefined>;
-  getTransferHistory(): Promise<Transfer[]>;
+  getTransferHistory(): Promise<TransferInfo[]>;
   reclaimPendingAsyncTransfers(): Promise<void>;
   reclaimPendingAsyncTransfer(
     amount: string,

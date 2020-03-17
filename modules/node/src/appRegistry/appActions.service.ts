@@ -1,11 +1,11 @@
 import {
-  SimpleLinkedTransferAppState,
+  FastSignedTransferActionType,
+  FastSignedTransferAppAction,
+  FastSignedTransferAppName,
   FastSignedTransferAppState,
   SimpleLinkedTransferAppAction,
-  FastSignedTransferAppAction,
-  FastSignedTransferActionType,
-  FastSignedTransferApp,
-  SimpleLinkedTransferApp,
+  SimpleLinkedTransferAppName,
+  SimpleLinkedTransferAppState,
 } from "@connext/types";
 import { SupportedApplication } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
@@ -44,7 +44,7 @@ export class AppActionsService {
     from: string,
   ): Promise<void> {
     switch (appName) {
-      case FastSignedTransferApp: {
+      case FastSignedTransferAppName: {
         await this.handleFastSignedTransferAppAction(
           appInstanceId,
           newState as FastSignedTransferAppState,
@@ -53,7 +53,7 @@ export class AppActionsService {
         );
         break;
       }
-      case SimpleLinkedTransferApp: {
+      case SimpleLinkedTransferAppName: {
         await this.handleSimpleLinkedTransferAppAction(
           appInstanceId,
           newState as SimpleLinkedTransferAppState,

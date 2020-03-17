@@ -23,7 +23,7 @@ import {
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
-  Transfer,
+  TransferInfo,
 } from "./types";
 import { invalidXpub } from "./validation";
 
@@ -133,7 +133,7 @@ export class NodeApiClient implements INodeApiClient {
     return await this.send(`swap-rate.${from}.${to}`);
   }
 
-  public async getTransferHistory(): Promise<Transfer[]> {
+  public async getTransferHistory(): Promise<TransferInfo[]> {
     return (await this.send(`transfer.get-history.${this.userPublicIdentifier}`)) || [];
   }
 
@@ -273,7 +273,10 @@ export class NodeApiClient implements INodeApiClient {
       if (unsignedToken.expiry < Date.now()) {
         throw new Error("Got expired authentication nonce from hub - this shouldnt happen!");
       }
-      const sig = await this.channelProvider.send(ChannelMethods.chan_nodeAuth, { message: unsignedToken.nonce });
+      const sig = await this.channelProvider.send(
+        ChannelMethods.chan_nodeAuth,
+        { message: unsignedToken.nonce },
+      );
       this._authToken = token = {
         expiry: unsignedToken.expiry,
         value: `${unsignedToken.nonce}:${sig}`,
