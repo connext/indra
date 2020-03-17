@@ -18,7 +18,7 @@
     "@connext/cf-core": "5.1.1",
     "@connext/types": "5.1.1",
     "ethers": "4.0.45",
-    "rollup": "2.0.5",
+    "rollup": "2.0.6",
     "rollup-plugin-typescript2": "0.26.0",
     "typescript": "3.8.3"
   }

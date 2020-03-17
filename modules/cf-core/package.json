@@ -29,13 +29,13 @@
     "p-queue": "5.0.0",
     "rpc-server": "0.0.1",
     "typescript-memoize": "1.0.0-alpha.3",
-    "uuid": "3.4.0"
+    "uuid": "7.0.2"
   },
   "devDependencies": {
     "@babel/core": "7.8.7",
     "@babel/plugin-proposal-object-rest-spread": "7.8.3",
     "@connext/store": "5.1.1",
-    "@types/chai": "4.2.10",
+    "@types/chai": "4.2.11",
     "@types/dotenv-safe": "8.1.0",
     "@types/jest": "25.1.4",
     "@types/loglevel": "1.6.3",
@@ -46,7 +46,7 @@
     "jest": "25.1.0",
     "jest-cli": "25.1.0",
     "jest-dot-reporter": "1.0.14",
-    "rollup": "2.0.5",
+    "rollup": "2.0.6",
     "rollup-plugin-babel": "4.4.0",
     "rollup-plugin-commonjs": "10.1.0",
     "rollup-plugin-json": "4.0.0",
