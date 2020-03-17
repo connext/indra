@@ -65,9 +65,11 @@ describe("ChallengeRegistry Challenge", () => {
   let setState: (versionNumber: number, appState?: string) => Promise<void>;
   let respondToChallenge: (state: any, action: any, actionSig: any) => Promise<any>;
 
+  const mineBlock = async () => await provider.send("evm_mine", []);
+
   const mineBlocks = async (num: number) => {
     for (let i = 0; i < num; i++) {
-      await provider.send("evm_mine", []);
+      await mineBlock();
       const block = await provider.getBlock('latest');
       const blockNumber = block.number;
       console.log(blockNumber);
@@ -83,7 +85,7 @@ describe("ChallengeRegistry Challenge", () => {
     console.log("Current block number: " + currentBlockNumber);
     while (currentBlockNumber < blockNumber - 1) {
       console.log("TRUE: " + currentBlockNumber + "<" + blockNumber);
-      await provider.send("evm_mine", []);
+      await mineBlock();
       currentBlockNumber = await getLatestBlockNumber();
     }
     expect(currentBlockNumber).to.be.eq(blockNumber - 1);
@@ -97,7 +99,7 @@ describe("ChallengeRegistry Challenge", () => {
     console.log("Current block number: " + currentBlockNumberBN);
     while (currentBlockNumberBN.lt(blockNumberBN.sub(1))) {
       console.log("TRUE: " + currentBlockNumberBN + "<" + blockNumberBN);
-      await provider.send("evm_mine", []);
+      await mineBlock();
       currentBlockNumberBN = bigNumberify(await getLatestBlockNumber());
     }
     expect(currentBlockNumberBN).to.be.equal(blockNumberBN.sub(1));
