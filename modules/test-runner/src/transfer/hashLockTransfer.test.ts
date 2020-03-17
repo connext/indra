@@ -16,8 +16,8 @@ import {
   expect,
   fundChannel,
   TOKEN_AMOUNT,
+  getNatsClient,
 } from "../util";
-import { connectNats, closeNats } from "../util/nats";
 import { Client } from "ts-nats";
 
 describe("HashLock Transfers", () => {
@@ -27,7 +27,7 @@ describe("HashLock Transfers", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -39,10 +39,6 @@ describe("HashLock Transfers", () => {
   afterEach(async () => {
     await clientA.messaging.disconnect();
     await clientB.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it("happy case: client A transfers eth to client B through node", async () => {

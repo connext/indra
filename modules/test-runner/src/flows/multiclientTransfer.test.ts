@@ -4,39 +4,31 @@ import {
   RECEIVE_TRANSFER_FAILED_EVENT,
 } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
-import { before, after } from "mocha";
+import { before } from "mocha";
 import { Client } from "ts-nats";
 
-import { env, expect, Logger, createClient, fundChannel, connectNats, closeNats } from "../util";
+import { expect, createClient, fundChannel, getNatsClient } from "../util";
 
 describe("Full Flow: Multi-client transfer", () => {
-  let log = new Logger("MultiClientTransfer", env.logLevel);
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
-  let clientD: IConnextClient;
-  let tokenAddress: string;
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
     gateway = await createClient();
     indexerA = await createClient();
     indexerB = await createClient();
-    tokenAddress = gateway.config.contractAddresses.Token;
   });
 
   afterEach(async () => {
     await gateway.messaging.disconnect();
     await indexerA.messaging.disconnect();
     await indexerB.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it("Clients transfer assets between themselves", async function() {

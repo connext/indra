@@ -95,9 +95,12 @@ export async function asyncTransferAsset(
   }
 
   await new Promise(async res => {
-    await nats.subscribe(`transfer.${paymentId}.reclaimed`, (err, msg) => {
-      res();
-    });
+    await nats.subscribe(
+      `${clientA.publicIdentifier}.channel.${clientA.multisigAddress}.transfer.${paymentId}.reclaimed`,
+      (err, msg) => {
+        res();
+      },
+    );
   });
 
   const paymentA = await clientA.getLinkedTransfer(paymentId);

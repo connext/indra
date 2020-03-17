@@ -26,10 +26,10 @@ import {
   TestMessagingService,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
+  getNatsClient,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
-import { connectNats, closeNats } from "../util/nats";
 import { before, after } from "mocha";
 
 const fundForTransfers = async (
@@ -77,7 +77,7 @@ describe("Async transfer offline tests", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -92,10 +92,6 @@ describe("Async transfer offline tests", () => {
     clock && clock.reset && clock.reset();
     await senderClient.messaging.disconnect();
     await receiverClient.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   /**

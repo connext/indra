@@ -21,6 +21,7 @@
     "@connext/types": "5.2.1",
     "@ethereum-waffle/chai": "2.3.0",
     "@openzeppelin/contracts": "2.5.0",
+    "axios": "^0.19.2",
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
     "chai-subset": "1.6.0",
