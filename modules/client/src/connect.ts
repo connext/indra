@@ -119,20 +119,25 @@ export const connect = async (
     }
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
-    config = await NodeApiClient.config(nodeUrl);
+    const getSignature = async (nonce: string) => {
+      return channelProvider.send("chan_nodeAuth", { message: nonce });
+    };
 
-    log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
+    const messagingUrl = `nats://${channelProvider.config.nodeUrl
+      .split("//")
+      .pop()
+      .split(":")
+      .shift()}:4222`;
+
+    log.debug(`Creating messaging service client ${messagingUrl}`);
     if (!messaging) {
-      // TODO nonce generation needs to be added to rpc methods for channelProvider to work
       messaging = await createMessagingService(
         log,
-        config.messagingUrl,
-        nodeUrl,
+        [messagingUrl],
+        channelProvider.config.nodeUrl,
         channelProvider.config.userPublicIdentifier,
         network.chainId,
-        async nonce => {
-          return "";
-        },
+        getSignature,
       );
     } else {
       await messaging.connect();
@@ -140,6 +145,7 @@ export const connect = async (
 
     // create a new node api instance
     node = new NodeApiClient({ channelProvider, logger: log, messaging, nodeUrl });
+    config = await node.config();
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
@@ -170,14 +176,13 @@ export const connect = async (
       return wallet.signMessage(nonce);
     };
 
-    config = await NodeApiClient.config(nodeUrl);
     const messagingUrl = `nats://${nodeUrl
       .split("//")
       .pop()
       .split(":")
       .shift()}:4222`;
 
-    log.debug(`Creating messaging service client ${config.messagingUrl}`);
+    log.debug(`Creating messaging service client ${messagingUrl}`);
     if (!messaging) {
       messaging = await createMessagingService(
         log,
