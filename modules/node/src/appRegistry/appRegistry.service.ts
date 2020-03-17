@@ -16,7 +16,6 @@ import {
   HashLockTransferApp,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
@@ -24,7 +23,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { MessagingClientProviderId } from "../constants";
+import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { CFCoreTypes } from "../util/cfCore";
@@ -34,6 +33,7 @@ import { Channel } from "../channel/channel.entity";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
+import { MessagingService } from "@connext/messaging";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -44,10 +44,10 @@ export class AppRegistryService implements OnModuleInit {
     private readonly log: LoggerService,
     private readonly swapRateService: SwapRateService,
     private readonly linkedTransferService: LinkedTransferService,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -76,12 +76,10 @@ export class AppRegistryService implements OnModuleInit {
       // TODO: need to validate this still
       if (registryAppInfo.name === CoinBalanceRefundApp) {
         this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
-        await this.messagingClient
-          .emit(
-            `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`,
-            proposeInstallParams,
-          )
-          .toPromise();
+        console.log(`MESSAGING CLIENT IS TRYING TO SEND`);
+        const proposalAcceptedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
+        await this.messagingService.publish(proposalAcceptedSubject, proposeInstallParams);
+        console.log(`MESSAGING CLIENT SENT`);
         return;
       }
 
@@ -121,12 +119,8 @@ export class AppRegistryService implements OnModuleInit {
     // any tasks that need to happen after install, i.e. DB writes
     await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
 
-    await this.messagingClient
-      .emit(
-        `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`,
-        appInstance,
-      )
-      .toPromise();
+    const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
+    await this.messagingService.publish(installSubject, appInstance);
   }
 
   private async runPreInstallValidation(

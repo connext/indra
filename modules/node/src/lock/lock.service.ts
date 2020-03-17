@@ -77,7 +77,7 @@ export class LockService {
       this.redlockClient
         .lock(lockName, hardcodedTTL)
         .then((lock: Lock) => {
-          this.log.debug(`Acquired lock for ${lock.resource} with secret ${lock.value}`);
+          this.log.warn(`Acquired lock for ${lock.resource} with secret ${lock.value}`);
           resolve(lock.value);
         })
         .catch((e: any) => {
@@ -88,7 +88,8 @@ export class LockService {
   }
 
   async releaseLock(lockName: string, lockValue: string): Promise<void> {
-    this.log.debug(`Releasing lock for ${lockName} at ${Date.now()}`);
+    console.log("lockValue: ", lockValue);
+    this.log.warn(`Releasing lock for ${lockName} at ${Date.now()} with secret ${lockValue}`);
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient
         // "trick" the library into unlocking by construciing an object that contains

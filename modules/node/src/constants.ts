@@ -21,7 +21,6 @@ export const ChannelMessagingProviderId = "CHANNEL_MESSAGING";
 export const ConfigMessagingProviderId = "CONFIG_MESSAGING";
 export const LockProviderId = "LOCK";
 export const MedianizerProviderId = "MEDIANIZER";
-export const MessagingClientProviderId = "MESSAGING_CLIENT";
 export const MessagingProviderId = "MESSAGING";
 export const MessagingAuthProviderId = "MESSAGING_AUTH";
 export const RedisProviderId = "REDIS";

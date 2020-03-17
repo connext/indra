@@ -17,13 +17,12 @@ import {
   ProtocolTypes,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { MessagingClientProviderId } from "../constants";
+import { MessagingProviderId } from "../constants";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import {
   CFCoreTypes,
@@ -47,6 +46,7 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { AppActionsService } from "../appRegistry/appActions.service";
+import { MessagingService } from "@connext/messaging";
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
@@ -60,10 +60,10 @@ export default class ListenerService implements OnModuleInit {
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly linkedTransferService: LinkedTransferService,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ListenerService");
   }
@@ -193,13 +193,12 @@ export default class ListenerService implements OnModuleInit {
       },
     );
 
-    this.cfCoreService.registerCfCoreListener(ProtocolTypes.chan_uninstall as any, (data: any) => {
-      this.messagingClient
-        .emit(
-          `${this.cfCoreService.cfCore.publicIdentifier}.app-instance.${data.result.result.appInstanceId}.uninstall`,
-          data.result.result,
-        )
-        .toPromise();
-    });
+    this.cfCoreService.registerCfCoreListener(
+      ProtocolTypes.chan_uninstall as any,
+      async (data: any) => {
+        const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.app-instance.${data.result.result.appInstanceId}.uninstall`;
+        await this.messagingService.publish(uninstallSubject, data.result.result);
+      },
+    );
   }
 }

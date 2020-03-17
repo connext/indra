@@ -3,12 +3,11 @@ import {
   maxBN,
   RebalanceProfileBigNumber,
   stringify,
-  GetConfigResponse,
   CoinBalanceRefundApp,
   StateChannelJSON,
 } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -20,12 +19,12 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { MessagingClientProviderId } from "../constants";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
+import { MessagingProviderId } from "../constants";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -52,9 +51,9 @@ export class ChannelService {
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ChannelService");
   }
@@ -161,18 +160,14 @@ export class ChannelService {
       channel,
       res.transaction,
     );
-    tx.wait().then(txReceipt => {
-      this.messagingClient
-        .emit(
-          `${this.cfCoreService.cfCore.publicIdentifier}.channel.${channel.multisigAddress}.reclaim`,
-          {
-            amount: amount.toString(),
-            assetId,
-            status: txReceipt.status,
-            transactionHash: txReceipt.transactionHash,
-          },
-        )
-        .toPromise();
+    tx.wait().then(async txReceipt => {
+      const reclaimSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${channel.multisigAddress}.reclaim`;
+      await this.messagingService.publish(reclaimSubject, {
+        amount: amount.toString(),
+        assetId,
+        status: txReceipt.status,
+        transactionHash: txReceipt.transactionHash,
+      });
     });
     return tx;
   }

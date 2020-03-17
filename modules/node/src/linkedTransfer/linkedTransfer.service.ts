@@ -9,34 +9,30 @@ import {
   SimpleLinkedTransferApp,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
-import { ConfigService } from "../config/config.service";
-import { MessagingClientProviderId } from "../constants";
+import { MessagingProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { xpubToAddress } from "../util";
 import { Channel } from "../channel/channel.entity";
 
 import { LinkedTransferRepository } from "./linkedTransfer.repository";
 import { LinkedTransfer, LinkedTransferStatus } from "./linkedTransfer.entity";
+import { MessagingService } from "@connext/messaging";
 
 @Injectable()
 export class LinkedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly configService: ConfigService,
     private readonly log: LoggerService,
-    private readonly appRegistryRepository: AppRegistryRepository,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly channelRepository: ChannelRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("LinkedTransferService");
   }
@@ -259,12 +255,8 @@ export class LinkedTransferService {
     // mark as reclaimed so the listener doesnt try to reclaim again
     await this.linkedTransferRepository.markAsReclaimed(transfer);
     await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-    await this.messagingClient
-      .emit(
-        `${this.cfCoreService.cfCore.publicIdentifier}.transfer.${transfer.paymentId}.reclaimed`,
-        {},
-      )
-      .toPromise();
+    const reclaimedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.transfer.${transfer.paymentId}.reclaimed`;
+    await this.messagingService.publish(reclaimedSubject, {});
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
