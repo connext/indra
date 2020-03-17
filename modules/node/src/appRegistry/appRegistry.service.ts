@@ -76,10 +76,8 @@ export class AppRegistryService implements OnModuleInit {
       // TODO: need to validate this still
       if (registryAppInfo.name === CoinBalanceRefundApp) {
         this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
-        console.log(`MESSAGING CLIENT IS TRYING TO SEND`);
         const proposalAcceptedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
         await this.messagingService.publish(proposalAcceptedSubject, proposeInstallParams);
-        console.log(`MESSAGING CLIENT SENT`);
         return;
       }
 

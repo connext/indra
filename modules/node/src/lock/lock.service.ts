@@ -88,7 +88,6 @@ export class LockService {
   }
 
   async releaseLock(lockName: string, lockValue: string): Promise<void> {
-    console.log("lockValue: ", lockValue);
     this.log.warn(`Releasing lock for ${lockName} at ${Date.now()} with secret ${lockValue}`);
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient

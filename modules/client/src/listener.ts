@@ -186,10 +186,8 @@ export class ConnextListener extends ConnextEventEmitter {
             result: { appInstance },
           },
         } = msg;
-        await this.connext.messaging.publish(
-          `${this.connext.publicIdentifier}.app-instance.${appInstance.identityHash}.install`,
-          stringify(appInstance),
-        );
+        const installSubject = `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
+        await this.connext.messaging.publish(installSubject, stringify(appInstance));
       },
     );
 
@@ -197,7 +195,7 @@ export class ConnextListener extends ConnextEventEmitter {
       const result = data.result.result;
       this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
       this.connext.messaging.publish(
-        `${this.connext.publicIdentifier}.app-instance.${result.appInstanceId}.uninstall`,
+        `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${result.appInstanceId}.uninstall`,
         stringify(result),
       );
     });
@@ -277,7 +275,7 @@ export class ConnextListener extends ConnextEventEmitter {
       );
       switch (registryAppInfo.name) {
         case CoinBalanceRefundApp: {
-          const subject = `${this.connext.publicIdentifier}.app-instance.proposal.accept.${this.connext.multisigAddress}.${appInstanceId}`;
+          const subject = `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
           this.log.debug(`Sending acceptance message to: ${subject}`);
           await this.connext.messaging.publish(subject, stringify(params));
           return;
@@ -302,7 +300,6 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       await this.connext.installApp(appInstanceId);
     } catch (e) {
-      console.log('e: ', e);
       this.log.error(`Caught error: ${e.toString()}`);
       await this.connext.rejectInstallApp(appInstanceId);
     }

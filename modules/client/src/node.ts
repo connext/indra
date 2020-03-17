@@ -95,7 +95,6 @@ export class NodeApiClient implements INodeApiClient {
     const lockValue = await this.send(`${this.userPublicIdentifier}.lock.acquire.${lockName}`, {
       lockTTL: timeout,
     });
-    console.log("lockValue: ", lockValue);
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {

@@ -255,7 +255,7 @@ export class LinkedTransferService {
     // mark as reclaimed so the listener doesnt try to reclaim again
     await this.linkedTransferRepository.markAsReclaimed(transfer);
     await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-    const reclaimedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.transfer.${transfer.paymentId}.reclaimed`;
+    const reclaimedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${transfer.senderChannel.multisigAddress}.transfer.${transfer.paymentId}.reclaimed`;
     await this.messagingService.publish(reclaimedSubject, {});
   }
 

@@ -307,9 +307,6 @@ export class ChannelService {
       assetId,
     );
     if (nodeFreeBalance.gte(lowerBoundCollateral)) {
-      this.log.info(
-        `User with multisig ${channel.multisigAddress} already has sufficient collateral, ignoring request for more.`,
-      );
       this.log.debug(
         `User ${channel.userPublicIdentifier} already has collateral of ${nodeFreeBalance} for asset ${assetId}`,
       );
@@ -317,10 +314,7 @@ export class ChannelService {
     }
 
     const amountDeposit = collateralNeeded.sub(nodeFreeBalance);
-    this.log.info(
-      `User with multisig ${channel.multisigAddress} needs more collateral, preparing to deposit.`,
-    );
-    this.log.debug(
+    this.log.warn(
       `Collateralizing ${channel.userPublicIdentifier} with ${amountDeposit}, token: ${assetId}`,
     );
 
