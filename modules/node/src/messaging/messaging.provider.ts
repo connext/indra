@@ -7,6 +7,7 @@ import { ConfigService } from "../config/config.service";
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingClientProviderId, MessagingProviderId } from "../constants";
+import { NatsOptions } from "@nestjs/common/interfaces/microservices/microservice-configuration.interface";
 
 export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>> = {
   inject: [ConfigService, AuthService, LoggerService],
@@ -33,15 +34,17 @@ export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>
 };
 
 export const messagingClientFactory: FactoryProvider = {
-  inject: [ConfigService],
+  inject: [ConfigService, AuthService],
   provide: MessagingClientProviderId,
-  useFactory: (config: ConfigService): ClientProxy => {
+  useFactory: async (config: ConfigService, auth: AuthService): Promise<ClientProxy> => {
     const messagingUrl = config.getMessagingConfig().messagingUrl;
+    const userJWT = await auth.vendAdminToken(config.getPublicIdentifier());
     return ClientProxyFactory.create({
       options: {
         servers: typeof messagingUrl === "string" ? [messagingUrl] : messagingUrl,
       },
       transport: Transport.NATS,
-    });
+      userJWT,
+    } as NatsOptions);
   },
 };
