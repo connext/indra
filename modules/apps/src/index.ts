@@ -1,14 +1,18 @@
 import { BigNumber } from "ethers/utils";
 
 import { AppRegistry as AppRegistryType } from "./shared";
-import {
-  SimpleLinkedTransferAppRegistryInfo,
-} from "./SimpleLinkedTransferApp";
+import { SimpleLinkedTransferAppRegistryInfo } from "./SimpleLinkedTransferApp";
 import { FastSignedTransferAppRegistryInfo } from "./FastSignedTransferApp";
 import { SimpleTwoPartySwapAppRegistryInfo } from "./SimpleTwoPartySwapApp";
 import { CoinBalanceRefundAppRegistryInfo } from "./CoinBalanceRefundApp";
 import { WithdrawAppRegistryInfo } from "./WithdrawApp";
-import { CoinBalanceRefundApp, SimpleLinkedTransferApp, SimpleTwoPartySwapApp, FastSignedTransferApp, WithdrawApp} from "@connext/types";
+import {
+  CoinBalanceRefundApp,
+  SimpleLinkedTransferApp,
+  SimpleTwoPartySwapApp,
+  FastSignedTransferApp,
+  WithdrawApp,
+} from "@connext/types";
 
 import {
   SimpleLinkedTransferAppAction,
@@ -48,9 +52,12 @@ export const AppRegistry: AppRegistryType = [
 export type AppAction<T> =
   | FastSignedTransferAppAction<T>
   | SimpleLinkedTransferAppAction
-  | SimpleSwapAppState
   | WithdrawAppAction;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
-export type AppState<T> = FastSignedTransferAppState<T> | SimpleLinkedTransferAppState<T> | WithdrawAppState<T>;
+export type AppState<T> =
+  | FastSignedTransferAppState<T>
+  | SimpleLinkedTransferAppState<T>
+  | SimpleSwapAppState<T>
+  | WithdrawAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;

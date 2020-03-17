@@ -15,7 +15,6 @@ import {
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
   ProtocolTypes,
-  DefaultApp,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -48,6 +47,7 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { AppActionsService } from "../appRegistry/appActions.service";
+import { AppAction } from "@connext/apps";
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
@@ -170,8 +170,8 @@ export default class ListenerService implements OnModuleInit {
         await this.appActionsService.handleAppAction(
           appRegistryInfo.name,
           appInstanceId,
-          newState as any,
-          action as any,
+          newState as any, // AppState (excluding simple swap app)
+          action as AppAction<any>,
           data.from,
         );
       },
