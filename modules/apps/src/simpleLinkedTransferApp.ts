@@ -5,6 +5,7 @@ import {
   OutcomeType,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppActionEncoding,
+  SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateEncoding,
   stringify,
 } from "@connext/types";
@@ -24,12 +25,11 @@ export const validateSimpleLinkedTransferApp = (
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
 ) => {
-  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = params;
+  const { responderDeposit, initiatorDeposit } = params;
+  const initialState = params.initialState as SimpleLinkedTransferAppState;
 
   const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
   const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
-
-  const initialState = initialStateBadType;
 
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === initiatorFreeBalanceAddress;

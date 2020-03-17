@@ -2,6 +2,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import {
   MethodParams,
   OutcomeType,
+  FastSignedTransferAppState,
   FastSignedTransferAppStateEncoding,
   FastSignedTransferAppActionEncoding,
   FastSignedTransferAppName,
@@ -24,7 +25,8 @@ export const validateFastSignedTransferApp = (
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
 ) => {
-  const { responderDeposit, initiatorDeposit, initialState } = params;
+  const { responderDeposit, initiatorDeposit } = params;
+  const initialState = params.initialState as FastSignedTransferAppState;
 
   if (initialState.paymentId !== HashZero) {
     throw new Error(`Cannot install with pre-populated paymentId`);
