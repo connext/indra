@@ -29,7 +29,6 @@ const fundAddress = async (to: string, ethProvider: JsonRpcProvider): Promise<vo
 
 export default async function globalSetup(): Promise<void> {
   const ethProvider = new JsonRpcProvider(env.ETHPROVIDER_URL) as any;
-  const network = await ethProvider.getNetwork();
   const fundedAccount = Wallet.createRandom().connect(ethProvider);
   const addresses = [A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY, C_EXTENDED_PRIVATE_KEY].map(
     (xprv: string): string => fromExtendedKey(xprv).derivePath(`${CF_PATH}/0`).address,
@@ -39,6 +38,5 @@ export default async function globalSetup(): Promise<void> {
   await fundAddress(addresses[2], ethProvider);
   await fundAddress(fundedAccount.address, ethProvider);
   global["fundedPrivateKey"] = fundedAccount.privateKey;
-  global["ganacheUrl"] = env.ETHPROVIDER_URL;
   global["networkContext"] = await deployTestArtifactsToChain(fundedAccount);
 }

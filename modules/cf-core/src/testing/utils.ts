@@ -109,23 +109,14 @@ export async function requestDepositRights(
   multisigAddress: string,
   tokenAddress: string = AddressZero,
 ) {
-  return await node.rpcRouter.dispatch(
-    constructRequestDepositRightsRpcCall(multisigAddress, tokenAddress),
-  );
-}
-
-export function constructRequestDepositRightsRpcCall(
-  multisigAddress: string,
-  tokenAddress: string = AddressZero,
-) {
-  return {
+  return await node.rpcRouter.dispatch({
     id: Date.now(),
     methodName: MethodNames.chan_requestDepositRights,
     parameters: {
       multisigAddress,
       tokenAddress,
-    },
-  };
+    } as MethodParams.RequestDepositRights,
+  });
 }
 
 export async function rescindDepositRights(
@@ -230,7 +221,6 @@ export async function getMultisigCreationAddress(node: Node, xpubs: string[]): P
       result: { multisigAddress },
     },
   } = await node.rpcRouter.dispatch(constructChannelCreationRpc(xpubs));
-
   return multisigAddress;
 }
 
@@ -240,7 +230,7 @@ export function constructChannelCreationRpc(owners: string[]) {
     methodName: MethodNames.chan_create,
     parameters: {
       owners,
-    },
+    } as MethodParams.CreateChannel,
   };
 }
 

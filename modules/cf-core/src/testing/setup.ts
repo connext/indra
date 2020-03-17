@@ -1,6 +1,6 @@
 import { CF_PATH, IMessagingService, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
-import { JsonRpcProvider, Provider, TransactionRequest } from "ethers/providers";
+import { Provider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -13,6 +13,11 @@ import {
   B_EXTENDED_PRIVATE_KEY,
   C_EXTENDED_PRIVATE_KEY,
 } from "./test-constants.jest";
+import { Logger } from "./logger";
+
+export const env = {
+  logLevel: process.env.LOG_LEVEL ? parseInt(process.env.LOG_LEVEL, 10) : 0,
+};
 
 export interface NodeContext {
   node: Node;
@@ -47,8 +52,7 @@ export async function setup(
   const setupContext: SetupContext = {};
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
-
-  const provider = new JsonRpcProvider(global["ganacheURL"]);
+  const provider = global["networkContext"].provider;
 
   const extendedPrvKeyA = A_EXTENDED_PRIVATE_KEY;
   let extendedPrvKeyB = B_EXTENDED_PRIVATE_KEY;
@@ -74,6 +78,8 @@ export async function setup(
     lockService,
     hdNodeA.neuter().extendedKey,
     (index: string): Promise<string> => Promise.resolve(hdNodeA.derivePath(index).privateKey),
+    0,
+    new Logger("CreateClient", env.logLevel, true, "A"),
   );
 
   setupContext["A"] = {
@@ -92,6 +98,8 @@ export async function setup(
     lockService,
     hdNodeB.neuter().extendedKey,
     (index: string): Promise<string> => Promise.resolve(hdNodeB.derivePath(index).privateKey),
+    0,
+    new Logger("CreateClient", env.logLevel, true, "B"),
   );
   setupContext["B"] = {
     node: nodeB,
@@ -111,6 +119,8 @@ export async function setup(
       lockService,
       hdNodeC.neuter().extendedKey,
       (index: string): Promise<string> => Promise.resolve(hdNodeC.derivePath(index).privateKey),
+      0,
+      new Logger("CreateClient", env.logLevel, true, "C"),
     );
     setupContext["C"] = {
       node: nodeC,
