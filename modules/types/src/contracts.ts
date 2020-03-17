@@ -1,5 +1,5 @@
 import { BaseProvider, BigNumber } from "./basic";
-import { CoinBalanceRefundApp, WithdrawApp } from "./apps";
+import { CoinBalanceRefundApp } from "./apps";
 
 ////////////////////////////////////////
 // Generic contract ops & network config
