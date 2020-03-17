@@ -59,7 +59,7 @@ export abstract class AbstractController {
         new Promise((res: () => any, rej: () => any): void => {
           boundResolve = this.resolveInstall.bind(null, res, rej, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
-          const installSubject = `indra.node.${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`;
+          const installSubject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`;
           this.log.debug(`subscribing to ${installSubject}`);
           this.connext.messaging.subscribe(installSubject, boundResolve);
           this.listener.on(REJECT_INSTALL_EVENT, boundReject);
@@ -179,14 +179,14 @@ export abstract class AbstractController {
 
   private cleanupInstallListeners = (boundReject: any, appId: string): void => {
     this.connext.messaging.unsubscribe(
-      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
+      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appId}.install`,
     );
     this.listener.removeCfListener(REJECT_INSTALL_EVENT, boundReject);
   };
 
   private cleanupProposalListeners = (boundReject: any): void => {
     this.connext.messaging.unsubscribe(
-      `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.*.proposal.accept`,
     );
     this.listener.removeCfListener(REJECT_INSTALL_EVENT, boundReject);
   };

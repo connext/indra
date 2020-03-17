@@ -81,7 +81,7 @@ export class LinkedTransferController extends AbstractController {
     } as CreateTransferEventData<"LINKED_TRANSFER_TO_RECIPIENT">;
     // publish encrypted secret for receiver
     await this.connext.messaging.publish(
-      `${this.connext.publicIdentifier}.transfer.linked.to.${recipient}`,
+      `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.transfer.linked.to.${recipient}`,
       stringify(eventData),
     );
 
@@ -156,6 +156,7 @@ export class LinkedTransferController extends AbstractController {
       timeout: Zero,
     };
     const appId = await this.proposeAndInstallLedgerApp(proposeInstallParams);
+    console.log('appId: ', appId);
 
     if (!appId) {
       throw new Error(`App was not installed`);
