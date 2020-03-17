@@ -59,9 +59,6 @@ describe("ChallengeRegistry Challenge", () => {
   let provider = buidler.provider;
   let wallet: Wallet;
 
-  let appRegistry: Contract;
-  let appDefinition: Contract;
-
   let latestTimeout: () => Promise<number>;
   let latestState: () => Promise<string>;
   let latestVersionNumber: () => Promise<number>;
@@ -121,13 +118,13 @@ describe("ChallengeRegistry Challenge", () => {
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
-
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
-
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
   });
 
   beforeEach(async () => {
+    const appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
+
+    const appDefinition: Contract = await waffle.deployContract(wallet, AppWithAction);
+
     const appInstance = new AppIdentityTestClass(
       [ALICE.address, BOB.address],
       appDefinition.address,
@@ -220,6 +217,7 @@ describe("ChallengeRegistry Challenge", () => {
   it("Cannot call respondToChallenge with incorrect turn taker", async () => {
     await setState(1, encodeState(PRE_STATE));
 
+    console.log("Block number: " +(await provider.getBlock('latest')).number);
     const signer = new SigningKey(ALICE.privateKey);
     const thingToSign = computeActionHash(
       BOB.address,
@@ -230,8 +228,9 @@ describe("ChallengeRegistry Challenge", () => {
     const signature = await signer.signDigest(thingToSign);
     const bytes = signaturesToBytes(signature);
 
+    await moveToBlock(66);
     await expect(respondToChallenge(PRE_STATE, ACTION, bytes)).to.be.revertedWith(
-      "Action must have been signed by correct turn taker",
+      "respondToChallenge called with action signed by incorrect turn taker",
     );
   });
 });
