@@ -1,9 +1,9 @@
 {
   "name": "@connext/cf-core",
   "version": "5.1.1",
-  "main": "dist/src/index.js",
-  "iife": "dist/src/index.iife.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "iife": "dist/index.iife.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "files": [
     "dist",
