@@ -99,9 +99,11 @@ export class MessagingService implements IMessagingService {
       if (err || !msg || !msg.data) {
         this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
       } else {
-        const data = typeof msg === `string` ? JSON.parse(msg) : msg;
-        this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
-        callback(data as CFCoreTypes.NodeMessage);
+        const parsedMsg = typeof msg === `string` ? JSON.parse(msg) : msg;
+        const parsedData = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
+        parsedMsg.data = parsedData;
+        this.log.debug(`Subscription for ${subject}: ${JSON.stringify(parsedMsg)}`);
+        callback(parsedMsg as CFCoreTypes.NodeMessage);
       }
     });
   }
