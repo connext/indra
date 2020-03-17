@@ -8,9 +8,9 @@ import {
   SigningKey,
 } from "ethers/utils";
 
-import { createAppInstanceForTest } from "../../test/unit/utils";
-import { getRandomHDNodes } from "../../test/machine/integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../test/machine/mocks";
+import { createAppInstanceForTest } from "../testing/utils";
+import { getRandomHDNodes } from "../testing/random-signing-keys";
+import { generateRandomNetworkContext } from "../testing/mocks";
 
 import { ChallengeRegistry } from "../contracts";
 import { Context } from "../types";

@@ -1,7 +1,7 @@
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
-import { getRandomExtendedPubKey } from "../../test/machine/integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../test/machine/mocks";
+import { getRandomExtendedPubKey } from "../testing/random-signing-keys";
+import { generateRandomNetworkContext } from "../testing/mocks";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { StateChannel } from "../models";

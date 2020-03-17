@@ -6,7 +6,7 @@ import {
   ProtocolParams,
 } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
-import uuid from "uuid";
+import { v4 as uuid } from "uuid";
 
 import { getProtocolFromName } from "../protocol";
 import {
@@ -60,7 +60,7 @@ export class ProtocolRunner {
     return this.runProtocol(getProtocolFromName(protocolName)[0], {
       params,
       protocol: protocolName,
-      processID: uuid.v1(),
+      processID: uuid(),
       seq: 0,
       toXpub: params[firstRecipientFromProtocolName(protocolName)],
       customData: {},
@@ -72,7 +72,7 @@ export class ProtocolRunner {
     return this.runProtocol(getProtocolFromName(protocol)[0], {
       protocol,
       params,
-      processID: uuid.v1(),
+      processID: uuid(),
       seq: 0,
       toXpub: params.responderXpub,
       customData: {},

@@ -12,9 +12,9 @@ import {
 import {
   getRandomExtendedPubKey,
   getRandomHDNodes,
-} from "../../test/machine/integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../test/machine/mocks";
-import { createAppInstanceForTest } from "../../test/unit/utils";
+} from "../testing/random-signing-keys";
+import { generateRandomNetworkContext } from "../testing/mocks";
+import { createAppInstanceForTest } from "../testing/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { ConditionalTransactionDelegateTarget } from "../contracts";
