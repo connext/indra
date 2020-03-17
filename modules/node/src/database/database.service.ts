@@ -30,10 +30,9 @@ import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-ne
 import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
 import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
 import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
-import { withdraw1583917148573 } from "../../migrations/1583917148573-withdraw";
-import { withdraw1583937670139 } from "../../migrations/1583937670139-withdraw";
 import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm-sync";
 import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
+import { initWithdrawApp1584466373728 } from "../../migrations/1584466373728-init-withdraw-app";
 
 export const entities = [
   AppRegistry,
@@ -65,8 +64,7 @@ export const migrations = [
   fastSignedTransfer1583682931763,
   typeormSync1584364675207,
   typeormSync21584369931723,
-  withdraw1583917148573,
-  withdraw1583937670139,
+  initWithdrawApp1584466373728,
 ];
 
 @Injectable()
