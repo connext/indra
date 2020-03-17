@@ -148,7 +148,9 @@ contract FastSignedTransferApp is CounterfactualApp {
         require(state.turnNum % 2 == 1, "Only receivers can unlock transfers.");
 
         // TODO any possibility of collision?
-        bytes32 rawHash = keccak256(abi.encodePacked(action.data, state.paymentId));
+        bytes32 rawHash = keccak256(abi.encodePacked(action.data, action.paymentId));
+        // TODO: this has to be done so we can associate the paymentId off-chain
+        require(action.paymentId == state.paymentId, "PaymentId must match created ID");
         require(state.signer == rawHash.recover(action.signature), "Incorrect signer recovered from signature");
 
         // Add receiver balances to coinTransfer

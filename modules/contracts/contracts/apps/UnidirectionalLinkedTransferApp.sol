@@ -8,7 +8,7 @@ import "../funding/libs/LibOutcome.sol";
 
 /// @title Unidirectional Linked Transfer App
 /// @notice This contract allows users to claim a payment locked in
-///         the application if they provide the correct preimage
+///         the application if they provide the correct preImage
 contract UnidirectionalLinkedTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
@@ -18,7 +18,7 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
     * as in the SimpleTwoPartySwapApp.
     *
     * This app can also not be used to send _multiple_ linked payments,
-    * only one can be redeemed with the preimage.
+    * only one can be redeemed with the preImage.
     *
     */
 
@@ -48,7 +48,7 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
 
     // Questions: if the app is set up to have the transfers pre-assigned
     // in the same way the swap app is atm, will the adjudicator know that
-    // if no correct preimage is included in the commitment, it should 0
+    // if no correct preImage is included in the commitment, it should 0
     // transfers?
     // enum ActionType {
     //   CLAIM_MONEY

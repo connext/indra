@@ -5,8 +5,9 @@ import {
   validateSimpleSwapApp,
   validateFastSignedTransferApp,
   validateWithdrawApp,
+  validateHashLockTransferApp,
 } from "@connext/apps";
-import { 
+import {
   CoinBalanceRefundApp,
   SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
@@ -15,6 +16,7 @@ import {
   AppInstanceJson,
   SimpleLinkedTransferAppStateBigNumber,
   WithdrawAppStateBigNumber,
+  HashLockTransferApp,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -164,7 +166,11 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case WithdrawApp: {
-        validateWithdrawApp(
+        validateWithdrawApp(proposeInstallParams, from, this.cfCoreService.cfCore.publicIdentifier);
+        break;
+      }
+      case HashLockTransferApp: {
+        validateHashLockTransferApp(
           proposeInstallParams,
           from,
           this.cfCoreService.cfCore.publicIdentifier,
@@ -218,10 +224,10 @@ export class AppRegistryService implements OnModuleInit {
       case FastSignedTransferApp:
         break;
       case WithdrawApp: {
-        this.log.debug(`Doing withdrawal post-install tasks`)
-        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId)
+        this.log.debug(`Doing withdrawal post-install tasks`);
+        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
         const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
-        this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`)
+        this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
           appInstanceId,
           bigNumberify(proposeInstallParams.initiatorDeposit),
@@ -231,7 +237,7 @@ export class AppRegistryService implements OnModuleInit {
           initialState.signatures[0],
           initialState.signatures[1],
           appInstance.multisigAddress,
-        )
+        );
         this.withdrawService.handleUserWithdraw(appInstance);
         break;
       }

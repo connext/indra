@@ -3,7 +3,6 @@ import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColum
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsXpub } from "../util";
-import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 
 @Entity()
@@ -48,18 +47,6 @@ export class Channel {
     (transfer: LinkedTransfer) => transfer.receiverChannel,
   )
   receiverLinkedTransfers!: LinkedTransfer[];
-
-  @OneToMany(
-    (type: any) => FastSignedTransfer,
-    (transfer: FastSignedTransfer) => transfer.senderChannel,
-  )
-  senderFastSignedTransfers!: FastSignedTransfer[];
-
-  @OneToMany(
-    (type: any) => FastSignedTransfer,
-    (transfer: FastSignedTransfer) => transfer.receiverChannel,
-  )
-  receiverFastSignedTransfers!: FastSignedTransfer[];
 
   @OneToMany(
     (type: any) => OnchainTransaction,

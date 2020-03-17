@@ -9,7 +9,6 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
-import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
 import { TransferRepository } from "../transfer/transfer.repository";
 
 import { LinkedTransferRepository } from "./linkedTransfer.repository";
@@ -30,7 +29,6 @@ import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
       ChannelRepository,
       AppRegistryRepository,
       LinkedTransferRepository,
-      FastSignedTransferRepository,
       TransferRepository,
     ]),
   ],

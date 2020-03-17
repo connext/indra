@@ -12,7 +12,6 @@ import {
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { Transfer } from "../transfer/transfer.entity";
 import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
-import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { Withdraw } from "../withdraw/withdraw.entity";
 
@@ -33,6 +32,8 @@ import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-
 import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
 import { withdraw1583917148573 } from "../../migrations/1583917148573-withdraw";
 import { withdraw1583937670139 } from "../../migrations/1583937670139-withdraw";
+import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm-sync";
+import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
 
 export const entities = [
   AppRegistry,
@@ -44,7 +45,6 @@ export const entities = [
   Transfer,
   AnonymizedOnchainTransaction,
   AnonymizedTransfer,
-  FastSignedTransfer,
   Withdraw,
 ];
 
@@ -63,6 +63,8 @@ export const migrations = [
   AddAnonymizedViewTables1581090243171,
   RebalancingProfile1581796200880,
   fastSignedTransfer1583682931763,
+  typeormSync1584364675207,
+  typeormSync21584369931723,
   withdraw1583917148573,
   withdraw1583937670139,
 ];
