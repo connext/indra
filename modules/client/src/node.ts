@@ -1,5 +1,9 @@
 import { MessagingService } from "@connext/messaging";
-import { ILoggerService, ResolveFastSignedTransferResponse, ResolveHashLockTransferResponse } from "@connext/types";
+import {
+  ILoggerService,
+  ResolveFastSignedTransferResponse,
+  ResolveHashLockTransferResponse,
+} from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
@@ -91,6 +95,7 @@ export class NodeApiClient implements INodeApiClient {
     const lockValue = await this.send(`${this.userPublicIdentifier}.lock.acquire.${lockName}`, {
       lockTTL: timeout,
     });
+    console.log("lockValue: ", lockValue);
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
