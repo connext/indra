@@ -1,6 +1,6 @@
 import { MessagingServiceFactory } from "@connext/messaging";
 import { CF_PATH } from "@connext/types";
-import uuid from "uuid";
+import { v4 as uuid } from "uuid";
 import { Wallet } from "ethers";
 import { arrayify } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -130,7 +130,7 @@ export default class AdminMessaging {
     );
     const payload = {
       ...data,
-      id: uuid.v4(),
+      id: uuid(),
     };
     payload.token = await this.getToken(subject);
     let msg;
