@@ -22,7 +22,10 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
   }
 
   async findByReceiverAppInstanceId(appInstanceId: string): Promise<LinkedTransfer | undefined> {
-    return await this.findOne({ where: { receiverAppInstanceId: appInstanceId } });
+    return await this.findOne({
+      relations: ["senderChannel"],
+      where: { receiverAppInstanceId: appInstanceId },
+    });
   }
 
   async findPendingByRecipient(recipientPublicIdentifier: string): Promise<LinkedTransfer[]> {
