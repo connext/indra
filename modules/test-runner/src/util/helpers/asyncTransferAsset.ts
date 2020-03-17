@@ -94,13 +94,9 @@ export async function asyncTransferAsset(
     expect(postTransferFreeBalanceNodeB).equal(preTransferFreeBalanceNodeB.sub(transferAmount));
   }
 
+  const reclaimSubject = `${clientA.nodePublicIdentifier}.channel.${clientA.multisigAddress}.transfer.${paymentId}.reclaimed`;
   await new Promise(async res => {
-    await nats.subscribe(
-      `${clientA.publicIdentifier}.channel.${clientA.multisigAddress}.transfer.${paymentId}.reclaimed`,
-      (err, msg) => {
-        res();
-      },
-    );
+    await nats.subscribe(reclaimSubject, res);
   });
 
   const paymentA = await clientA.getLinkedTransfer(paymentId);
