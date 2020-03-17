@@ -51,7 +51,8 @@ export const createCFChannelProvider = async ({
     signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
-  const connection = new CFCoreRpcConnection(cfCore, store, await keyGen("0"));
+  const wallet = new Wallet(await keyGen("0")).connect(ethProvider);
+  const connection = new CFCoreRpcConnection(cfCore, store, wallet);
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
   return channelProvider;
 };
@@ -64,10 +65,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   // TODO: replace this when signing keys are added!
   public wallet: Wallet;
 
-  constructor(cfCore: CFCore, store: Store, authKey: any) {
+  constructor(cfCore: CFCore, store: Store, wallet: Wallet) {
     super();
     this.cfCore = cfCore;
-    this.wallet = authKey ? new Wallet(authKey) : null;
+    this.wallet = wallet;
     this.store = store;
   }
 
