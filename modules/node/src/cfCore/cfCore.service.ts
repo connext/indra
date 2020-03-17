@@ -160,37 +160,13 @@ export class CFCoreService {
     return depositRes.result.result as CFCoreTypes.DepositResult;
   }
 
-  async withdraw(
+  async createWithdrawCommitment(
+    params: WithdrawParameters<BigNumber>,
     multisigAddress: string,
-    amount: BigNumber,
-    assetId: string = AddressZero,
-    recipient: string = this.cfCore.freeBalanceAddress,
-  ): Promise<CFCoreTypes.WithdrawResult> {
-    this.log.debug(
-      `Calling ${ProtocolTypes.chan_withdraw} with params: ${stringify({
-        amount,
-        multisigAddress,
-        tokenAddress: assetId,
-      })}`,
-    );
-    const withdrawRes = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: ProtocolTypes.chan_withdraw,
-      parameters: {
-        amount,
-        multisigAddress,
-        recipient,
-        tokenAddress: assetId,
-      } as CFCoreTypes.WithdrawParams,
-    });
-    this.log.debug(`withdraw called with result ${stringify(withdrawRes.result.result)}`);
-    return withdrawRes.result.result as CFCoreTypes.WithdrawResult;
-  }
-
-  async createWithdrawCommitment(params: WithdrawParameters<BigNumber>, multisigAddress: string): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
+  ): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
     const { assetId, amount, recipient } = params;
     const channel = await this.getStateChannel(multisigAddress);
-    if ( assetId === AddressZero) {
+    if (assetId === AddressZero) {
       return new WithdrawETHCommitment(
         channel.data.multisigAddress,
         channel.data.freeBalanceAppInstance.participants,
@@ -290,7 +266,7 @@ export class CFCoreService {
       responderDepositTokenAddress,
       timeout: Zero,
     };
-    
+
     const proposeRes = await this.proposeInstallApp(params);
 
     try {

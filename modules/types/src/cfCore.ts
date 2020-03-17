@@ -73,8 +73,4 @@ export namespace CFCoreTypes {
   export type UpdateStateEventData = ProtocolTypes.UpdateStateEventData;
   export type UpdateStateParams = ProtocolTypes.UpdateStateParams;
   export type UpdateStateResult = ProtocolTypes.UpdateStateResult;
-  export type WithdrawCommitmentParams = ProtocolTypes.WithdrawCommitmentParams;
-  export type WithdrawCommitmentResult = ProtocolTypes.WithdrawCommitmentResult;
-  export type WithdrawParams = ProtocolTypes.WithdrawParams;
-  export type WithdrawResult = ProtocolTypes.WithdrawResult;
 }

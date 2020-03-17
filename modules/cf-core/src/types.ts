@@ -74,8 +74,7 @@ export {
   AppInstanceProposal,
   AppInterface,
   CFCoreTypes,
-  CoinBalanceRefundState,
-  coinBalanceRefundStateEncoding,
+  CoinBalanceRefundAppState,
   CreateChannelMessage,
   DeployedContractNetworksFileEntry,
   DepositConfirmationMessage,
@@ -118,8 +117,4 @@ export {
   UpdateProtocolParams,
   UpdateStateMessage,
   virtualAppAgreementEncoding,
-  WithdrawConfirmationMessage,
-  WithdrawFailedMessage,
-  WithdrawProtocolParams,
-  WithdrawStartedMessage,
 } from "@connext/types";

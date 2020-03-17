@@ -2,7 +2,7 @@ import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node, NOT_YOUR_BALANCE_REFUND_APP } from "../../src";
-import { CoinBalanceRefundState, ProtocolTypes } from "../../src/types";
+import { CoinBalanceRefundAppState, ProtocolTypes } from "../../src/types";
 import { toBeLt, toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
@@ -42,7 +42,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundState).recipient).toBe(
+      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(
         xkeyKthAddress(nodeA.publicIdentifier, 0),
       );
 
@@ -92,7 +92,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundState).recipient).toBe(
+      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(
         xkeyKthAddress(nodeA.publicIdentifier, 0),
       );
 
@@ -137,7 +137,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundState).recipient).toBe(
+      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(
         xkeyKthAddress(nodeA.publicIdentifier, 0),
       );
 
@@ -248,7 +248,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundState).recipient).toBe(
+      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(
         xkeyKthAddress(nodeA.publicIdentifier, 0),
       );
       done();

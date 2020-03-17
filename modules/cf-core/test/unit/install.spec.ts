@@ -1,15 +1,15 @@
-import { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT, NetworkContext, nullLogger } from "@connext/types";
+import {
+  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
+  NetworkContext,
+  nullLogger,
+} from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
 import { hexlify, randomBytes, HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
-import {
-  NO_APP_INSTANCE_ID_TO_INSTALL,
-  NO_MULTISIG_FOR_APP_INSTANCE_ID,
-  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
-} from "../../src";
+import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { Protocol, ProtocolRunner, xkeysToSortedKthAddresses } from "../../src/machine";
 import { install } from "../../src/methods/app-instance/install/operation";
@@ -35,7 +35,11 @@ describe("Can handle correct & incorrect installs", () => {
 
   beforeAll(() => {
     store = new Store(new MemoryStoreService(), "install.spec.ts-test-store");
-    protocolRunner = new ProtocolRunner(NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES, {} as BaseProvider, nullLogger);
+    protocolRunner = new ProtocolRunner(
+      NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
+      {} as BaseProvider,
+      nullLogger,
+    );
     initiatorIdentifier = HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
   });
 

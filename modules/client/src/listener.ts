@@ -36,9 +36,6 @@ import {
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawConfirmationMessage,
-  WithdrawFailedMessage,
-  WithdrawStartedMessage,
 } from "./types";
 import {
   ProtocolTypes,
@@ -54,9 +51,6 @@ import {
   UNINSTALL_EVENT,
   UNINSTALL_VIRTUAL_EVENT,
   UPDATE_STATE_EVENT,
-  WITHDRAWAL_CONFIRMED_EVENT,
-  WITHDRAWAL_FAILED_EVENT,
-  WITHDRAWAL_STARTED_EVENT,
 } from "@connext/types";
 
 // TODO: index of connext events only?
@@ -138,16 +132,6 @@ export class ConnextListener extends ConnextEventEmitter {
         };
         await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
       }
-    },
-    WITHDRAWAL_CONFIRMED_EVENT: (msg: WithdrawConfirmationMessage): void => {
-      this.emitAndLog(WITHDRAWAL_CONFIRMED_EVENT, msg.data);
-    },
-    WITHDRAWAL_FAILED_EVENT: (msg: WithdrawFailedMessage): void => {
-      this.emitAndLog(WITHDRAWAL_FAILED_EVENT, msg.data);
-    },
-    WITHDRAWAL_STARTED_EVENT: (msg: WithdrawStartedMessage): void => {
-      this.log.info(`Withdrawal transaction: ${msg.data.txHash}`);
-      this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
 

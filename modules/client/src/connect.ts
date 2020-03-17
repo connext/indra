@@ -6,7 +6,7 @@ import {
   CF_PATH,
   CREATE_CHANNEL_EVENT,
   StateSchemaVersion,
-  CoinBalanceRefundState,
+  CoinBalanceRefundAppState,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -275,7 +275,7 @@ export const connect = async (
   );
   for (const coinBalance of coinBalanceRefundApps) {
     await client.uninstallCoinBalanceIfNeeded(
-      (coinBalance.latestState as CoinBalanceRefundState).tokenAddress,
+      (coinBalance.latestState as CoinBalanceRefundAppState).tokenAddress,
     );
   }
 

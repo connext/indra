@@ -1,4 +1,5 @@
 import { BaseProvider, BigNumber } from "./basic";
+import { CoinBalanceRefundApp, WithdrawApp } from "./apps";
 
 ////////////////////////////////////////
 // Generic contract ops & network config
@@ -32,13 +33,14 @@ export interface NetworkContext {
   TimeLockedPassThrough: string;
   TwoPartyFixedOutcomeFromVirtualAppInterpreter: string;
   TwoPartyFixedOutcomeInterpreter: string;
+  WithdrawApp: string;
   provider?: BaseProvider;
 }
 
 // Keep in sync with above
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ChallengeRegistry",
-  "CoinBalanceRefundApp",
+  CoinBalanceRefundApp, // TODO: remove, but this will break existing channels
   "ConditionalTransactionDelegateTarget",
   "IdentityApp",
   "MinimumViableMultisig",
@@ -48,6 +50,7 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
   "TwoPartyFixedOutcomeInterpreter",
+  WithdrawApp,
 ];
 
 export interface DeployedContractNetworksFileEntry {
@@ -103,9 +106,6 @@ export const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint25
 
 export const multiAssetMultiPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[][]`;
 
-export const coinBalanceRefundStateEncoding =
-  "tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)";
-
 export enum OutcomeType {
   // uint8
   TWO_PARTY_FIXED_OUTCOME = "TWO_PARTY_FIXED_OUTCOME",
@@ -121,10 +121,3 @@ export enum TwoPartyFixedOutcome {
   SEND_TO_ADDR_TWO = 1,
   SPLIT_AND_SEND_TO_BOTH_ADDRS = 2,
 }
-
-export type CoinBalanceRefundState = {
-  recipient: string;
-  multisig: string;
-  threshold: BigNumber;
-  tokenAddress: string;
-};
