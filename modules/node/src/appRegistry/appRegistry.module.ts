@@ -18,6 +18,7 @@ import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
 import { AppRegistryService } from "./appRegistry.service";
 import { AppActionsService } from "./appActions.service";
+import { WithdrawRepository } from "../withdraw/withdraw.repository";
 
 @Module({
   controllers: [AppRegistryController],
@@ -34,7 +35,12 @@ import { AppActionsService } from "./appActions.service";
     TransferModule,
     MessagingModule,
     WithdrawModule,
-    TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository, LinkedTransferRepository]),
+    TypeOrmModule.forFeature([
+      AppRegistryRepository,
+      ChannelRepository,
+      LinkedTransferRepository,
+      WithdrawRepository,
+    ]),
   ],
   providers: [AppRegistryService, AppActionsService],
 })

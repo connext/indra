@@ -60,7 +60,7 @@ export type AppAction<T = string> =
   | WithdrawAppAction;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
-export type AppState<T> =
+export type AppState<T = string> =
   | FastSignedTransferAppState<T>
   | HashLockTransferAppState<T>
   | SimpleLinkedTransferAppState<T>
