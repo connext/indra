@@ -345,7 +345,7 @@ store: node-modules types $(shell find $(store)/src $(find_options))
 
 test-runner-js: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/test-runner && npm run build-js"
+	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))

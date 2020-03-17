@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build-bundle": "webpack --config ops/webpack.config.js",
+    "build": "webpack --config ops/webpack.config.js",
     "build-js": "tsc --project tsconfig.json",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "test": "bash ops/entry.sh"
