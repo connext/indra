@@ -1,5 +1,5 @@
 import { utils } from "@connext/client";
-import { IConnextClient, stringify, UPDATE_STATE_EVENT } from "@connext/types";
+import { IConnextClient, UPDATE_STATE_EVENT } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
