@@ -59,13 +59,20 @@ describe("ChallengeRegistry Challenge", () => {
   let provider = buidler.provider;
   let wallet: Wallet;
 
+  let appRegistry: Contract;
+  let appDefinition: Contract;
+
+  let snapshotId: any;
+
   let latestTimeout: () => Promise<number>;
   let latestState: () => Promise<string>;
   let latestVersionNumber: () => Promise<number>;
   let setState: (versionNumber: number, appState?: string) => Promise<void>;
   let respondToChallenge: (state: any, action: any, actionSig: any) => Promise<any>;
 
-  const mineBlock = async () => await provider.send("evm_mine", []);
+  const mineBlock = async () => await provider.send('evm_mine', []);
+  const snapshot = async () => await provider.send('evm_snapshot', []);
+  const restore = async (snapshotId: any) => await provider.send('evm_revert', [snapshotId]);
 
   const mineBlocks = async (num: number) => {
     for (let i = 0; i < num; i++) {
@@ -120,12 +127,14 @@ describe("ChallengeRegistry Challenge", () => {
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
+
+    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
+
+    appDefinition = await waffle.deployContract(wallet, AppWithAction);
   });
 
   beforeEach(async () => {
-    const appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
-
-    const appDefinition: Contract = await waffle.deployContract(wallet, AppWithAction);
+    snapshotId = await snapshot();
 
     const appInstance = new AppIdentityTestClass(
       [ALICE.address, BOB.address],
@@ -172,6 +181,10 @@ describe("ChallengeRegistry Challenge", () => {
       );
     };
   });
+
+  afterEach(async () => {
+    await restore(snapshotId)
+  })
 
   it("Can call respondToChallenge", async () => {
     expect(await latestVersionNumber()).to.eq(0);
@@ -230,7 +243,7 @@ describe("ChallengeRegistry Challenge", () => {
     const signature = await signer.signDigest(thingToSign);
     const bytes = signaturesToBytes(signature);
 
-    await moveToBlock(66);
+    await moveToBlock(33);
     await expect(respondToChallenge(PRE_STATE, ACTION, bytes)).to.be.revertedWith(
       "respondToChallenge called with action signed by incorrect turn taker",
     );

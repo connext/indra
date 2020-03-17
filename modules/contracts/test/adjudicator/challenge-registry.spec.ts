@@ -20,12 +20,19 @@ import {
   sortSignaturesBySignerAddress,
 } from "./utils";
 
+enum ChallengeStatus {
+  NO_CHALLENGE,
+  IN_DISPUTE,
+  IN_ONCHAIN_PROGRESSION,
+  EXPLICITLY_FINALIZED,
+};
+
 type Challenge = {
-  status: 0 | 1 | 2 | 3;
+  status: ChallengeStatus;
   latestSubmitter: string;
   appStateHash: string;
-  versionNumber: number;
-  finalizesAt: number;
+  versionNumber: BigNumberish;
+  finalizesAt: BigNumberish;
 };
 
 const ALICE =
@@ -55,8 +62,9 @@ describe("ChallengeRegistry", () => {
   let sendSignedFinalizationToChain: () => Promise<any>;
   let getChallenge: () => Promise<Challenge>;
   let latestAppStateHash: () => Promise<string>;
-  let latestVersionNumber: () => Promise<number>;
+  let latestVersionNumber: () => Promise<BigNumberish>;
   let isStateFinalized: () => Promise<boolean>;
+  let verifyChallenge: (expected: Challenge) => Promise<void>;
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
@@ -84,6 +92,22 @@ describe("ChallengeRegistry", () => {
 
     isStateFinalized = async () =>
       await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
+
+    verifyChallenge = async (expected: Challenge) => {
+      const {
+        status,
+        latestSubmitter,
+        appStateHash,
+        versionNumber,
+        finalizesAt,
+      } = await getChallenge();
+
+      expect(status).to.be.eq(expected.status);
+      expect(latestSubmitter).to.be.eq(expected.latestSubmitter);
+      expect(appStateHash).to.be.eq(expected.appStateHash);
+      expect(versionNumber).to.be.eq(expected.versionNumber);
+      expect(finalizesAt).to.be.eq(expected.finalizesAt);
+    }
 
     cancelChallenge = async () => {
       const digest = computeAppChallengeHash(
@@ -204,13 +228,22 @@ describe("ChallengeRegistry", () => {
   });
   */
 
-  it("is possible to call setState to put state on-chain", async () => {
+  it.only("is possible to call setState to put state on-chain", async () => {
     // Tell the ChallengeRegistry to start timer
     const state = hexlify(randomBytes(32));
 
     await setStateWithSignatures(1, state);
 
+    await verifyChallenge({
+      status: ChallengeStatus.IN_DISPUTE,
+      latestSubmitter: await wallet.getAddress(),
+      appStateHash: keccak256(state),
+      versionNumber: 1,
+      finalizesAt: await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT,
+    });
+
     // Verify the correct data was put on-chain
+    /*
     const {
       status,
       latestSubmitter,
@@ -224,5 +257,6 @@ describe("ChallengeRegistry", () => {
     expect(appStateHash).to.be.eq(keccak256(state));
     expect(versionNumber).to.be.eq(1);
     expect(finalizesAt).to.be.eq((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT);
+   */
   });
 });
