@@ -1,13 +1,6 @@
 import * as connext from "@connext/client";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
-import {
-  CF_PATH,
-  ConnextClientStorePrefix,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  StoreTypes,
-} from "@connext/types";
+import { CF_PATH, ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
@@ -315,18 +308,18 @@ class App extends React.Component {
       this.setState({ swapRate: res.swapRate });
     });
 
-    channel.on(RECEIVE_TRANSFER_STARTED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_STARTED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_STARTED_EVENT} event: `, data);
       machine.send("START_RECEIVE");
     });
 
-    channel.on(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_FINISHED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_FINISHED_EVENT} event: `, data);
       machine.send("SUCCESS_RECEIVE");
     });
 
-    channel.on(RECEIVE_TRANSFER_FAILED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_FAILED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_FAILED_EVENT} event: `, data);
       machine.send("ERROR_RECEIVE");
     });
 
