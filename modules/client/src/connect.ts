@@ -53,7 +53,7 @@ const createMessagingService = async (
   };
   // create a messaging service client
   // do not specify a prefix so that clients can publish to node
-  const messaging = new MessagingService(config, `INDRA.${chainId}`, () =>
+  const messaging = new MessagingService(config, `INDRA.${chainId}`, async () =>
     getBearerToken(logger, nodeUrl, xpub, getSignature),
   );
   await messaging.connect();
