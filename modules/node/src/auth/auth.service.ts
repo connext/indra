@@ -1,7 +1,7 @@
 import { MessagingAuthService } from "@connext/messaging";
 // import { getMessagingPrefix } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
-import { hexlify, randomBytes, verifyMessage } from "ethers/utils";
+import { hexlify, randomBytes, verifyMessage, recoverPublicKey } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
@@ -30,8 +30,6 @@ export class AuthService {
     this.log.setContext("AuthService");
   }
 
-  // FIXME-- fix this client api contract error...
-  // TODO-- get ops/start_prod.sh placeholders filled out
   async getNonce(userPublicIdentifier: string): Promise<string> {
     const nonce = hexlify(randomBytes(nonceLen));
     const expiry = Date.now() + nonceTTL;
@@ -55,10 +53,14 @@ export class AuthService {
     }
 
     const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
+    console.log("xpubAddress: ", xpubAddress);
     this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
     const addr = verifyMessage(nonce, signedNonce);
+    console.log('nonce: ', nonce);
+    console.log('signedNonce: ', signedNonce);
+    console.log("addr: ", addr);
     if (addr !== xpubAddress) {
       throw new Error(`verification failed`);
     }
