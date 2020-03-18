@@ -4,6 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AppRegistryModule } from "../appRegistry/appRegistry.module";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
+import { ConfigModule } from "../config/config.module";
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
@@ -23,6 +24,7 @@ import ListenerService from "./listener.service";
     ChannelModule,
     LinkedTransferModule,
     LoggerModule,
+    ConfigModule,
     MessagingModule,
     MessagingModule,
     TransferModule,

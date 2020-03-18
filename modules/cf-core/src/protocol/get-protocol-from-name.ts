@@ -9,7 +9,6 @@ import { TAKE_ACTION_PROTOCOL } from "./take-action";
 import { UNINSTALL_PROTOCOL } from "./uninstall";
 import { UNINSTALL_VIRTUAL_APP_PROTOCOL } from "./uninstall-virtual-app";
 import { UPDATE_PROTOCOL } from "./update";
-import { WITHDRAW_PROTOCOL } from "./withdraw";
 
 const protocolsByName = {
   [Protocol.Install]: INSTALL_PROTOCOL,
@@ -20,7 +19,6 @@ const protocolsByName = {
   [Protocol.Uninstall]: UNINSTALL_PROTOCOL,
   [Protocol.UninstallVirtualApp]: UNINSTALL_VIRTUAL_APP_PROTOCOL,
   [Protocol.Update]: UPDATE_PROTOCOL,
-  [Protocol.Withdraw]: WITHDRAW_PROTOCOL,
 };
 
 export function getProtocolFromName(protocolName: Protocol): ProtocolExecutionFlow {

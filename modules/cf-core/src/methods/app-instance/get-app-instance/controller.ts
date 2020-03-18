@@ -23,8 +23,12 @@ export default class GetAppInstanceDetailsController extends NodeController {
       throw Error(NO_APP_INSTANCE_ID_TO_GET_DETAILS);
     }
 
+    //TODO - This is very dumb, just add multisigAddress to the base app instance type to begin with
+    let appInstance = (await store.getAppInstance(appInstanceId)).toJson()
+    appInstance.multisigAddress = (await store.getMultisigAddressFromAppInstance(appInstanceId))
+
     return {
-      appInstance: (await store.getAppInstance(appInstanceId)).toJson(),
+      appInstance
     };
   }
 }

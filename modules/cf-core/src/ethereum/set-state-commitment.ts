@@ -14,16 +14,14 @@ import { appIdentityToHash } from "./utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 
-export class SetStateCommitment extends EthereumCommitment {
+export class SetStateCommitment implements EthereumCommitment {
   constructor(
     public readonly networkContext: NetworkContext,
     public readonly appIdentity: AppIdentity,
     public readonly hashedAppState: string,
     public readonly appVersionNumber: number,
     public readonly timeout: number,
-  ) {
-    super();
-  }
+  ) {}
 
   public hashToSign(): string {
     return keccak256(

@@ -1,4 +1,8 @@
-import { DEPOSIT_STARTED_EVENT, DEPOSIT_FAILED_EVENT } from "@connext/types";
+import {
+  DEPOSIT_STARTED_EVENT,
+  DEPOSIT_FAILED_EVENT,
+  CoinBalanceRefundAppStateEncoding,
+} from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BaseProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
@@ -12,8 +16,7 @@ import { RequestHandler } from "../../../request-handler";
 import {
   AppInterface,
   CFCoreTypes,
-  CoinBalanceRefundState,
-  coinBalanceRefundStateEncoding,
+  CoinBalanceRefundAppState,
   DepositFailedMessage,
   InstallProtocolParams,
   NetworkContext,
@@ -223,13 +226,13 @@ async function getDepositContext(
     tokenAddress,
     recipient: xkeyKthAddress(publicIdentifier, 0),
     multisig: multisigAddress,
-  } as CoinBalanceRefundState;
+  } as CoinBalanceRefundAppState;
 
   return {
     initialState,
     appInterface: {
       addr: networkContext.CoinBalanceRefundApp,
-      stateEncoding: coinBalanceRefundStateEncoding,
+      stateEncoding: CoinBalanceRefundAppStateEncoding,
       actionEncoding: undefined,
     },
   };

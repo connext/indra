@@ -1,5 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import { ContractAddresses, SwapRate } from "@connext/types";
+import { ContractAddresses, SwapRate, CF_PATH } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -216,7 +216,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    const wallet = Wallet.fromMnemonic(this.getMnemonic());
+    const wallet = Wallet.fromMnemonic(this.getMnemonic(), `${CF_PATH}/0`);
     this.wallet = wallet.connect(this.getEthProvider());
   }
 }

@@ -1,6 +1,7 @@
 import {
   chan_storeSet,
   chan_storeGet,
+  chan_signWithdrawCommitment,
   chan_nodeAuth,
   chan_restoreState,
   IChannelProvider,
@@ -20,6 +21,7 @@ import {
   Store,
   StorePair,
 } from "./types";
+import { SigningKey, joinSignature } from "ethers/utils";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -81,9 +83,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_storeGet:
         result = await this.storeGet(params.path);
         break;
-      case chan_nodeAuth:
-        result = await this.walletSign(params.message);
+      case chan_signWithdrawCommitment:
+        result = await this.signWithdrawCommitment(params.message);
         break;
+      case chan_nodeAuth:
+          result = await this.walletSign(params.message);
+          break;
       case chan_restoreState:
         result = await this.restoreState(params.path);
         break;
@@ -124,6 +129,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     const { chainId } = await this.wallet.provider.getNetwork();
     return signMessage(this.wallet.privateKey, message, chainId);
   };
+
+  private signWithdrawCommitment = async (message: string): Promise<string> => {
+    const key = new SigningKey(this.wallet.privateKey);
+    return joinSignature(key.signDigest(message));
+  }
 
   private storeGet = async (path: string): Promise<any> => {
     return this.store.get(path);
