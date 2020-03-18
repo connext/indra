@@ -24,7 +24,9 @@ describe("ChannelProvider", () => {
 
   beforeEach(async () => {
     client = await createClient();
+    console.log("smart client: ", client.publicIdentifier);
     remoteClient = await createRemoteClient(await createChannelProvider(client));
+    console.log("dumb client: ", remoteClient.publicIdentifier);
     nodePublicIdentifier = client.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
     tokenAddress = client.config.contractAddresses.Token;
