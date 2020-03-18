@@ -1,32 +1,23 @@
 import {
+  CoinBalanceRefundAppName,
+  EventNames,
+  FastSignedTransferAppName,
+  HashLockTransferAppName,
   ILoggerService,
+  MethodNames,
+  MethodParams,
+  SimpleLinkedTransferAppName,
+  WithdrawAppName,
   WithdrawAppState,
-  BigNumber,
-  WithdrawApp,
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  FastSignedTransferApp,
-  HashLockTransferApp,
 } from "@connext/types";
 import {
   commonAppProposalValidation,
-  SupportedApplication,
+  SupportedApplications,
   validateSimpleLinkedTransferApp,
   validateWithdrawApp,
   validateFastSignedTransferApp,
   validateHashLockTransferApp,
 } from "@connext/apps";
-<<<<<<< HEAD
-import {
-  CoinBalanceRefundAppName,
-  EventNames,
-  ILoggerService,
-  MethodNames,
-  MethodParams,
-  SimpleLinkedTransferAppName,
-} from "@connext/types";
-=======
->>>>>>> 845-store-refactor
 
 import { ConnextClient } from "./connext";
 import { stringify } from "./lib";
@@ -61,14 +52,7 @@ const {
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
   UPDATE_STATE_EVENT,
-<<<<<<< HEAD
-  WITHDRAWAL_CONFIRMED_EVENT,
-  WITHDRAWAL_FAILED_EVENT,
-  WITHDRAWAL_STARTED_EVENT,
 } = EventNames;
-=======
-} from "@connext/types";
->>>>>>> 845-store-refactor
 
 // TODO: index of connext events only?
 type CallbackStruct = {
@@ -138,19 +122,15 @@ export class ConnextListener extends ConnextEventEmitter {
     UNINSTALL_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
-<<<<<<< HEAD
-    UPDATE_STATE_EVENT: (msg: UpdateStateMessage): void => {
-=======
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
->>>>>>> 845-store-refactor
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
       const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appInstanceId))
         .appInstance;
-      const state = msg.data.newState as WithdrawAppState<BigNumber>;
+      const state = msg.data.newState as WithdrawAppState;
       const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
         return app.appDefinitionAddress === appInstance.appInterface.addr;
       });
-      if (registryAppInfo.name === WithdrawApp) {
+      if (registryAppInfo.name === WithdrawAppName) {
         const params = {
           amount: state.transfers[0][1],
           recipient: state.transfers[0][0],
@@ -158,6 +138,15 @@ export class ConnextListener extends ConnextEventEmitter {
         };
         await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
       }
+    },
+    WITHDRAWAL_CONFIRMED_EVENT: (msg: UninstallMessage): void => {
+      this.emitAndLog(EventNames.WITHDRAWAL_CONFIRMED_EVENT, msg.data);
+    },
+    WITHDRAWAL_FAILED_EVENT: (msg: UninstallMessage): void => {
+      this.emitAndLog(EventNames.WITHDRAWAL_FAILED_EVENT, msg.data);
+    },
+    WITHDRAWAL_STARTED_EVENT: (msg: UninstallMessage): void => {
+      this.emitAndLog(EventNames.WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
 
@@ -206,7 +195,6 @@ export class ConnextListener extends ConnextEventEmitter {
     });
 
     this.channelProvider.on(
-<<<<<<< HEAD
       MethodNames.chan_install,
       async (msg: any): Promise<void> => {
         const {
@@ -214,30 +202,12 @@ export class ConnextListener extends ConnextEventEmitter {
             result: { appInstance },
           },
         } = msg;
-=======
-      ProtocolTypes.chan_uninstall,
-      async (data: any): Promise<any> => {
-        const result = data.result.result;
-        this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
->>>>>>> 845-store-refactor
         await this.connext.messaging.publish(
-          `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-          stringify(result),
+          `indra.client.${this.connext.publicIdentifier}.uninstall.${appInstance.appInstanceId}`,
+          stringify(appInstance),
         );
       },
     );
-<<<<<<< HEAD
-
-    this.channelProvider.on(MethodNames.chan_uninstall, (data: any): any => {
-      const result = data.result.result;
-      this.log.debug(`Emitting MethodNames.chan_uninstall event`);
-      this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-        stringify(result),
-      );
-    });
-=======
->>>>>>> 845-store-refactor
   };
 
   private emitAndLog = (event: EventNames, data: any): void => {
@@ -304,7 +274,7 @@ export class ConnextListener extends ConnextEventEmitter {
       commonAppProposalValidation(
         params,
         // types weirdness
-        { ...registryAppInfo, name: registryAppInfo.name as SupportedApplication },
+        { ...registryAppInfo, name: registryAppInfo.name as SupportedApplications },
         this.connext.config.supportedTokenAddresses,
       );
       switch (registryAppInfo.name) {
@@ -322,15 +292,15 @@ export class ConnextListener extends ConnextEventEmitter {
           validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
-        case WithdrawApp: {
+        case WithdrawAppName: {
           validateWithdrawApp(params, from, this.connext.publicIdentifier);
           break;
         }
-        case FastSignedTransferApp: {
+        case FastSignedTransferAppName: {
           validateFastSignedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
-        case HashLockTransferApp: {
+        case HashLockTransferAppName: {
           validateHashLockTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
@@ -348,8 +318,7 @@ export class ConnextListener extends ConnextEventEmitter {
         stringify(appInstance),
       );
     } catch (e) {
-      console.log('e: ', e);
-      this.log.error(`Caught error: ${e.toString()}`);
+      this.log.error(`Caught error: ${e.message}`);
       await this.connext.rejectInstallApp(appInstanceId);
     }
   };
@@ -359,7 +328,7 @@ export class ConnextListener extends ConnextEventEmitter {
     registryAppInfo: DefaultApp,
   ): Promise<void> => {
     switch (registryAppInfo.name) {
-      case WithdrawApp: {
+      case WithdrawAppName: {
         const appInstance = (await this.connext.getAppInstanceDetails(appInstanceId)).appInstance;
         this.connext.respondToNodeWithdraw(appInstance);
         break;

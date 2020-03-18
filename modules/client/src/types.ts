@@ -76,10 +76,6 @@ export {
   RebalanceProfile,
   PendingAsyncTransfer,
   ProposeMessage,
-<<<<<<< HEAD
-=======
-  ProtocolTypes,
->>>>>>> 845-store-refactor
   RejectProposalMessage,
   RequestCollateralResponse,
   RequestDepositRightsParameters,

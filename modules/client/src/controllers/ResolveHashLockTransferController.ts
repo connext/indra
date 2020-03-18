@@ -1,12 +1,11 @@
 import {
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
+  EventNames,
   ReceiveTransferFinishedEventData,
   ResolveHashLockTransferParameters,
   ResolveHashLockTransferResponse,
-  HASHLOCK_TRANSFER,
+  ConditionalTransferTypes,
 } from "@connext/types";
+import { HashZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
@@ -20,7 +19,7 @@ export class ResolveHashLockTransferController extends AbstractController {
     this.log.info(`Resolving hash lock transfer with preImage ${preImage}`);
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
-    this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, {
       lockHash,
       publicIdentifier: this.connext.publicIdentifier,
     });
@@ -32,22 +31,22 @@ export class ResolveHashLockTransferController extends AbstractController {
       await this.connext.takeAction(resolveRes.appId, { preImage });
       await this.connext.uninstallApp(resolveRes.appId);
     } catch (e) {
-      this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
+      this.connext.emit(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,
         lockHash,
       });
       throw e;
     }
 
-    this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
-      type: HASHLOCK_TRANSFER,
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
+      type: ConditionalTransferTypes.HashLockTransfer,
       amount: resolveRes.amount,
       assetId: resolveRes.assetId,
-      paymentId: "",
+      paymentId: HashZero,
       sender: resolveRes.sender,
       recipient: this.connext.publicIdentifier,
       meta: resolveRes.meta,
-    } as ReceiveTransferFinishedEventData<typeof HASHLOCK_TRANSFER>);
+    } as ReceiveTransferFinishedEventData<typeof ConditionalTransferTypes.HashLockTransfer>);
 
     return resolveRes;
   };

@@ -11,7 +11,6 @@ import {
 
 import { validate, invalid32ByteHexString, invalidEthSignature } from "../validation";
 import { AbstractController } from "./AbstractController";
-import { bigNumberify } from "ethers/utils";
 import { Zero, AddressZero } from "ethers/constants";
 
 export class ResolveFastSignedTransferController extends AbstractController {
@@ -42,16 +41,10 @@ export class ResolveFastSignedTransferController extends AbstractController {
         data,
         signature,
         paymentId,
-        // other params are not even necessary
         amount: Zero,
-        signer: AddressZero,
         recipientXpub: this.connext.publicIdentifier,
-<<<<<<< HEAD
-        signer: resolveRes.signer,
+        signer: resolveRes.signer || AddressZero,
       } as FastSignedTransferAppAction;
-=======
-      } as FastSignedTransferAppActionBigNumber;
->>>>>>> 845-store-refactor
 
       const takeActionRes = await this.connext.takeAction(resolveRes.appId, action);
       const newState = takeActionRes.newState as FastSignedTransferAppState;

@@ -63,7 +63,7 @@ export const objMapPromise = async <T, F extends keyof T, R>(
 
 export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   const adjusted = {} as any;
-  keys.concat(Object.keys(obj)).map((k: any): any => {
+  keys.concat(Object.keys(obj)).forEach((k: any): any => {
     // check by index and undefined
     adjusted[k] = isNullOrUndefined(obj[k])
       ? val // not supplied set as default val

@@ -1,18 +1,11 @@
-import { SupportedApplication } from "@connext/apps";
+import { SupportedApplications } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
 import {
-<<<<<<< HEAD
   ChannelMethods,
   ILoggerService,
-  MinimalTransaction,
-  ResolveFastSignedTransferResponse,
-=======
-  ILoggerService,
-  ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
->>>>>>> 845-store-refactor
+  ResolveFastSignedTransferResponse,
 } from "@connext/types";
-import { TransactionResponse } from "ethers/providers";
 import { getAddress, Transaction } from "ethers/utils";
 import uuid from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
@@ -110,7 +103,7 @@ export class NodeApiClient implements INodeApiClient {
   public async appRegistry(
     appDetails?:
       | {
-          name: SupportedApplication;
+          name: SupportedApplications;
           chainId: number;
         }
       | { appDefinitionAddress: string },
@@ -160,15 +153,6 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-<<<<<<< HEAD
-  public async withdraw(tx: MinimalTransaction): Promise<TransactionResponse> {
-    return await this.send(`channel.withdraw.${this.userPublicIdentifier}`, {
-      tx,
-    });
-  }
-
-=======
->>>>>>> 845-store-refactor
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
     return await this.send(`transfer.fetch-linked.${this.userPublicIdentifier}`, {
       paymentId,

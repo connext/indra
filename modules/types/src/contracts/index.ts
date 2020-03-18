@@ -8,6 +8,7 @@ import {
   SimpleLinkedTransferAppState,
   SimpleSwapAppState,
   WithdrawAppState,
+  WithdrawAppAction,
 } from "./apps";
 
 export * from "./adjudicator";
@@ -18,7 +19,8 @@ export * from "./misc";
 export type AppAction =
   | FastSignedTransferAppAction
   | HashLockTransferAppAction
-  | SimpleLinkedTransferAppAction;
+  | SimpleLinkedTransferAppAction
+  | WithdrawAppAction;
 
 export type AppState = 
   | CoinBalanceRefundAppState

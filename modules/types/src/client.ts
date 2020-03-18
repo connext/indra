@@ -73,6 +73,7 @@ export type RescindDepositRightsResponse = MethodResults.Deposit;
 export type TransferParameters = DepositParameters & {
   recipient: Address;
   meta?: object;
+  paymentId?: string;
 };
 
 export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };

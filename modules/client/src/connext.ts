@@ -1,26 +1,20 @@
-import { SupportedApplication } from "@connext/apps";
+import { SupportedApplications } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
 import {
   Address,
   AppAction,
   AppInstanceProposal,
-<<<<<<< HEAD
   AppState,
   ChannelMethods,
-=======
-  chan_getUserWithdrawal,
-  chan_restoreState,
-  chan_setStateChannel,
-  chan_setUserWithdrawal,
->>>>>>> 845-store-refactor
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConditionalTransferTypes,
   EventNames,
   FastSignedTransferParameters,
-<<<<<<< HEAD
+  IChannelProvider,
   IClientStore,
   ILoggerService,
+  LinkedTransferToRecipientResponse,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -28,23 +22,13 @@ import {
   RequestDepositRightsParameters,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
-  toBN,
-  WithdrawParameters,
-=======
-  HASHLOCK_TRANSFER,
-  IChannelProvider,
-  IClientStore,
-  ILoggerService,
-  LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
-  LinkedTransferToRecipientResponse,
   ResolveFastSignedTransferParameters,
   ResolveHashLockTransferParameters,
   ResolveLinkedTransferParameters,
+  toBN,
   TransactionResponse,
   WithdrawParameters,
   WithdrawResponse,
->>>>>>> 845-store-refactor
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -75,16 +59,10 @@ import {
   DepositParameters,
   GetChannelResponse,
   GetConfigResponse,
-  IChannelProvider,
   IConnextClient,
   INodeApiClient,
   InternalClientOptions,
   KeyGen,
-<<<<<<< HEAD
-  LinkedTransferToRecipientResponse,
-=======
-  makeChecksum,
->>>>>>> 845-store-refactor
   RebalanceProfile,
   RequestCollateralResponse,
   ResolveConditionParameters,
@@ -93,10 +71,6 @@ import {
   SwapParameters,
   TransferInfo,
   TransferParameters,
-<<<<<<< HEAD
-  WithdrawalResponse,
-=======
->>>>>>> 845-store-refactor
 } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
@@ -304,7 +278,7 @@ export class ConnextClient implements IConnextClient {
   public getAppRegistry = async (
     appDetails?:
       | {
-          name: SupportedApplication;
+          name: SupportedApplications;
           chainId: number;
         }
       | { appDefinitionAddress: string },
@@ -419,7 +393,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   public saveWithdrawCommitmentToStore = async (
-    params: WithdrawParameters<BigNumber>,
+    params: WithdrawParameters,
     signatures: string[],
   ): Promise<void> => {
     return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
@@ -429,36 +403,21 @@ export class ConnextClient implements IConnextClient {
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
     switch (params.conditionType) {
-<<<<<<< HEAD
       case ConditionalTransferTypes.LinkedTransferToRecipient:
       case ConditionalTransferTypes.LinkedTransfer: {
-        return this.resolveLinkedTransferController.resolveLinkedTransfer({
-          ...params,
-          conditionType: ConditionalTransferTypes.LinkedTransfer,
-        });
-      }
-      case ConditionalTransferTypes.FastSignedTransfer: {
-        return this.resolveFastSignedTransferController.resolveFastSignedTransfer({
-          ...params,
-          conditionType: ConditionalTransferTypes.FastSignedTransfer,
-        });
-=======
-      case LINKED_TRANSFER_TO_RECIPIENT:
-      case LINKED_TRANSFER: {
         return this.resolveLinkedTransferController.resolveLinkedTransfer(
           params as ResolveLinkedTransferParameters,
         );
       }
-      case FAST_SIGNED_TRANSFER: {
+      case ConditionalTransferTypes.FastSignedTransfer: {
         return this.resolveFastSignedTransferController.resolveFastSignedTransfer(
           params as ResolveFastSignedTransferParameters,
         );
       }
-      case HASHLOCK_TRANSFER: {
+      case ConditionalTransferTypes.HashLockTransfer: {
         return this.resolveHashLockTransferController.resolveHashLockTransfer(
           params as ResolveHashLockTransferParameters,
         );
->>>>>>> 845-store-refactor
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
@@ -480,7 +439,7 @@ export class ConnextClient implements IConnextClient {
           params as FastSignedTransferParameters,
         );
       }
-      case HASHLOCK_TRANSFER: {
+      case ConditionalTransferTypes.HashLockTransfer: {
         return this.hashlockTransferController.hashLockTransfer(params);
       }
       default:
@@ -488,13 +447,8 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
-<<<<<<< HEAD
-  public getLatestNodeSubmittedWithdrawal = async (): Promise<
-    { retry: number; tx: MinimalTransaction } | undefined
-=======
   public getLatestWithdrawal = async (): Promise<
-    { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
->>>>>>> 845-store-refactor
+    { retry: number; tx: MinimalTransaction } | undefined
   > => {
     const value = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
@@ -526,15 +480,9 @@ export class ConnextClient implements IConnextClient {
         this.ethProvider.on(
           "block",
           async (blockNumber: number): Promise<void> => {
-<<<<<<< HEAD
-            const found = await this.checkForUserWithdrawal(blockNumber);
-            if (found) {
-              await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-=======
             const transaction = await this.checkForUserWithdrawal(blockNumber);
             if (transaction) {
-              await this.channelProvider.send(chan_setUserWithdrawal, {
->>>>>>> 845-store-refactor
+              await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
                 withdrawalObject: undefined,
               });
               this.ethProvider.removeAllListeners("block");
@@ -781,11 +729,7 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-<<<<<<< HEAD
   public installApp = async (appInstanceId: string): Promise<MethodResults.Install> => {
-=======
-  public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
->>>>>>> 845-store-refactor
     // check the app isnt actually installed
     const alreadyInstalled = await this.appInstalled(appInstanceId);
     if (alreadyInstalled) {
@@ -796,7 +740,6 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.Install);
   };
 
-<<<<<<< HEAD
   public uninstallApp = async (appInstanceId: string): Promise<MethodResults.Uninstall> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
@@ -811,66 +754,10 @@ export class ConnextClient implements IConnextClient {
 
   public rejectInstallApp = async (appInstanceId: string): Promise<MethodResults.Uninstall> => {
     return await this.channelProvider.send(MethodNames.chan_rejectInstall, {
-=======
-  public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this.channelProvider.send(ProtocolTypes.chan_rejectInstall, {
->>>>>>> 845-store-refactor
       appInstanceId,
     });
   };
 
-<<<<<<< HEAD
-  public providerWithdraw = async (
-    assetId: string,
-    amount: BigNumber,
-    recipient?: string,
-  ): Promise<MethodResults.Withdraw> => {
-    const freeBalance = await this.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
-    const err = [
-      notLessThanOrEqualTo(amount, preWithdrawalBal),
-      assetId ? invalidAddress(assetId) : null,
-      recipient ? invalidAddress(recipient) : null,
-    ].filter(falsy)[0];
-    if (err) {
-      this.log.error(err);
-      throw new Error(err);
-    }
-
-    return await this.channelProvider.send(MethodNames.chan_withdraw, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      recipient,
-      tokenAddress: getAddress(assetId),
-    } as MethodParams.Withdraw);
-  };
-
-  public withdrawCommitment = async (
-    amount: BigNumber,
-    assetId?: string,
-    recipient?: string,
-  ): Promise<MethodResults.WithdrawCommitment> => {
-    const freeBalance = await this.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
-    const err = [
-      notLessThanOrEqualTo(amount, preWithdrawalBal),
-      assetId ? invalidAddress(assetId) : null,
-      recipient ? invalidAddress(recipient) : null,
-    ].filter(falsy)[0];
-    if (err) {
-      this.log.error(err);
-      throw new Error(err);
-    }
-    return await this.channelProvider.send(MethodNames.chan_withdrawCommitment, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      recipient,
-      tokenAddress: getAddress(assetId),
-    } as MethodParams.WithdrawCommitment);
-  };
-
-=======
->>>>>>> 845-store-refactor
   ///////////////////////////////////
   // NODE METHODS
 
@@ -927,7 +814,7 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
-  public getRegisteredAppDetails = (appName: SupportedApplication): DefaultApp => {
+  public getRegisteredAppDetails = (appName: SupportedApplications): DefaultApp => {
     const appInfo = this.appRegistry.filter((app: DefaultApp): boolean => {
       return app.name === appName && app.chainId === this.network.chainId;
     });
@@ -1097,71 +984,6 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
-<<<<<<< HEAD
-  public resubmitActiveWithdrawal = async (): Promise<void> => {
-    const withdrawal = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
-
-    if (!withdrawal || withdrawal === "undefined") {
-      // No active withdrawal, nothing to do
-      return;
-    }
-
-    if (withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
-      // throw an error here, node has failed to submit withdrawal.
-      // this indicates the node is compromised or acting maliciously.
-      // no further actions should be taken by the client. (since this fn is
-      // called on `connext.connect`, throwing an error will prevent client
-      // starting properly)
-      const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
-      this.log.error(msg);
-      throw new Error(msg);
-    }
-
-    // get latest submitted withdrawal from hub and check to see if the
-    // data matches what we expect from our store
-    const tx = await this.node.getLatestWithdrawal();
-    if (this.matchTx(tx, withdrawal.tx)) {
-      // the withdrawal in our store matches latest submitted tx,
-      // clear value in store and return
-      await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-        withdrawalObject: undefined,
-      });
-      return;
-    }
-
-    // otherwise, there are retries remaining, and you should resubmit
-    this.log.debug(
-      `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
-    );
-    await this.retryNodeSubmittedWithdrawal();
-  };
-
-  public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
-    const val = await this.getLatestNodeSubmittedWithdrawal();
-    if (!val) {
-      this.log.error("No transaction found to retry");
-      return;
-    }
-    let { retry } = val;
-    const { tx } = val;
-    retry += 1;
-    await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-      withdrawalObject: { retry, tx },
-    });
-    if (retry >= MAX_WITHDRAWAL_RETRIES) {
-      const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
-      this.log.error(msg);
-      // TODO: make this submit from wallet :)
-      // but this is weird, could take a while and may have gas issues.
-      // may not be the best way to do this
-      throw new Error(msg);
-    }
-    await this.node.withdraw(tx);
-    await this.watchForUserWithdrawal();
-  };
-
-=======
->>>>>>> 845-store-refactor
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);

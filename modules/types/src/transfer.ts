@@ -16,9 +16,7 @@ export type CreatedFastSignedTransferMeta = {
   signer: string;
 };
 
-export type ReceiveTransferFinishedEventData<
-  T extends ConditionalTransferTypes | undefined = undefined
-> = {
+export type ReceiveTransferFinishedEventData<T extends ConditionalTransferTypes> = {
   amount: BigNumber;
   assetId: string;
   paymentId: string;
@@ -28,7 +26,7 @@ export type ReceiveTransferFinishedEventData<
   type: T;
 };
 
-export type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = undefined> = {
+export type CreateTransferEventData<T extends ConditionalTransferTypes> = {
   amount: BigNumber;
   assetId: string;
   paymentId: string;

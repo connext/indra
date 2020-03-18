@@ -1,18 +1,18 @@
-import { convertHashLockTransferParameters } from "@connext/apps";
 import {
+  ConditionalTransferTypes,
   CreateTransferEventData,
-  CREATE_TRANSFER,
+  EventNames,
+  HashLockTransferAppName,
+  HashLockTransferAppState,
   HashLockTransferParameters,
   HashLockTransferResponse,
-  HashLockTransferAppStateBigNumber,
-  HashLockTransferApp,
-  HASHLOCK_TRANSFER,
+  MethodParams,
+  toBN,
 } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
 
 import { xpubToAddress } from "../lib";
-import { CFCoreTypes } from "../types";
 
 import { AbstractController } from "./AbstractController";
 
@@ -21,16 +21,14 @@ export class HashLockTransferController extends AbstractController {
     params: HashLockTransferParameters,
   ): Promise<HashLockTransferResponse> => {
     // convert params + validate
-    const { amount, assetId, preImage, meta } = convertHashLockTransferParameters(
-      `bignumber`,
-      params,
-    );
+    const amount = toBN(params.amount);
+    const { assetId, preImage, meta } = params;
 
     // install the transfer application
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     console.log("lockHash: ", lockHash);
 
-    const initialState: HashLockTransferAppStateBigNumber = {
+    const initialState: HashLockTransferAppState = {
       coinTransfers: [
         {
           amount,
@@ -52,8 +50,8 @@ export class HashLockTransferController extends AbstractController {
       stateEncoding,
       appDefinitionAddress: appDefinition,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(HashLockTransferApp);
-    const proposeInstallParams: CFCoreTypes.ProposeInstallParams = {
+    } = this.connext.getRegisteredAppDetails(HashLockTransferAppName);
+    const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -76,16 +74,17 @@ export class HashLockTransferController extends AbstractController {
     }
 
     const eventData = {
-      type: HASHLOCK_TRANSFER,
-      amount: amount.toString(),
+      type: ConditionalTransferTypes.HashLockTransfer,
+      amount,
       assetId,
       sender: this.connext.publicIdentifier,
       meta,
+      paymentId: HashZero,
       transferMeta: {
         lockHash,
       },
-    } as CreateTransferEventData<typeof HASHLOCK_TRANSFER>;
-    this.connext.emit(CREATE_TRANSFER, eventData);
+    } as CreateTransferEventData<typeof ConditionalTransferTypes.HashLockTransfer>;
+    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     return {
       appId,

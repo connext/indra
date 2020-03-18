@@ -1,16 +1,7 @@
 import {
-<<<<<<< HEAD
   ChannelMethods,
   ConnextEventEmitter,
   EventNames,
-=======
-  chan_nodeAuth,
-  chan_getUserWithdrawal,
-  chan_setUserWithdrawal,
-  chan_signWithdrawCommitment,
-  chan_setStateChannel,
-  chan_restoreState,
->>>>>>> 845-store-refactor
   IChannelProvider,
   IClientStore,
   MethodName,
@@ -90,14 +81,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-<<<<<<< HEAD
-      case ChannelMethods.chan_nodeAuth:
-=======
-      case chan_signWithdrawCommitment:
+      case ChannelMethods.chan_signWithdrawCommitment:
         result = await this.signWithdrawCommitment(params.message);
         break;
-      case chan_nodeAuth:
->>>>>>> 845-store-refactor
+      case ChannelMethods.chan_nodeAuth:
         result = await this.walletSign(params.message);
         break;
       case ChannelMethods.chan_restoreState:
