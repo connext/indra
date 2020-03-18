@@ -42,14 +42,20 @@ import {
   INodeApiClient,
 } from "./types";
 
+const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") =>
+  protocol + delimiter + url.split(delimiter).pop();
+
+const replaceUrlPort = (url: string, port: number, delimiter: string = ":") =>
+  url.split(delimiter).shift() + delimiter + port;
+
 const formatMessagingUrl = (nodeUrl: string) => {
-  const protocol = isNode() ? "nats" : "wss";
-  return `${protocol}://${nodeUrl
-    .replace("/messaging", "")
-    .split("//")
-    .pop()
-    .split(":")
-    .shift()}:4222`;
+  // for backwards-compatiblity
+  let url = nodeUrl.replace("/messaging", "");
+  // replace url protocol
+  url = replaceUrlProtocol(url, isNode() ? "nats" : "wss");
+  // replace url port
+  url = replaceUrlPort(url, 4222);
+  return url;
 };
 
 const createMessagingService = async (
