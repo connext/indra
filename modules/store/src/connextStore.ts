@@ -136,13 +136,13 @@ export class ConnextStore implements IClientStore {
 
   getSetupCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     return this.internalStore.getSetupCommitment(multisigAddress);
   }
 
   saveSetupCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     return this.internalStore.saveSetupCommitment(multisigAddress, commitment);
   }

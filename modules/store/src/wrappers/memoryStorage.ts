@@ -24,7 +24,7 @@ export class MemoryStorage implements IClientStore {
   private appInstances: Map<string, AppInstanceJson> = new Map();
   private userWithdrawals: WithdrawalMonitorObject | undefined = undefined;
   private freeBalances: Map<string, AppInstanceJson> = new Map();
-  private setupCommitments: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
+  private setupCommitments: Map<string, MinimalTransaction> = new Map();
 
   constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
 
@@ -103,13 +103,13 @@ export class MemoryStorage implements IClientStore {
 
   async getSetupCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     return this.setupCommitments.get(multisigAddress);
   }
 
   async saveSetupCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     this.setupCommitments.set(multisigAddress, commitment);
     return;
