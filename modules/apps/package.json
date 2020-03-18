@@ -19,8 +19,8 @@
     "@connext/contracts": "1.0.5",
     "@connext/types": "5.2.1",
     "@rollup/plugin-json": "4.0.2",
-    "ethers": "4.0.45",
-    "rollup": "2.0.6",
+    "ethers": "4.0.46",
+    "rollup": "2.1.0",
     "rollup-plugin-typescript2": "0.26.0",
     "typescript": "3.8.3"
   }

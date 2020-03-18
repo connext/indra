@@ -13,11 +13,11 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "ethers": "4.0.45",
+    "ethers": "4.0.46",
     "eventemitter3": "4.0.0"
   },
   "devDependencies": {
-    "rollup": "2.0.6",
+    "rollup": "2.1.0",
     "rollup-plugin-typescript2": "0.26.0",
     "typescript": "3.8.3"
   }
