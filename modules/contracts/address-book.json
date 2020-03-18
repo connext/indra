@@ -333,17 +333,10 @@
       "txHash": "0xce08542a21ee9ddafd0254b96180f84ba2ab592ef466577179d9fc0ea3c29569"
     },
     "TwoPartyFixedOutcomeInterpreter": {
-<<<<<<< HEAD
       "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1",
       "creationCodeHash": "0xc6df75aaf6a672ffcccb0d0ac7f122212bcd9573001453752506212e05b66ba2",
       "runtimeCodeHash": "0xd0e87a9d06bb8a3ac9d7c66622206da16437c04851040308461111637364d761",
       "txHash": "0xfda78cf72a9a6448f28a3794cd3f2ee05c467c74a2234643351794dd57c0099c"
-=======
-      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",
-      "creationCodeHash": "0xc6df75aaf6a672ffcccb0d0ac7f122212bcd9573001453752506212e05b66ba2",
-      "runtimeCodeHash": "0xd0e87a9d06bb8a3ac9d7c66622206da16437c04851040308461111637364d761",
-      "txHash": "0x265eecc1d57f2916dc8649aab638a906b13a1503fd079f8cdd13a78dcad42d89"
->>>>>>> 845-store-refactor
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0xeec918d74c746167564401103096D45BbD494B74",
@@ -370,17 +363,10 @@
       "txHash": "0xa400d7d6dc666a45b94df1d3bc86cf556ebe10001448430ceffbc584a8f31f32"
     },
     "Token": {
-<<<<<<< HEAD
       "address": "0xeec918d74c746167564401103096D45BbD494B74",
       "creationCodeHash": "0x15a50be77512dde6420d6d79ac5a273236c93850c92a2564596570aa33961e61",
       "runtimeCodeHash": "0x94ee377930298d1af932c16a0da2468327125f76c93d99ed3b650bb3cc9433ec",
       "txHash": "0x308e3a097f3fb27d46fddfde3c12f983fa1abb7f5b5f50de8d261330b7fbe465"
-=======
-      "address": "0x38cF23C52Bb4B13F051Aec09580a2dE845a7FA35",
-      "creationCodeHash": "0x15a50be77512dde6420d6d79ac5a273236c93850c92a2564596570aa33961e61",
-      "runtimeCodeHash": "0x94ee377930298d1af932c16a0da2468327125f76c93d99ed3b650bb3cc9433ec",
-      "txHash": "0x5462fb980269717735d71a53b643df002b4c94ec82ec72b44bced40f71e22298"
->>>>>>> 845-store-refactor
     },
     "FastSignedTransferApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
