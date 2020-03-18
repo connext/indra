@@ -21,9 +21,10 @@ import TwoPartyFixedOutcomeFromVirtualAppInterpreter from "@connext/contracts/bu
 import TwoPartyFixedOutcomeInterpreter from "@connext/contracts/build/TwoPartyFixedOutcomeInterpreter.json";
 import { NetworkContext } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 
 export type NetworkContextForTestSuite = NetworkContext & {
+  provider: JsonRpcProvider;
   TicTacToeApp: string;
   DolphinCoin: string;
   UnidirectionalTransferApp: string;
@@ -129,7 +130,7 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
   ).deploy();
 
   return {
-    provider: wallet.provider as BaseProvider,
+    provider: wallet.provider as JsonRpcProvider,
     ChallengeRegistry: challengeRegistry.address,
     CoinBalanceRefundApp: coinBalanceRefundContract.address,
     ConditionalTransactionDelegateTarget: conditionalTransactionDelegateTarget.address,

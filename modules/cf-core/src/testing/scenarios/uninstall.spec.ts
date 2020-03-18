@@ -23,7 +23,7 @@ import {
 
 expect.extend({ toBeEq });
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 function assertUninstallMessage(senderId: string, appInstanceId: string, msg: UninstallMessage) {
   assertNodeMessage(msg, {

@@ -17,7 +17,7 @@ describe("Node method follows spec - deploy state deposit holder", () => {
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global, true, true);
-    provider = new JsonRpcProvider(global["ganacheURL"]);
+    provider = global["wallet"].provider;
     nodeA = context["A"].node;
     nodeB = context["B"].node;
 

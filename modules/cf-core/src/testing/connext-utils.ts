@@ -33,9 +33,7 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-const { UnidirectionalLinkedTransferApp } = global[
-  "networkContext"
-] as NetworkContextForTestSuite;
+const { UnidirectionalLinkedTransferApp } = global["network"] as NetworkContextForTestSuite;
 
 export async function installLink(
   funder: Node,

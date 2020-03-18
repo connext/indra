@@ -8,7 +8,7 @@ import { constructGetStateRpc, createChannel, getState, installApp } from "../ut
 import { setup, SetupContext } from "../setup";
 import { initialEmptyTTTState } from "../tic-tac-toe";
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - getAppInstances", () => {
   let nodeA: Node;

@@ -1,5 +1,4 @@
 import { One } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
 import { Node } from "../../node";
@@ -37,7 +36,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
       `sends acks back to A, A installs it, both nodes have the same app instance`,
     () => {
       beforeEach(async () => {
-        const provider = new JsonRpcProvider(global[`ganacheURL`]);
+        const provider = global["wallet"].provider;
         const messagingService = new MemoryMessagingService();
         const nodeConfig = { STORE_KEY_PREFIX: `test` };
 
@@ -50,7 +49,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA = await Node.create(
           messagingService,
           storeServiceA,
-          global[`networkContext`],
+          global[`network`],
           nodeConfig,
           provider,
           lockService,
@@ -65,7 +64,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeB = await Node.create(
           messagingService,
           storeServiceB,
-          global[`networkContext`],
+          global[`network`],
           nodeConfig,
           provider,
           lockService,
@@ -117,7 +116,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA.rpcRouter.dispatch(
           await makeProposeCall(
             nodeB,
-            (global[`networkContext`] as NetworkContextForTestSuite).TicTacToeApp,
+            (global[`network`] as NetworkContextForTestSuite).TicTacToeApp,
             undefined,
             One,
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,

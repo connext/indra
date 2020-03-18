@@ -4,7 +4,7 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { confirmAppInstanceInstallation, createChannel, getAppInstance, installApp } from "../utils";
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - getAppInstanceDetails", () => {
   let nodeA: Node;

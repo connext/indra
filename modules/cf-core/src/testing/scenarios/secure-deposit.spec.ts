@@ -64,7 +64,7 @@ describe("Node method follows spec - deposit", () => {
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
-    provider = new JsonRpcProvider(global["ganacheURL"]);
+    provider = global["wallet"].provider;
 
     multisigAddress = await createChannel(nodeA, nodeB);
     expect(multisigAddress).toBeDefined();
@@ -73,7 +73,7 @@ describe("Node method follows spec - deposit", () => {
   });
 
   it("has the right balance before an ERC20 deposit has been made", async () => {
-    const erc20ContractAddress = (global["networkContext"] as NetworkContextForTestSuite)
+    const erc20ContractAddress = (global["network"] as NetworkContextForTestSuite)
       .DolphinCoin;
 
     const freeBalanceState = await getFreeBalanceState(
@@ -99,13 +99,13 @@ describe("Node method follows spec - deposit", () => {
   });
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {
-    const erc20ContractAddress = (global["networkContext"] as NetworkContextForTestSuite)
+    const erc20ContractAddress = (global["network"] as NetworkContextForTestSuite)
       .DolphinCoin;
 
     const erc20Contract = new Contract(
       erc20ContractAddress,
       DolphinCoin.abi,
-      new JsonRpcProvider(global["ganacheURL"]),
+      global["wallet"].provider,
     );
 
     await transferERC20Tokens(await nodeA.signerAddress());

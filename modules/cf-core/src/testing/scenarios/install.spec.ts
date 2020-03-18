@@ -28,7 +28,7 @@ import {
 
 expect.extend({ toBeLt });
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - install", () => {
   let multisigAddress: string;
@@ -129,7 +129,7 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeA.signerAddress());
         await transferERC20Tokens(await nodeB.signerAddress());
 
-        const erc20TokenAddress = (global["networkContext"] as NetworkContextForTestSuite)
+        const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite)
           .DolphinCoin;
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, erc20TokenAddress);

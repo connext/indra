@@ -9,7 +9,6 @@ import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
 import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
-import { connectToGanache } from "../connect-ganache";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "../random-signing-keys";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
@@ -23,10 +22,8 @@ let appRegistry: Contract;
 expect.extend({ toBeEq });
 
 beforeAll(async () => {
-  [{}, wallet, {}] = await connectToGanache();
-
-  network = global["networkContext"];
-
+  wallet = global["wallet"];
+  network = global["network"];
   appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
 });
 

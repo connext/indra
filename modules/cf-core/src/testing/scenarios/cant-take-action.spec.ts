@@ -5,7 +5,7 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { constructTakeActionRpc, createChannel, installApp } from "../utils";
 import { setup, SetupContext } from "../setup";
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - fails with improper action taken", () => {
   let nodeA: Node;

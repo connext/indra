@@ -6,7 +6,6 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { xkeyKthAddress } from "../../xkeys";
 
 import { toBeEq } from "../bignumber-jest-matcher";
-import { connectToGanache } from "../connect-ganache";
 import { AppWithAction } from "../contracts";
 import { TestRunner } from "../test-runner";
 
@@ -21,7 +20,7 @@ enum ActionType {
 }
 
 beforeAll(async () => {
-  [{}, wallet, {}] = await connectToGanache();
+  wallet = global["wallet"];
 
   appWithAction = await new ContractFactory(
     AppWithAction.abi,

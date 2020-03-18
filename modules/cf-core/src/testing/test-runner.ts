@@ -12,7 +12,6 @@ import { sortAddresses, xkeyKthAddress } from "../xkeys";
 
 import { IdentityApp } from "./contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
-import { connectToGanache } from "./connect-ganache";
 import { MessageRouter } from "./message-router";
 import { MiniNode } from "./mininode";
 
@@ -38,9 +37,10 @@ export class TestRunner {
   private mr!: MessageRouter;
 
   async connectToGanache(): Promise<void> {
-    const [provider, wallet] = await connectToGanache();
+    const wallet = global["wallet"];
+    const network = global["network"];
+    const provider = network.provider;
     this.provider = provider;
-    const network = global["networkContext"];
 
     this.identityApp = await new ContractFactory(
       IdentityApp.abi,

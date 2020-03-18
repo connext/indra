@@ -17,7 +17,7 @@ import {
   makeAndSendProposeCall,
 } from "../utils";
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - rejectInstall", () => {
   let nodeA: Node;

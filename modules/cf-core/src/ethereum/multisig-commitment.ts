@@ -27,17 +27,21 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     this.participantSignatures = sigs;
   }
 
-  public getSignedTransaction(sigs?: Signature[] | string[]): MinimalTransaction {
+  public getSignedTransaction(inputSigs?: Signature[] | string[]): MinimalTransaction {
     this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
     let signaturesList: string[];
+    const sigs = inputSigs || this.participantSignatures;
 
     if (sigs && typeof sigs[0] == "string") {
-      //@ts-ignore
-      signaturesList = sortStringSignaturesBySignerAddress(this.hashToSign(), sigs);
+      signaturesList = sortStringSignaturesBySignerAddress(this.hashToSign(), sigs as string[]);
+    } else if (sigs && typeof sigs[0] == "object") {
+      signaturesList = sortSignaturesBySignerAddress(
+        this.hashToSign(),
+        sigs as Signature[],
+      ).map(joinSignature);
     } else {
-      //@ts-ignore
-      signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(joinSignature);
+      throw new Error(`Missing signatures`);
     }
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([

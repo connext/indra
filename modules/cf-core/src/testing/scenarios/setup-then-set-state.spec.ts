@@ -1,11 +1,9 @@
-import { NetworkContext } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { Interface, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
-import { ChallengeRegistry, MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { SetStateCommitment, getSetupCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
@@ -13,7 +11,12 @@ import { getCreate2MultisigAddress } from "../../utils";
 import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
 import { toBeEq } from "../bignumber-jest-matcher";
-import { connectToGanache } from "../connect-ganache";
+import {
+  ChallengeRegistry,
+  MinimumViableMultisig,
+  NetworkContextForTestSuite,
+  ProxyFactory,
+} from "../contracts";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "../random-signing-keys";
 
 expect.extend({ toBeEq });
@@ -37,13 +40,14 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
   let context: Context;
   let provider: JsonRpcProvider;
   let wallet: Wallet;
-  let network: NetworkContext;
+  let network: NetworkContextForTestSuite;
   let appRegistry: Contract;
 
   beforeAll(async () => {
-    [provider, wallet, {}] = await connectToGanache();
-    network = global["networkContext"];
-    context = { network } as Context;
+    wallet = global["wallet"];
+    network = global["network"];
+    provider = network.provider;
+    context = { network: global["network"] } as Context;
     appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 

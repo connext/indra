@@ -1,6 +1,5 @@
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
-  NetworkContext,
   OutcomeType,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
@@ -28,7 +27,6 @@ import {
 import { transferERC20Tokens } from "../utils";
 
 import { toBeEq } from "../bignumber-jest-matcher";
-import { connectToGanache } from "../connect-ganache";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "../random-signing-keys";
 
 expect.extend({ toBeEq });
@@ -57,26 +55,23 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
   let context: Context;
   let provider: JsonRpcProvider;
   let wallet: Wallet;
-  let network: NetworkContext;
+  let network: NetworkContextForTestSuite;
   let appRegistry: Contract;
 
   beforeAll(async () => {
     jest.setTimeout(10000);
-    [provider, wallet, {}] = await connectToGanache();
-    network = global["networkContext"];
-    context = { network } as Context;
+    network = global["network"];
+    wallet = global["wallet"];
+    provider = network.provider;
+    context = { network: global["network"] } as Context;
     appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
 
   it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
     const xprvs = getRandomExtendedPrvKeys(2);
-
     const multisigOwnerKeys = xkeysToSortedKthSigningKeys(xprvs, 0);
-
     const xpubs = xprvs.map(extendedPrvKeyToExtendedPubKey);
-
-    const erc20TokenAddress = (global["networkContext"] as NetworkContextForTestSuite).DolphinCoin;
-
+    const erc20TokenAddress = network.DolphinCoin;
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 
     proxyFactory.once("ProxyCreation", async (proxyAddress: string) => {
@@ -218,7 +213,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       const erc20Contract = new Contract(
         erc20TokenAddress,
         DolphinCoin.abi,
-        new JsonRpcProvider(global["ganacheURL"]),
+        provider,
       );
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(WeiPerEther);

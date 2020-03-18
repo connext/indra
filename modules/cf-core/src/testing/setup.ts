@@ -52,14 +52,14 @@ export async function setup(
   const setupContext: SetupContext = {};
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
-  const provider = global["networkContext"].provider;
+  const provider = global["network"].provider;
 
   const extendedPrvKeyA = A_EXTENDED_PRIVATE_KEY;
   let extendedPrvKeyB = B_EXTENDED_PRIVATE_KEY;
 
   if (newExtendedPrvKey) {
     const newExtendedPrvKeys = await generateNewFundedExtendedPrvKeys(
-      global["fundedPrivateKey"],
+      global["wallet"].privateKey,
       provider,
     );
     extendedPrvKeyB = newExtendedPrvKeys.B_EXTENDED_PRV_KEY;
@@ -72,7 +72,7 @@ export async function setup(
   const nodeA = await Node.create(
     messagingService,
     storeServiceA,
-    global["networkContext"],
+    global["network"],
     nodeConfig,
     provider,
     lockService,
@@ -92,7 +92,7 @@ export async function setup(
   const nodeB = await Node.create(
     messagingService,
     storeServiceB,
-    global["networkContext"],
+    global["network"],
     nodeConfig,
     provider,
     lockService,
@@ -113,7 +113,7 @@ export async function setup(
     nodeC = await Node.create(
       messagingService,
       storeServiceC,
-      global["networkContext"],
+      global["network"],
       nodeConfig,
       provider,
       lockService,

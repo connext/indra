@@ -7,9 +7,8 @@ require("dotenv-extended").load();
 class NodeEnvironment extends NodeJSEnvironment {
   async setup() {
     await super.setup();
-    this.global.fundedPrivateKey = global["fundedPrivateKey"];
-    this.global.ganacheURL = global["ganacheUrl"];
-    this.global.networkContext = global["networkContext"];
+    this.global.wallet = global["wallet"];
+    this.global.network = global["network"];
   }
 
   async teardown() {

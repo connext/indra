@@ -11,7 +11,7 @@ import {
   installApp,
 } from "../utils";
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - uninstall", () => {
   let nodeA: Node;

@@ -18,7 +18,6 @@ import {
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 import { JsonRpcResponse, Rpc } from "rpc-server";
 
@@ -52,7 +51,7 @@ const {
   SimpleTransferApp,
   UnidirectionalLinkedTransferApp,
   UnidirectionalTransferApp,
-} = global[`networkContext`] as NetworkContextForTestSuite;
+} = global[`network`] as NetworkContextForTestSuite;
 
 export function createAppInstanceProposalForTest(appInstanceId: string): AppInstanceProposal {
   return {
@@ -359,7 +358,7 @@ export async function getProposeCoinBalanceRefundAppParams(
   proposedToIdentifier: string,
   tokenAddress: string = AddressZero,
 ): Promise<MethodParams.ProposeInstall> {
-  const provider = new JsonRpcProvider(global[`ganacheURL`]);
+  const provider = global[`wallet`].provider;
   let threshold: BigNumber;
   if (tokenAddress === AddressZero) {
     threshold = await provider.getBalance(multisigAddress);
@@ -835,13 +834,13 @@ export async function makeAndSendProposeCall(
  */
 export async function transferERC20Tokens(
   toAddress: string,
-  tokenAddress: string = global[`networkContext`][`DolphinCoin`],
+  tokenAddress: string = global[`network`][`DolphinCoin`],
   contractABI: ContractABI = DolphinCoin.abi,
   amount: BigNumber = One,
 ): Promise<BigNumber> {
   const deployerAccount = new Wallet(
-    global[`fundedPrivateKey`],
-    new JsonRpcProvider(global[`ganacheURL`]),
+    global["wallet"].fundedPrivateKey,
+    global["wallet"].provider,
   );
 
   const contract = new Contract(tokenAddress, contractABI, deployerAccount);

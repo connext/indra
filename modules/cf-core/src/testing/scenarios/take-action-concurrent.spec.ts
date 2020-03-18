@@ -22,7 +22,7 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - toke action", () => {
   let multisigAddress: string;

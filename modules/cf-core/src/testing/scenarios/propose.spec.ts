@@ -17,7 +17,7 @@ import {
 
 expect.extend({ toBeLt });
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 async function assertEqualProposedApps(
   nodeA: Node,

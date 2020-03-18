@@ -29,7 +29,7 @@ describe(`Node method follows spec - install balance refund`, () => {
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global);
-    provider = new JsonRpcProvider(global[`ganacheURL`]);
+    provider = global["wallet"].provider;
     nodeA = context[`A`].node;
     nodeB = context[`B`].node;
 
@@ -85,7 +85,7 @@ describe(`Node method follows spec - install balance refund`, () => {
   });
 
   it(`install app with tokens, sending tokens should increase free balance`, async done => {
-    const erc20TokenAddress = global[`networkContext`].DolphinCoin;
+    const erc20TokenAddress = global[`network`].DolphinCoin;
 
     nodeB.on(EventNames.INSTALL_EVENT, async () => {
       const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
@@ -128,7 +128,7 @@ describe(`Node method follows spec - install balance refund`, () => {
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async done => {
-    const erc20TokenAddress = global[`networkContext`].DolphinCoin;
+    const erc20TokenAddress = global[`network`].DolphinCoin;
 
     let installedCount = 0;
     nodeB.on(EventNames.INSTALL_EVENT, async () => {

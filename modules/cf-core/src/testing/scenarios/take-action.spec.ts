@@ -15,7 +15,7 @@ import {
   assertNodeMessage,
 } from "../utils";
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 // NOTE: no initiator events
 function confirmMessages(
