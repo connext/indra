@@ -9,7 +9,6 @@ import {
   HASHLOCK_TRANSFER,
 } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
-import { soliditySha256 } from "ethers/utils";
 
 import { xpubToAddress } from "../lib";
 import { CFCoreTypes } from "../types";
@@ -21,14 +20,10 @@ export class HashLockTransferController extends AbstractController {
     params: HashLockTransferParameters,
   ): Promise<HashLockTransferResponse> => {
     // convert params + validate
-    const { amount, assetId, preImage, meta } = convertHashLockTransferParameters(
+    const { amount, assetId, lockHash, meta } = convertHashLockTransferParameters(
       `bignumber`,
       params,
     );
-
-    // install the transfer application
-    const lockHash = soliditySha256(["bytes32"], [preImage]);
-    console.log("lockHash: ", lockHash);
 
     const initialState: HashLockTransferAppStateBigNumber = {
       coinTransfers: [
@@ -89,7 +84,6 @@ export class HashLockTransferController extends AbstractController {
 
     return {
       appId,
-      preImage,
     };
   };
 }

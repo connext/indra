@@ -13,7 +13,7 @@ export const HASHLOCK_TRANSFER = "HASHLOCK_TRANSFER";
 export type HashLockTransferParameters<T = string> = {
   conditionType: typeof HASHLOCK_TRANSFER;
   amount: T;
-  preImage: string;
+  lockHash: string;
   assetId?: string;
   meta?: object;
 };
@@ -21,7 +21,6 @@ export type HashLockTransferParameters<T = string> = {
 // Client Controller Response
 export type HashLockTransferResponse = {
   appId: string;
-  preImage: string;
 };
 
 // Client Resolve Params
