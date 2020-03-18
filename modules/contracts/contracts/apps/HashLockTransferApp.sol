@@ -8,24 +8,19 @@ import "../funding/libs/LibOutcome.sol";
 
 /// @title Lightning HTLC Transfer App
 /// @notice This contract allows users to claim a payment locked in
-///         the application if they provide a preImage that corresponds
-///         to a lightning hash
+///         the application if they provide a preImage and timelock
+///         that corresponds to a lightning htlc
 contract HashLockTransferApp is CounterfactualApp {
 
-    using SafeMath for uint256;
-
     /**
-    * Assume the app is funded with the money already owed to receiver,
-    * as in the SimpleTwoPartySwapApp.
-    *
     * This app can also not be used to send _multiple_ hashlocked payments,
     * only one can be redeemed with the preImage.
-    *
     */
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
         bytes32 lockHash;
         bytes32 preImage;
+        uint256 timelock;
         uint256 turnNum; // even is receiver?
         bool finalized;
     }
@@ -39,16 +34,19 @@ contract HashLockTransferApp is CounterfactualApp {
         bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
         Action memory action = abi.decode(encodedAction, (Action));
+        bytes32 generatedHash = sha256(abi.encode(action.preImage));
 
         require(!state.finalized, "Cannot take action on finalized state");
-        // TODO feels weird that the initial state and first turn have same turnNum
-        require(state.turnNum % 2 == 0, "Payment must be unlocked by receiver");
-
+        require(state.timelock <= block.number, "Cannot take action if timelock is expired");
+        require(state.lockHash == generatedHash, "Hash generated from preimage does not match hash in state");
+        
+        state.coinTransfers[1].amount = state.coinTransfers[0].amount;
+        state.coinTransfers[0].amount = 0;
         state.preImage = action.preImage;
         state.finalized = true;
         state.turnNum += 1;
@@ -58,47 +56,17 @@ contract HashLockTransferApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
-        // TODO: whats the protection against passing a different hash?
 
-        bytes32 generatedHash = sha256(abi.encode(state.preImage));
-
-        LibOutcome.CoinTransfer[2] memory transfers;
-        if (generatedHash == state.lockHash && state.finalized) {
-            /**
-             * If the hash is correct, set outcome to provided transfers.
-             */
-            transfers = LibOutcome.CoinTransfer[2]([
-                LibOutcome.CoinTransfer(
-                    state.coinTransfers[0].to,
-                    /* should always be 0 */
-                    0
-                ),
-                LibOutcome.CoinTransfer(
-                    state.coinTransfers[1].to,
-                    /* should always be full value of transfer */
-                    state.coinTransfers[0].amount
-                )
-            ]);
-        } else {
-            /**
-             * If the hash is not correct, set outcome to reverted transfers.
-             */
-            transfers = LibOutcome.CoinTransfer[2]([
-                LibOutcome.CoinTransfer(
-                    state.coinTransfers[0].to,
-                    state.coinTransfers[0].amount
-                ),
-                LibOutcome.CoinTransfer(
-                    state.coinTransfers[1].to,
-                    0
-                )
-            ]);
+        // If payment hasn't been unlocked, require that the timelock is expired
+        if (!state.finalized) {
+            require(state.timelock > block.number, "Cannot revert payment if timelock is unexpired");
         }
-        return abi.encode(transfers);
+
+        return abi.encode(state.coinTransfers);
     }
 
     function getTurnTaker(
