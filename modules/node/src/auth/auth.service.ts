@@ -58,8 +58,8 @@ export class AuthService {
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
     const addr = verifyMessage(nonce, signedNonce);
-    console.log('nonce: ', nonce);
-    console.log('signedNonce: ', signedNonce);
+    console.log("nonce: ", nonce);
+    console.log("signedNonce: ", signedNonce);
     console.log("addr: ", addr);
     if (addr !== xpubAddress) {
       throw new Error(`verification failed`);

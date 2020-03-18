@@ -3,13 +3,26 @@ import { MessagingConfig, VerifyNonceDtoType, ILoggerService } from "@connext/ty
 import axios, { AxiosResponse } from "axios";
 import { isNode } from "./lib";
 
-export const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") =>
-  protocol + delimiter + url.split(delimiter).pop();
+const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") => {
+  let arr = url.split(delimiter);
+  if (arr.length > 1) {
+    arr.shift();
+  }
+  arr.unshift(protocol);
+  return arr.join(delimiter);
+};
 
-export const replaceUrlPort = (url: string, port: number, delimiter: string = ":") =>
-  url.split(delimiter).shift() + delimiter + port;
+const replaceUrlPort = (url: string, port: number, delimiter: string = ":") => {
+  const arr = url.split(delimiter);
+  if (arr.length > 1) {
+    arr.pop();
+  }
+  arr.push(`${port}`);
+  return arr.join(delimiter);
+};
 
 export const formatMessagingUrl = (nodeUrl: string) => {
+  console.log("nodeUrl: ", nodeUrl);
   // for backwards-compatiblity
   let url = nodeUrl.replace("/messaging", "");
   // replace url protocol
@@ -42,6 +55,7 @@ export const createMessagingService = async (
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<MessagingService> => {
   const messagingUrl = formatMessagingUrl(nodeUrl);
+  console.log("messagingUrl: ", messagingUrl);
   logger.debug(`Creating messaging service client ${messagingUrl}`);
   const config: MessagingConfig = {
     messagingUrl,

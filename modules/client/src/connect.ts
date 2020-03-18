@@ -81,7 +81,9 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      return channelProvider.send("chan_nodeAuth", { message });
+      const sig = await channelProvider.send("chan_nodeAuth", { message });
+      console.log("sig: ", sig);
+      return sig;
     };
 
     let { userPublicIdentifier, nodeUrl } = channelProvider.config;
@@ -128,7 +130,11 @@ export const connect = async (
     }
     const getSignature = async message => {
       const wallet = new Wallet(await keyGen("0"));
-      return signMessage(wallet.privateKey, message);
+      const sig = await signMessage(wallet.privateKey, message);
+      console.log("smart client sig: ", sig);
+      const ethersSig = await wallet.signMessage(message);
+      console.log("smart client ethersSig: ", ethersSig);
+      return sig;
     };
 
     if (!messaging) {
