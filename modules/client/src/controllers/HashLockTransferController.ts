@@ -20,7 +20,7 @@ export class HashLockTransferController extends AbstractController {
     params: HashLockTransferParameters,
   ): Promise<HashLockTransferResponse> => {
     // convert params + validate
-    const { amount, assetId, lockHash, meta } = convertHashLockTransferParameters(
+    const { amount, assetId, lockHash, timelock, meta } = convertHashLockTransferParameters(
       `bignumber`,
       params,
     );
@@ -36,9 +36,9 @@ export class HashLockTransferController extends AbstractController {
           to: xpubToAddress(this.connext.nodePublicIdentifier),
         },
       ],
+      timelock,
       lockHash,
       preImage: HashZero,
-      turnNum: Zero,
       finalized: false,
     };
 
