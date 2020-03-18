@@ -3,11 +3,24 @@ import { MessagingConfig, VerifyNonceDtoType, ILoggerService } from "@connext/ty
 import axios, { AxiosResponse } from "axios";
 import { isNode } from "./lib";
 
-export const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") =>
-  protocol + delimiter + url.split(delimiter).pop();
+export const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") => {
+  let arr = url.split(delimiter);
+  console.log("arr", arr);
+  if (arr.length > 1) {
+    arr.shift();
+  }
+  arr.unshift(protocol);
+  return arr.join(delimiter);
+};
 
-export const replaceUrlPort = (url: string, port: number, delimiter: string = ":") =>
-  url.split(delimiter).shift() + delimiter + port;
+export const replaceUrlPort = (url: string, port: number, delimiter: string = ":") => {
+  const arr = url.split(delimiter);
+  if (arr.length > 1) {
+    arr.pop();
+  }
+  arr.push(`${port}`);
+  return arr.join(delimiter);
+};
 
 export const formatMessagingUrl = (nodeUrl: string) => {
   // for backwards-compatiblity
