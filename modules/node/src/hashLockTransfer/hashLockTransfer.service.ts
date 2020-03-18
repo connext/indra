@@ -38,12 +38,13 @@ export class HashLockTransferService {
 
     // TODO: could there be more than 1? how to handle that case?
     const [senderApp] = await this.cfCoreService.getHashLockTransferAppsByLockHash(lockHash);
-    const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
-      senderApp.multisigAddress,
-    );
     if (!senderApp) {
       throw new Error(`No sender app installed for lockHash: ${lockHash}`);
     }
+
+    const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
+      senderApp.multisigAddress,
+    );
 
     const appState = convertHashLockTransferAppState(
       "bignumber",

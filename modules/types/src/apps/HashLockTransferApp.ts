@@ -39,6 +39,17 @@ export type ResolveHashLockTransferResponse<T = string> = {
 };
 export type ResolveHashLockTransferResponseBigNumber = ResolveHashLockTransferResponse<BigNumber>;
 
+// Getter
+export type GetHashLockTransferResponse =
+  | {
+      sender: string;
+      assetId: string;
+      amount: string;
+      lockHash: string;
+      meta?: any;
+    }
+  | undefined;
+
 // ABI Encodings
 export const HashLockTransferAppStateEncoding = `
   tuple(
