@@ -106,8 +106,7 @@ export type ProtocolParameters =
   | ProposeInstallProtocolParams
   | SetupProtocolParams
   | UninstallProtocolParams
-  | UpdateProtocolParams
-  | WithdrawProtocolParams;
+  | UpdateProtocolParams;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace ProtocolTypes {

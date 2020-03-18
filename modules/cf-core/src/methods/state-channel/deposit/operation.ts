@@ -1,7 +1,7 @@
 import {
   DEPOSIT_STARTED_EVENT,
   DEPOSIT_FAILED_EVENT,
-  CoinBalanceRefundAppStateEncoding,
+  coinBalanceRefundAppStateEncoding,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
@@ -223,7 +223,7 @@ async function getDepositContext(
     initialState,
     appInterface: {
       addr: networkContext.CoinBalanceRefundApp,
-      stateEncoding: CoinBalanceRefundAppStateEncoding,
+      stateEncoding: coinBalanceRefundAppStateEncoding,
       actionEncoding: undefined,
     },
   };

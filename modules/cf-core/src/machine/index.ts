@@ -13,7 +13,6 @@ import {
   TakeActionProtocolParams,
   UninstallProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams,
 } from "../types";
 import {
   computeRandomExtendedPrvKey,
@@ -38,7 +37,6 @@ export {
   InstallProtocolParams,
   UpdateProtocolParams,
   UninstallProtocolParams,
-  WithdrawProtocolParams,
   TakeActionProtocolParams,
   xkeyKthAddress,
   xkeysToSortedKthAddresses,

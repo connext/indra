@@ -6,15 +6,33 @@ import { sortSignaturesBySignerAddress, sortStringSignaturesBySignerAddress } fr
 
 /// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment implements EthereumCommitment {
-  constructor(readonly multisigAddress: string, readonly multisigOwners: string[]) {}
+  constructor(
+    readonly multisigAddress: string,
+    readonly multisigOwners: string[],
+    private participantSignatures: Signature[] = [],
+  ) {}
 
   abstract getTransactionDetails(): MultisigTransaction;
 
-  public getSignedTransaction(sigs: Signature[] | string[]): CFCoreTypes.MinimalTransaction {
+  get signatures(): Signature[] {
+    return this.participantSignatures;
+  }
+
+  set signatures(sigs: Signature[]) {
+    if (sigs.length < 2) {
+      throw new Error(
+        `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
+      );
+    }
+    this.participantSignatures = sigs;
+  }
+
+  public getSignedTransaction(sigs?: Signature[] | string[]): CFCoreTypes.MinimalTransaction {
+    this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
     let signaturesList: string[];
 
-    if (typeof sigs[0] == "string") {
+    if (sigs && typeof sigs[0] == "string") {
       //@ts-ignore
       signaturesList = sortStringSignaturesBySignerAddress(this.hashToSign(), sigs);
     } else {

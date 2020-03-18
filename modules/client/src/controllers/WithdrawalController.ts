@@ -4,7 +4,6 @@ import {
   WithdrawETHCommitment,
 } from "@connext/apps";
 import {
-  chan_storeSet,
   EventNames,
   WITHDRAWAL_STARTED_EVENT,
   WITHDRAWAL_CONFIRMED_EVENT,
@@ -19,15 +18,8 @@ import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { formatEther } from "ethers/utils";
 
-import { stringify, withdrawalKey, xpubToAddress } from "../lib";
-import {
-  BigNumber,
-  CFCoreTypes,
-  ProtocolTypes,
-  WithdrawParameters,
-  chan_setUserWithdrawal,
-} from "../types";
-import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
+import { stringify, xpubToAddress } from "../lib";
+import { BigNumber, CFCoreTypes, chan_setUserWithdrawal } from "../types";
 
 import { AbstractController } from "./AbstractController";
 
@@ -187,9 +179,7 @@ export class WithdrawalController extends AbstractController {
     const commitment = await this.createWithdrawCommitment(params);
     const minTx: CFCoreTypes.MinimalTransaction = commitment.getSignedTransaction(signatures);
     const value = { tx: minTx, retry: 0 };
-    await this.connext.channelProvider.send(chan_storeSet, {
-      pairs: [{ path: withdrawalKey(this.connext.publicIdentifier), value }],
-    });
+    await this.connext.channelProvider.send(chan_setUserWithdrawal, { ...value });
     return;
   }
 }

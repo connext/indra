@@ -149,7 +149,6 @@ export interface IConnextClient {
   getAppInstances(): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
   getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
-  getLatestNodeSubmittedWithdrawal(): Promise<WithdrawalMonitorObject>;
   getProposedAppInstances(
     multisigAddress?: string,
   ): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;

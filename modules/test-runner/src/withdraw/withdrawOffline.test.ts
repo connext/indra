@@ -105,12 +105,11 @@ describe("Withdraw offline tests", () => {
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero);
     });
 
-    const { val, retry } = await client.store.getUserWithdrawal!();
+    const val = await client.store.getUserWithdrawal!();
     expect(val).to.not.be.undefined;
     expect(val.tx).to.not.be.undefined;
     expect(val.retry).to.be.equal(0);
     expect(val.tx).to.be.containSubset({ to: client.multisigAddress, value: 0 });
-    expect(retry).to.be.equal(0);
 
     // restart the client
     const reconnected = await createClient({
