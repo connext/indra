@@ -1,6 +1,6 @@
 import { Client as DBClient } from "pg";
 import { before } from "mocha";
-import { STORE_SCHEMA_VERSION, StateChannelJSON, AppInstanceJson } from "@connext/types";
+import { STORE_SCHEMA_VERSION, StateChannelJSON } from "@connext/types";
 import { Client as NatsClient } from "ts-nats";
 import SQL from "sql-template-strings";
 
@@ -12,7 +12,7 @@ import {
   CHANNEL_KEY_VO_1,
 } from "./examples";
 
-describe.only("Store Migrations", () => {
+describe("Store Migrations", () => {
   let dbClient: DBClient;
   let nats: NatsClient;
 
