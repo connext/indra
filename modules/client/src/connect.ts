@@ -27,6 +27,8 @@ import {
   Logger,
   logTime,
   stringify,
+  isNode,
+  isWalletProvided,
 } from "./lib";
 import { NodeApiClient } from "./node";
 import {
@@ -39,6 +41,16 @@ import {
   IConnextClient,
   INodeApiClient,
 } from "./types";
+
+const formatMessagingUrl = (nodeUrl: string) => {
+  const protocol = isNode() ? "nats" : "wss";
+  return `${protocol}://${nodeUrl
+    .replace("/messaging", "")
+    .split("//")
+    .pop()
+    .split(":")
+    .shift()}:4222`;
+};
 
 const createMessagingService = async (
   logger: ILoggerService,
@@ -92,9 +104,8 @@ export const connect = async (
     loggerService,
     logLevel,
     mnemonic,
-    nodeUrl,
   } = opts;
-  let { xpub, keyGen, store, messaging } = opts;
+  let { xpub, keyGen, store, messaging, nodeUrl } = opts;
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -124,19 +135,17 @@ export const connect = async (
       return channelProvider.send("chan_nodeAuth", { message });
     };
 
-    const messagingUrl = `nats://${channelProvider.config.nodeUrl
-      .split("//")
-      .pop()
-      .split(":")
-      .shift()}:4222`;
+    let { userPublicIdentifier, nodeUrl } = channelProvider.config;
+
+    const messagingUrl = formatMessagingUrl(nodeUrl);
 
     log.debug(`Creating messaging service client ${messagingUrl}`);
     if (!messaging) {
       messaging = await createMessagingService(
         log,
         [messagingUrl],
-        channelProvider.config.nodeUrl,
-        channelProvider.config.userPublicIdentifier,
+        nodeUrl,
+        userPublicIdentifier,
         network.chainId,
         getSignature,
       );
@@ -150,11 +159,11 @@ export const connect = async (
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
+    node.userPublicIdentifier = userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
     isInjected = true;
-  } else if (opts && (opts.mnemonic || (opts.xpub && opts.keyGen))) {
+  } else if (isWalletProvided(opts)) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
@@ -173,16 +182,12 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const wallet = new Wallet(await keyGen("0"));
+      const wallet = new Wallet(await keyGen("0")).connect(ethProvider);
       const { chainId } = await wallet.provider.getNetwork();
       return signMessage(wallet.privateKey, message, chainId);
     };
 
-    const messagingUrl = `nats://${nodeUrl
-      .split("//")
-      .pop()
-      .split(":")
-      .shift()}:4222`;
+    const messagingUrl = formatMessagingUrl(nodeUrl);
 
     log.debug(`Creating messaging service client ${messagingUrl}`);
     if (!messaging) {
