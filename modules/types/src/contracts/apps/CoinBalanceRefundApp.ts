@@ -15,7 +15,7 @@ export type CoinBalanceRefundAppState = {
   tokenAddress: Address;
 };
 
-export const coinBalanceRefundAppStateEncoding = tidy(`tuple(
+export const CoinBalanceRefundAppStateEncoding = tidy(`tuple(
   address recipient,
   address multisig,
   uint256 threshold,

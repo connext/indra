@@ -1,6 +1,6 @@
 import {
   CoinBalanceRefundAppState,
-  coinBalanceRefundAppStateEncoding,
+  CoinBalanceRefundAppStateEncoding,
   EventNames,
   MethodNames,
   MethodParams,
@@ -365,7 +365,7 @@ async function getDepositContext(
     initialState,
     appInterface: {
       addr: networkContext.CoinBalanceRefundApp,
-      stateEncoding: coinBalanceRefundAppStateEncoding,
+      stateEncoding: CoinBalanceRefundAppStateEncoding,
       actionEncoding: undefined,
     },
   };

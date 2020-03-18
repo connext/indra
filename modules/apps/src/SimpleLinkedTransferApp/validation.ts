@@ -2,23 +2,11 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import {
   MethodParams,
   CoinTransfer,
-  OutcomeType,
-  SimpleLinkedTransferAppName,
-  SimpleLinkedTransferAppActionEncoding,
   SimpleLinkedTransferAppState,
-  SimpleLinkedTransferAppStateEncoding,
   stringify,
 } from "@connext/types";
 
-import { AppRegistryInfo, unidirectionalCoinTransferValidation } from "./shared";
-
-export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
-  actionEncoding: SimpleLinkedTransferAppActionEncoding,
-  allowNodeInstall: true,
-  name: SimpleLinkedTransferAppName,
-  outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  stateEncoding: SimpleLinkedTransferAppStateEncoding,
-};
+import { unidirectionalCoinTransferValidation } from "../shared";
 
 export const validateSimpleLinkedTransferApp = (
   params: MethodParams.ProposeInstall,

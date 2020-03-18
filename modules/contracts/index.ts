@@ -8,6 +8,7 @@ import * as ChallengeRegistry from "./build/ChallengeRegistry.json";
 import * as CoinBalanceRefundApp from "./build/CoinBalanceRefundApp.json";
 import * as ConditionalTransactionDelegateTarget from "./build/ConditionalTransactionDelegateTarget.json";
 import * as CounterfactualApp from "./build/CounterfactualApp.json";
+import * as ERC20 from "./build/ERC20.json";
 import * as IdentityApp from "./build/IdentityApp.json";
 import * as MinimumViableMultisig from "./build/MinimumViableMultisig.json";
 import * as MultiAssetMultiPartyCoinTransferInterpreter from "./build/MultiAssetMultiPartyCoinTransferInterpreter.json";
@@ -28,6 +29,7 @@ export {
   CoinBalanceRefundApp,
   ConditionalTransactionDelegateTarget,
   CounterfactualApp,
+  ERC20,
   IdentityApp,
   MinimumViableMultisig,
   MultiAssetMultiPartyCoinTransferInterpreter,

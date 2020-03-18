@@ -2,24 +2,12 @@ import {
   MethodParams,
   AllowedSwap,
   calculateExchange,
-  OutcomeType,
-  SimpleSwapAppStateEncoding,
-  SimpleTwoPartySwapAppName,
   stringify,
   SwapRate,
 } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
-import { AppRegistryInfo } from "./shared";
-
 const ALLOWED_DISCREPANCY_PCT = 5;
-
-export const SimpleTwoPartySwapAppRegistryInfo: AppRegistryInfo = {
-  allowNodeInstall: true,
-  name: SimpleTwoPartySwapAppName,
-  outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-  stateEncoding: SimpleSwapAppStateEncoding,
-};
 
 export const validateSimpleSwapApp = (
   params: MethodParams.ProposeInstall,

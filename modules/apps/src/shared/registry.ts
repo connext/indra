@@ -1,24 +1,30 @@
 import {
   CoinBalanceRefundAppName,
+  enumify,
   FastSignedTransferAppName,
+  HashLockTransferAppName,
   OutcomeType,
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
+  WithdrawAppName,
 } from "@connext/types";
 
-export const SupportedApplications = {
+export const SupportedApplications = enumify({
   [CoinBalanceRefundAppName]: CoinBalanceRefundAppName,
-  [FastSignedTransferAppName]: FastSignedTransferAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
-};
+  [FastSignedTransferAppName]: FastSignedTransferAppName,
+  [WithdrawAppName]: WithdrawAppName,
+  [HashLockTransferAppName]: HashLockTransferAppName,
+});
 
-export type SupportedApplication = keyof typeof SupportedApplications;
+export type SupportedApplications =
+  (typeof SupportedApplications)[keyof typeof SupportedApplications];
 
 export type AppRegistryInfo = {
   actionEncoding?: string;
   allowNodeInstall: boolean;
-  name: SupportedApplication;
+  name: SupportedApplications;
   outcomeType: OutcomeType;
   stateEncoding: string;
 };

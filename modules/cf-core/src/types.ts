@@ -50,7 +50,7 @@ export {
   AppInstanceProposal,
   AppInterface,
   CoinBalanceRefundAppState,
-  coinBalanceRefundAppStateEncoding,
+  CoinBalanceRefundAppStateEncoding,
   ConditionalTransactionCommitmentJSON,
   CreateChannelMessage,
   DepositConfirmationMessage,

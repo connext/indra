@@ -7,6 +7,7 @@ import {
   SimpleLinkedTransferAppAction,
   SimpleLinkedTransferAppState,
   SimpleSwapAppState,
+  WithdrawAppState,
 } from "./apps";
 
 export * from "./adjudicator";
@@ -24,4 +25,5 @@ export type AppState =
   | FastSignedTransferAppState
   | HashLockTransferAppState
   | SimpleLinkedTransferAppState
-  | SimpleSwapAppState;
+  | SimpleSwapAppState
+  | WithdrawAppState;
