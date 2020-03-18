@@ -7,12 +7,19 @@ import {
   defaultAbiCoder,
   joinSignature,
   keccak256,
+  hexlify,
+  randomBytes,
   recoverAddress,
   Signature,
   solidityPack,
 } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
+
+export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
+
+// TS version of MChallengeRegistryCore::appStateToHash
+export const appStateToHash = (state: string) => keccak256(state);
 
 // TS version of MChallengeRegistryCore::computeAppChallengeHash
 export const computeAppChallengeHash = (

@@ -2,7 +2,7 @@
 import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { HashZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import {
   BigNumberish,
   hexlify,
@@ -15,6 +15,8 @@ import {
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 import {
   AppIdentityTestClass,
+  randomState,
+  appStateToHash,
   computeAppChallengeHash,
   expect,
   sortSignaturesBySignerAddress,
@@ -65,6 +67,7 @@ describe("ChallengeRegistry", () => {
   let latestVersionNumber: () => Promise<BigNumberish>;
   let isStateFinalized: () => Promise<boolean>;
   let verifyChallenge: (expected: Challenge) => Promise<void>;
+  let verifyEmptyChallenge: () => Promise<void>;
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
@@ -107,7 +110,18 @@ describe("ChallengeRegistry", () => {
       expect(appStateHash).to.be.eq(expected.appStateHash);
       expect(versionNumber).to.be.eq(expected.versionNumber);
       expect(finalizesAt).to.be.eq(expected.finalizesAt);
-    }
+    };
+
+    verifyEmptyChallenge = async () => {
+      await verifyChallenge({
+        status: ChallengeStatus.NO_CHALLENGE,
+        latestSubmitter: AddressZero,
+        appStateHash: HashZero,
+        versionNumber: 0,
+        finalizesAt: 0
+      });
+    };
+
 
     cancelChallenge = async () => {
       const digest = computeAppChallengeHash(
@@ -157,6 +171,27 @@ describe("ChallengeRegistry", () => {
         0,
       );
     */
+  });
+
+  describe.only("setState -- happy case", () => {
+    it("should work when a challenge is submitted for the first time", async () => {
+      await verifyEmptyChallenge();
+
+      const sender = await wallet.getAddress();
+      const versionNumber = 3;
+      const state = randomState();
+      const timeout = 4;
+
+      await setStateWithSignatures(versionNumber, state, timeout);
+
+      await verifyChallenge({
+        status: ChallengeStatus.IN_DISPUTE,
+        latestSubmitter: sender,
+        appStateHash: appStateToHash(state),
+        versionNumber: versionNumber,
+        finalizesAt: await provider.getBlockNumber() + timeout,
+      });
+    });
   });
 
   describe("updating app state", () => {
@@ -228,7 +263,7 @@ describe("ChallengeRegistry", () => {
   });
   */
 
-  it.only("is possible to call setState to put state on-chain", async () => {
+  it("is possible to call setState to put state on-chain", async () => {
     // Tell the ChallengeRegistry to start timer
     const state = hexlify(randomBytes(32));
 
