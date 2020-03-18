@@ -5,7 +5,6 @@ import {
   maxBN,
   MethodParams,
   MethodResults,
-  MinimalTransaction,
   StateChannelJSON,
   stringify,
 } from "@connext/types";
@@ -15,7 +14,7 @@ import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify} from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -500,45 +499,6 @@ export class ChannelService {
     };
   }
 
-<<<<<<< HEAD
-  async withdrawForClient(
-    userPublicIdentifier: string,
-    tx: MinimalTransaction,
-  ): Promise<TransactionResponse> {
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
-    );
-
-    const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
-      channel.multisigAddress,
-    );
-    this.log.debug(`Deploy multisig tx: ${deployTx}`);
-
-    const wallet = this.configService.getEthWallet();
-    if (deployTx !== HashZero) {
-      this.log.debug(`Waiting for deployment transaction...`);
-      wallet.provider.waitForTransaction(deployTx);
-      this.log.debug(`Deployment transaction complete!`);
-    } else {
-      this.log.debug(`Multisig already deployed, proceeding with withdrawal`);
-    }
-
-    const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
-    return txRes;
-  }
-
-  async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
-    }
-    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
-
-    return state;
-  }
-
-=======
->>>>>>> 845-store-refactor
   async getDataFromRebalancingService(
     userPublicIdentifier: string,
     assetId: string,

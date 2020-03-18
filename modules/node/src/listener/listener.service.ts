@@ -1,21 +1,4 @@
-<<<<<<< HEAD
-import { EventNames, MethodNames, NodeMessage } from "@connext/types";
-=======
-import { AppAction } from "@connext/apps";
-import {
-  CREATE_CHANNEL_EVENT,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
-  DEPOSIT_STARTED_EVENT,
-  INSTALL_EVENT,
-  PROPOSE_INSTALL_EVENT,
-  PROTOCOL_MESSAGE_EVENT,
-  REJECT_INSTALL_EVENT,
-  UNINSTALL_EVENT,
-  UPDATE_STATE_EVENT,
-  ProtocolTypes,
-} from "@connext/types";
->>>>>>> 845-store-refactor
+import { AppAction, EventNames, MethodNames, NodeMessage } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 
@@ -203,9 +186,18 @@ export default class ListenerService implements OnModuleInit {
           appRegistryInfo.name,
           appInstanceId,
           newState as any, // AppState (excluding simple swap app)
-          action as AppAction<any>,
+          action as AppAction,
           data.from,
         );
+      },
+      WITHDRAWAL_FAILED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(WITHDRAWAL_FAILED_EVENT, data);
+      },
+      WITHDRAWAL_CONFIRMED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
+      },
+      WITHDRAWAL_STARTED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
     };
   }

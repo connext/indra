@@ -1,4 +1,4 @@
-import { ProtocolTypes } from "@connext/types";
+import { MinimalTransaction } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 import { EntityRepository, Repository } from "typeorm";
 
@@ -22,7 +22,7 @@ export class SetupCommitmentEntityRepository extends Repository<SetupCommitmentE
     });
   }
 
-  async getCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
+  async getCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     const setup = await this.findByMultisigAddress(multisigAddress);
     if (!setup) {
       return undefined;
@@ -32,7 +32,7 @@ export class SetupCommitmentEntityRepository extends Repository<SetupCommitmentE
 
   async saveCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
     channel?: Channel,
   ): Promise<SetupCommitmentEntity> {
     let commitmentEnt = await this.findByMultisigAddress(multisigAddress);

@@ -1,14 +1,11 @@
 import {
   DepositConfirmationMessage,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
+  EventNames,
   DepositFailedMessage,
   HashLockTransferAppState,
-  HashLockTransferAppStateBigNumber,
-  HashLockTransferApp,
-  ResolveHashLockTransferResponseBigNumber,
+  HashLockTransferAppName,
+  ResolveHashLockTransferResponse,
 } from "@connext/types";
-import { convertHashLockTransferAppState } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 
@@ -32,7 +29,7 @@ export class HashLockTransferService {
   async resolveHashLockTransfer(
     userPubId: string,
     lockHash: string,
-  ): Promise<ResolveHashLockTransferResponseBigNumber> {
+  ): Promise<ResolveHashLockTransferResponse> {
     this.log.debug(`resolveLinkedTransfer(${userPubId}, ${lockHash})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
@@ -45,10 +42,7 @@ export class HashLockTransferService {
       throw new Error(`No sender app installed for lockHash: ${lockHash}`);
     }
 
-    const appState = convertHashLockTransferAppState(
-      "bignumber",
-      senderApp.latestState as HashLockTransferAppState,
-    );
+    const appState = senderApp.latestState as HashLockTransferAppState;
 
     const assetId = senderApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
 
@@ -67,7 +61,7 @@ export class HashLockTransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          DEPOSIT_CONFIRMED_EVENT,
+          EventNames.DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
@@ -88,9 +82,12 @@ export class HashLockTransferService {
             resolve();
           },
         );
-        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
-          return reject(JSON.stringify(msg, null, 2));
-        });
+        this.cfCoreService.cfCore.on(
+          EventNames.DEPOSIT_FAILED_EVENT,
+          (msg: DepositFailedMessage) => {
+            return reject(JSON.stringify(msg, null, 2));
+          },
+        );
         try {
           await this.channelService.rebalance(
             userPubId,
@@ -107,7 +104,7 @@ export class HashLockTransferService {
       this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amount);
     }
 
-    const initialState: HashLockTransferAppStateBigNumber = {
+    const initialState: HashLockTransferAppState = {
       coinTransfers: [
         {
           amount,
@@ -131,7 +128,7 @@ export class HashLockTransferService {
       assetId,
       Zero,
       assetId,
-      HashLockTransferApp,
+      HashLockTransferAppName,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {

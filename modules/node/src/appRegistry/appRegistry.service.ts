@@ -8,25 +8,16 @@ import {
   validateHashLockTransferApp,
 } from "@connext/apps";
 import {
-<<<<<<< HEAD
   AppInstanceJson,
-  SimpleLinkedTransferAppState,
   CoinBalanceRefundAppName,
+  FastSignedTransferAppName,
   MethodParams,
   SimpleLinkedTransferAppName,
+  HashLockTransferAppName,
+  SimpleLinkedTransferAppState,
   SimpleTwoPartySwapAppName,
-  FastSignedTransferAppName,
-=======
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  SimpleTwoPartySwapApp,
-  FastSignedTransferApp,
-  WithdrawApp,
-  AppInstanceJson,
-  SimpleLinkedTransferAppStateBigNumber,
-  WithdrawAppStateBigNumber,
-  HashLockTransferApp,
->>>>>>> 845-store-refactor
+  WithdrawAppName,
+  WithdrawAppState,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -174,11 +165,11 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-      case WithdrawApp: {
+      case WithdrawAppName: {
         validateWithdrawApp(proposeInstallParams, from, this.cfCoreService.cfCore.publicIdentifier);
         break;
       }
-      case HashLockTransferApp: {
+      case HashLockTransferAppName: {
         validateHashLockTransferApp(
           proposeInstallParams,
           from,
@@ -232,10 +223,10 @@ export class AppRegistryService implements OnModuleInit {
       }
       case FastSignedTransferAppName:
         break;
-      case WithdrawApp: {
+      case WithdrawAppName: {
         this.log.debug(`Doing withdrawal post-install tasks`);
         const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
-        const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
+        const initialState = proposeInstallParams.initialState as WithdrawAppState;
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
           appInstanceId,

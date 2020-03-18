@@ -1,5 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
-import { replaceBN, ResolveHashLockTransferResponse } from "@connext/types";
+import { ResolveHashLockTransferResponse } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -32,7 +32,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     const response = await this.hashLockTransferService.resolveHashLockTransfer(pubId, lockHash);
     return {
       ...response,
-      amount: response.amount.toString(),
+      amount: response.amount,
     };
   }
 

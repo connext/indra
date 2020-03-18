@@ -1,6 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
 import {
-  MinimalTransaction,
   MethodResults,
   ChannelAppSequences,
   GetChannelResponse,
@@ -69,16 +68,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     ) as unknown)) as MethodResults.Deposit;
   }
 
-<<<<<<< HEAD
-  async withdraw(
-    pubId: string,
-    data: { tx: MinimalTransaction },
-  ): Promise<TransactionResponse> {
-    return await this.channelService.withdrawForClient(pubId, data.tx);
-  }
-
-=======
->>>>>>> 845-store-refactor
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
     await this.channelService.addRebalanceProfileToChannel(pubId, data.profile);
   }

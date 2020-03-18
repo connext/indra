@@ -67,7 +67,7 @@ export class Withdraw {
 
   @OneToOne(
     (type: any) => OnchainTransaction,
-    { nullable: true }
+    { nullable: true },
   )
   @JoinColumn()
   onchainTransaction!: OnchainTransaction;

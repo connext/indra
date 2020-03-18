@@ -1,17 +1,13 @@
 import { CriticalStateChannelAddresses } from "@connext/types";
-<<<<<<< HEAD
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-=======
 import {
   Column,
   Entity,
   JoinTable,
   ManyToMany,
   OneToMany,
-  PrimaryGeneratedColumn,
   OneToOne,
+  PrimaryGeneratedColumn,
 } from "typeorm";
->>>>>>> 845-store-refactor
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
