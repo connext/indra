@@ -1,4 +1,4 @@
-import { AppInstanceJson, AppInstanceProposal, OutcomeType } from "@connext/types";
+import { AppInstanceJson, AppInstanceProposal, OutcomeType, stringify } from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -50,7 +50,7 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     latestTimeout: app.latestTimeout,
     latestVersionNumber: app.latestVersionNumber,
     multisigAddress: channel.multisigAddress,
-    outcomeType: Object.keys(OutcomeType).findIndex(a => a === app.outcomeType),
+    outcomeType: app.outcomeType,
     participants: sortAddresses([app.userParticipantAddress, app.nodeParticipantAddress]),
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,
@@ -234,6 +234,9 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     freeBalanceSaved.timeout = freeBalance.latestTimeout;
 
     // interpreter params
+    if (freeBalanceSaved.outcomeType) {
+      return this.save(freeBalanceSaved);
+    }
     switch (OutcomeType[freeBalance.outcomeType]) {
       case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
         freeBalanceSaved.outcomeInterpreterParameters =

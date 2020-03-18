@@ -73,7 +73,6 @@ export class StateChannel {
 
   public getAppInstance(appInstanceIdentityHash: string): AppInstance {
     if (this.hasFreeBalance && appInstanceIdentityHash === this.freeBalance.identityHash) {
-      console.log(`[channel] returning free balance app`);
       return this.freeBalance;
     }
     if (!this.appInstances.has(appInstanceIdentityHash)) {

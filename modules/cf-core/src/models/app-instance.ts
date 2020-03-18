@@ -112,7 +112,7 @@ export class AppInstance {
       deserialized.latestState,
       deserialized.latestVersionNumber,
       deserialized.latestTimeout,
-      Object.keys(OutcomeType)[deserialized.outcomeType] as OutcomeType,
+      deserialized.outcomeType as any, // OutcomeType is enum, so gives attitude
       deserialized.multisigAddress,
       interpreterParams.twoPartyOutcomeInterpreterParams,
       interpreterParams.multiAssetMultiPartyCoinTransferInterpreterParams,
