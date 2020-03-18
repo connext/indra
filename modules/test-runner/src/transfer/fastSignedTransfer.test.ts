@@ -2,15 +2,12 @@ import {
   CoinTransfer,
   ConditionalTransferTypes,
   delay,
-<<<<<<< HEAD
   FastSignedTransferAppState,
   FastSignedTransferParameters,
   FastSignedTransferResponse,
   IConnextClient,
-  ResolveFastSignedTransferParameters,
-=======
   ResolveConditionResponse,
->>>>>>> 845-store-refactor
+  ResolveFastSignedTransferParameters,
 } from "@connext/types";
 import {
   hexlify,
@@ -83,19 +80,6 @@ describe.skip("Fast Signed Transfer", () => {
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
     const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
 
-<<<<<<< HEAD
-    const res = await clientB.resolveCondition({
-      conditionType: ConditionalTransferTypes.FastSignedTransfer,
-      paymentId,
-      signature,
-      data,
-    } as ResolveFastSignedTransferParameters);
-
-    // locked payment can resolve
-    transferApp = await clientB.getAppInstanceDetails(res.appId);
-    transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppState;
-    coinTransfers = transferAppState.coinTransfers;
-=======
     let resolveCondition: ResolveConditionResponse;
     await new Promise(async resolve => {
       clientA.on("UPDATE_STATE_EVENT", data => {
@@ -104,7 +88,7 @@ describe.skip("Fast Signed Transfer", () => {
         resolve();
       });
       resolveCondition = await clientB.resolveCondition({
-        conditionType: FAST_SIGNED_TRANSFER,
+        conditionType: ConditionalTransferTypes.FastSignedTransfer,
         paymentId,
         signature,
         data,
@@ -113,9 +97,8 @@ describe.skip("Fast Signed Transfer", () => {
 
     // locked payment resolved
     transferApp = await clientB.getAppInstanceDetails(resolveCondition!.appId);
-    transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppStateBigNumber;
-    coinTransfers = transferAppState.coinTransfers.map(bigNumberifyObj);
->>>>>>> 845-store-refactor
+    transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppState;
+    coinTransfers = transferAppState.coinTransfers;
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
     expect(coinTransfers[1][0]).eq(clientB.freeBalanceAddress);
     expect(coinTransfers[1][1]).eq(Zero.add(transferAmount));

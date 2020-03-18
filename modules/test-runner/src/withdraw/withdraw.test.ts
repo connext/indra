@@ -57,13 +57,8 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     const recipient = "0xabc";
     await expect(
-<<<<<<< HEAD
-      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, recipient),
-    ).to.be.rejectedWith(`Value "${recipient}" is not a valid eth address`);
-=======
       withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient),
     ).to.be.rejectedWith(`invalid address`);
->>>>>>> 845-store-refactor
   });
 
   it("client tries to withdraw with invalid assetId", async () => {
@@ -77,9 +72,6 @@ describe("Withdrawal", () => {
         assetId,
         recipient: Wallet.createRandom().address,
       }),
-<<<<<<< HEAD
-    ).to.be.rejectedWith(`Value "${assetId}" is not a valid eth address`);
-=======
     ).to.be.rejectedWith(`invalid address`);
   });
 
@@ -90,7 +82,6 @@ describe("Withdrawal", () => {
     // utils compare initial and final balance only
     withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
->>>>>>> 845-store-refactor
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to

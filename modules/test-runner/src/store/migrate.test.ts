@@ -1,7 +1,7 @@
 import { Client } from "pg";
 import { before } from "mocha";
 
-import { expect, getDbClient } from "../util";
+import { getDbClient } from "../util";
 import SQL from "sql-template-strings";
 
 
@@ -16,6 +16,6 @@ describe("Store Migrations", () => {
     await dbClient.query(SQL`
       INSERT INTO node_records
       VALUES ()
-    `)
+    `);
   });
 });

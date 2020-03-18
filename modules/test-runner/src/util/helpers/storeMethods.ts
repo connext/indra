@@ -18,7 +18,7 @@ import {
   StateChannelJSON,
   AppInstanceJson,
   OutcomeType,
-  ProtocolTypes,
+  MinimalTransaction,
   SetStateCommitmentJSON,
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
@@ -94,7 +94,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   monotonicNumProposedApps: 2,
 };
 
-export const TEST_STORE_MINIMAL_TX: ProtocolTypes.MinimalTransaction = {
+export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
   to: TEST_STORE_ETH_ADDRESS,
   value: One,
   data: hexlify(randomBytes(64)),

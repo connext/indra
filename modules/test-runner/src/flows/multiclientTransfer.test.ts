@@ -46,7 +46,7 @@ describe("Full Flow: Multi-client transfer", () => {
       await fundChannel(gateway, bigNumberify(100));
       gateway.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData) => {
+        async (data: ReceiveTransferFinishedEventData<any>) => {
           const freeBalance = await gateway.getFreeBalance();
           if (freeBalance[gateway.freeBalanceAddress].isZero()) {
             res();
@@ -73,7 +73,7 @@ describe("Full Flow: Multi-client transfer", () => {
 
       indexerA.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData) => {
+        async (data: ReceiveTransferFinishedEventData<any>) => {
           indexerATransfers.received += 1;
           await indexerA.transfer({
             amount: data.amount,
@@ -87,7 +87,7 @@ describe("Full Flow: Multi-client transfer", () => {
 
       indexerB.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData) => {
+        async (data: ReceiveTransferFinishedEventData<any>) => {
           indexerBTransfers.received += 1;
           await indexerB.transfer({
             amount: data.amount,

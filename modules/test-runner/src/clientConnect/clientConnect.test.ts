@@ -1,16 +1,7 @@
-import { connect } from "@connext/client";
-import { ConnextStore } from "@connext/store";
-import { ClientOptions, MEMORYSTORAGE } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 
-<<<<<<< HEAD
-import { createClient, expect, env, sendOnchainValue } from "../util";
-import { Logger } from "../util/logger";
-=======
 import { createClient, expect, sendOnchainValue } from "../util";
-import { Wallet } from "ethers";
->>>>>>> 845-store-refactor
 
 describe("Client Connect", () => {
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {

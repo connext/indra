@@ -1,10 +1,6 @@
 /* global before after */
 import { utils } from "@connext/client";
-<<<<<<< HEAD
 import { IConnextClient, ConditionalTransferTypes, CF_PATH } from "@connext/types";
-=======
-import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, CF_PATH } from "@connext/types";
->>>>>>> 845-store-refactor
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";

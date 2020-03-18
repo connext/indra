@@ -1,7 +1,8 @@
 /* global before after */
 import {
-  IConnextClient,
+  ConditionalTransferTypes,
   HashLockTransferParameters,
+  IConnextClient,
   ResolveHashLockTransferParameters,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
@@ -56,8 +57,8 @@ describe("HashLock Transfers", () => {
     expect(clientAPreTransferBal).to.eq(transfer.amount);
     expect(nodePreTransferBal).to.eq(0);
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: "HASHLOCK_TRANSFER",
+      amount: transfer.amount,
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
       preImage,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
@@ -81,7 +82,7 @@ describe("HashLock Transfers", () => {
         res();
       });
       await clientB.resolveCondition({
-        conditionType: "HASHLOCK_TRANSFER",
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
       } as ResolveHashLockTransferParameters);
       const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(

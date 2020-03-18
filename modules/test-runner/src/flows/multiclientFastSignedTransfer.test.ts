@@ -1,13 +1,13 @@
 import {
   CreateTransferEventData,
   ConditionalTransferTypes,
-  delay,
   EventNames,
   FastSignedTransferParameters,
   IConnextClient,
   ReceiveTransferFinishedEventData,
   ResolveFastSignedTransferParameters,
 } from "@connext/types";
+import { Wallet } from "ethers";
 import {
   bigNumberify,
   hexlify,
@@ -19,18 +19,13 @@ import {
 import { before, after } from "mocha";
 import { Client } from "ts-nats";
 
-import { env, expect, Logger, createClient, fundChannel, connectNats, closeNats } from "../util";
-import { Wallet } from "ethers";
-import { One, AddressZero } from "ethers/constants";
-import { clientA } from "../benchmarking/flamegraphPrep";
+import { createClient, fundChannel, connectNats, closeNats } from "../util";
+import { AddressZero } from "ethers/constants";
 
 describe("Full Flow: Multi-client transfer", () => {
-  let log = new Logger("MultiClientTransfer", env.logLevel);
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
-  let clientD: IConnextClient;
-  let tokenAddress: string;
   let nats: Client;
   let signerWalletA: Wallet;
   let signerWalletB: Wallet;
@@ -43,8 +38,6 @@ describe("Full Flow: Multi-client transfer", () => {
     gateway = await createClient();
     indexerA = await createClient();
     indexerB = await createClient();
-
-    tokenAddress = gateway.config.contractAddresses.Token;
 
     signerWalletA = Wallet.createRandom();
     signerWalletB = Wallet.createRandom();
@@ -83,7 +76,7 @@ describe("Full Flow: Multi-client transfer", () => {
 
       gateway.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData) => {
+        async (data: ReceiveTransferFinishedEventData<any>) => {
           if (Date.now() - startTime >= DURATION) {
             // sufficient time has elapsed, resolve
             done();
@@ -125,7 +118,9 @@ describe("Full Flow: Multi-client transfer", () => {
 
       gateway.on(
         EventNames.CREATE_TRANSFER,
-        async (eventData: CreateTransferEventData<typeof ConditionalTransferTypes.FastSignedTransfer>) => {
+        async (eventData: CreateTransferEventData<
+          typeof ConditionalTransferTypes.FastSignedTransfer
+        >) => {
           let withdrawerSigningKey: SigningKey;
           let indexer: IConnextClient;
           let indexerTransfers: {

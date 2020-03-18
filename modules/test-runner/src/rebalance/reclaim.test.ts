@@ -68,7 +68,7 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = hexlify(randomBytes(32))
+      const paymentId = hexlify(randomBytes(32));
       await nats.subscribe(
         `transfer.${paymentId}.reclaimed`,
         res,
@@ -77,7 +77,7 @@ describe("Reclaim", () => {
         amount: One.toString(),
         assetId: AddressZero,
         recipient: clientB.publicIdentifier,
-        paymentId
+        paymentId,
       });
     });
 
@@ -126,7 +126,7 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = hexlify(randomBytes(32))
+      const paymentId = hexlify(randomBytes(32));
       await nats.subscribe(
         `transfer.${paymentId}.reclaimed`,
         res,
@@ -135,7 +135,7 @@ describe("Reclaim", () => {
         amount: One.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
-        paymentId
+        paymentId,
       });
     });
 
