@@ -1,21 +1,10 @@
 import {
-<<<<<<< HEAD
-  ChannelMethod,
   ChannelMethods,
-=======
-  chan_config,
-  chan_signWithdrawCommitment,
-  chan_restoreState,
-  chan_getUserWithdrawal,
-  chan_setUserWithdrawal,
-  chan_setStateChannel,
->>>>>>> 845-store-refactor
   ChannelProviderConfig,
   ConnextEventEmitter,
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
-  chan_nodeAuth,
   StateChannelJSON,
   WithdrawalMonitorObject,
 } from "@connext/types";
@@ -55,7 +44,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     );
   }
 
-  public send = async (method: ChannelMethod, params: any = {}): Promise<any> => {
+  public send = async (method: ChannelMethods, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
       case ChannelMethods.chan_setUserWithdrawal:
@@ -64,20 +53,13 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
         break;
-<<<<<<< HEAD
-      case ChannelMethods.chan_nodeAuth:
-        result = await this.signMessage(params.message);
-        break;
-      case ChannelMethods.chan_config:
-=======
-      case chan_signWithdrawCommitment:
+      case ChannelMethods.chan_signWithdrawCommitment:
         result = await this.signWithdrawCommitment(params.message);
         break;
-      case chan_nodeAuth:
+      case ChannelMethods.chan_nodeAuth:
           result = await this.signMessage(params.message);
           break;
-      case chan_config:
->>>>>>> 845-store-refactor
+      case ChannelMethods.chan_config:
         result = this.config;
         break;
       case ChannelMethods.chan_restoreState:
@@ -149,7 +131,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   };
 
   public signWithdrawCommitment = async (message: string): Promise<string> => {
-    return this._send(chan_signWithdrawCommitment, { message });
+    return this._send(ChannelMethods.chan_signWithdrawCommitment, { message });
   };
   /// ////////////////////////////////////////////
   /// // STORE METHODS
@@ -175,7 +157,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// ////////////////////////////////////////////
   /// // PRIVATE METHODS
 
-  private async _send(method: ChannelMethod, params: any = {}): Promise<any> {
+  private async _send(method: ChannelMethods, params: any = {}): Promise<any> {
     const payload = { id: Date.now(), jsonrpc: "2.0", method, params };
     const result = await this.connection.send(payload as JsonRpcRequest);
     return result;
