@@ -60,19 +60,21 @@ const formatMessagingUrl = (nodeUrl: string) => {
 
 const createMessagingService = async (
   logger: ILoggerService,
-  natsUrl: string[],
   nodeUrl: string,
   xpub: string,
   chainId: number,
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<MessagingService> => {
+  const messagingUrl = formatMessagingUrl(nodeUrl);
+  logger.debug(`Creating messaging service client ${messagingUrl}`);
   const config: MessagingConfig = {
-    messagingUrl: natsUrl,
+    messagingUrl,
     logger,
   };
+  const key = `INDRA.${chainId}`;
   // create a messaging service client
   // do not specify a prefix so that clients can publish to node
-  const messaging = new MessagingService(config, `INDRA.${chainId}`, async () =>
+  const messaging = new MessagingService(config, key, () =>
     getBearerToken(nodeUrl, xpub, getSignature),
   );
   await messaging.connect();
@@ -143,13 +145,9 @@ export const connect = async (
 
     let { userPublicIdentifier, nodeUrl } = channelProvider.config;
 
-    const messagingUrl = formatMessagingUrl(nodeUrl);
-
-    log.debug(`Creating messaging service client ${messagingUrl}`);
     if (!messaging) {
       messaging = await createMessagingService(
         log,
-        [messagingUrl],
         nodeUrl,
         userPublicIdentifier,
         network.chainId,
@@ -192,18 +190,8 @@ export const connect = async (
       return signMessage(wallet.privateKey, message, network.chainId);
     };
 
-    const messagingUrl = formatMessagingUrl(nodeUrl);
-
-    log.debug(`Creating messaging service client ${messagingUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(
-        log,
-        [messagingUrl],
-        nodeUrl,
-        xpub,
-        network.chainId,
-        getSignature,
-      );
+      messaging = await createMessagingService(log, nodeUrl, xpub, network.chainId, getSignature);
     } else {
       await messaging.connect();
     }
