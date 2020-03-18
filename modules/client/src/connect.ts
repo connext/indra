@@ -128,7 +128,7 @@ export const connect = async (
     }
     const getSignature = async message => {
       const wallet = new Wallet(await keyGen("0"));
-      return signMessage(wallet.privateKey, message, network.chainId);
+      return signMessage(wallet.privateKey, message);
     };
 
     if (!messaging) {

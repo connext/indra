@@ -15,17 +15,13 @@ import {
 } from "eccrypto-js";
 
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
+export const FIXED_V_VALUE = "1b";
 
 export function hashMessage(message: Buffer | string): Buffer {
   const data = Buffer.isBuffer(message) ? message : utf8ToBuffer(message);
   return keccak256(
     concatBuffers(utf8ToBuffer(ETH_SIGN_PREFIX), utf8ToBuffer(String(data.length)), data),
   );
-}
-
-export function calcV(chainId = 0): Buffer {
-  const v = chainId ? chainId * 2 + 35 : 27;
-  return hexToBuffer(v.toString(16));
 }
 
 export function splitSignature(sig: Buffer): EthSignature {
@@ -48,12 +44,11 @@ export async function signDigest(privateKey: Buffer, digest: Buffer): Promise<Bu
 export async function signMessage(
   privateKey: Buffer | string,
   message: Buffer | string,
-  chainId?: number,
 ): Promise<string> {
   privateKey = Buffer.isBuffer(privateKey) ? privateKey : hexToBuffer(privateKey);
   const hash = hashMessage(message);
   let sig = await signDigest(privateKey, hash);
-  sig = concatBuffers(sig, calcV(chainId));
+  sig = concatBuffers(sig, hexToBuffer(FIXED_V_VALUE));
   return addHexPrefix(bufferToHex(sig));
 }
 
