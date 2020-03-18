@@ -22,6 +22,7 @@ import {
   IRpcConnection,
   JsonRpcRequest,
 } from "./types";
+import { SigningKey, joinSignature } from "ethers/utils";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -83,9 +84,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-      case chan_nodeAuth:
-        result = await this.walletSign(params.message);
+      case chan_signWithdrawCommitment:
+        result = await this.signWithdrawCommitment(params.message);
         break;
+      case chan_nodeAuth:
+          result = await this.walletSign(params.message);
+          break;
       case chan_restoreState:
         result = await this.restoreState();
         break;

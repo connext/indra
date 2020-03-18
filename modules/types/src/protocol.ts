@@ -11,7 +11,6 @@ export enum Protocol {
   TakeAction = "takeAction",
   Uninstall = "uninstall",
   Update = "update",
-  Withdraw = "withdraw",
 }
 
 export enum Commitment {
@@ -102,15 +101,6 @@ export type UpdateProtocolParams = {
   newState: SolidityValueType;
 };
 
-export type WithdrawProtocolParams = {
-  initiatorXpub: string;
-  responderXpub: string;
-  multisigAddress: string;
-  recipient: string;
-  amount: BigNumber;
-  tokenAddress: string;
-};
-
 export type ProtocolParameters =
   | InstallProtocolParams
   | ProposeInstallProtocolParams
@@ -175,8 +165,6 @@ export namespace ProtocolTypes {
   export const chan_takeAction = "chan_takeAction";
   export const chan_uninstall = "chan_uninstall";
   export const chan_rescindDepositRights = "chan_rescindDepositRights";
-  export const chan_withdraw = "chan_withdraw";
-  export const chan_withdrawCommitment = "chan_withdrawCommitment";
 
   export const RpcMethodNames = {
     [chan_create]: chan_create,
@@ -200,8 +188,6 @@ export namespace ProtocolTypes {
     [chan_takeAction]: chan_takeAction,
     [chan_uninstall]: chan_uninstall,
     [chan_rescindDepositRights]: chan_rescindDepositRights,
-    [chan_withdraw]: chan_withdraw,
-    [chan_withdrawCommitment]: chan_withdrawCommitment,
   };
   export type RpcMethodName = keyof typeof RpcMethodNames;
 
@@ -408,24 +394,6 @@ export namespace ProtocolTypes {
     newState: SolidityValueType;
   };
 
-  export type WithdrawParams = {
-    multisigAddress: string;
-    recipient?: string;
-    amount: BigNumber;
-    tokenAddress?: string;
-  };
-
-  export type WithdrawResult = {
-    recipient: string;
-    txHash: string;
-  };
-
-  export type WithdrawCommitmentParams = WithdrawParams;
-
-  export type WithdrawCommitmentResult = {
-    transaction: MinimalTransaction;
-  };
-
   export type MethodParams =
     | GetAppInstancesParams
     | GetProposedAppInstancesParams
@@ -474,10 +442,6 @@ export namespace ProtocolTypes {
     appInstanceId: string;
     newState: SolidityValueType;
     action?: SolidityValueType;
-  };
-
-  export type WithdrawEventData = {
-    amount: BigNumber;
   };
 
   export type EventData =

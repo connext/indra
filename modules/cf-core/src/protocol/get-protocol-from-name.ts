@@ -7,7 +7,6 @@ import { SETUP_PROTOCOL } from "./setup";
 import { TAKE_ACTION_PROTOCOL } from "./take-action";
 import { UNINSTALL_PROTOCOL } from "./uninstall";
 import { UPDATE_PROTOCOL } from "./update";
-import { WITHDRAW_PROTOCOL } from "./withdraw";
 
 const protocolsByName = {
   [Protocol.Install]: INSTALL_PROTOCOL,
@@ -16,7 +15,6 @@ const protocolsByName = {
   [Protocol.TakeAction]: TAKE_ACTION_PROTOCOL,
   [Protocol.Uninstall]: UNINSTALL_PROTOCOL,
   [Protocol.Update]: UPDATE_PROTOCOL,
-  [Protocol.Withdraw]: WITHDRAW_PROTOCOL,
 };
 
 export function getProtocolFromName(protocolName: Protocol): ProtocolExecutionFlow {

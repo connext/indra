@@ -25,7 +25,7 @@ beforeAll(async () => {
 
   appWithAction = await new ContractFactory(
     AppWithAction.abi,
-    AppWithAction.evm.bytecode,
+    AppWithAction.bytecode,
     wallet,
   ).deploy();
 });

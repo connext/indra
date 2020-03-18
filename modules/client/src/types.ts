@@ -113,9 +113,5 @@ export {
   UninstallMessage,
   UpdateStateMessage,
   weiToToken,
-  WithdrawalResponse,
-  WithdrawConfirmationMessage,
-  WithdrawFailedMessage,
   WithdrawParameters,
-  WithdrawStartedMessage,
 } from "@connext/types";

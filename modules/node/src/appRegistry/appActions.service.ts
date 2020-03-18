@@ -1,41 +1,45 @@
 import {
-  SimpleLinkedTransferAppState,
-  FastSignedTransferAppState,
-  FastSignedTransferAppAction,
-  FastSignedTransferActionType,
-  FastSignedTransferApp,
-  SimpleLinkedTransferApp,
-  HashLockTransferApp,
-  HashLockTransferAppState,
-  HashLockTransferAppAction,
-  FastSignedTransferAppActionBigNumber,
-} from "@connext/types";
-import {
   SupportedApplication,
+  convertWithrawAppState,
   AppState,
   AppAction,
   convertHashLockTransferAppState,
   convertFastSignedTransferAppState,
 } from "@connext/apps";
+import {
+  FastSignedTransferApp,
+  SimpleLinkedTransferApp,
+  WithdrawApp,
+  SimpleLinkedTransferAppState,
+  FastSignedTransferAppState,
+  FastSignedTransferAppAction,
+  FastSignedTransferActionType,
+  HashLockTransferApp,
+  HashLockTransferAppState,
+  HashLockTransferAppAction,
+  FastSignedTransferAppActionBigNumber,
+  WithdrawAppState,
+  WithdrawAppAction,
+} from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { soliditySha256 } from "ethers/utils";
 import { AddressZero, Zero } from "ethers/constants";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
-import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { FastSignedTransferService } from "../fastSignedTransfer/fastSignedTransfer.service";
+import { WithdrawRepository } from "../withdraw/withdraw.repository";
+import { WithdrawService } from "../withdraw/withdraw.service";
 
 @Injectable()
 export class AppActionsService {
   constructor(
     private readonly log: LoggerService,
-    private readonly linkedTransferService: LinkedTransferService,
-    private readonly fastSignedTransferService: FastSignedTransferService,
+    private readonly withdrawService: WithdrawService,
     private readonly cfCoreService: CFCoreService,
+    private readonly withdrawRepository: WithdrawRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
@@ -64,6 +68,14 @@ export class AppActionsService {
           appInstanceId,
           newState as SimpleLinkedTransferAppState,
           from,
+        );
+        break;
+      }
+      case WithdrawApp: {
+        await this.handleWithdrawAppAction(
+          appInstanceId,
+          action as WithdrawAppAction,
+          newState as WithdrawAppState,
         );
         break;
       }
@@ -162,6 +174,40 @@ export class AppActionsService {
       await this.channelRepository.findByUserPublicIdentifierOrThrow(from),
     );
     this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+  }
+
+  private async handleWithdrawAppAction(
+    appInstanceId: string,
+    action: WithdrawAppAction,
+    state: WithdrawAppState,
+  ): Promise<void> {
+    let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstanceId);
+    if (!withdraw) {
+      throw new Error(`No withdraw entity found for this appInstanceId: ${appInstanceId}`);
+    }
+    withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(
+      withdraw,
+      action.signature,
+    );
+
+    const stateBigNumber = convertWithrawAppState("bignumber", state);
+    const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
+    if (!appInstance) {
+      throw new Error(`No channel exists for multisigAddress ${appInstance.multisigAddress}`);
+    }
+
+    const commitment = await this.cfCoreService.createWithdrawCommitment(
+      {
+        amount: stateBigNumber.transfers[0].amount,
+        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        recipient: this.cfCoreService.cfCore.freeBalanceAddress,
+      },
+      appInstance.multisigAddress,
+    );
+    const tx = commitment.getSignedTransaction(stateBigNumber.signatures);
+
+    this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstanceId}`);
+    await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
   }
 
   private async handleHashLockTransferAppAction(

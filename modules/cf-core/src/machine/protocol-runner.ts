@@ -14,7 +14,6 @@ import {
   TakeActionProtocolParams,
   UninstallProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams,
 } from "../types";
 
 import { Opcode, Protocol } from "./enums";
@@ -35,8 +34,6 @@ type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
   ? UninstallProtocolParams
   : T extends Protocol.TakeAction
   ? TakeActionProtocolParams
-  : T extends Protocol.Withdraw
-  ? WithdrawProtocolParams
   : T extends Protocol.Propose
   ? ProposeInstallProtocolParams
   : never;
@@ -48,7 +45,6 @@ function firstRecipientFromProtocolName(protocolName: Protocol) {
       Protocol.Uninstall,
       Protocol.TakeAction,
       Protocol.Install,
-      Protocol.Withdraw,
       Protocol.Propose,
     ].indexOf(protocolName) !== -1
   ) {

@@ -40,7 +40,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async addUserWithdrawal(tx: Transaction, channel: Channel): Promise<OnchainTransaction> {
+  async addWithdrawal(tx: Transaction, channel: Channel): Promise<OnchainTransaction> {
     const onchain = new OnchainTransaction();
     onchain.reason = TransactionReason.USER_WITHDRAWAL;
     onchain.value = tx.value;

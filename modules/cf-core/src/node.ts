@@ -228,6 +228,13 @@ export class Node {
       return (msg as NodeMessageWrappedProtocolMessage).data;
     });
 
+    protocolRunner.register(Opcode.WRITE_COMMITMENT, async (args: any[]) => {
+      const { store } = this.requestHandler;
+
+      const [protocol, commitment, ...key] = args;
+      await store.setCommitment([protocol, ...key], commitment);
+    });
+
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
       const { store } = this.requestHandler;
       const [stateChannels] = args;

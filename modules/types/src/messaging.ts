@@ -1,4 +1,4 @@
-import { BigNumber, TransactionReceipt } from "./basic";
+import { BigNumber } from "./basic";
 import { EventName } from "./events";
 import { ILoggerService } from "./logger";
 import { ProtocolMessage, ProtocolTypes } from "./protocol";
@@ -126,28 +126,8 @@ export interface UpdateStateMessage extends NodeMessage {
   data: ProtocolTypes.UpdateStateEventData;
 }
 
-export interface WithdrawConfirmationMessage extends NodeMessage {
-  data: {
-    txReceipt: TransactionReceipt;
-  };
-}
-
-export interface WithdrawFailedMessage extends NodeMessage {
-  data: string; // failure error
-}
-
-export interface WithdrawStartedMessage extends NodeMessage {
-  data: {
-    params: ProtocolTypes.WithdrawParams;
-    txHash?: string; // not included in responder events
-  };
-}
-
 export type EventEmittedMessage =
   | RejectProposalMessage
-  | WithdrawConfirmationMessage
-  | WithdrawStartedMessage
-  | WithdrawFailedMessage
   | UninstallMessage
   | UpdateStateMessage
   | InstallMessage

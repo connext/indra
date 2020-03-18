@@ -2,24 +2,27 @@ import { SupportedApplication, AppActionBigNumber, AppStateBigNumber } from "@co
 import { IMessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
-  IChannelProvider,
-  LINKED_TRANSFER_TO_RECIPIENT,
   chan_getUserWithdrawal,
-  chan_setUserWithdrawal,
-  chan_setStateChannel,
   chan_restoreState,
-  IClientStore,
-  ILoggerService,
-  LinkedTransferToRecipientResponse,
-  LINKED_TRANSFER,
+  chan_setStateChannel,
+  chan_setUserWithdrawal,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   FAST_SIGNED_TRANSFER,
   FastSignedTransferParameters,
   HASHLOCK_TRANSFER,
-  ResolveLinkedTransferParameters,
+  IChannelProvider,
+  IClientStore,
+  ILoggerService,
+  LINKED_TRANSFER,
+  LINKED_TRANSFER_TO_RECIPIENT,
+  LinkedTransferToRecipientResponse,
   ResolveFastSignedTransferParameters,
   ResolveHashLockTransferParameters,
+  ResolveLinkedTransferParameters,
+  TransactionResponse,
+  WithdrawParameters,
+  WithdrawResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -59,7 +62,6 @@ import {
   InternalClientOptions,
   KeyGen,
   makeChecksum,
-  makeChecksumOrEthAddress,
   RebalanceProfile,
   ProtocolTypes,
   RequestCollateralResponse,
@@ -71,8 +73,6 @@ import {
   SwapParameters,
   Transfer,
   TransferParameters,
-  WithdrawalResponse,
-  WithdrawParameters,
 } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
@@ -81,8 +81,6 @@ import { FastSignedTransferController } from "./controllers/FastSignedTransferCo
 import { ResolveFastSignedTransferController } from "./controllers/ResolveFastSignedTransferController";
 import { HashLockTransferController } from "./controllers/HashLockTransferController";
 import { ResolveHashLockTransferController } from "./controllers/ResolveHashLockTransferController";
-
-const MAX_WITHDRAWAL_RETRIES = 3;
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
@@ -374,19 +372,33 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: TransferParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
+    if (!params.paymentId) {
+      params.paymentId = hexlify(randomBytes(32));
+    }
     return this.linkedTransferController.linkedTransferToRecipient({
       amount: params.amount,
       assetId: params.assetId,
       conditionType: LINKED_TRANSFER_TO_RECIPIENT,
       meta: params.meta,
-      paymentId: hexlify(randomBytes(32)),
+      paymentId: params.paymentId,
       preImage: hexlify(randomBytes(32)),
       recipient: params.recipient,
     }) as Promise<LinkedTransferToRecipientResponse>;
   };
 
-  public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
+  public withdraw = async (params: WithdrawParameters): Promise<WithdrawResponse> => {
     return await this.withdrawalController.withdraw(params);
+  };
+
+  public respondToNodeWithdraw = async (appInstance: AppInstanceJson): Promise<void> => {
+    return await this.withdrawalController.respondToNodeWithdraw(appInstance);
+  };
+
+  public saveWithdrawCommitmentToStore = async (
+    params: WithdrawParameters<BigNumber>,
+    signatures: string[],
+  ): Promise<void> => {
+    return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
   };
 
   public resolveCondition = async (
@@ -437,7 +449,7 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
-  public getLatestNodeSubmittedWithdrawal = async (): Promise<
+  public getLatestWithdrawal = async (): Promise<
     { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
   > => {
     const value = await this.channelProvider.send(chan_getUserWithdrawal, {});
@@ -457,25 +469,26 @@ export class ConnextClient implements IConnextClient {
     return value;
   };
 
-  public watchForUserWithdrawal = async (): Promise<void> => {
+  public watchForUserWithdrawal = async (): Promise<TransactionResponse | undefined> => {
     // poll for withdrawal tx submitted to multisig matching tx data
     const maxBlocks = 15;
     const startingBlock = await this.ethProvider.getBlockNumber();
+    let transaction: TransactionResponse;
 
     // TODO: poller should not be completely blocking, but safe to leave for now
     // because the channel should be blocked
     try {
-      await new Promise((resolve: any, reject: any): any => {
+      transaction = await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on(
           "block",
           async (blockNumber: number): Promise<void> => {
-            const found = await this.checkForUserWithdrawal(blockNumber);
-            if (found) {
+            const transaction = await this.checkForUserWithdrawal(blockNumber);
+            if (transaction) {
               await this.channelProvider.send(chan_setUserWithdrawal, {
                 withdrawalObject: undefined,
               });
               this.ethProvider.removeAllListeners("block");
-              resolve();
+              resolve(transaction);
             }
             if (blockNumber - startingBlock >= maxBlocks) {
               this.ethProvider.removeAllListeners("block");
@@ -485,11 +498,13 @@ export class ConnextClient implements IConnextClient {
         );
       });
     } catch (e) {
-      if (e.includes(`More than ${maxBlocks} have passed`)) {
-        this.log.debug("Retrying node submission");
-        await this.retryNodeSubmittedWithdrawal();
-      }
+      // if (e.includes(`More than ${maxBlocks} have passed`)) {
+      //   this.log.debug("Retrying node submission");
+      //   await this.retryNodeSubmittedWithdrawal();
+      // }
+      throw new Error(`Error watching for user withdrawal: ${e}`);
     }
+    return transaction;
   };
 
   ////////////////////////////////////////
@@ -745,55 +760,6 @@ export class ConnextClient implements IConnextClient {
     });
   };
 
-  public providerWithdraw = async (
-    assetId: string,
-    amount: BigNumber,
-    recipient?: string,
-  ): Promise<CFCoreTypes.WithdrawResult> => {
-    const freeBalance = await this.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
-    const err = [
-      notLessThanOrEqualTo(amount, preWithdrawalBal),
-      assetId ? invalidAddress(assetId) : null,
-      recipient ? invalidAddress(recipient) : null,
-    ].filter(falsy)[0];
-    if (err) {
-      this.log.error(err);
-      throw new Error(err);
-    }
-
-    return await this.channelProvider.send(ProtocolTypes.chan_withdraw, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      recipient,
-      tokenAddress: makeChecksum(assetId),
-    } as CFCoreTypes.WithdrawParams);
-  };
-
-  public withdrawCommitment = async (
-    amount: BigNumber,
-    assetId?: string,
-    recipient?: string,
-  ): Promise<CFCoreTypes.WithdrawCommitmentResult> => {
-    const freeBalance = await this.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
-    const err = [
-      notLessThanOrEqualTo(amount, preWithdrawalBal),
-      assetId ? invalidAddress(assetId) : null,
-      recipient ? invalidAddress(recipient) : null,
-    ].filter(falsy)[0];
-    if (err) {
-      this.log.error(err);
-      throw new Error(err);
-    }
-    return await this.channelProvider.send(ProtocolTypes.chan_withdrawCommitment, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      recipient,
-      tokenAddress: makeChecksumOrEthAddress(assetId),
-    } as CFCoreTypes.WithdrawCommitmentParams);
-  };
-
   ///////////////////////////////////
   // NODE METHODS
 
@@ -899,14 +865,21 @@ export class ConnextClient implements IConnextClient {
     const linkedRegistryInfo = this.appRegistry.filter(
       (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
     )[0];
+    const withdrawRegistryInfo = this.appRegistry.filter(
+      (app: DefaultApp) => app.name === "WithdrawApp",
+    )[0];
 
     await this.removeHangingProposalsByDefinition([
       swapAppRegistryInfo.appDefinitionAddress,
       linkedRegistryInfo.appDefinitionAddress,
+      withdrawRegistryInfo.appDefinitionAddress,
     ]);
 
     // deal with any swap apps that are installed
-    await this.uninstallAllAppsByDefintion([swapAppRegistryInfo.appDefinitionAddress]);
+    await this.uninstallAllAppsByDefintion([
+      swapAppRegistryInfo.appDefinitionAddress,
+      withdrawRegistryInfo.appDefinitionAddress,
+    ]);
   };
 
   /**
@@ -933,6 +906,7 @@ export class ConnextClient implements IConnextClient {
     const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
       appDefinitions.includes(app.appInterface.addr),
     );
+    //TODO ARJUN there is an edgecase where this will cancel withdrawal
     for (const app of apps) {
       await this.uninstallApp(app.identityHash);
     }
@@ -1012,68 +986,6 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
-  public resubmitActiveWithdrawal = async (): Promise<void> => {
-    const withdrawal = await this.channelProvider.send(chan_getUserWithdrawal, {});
-
-    if (!withdrawal || withdrawal === "undefined") {
-      // No active withdrawal, nothing to do
-      return;
-    }
-
-    if (withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
-      // throw an error here, node has failed to submit withdrawal.
-      // this indicates the node is compromised or acting maliciously.
-      // no further actions should be taken by the client. (since this fn is
-      // called on `connext.connect`, throwing an error will prevent client
-      // starting properly)
-      const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
-      this.log.error(msg);
-      throw new Error(msg);
-    }
-
-    // get latest submitted withdrawal from hub and check to see if the
-    // data matches what we expect from our store
-    const tx = await this.node.getLatestWithdrawal();
-    if (this.matchTx(tx, withdrawal.tx)) {
-      // the withdrawal in our store matches latest submitted tx,
-      // clear value in store and return
-      await this.channelProvider.send(chan_setUserWithdrawal, {
-        withdrawalObject: undefined,
-      });
-      return;
-    }
-
-    // otherwise, there are retries remaining, and you should resubmit
-    this.log.debug(
-      `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
-    );
-    await this.retryNodeSubmittedWithdrawal();
-  };
-
-  public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
-    const val = await this.getLatestNodeSubmittedWithdrawal();
-    if (!val) {
-      this.log.error("No transaction found to retry");
-      return;
-    }
-    let { retry } = val;
-    const { tx } = val;
-    retry += 1;
-    await this.channelProvider.send(chan_setUserWithdrawal, {
-      withdrawalObject: { retry, tx },
-    });
-    if (retry >= MAX_WITHDRAWAL_RETRIES) {
-      const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
-      this.log.error(msg);
-      // TODO: make this submit from wallet :)
-      // but this is weird, could take a while and may have gas issues.
-      // may not be the best way to do this
-      throw new Error(msg);
-    }
-    await this.node.withdraw(tx);
-    await this.watchForUserWithdrawal();
-  };
-
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
@@ -1104,11 +1016,13 @@ export class ConnextClient implements IConnextClient {
     return undefined;
   };
 
-  private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
-    const val = await this.getLatestNodeSubmittedWithdrawal();
+  private checkForUserWithdrawal = async (
+    inBlock: number,
+  ): Promise<TransactionResponse | undefined> => {
+    const val = await this.getLatestWithdrawal();
     if (!val) {
       this.log.error("No transaction found in store.");
-      return false;
+      return undefined;
     }
 
     const { tx } = val;
@@ -1116,21 +1030,21 @@ export class ConnextClient implements IConnextClient {
     // the contract method
     const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
     if (txsTo === 0) {
-      return false;
+      return undefined;
     }
 
     const block = await this.ethProvider.getBlock(inBlock);
     const { transactions } = block;
     if (transactions.length === 0) {
-      return false;
+      return undefined;
     }
 
     for (const transactionHash of transactions) {
       const transaction = await this.ethProvider.getTransaction(transactionHash);
       if (this.matchTx(transaction, tx)) {
-        return true;
+        return transaction;
       }
     }
-    return false;
+    return undefined;
   };
 }

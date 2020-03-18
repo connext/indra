@@ -3,7 +3,6 @@ import {
   INSTALL_EVENT,
   UNINSTALL_EVENT,
   CREATE_CHANNEL_EVENT,
-  WITHDRAWAL_STARTED_EVENT,
   UPDATE_STATE_EVENT,
 } from "@connext/types";
 import { Protocol } from "../machine";
@@ -24,8 +23,6 @@ import {
   TakeActionProtocolParams,
   UninstallProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams,
-  WithdrawStartedMessage,
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
@@ -149,15 +146,6 @@ async function getOutgoingEventDataFromProtocol(
             .multisigOwners,
         ),
       };
-    case Protocol.Withdraw:
-      // NOTE: responder will only ever emit a withdraw started
-      // event. does not include tx hash
-      // determine if the withdraw is finishing or if it is starting
-      return {
-        ...baseEvent,
-        type: WITHDRAWAL_STARTED_EVENT,
-        data: getWithdrawEventData(params as WithdrawProtocolParams),
-      } as WithdrawStartedMessage;
     case Protocol.TakeAction:
     case Protocol.Update:
       return {
@@ -189,18 +177,6 @@ function getStateUpdateEventData(
 
 function getUninstallEventData({ appIdentityHash: appInstanceId }: UninstallProtocolParams) {
   return { appInstanceId };
-}
-
-function getWithdrawEventData(params: WithdrawProtocolParams) {
-  const { multisigAddress, tokenAddress, recipient, amount } = params;
-  return {
-    params: {
-      multisigAddress,
-      tokenAddress,
-      recipient,
-      amount,
-    },
-  };
 }
 
 function getSetupEventData(

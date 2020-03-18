@@ -13,7 +13,6 @@ export const withdrawFromChannel = async (
   client: IConnextClient,
   amount: BigNumber,
   assetId: string,
-  userSubmitted: boolean = false,
   recipient: string = Wallet.createRandom().address,
 ): Promise<void> => {
   // try to withdraw
@@ -22,15 +21,14 @@ export const withdrawFromChannel = async (
   const log = new Logger("WithdrawFromChannel", env.logLevel);
   log.info(`client.withdraw() called`);
   const start = Date.now();
-  await client.withdraw({
+  const { transaction } = await client.withdraw({
     amount: amount.toString(),
     assetId,
     recipient,
-    userSubmitted,
   });
   log.info(`client.withdraw() returned in ${Date.now() - start}ms`);
   const postWithdrawalBalance = await client.getFreeBalance(assetId);
-  let recipientBalance;
+  let recipientBalance: BigNumber;
   if (assetId === AddressZero) {
     recipientBalance = await ethProvider.getBalance(recipient);
   } else {
@@ -39,5 +37,6 @@ export const withdrawFromChannel = async (
   }
   expect(recipientBalance.toString()).to.be.eq(amount.toString());
   expect(postWithdrawalBalance[client.freeBalanceAddress].toString()).to.be.eq(expected.toString());
+  expect(transaction.hash).to.exist;
   return;
 };

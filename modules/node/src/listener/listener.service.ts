@@ -1,3 +1,4 @@
+import { AppAction } from "@connext/apps";
 import {
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
@@ -9,9 +10,6 @@ import {
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
   UPDATE_STATE_EVENT,
-  WITHDRAWAL_CONFIRMED_EVENT,
-  WITHDRAWAL_FAILED_EVENT,
-  WITHDRAWAL_STARTED_EVENT,
   ProtocolTypes,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
@@ -35,9 +33,6 @@ import {
   RejectProposalMessage,
   UninstallMessage,
   UpdateStateMessage,
-  WithdrawConfirmationMessage,
-  WithdrawFailedMessage,
-  WithdrawStartedMessage,
 } from "../util/cfCore";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
@@ -172,19 +167,10 @@ export default class ListenerService implements OnModuleInit {
         await this.appActionsService.handleAppAction(
           appRegistryInfo.name,
           appInstanceId,
-          newState as any,
-          action as any,
+          newState as any, // AppState (excluding simple swap app)
+          action as AppAction<any>,
           data.from,
         );
-      },
-      WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
-        this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
-      },
-      WITHDRAWAL_FAILED_EVENT: (data: WithdrawFailedMessage): void => {
-        this.logEvent(WITHDRAWAL_FAILED_EVENT, data);
-      },
-      WITHDRAWAL_STARTED_EVENT: (data: WithdrawStartedMessage): void => {
-        this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
     };
   }

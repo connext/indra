@@ -5,7 +5,7 @@ import { hexlify, randomBytes } from "ethers/utils";
 import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
 
-describe("Async Transfers", () => {
+describe("Get Linked Transfer", () => {
   let clientA: IConnextClient;
 
   beforeEach(async () => {

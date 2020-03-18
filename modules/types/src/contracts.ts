@@ -1,4 +1,7 @@
 import { BaseProvider, BigNumber } from "./basic";
+import { CoinBalanceRefundApp } from "./apps";
+import { ProtocolTypes } from "./protocol";
+import { Signature } from "ethers/utils";
 
 ////////////////////////////////////////
 // Generic contract ops & network config
@@ -38,7 +41,7 @@ export interface NetworkContext {
 // Keep in sync with above
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ChallengeRegistry",
-  "CoinBalanceRefundApp",
+  CoinBalanceRefundApp, // TODO: remove, but this will break existing channels
   "ConditionalTransactionDelegateTarget",
   "IdentityApp",
   "MinimumViableMultisig",
@@ -58,6 +61,26 @@ export interface DeployedContractNetworksFileEntry {
 
 ////////////////////////////////////////
 // Specific contract Interfaces
+
+// Multisig
+export interface EthereumCommitment {
+  hashToSign(): string;
+  getSignedTransaction(signatures: Signature[]): ProtocolTypes.MinimalTransaction;
+}
+
+export enum MultisigOperation {
+  Call = 0,
+  DelegateCall = 1,
+  // Gnosis Safe uses "2" for CREATE, but we don't actually
+  // make use of it in our code. Still, I put this here to be
+  // maximally explicit that we based the data structure on
+  // Gnosis's implementation of a Multisig
+  Create = 2,
+}
+
+export type MultisigTransaction = ProtocolTypes.MinimalTransaction & {
+  operation: MultisigOperation;
+};
 
 export type SingleAssetTwoPartyIntermediaryAgreement = {
   timeLockedPassThroughIdentityHash: string;
@@ -103,9 +126,6 @@ export const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint25
 
 export const multiAssetMultiPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[][]`;
 
-export const coinBalanceRefundStateEncoding =
-  "tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)";
-
 export enum OutcomeType {
   // uint8
   TWO_PARTY_FIXED_OUTCOME = "TWO_PARTY_FIXED_OUTCOME",
@@ -121,10 +141,3 @@ export enum TwoPartyFixedOutcome {
   SEND_TO_ADDR_TWO = 1,
   SPLIT_AND_SEND_TO_BOTH_ADDRS = 2,
 }
-
-export type CoinBalanceRefundState = {
-  recipient: string;
-  multisig: string;
-  threshold: BigNumber;
-  tokenAddress: string;
-};

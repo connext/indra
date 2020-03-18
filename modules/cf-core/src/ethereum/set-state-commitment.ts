@@ -14,7 +14,7 @@ import { appIdentityToHash } from "./utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 
-export class SetStateCommitment extends EthereumCommitment {
+export class SetStateCommitment implements EthereumCommitment {
   constructor(
     public readonly challengeRegistryAddress: string,
     public readonly appIdentity: AppIdentity,
