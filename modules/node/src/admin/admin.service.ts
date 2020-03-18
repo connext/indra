@@ -4,6 +4,7 @@ import {
   StateChannelJSON,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
+import { HashZero, AddressZero, Zero } from "ethers/constants";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -15,6 +16,9 @@ import { LoggerService } from "../logger/logger.service";
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { CFCoreStore } from "../cfCore/cfCore.store";
+import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
+import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -28,6 +32,8 @@ export class AdminService {
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
+    private readonly cfCoreStore: CFCoreStore,
+    private readonly setupCommitment: SetupCommitmentRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
@@ -224,7 +230,36 @@ export class AdminService {
     return output;
   }
 
-  async migrateChannelStore() {
-    
+  async migrateChannelStore(): Promise<boolean> {
+    console.log(`${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`);
+    const oldChannelRecords = await this.cfCoreRepository.get(
+      `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`,
+    );
+    console.log("migrateChannelStore: ", oldChannelRecords);
+    const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
+    for (const channelJSON of channelJSONs) {
+      // create blank setup commitment
+      const setup = new SetupCommitmentEntity();
+      setup.multisigAddress = channelJSON.multisigAddress;
+      setup.to = AddressZero;
+      setup.value = Zero;
+      setup.data = HashZero;
+      await this.setupCommitment.save(setup);
+
+      await this.cfCoreStore.saveStateChannel(channelJSON);
+      for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
+        await this.cfCoreStore.saveAppProposal(channelJSON.multisigAddress, proposedApp);
+      }
+
+      for (const [, appInstance] of channelJSON.appInstances) {
+        await this.cfCoreStore.saveAppInstance(channelJSON.multisigAddress, appInstance);
+      }
+
+      await this.cfCoreStore.saveFreeBalance(
+        channelJSON.multisigAddress,
+        channelJSON.freeBalanceAppInstance,
+      );
+    }
+    return true;
   }
 }

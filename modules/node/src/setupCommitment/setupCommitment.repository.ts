@@ -14,7 +14,7 @@ export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitme
 };
 
 @EntityRepository(SetupCommitmentEntity)
-export class SetupCommitmentEntityRepository extends Repository<SetupCommitmentEntity> {
+export class SetupCommitmentRepository extends Repository<SetupCommitmentEntity> {
   findByMultisigAddress(multisigAddress: string): Promise<SetupCommitmentEntity> {
     return this.findOne({
       where: { multisigAddress },

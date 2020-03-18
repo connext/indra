@@ -21,7 +21,7 @@ import {
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
-import { SetupCommitmentEntityRepository } from "../setupCommitment/setupCommitment.repository";
+import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -33,7 +33,7 @@ export class CFCoreStore implements IStoreService {
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
     private readonly configService: ConfigService,
-    private readonly setupCommitmentRepository: SetupCommitmentEntityRepository,
+    private readonly setupCommitmentRepository: SetupCommitmentRepository,
   ) {}
 
   getSchemaVersion(): number {
