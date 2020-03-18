@@ -3,7 +3,7 @@ import { MessagingConfig, VerifyNonceDtoType, ILoggerService } from "@connext/ty
 import axios, { AxiosResponse } from "axios";
 import { isNode } from "./lib";
 
-const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") => {
+export const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") => {
   let arr = url.split(delimiter);
   if (arr.length > 1) {
     arr.shift();
@@ -12,7 +12,7 @@ const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "
   return arr.join(delimiter);
 };
 
-const replaceUrlPort = (url: string, port: number, delimiter: string = ":") => {
+export const replaceUrlPort = (url: string, port: number, delimiter: string = ":") => {
   const arr = url.split(delimiter);
   if (arr.length > 1) {
     arr.pop();
