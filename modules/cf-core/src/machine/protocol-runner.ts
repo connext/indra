@@ -11,17 +11,59 @@ import { v4 as uuid } from "uuid";
 import { getProtocolFromName } from "../protocol";
 import {
   Context,
+<<<<<<< HEAD
+=======
+  InstallProtocolParams,
+>>>>>>> 845-store-refactor
   Middleware,
   NetworkContext,
   Opcode,
   ProtocolMessage,
+<<<<<<< HEAD
+=======
+  SetupProtocolParams,
+  TakeActionProtocolParams,
+  UninstallProtocolParams,
+  UpdateProtocolParams,
+>>>>>>> 845-store-refactor
 } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
 import { Store } from "../store";
 
+<<<<<<< HEAD
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
+=======
+/**
+Type-level mapping from Protocol to Protocol Param
+For e.g., ParamTypeOf<Protocol.Install> = InstallProtocolParams
+This syntax is preferred according to:
+https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types
+**/
+type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
+  ? InstallProtocolParams
+  : T extends Protocol.Update
+  ? UpdateProtocolParams
+  : T extends Protocol.Uninstall
+  ? UninstallProtocolParams
+  : T extends Protocol.TakeAction
+  ? TakeActionProtocolParams
+  : T extends Protocol.Propose
+  ? ProposeInstallProtocolParams
+  : never;
+
+function firstRecipientFromProtocolName(protocolName: Protocol) {
+  if (
+    [
+      Protocol.Update,
+      Protocol.Uninstall,
+      Protocol.TakeAction,
+      Protocol.Install,
+      Protocol.Propose,
+    ].indexOf(protocolName) !== -1
+  ) {
+>>>>>>> 845-store-refactor
     return "responderXpub";
   }
   throw Error(`Unknown protocolName ${protocolName} passed to firstRecipientFromProtocolName`);

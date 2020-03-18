@@ -1,10 +1,17 @@
 import {
+<<<<<<< HEAD
   EventNames,
   EventPayloads,
   IChannelProvider,
   ILoggerService,
   MethodParams,
   MethodResults,
+=======
+  CFCoreTypes,
+  IChannelProvider,
+  ILoggerService,
+  REJECT_INSTALL_EVENT,
+>>>>>>> 845-store-refactor
 } from "@connext/types";
 import { providers } from "ethers";
 

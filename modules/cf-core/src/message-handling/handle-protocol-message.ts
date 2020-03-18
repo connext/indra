@@ -1,9 +1,17 @@
 import {
+<<<<<<< HEAD
   EventNames,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
+=======
+  PROPOSE_INSTALL_EVENT,
+  INSTALL_EVENT,
+  UNINSTALL_EVENT,
+  CREATE_CHANNEL_EVENT,
+  UPDATE_STATE_EVENT,
+>>>>>>> 845-store-refactor
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -13,10 +21,20 @@ import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import {
   EventEmittedMessage,
+<<<<<<< HEAD
+=======
+  InstallProtocolParams,
+>>>>>>> 845-store-refactor
   NetworkContext,
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
+<<<<<<< HEAD
   WithdrawStartedMessage,
+=======
+  TakeActionProtocolParams,
+  UninstallProtocolParams,
+  UpdateProtocolParams,
+>>>>>>> 845-store-refactor
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
@@ -48,9 +66,13 @@ export async function handleReceivedProtocolMessage(
     publicIdentifier,
   );
 
+<<<<<<< HEAD
   if (
     outgoingEventData && protocol === ProtocolNames.install
   ) {
+=======
+  if (outgoingEventData && protocol === Protocol.Install) {
+>>>>>>> 845-store-refactor
     const appInstanceId =
       outgoingEventData!.data["appInstanceId"] ||
       (outgoingEventData!.data as any).params["appInstanceId"];
@@ -64,11 +86,10 @@ export async function handleReceivedProtocolMessage(
         }
       }
       if (proposal) {
-        await store.saveStateChannel(
-          (await store.getStateChannelFromAppInstanceID(appInstanceId)).removeProposal(
-            appInstanceId,
-          ),
-        );
+        const channel = (
+          await store.getStateChannelFromAppInstanceID(appInstanceId)
+        ).removeProposal(proposal.identityHash);
+        await store.removeAppProposal(channel, proposal);
       }
     }
   }
@@ -143,6 +164,7 @@ async function getOutgoingEventDataFromProtocol(
             .multisigOwners,
         ),
       };
+<<<<<<< HEAD
     case ProtocolNames.withdraw:
       // NOTE: responder will only ever emit a withdraw started
       // event. does not include tx hash
@@ -154,6 +176,10 @@ async function getOutgoingEventDataFromProtocol(
       } as WithdrawStartedMessage;
     case ProtocolNames.takeAction:
     case ProtocolNames.update:
+=======
+    case Protocol.TakeAction:
+    case Protocol.Update:
+>>>>>>> 845-store-refactor
       return {
         ...baseEvent,
         type: EventNames.UPDATE_STATE_EVENT,
@@ -181,6 +207,7 @@ function getStateUpdateEventData(
   return { newState, appInstanceId, action };
 }
 
+<<<<<<< HEAD
 function getUninstallEventData({ appIdentityHash: appInstanceId }: ProtocolParams.Uninstall) {
   return { appInstanceId };
 }
@@ -197,12 +224,19 @@ function getWithdrawEventData(params: ProtocolParams.Withdraw) {
   };
 }
 
+=======
+function getUninstallEventData({ appIdentityHash: appInstanceId }: UninstallProtocolParams) {
+  return { appInstanceId };
+}
+
+>>>>>>> 845-store-refactor
 function getSetupEventData(
   { initiatorXpub: counterpartyXpub, multisigAddress }: ProtocolParams.Setup,
   owners: string[],
 ) {
   return { multisigAddress, owners, counterpartyXpub };
 }
+<<<<<<< HEAD
 
 /**
  * Produces an array of queues that the client must halt execution on
@@ -277,3 +311,5 @@ async function getQueueNamesListByProtocolName(
   throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
 }
 */
+=======
+>>>>>>> 845-store-refactor

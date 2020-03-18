@@ -21,7 +21,4 @@ export {
   RejectProposalMessage,
   UninstallMessage,
   UpdateStateMessage,
-  WithdrawConfirmationMessage,
-  WithdrawFailedMessage,
-  WithdrawStartedMessage,
 } from "@connext/types";

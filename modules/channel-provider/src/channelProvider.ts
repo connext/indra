@@ -1,11 +1,21 @@
 import {
+<<<<<<< HEAD
   ChannelMethod,
   ChannelMethods,
+=======
+  chan_config,
+  chan_signWithdrawCommitment,
+  chan_restoreState,
+  chan_getUserWithdrawal,
+  chan_setUserWithdrawal,
+  chan_setStateChannel,
+>>>>>>> 845-store-refactor
   ChannelProviderConfig,
   ConnextEventEmitter,
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
+  chan_nodeAuth,
   StateChannelJSON,
   WithdrawalMonitorObject,
 } from "@connext/types";
@@ -54,10 +64,20 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
         break;
+<<<<<<< HEAD
       case ChannelMethods.chan_nodeAuth:
         result = await this.signMessage(params.message);
         break;
       case ChannelMethods.chan_config:
+=======
+      case chan_signWithdrawCommitment:
+        result = await this.signWithdrawCommitment(params.message);
+        break;
+      case chan_nodeAuth:
+          result = await this.signMessage(params.message);
+          break;
+      case chan_config:
+>>>>>>> 845-store-refactor
         result = this.config;
         break;
       case ChannelMethods.chan_restoreState:
@@ -128,6 +148,9 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return this._send(ChannelMethods.chan_nodeAuth, { message });
   };
 
+  public signWithdrawCommitment = async (message: string): Promise<string> => {
+    return this._send(chan_signWithdrawCommitment, { message });
+  };
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 

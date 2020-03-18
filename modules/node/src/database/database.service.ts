@@ -12,13 +12,13 @@ import {
 } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { SetStateCommitmentEntity } from "../setStateCommitment/setStateCommitment.entity";
-import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { ConditionalTransactionCommitmentEntity } from "../conditionalCommitment/conditionalCommitment.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { Transfer } from "../transfer/transfer.entity";
 import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
-import { FastSignedTransfer } from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
+import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
+import { Withdraw } from "../withdraw/withdraw.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -34,10 +34,11 @@ import { EditViewTable1578621554000 } from "../../migrations/1578621554000-edit-
 import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-network-to-chain-id";
 import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
 import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
-import { InitCommitmentTable1582692126872 } from "../../migrations/1582692126872-init-commitment-table";
-import { InitAppInstanceTable1583612960994 } from "../../migrations/1583612960994-init-app-instance-table";
-import { UpdateChannelTable1583618773094 } from "../../migrations/1583618773094-update-channel-table";
 import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
+import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm-sync";
+import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
+import { cfCoreStoreUpdate1584381845220 } from "../../migrations/1584381845220-cf-core-store-update";
+import { initWithdrawApp1584466373728 } from "../../migrations/1584466373728-init-withdraw-app";
 
 export const entities = [
   AppInstance,
@@ -52,8 +53,8 @@ export const entities = [
   AnonymizedTransfer,
   ConditionalTransactionCommitmentEntity,
   SetStateCommitmentEntity,
-  WithdrawCommitment,
-  FastSignedTransfer,
+  SetupCommitmentEntity,
+  Withdraw,
 ];
 
 export const migrations = [
@@ -70,10 +71,11 @@ export const migrations = [
   NetworkToChainId1579686361011,
   AddAnonymizedViewTables1581090243171,
   RebalancingProfile1581796200880,
-  InitCommitmentTable1582692126872,
-  InitAppInstanceTable1583612960994,
-  UpdateChannelTable1583618773094,
   fastSignedTransfer1583682931763,
+  typeormSync1584364675207,
+  typeormSync21584369931723,
+  cfCoreStoreUpdate1584381845220,
+  initWithdrawApp1584466373728,
 ];
 
 @Injectable()

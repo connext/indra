@@ -3,7 +3,7 @@ import { AddressZero } from "ethers/constants";
 
 import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
 
-describe("Deposits", () => {
+describe("Deposit Rights", () => {
   let client: IConnextClient;
 
   afterEach(async () => {

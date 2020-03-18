@@ -8,7 +8,7 @@ import "../funding/libs/LibOutcome.sol";
 
 /// @title Simple Linked Transfer App
 /// @notice This contract allows users to claim a payment locked in
-///         the application if they provide the correct preimage
+///         the application if they provide the correct preImage
 contract SimpleLinkedTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
@@ -18,7 +18,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
     * as in the SimpleTwoPartySwapApp.
     *
     * This app can also not be used to send _multiple_ linked payments,
-    * only one can be redeemed with the preimage.
+    * only one can be redeemed with the preImage.
     *
     */
 

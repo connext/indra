@@ -12,6 +12,11 @@ export const RINKEBY_NETWORK = "rinkeby";
 
 // helpers
 
+export const isNode =
+  typeof process !== "undefined" &&
+  typeof process.versions !== "undefined" &&
+  typeof process.versions.node !== "undefined";
+
 export function isMainnet(network: string): boolean {
   return network.toLowerCase() === MAINNET_NETWORK.toLowerCase();
 }
@@ -57,9 +62,11 @@ export async function getDefaultOptions(
     throw new Error(`Provided network (${network.toLowerCase()}) is not supported`);
   }
 
+  const nodeUrlProtocol = isNode ? "nats" : "wss";
+
   const urlOptions = {
     ethProviderUrl: `https://${baseUrl}/ethprovider`,
-    nodeUrl: `wss://${baseUrl}/messaging`,
+    nodeUrl: `${nodeUrlProtocol}://${baseUrl}/messaging`,
   };
 
   const store = getOptionIfAvailable("store", overrideOptions) || getDefaultStore(overrideOptions);

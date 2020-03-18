@@ -13,15 +13,16 @@ import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify} from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 import { MessagingClientProviderId } from "../constants";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
@@ -52,6 +53,7 @@ export class ChannelService {
     private readonly channelRepository: ChannelRepository,
     private readonly configService: ConfigService,
     private readonly onchainTransactionService: OnchainTransactionService,
+    private readonly withdrawService: WithdrawService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
@@ -162,31 +164,9 @@ export class ChannelService {
       await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
     }
 
-    await this.proposeCoinBalanceRefund(assetId, channel);
+    await this.withdrawService.withdraw(channel.multisigAddress, amount, assetId);
 
-    const res = await this.cfCoreService.generateWithdrawCommitment(
-      channel.multisigAddress,
-      amount,
-      getAddress(assetId),
-    );
-    const tx = await this.onchainTransactionService.sendWithdrawalCommitment(
-      channel,
-      res.transaction,
-    );
-    tx.wait().then(txReceipt => {
-      this.messagingClient
-        .emit(
-          `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.reclaim.${channel.multisigAddress}`,
-          {
-            amount: amount.toString(),
-            assetId,
-            status: txReceipt.status,
-            transactionHash: txReceipt.transactionHash,
-          },
-        )
-        .toPromise();
-    });
-    return tx;
+    return {} as TransactionResponse; //TODO ARJUN temporary!!
   }
 
   private async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
@@ -520,6 +500,7 @@ export class ChannelService {
     };
   }
 
+<<<<<<< HEAD
   async withdrawForClient(
     userPublicIdentifier: string,
     tx: MinimalTransaction,
@@ -556,6 +537,8 @@ export class ChannelService {
     return state;
   }
 
+=======
+>>>>>>> 845-store-refactor
   async getDataFromRebalancingService(
     userPublicIdentifier: string,
     assetId: string,
@@ -587,5 +570,45 @@ export class ChannelService {
       lowerBoundReclaim: bigNumberify(rebalancingTargets.lowerBoundReclaim),
       upperBoundReclaim: bigNumberify(rebalancingTargets.upperBoundReclaim),
     };
+  }
+
+  async getRebalanceProfileForChannelAndAsset(
+    userPublicIdentifier: string,
+    assetId: string = AddressZero,
+  ): Promise<RebalanceProfile | undefined> {
+    // try to get rebalance profile configured
+    let profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
+      userPublicIdentifier,
+      assetId,
+    );
+    return profile;
+  }
+
+  async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
+
+    return state;
+  }
+
+  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
+    }
+    const { data: state } = await this.cfCoreService.getStateChannel(multisigAddress);
+
+    return state;
+  }
+
+  async getAllChannels(): Promise<Channel[]> {
+    const channels = await this.channelRepository.findAll();
+    if (!channels) {
+      throw new Error(`No channels found. This should never happen`);
+    }
+    return channels;
   }
 }

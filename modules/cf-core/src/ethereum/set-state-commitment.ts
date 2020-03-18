@@ -14,6 +14,7 @@ import { appIdentityToHash, sortSignaturesBySignerAddress } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 
+<<<<<<< HEAD
 export const getSetStateCommitment = (
   context: Context,
   appInstance: AppInstance,
@@ -26,6 +27,9 @@ export const getSetStateCommitment = (
 );
 
 export class SetStateCommitment extends EthereumCommitment {
+=======
+export class SetStateCommitment implements EthereumCommitment {
+>>>>>>> 845-store-refactor
   constructor(
     public readonly challengeRegistryAddress: string,
     public readonly appIdentity: AppIdentity,
@@ -34,9 +38,7 @@ export class SetStateCommitment extends EthereumCommitment {
     public readonly timeout: number,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
     private participantSignatures: Signature[] = [],
-  ) {
-    super();
-  }
+  ) {}
 
   get signatures(): Signature[] {
     return this.participantSignatures;

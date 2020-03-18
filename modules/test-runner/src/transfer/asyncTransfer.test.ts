@@ -1,6 +1,10 @@
 /* global before after */
 import { utils } from "@connext/client";
+<<<<<<< HEAD
 import { IConnextClient, ConditionalTransferTypes, CF_PATH } from "@connext/types";
+=======
+import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, CF_PATH } from "@connext/types";
+>>>>>>> 845-store-refactor
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
@@ -68,7 +72,6 @@ describe("Async Transfers", () => {
 
   it("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
     const receiverMnemonic = Wallet.createRandom().mnemonic;
-    console.log("receiverMnemonic: ", receiverMnemonic);
     const receiverXpub = HDNode.fromMnemonic(receiverMnemonic)
       .derivePath(CF_PATH)
       .neuter().extendedKey;
@@ -94,7 +97,7 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
-    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero, true);
+    await withdrawFromChannel(clientA, ZERO_ZERO_ONE_ETH, AddressZero);
     /*
       // @ts-ignore
       this.timeout(1200000);
@@ -247,7 +250,7 @@ describe("Async Transfers", () => {
     ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
   });
 
-  it("Bot A tries to transfer with a preimage that is not 32 bytes", async () => {
+  it("Bot A tries to transfer with a preImage that is not 32 bytes", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     const preImage = "nope";

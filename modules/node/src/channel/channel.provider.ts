@@ -8,11 +8,11 @@ import {
   StateChannelJSON,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
@@ -27,12 +27,13 @@ import { ChannelService, RebalanceType } from "./channel.service";
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
+    private readonly channelRepository: ChannelRepository,
+    private readonly channelService: ChannelService,
+    private readonly withdrawService: WithdrawService,
+    private readonly cfCoreService: CFCoreService,
+    private readonly onchainTransactionRepository: OnchainTransactionRepository,
     log: LoggerService,
     messaging: IMessagingService,
-    private readonly channelService: ChannelService,
-    private readonly cfCoreService: CFCoreService,
-    private readonly channelRepository: ChannelRepository,
-    private readonly onchainTransactionRepository: OnchainTransactionRepository,
   ) {
     super(log, messaging);
   }
@@ -68,6 +69,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     ) as unknown)) as MethodResults.Deposit;
   }
 
+<<<<<<< HEAD
   async withdraw(
     pubId: string,
     data: { tx: MinimalTransaction },
@@ -75,6 +77,8 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return await this.channelService.withdrawForClient(pubId, data.tx);
   }
 
+=======
+>>>>>>> 845-store-refactor
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
     await this.channelService.addRebalanceProfileToChannel(pubId, data.profile);
   }
@@ -106,10 +110,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "channel.create.>",
       this.authService.useUnverifiedPublicIdentifier(this.createChannel.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "channel.withdraw.>",
-      this.authService.useUnverifiedPublicIdentifier(this.withdraw.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.request-collateral.>",
@@ -150,6 +150,7 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     CFCoreService,
     ChannelRepository,
     OnchainTransactionRepository,
+    WithdrawService,
   ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
@@ -160,15 +161,17 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     cfCore: CFCoreService,
     channelRepo: ChannelRepository,
     onchain: OnchainTransactionRepository,
+    withdrawService: WithdrawService,
   ): Promise<void> => {
     const channel = new ChannelMessaging(
       authService,
+      channelRepo,
+      channelService,
+      withdrawService,
+      cfCore,
+      onchain,
       log,
       messaging,
-      channelService,
-      cfCore,
-      channelRepo,
-      onchain,
     );
     await channel.setupSubscriptions();
   },

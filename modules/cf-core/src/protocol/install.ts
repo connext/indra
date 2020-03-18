@@ -22,6 +22,7 @@ import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
+<<<<<<< HEAD
 const protocol = ProtocolNames.install;
 const {
   OP_SIGN,
@@ -32,6 +33,11 @@ const {
   PERSIST_FREE_BALANCE,
 } = Opcode;
 const { Conditional, SetState } = CommitmentType;
+=======
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
+const { Install } = Protocol;
+const { Conditional, SetState } = Commitment;
+>>>>>>> 845-store-refactor
 
 /**
  * @description This exchange is described at the following URL:
@@ -173,9 +179,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelAfter.freeBalance.identityHash,
     ];
 
+<<<<<<< HEAD
     yield [PERSIST_FREE_BALANCE, stateChannelAfter];
 
     yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
+=======
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
+>>>>>>> 845-store-refactor
 
     substart = Date.now();
     yield [
@@ -328,9 +338,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelAfter.freeBalance.identityHash,
     ];
 
+<<<<<<< HEAD
     yield [PERSIST_FREE_BALANCE, stateChannelAfter];
 
     yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
+=======
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
+>>>>>>> 845-store-refactor
 
     const m4 = {
       processID,

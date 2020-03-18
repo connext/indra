@@ -1,10 +1,17 @@
 import { CommitmentType, ProtocolParams, ProtocolNames, PersistAppType } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
+<<<<<<< HEAD
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, AppInstanceProposal } from "../models";
+=======
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
+import { xkeyKthAddress, Commitment, Opcode, Protocol, appIdentityToHash } from "../machine";
+import { SetStateCommitment } from "../ethereum";
+import { AppInstanceProposal } from "../models";
+>>>>>>> 845-store-refactor
 import {
   Context,
   Opcode,
@@ -45,10 +52,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
     } = params as ProtocolParams.Propose;
 
-    const preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
-    if (!preProtocolStateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
-    }
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -137,8 +141,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
-
     // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
@@ -146,6 +148,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
     ];
+
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
 
     logTime(log, start, `Finished Initiating`);
   },
@@ -178,10 +182,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    const preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
-    if (!preProtocolStateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
-    }
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -245,21 +246,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal.appSeqNo,
     ];
 
-    setStateCommitment.signatures = [
-      initiatorSignatureOnInitialState,
-      responderSignatureOnInitialState,
-    ];
-
-    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
-
-    // will also save the app array into the state channel
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.Proposal,
-      postProtocolStateChannel,
-      appInstanceProposal,
-    ];
-
     yield [
       IO_SEND,
       {
@@ -272,6 +258,20 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
+
+    setStateCommitment.signatures = [
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState,
+    ];
+
+    // will also save the app array into the state channel
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Proposal,
+      postProtocolStateChannel,
+      appInstanceProposal,
+    ];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
     logTime(log, start, `Finished responding`);
   },
 };

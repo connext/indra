@@ -16,6 +16,10 @@ const config: BuidlerConfig = {
   defaultNetwork: "buidlerevm",
   networks: {
     buidlerevm: {},
+    ganache: {
+      chainId: 4447,
+      url: "http://localhost:8545",
+    },
   },
 };
 

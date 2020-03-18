@@ -25,8 +25,15 @@ export const validateFastSignedTransferApp = (
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
 ) => {
+<<<<<<< HEAD:modules/apps/src/fastSignedTransferApp.ts
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as FastSignedTransferAppState;
+=======
+  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
+    params,
+  );
+  const initialState = convertFastSignedTransferAppState("bignumber", initialStateBadType);
+>>>>>>> 845-store-refactor:modules/apps/src/FastSignedTransferApp/validation.ts
 
   if (initialState.paymentId !== HashZero) {
     throw new Error(`Cannot install with pre-populated paymentId`);

@@ -1,3 +1,4 @@
+<<<<<<< HEAD:modules/cf-core/src/methods/app-instance/propose-install.ts
 import {
   MethodNames, MethodParams, MethodResults, ProtocolNames,
 } from "@connext/types";
@@ -18,6 +19,16 @@ import { appIdentityToHash } from "../../utils";
 import { xkeyKthAddress } from "../../xkeys";
 
 import { NodeController } from "../controller";
+=======
+import { jsonRpcMethod } from "rpc-server";
+
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
+import { Protocol } from "../../../machine";
+import { RequestHandler } from "../../../request-handler";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { NodeController } from "../../controller";
+import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
+>>>>>>> 845-store-refactor:modules/cf-core/src/methods/app-instance/propose-install/controller.ts
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -50,7 +61,6 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<void> {
-    const { networkContext, publicIdentifier, store } = requestHandler;
     const { initialState } = params;
 
     if (!initialState) {
@@ -58,36 +68,15 @@ export class ProposeInstallAppInstanceController extends NodeController {
     }
 
     const {
-      proposedToIdentifier,
       initiatorDepositTokenAddress: initiatorDepositTokenAddressParam,
       responderDepositTokenAddress: responderDepositTokenAddressParam,
     } = params;
-
-    const myIdentifier = publicIdentifier;
-
-    // see comment in `getRequiredLockNames`
-    const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      [publicIdentifier, proposedToIdentifier],
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
-      networkContext.provider,
-    );
 
     const initiatorDepositTokenAddress =
       initiatorDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     const responderDepositTokenAddress =
       responderDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
-
-    const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
-      multisigAddress,
-      {
-        proxyFactory: networkContext.ProxyFactory,
-        multisigMastercopy: networkContext.MinimumViableMultisig,
-      },
-      myIdentifier,
-      proposedToIdentifier,
-    );
 
     params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
     params.responderDepositTokenAddress = responderDepositTokenAddress;
@@ -123,6 +112,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
     };
   }
 }
+<<<<<<< HEAD:modules/cf-core/src/methods/app-instance/propose-install.ts
 
 function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,
@@ -217,3 +207,5 @@ export async function createProposedAppInstance(
 
   return appInstanceProposal.identityHash;
 }
+=======
+>>>>>>> 845-store-refactor:modules/cf-core/src/methods/app-instance/propose-install/controller.ts

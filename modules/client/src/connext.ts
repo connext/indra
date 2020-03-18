@@ -4,13 +4,21 @@ import {
   Address,
   AppAction,
   AppInstanceProposal,
+<<<<<<< HEAD
   AppState,
   ChannelMethods,
+=======
+  chan_getUserWithdrawal,
+  chan_restoreState,
+  chan_setStateChannel,
+  chan_setUserWithdrawal,
+>>>>>>> 845-store-refactor
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConditionalTransferTypes,
   EventNames,
   FastSignedTransferParameters,
+<<<<<<< HEAD
   IClientStore,
   ILoggerService,
   MethodNames,
@@ -22,6 +30,21 @@ import {
   RescindDepositRightsResponse,
   toBN,
   WithdrawParameters,
+=======
+  HASHLOCK_TRANSFER,
+  IChannelProvider,
+  IClientStore,
+  ILoggerService,
+  LINKED_TRANSFER,
+  LINKED_TRANSFER_TO_RECIPIENT,
+  LinkedTransferToRecipientResponse,
+  ResolveFastSignedTransferParameters,
+  ResolveHashLockTransferParameters,
+  ResolveLinkedTransferParameters,
+  TransactionResponse,
+  WithdrawParameters,
+  WithdrawResponse,
+>>>>>>> 845-store-refactor
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -57,7 +80,11 @@ import {
   INodeApiClient,
   InternalClientOptions,
   KeyGen,
+<<<<<<< HEAD
   LinkedTransferToRecipientResponse,
+=======
+  makeChecksum,
+>>>>>>> 845-store-refactor
   RebalanceProfile,
   RequestCollateralResponse,
   ResolveConditionParameters,
@@ -66,15 +93,18 @@ import {
   SwapParameters,
   TransferInfo,
   TransferParameters,
+<<<<<<< HEAD
   WithdrawalResponse,
+=======
+>>>>>>> 845-store-refactor
 } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { ResolveLinkedTransferController } from "./controllers/ResolveLinkedTransferController";
 import { FastSignedTransferController } from "./controllers/FastSignedTransferController";
 import { ResolveFastSignedTransferController } from "./controllers/ResolveFastSignedTransferController";
-
-const MAX_WITHDRAWAL_RETRIES = 3;
+import { HashLockTransferController } from "./controllers/HashLockTransferController";
+import { ResolveHashLockTransferController } from "./controllers/ResolveHashLockTransferController";
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
@@ -105,6 +135,8 @@ export class ConnextClient implements IConnextClient {
   private requestDepositRightsController: RequestDepositRightsController;
   private fastSignedTransferController: FastSignedTransferController;
   private resolveFastSignedTransferController: ResolveFastSignedTransferController;
+  private hashlockTransferController: HashLockTransferController;
+  private resolveHashLockTransferController: ResolveHashLockTransferController;
 
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -148,6 +180,14 @@ export class ConnextClient implements IConnextClient {
     );
     this.resolveFastSignedTransferController = new ResolveFastSignedTransferController(
       "ResolveFastSignedTransferController",
+      this,
+    );
+    this.hashlockTransferController = new HashLockTransferController(
+      "HashLockTransferController",
+      this,
+    );
+    this.resolveHashLockTransferController = new ResolveHashLockTransferController(
+      "ResolveHashLockTransferController",
       this,
     );
   }
@@ -356,25 +396,40 @@ export class ConnextClient implements IConnextClient {
   public transfer = async (
     params: TransferParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
+    if (!params.paymentId) {
+      params.paymentId = hexlify(randomBytes(32));
+    }
     return this.linkedTransferController.linkedTransferToRecipient({
       amount: toBN(params.amount),
       assetId: params.assetId,
       conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
       meta: params.meta,
-      paymentId: hexlify(randomBytes(32)),
+      paymentId: params.paymentId,
       preImage: hexlify(randomBytes(32)),
       recipient: params.recipient,
     }) as Promise<LinkedTransferToRecipientResponse>;
   };
 
-  public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
+  public withdraw = async (params: WithdrawParameters): Promise<WithdrawResponse> => {
     return await this.withdrawalController.withdraw(params);
+  };
+
+  public respondToNodeWithdraw = async (appInstance: AppInstanceJson): Promise<void> => {
+    return await this.withdrawalController.respondToNodeWithdraw(appInstance);
+  };
+
+  public saveWithdrawCommitmentToStore = async (
+    params: WithdrawParameters<BigNumber>,
+    signatures: string[],
+  ): Promise<void> => {
+    return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
   };
 
   public resolveCondition = async (
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
     switch (params.conditionType) {
+<<<<<<< HEAD
       case ConditionalTransferTypes.LinkedTransferToRecipient:
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.resolveLinkedTransferController.resolveLinkedTransfer({
@@ -387,6 +442,23 @@ export class ConnextClient implements IConnextClient {
           ...params,
           conditionType: ConditionalTransferTypes.FastSignedTransfer,
         });
+=======
+      case LINKED_TRANSFER_TO_RECIPIENT:
+      case LINKED_TRANSFER: {
+        return this.resolveLinkedTransferController.resolveLinkedTransfer(
+          params as ResolveLinkedTransferParameters,
+        );
+      }
+      case FAST_SIGNED_TRANSFER: {
+        return this.resolveFastSignedTransferController.resolveFastSignedTransfer(
+          params as ResolveFastSignedTransferParameters,
+        );
+      }
+      case HASHLOCK_TRANSFER: {
+        return this.resolveHashLockTransferController.resolveHashLockTransfer(
+          params as ResolveHashLockTransferParameters,
+        );
+>>>>>>> 845-store-refactor
       }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
@@ -408,13 +480,21 @@ export class ConnextClient implements IConnextClient {
           params as FastSignedTransferParameters,
         );
       }
+      case HASHLOCK_TRANSFER: {
+        return this.hashlockTransferController.hashLockTransfer(params);
+      }
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
     }
   };
 
+<<<<<<< HEAD
   public getLatestNodeSubmittedWithdrawal = async (): Promise<
     { retry: number; tx: MinimalTransaction } | undefined
+=======
+  public getLatestWithdrawal = async (): Promise<
+    { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
+>>>>>>> 845-store-refactor
   > => {
     const value = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
@@ -433,25 +513,32 @@ export class ConnextClient implements IConnextClient {
     return value;
   };
 
-  public watchForUserWithdrawal = async (): Promise<void> => {
+  public watchForUserWithdrawal = async (): Promise<TransactionResponse | undefined> => {
     // poll for withdrawal tx submitted to multisig matching tx data
     const maxBlocks = 15;
     const startingBlock = await this.ethProvider.getBlockNumber();
+    let transaction: TransactionResponse;
 
     // TODO: poller should not be completely blocking, but safe to leave for now
     // because the channel should be blocked
     try {
-      await new Promise((resolve: any, reject: any): any => {
+      transaction = await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on(
           "block",
           async (blockNumber: number): Promise<void> => {
+<<<<<<< HEAD
             const found = await this.checkForUserWithdrawal(blockNumber);
             if (found) {
               await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
+=======
+            const transaction = await this.checkForUserWithdrawal(blockNumber);
+            if (transaction) {
+              await this.channelProvider.send(chan_setUserWithdrawal, {
+>>>>>>> 845-store-refactor
                 withdrawalObject: undefined,
               });
               this.ethProvider.removeAllListeners("block");
-              resolve();
+              resolve(transaction);
             }
             if (blockNumber - startingBlock >= maxBlocks) {
               this.ethProvider.removeAllListeners("block");
@@ -461,11 +548,13 @@ export class ConnextClient implements IConnextClient {
         );
       });
     } catch (e) {
-      if (e.includes(`More than ${maxBlocks} have passed`)) {
-        this.log.debug("Retrying node submission");
-        await this.retryNodeSubmittedWithdrawal();
-      }
+      // if (e.includes(`More than ${maxBlocks} have passed`)) {
+      //   this.log.debug("Retrying node submission");
+      //   await this.retryNodeSubmittedWithdrawal();
+      // }
+      throw new Error(`Error watching for user withdrawal: ${e}`);
     }
+    return transaction;
   };
 
   ////////////////////////////////////////
@@ -692,7 +781,11 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
+<<<<<<< HEAD
   public installApp = async (appInstanceId: string): Promise<MethodResults.Install> => {
+=======
+  public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
+>>>>>>> 845-store-refactor
     // check the app isnt actually installed
     const alreadyInstalled = await this.appInstalled(appInstanceId);
     if (alreadyInstalled) {
@@ -703,6 +796,7 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.Install);
   };
 
+<<<<<<< HEAD
   public uninstallApp = async (appInstanceId: string): Promise<MethodResults.Uninstall> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
@@ -717,10 +811,15 @@ export class ConnextClient implements IConnextClient {
 
   public rejectInstallApp = async (appInstanceId: string): Promise<MethodResults.Uninstall> => {
     return await this.channelProvider.send(MethodNames.chan_rejectInstall, {
+=======
+  public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
+    return await this.channelProvider.send(ProtocolTypes.chan_rejectInstall, {
+>>>>>>> 845-store-refactor
       appInstanceId,
     });
   };
 
+<<<<<<< HEAD
   public providerWithdraw = async (
     assetId: string,
     amount: BigNumber,
@@ -770,6 +869,8 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.WithdrawCommitment);
   };
 
+=======
+>>>>>>> 845-store-refactor
   ///////////////////////////////////
   // NODE METHODS
 
@@ -875,14 +976,21 @@ export class ConnextClient implements IConnextClient {
     const linkedRegistryInfo = this.appRegistry.filter(
       (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
     )[0];
+    const withdrawRegistryInfo = this.appRegistry.filter(
+      (app: DefaultApp) => app.name === "WithdrawApp",
+    )[0];
 
     await this.removeHangingProposalsByDefinition([
       swapAppRegistryInfo.appDefinitionAddress,
       linkedRegistryInfo.appDefinitionAddress,
+      withdrawRegistryInfo.appDefinitionAddress,
     ]);
 
     // deal with any swap apps that are installed
-    await this.uninstallAllAppsByDefintion([swapAppRegistryInfo.appDefinitionAddress]);
+    await this.uninstallAllAppsByDefintion([
+      swapAppRegistryInfo.appDefinitionAddress,
+      withdrawRegistryInfo.appDefinitionAddress,
+    ]);
   };
 
   /**
@@ -909,6 +1017,7 @@ export class ConnextClient implements IConnextClient {
     const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
       appDefinitions.includes(app.appInterface.addr),
     );
+    //TODO ARJUN there is an edgecase where this will cancel withdrawal
     for (const app of apps) {
       await this.uninstallApp(app.identityHash);
     }
@@ -988,6 +1097,7 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
+<<<<<<< HEAD
   public resubmitActiveWithdrawal = async (): Promise<void> => {
     const withdrawal = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
@@ -1050,6 +1160,8 @@ export class ConnextClient implements IConnextClient {
     await this.watchForUserWithdrawal();
   };
 
+=======
+>>>>>>> 845-store-refactor
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
@@ -1080,11 +1192,13 @@ export class ConnextClient implements IConnextClient {
     return undefined;
   };
 
-  private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
-    const val = await this.getLatestNodeSubmittedWithdrawal();
+  private checkForUserWithdrawal = async (
+    inBlock: number,
+  ): Promise<TransactionResponse | undefined> => {
+    const val = await this.getLatestWithdrawal();
     if (!val) {
       this.log.error("No transaction found in store.");
-      return false;
+      return undefined;
     }
 
     const { tx } = val;
@@ -1092,21 +1206,21 @@ export class ConnextClient implements IConnextClient {
     // the contract method
     const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
     if (txsTo === 0) {
-      return false;
+      return undefined;
     }
 
     const block = await this.ethProvider.getBlock(inBlock);
     const { transactions } = block;
     if (transactions.length === 0) {
-      return false;
+      return undefined;
     }
 
     for (const transactionHash of transactions) {
       const transaction = await this.ethProvider.getTransaction(transactionHash);
       if (this.matchTx(transaction, tx)) {
-        return true;
+        return transaction;
       }
     }
-    return false;
+    return undefined;
   };
 }

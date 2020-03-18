@@ -18,6 +18,18 @@ import { AppInstance, FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
 import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
+<<<<<<< HEAD:modules/cf-core/src/testing/scenarios/install-then-set-state.spec.ts
+=======
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
+import {
+  ConditionalTransactionCommitment,
+  SetStateCommitment,
+  SetupCommitment,
+} from "../../../src/ethereum";
+import { xkeysToSortedKthSigningKeys } from "../../../src/machine/xkeys";
+import { AppInstance, StateChannel } from "../../../src/models";
+import { FreeBalanceClass } from "../../../src/models/free-balance";
+>>>>>>> 845-store-refactor:modules/cf-core/test/machine/integration/install-then-set-state.spec.ts
 import {
   ChallengeRegistry,
   DolphinCoin,

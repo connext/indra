@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import {
   ILoggerService,
   MinimalTransaction,
@@ -50,6 +51,14 @@ export type MultisigTransaction = MinimalTransaction & {
   operation: MultisigOperation;
 };
 
+=======
+import { ILoggerService, NetworkContext, ProtocolMessage, SolidityValueType } from "@connext/types";
+import { BaseProvider } from "ethers/providers";
+
+import { Opcode } from "./machine";
+import { Store } from "./store";
+
+>>>>>>> 845-store-refactor
 export type ProtocolExecutionFlow = {
   [x: number]: (context: Context) => AsyncIterableIterator<any[]>;
 };
@@ -78,9 +87,16 @@ export {
   AppInstanceJson,
   AppInstanceProposal,
   AppInterface,
+<<<<<<< HEAD
   CoinBalanceRefundAppState,
   coinBalanceRefundAppStateEncoding,
+=======
+  CFCoreTypes,
+  Commitment,
+>>>>>>> 845-store-refactor
   ConditionalTransactionCommitmentJSON,
+  coinBalanceRefundAppStateEncoding,
+  CoinBalanceRefundAppState,
   CreateChannelMessage,
   DepositConfirmationMessage,
   DepositFailedMessage,
@@ -92,6 +108,7 @@ export {
   ILockService,
   IMessagingService,
   InstallMessage,
+<<<<<<< HEAD
   IStoreService,
   MethodName,
   MethodNames,
@@ -102,6 +119,9 @@ export {
   MethodResult,
   MethodResults,
   MinimalTransaction,
+=======
+  InstallProtocolParams,
+>>>>>>> 845-store-refactor
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
@@ -112,6 +132,11 @@ export {
   PersistAppType,
   ProposeMessage,
   ProtocolMessage,
+<<<<<<< HEAD
+=======
+  ProtocolParameters,
+  ProtocolTypes,
+>>>>>>> 845-store-refactor
   RejectProposalMessage,
   SetStateCommitmentJSON,
   SignedStateHashUpdate,
@@ -122,8 +147,17 @@ export {
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   UninstallMessage,
+<<<<<<< HEAD
   UpdateStateMessage,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
   WithdrawStartedMessage,
+=======
+  UninstallProtocolParams,
+  UpdateProtocolParams,
+  UpdateStateMessage,
+  EthereumCommitment,
+  MultisigOperation,
+  MultisigTransaction,
+>>>>>>> 845-store-refactor
 } from "@connext/types";

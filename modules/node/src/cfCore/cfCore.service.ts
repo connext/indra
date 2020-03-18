@@ -1,3 +1,14 @@
+<<<<<<< HEAD
+=======
+import {
+  AppActionBigNumber,
+  SupportedApplication,
+  convertHashLockTransferAppState,
+  convertFastSignedTransferAppState,
+  WithdrawERC20Commitment,
+  WithdrawETHCommitment,
+} from "@connext/apps";
+>>>>>>> 845-store-refactor
 import { NatsMessagingService } from "@connext/messaging";
 import {
   AppAction,
@@ -7,7 +18,17 @@ import {
   MethodParams,
   MethodResults,
   StateChannelJSON,
+<<<<<<< HEAD
+=======
+  REJECT_INSTALL_EVENT,
+  ProtocolTypes,
+  WithdrawParameters,
+>>>>>>> 845-store-refactor
   stringify,
+  HashLockTransferApp,
+  HashLockTransferAppStateBigNumber,
+  FastSignedTransferApp,
+  FastSignedTransferAppState,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -25,8 +46,11 @@ import {
   RejectProposalMessage,
   xpubToAddress,
 } from "../util";
+import { ChannelRepository } from "../channel/channel.repository";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
+import { AppType } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 Injectable();
 export class CFCoreService {
@@ -35,8 +59,10 @@ export class CFCoreService {
     private readonly configService: ConfigService,
     @Inject(MessagingProviderId) private readonly messagingProvider: NatsMessagingService,
     private readonly cfCoreRepository: CFCoreRecordRepository,
+    private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.cfCore = cfCore;
     this.log.setContext("CFCoreService");
@@ -148,8 +174,10 @@ export class CFCoreService {
     return depositRes.result.result as MethodResults.Deposit;
   }
 
-  async withdraw(
+  async createWithdrawCommitment(
+    params: WithdrawParameters<BigNumber>,
     multisigAddress: string,
+<<<<<<< HEAD
     amount: BigNumber,
     assetId: string = AddressZero,
     recipient: string = this.cfCore.freeBalanceAddress,
@@ -183,11 +211,27 @@ export class CFCoreService {
   ): Promise<MethodResults.WithdrawCommitment> {
     this.log.debug(
       `Calling ${MethodNames.chan_withdraw} with params: ${stringify({
+=======
+  ): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
+    const { assetId, amount, recipient } = params;
+    const channel = await this.getStateChannel(multisigAddress);
+    if (assetId === AddressZero) {
+      return new WithdrawETHCommitment(
+        channel.data.multisigAddress,
+        channel.data.freeBalanceAppInstance.participants,
+        recipient,
+>>>>>>> 845-store-refactor
         amount,
-        multisigAddress,
-        tokenAddress: assetId,
-      })}`,
+      );
+    }
+    return new WithdrawERC20Commitment(
+      channel.data.multisigAddress,
+      channel.data.freeBalanceAppInstance.participants,
+      recipient,
+      amount,
+      assetId,
     );
+<<<<<<< HEAD
     const withdrawRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_withdrawCommitment,
@@ -200,6 +244,8 @@ export class CFCoreService {
     });
     this.log.debug(`withdrawCommitment called with result ${stringify(withdrawRes.result.result)}`);
     return withdrawRes.result.result as MethodResults.WithdrawCommitment;
+=======
+>>>>>>> 845-store-refactor
   }
 
   async proposeInstallApp(
@@ -226,17 +272,26 @@ export class CFCoreService {
     try {
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
+          let promiseCounter = 0;
+          const incrementAndResolve = () => {
+            promiseCounter += 1;
+            if (promiseCounter === 2) {
+              console.warn(`resolving`);
+              res();
+            }
+          };
           boundReject = this.rejectInstallTransfer.bind(null, rej);
           this.log.debug(
             `Subscribing to: indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
           );
           await this.messagingProvider.subscribe(
             `indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
-            res,
+            incrementAndResolve,
           );
           this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
+          incrementAndResolve();
           this.log.debug(`waiting for client to publish proposal results`);
         },
       );
@@ -331,7 +386,18 @@ export class CFCoreService {
     });
     this.log.info(`rejectInstallApp succeeded for app ${appInstanceId}`);
     this.log.debug(`rejectInstallApp result: ${stringify(rejectRes.result.result)}`);
+<<<<<<< HEAD
     return rejectRes.result.result as MethodResults.RejectInstall;
+=======
+    // update app status
+    const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
+    if (!rejectedApp) {
+      throw new Error(`No app found after being rejected for app ${appInstanceId}`);
+    }
+    rejectedApp.type = AppType.REJECTED;
+    await this.appInstanceRepository.save(rejectedApp);
+    return rejectRes.result.result as CFCoreTypes.RejectInstallResult;
+>>>>>>> 845-store-refactor
   }
 
   async takeAction(
@@ -412,7 +478,9 @@ export class CFCoreService {
         app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
         app.latestState[`tokenAddress`] === tokenAddress,
     );
-    this.log.info(`Got coinBalanceRefundApps for multisig ${multisigAddress}`);
+    this.log.info(
+      `Got ${coinBalanceRefundAppArray.length} coinBalanceRefundApps for multisig ${multisigAddress}`,
+    );
     this.log.debug(`CoinBalanceRefundApps result: ${stringify(coinBalanceRefundAppArray)}`);
     if (coinBalanceRefundAppArray.length > 1) {
       throw new Error(
@@ -472,6 +540,67 @@ export class CFCoreService {
     this.log.info(`Got state for app ${appInstanceId}`);
     this.log.debug(`getAppState result: ${stringify(stateResponse)}`);
     return stateResponse.result.result as MethodResults.GetState;
+  }
+
+  // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
+  async getHashLockTransferAppsByLockHash(lockHash: string): Promise<AppInstanceJson[]> {
+    const channels = await this.channelRepository.findAll();
+    const apps: AppInstanceJson[] = [];
+    for (const channel of channels) {
+      const installed = await this.getAppInstancesByAppName(
+        channel.multisigAddress,
+        HashLockTransferApp,
+      );
+      // found hashlocked transfer app
+      for (const app of installed) {
+        const appState = convertHashLockTransferAppState(
+          "bignumber",
+          app.latestState as HashLockTransferAppStateBigNumber,
+        );
+        if (appState.lockHash === lockHash) {
+          // TODO: FIX THIS IN CF CORE
+          apps.push({ ...app, multisigAddress: channel.multisigAddress });
+        }
+      }
+    }
+    return apps;
+  }
+
+  // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
+  async getFastSignedTransferAppsByPaymentId(paymentId: string): Promise<AppInstanceJson[]> {
+    const channels = await this.channelRepository.findAll();
+    const apps: AppInstanceJson[] = [];
+    for (const channel of channels) {
+      const installed = await this.getAppInstancesByAppName(
+        channel.multisigAddress,
+        FastSignedTransferApp,
+      );
+      // found fastsigned transfer app
+      for (const app of installed) {
+        const appState = convertFastSignedTransferAppState(
+          "bignumber",
+          app.latestState as FastSignedTransferAppState,
+        );
+        if (appState.paymentId === paymentId) {
+          // TODO: FIX THIS IN CF CORE
+          apps.push({ ...app, multisigAddress: channel.multisigAddress });
+        }
+      }
+    }
+    return apps;
+  }
+
+  async getAppInstancesByAppName(
+    multisigAddress: string,
+    appName: SupportedApplication,
+  ): Promise<AppInstanceJson[]> {
+    const network = await this.configService.getEthNetwork();
+    const appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
+      appName,
+      network.chainId,
+    );
+    const apps = await this.getAppInstances(multisigAddress);
+    return apps.filter(app => app.appInterface.addr === appRegistry.appDefinitionAddress);
   }
 
   /**

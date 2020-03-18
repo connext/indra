@@ -2,11 +2,15 @@ import {
   CoinTransfer,
   ConditionalTransferTypes,
   delay,
+<<<<<<< HEAD
   FastSignedTransferAppState,
   FastSignedTransferParameters,
   FastSignedTransferResponse,
   IConnextClient,
   ResolveFastSignedTransferParameters,
+=======
+  ResolveConditionResponse,
+>>>>>>> 845-store-refactor
 } from "@connext/types";
 import {
   hexlify,
@@ -22,7 +26,7 @@ import { AddressZero, One, Zero } from "ethers/constants";
 import { createClient, fundChannel, expect } from "../util";
 import { xkeyKthAddress } from "@connext/cf-core";
 
-describe("Fast Signed Transfer", () => {
+describe.skip("Fast Signed Transfer", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
 
@@ -79,6 +83,7 @@ describe("Fast Signed Transfer", () => {
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
     const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
 
+<<<<<<< HEAD
     const res = await clientB.resolveCondition({
       conditionType: ConditionalTransferTypes.FastSignedTransfer,
       paymentId,
@@ -90,6 +95,27 @@ describe("Fast Signed Transfer", () => {
     transferApp = await clientB.getAppInstanceDetails(res.appId);
     transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppState;
     coinTransfers = transferAppState.coinTransfers;
+=======
+    let resolveCondition: ResolveConditionResponse;
+    await new Promise(async resolve => {
+      clientA.on("UPDATE_STATE_EVENT", data => {
+        expect(data.newState.coinTransfers[0][1]).eq(initialChannelBalance.sub(transferAmount));
+        expect(data.newState.coinTransfers[1][1]).eq(transferAmount);
+        resolve();
+      });
+      resolveCondition = await clientB.resolveCondition({
+        conditionType: FAST_SIGNED_TRANSFER,
+        paymentId,
+        signature,
+        data,
+      } as ResolveFastSignedTransferParameters);
+    });
+
+    // locked payment resolved
+    transferApp = await clientB.getAppInstanceDetails(resolveCondition!.appId);
+    transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppStateBigNumber;
+    coinTransfers = transferAppState.coinTransfers.map(bigNumberifyObj);
+>>>>>>> 845-store-refactor
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
     expect(coinTransfers[1][0]).eq(clientB.freeBalanceAddress);
     expect(coinTransfers[1][1]).eq(Zero.add(transferAmount));

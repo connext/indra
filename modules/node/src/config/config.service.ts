@@ -221,8 +221,8 @@ export class ConfigService implements OnModuleInit {
     return hdNode.neuter().extendedKey;
   }
 
-  onModuleInit(): void {
-    const wallet = Wallet.fromMnemonic(this.getMnemonic());
+  async onModuleInit(): Promise<void> {
+    const wallet = Wallet.fromMnemonic(this.getMnemonic(), `${CF_PATH}/0`);
     this.wallet = wallet.connect(this.getEthProvider());
   }
 }

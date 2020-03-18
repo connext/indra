@@ -76,6 +76,10 @@ export {
   RebalanceProfile,
   PendingAsyncTransfer,
   ProposeMessage,
+<<<<<<< HEAD
+=======
+  ProtocolTypes,
+>>>>>>> 845-store-refactor
   RejectProposalMessage,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
@@ -99,9 +103,5 @@ export {
   UninstallMessage,
   UpdateStateMessage,
   weiToToken,
-  WithdrawalResponse,
-  WithdrawConfirmationMessage,
-  WithdrawFailedMessage,
   WithdrawParameters,
-  WithdrawStartedMessage,
 } from "@connext/types";

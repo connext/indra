@@ -19,7 +19,11 @@ export class UninstallController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
+<<<<<<< HEAD:modules/cf-core/src/methods/app-instance/uninstall.ts
     params: MethodParams.Uninstall,
+=======
+    params: CFCoreTypes.UninstallParams,
+>>>>>>> 845-store-refactor:modules/cf-core/src/methods/app-instance/uninstall/controller.ts
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;

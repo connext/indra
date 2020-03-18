@@ -18,7 +18,11 @@ import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.setup;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
+<<<<<<< HEAD
 const { SetState } = CommitmentType;
+=======
+const { Setup } = Commitment;
+>>>>>>> 845-store-refactor
 
 /**
  * @description This exchange is described at the following URL:
@@ -78,9 +82,20 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
+    setupCommitment.signatures = [responderSignature, initiatorSignature];
+
     // 33 ms
+    yield [
+      PERSIST_COMMITMENT,
+      Setup,
+      setupCommitment.getSignedTransaction(),
+      stateChannel.multisigAddress,
+    ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
+<<<<<<< HEAD
     // yield [PERSIST_COMMITMENT, SetState, setupCommitment, stateChannel.freeBalance.identityHash];
+=======
+>>>>>>> 845-store-refactor
     logTime(log, start, `Finished initiating`);
   },
 
@@ -119,8 +134,19 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // 49 ms
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
+    setupCommitment.signatures = [responderSignature, initiatorSignature];
+
+    yield [
+      PERSIST_COMMITMENT,
+      Setup,
+      setupCommitment.getSignedTransaction(),
+      stateChannel.multisigAddress,
+    ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
+<<<<<<< HEAD
     // yield [PERSIST_COMMITMENT, SetState, setupCommitment, stateChannel.freeBalance.identityHash];
+=======
+>>>>>>> 845-store-refactor
 
     yield [
       IO_SEND,

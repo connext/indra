@@ -36,9 +36,7 @@ describe("Node method follows spec - uninstall", () => {
       };
 
       const multisigAddess = await createChannel(nodeA, nodeB);
-
-      // FIXME: There is some timing issue with slow stores @snario noticed
-      await timeout(2000);
+      expect(multisigAddess).toBeDefined;
 
       const [appInstanceId] = await installApp(
         nodeA,
@@ -47,6 +45,7 @@ describe("Node method follows spec - uninstall", () => {
         TicTacToeApp,
         initialState,
       );
+      expect(appInstanceId).toBeDefined;
 
       nodeB.once("UNINSTALL_EVENT", async (msg: UninstallMessage) => {
         expect(msg.data.appInstanceId).toBe(appInstanceId);

@@ -9,7 +9,10 @@ import {
 } from "../models";
 import {
   CoinBalanceRefundAppState,
+<<<<<<< HEAD:modules/cf-core/src/protocol/utils.ts
   EthereumCommitment,
+=======
+>>>>>>> 845-store-refactor:modules/cf-core/src/protocol/utils/get-outcome-increments.ts
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,

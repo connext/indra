@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { DecString, TransactionReceipt } from "./basic";
 import { EventNames, EventPayloads } from "./events";
+=======
+import { BigNumber } from "./basic";
+import { EventName } from "./events";
+>>>>>>> 845-store-refactor
 import { ILoggerService } from "./logger";
 import {
   MethodName,
@@ -150,10 +155,16 @@ export interface DepositStartedMessage extends NodeMessage {
 
 export interface InstallMessage extends NodeMessage {
   data: {
+<<<<<<< HEAD
     params: MethodParams.Install;
   };
 }
 
+=======
+    params: ProtocolTypes.InstallParams;
+  };
+}
+>>>>>>> 845-store-refactor
 export interface ProposeMessage extends NodeMessage {
   data: {
     params: MethodParams.ProposeInstall;
@@ -168,13 +179,18 @@ export interface RejectProposalMessage extends NodeMessage {
 }
 
 export interface UninstallMessage extends NodeMessage {
+<<<<<<< HEAD
   data: EventPayloads.Uninstall;
+=======
+  data: ProtocolTypes.UninstallEventData;
+>>>>>>> 845-store-refactor
 }
 
 export interface UpdateStateMessage extends NodeMessage {
   data: EventPayloads.UpdateState;
 }
 
+<<<<<<< HEAD
 export interface WithdrawConfirmationMessage extends NodeMessage {
   data: {
     txReceipt: TransactionReceipt;
@@ -197,6 +213,10 @@ export type EventEmittedMessage =
   | WithdrawConfirmationMessage
   | WithdrawStartedMessage
   | WithdrawFailedMessage
+=======
+export type EventEmittedMessage =
+  | RejectProposalMessage
+>>>>>>> 845-store-refactor
   | UninstallMessage
   | UpdateStateMessage
   | InstallMessage

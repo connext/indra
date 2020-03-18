@@ -6,15 +6,23 @@ import {
   CreateChannelMessage,
   EventNames,
   InstallMessage,
+<<<<<<< HEAD:modules/cf-core/src/testing/utils.ts
   MethodNames,
   MethodParams,
   MethodParam,
   MethodResults,
+=======
+>>>>>>> 845-store-refactor:modules/cf-core/test/integration/utils.ts
   OutcomeType,
   ProposeMessage,
   ProtocolParams,
   SolidityValueType,
   UninstallMessage,
+<<<<<<< HEAD:modules/cf-core/src/testing/utils.ts
+=======
+  CREATE_CHANNEL_EVENT,
+  UNINSTALL_EVENT,
+>>>>>>> 845-store-refactor:modules/cf-core/test/integration/utils.ts
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
@@ -275,9 +283,8 @@ export async function getAppInstanceProposal(
   appInstanceId: string,
   multisigAddress: string,
 ): Promise<AppInstanceProposal> {
-  const candidates = (await getProposedAppInstances(node, multisigAddress)).filter(
-    proposal => proposal.identityHash === appInstanceId,
-  );
+  const proposals = await getProposedAppInstances(node, multisigAddress);
+  const candidates = proposals.filter(proposal => proposal.identityHash === appInstanceId);
 
   if (candidates.length === 0) {
     throw new Error(`Could not find proposal`);
@@ -484,6 +491,7 @@ export function constructDepositRpc(
   };
 }
 
+<<<<<<< HEAD:modules/cf-core/src/testing/utils.ts
 export function constructWithdrawCommitmentRpc(
   multisigAddress: string,
   amount: BigNumber,
@@ -520,6 +528,8 @@ export function constructWithdrawRpc(
   };
 }
 
+=======
+>>>>>>> 845-store-refactor:modules/cf-core/test/integration/utils.ts
 export function constructInstallRpc(appInstanceId: string): Rpc {
   return {
     id: Date.now(),
@@ -565,7 +575,11 @@ export function constructAppProposalRpc(
       abiEncodings,
       outcomeType,
       timeout: One,
+<<<<<<< HEAD:modules/cf-core/src/testing/utils.ts
     } as MethodParams.ProposeInstall),
+=======
+    } as CFCoreTypes.ProposeInstallParams),
+>>>>>>> 845-store-refactor:modules/cf-core/test/integration/utils.ts
   };
 }
 
@@ -639,7 +653,11 @@ export function constructUninstallRpc(appInstanceId: string): Rpc {
       appInstanceId,
     } as MethodParams.Uninstall,
     id: Date.now(),
+<<<<<<< HEAD:modules/cf-core/src/testing/utils.ts
     methodName: MethodNames.chan_uninstall,
+=======
+    methodName: ProtocolTypes.chan_uninstall,
+>>>>>>> 845-store-refactor:modules/cf-core/test/integration/utils.ts
   };
 }
 
@@ -746,6 +764,10 @@ export async function installApp(
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
+        await getAppInstanceProposal(nodeB, appInstanceId, multisigAddress),
+      );
+      confirmProposedAppInstance(
+        installationProposalRpc.parameters,
         await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
       );
 
@@ -799,7 +821,11 @@ export async function confirmAppInstanceInstallation(
 export async function getState(nodeA: Node, appInstanceId: string): Promise<SolidityValueType> {
   const getStateReq = constructGetStateRpc(appInstanceId);
   const getStateResult = await nodeA.rpcRouter.dispatch(getStateReq);
+<<<<<<< HEAD:modules/cf-core/src/testing/utils.ts
   return (getStateResult.result.result as MethodResults.GetState).state;
+=======
+  return (getStateResult.result.result as CFCoreTypes.GetStateResult).state;
+>>>>>>> 845-store-refactor:modules/cf-core/test/integration/utils.ts
 }
 
 export async function makeInstallCall(node: Node, appInstanceId: string) {

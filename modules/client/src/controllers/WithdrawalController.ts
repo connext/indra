@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { ChannelMethods, MethodNames, MinimalTransaction, toBN } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -9,20 +10,40 @@ import {
   WithdrawParameters,
 } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
+=======
+import {
+  convertWithdrawParameters,
+  WithdrawERC20Commitment,
+  WithdrawETHCommitment,
+} from "@connext/apps";
+import {
+  EventNames,
+  WITHDRAWAL_STARTED_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+  AppInstanceJson,
+  WithdrawResponse,
+  WithdrawParameters,
+  WithdrawAppState,
+  WithdrawAppAction,
+  WithdrawApp,
+} from "@connext/types";
+import { AddressZero, Zero, HashZero } from "ethers/constants";
+import { TransactionResponse } from "ethers/providers";
+import { formatEther } from "ethers/utils";
+
+import { stringify, xpubToAddress } from "../lib";
+import { BigNumber, CFCoreTypes, chan_setUserWithdrawal } from "../types";
+>>>>>>> 845-store-refactor
 
 import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
-  public async withdraw(params: WithdrawParameters): Promise<WithdrawalResponse> {
-    if (params.assetId) {
-      try {
-        params.assetId = getAddress(params.assetId);
-      } catch (e) {
-        // likely means that this is an invalid eth address, so
-        // use validator fn for better error message
-        validate(invalidAddress(params.assetId));
-      }
+  public async withdraw(paramsRaw: WithdrawParameters): Promise<WithdrawResponse> {
+    //Set defaults
+    if (!paramsRaw.assetId) {
+      paramsRaw.assetId = AddressZero;
     }
+<<<<<<< HEAD
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const amount = toBN(params.amount);
@@ -36,16 +57,22 @@ export class WithdrawalController extends AbstractController {
     );
     if (recipient) {
       validate(invalidAddress(recipient));
+=======
+    if (!paramsRaw.recipient) {
+      paramsRaw.recipient = this.connext.freeBalanceAddress;
+>>>>>>> 845-store-refactor
     }
 
-    const preWithdrawBalances = await this.connext.getFreeBalance(assetId);
+    const params = convertWithdrawParameters(`bignumber`, paramsRaw);
+    let transaction: TransactionResponse | undefined;
 
     this.log.info(
-      `Withdrawing ${formatEther(amount)} ${
-        assetId === AddressZero ? "ETH" : "Tokens"
-      } from multisig to ${recipient}`,
+      `Withdrawing ${formatEther(params.amount)} ${
+        params.assetId === AddressZero ? "ETH" : "Tokens"
+      } from multisig to ${params.recipient}`,
     );
 
+<<<<<<< HEAD
     let transaction: TransactionResponse | undefined;
     try {
       this.log.info(`Rescinding deposit rights before withdrawal`);
@@ -101,12 +128,146 @@ export class WithdrawalController extends AbstractController {
     } catch (e) {
       this.log.error(`Failed to withdraw: ${e.stack || e.message}`);
       throw new Error(e);
-    }
+=======
+    // TODO: try to remove this with deposit redesign
+    await this.cleanupPendingDeposit(params.assetId);
 
-    return {
-      apps: await this.connext.getAppInstances(),
-      freeBalance: await this.connext.getFreeBalance(),
-      transaction,
+    const withdrawCommitment = await this.createWithdrawCommitment(params);
+    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(
+      withdrawCommitment.hashToSign(),
+    );
+
+    await this.proposeWithdrawApp(
+      params,
+      withdrawCommitment.hashToSign(),
+      withdrawerSignatureOnWithdrawCommitment,
+    );
+
+    this.connext.listener.emit(EventNames[WITHDRAWAL_STARTED_EVENT], {
+      params,
+      withdrawCommitment,
+      withdrawerSignatureOnWithdrawCommitment,
+    });
+
+    transaction = await this.connext.watchForUserWithdrawal();
+    this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
+    this.log.debug(`Transaction details: ${stringify(transaction)}`);
+
+    this.connext.listener.emit(EventNames[WITHDRAWAL_CONFIRMED_EVENT], { transaction });
+
+    // Note that we listen for the signed commitment and save it to store only in listener.ts
+
+    return { transaction };
+  }
+
+  public async respondToNodeWithdraw(appInstance: AppInstanceJson) {
+    const state = appInstance.latestState as WithdrawAppState<BigNumber>;
+
+    const generatedCommitment = await this.createWithdrawCommitment({
+      amount: state.transfers[0].amount,
+      assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+      recipient: state.transfers[0].to,
+    } as WithdrawParameters<BigNumber>);
+
+    // Dont need to validate anything because we already did it during the propose flow
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(
+      generatedCommitment.hashToSign(),
+    );
+    await this.connext.takeAction(appInstance.identityHash, {
+      signature: counterpartySignatureOnWithdrawCommitment,
+    } as WithdrawAppAction);
+    await this.connext.uninstallApp(appInstance.identityHash);
+  }
+
+  private async cleanupPendingDeposit(assetId: string) {
+    /*
+      TODO: We should find some way to avoid this case completely if possible.
+            Otherwise, it's too easy for collisions between deposits and withdraws
+            to occur, which would completely fuck up a user channel.
+            Circle back after deposit redesign is done.
+    */
+    this.log.info(`Rescinding deposit rights before withdrawal`);
+    await this.connext.rescindDepositRights({ assetId });
+  }
+
+  private async createWithdrawCommitment(
+    params: WithdrawParameters<BigNumber>,
+  ): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
+    const { assetId, amount, recipient } = params;
+    const channel = await this.connext.getStateChannel();
+    if (assetId === AddressZero) {
+      return new WithdrawETHCommitment(
+        channel.data.multisigAddress,
+        channel.data.freeBalanceAppInstance.participants,
+        recipient,
+        amount,
+      );
+>>>>>>> 845-store-refactor
+    }
+    return new WithdrawERC20Commitment(
+      channel.data.multisigAddress,
+      channel.data.freeBalanceAppInstance.participants,
+      recipient,
+      amount,
+      assetId,
+    );
+  }
+
+  private async proposeWithdrawApp(
+    params: WithdrawParameters<BigNumber>,
+    withdrawCommitmentHash: string,
+    withdrawerSignatureOnWithdrawCommitment: string,
+  ): Promise<string> {
+    const { amount, recipient, assetId } = params;
+    const appInfo = this.connext.getRegisteredAppDetails(WithdrawApp);
+    const {
+      appDefinitionAddress: appDefinition,
+      outcomeType,
+      stateEncoding,
+      actionEncoding,
+    } = appInfo;
+    const initialState: WithdrawAppState<BigNumber> = {
+      transfers: [
+        { amount: amount, to: recipient },
+        { amount: Zero, to: xpubToAddress(this.connext.nodePublicIdentifier) },
+      ],
+      signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
+      signers: [
+        xpubToAddress(this.connext.publicIdentifier),
+        xpubToAddress(this.connext.nodePublicIdentifier),
+      ],
+      data: withdrawCommitmentHash,
+      finalized: false,
     };
+    const installParams: CFCoreTypes.ProposeInstallParams = {
+      abiEncodings: {
+        actionEncoding,
+        stateEncoding,
+      },
+      appDefinition,
+      initialState,
+      initiatorDeposit: amount,
+      initiatorDepositTokenAddress: assetId,
+      outcomeType,
+      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderDeposit: Zero,
+      responderDepositTokenAddress: assetId,
+      timeout: Zero,
+    };
+
+    const appId = await this.proposeAndInstallLedgerApp(installParams);
+    return appId;
+  }
+
+  public async saveWithdrawCommitmentToStore(
+    params: WithdrawParameters<BigNumber>,
+    signatures: string[],
+  ): Promise<void> {
+    // set the withdrawal tx in the store
+    const commitment = await this.createWithdrawCommitment(params);
+    const minTx: CFCoreTypes.MinimalTransaction = commitment.getSignedTransaction(signatures);
+    const value = { tx: minTx, retry: 0 };
+    await this.connext.channelProvider.send(chan_setUserWithdrawal, { ...value });
+    return;
   }
 }

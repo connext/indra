@@ -15,7 +15,10 @@ import { AbstractMessagingProvider } from "../util";
 import { TransferRepository } from "../transfer/transfer.repository";
 
 import { FastSignedTransferService } from "./fastSignedTransfer.service";
+<<<<<<< HEAD
 import { FastSignedTransferRepository } from "./fastSignedTransfer.repository";
+=======
+>>>>>>> 845-store-refactor
 
 export class FastSignedTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -24,12 +27,12 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     messaging: IMessagingService,
     private readonly fastSignedTransferService: FastSignedTransferService,
     private readonly transferRepository: TransferRepository,
-    private readonly fastSignedTransferRepository: FastSignedTransferRepository,
   ) {
     super(log, messaging);
     log.setContext("FastSignedTransferMessaging");
   }
 
+<<<<<<< HEAD
   async getFastSignedTransferByPaymentId(
     pubId: string,
     data: { paymentId: string },
@@ -41,6 +44,8 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     return await this.transferRepository.findByPaymentId(data.paymentId);
   }
 
+=======
+>>>>>>> 845-store-refactor
   async resolveFastSignedTransfer(
     pubId: string,
     { paymentId }: { paymentId: string },
@@ -61,24 +66,17 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     };
   }
 
+<<<<<<< HEAD
   async getPendingTransfers(pubId: string): Promise<PendingFastSignedTransfer[]> {
     return this.fastSignedTransferRepository.findPendingByRecipient(pubId);
   }
 
+=======
+>>>>>>> 845-store-refactor
   async setupSubscriptions(): Promise<void> {
-    await super.connectRequestReponse(
-      "transfer.fetch-fast-signed.>",
-      this.authService.useUnverifiedPublicIdentifier(
-        this.getFastSignedTransferByPaymentId.bind(this),
-      ),
-    );
     await super.connectRequestReponse(
       "transfer.resolve-fast-signed.>",
       this.authService.useUnverifiedPublicIdentifier(this.resolveFastSignedTransfer.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "transfer.get-pending-fast-signed.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getPendingTransfers.bind(this)),
     );
   }
 }
@@ -90,7 +88,6 @@ export const fastSignedTransferProviderFactory: FactoryProvider<Promise<void>> =
     MessagingProviderId,
     FastSignedTransferService,
     TransferRepository,
-    FastSignedTransferRepository,
   ],
   provide: FastSignedTransferProviderId,
   useFactory: async (
@@ -99,7 +96,6 @@ export const fastSignedTransferProviderFactory: FactoryProvider<Promise<void>> =
     messaging: IMessagingService,
     fastSignedTransferService: FastSignedTransferService,
     transferRepository: TransferRepository,
-    fastSignedTransferRepository: FastSignedTransferRepository,
   ): Promise<void> => {
     const transfer = new FastSignedTransferMessaging(
       authService,
@@ -107,7 +103,6 @@ export const fastSignedTransferProviderFactory: FactoryProvider<Promise<void>> =
       messaging,
       fastSignedTransferService,
       transferRepository,
-      fastSignedTransferRepository,
     );
     await transfer.setupSubscriptions();
   },

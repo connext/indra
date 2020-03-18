@@ -9,7 +9,16 @@ import {
 } from "./contracts";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
+<<<<<<< HEAD
 import { MethodResults } from "./methods";
+=======
+import { ProtocolTypes } from "./protocol";
+import {
+  ResolveLinkedTransferResponse,
+  ResolveFastSignedTransferResponse,
+  ResolveHashLockTransferResponse,
+} from "./apps";
+>>>>>>> 845-store-refactor
 
 ////////////////////////////////////
 // Misc
@@ -160,10 +169,14 @@ export interface INodeApiClient {
   getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
+<<<<<<< HEAD
   withdraw(tx: MinimalTransaction): Promise<TransactionResponse>;
+=======
+>>>>>>> 845-store-refactor
   fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
+  resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;

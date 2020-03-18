@@ -11,6 +11,6 @@ export async function handleRejectProposalMessage(
   } = receivedRejectProposalMessage;
 
   const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
-
-  await store.saveStateChannel(stateChannel.removeProposal(appInstanceId));
+  const proposal = await store.getAppInstanceProposal(appInstanceId);
+  await store.removeAppProposal(stateChannel.removeProposal(appInstanceId), proposal);
 }

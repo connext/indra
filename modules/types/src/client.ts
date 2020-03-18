@@ -6,6 +6,7 @@ import { Address, BigNumber, BigNumberish, Xpub } from "./basic";
 import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+<<<<<<< HEAD
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -13,6 +14,24 @@ import {
 } from "./contracts";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { EventNames } from "./events";
+=======
+  WithdrawResponse,
+} from "./apps";
+import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
+import { BigNumber } from "./basic";
+import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
+import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
+import { ConnextEvent } from "./events";
+import {
+  CheckDepositRightsParameters,
+  CheckDepositRightsResponse,
+  DepositParameters,
+  RequestDepositRightsParameters,
+  RescindDepositRightsParameters,
+  RescindDepositRightsResponse,
+  TransferParameters,
+} from "./inputs";
+>>>>>>> 845-store-refactor
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
@@ -30,6 +49,7 @@ import {
   MethodName,
 } from "./methods";
 import { IBackupServiceAPI, IClientStore, StoreType, WithdrawalMonitorObject } from "./store";
+<<<<<<< HEAD
 
 export type ChannelState = {
   apps: AppInstanceJson[]; // result of getApps()
@@ -82,6 +102,11 @@ export type TransferParameters = DepositParameters & {
 export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };
 
 /////////////////////////////////
+=======
+import { CFCoreTypes } from "./cfCore";
+import { SwapParameters, WithdrawParameters } from "./apps";
+import { TransactionResponse } from "ethers/providers";
+>>>>>>> 845-store-refactor
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
@@ -138,7 +163,7 @@ export interface IConnextClient {
   deposit(params: DepositParameters): Promise<ChannelState>;
   swap(params: SwapParameters): Promise<GetChannelResponse>;
   transfer(params: TransferParameters): Promise<any>;
-  withdraw(params: WithdrawParameters): Promise<ChannelState>;
+  withdraw(params: WithdrawParameters): Promise<WithdrawResponse>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
   restoreState(): Promise<void>;
@@ -193,9 +218,14 @@ export interface IConnextClient {
   ): Promise<MethodResults.Deposit>;
   getFreeBalance(assetId?: string): Promise<MethodResults.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
+<<<<<<< HEAD
   getAppInstanceDetails(appInstanceId: string): Promise<MethodResults.GetAppInstanceDetails>;
   getAppState(appInstanceId: string): Promise<MethodResults.GetState>;
   getLatestNodeSubmittedWithdrawal(): Promise<WithdrawalMonitorObject>;
+=======
+  getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
+  getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
+>>>>>>> 845-store-refactor
   getProposedAppInstances(
     multisigAddress?: string,
   ): Promise<MethodResults.GetProposedAppInstances | undefined>;
@@ -203,6 +233,7 @@ export interface IConnextClient {
     appInstanceId: string,
   ): Promise<MethodResults.GetProposedAppInstance | undefined>;
   proposeInstallApp(
+<<<<<<< HEAD
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall>;
   installApp(appInstanceId: string): Promise<MethodResults.Install>;
@@ -210,4 +241,13 @@ export interface IConnextClient {
   takeAction(appInstanceId: string, action: any): Promise<MethodResults.TakeAction>;
   updateState(appInstanceId: string, newState: any): Promise<MethodResults.UpdateState>;
   uninstallApp(appInstanceId: string): Promise<MethodResults.Uninstall>;
+=======
+    params: ProtocolTypes.ProposeInstallParams,
+  ): Promise<ProtocolTypes.ProposeInstallResult>;
+  installApp(appInstanceId: string): Promise<ProtocolTypes.InstallResult>;
+  rejectInstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
+  takeAction(appInstanceId: string, action: any): Promise<ProtocolTypes.TakeActionResult>;
+  updateState(appInstanceId: string, newState: any): Promise<ProtocolTypes.UpdateStateResult>;
+  uninstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
+>>>>>>> 845-store-refactor
 }

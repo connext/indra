@@ -65,9 +65,6 @@ export interface StoreFactoryOptions extends FileStorageOptions {
   backupService?: IBackupServiceAPI;
 }
 
-// TODO: delete
-
-
 export interface IBackupServiceAPI {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
@@ -101,12 +98,19 @@ export interface IStoreService {
   saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
-  removeAppInstance(appInstanceId: string): Promise<void>;
+  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void>;
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined>;
   saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void>;
-  removeAppProposal(appInstanceId: string): Promise<void>;
+  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void>;
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
   saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
+  getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<MinimalTransaction | undefined>;
+  saveSetupCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void>;
   getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
   saveLatestSetStateCommitment(
     appIdentityHash: string,

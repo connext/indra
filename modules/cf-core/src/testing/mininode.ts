@@ -1,12 +1,19 @@
-import { NetworkContext, nullLogger } from "@connext/types";
+import { NetworkContext, nullLogger, PersistAppType, AppInstanceProposal } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import { HDNode } from "ethers/utils/hdnode";
 
+<<<<<<< HEAD:modules/cf-core/src/testing/mininode.ts
 import { EthereumCommitment, Opcode } from "../types";
 import { ProtocolRunner } from "../machine";
 import { StateChannel } from "../models";
 import { Store } from "../store";
+=======
+import { EthereumCommitment } from "../../../src/types";
+import { Opcode, ProtocolRunner } from "../../../src/machine";
+import { StateChannel, AppInstance } from "../../../src/models";
+import { Store } from "../../../src/store";
+>>>>>>> 845-store-refactor:modules/cf-core/test/machine/integration/mininode.ts
 
 import { getRandomHDNodes } from "./random-signing-keys";
 
@@ -49,6 +56,39 @@ export class MiniNode {
         await this.store.saveStateChannel(stateChannel);
       }
     });
+    this.protocolRunner.register(
+      Opcode.PERSIST_APP_INSTANCE,
+      async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
+        const [type, postProtocolChannel, app] = args;
+
+        // always persist the free balance
+        // this will error if channel does not exist
+        await this.store.saveFreeBalance(postProtocolChannel);
+
+        switch (type) {
+          case PersistAppType.Proposal:
+            await this.store.saveAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            break;
+          case PersistAppType.Reject:
+            await this.store.removeAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            break;
+
+          case PersistAppType.Instance:
+            if (app.identityHash === postProtocolChannel.freeBalance.identityHash) {
+              break;
+            }
+            await this.store.saveAppInstance(postProtocolChannel, app as AppInstance);
+            break;
+
+          case PersistAppType.Uninstall:
+            await this.store.removeAppInstance(postProtocolChannel, app as AppInstance);
+            break;
+
+          default:
+            throw new Error(`Unrecognized app persistence call: ${type}`);
+        }
+      },
+    );
   }
 
   public async dispatchMessage(message: any) {

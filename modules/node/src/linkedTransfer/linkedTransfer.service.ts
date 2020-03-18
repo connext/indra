@@ -22,11 +22,6 @@ import { xpubToAddress } from "../util";
 import { Channel } from "../channel/channel.entity";
 
 import { LinkedTransferRepository } from "./linkedTransfer.repository";
-import { FastSignedTransferRepository } from "../fastSignedTransfer/fastSignedTransfer.repository";
-import {
-  FastSignedTransfer,
-  FastSignedTransferStatus,
-} from "../fastSignedTransfer/fastSignedTransfer.entity";
 import { LinkedTransfer, LinkedTransferStatus } from "./linkedTransfer.entity";
 
 @Injectable()
@@ -39,7 +34,6 @@ export class LinkedTransferService {
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
-    private readonly fastSignedTransferRespository: FastSignedTransferRepository,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("LinkedTransferService");
@@ -80,32 +74,6 @@ export class LinkedTransferService {
     transfer.receiverChannel = receiverChannel;
 
     return await this.linkedTransferRepository.save(transfer);
-  }
-
-  async saveFastSignedTransfer(
-    senderPubId: string,
-    assetId: string,
-    amount: BigNumber,
-    appInstanceId: string,
-    signer: string,
-    paymentId: string,
-    meta?: object,
-  ): Promise<FastSignedTransfer> {
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      senderPubId,
-    );
-
-    const transfer = new FastSignedTransfer();
-    transfer.senderAppInstanceId = appInstanceId;
-    transfer.amount = amount;
-    transfer.assetId = assetId;
-    transfer.paymentId = paymentId;
-    transfer.signer = signer;
-    transfer.meta = meta;
-    transfer.senderChannel = senderChannel;
-    transfer.status = FastSignedTransferStatus.PENDING;
-
-    return await this.fastSignedTransferRespository.save(transfer);
   }
 
   async resolveLinkedTransfer(
@@ -273,7 +241,7 @@ export class LinkedTransferService {
     }
 
     const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
-    // if action has been taken on the app, then there will be a preimage
+    // if action has been taken on the app, then there will be a preImage
     // in the latest state, and you just have to uninstall
     if ((app.latestState as SimpleLinkedTransferAppState).preImage !== transfer.preImage) {
       this.log.info(`Reclaiming linked transfer ${transfer.paymentId}`);

@@ -43,7 +43,6 @@ export class MemoryStoreServiceOld implements IStoreServiceOld {
   }
 }
 
-
 export class MemoryStoreServiceFactory {
   createStoreService() {
     return new MemoryStorage();

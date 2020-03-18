@@ -1,11 +1,18 @@
+<<<<<<< HEAD
 import { ABIEncoding, Address, DecString, HexString, SolidityValueType, Xpub } from "./basic";
+=======
+import { Address, BigNumber, BigNumberish, SolidityValueType } from "./basic";
+>>>>>>> 845-store-refactor
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "./contracts";
+<<<<<<< HEAD
 import { enumify } from "./utils";
+=======
+>>>>>>> 845-store-refactor
 
 ////////////////////////////////////
 // App Instances
@@ -40,6 +47,7 @@ export type AppInstanceInfo = {
   identityHash: HexString;
   appDefinition: Address;
   abiEncodings: AppABIEncodings;
+<<<<<<< HEAD
   initiatorDeposit: DecString;
   initiatorDepositTokenAddress: Address;
   responderDeposit: DecString;
@@ -55,6 +63,19 @@ export type AppInstanceInfo = {
     MultiAssetMultiPartyCoinTransferInterpreterParams;
   singleAssetTwoPartyCoinTransferInterpreterParams?:
     SingleAssetTwoPartyCoinTransferInterpreterParams;
+=======
+  initiatorDeposit: BigNumber;
+  initiatorDepositTokenAddress: string;
+  responderDeposit: BigNumber;
+  responderDepositTokenAddress: string;
+  timeout: BigNumber;
+  proposedByIdentifier: string; // xpub
+  proposedToIdentifier: string; // xpub
+  // Interpreter-related Fields:
+  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+>>>>>>> 845-store-refactor
 };
 
 export type AppInstanceJson = {
@@ -83,9 +104,14 @@ export type AppInstanceProposal = {
   appSeqNo: number;
   identityHash: HexString;
   initialState: SolidityValueType;
+<<<<<<< HEAD
   initiatorDeposit: DecString;
   initiatorDepositTokenAddress: Address;
   intermediaryIdentifier?: Xpub;
+=======
+  initiatorDeposit: string;
+  initiatorDepositTokenAddress: string;
+>>>>>>> 845-store-refactor
   outcomeType: OutcomeType;
   proposedByIdentifier: Xpub;
   proposedToIdentifier: Xpub;

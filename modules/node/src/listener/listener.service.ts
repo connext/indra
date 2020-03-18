@@ -1,4 +1,21 @@
+<<<<<<< HEAD
 import { EventNames, MethodNames, NodeMessage } from "@connext/types";
+=======
+import { AppAction } from "@connext/apps";
+import {
+  CREATE_CHANNEL_EVENT,
+  DEPOSIT_CONFIRMED_EVENT,
+  DEPOSIT_FAILED_EVENT,
+  DEPOSIT_STARTED_EVENT,
+  INSTALL_EVENT,
+  PROPOSE_INSTALL_EVENT,
+  PROTOCOL_MESSAGE_EVENT,
+  REJECT_INSTALL_EVENT,
+  UNINSTALL_EVENT,
+  UPDATE_STATE_EVENT,
+  ProtocolTypes,
+} from "@connext/types";
+>>>>>>> 845-store-refactor
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 
@@ -19,14 +36,13 @@ import {
   RejectProposalMessage,
   UninstallMessage,
   UpdateStateMessage,
-  WithdrawConfirmationMessage,
-  WithdrawFailedMessage,
-  WithdrawStartedMessage,
 } from "../util/cfCore";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { AppActionsService } from "../appRegistry/appActions.service";
+import { AppType } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const {
   CREATE_CHANNEL_EVENT,
@@ -63,6 +79,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
+    private readonly appInstanceRepository: AppInstanceRepository,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ListenerService");
@@ -129,6 +146,17 @@ export default class ListenerService implements OnModuleInit {
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         this.logEvent(REJECT_INSTALL_EVENT, data);
 
+        // update app status
+        const rejectedApp = await this.appInstanceRepository.findByIdentityHash(
+          data.data.appInstanceId,
+        );
+        if (!rejectedApp) {
+          this.log.debug(`No app found`);
+          return;
+        }
+        rejectedApp.type = AppType.REJECTED;
+        await this.appInstanceRepository.save(rejectedApp);
+
         const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
           data.data.appInstanceId,
         );
@@ -174,19 +202,10 @@ export default class ListenerService implements OnModuleInit {
         await this.appActionsService.handleAppAction(
           appRegistryInfo.name,
           appInstanceId,
-          newState as any,
-          action as any,
+          newState as any, // AppState (excluding simple swap app)
+          action as AppAction<any>,
           data.from,
         );
-      },
-      WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
-        this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
-      },
-      WITHDRAWAL_FAILED_EVENT: (data: WithdrawFailedMessage): void => {
-        this.logEvent(WITHDRAWAL_FAILED_EVENT, data);
-      },
-      WITHDRAWAL_STARTED_EVENT: (data: WithdrawStartedMessage): void => {
-        this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
     };
   }

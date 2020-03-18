@@ -28,8 +28,6 @@ import {
   GetStateDepositHolderAddressController,
   RequestDepositRightsController,
   RescindDepositRightsController,
-  WithdrawCommitmentController,
-  WithdrawController,
 } from "./state-channel";
 
 const controllers = [
@@ -46,8 +44,6 @@ const controllers = [
   TakeActionController,
   UninstallController,
   UpdateStateController,
-  WithdrawCommitmentController,
-  WithdrawController,
 
   /**
    * Constant methods

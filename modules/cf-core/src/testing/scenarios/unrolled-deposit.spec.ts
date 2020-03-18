@@ -2,9 +2,15 @@ import { CoinBalanceRefundAppState, MethodNames, EventNames } from "@connext/typ
 import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
+<<<<<<< HEAD:modules/cf-core/src/testing/scenarios/unrolled-deposit.spec.ts
 import { Node } from "../../node";
 import { NOT_YOUR_BALANCE_REFUND_APP } from "../../errors";
 import { xkeyKthAddress } from "../../xkeys";
+=======
+import { Node, NOT_YOUR_BALANCE_REFUND_APP } from "../../src";
+import { CoinBalanceRefundAppState, ProtocolTypes } from "../../src/types";
+import { toBeLt, toBeEq } from "../machine/integration/bignumber-jest-matcher";
+>>>>>>> 845-store-refactor:modules/cf-core/test/integration/unrolled-deposit.spec.ts
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
 import { setup, SetupContext } from "../setup";
@@ -17,7 +23,14 @@ import {
   rescindDepositRights,
   requestDepositRights,
   transferERC20Tokens,
+<<<<<<< HEAD:modules/cf-core/src/testing/scenarios/unrolled-deposit.spec.ts
 } from "../utils";
+=======
+} from "./utils";
+import { xkeyKthAddress } from "../../src/machine";
+import { INSTALL_EVENT, ProposeMessage } from "@connext/types";
+import { prettyPrintObject } from "../../src/utils";
+>>>>>>> 845-store-refactor:modules/cf-core/test/integration/unrolled-deposit.spec.ts
 
 expect.extend({ toBeLt, toBeEq });
 
@@ -212,7 +225,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       AddressZero,
     );
 
-    await new Promise(async res => {
+    const proposeEth: ProposeMessage = await new Promise(async res => {
       nodeB.once(`PROPOSE_INSTALL_EVENT`, data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
@@ -230,7 +243,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       erc20TokenAddress,
     );
 
-    await new Promise(async res => {
+    const proposeTokens: ProposeMessage = await new Promise(async res => {
       nodeB.once(`PROPOSE_INSTALL_EVENT`, data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
@@ -238,6 +251,7 @@ describe(`Node method follows spec - install balance refund`, () => {
         parameters,
       });
     });
+    expect(proposeTokens.data.appInstanceId === proposeEth.data.appInstanceId).toBe(false);
 
     await requestDepositRights(nodeA, multisigAddress, erc20TokenAddress);
   });
