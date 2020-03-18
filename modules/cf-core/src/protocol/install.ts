@@ -403,6 +403,7 @@ function computeStateChannelTransition(
     /* latestVersionNumber */ 0,
     /* defaultTimeout */ defaultTimeout,
     /* outcomeType */ outcomeType,
+    /* multisig */ stateChannel.multisigAddress,
     twoPartyOutcomeInterpreterParams,
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,

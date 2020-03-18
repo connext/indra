@@ -13,9 +13,9 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     return undefined;
   }
   // interpreter params
-  let multiAssetMultiPartyCoinTransferInterpreterParams = undefined;
-  let singleAssetTwoPartyCoinTransferInterpreterParams = undefined;
-  let twoPartyOutcomeInterpreterParams = undefined;
+  let multiAssetMultiPartyCoinTransferInterpreterParams = null;
+  let singleAssetTwoPartyCoinTransferInterpreterParams = null;
+  let twoPartyOutcomeInterpreterParams = null;
 
   switch (OutcomeType[app.outcomeType]) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
@@ -37,10 +37,10 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     default:
       throw new Error(`Unrecognized outcome type: ${OutcomeType[app.outcomeType]}`);
   }
-  return {
+  const json: AppInstanceJson = {
     appInterface: {
       stateEncoding: app.stateEncoding,
-      actionEncoding: app.actionEncoding || undefined,
+      actionEncoding: app.actionEncoding || null,
       addr: app.appDefinition,
     },
     appSeqNo: app.appSeqNo,
@@ -50,12 +50,13 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     latestTimeout: app.latestTimeout,
     latestVersionNumber: app.latestVersionNumber,
     multisigAddress: channel.multisigAddress,
-    outcomeType: (app.outcomeType as unknown) as number,
+    outcomeType: Object.keys(OutcomeType).findIndex(a => a === app.outcomeType),
     participants: sortAddresses([app.userParticipantAddress, app.nodeParticipantAddress]),
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,
     twoPartyOutcomeInterpreterParams,
   };
+  return json;
 };
 
 export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceProposal => {

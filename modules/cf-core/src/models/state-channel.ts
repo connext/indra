@@ -1,25 +1,18 @@
 import {
   CriticalStateChannelAddresses,
-  SingleAssetTwoPartyIntermediaryAgreement,
   StateChannelJSON,
   StateSchemaVersion,
 } from "@connext/types";
-import { BigNumber } from "ethers/utils";
 
-import { flip, flipTokenIndexedBalances } from "../ethereum";
+import { flipTokenIndexedBalances } from "../ethereum";
 import { xkeyKthAddress } from "../machine/xkeys";
 import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";
-import { prettyPrintObject } from "../utils";
+import { prettyPrintObject, deBigNumberifyJson } from "../utils";
 
 import { AppInstanceProposal } from ".";
 import { AppInstance } from "./app-instance";
-import {
-  CoinTransferMap,
-  createFreeBalance,
-  FreeBalanceClass,
-  TokenIndexedCoinTransferMap,
-} from "./free-balance";
+import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 
 // TODO: Hmmm this code should probably be somewhere else?
@@ -343,6 +336,7 @@ export class StateChannel {
         userNeuteredExtendedKeys,
         freeBalanceAppAddress,
         freeBalanceTimeout || HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout,
+        multisigAddress,
       ),
       1,
     );
@@ -484,7 +478,7 @@ export class StateChannel {
   }
 
   toJson(): StateChannelJSON {
-    return {
+    return deBigNumberifyJson({
       multisigAddress: this.multisigAddress,
       addresses: this.addresses,
       userNeuteredExtendedKeys: this.userNeuteredExtendedKeys,
@@ -500,10 +494,10 @@ export class StateChannel {
       // does not have a FreeBalance before the `setup` protocol gets run
       freeBalanceAppInstance: this.freeBalanceAppInstance
         ? this.freeBalanceAppInstance.toJson()
-        : undefined,
+        : null,
       monotonicNumProposedApps: this.monotonicNumProposedApps,
       schemaVersion: this.schemaVersion,
-    };
+    });
   }
 
   /**

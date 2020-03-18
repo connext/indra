@@ -1,6 +1,6 @@
 import { Client as DBClient } from "pg";
 import { before } from "mocha";
-import { delay, StateChannelJSON } from "@connext/types";
+import { STORE_SCHEMA_VERSION, StateChannelJSON, AppInstanceJson } from "@connext/types";
 import { Client as NatsClient } from "ts-nats";
 import SQL from "sql-template-strings";
 
@@ -19,7 +19,7 @@ describe("Store Migrations", () => {
     await dbClient.query("truncate table node_records cascade;");
   });
 
-  it("node can migrate from v0 to v1", async () => {
+  it.only("node can migrate from v0 to v1", async () => {
     const oldChannelKey1 =
       "INDRA_NODE_CF_CORE/xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6/channel/0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994";
     const oldChannelValue1 = {
@@ -29,7 +29,7 @@ describe("Store Migrations", () => {
           "xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6",
           "xpub6EahuqCg3qVXgL1oh33w6gfUYrKh4gBoMacUa8oJvRpzg1inb9aZ73fS1iAP2pKrRf3pkbmTSyuybLhLhYXVVPF9VvVbgjCeaQcfi8M5qpV",
         ],
-        appInstances: [],
+        appInstances: [] as [string, AppInstanceJson][],
         freeBalanceAppInstance: {
           participants: [
             "0xadFA28e08Fb7427cfE0e02b47632151FC549eDd9",
@@ -77,7 +77,7 @@ describe("Store Migrations", () => {
           "xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6",
           "xpub6E37ACnYHvmaHmkHsWrLKGc3ibkBppwhhBptWfv3dRW4t72LQtuo8eDegvqqwPtf2agT6FXJBfSHPxokbvaBqNeZS1FPkEvKjHVc77p5s9e",
         ],
-        appInstances: [],
+        appInstances: [] as [string, AppInstanceJson][],
         freeBalanceAppInstance: {
           participants: [
             "0xD5f9bDb0A387F42B9109110c6fEe1864737E4274",
@@ -150,6 +150,26 @@ describe("Store Migrations", () => {
     expect(JSON.parse(res.data).err).to.be.null;
 
     for (const oldChannel of [oldChannelValue1[oldChannelKey1], oldChannelValue2[oldChannelKey2]]) {
+      const expected: StateChannelJSON = {
+        schemaVersion: STORE_SCHEMA_VERSION,
+        monotonicNumProposedApps: oldChannel.monotonicNumProposedApps,
+        multisigAddress: oldChannel.multisigAddress,
+        userNeuteredExtendedKeys: oldChannel.userNeuteredExtendedKeys,
+        proposedAppInstances: (oldChannel as any).proposedAppInstances || [],
+        appInstances: oldChannel.appInstances,
+        freeBalanceAppInstance: {
+          multisigAddress: oldChannel.multisigAddress,
+          multiAssetMultiPartyCoinTransferInterpreterParams: null,
+          singleAssetTwoPartyCoinTransferInterpreterParams: null,
+          twoPartyOutcomeInterpreterParams: null,
+          ...oldChannel.freeBalanceAppInstance,
+          appInterface: {
+            ...oldChannel.freeBalanceAppInstance.appInterface,
+            actionEncoding: null,
+          },
+        } as any,
+        addresses: oldChannel.addresses,
+      };
       const { data } = await nats.request(
         `admin.get-state-channel-by-multisig`,
         10000,
@@ -159,8 +179,7 @@ describe("Store Migrations", () => {
         }),
       );
       const { response: channel }: { response: StateChannelJSON } = JSON.parse(data);
-      console.log("channel: ", channel);
-      expect(channel).to.deep.eq(oldChannel);
+      expect(channel).to.deep.eq(expected);
     }
   });
 });
