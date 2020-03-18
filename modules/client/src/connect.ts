@@ -188,9 +188,8 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const wallet = new Wallet(await keyGen("0")).connect(ethProvider);
-      const { chainId } = await wallet.provider.getNetwork();
-      return signMessage(wallet.privateKey, message, chainId);
+      const wallet = new Wallet(await keyGen("0"));
+      return signMessage(wallet.privateKey, message, network.chainId);
     };
 
     const messagingUrl = formatMessagingUrl(nodeUrl);
