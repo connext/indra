@@ -17,6 +17,7 @@ export {
   generatePrivateKeyGeneratorAndXPubPair,
   PrivateKeysGetter,
 } from "./private-keys-generator";
+export { MultisigCommitment } from "./ethereum";
 export {
   getCreate2MultisigAddress,
   bigNumberifyJson,

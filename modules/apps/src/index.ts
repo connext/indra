@@ -4,6 +4,8 @@ import {
   SimpleLinkedTransferAppState,
   FastSignedTransferAppAction,
   FastSignedTransferAppState,
+  WithdrawAppAction,
+  WithdrawAppState,
   CoinBalanceRefundApp,
   SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
@@ -11,9 +13,11 @@ import {
   HashLockTransferApp,
   HashLockTransferAppAction,
   HashLockTransferAppState,
+  WithdrawApp,
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
+import { WithdrawAppRegistryInfo } from "./WithdrawApp";
 import { FastSignedTransferAppRegistryInfo } from "./FastSignedTransferApp";
 import { AppRegistry as AppRegistryType } from "./shared";
 import { SimpleLinkedTransferAppRegistryInfo } from "./SimpleLinkedTransferApp";
@@ -26,6 +30,7 @@ export * from "./FastSignedTransferApp";
 export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleTwoPartySwapApp";
 export * from "./CoinBalanceRefundApp";
+export * from "./WithdrawApp";
 export * from "./HashLockTransferApp";
 
 export const SupportedApplications = {
@@ -33,6 +38,7 @@ export const SupportedApplications = {
   [SimpleLinkedTransferApp]: SimpleLinkedTransferApp,
   [SimpleTwoPartySwapApp]: SimpleTwoPartySwapApp,
   [FastSignedTransferApp]: FastSignedTransferApp,
+  [WithdrawApp]: WithdrawApp,
   [HashLockTransferApp]: HashLockTransferApp,
 };
 
@@ -43,18 +49,21 @@ export const AppRegistry: AppRegistryType = [
   SimpleLinkedTransferAppRegistryInfo,
   SimpleTwoPartySwapAppRegistryInfo,
   CoinBalanceRefundAppRegistryInfo,
+  WithdrawAppRegistryInfo,
   HashLockTransferAppRegistryInfo,
 ];
 
 export type AppAction<T = string> =
   | FastSignedTransferAppAction<T>
+  | HashLockTransferAppAction
   | SimpleLinkedTransferAppAction
-  | HashLockTransferAppAction;
+  | WithdrawAppAction;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
 export type AppState<T = string> =
   | FastSignedTransferAppState<T>
+  | HashLockTransferAppState<T>
   | SimpleLinkedTransferAppState<T>
   | SimpleSwapAppState<T>
-  | HashLockTransferAppState<T>;
+  | WithdrawAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;

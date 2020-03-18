@@ -27,20 +27,6 @@ describe("Withdrawal", () => {
     tokenAddress = client.config.contractAddresses.Token;
   });
 
-  it("happy case: client successfully withdraws eth and submits the tx itself", async () => {
-    // fund client with eth
-    await fundChannel(client, ZERO_ZERO_TWO_ETH);
-    // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, true);
-  });
-
-  it("happy case: client successfully withdraws tokens and submits the tx itself", async () => {
-    // fund client with tokens
-    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
-    // withdraw
-    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress, true);
-  });
-
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     // withdraw
@@ -56,7 +42,7 @@ describe("Withdrawal", () => {
   it("client tries to withdraw more than it has in free balance", async () => {
     await fundChannel(client, ZERO_ZERO_ZERO_ONE_ETH);
     await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).to.be.rejectedWith(
-      `Value (${ZERO_ZERO_ONE_ETH}) is not less than or equal to ${ZERO_ZERO_ZERO_ONE_ETH}`,
+      `Install failed.`,
     );
   });
 
@@ -64,15 +50,15 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
-    ).to.be.rejectedWith(`Value (${NEGATIVE_ZERO_ZERO_ONE_ETH}) is not greater than or equal to 0`);
+    ).to.be.rejectedWith(`invalid BigNumber value`);
   });
 
   it("client tries to withdraw to an invalid recipient address", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     const recipient = "0xabc";
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, recipient),
-    ).to.be.rejectedWith(`Value \"${recipient}\" is not a valid eth address`);
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, recipient),
+    ).to.be.rejectedWith(`invalid address`);
   });
 
   it("client tries to withdraw with invalid assetId", async () => {
@@ -86,7 +72,16 @@ describe("Withdrawal", () => {
         assetId,
         recipient: Wallet.createRandom().address,
       }),
-    ).to.be.rejectedWith(`Value \"${assetId}\" is not a valid eth address`);
+    ).to.be.rejectedWith(`invalid address`);
+  });
+
+  it("client successfully withdraws tokens and eth concurrently", async () => {
+    await fundChannel(client, ZERO_ZERO_TWO_ETH);
+    await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
+    // withdraw (dont await first for concurrency). Note: don't withdraw same assetId twice bc 
+    // utils compare initial and final balance only
+    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
+    await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to
@@ -118,7 +113,7 @@ describe("Withdrawal", () => {
     client.requestCollateral(AddressZero);
     // use user-submitted to make sure that the event is properly
     // thrown
-    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, true);
+    withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
     // TODO: events for withdrawal commitments! issue 698
   });
 

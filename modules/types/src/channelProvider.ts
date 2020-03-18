@@ -34,6 +34,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
   ///////////////////////////////////
   // SIGNING METHODS
   signMessage(message: string): Promise<string>;
+  signWithdrawCommitment(message: any): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS
@@ -44,6 +45,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
 export const chan_config = "chan_config";
 export const chan_nodeAuth = "chan_nodeAuth";
+export const chan_signWithdrawCommitment = "chan_signWithdrawCommitment";
 export const chan_restoreState = "chan_restoreState";
 export const chan_storeGet = "chan_storeGet";
 export const chan_storeSet = "chan_storeSet";
@@ -53,6 +55,7 @@ export const chan_storeSet = "chan_storeSet";
 export const ConnextRpcMethods = {
   [chan_config]: chan_config,
   [chan_nodeAuth]: chan_nodeAuth,
+  [chan_signWithdrawCommitment]: chan_signWithdrawCommitment,
   [chan_restoreState]: chan_restoreState,
   [chan_storeGet]: chan_storeGet,
   [chan_storeSet]: chan_storeSet,

@@ -23,12 +23,12 @@ export class OnchainTransactionService {
     return tx;
   }
 
-  async sendUserWithdrawal(
+  async sendWithdrawal(
     channel: Channel,
     transaction: CFCoreTypes.MinimalTransaction,
   ): Promise<TransactionResponse> {
     const tx = await this.configService.getEthWallet().sendTransaction(transaction);
-    await this.onchainTransactionRepository.addUserWithdrawal(tx, channel);
+    await this.onchainTransactionRepository.addWithdrawal(tx, channel);
     return tx;
   }
 }

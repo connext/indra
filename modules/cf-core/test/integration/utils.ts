@@ -437,42 +437,6 @@ export function constructDepositRpc(
   };
 }
 
-export function constructWithdrawCommitmentRpc(
-  multisigAddress: string,
-  amount: BigNumber,
-  tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-  recipient?: string,
-): Rpc {
-  const withdrawCommitmentReq = constructWithdrawRpc(
-    multisigAddress,
-    amount,
-    tokenAddress,
-    recipient,
-  );
-
-  withdrawCommitmentReq.methodName = ProtocolTypes.chan_withdrawCommitment;
-
-  return withdrawCommitmentReq;
-}
-
-export function constructWithdrawRpc(
-  multisigAddress: string,
-  amount: BigNumber,
-  tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-  recipient?: string,
-): Rpc {
-  return {
-    id: Date.now(),
-    methodName: ProtocolTypes.chan_withdraw,
-    parameters: deBigNumberifyJson({
-      tokenAddress,
-      multisigAddress,
-      amount,
-      recipient,
-    }) as CFCoreTypes.WithdrawParams,
-  };
-}
-
 export function constructInstallRpc(appInstanceId: string): Rpc {
   return {
     id: Date.now(),

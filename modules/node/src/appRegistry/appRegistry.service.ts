@@ -4,15 +4,18 @@ import {
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
   validateFastSignedTransferApp,
+  validateWithdrawApp,
   validateHashLockTransferApp,
 } from "@connext/apps";
 import {
-  AppInstanceJson,
-  SimpleLinkedTransferAppStateBigNumber,
   CoinBalanceRefundApp,
   SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
   FastSignedTransferApp,
+  WithdrawApp,
+  AppInstanceJson,
+  SimpleLinkedTransferAppStateBigNumber,
+  WithdrawAppStateBigNumber,
   HashLockTransferApp,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
@@ -24,6 +27,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 import { MessagingClientProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
@@ -43,6 +47,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly log: LoggerService,
     private readonly swapRateService: SwapRateService,
     private readonly linkedTransferService: LinkedTransferService,
+    private readonly withdrawService: WithdrawService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
@@ -160,6 +165,10 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
+      case WithdrawApp: {
+        validateWithdrawApp(proposeInstallParams, from, this.cfCoreService.cfCore.publicIdentifier);
+        break;
+      }
       case HashLockTransferApp: {
         validateHashLockTransferApp(
           proposeInstallParams,
@@ -214,6 +223,24 @@ export class AppRegistryService implements OnModuleInit {
       }
       case FastSignedTransferApp:
         break;
+      case WithdrawApp: {
+        this.log.debug(`Doing withdrawal post-install tasks`);
+        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
+        const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
+        this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
+        await this.withdrawService.saveWithdrawal(
+          appInstanceId,
+          bigNumberify(proposeInstallParams.initiatorDeposit),
+          proposeInstallParams.initiatorDepositTokenAddress,
+          initialState.transfers[0].to,
+          initialState.data,
+          initialState.signatures[0],
+          initialState.signatures[1],
+          appInstance.multisigAddress,
+        );
+        this.withdrawService.handleUserWithdraw(appInstance);
+        break;
+      }
       default:
         this.log.debug(`No post-install actions configured.`);
     }

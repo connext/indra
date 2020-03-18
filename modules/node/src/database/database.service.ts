@@ -13,6 +13,7 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { Transfer } from "../transfer/transfer.entity";
 import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
+import { Withdraw } from "../withdraw/withdraw.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -31,6 +32,7 @@ import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-
 import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
 import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm-sync";
 import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
+import { initWithdrawApp1584466373728 } from "../../migrations/1584466373728-init-withdraw-app";
 
 export const entities = [
   AppRegistry,
@@ -42,6 +44,7 @@ export const entities = [
   Transfer,
   AnonymizedOnchainTransaction,
   AnonymizedTransfer,
+  Withdraw,
 ];
 
 export const migrations = [
@@ -61,6 +64,7 @@ export const migrations = [
   fastSignedTransfer1583682931763,
   typeormSync1584364675207,
   typeormSync21584369931723,
+  initWithdrawApp1584466373728,
 ];
 
 @Injectable()
