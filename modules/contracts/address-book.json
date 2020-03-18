@@ -333,10 +333,10 @@
       "txHash": "0xce08542a21ee9ddafd0254b96180f84ba2ab592ef466577179d9fc0ea3c29569"
     },
     "TwoPartyFixedOutcomeInterpreter": {
-      "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1",
+      "address": "0xeec918d74c746167564401103096D45BbD494B74",
       "creationCodeHash": "0xc6df75aaf6a672ffcccb0d0ac7f122212bcd9573001453752506212e05b66ba2",
       "runtimeCodeHash": "0xd0e87a9d06bb8a3ac9d7c66622206da16437c04851040308461111637364d761",
-      "txHash": "0xfda78cf72a9a6448f28a3794cd3f2ee05c467c74a2234643351794dd57c0099c"
+      "txHash": "0x94da055239caa5da0db0f2db45db6122befbf505cd307fc2a9704891b2bc8adf"
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0xeec918d74c746167564401103096D45BbD494B74",
@@ -363,10 +363,10 @@
       "txHash": "0xa400d7d6dc666a45b94df1d3bc86cf556ebe10001448430ceffbc584a8f31f32"
     },
     "Token": {
-      "address": "0xeec918d74c746167564401103096D45BbD494B74",
+      "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC",
       "creationCodeHash": "0x15a50be77512dde6420d6d79ac5a273236c93850c92a2564596570aa33961e61",
       "runtimeCodeHash": "0x94ee377930298d1af932c16a0da2468327125f76c93d99ed3b650bb3cc9433ec",
-      "txHash": "0x308e3a097f3fb27d46fddfde3c12f983fa1abb7f5b5f50de8d261330b7fbe465"
+      "txHash": "0xc4bc6979712880e8ec27a12149e4b82eb2954eb6b16319246e838b129158da94"
     },
     "FastSignedTransferApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
@@ -381,10 +381,10 @@
       "txHash": "0xf0f316d76736259a224571bc76af48ad5ed65067c6eb278a2957000b77db553a"
     },
     "WithdrawApp": {
-      "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC",
+      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b",
       "creationCodeHash": "0x0761b233e19652b211a1ef47b0b1d2dd738b546a9c9cc712cbb9d7f685c782c1",
       "runtimeCodeHash": "0xd79f773a16e7b6459800341854346be7a82d3a694209fe8e87a5406f5413387e",
-      "txHash": "0x46975bcc207818f2407d7915cf2fcb47ff01149a2dca7ac44b4857ef8df2c08f"
+      "txHash": "0x40a12a175719c81f308a366b11ab8ea57c65b16a7de481afcfcfb219593da729"
     }
   }
 }
