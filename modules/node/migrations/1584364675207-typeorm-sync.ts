@@ -117,10 +117,6 @@ export class typeormSync1584364675207 implements MigrationInterface {
     );
     await queryRunner.query(`DROP TYPE "linked_transfer_status_enum_old"`, undefined);
     await queryRunner.query(
-      `ALTER TABLE "linked_transfer" ALTER COLUMN "meta" SET NOT NULL`,
-      undefined,
-    );
-    await queryRunner.query(
       `CREATE INDEX "IDX_a6e241f5665c326b3e201d8425" ON "channel_rebalance_profiles_rebalance_profile" ("channelId") `,
       undefined,
     );

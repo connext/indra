@@ -86,6 +86,6 @@ export class LinkedTransfer {
   )
   receiverChannel!: Channel;
 
-  @Column({ type: "json" })
+  @Column({ type: "json", nullable: true })
   meta: object;
 }
