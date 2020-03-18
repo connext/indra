@@ -13,6 +13,7 @@ export const HASHLOCK_TRANSFER = "HASHLOCK_TRANSFER";
 export type HashLockTransferParameters<T = string> = {
   conditionType: typeof HASHLOCK_TRANSFER;
   amount: T;
+  timelock: T;
   lockHash: string;
   assetId?: string;
   meta?: object;
@@ -56,7 +57,7 @@ export const HashLockTransferAppStateEncoding = `
     ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
     bytes32 lockHash,
     bytes32 preImage,
-    uint256 turnNum,
+    uint256 timelock,
     bool finalized
   )
 `;
@@ -67,7 +68,7 @@ export type HashLockTransferAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[];
   lockHash: string;
   preImage: string;
-  turnNum: T;
+  timelock: T;
   finalized: boolean;
 };
 export type HashLockTransferAppStateBigNumber = HashLockTransferAppState<BigNumber>;
