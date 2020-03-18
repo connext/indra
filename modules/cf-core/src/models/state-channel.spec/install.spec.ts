@@ -78,17 +78,4 @@ describe("StateChannel::uninstallApp", () => {
       }
     });
   });
-<<<<<<< HEAD:modules/cf-core/src/models/state-channel.spec/install.spec.ts
-=======
-
-  describe("the newly installed app", () => {
-    let app: AppInstance;
-
-    beforeAll(() => {
-      app = sc2.getAppInstance(appIdentityHash)!;
-    });
-
-    // TODO: moar tests pl0x
-  });
->>>>>>> 845-store-refactor:modules/cf-core/test/machine/unit/models/state-channel/install.spec.ts
 });

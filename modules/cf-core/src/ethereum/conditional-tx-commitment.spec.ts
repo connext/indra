@@ -1,12 +1,13 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
+import { MultisigTransaction } from "@connext/types";
 import { WeiPerEther } from "ethers/constants";
 import {
   getAddress,
   hexlify,
   Interface,
   randomBytes,
-  TransactionDescription,
   SigningKey,
+  TransactionDescription,
 } from "ethers/utils";
 
 import {
@@ -20,7 +21,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { FreeBalanceClass, StateChannel } from "../models";
 import { Store } from "../store";
-import { Context, MultisigTransaction } from "../types";
+import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import {

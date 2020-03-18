@@ -1,3 +1,4 @@
+import { MultisigOperation } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { Interface, Signature } from "ethers/utils";
 
@@ -6,7 +7,6 @@ import { AppInstance, StateChannel } from "../models";
 import {
   ConditionalTransactionCommitmentJSON,
   Context,
-  MultisigOperation,
   NetworkContext,
   OutcomeType,
 } from "../types";

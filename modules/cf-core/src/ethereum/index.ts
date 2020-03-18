@@ -2,4 +2,3 @@ export { getConditionalTransactionCommitment, ConditionalTransactionCommitment }
 export { MultisigCommitment } from "./multisig-commitment";
 export { getSetStateCommitment, SetStateCommitment } from "./set-state-commitment";
 export { getSetupCommitment, SetupCommitment } from "./setup-commitment";
-export { getWithdrawCommitment, WithdrawCommitment } from "./withdraw-commitment";

@@ -25,11 +25,9 @@ export class GetAppInstanceController extends NodeController {
     }
 
     //TODO - This is very dumb, just add multisigAddress to the base app instance type to begin with
-    let appInstance = (await store.getAppInstance(appInstanceId)).toJson()
-    appInstance.multisigAddress = (await store.getMultisigAddressFromAppInstance(appInstanceId))
+    let appInstance = (await store.getAppInstance(appInstanceId)).toJson();
+    appInstance.multisigAddress = (await store.getMultisigAddressFromAppInstance(appInstanceId));
 
-    return {
-      appInstance
-    };
+    return { appInstance };
   }
 }

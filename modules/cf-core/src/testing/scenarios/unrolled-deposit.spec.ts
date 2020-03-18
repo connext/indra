@@ -1,16 +1,10 @@
-import { CoinBalanceRefundAppState, MethodNames, EventNames } from "@connext/types";
+import { CoinBalanceRefundAppState, MethodNames, ProposeMessage, EventNames } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
-<<<<<<< HEAD:modules/cf-core/src/testing/scenarios/unrolled-deposit.spec.ts
 import { Node } from "../../node";
 import { NOT_YOUR_BALANCE_REFUND_APP } from "../../errors";
 import { xkeyKthAddress } from "../../xkeys";
-=======
-import { Node, NOT_YOUR_BALANCE_REFUND_APP } from "../../src";
-import { CoinBalanceRefundAppState, ProtocolTypes } from "../../src/types";
-import { toBeLt, toBeEq } from "../machine/integration/bignumber-jest-matcher";
->>>>>>> 845-store-refactor:modules/cf-core/test/integration/unrolled-deposit.spec.ts
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
 import { setup, SetupContext } from "../setup";
@@ -23,14 +17,7 @@ import {
   rescindDepositRights,
   requestDepositRights,
   transferERC20Tokens,
-<<<<<<< HEAD:modules/cf-core/src/testing/scenarios/unrolled-deposit.spec.ts
 } from "../utils";
-=======
-} from "./utils";
-import { xkeyKthAddress } from "../../src/machine";
-import { INSTALL_EVENT, ProposeMessage } from "@connext/types";
-import { prettyPrintObject } from "../../src/utils";
->>>>>>> 845-store-refactor:modules/cf-core/test/integration/unrolled-deposit.spec.ts
 
 expect.extend({ toBeLt, toBeEq });
 

@@ -1,4 +1,4 @@
-import { CommitmentType, ProtocolNames, ProtocolParams } from "@connext/types";
+import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment } from "../ethereum";
@@ -18,11 +18,7 @@ import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.setup;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
-<<<<<<< HEAD
-const { SetState } = CommitmentType;
-=======
-const { Setup } = Commitment;
->>>>>>> 845-store-refactor
+const { Setup } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -92,10 +88,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-<<<<<<< HEAD
-    // yield [PERSIST_COMMITMENT, SetState, setupCommitment, stateChannel.freeBalance.identityHash];
-=======
->>>>>>> 845-store-refactor
+    yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
     logTime(log, start, `Finished initiating`);
   },
 
@@ -143,10 +136,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-<<<<<<< HEAD
-    // yield [PERSIST_COMMITMENT, SetState, setupCommitment, stateChannel.freeBalance.identityHash];
-=======
->>>>>>> 845-store-refactor
+    yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
 
     yield [
       IO_SEND,

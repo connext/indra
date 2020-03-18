@@ -1,14 +1,14 @@
-import { OutcomeType } from "@connext/types";
+import { OutcomeType, ProtocolNames } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { bigNumberify } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { Protocol, xkeyKthAddress } from "../../../../src/machine";
-import { AppWithAction } from "../../../contracts";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
+import { xkeyKthAddress } from "../../xkeys";
+
 import { toBeEq } from "../bignumber-jest-matcher";
 import { connectToGanache } from "../connect-ganache";
-
-import { TestRunner } from "./test-runner";
+import { AppWithAction } from "../contracts";
+import { TestRunner } from "../test-runner";
 
 let wallet: Wallet;
 let appWithAction: Contract;
@@ -37,7 +37,7 @@ describe("Three mininodes", () => {
 
     await tr.setup();
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
+    await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeB.xpub,
       defaultTimeout: 100,
@@ -68,7 +68,7 @@ describe("Three mininodes", () => {
 
     const [appInstance] = [...postInstallChannel.appInstances.values()];
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Update, {
+    await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.update, {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeB.xpub,
       multisigAddress: tr.multisigAB,
@@ -78,7 +78,7 @@ describe("Three mininodes", () => {
       },
     });
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.TakeAction, {
+    await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeB.xpub,
       multisigAddress: tr.multisigAB,
@@ -89,7 +89,7 @@ describe("Three mininodes", () => {
       },
     });
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.Uninstall, {
+    await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeB.xpub,
       appIdentityHash: appInstance.identityHash,

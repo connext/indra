@@ -5,10 +5,6 @@ require("dotenv-extended").load();
 // This environment runs for _every test suite_.
 
 class NodeEnvironment extends NodeJSEnvironment {
-  constructor(config) {
-    super(config);
-  }
-
   async setup() {
     await super.setup();
     this.global.fundedPrivateKey = global["fundedPrivateKey"];

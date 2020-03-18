@@ -1,19 +1,18 @@
-import { NetworkContext, nullLogger, PersistAppType, AppInstanceProposal } from "@connext/types";
+import {
+  AppInstanceProposal,
+  EthereumCommitment,
+  NetworkContext,
+  nullLogger,
+  PersistAppType,
+} from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import { HDNode } from "ethers/utils/hdnode";
 
-<<<<<<< HEAD:modules/cf-core/src/testing/mininode.ts
-import { EthereumCommitment, Opcode } from "../types";
+import { Opcode } from "../types";
 import { ProtocolRunner } from "../machine";
-import { StateChannel } from "../models";
+import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
-=======
-import { EthereumCommitment } from "../../../src/types";
-import { Opcode, ProtocolRunner } from "../../../src/machine";
-import { StateChannel, AppInstance } from "../../../src/models";
-import { Store } from "../../../src/store";
->>>>>>> 845-store-refactor:modules/cf-core/test/machine/integration/mininode.ts
 
 import { getRandomHDNodes } from "./random-signing-keys";
 

@@ -6,30 +6,18 @@ import {
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { Interface, keccak256, parseEther } from "ethers/utils";
+import { Interface, parseEther } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import {
   getConditionalTransactionCommitment,
   getSetupCommitment,
-  SetStateCommitment,
+  getSetStateCommitment,
 } from "../../ethereum";
 import { AppInstance, FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
 import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
-<<<<<<< HEAD:modules/cf-core/src/testing/scenarios/install-then-set-state.spec.ts
-=======
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
-import {
-  ConditionalTransactionCommitment,
-  SetStateCommitment,
-  SetupCommitment,
-} from "../../../src/ethereum";
-import { xkeysToSortedKthSigningKeys } from "../../../src/machine/xkeys";
-import { AppInstance, StateChannel } from "../../../src/models";
-import { FreeBalanceClass } from "../../../src/models/free-balance";
->>>>>>> 845-store-refactor:modules/cf-core/test/machine/integration/install-then-set-state.spec.ts
 import {
   ChallengeRegistry,
   DolphinCoin,
@@ -155,12 +143,9 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         },
       });
 
-      const setStateCommitment = new SetStateCommitment(
-        network.ChallengeRegistry,
-        identityAppInstance.identity,
-        keccak256(identityAppInstance.encodedLatestState),
-        identityAppInstance.versionNumber + 1,
-        identityAppInstance.timeout,
+      const setStateCommitment = getSetStateCommitment(
+        context,
+        identityAppInstance,
       );
 
       setStateCommitment.signatures = [
@@ -173,12 +158,9 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
-      const setStateCommitmentForFreeBalance = new SetStateCommitment(
-        network.ChallengeRegistry,
-        stateChannel.freeBalance.identity,
-        stateChannel.freeBalance.hashOfLatestState,
-        stateChannel.freeBalance.versionNumber,
-        stateChannel.freeBalance.timeout,
+      const setStateCommitmentForFreeBalance = getSetStateCommitment(
+        context,
+        stateChannel.freeBalance,
       );
       setStateCommitmentForFreeBalance.signatures = [
         multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),

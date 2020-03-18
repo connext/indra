@@ -1,3 +1,4 @@
+import { EthereumCommitment } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress, recoverAddress, Signature } from "ethers/utils";
 
@@ -9,10 +10,6 @@ import {
 } from "../models";
 import {
   CoinBalanceRefundAppState,
-<<<<<<< HEAD:modules/cf-core/src/protocol/utils.ts
-  EthereumCommitment,
-=======
->>>>>>> 845-store-refactor:modules/cf-core/src/protocol/utils/get-outcome-increments.ts
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,

@@ -1,24 +1,18 @@
-import { AppInstanceJson } from "@connext/types";
+import { AppInstanceJson, MinimalTransaction } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 
 import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
-  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
-  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
   NO_MULTISIG_FOR_COUNTERPARTIES,
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
   NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
-<<<<<<< HEAD
+  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
+  NO_STATE_CHANNEL_FOR_OWNERS,
 } from "./errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
-import { IStoreService, MinimalTransaction } from "./types";
-import { getCreate2MultisigAddress } from "./utils";
-=======
-  NO_STATE_CHANNEL_FOR_OWNERS,
-} from "./methods";
-import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
-import { CFCoreTypes } from "./types";
+import { IStoreService } from "./types";
 import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
->>>>>>> 845-store-refactor
+
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
 /**
@@ -279,7 +273,7 @@ export class Store {
 
   public async getSetupCommitment(
     multisigAddress: string,
-  ): Promise<CFCoreTypes.MinimalTransaction> {
+  ): Promise<MinimalTransaction> {
     const withdrawalCommitment = await this.storeService.getSetupCommitment(multisigAddress);
     if (!withdrawalCommitment) {
       throw new Error("Could not find setup commitment");
@@ -289,7 +283,7 @@ export class Store {
 
   public async saveSetupCommitment(
     multisigAddress: string,
-    commitment: CFCoreTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ) {
     return this.storeService.saveSetupCommitment(multisigAddress, commitment);
   }

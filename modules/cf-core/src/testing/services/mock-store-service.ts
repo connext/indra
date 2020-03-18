@@ -53,12 +53,12 @@ export class MockStoreService implements IStoreService {
   saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
-  getSetupCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return Promise.resolve(undefined);
   }
   saveSetupCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     return Promise.resolve();
   }

@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { CommitmentType, ProtocolNames, ProtocolParams } from "@connext/types";
-=======
-import { PersistAppType } from "@connext/types";
->>>>>>> 845-store-refactor
+import { CommitmentTypes, PersistAppType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -18,17 +14,11 @@ import {
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-<<<<<<< HEAD
 import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
 
 const protocol = ProtocolNames.uninstall;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = CommitmentType;
-=======
-const protocol = Protocol.Uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = Commitment;
->>>>>>> 845-store-refactor
+const { SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:

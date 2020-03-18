@@ -1,16 +1,12 @@
 import {
-<<<<<<< HEAD:modules/cf-core/src/methods/state-channel/deposit.ts
+  CoinBalanceRefundAppState,
+  coinBalanceRefundAppStateEncoding,
   EventNames,
   MethodNames,
   MethodParams,
   MethodResults,
   ProtocolNames,
   ProtocolParams,
-=======
-  DEPOSIT_STARTED_EVENT,
-  DEPOSIT_FAILED_EVENT,
-  coinBalanceRefundAppStateEncoding,
->>>>>>> 845-store-refactor:modules/cf-core/src/methods/state-channel/deposit/operation.ts
 } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
@@ -36,14 +32,7 @@ import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import {
   AppInterface,
-<<<<<<< HEAD:modules/cf-core/src/methods/state-channel/deposit.ts
-  CoinBalanceRefundAppState,
-  coinBalanceRefundAppStateEncoding,
   DepositConfirmationMessage,
-=======
-  CFCoreTypes,
-  CoinBalanceRefundAppState,
->>>>>>> 845-store-refactor:modules/cf-core/src/methods/state-channel/deposit/operation.ts
   DepositFailedMessage,
   NetworkContext,
   OutcomeType,

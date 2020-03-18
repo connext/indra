@@ -10,13 +10,13 @@ export interface EthereumCommitment {
   getSignedTransaction(signatures: Signature[]): MinimalTransaction;
 }
 
-export const CommitmentType = enumify({
+export const CommitmentTypes = enumify({
   Conditional: "conditional",
   SetState: "setState",
   Setup: "setup",
   Withdraw: "withdraw",
 });
-export type CommitmentType = (typeof CommitmentType)[keyof typeof CommitmentType];
+export type CommitmentTypes = (typeof CommitmentTypes)[keyof typeof CommitmentTypes];
 
 // This is used instead of the ethers `Transaction` because that type
 // requires the nonce and chain ID to be specified, when sometimes those

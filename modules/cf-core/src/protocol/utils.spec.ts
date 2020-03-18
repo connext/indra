@@ -1,7 +1,7 @@
+import { EthereumCommitment } from "@connext/types";
 import { HashZero } from "ethers/constants";
 import { hexlify, randomBytes, recoverAddress, Signature, SigningKey } from "ethers/utils";
 
-import { EthereumCommitment } from "../types";
 import { assertIsValidSignature } from "./utils";
 
 describe("Signature Validator Helper", () => {

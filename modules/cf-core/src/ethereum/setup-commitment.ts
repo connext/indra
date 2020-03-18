@@ -1,14 +1,9 @@
+import { MultisigOperation, MultisigTransaction } from "@connext/types";
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { StateChannel } from "../models";
-import {
-  AppIdentity,
-  Context,
-  MultisigOperation,
-  MultisigTransaction,
-  NetworkContext,
-} from "../types";
+import { AppIdentity, Context, NetworkContext } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import { MultisigCommitment } from "./multisig-commitment";

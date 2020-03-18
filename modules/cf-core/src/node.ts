@@ -1,6 +1,6 @@
 import {
   AppInstanceProposal,
-  CommitmentType,
+  CommitmentTypes,
   EventNames,
   ILoggerService,
   MethodName,
@@ -249,7 +249,7 @@ export class Node {
       Opcode.PERSIST_COMMITMENT,
       async (
         args: [
-          CommitmentType,
+          CommitmentTypes,
           MultisigCommitment | SetStateCommitment | MinimalTransaction,
           string,
         ],
@@ -259,31 +259,16 @@ export class Node {
         const [commitmentType, commitment, ...res] = args;
 
         switch (commitmentType) {
-<<<<<<< HEAD
-          case CommitmentType.Withdraw:
-=======
-          case Commitment.Setup:
->>>>>>> 845-store-refactor
-            const [multisigAddress] = res;
-            await store.saveSetupCommitment(
-              multisigAddress,
-              commitment as MinimalTransaction,
+
+          case CommitmentTypes.Conditional:
+            const [appId] = res;
+            await store.saveConditionalTransactionCommitment(
+              appId,
+              commitment as ConditionalTransactionCommitment,
             );
             break;
 
-<<<<<<< HEAD
-          case CommitmentType.SetState:
-=======
-          case Commitment.Withdraw:
-            const [multisig] = res;
-            await store.saveWithdrawalCommitment(
-              multisig,
-              commitment as ProtocolTypes.MinimalTransaction,
-            );
-            break;
-
-          case Commitment.SetState:
->>>>>>> 845-store-refactor
+          case CommitmentTypes.SetState:
             const [appIdentityHash] = res;
             await store.saveLatestSetStateCommitment(
               appIdentityHash,
@@ -291,11 +276,19 @@ export class Node {
             );
             break;
 
-          case CommitmentType.Conditional:
-            const [appId] = res;
-            await store.saveConditionalTransactionCommitment(
-              appId,
-              commitment as ConditionalTransactionCommitment,
+          case CommitmentTypes.Setup:
+            const [multisigAddress] = res;
+            await store.saveSetupCommitment(
+              multisigAddress,
+              commitment as MinimalTransaction,
+            );
+            break;
+
+          case CommitmentTypes.Withdraw:
+            const [multisig] = res;
+            await store.saveWithdrawalCommitment(
+              multisig,
+              commitment as MinimalTransaction,
             );
             break;
 

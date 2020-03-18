@@ -1,20 +1,11 @@
 import { HashZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
-<<<<<<< HEAD:modules/cf-core/src/testing/scenarios/deploy-state-deposit-holder.spec.ts
 import { Node } from "../../node";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { setup, SetupContext } from "../setup";
-import { constructWithdrawRpc, createChannel, deployStateDepositHolder, deposit } from "../utils";
-=======
-import { Node } from "../../src";
-import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
-
-import { setup, SetupContext } from "./setup";
-import { createChannel, deployStateDepositHolder, deposit } from "./utils";
->>>>>>> 845-store-refactor:modules/cf-core/test/integration/deploy-state-deposit-holder.spec.ts
+import { createChannel, deployStateDepositHolder, deposit } from "../utils";
 
 expect.extend({ toBeEq });
 

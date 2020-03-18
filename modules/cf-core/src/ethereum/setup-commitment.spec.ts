@@ -1,3 +1,4 @@
+import { MultisigTransaction } from "@connext/types";
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { getRandomExtendedPubKey } from "../testing/random-signing-keys";
@@ -5,7 +6,7 @@ import { generateRandomNetworkContext } from "../testing/mocks";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { StateChannel } from "../models";
-import { Context, MultisigTransaction } from "../types";
+import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import { getSetupCommitment } from "./setup-commitment";

@@ -1,12 +1,11 @@
+import { MinimalTransaction, EthereumCommitment } from "@connext/types";
 import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
 
 import { ChallengeRegistry } from "../contracts";
 import { AppInstance } from "../models";
 import {
   AppIdentity,
-  MinimalTransaction,
   Context,
-  EthereumCommitment,
   SignedStateHashUpdate,
   SetStateCommitmentJSON,
 } from "../types";
@@ -14,7 +13,6 @@ import { appIdentityToHash, sortSignaturesBySignerAddress } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 
-<<<<<<< HEAD
 export const getSetStateCommitment = (
   context: Context,
   appInstance: AppInstance,
@@ -26,10 +24,7 @@ export const getSetStateCommitment = (
   appInstance.timeout,
 );
 
-export class SetStateCommitment extends EthereumCommitment {
-=======
 export class SetStateCommitment implements EthereumCommitment {
->>>>>>> 845-store-refactor
   constructor(
     public readonly challengeRegistryAddress: string,
     public readonly appIdentity: AppIdentity,

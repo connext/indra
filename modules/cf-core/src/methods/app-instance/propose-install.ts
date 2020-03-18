@@ -1,34 +1,15 @@
-<<<<<<< HEAD:modules/cf-core/src/methods/app-instance/propose-install.ts
 import {
   MethodNames, MethodParams, MethodResults, ProtocolNames,
 } from "@connext/types";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import {
-  INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
   NULL_INITIAL_STATE_FOR_PROPOSAL,
 } from "../../errors";
-import { AppInstanceProposal, StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { Store } from "../../store";
-import { NetworkContext } from "../../types";
-import { appIdentityToHash } from "../../utils";
-import { xkeyKthAddress } from "../../xkeys";
 
 import { NodeController } from "../controller";
-=======
-import { jsonRpcMethod } from "rpc-server";
-
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
-import { Protocol } from "../../../machine";
-import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
-import { NodeController } from "../../controller";
-import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
->>>>>>> 845-store-refactor:modules/cf-core/src/methods/app-instance/propose-install/controller.ts
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -112,100 +93,3 @@ export class ProposeInstallAppInstanceController extends NodeController {
     };
   }
 }
-<<<<<<< HEAD:modules/cf-core/src/methods/app-instance/propose-install.ts
-
-function assertSufficientFundsWithinFreeBalance(
-  channel: StateChannel,
-  publicIdentifier: string,
-  tokenAddress: string,
-  depositAmount: BigNumber,
-): void {
-  if (!channel.hasFreeBalance) return;
-
-  const freeBalanceForToken =
-    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
-    Zero;
-
-  if (freeBalanceForToken.lt(depositAmount)) {
-    throw Error(
-      INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
-        publicIdentifier,
-        channel.multisigAddress,
-        tokenAddress,
-        freeBalanceForToken,
-        depositAmount,
-      ),
-    );
-  }
-}
-
-/**
- * Creates a AppInstanceProposal to reflect the proposal received from
- * the client.
- * @param myIdentifier
- * @param store
- * @param params
- */
-export async function createProposedAppInstance(
-  myIdentifier: string,
-  store: Store,
-  networkContext: NetworkContext,
-  params: MethodParams.ProposeInstall,
-): Promise<string> {
-  const {
-    abiEncodings,
-    appDefinition,
-    initialState,
-    initiatorDeposit,
-    initiatorDepositTokenAddress,
-    outcomeType,
-    proposedToIdentifier,
-    responderDeposit,
-    responderDepositTokenAddress,
-    timeout,
-  } = params;
-
-  const multisigAddress = await store.getMultisigAddressWithCounterparty(
-    [myIdentifier, proposedToIdentifier],
-    networkContext.ProxyFactory,
-    networkContext.MinimumViableMultisig,
-    networkContext.provider,
-  );
-
-  const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
-    multisigAddress,
-    {
-      proxyFactory: networkContext.ProxyFactory,
-      multisigMastercopy: networkContext.MinimumViableMultisig,
-    },
-    myIdentifier,
-    proposedToIdentifier,
-  );
-
-  const appInstanceProposal: AppInstanceProposal = {
-    identityHash: appIdentityToHash({
-      appDefinition,
-      channelNonce: stateChannel.numProposedApps,
-      participants: stateChannel.getSigningKeysFor(stateChannel.numProposedApps),
-      defaultTimeout: timeout.toNumber(),
-    }),
-    abiEncodings: abiEncodings,
-    appDefinition: appDefinition,
-    appSeqNo: stateChannel.numProposedApps,
-    initialState: initialState,
-    initiatorDeposit: initiatorDeposit.toHexString(),
-    initiatorDepositTokenAddress: initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-    outcomeType: outcomeType,
-    proposedByIdentifier: myIdentifier,
-    proposedToIdentifier: proposedToIdentifier,
-    responderDeposit: responderDeposit.toHexString(),
-    responderDepositTokenAddress: responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-    timeout: timeout.toHexString(),
-  };
-
-  await store.saveStateChannel(stateChannel.addProposal(appInstanceProposal));
-
-  return appInstanceProposal.identityHash;
-}
-=======
->>>>>>> 845-store-refactor:modules/cf-core/src/methods/app-instance/propose-install/controller.ts

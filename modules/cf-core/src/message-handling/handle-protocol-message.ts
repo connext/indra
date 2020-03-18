@@ -1,17 +1,9 @@
 import {
-<<<<<<< HEAD
   EventNames,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
-=======
-  PROPOSE_INSTALL_EVENT,
-  INSTALL_EVENT,
-  UNINSTALL_EVENT,
-  CREATE_CHANNEL_EVENT,
-  UPDATE_STATE_EVENT,
->>>>>>> 845-store-refactor
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -21,20 +13,9 @@ import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import {
   EventEmittedMessage,
-<<<<<<< HEAD
-=======
-  InstallProtocolParams,
->>>>>>> 845-store-refactor
   NetworkContext,
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
-<<<<<<< HEAD
-  WithdrawStartedMessage,
-=======
-  TakeActionProtocolParams,
-  UninstallProtocolParams,
-  UpdateProtocolParams,
->>>>>>> 845-store-refactor
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
@@ -66,13 +47,7 @@ export async function handleReceivedProtocolMessage(
     publicIdentifier,
   );
 
-<<<<<<< HEAD
-  if (
-    outgoingEventData && protocol === ProtocolNames.install
-  ) {
-=======
-  if (outgoingEventData && protocol === Protocol.Install) {
->>>>>>> 845-store-refactor
+  if (outgoingEventData && protocol === ProtocolNames.install) {
     const appInstanceId =
       outgoingEventData!.data["appInstanceId"] ||
       (outgoingEventData!.data as any).params["appInstanceId"];
@@ -164,22 +139,8 @@ async function getOutgoingEventDataFromProtocol(
             .multisigOwners,
         ),
       };
-<<<<<<< HEAD
-    case ProtocolNames.withdraw:
-      // NOTE: responder will only ever emit a withdraw started
-      // event. does not include tx hash
-      // determine if the withdraw is finishing or if it is starting
-      return {
-        ...baseEvent,
-        type: EventNames.WITHDRAWAL_STARTED_EVENT,
-        data: getWithdrawEventData(params as ProtocolParams.Withdraw),
-      } as WithdrawStartedMessage;
     case ProtocolNames.takeAction:
     case ProtocolNames.update:
-=======
-    case Protocol.TakeAction:
-    case Protocol.Update:
->>>>>>> 845-store-refactor
       return {
         ...baseEvent,
         type: EventNames.UPDATE_STATE_EVENT,
@@ -207,109 +168,13 @@ function getStateUpdateEventData(
   return { newState, appInstanceId, action };
 }
 
-<<<<<<< HEAD
 function getUninstallEventData({ appIdentityHash: appInstanceId }: ProtocolParams.Uninstall) {
   return { appInstanceId };
 }
 
-function getWithdrawEventData(params: ProtocolParams.Withdraw) {
-  const { multisigAddress, tokenAddress, recipient, amount } = params;
-  return {
-    params: {
-      multisigAddress,
-      tokenAddress,
-      recipient,
-      amount,
-    },
-  };
-}
-
-=======
-function getUninstallEventData({ appIdentityHash: appInstanceId }: UninstallProtocolParams) {
-  return { appInstanceId };
-}
-
->>>>>>> 845-store-refactor
 function getSetupEventData(
   { initiatorXpub: counterpartyXpub, multisigAddress }: ProtocolParams.Setup,
   owners: string[],
 ) {
   return { multisigAddress, owners, counterpartyXpub };
 }
-<<<<<<< HEAD
-
-/**
- * Produces an array of queues that the client must halt execution on
- * for some particular protocol and its set of parameters/
- *
- * @param {string} protocol - string name of the protocol
- * @param {ProtocolParams.} params - parameters relevant for the protocol
- * @param {Store} store - the store the client is connected to
- * @param {RequestHandler} requestHandler - the request handler object of the client
- *
- * @returns {Promise<string[]>} - list of the names of the queues
-async function getQueueNamesListByProtocolName(
-  protocol: ProtocolName,
-  params: ProtocolParam,
-  requestHandler: RequestHandler,
-): Promise<string[]> {
-  const { networkContext, provider, publicIdentifier, store } = requestHandler;
-
-  async function multisigAddressFor(xpubs: string[]) {
-    // allow generated multisig for setup protocol only!
-
-    // in propose, you may need to generate a multisig address for
-    // initiator and responder if it is a virtual app. but in the `install`
-    // step, these channels should have been persisted with end participants,
-    // and previously exist for intermediaries.
-    const allowed = protocol === ProtocolNames.setup;
-    return await store.getMultisigAddressWithCounterparty(
-      xpubs,
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
-      allowed ? provider : undefined,
-    );
-  }
-
-  switch (protocol) {
-    // Queue on the multisig address of the direct channel.
-    case ProtocolNames.install:
-    case ProtocolNames.setup:
-    case ProtocolNames.withdraw:
-    case ProtocolNames.propose:
-      const { multisigAddress } = params as
-        | ProtocolParams.Install
-        | ProtocolParams.Setup
-        | ProtocolParams.Withdraw;
-
-      return [multisigAddress];
-
-    // Queue on the appInstanceId of the AppInstance.
-    case ProtocolNames.takeAction:
-    case ProtocolNames.update:
-      const { appIdentityHash } = params as ProtocolParams.TakeAction | ProtocolParams.Update;
-
-      return [appIdentityHash];
-
-    case ProtocolNames.uninstall:
-      const {
-        multisigAddress: addr,
-        appIdentityHash: appInstanceId,
-      } = params as ProtocolParams.Uninstall;
-
-      return [addr, appInstanceId];
-
-    // NOTE: This file is only reachable if a protocol message is sent
-    // from an initiator to an intermediary, an intermediary to
-    // a responder, or an initiator to a responder. It is never possible
-    // for the publicIdentifier to be the initiatorXpub, so we ignore
-    // that case.
-
-    default:
-      break;
-  }
-  throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
-}
-*/
-=======
->>>>>>> 845-store-refactor
