@@ -16,12 +16,15 @@ import {
   expect,
   fundChannel,
   TOKEN_AMOUNT,
+  env,
 } from "../util";
+import { providers } from "ethers";
 
-describe("HashLock Transfers", () => {
+describe.only("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
+  const provider = new providers.JsonRpcProvider(env.ethProviderUrl)
 
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
@@ -38,12 +41,14 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString()
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       conditionType: "HASHLOCK_TRANSFER",
       lockHash,
+      timelock,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
@@ -80,12 +85,14 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString()
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       conditionType: "HASHLOCK_TRANSFER",
       lockHash,
+      timelock,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
@@ -122,12 +129,14 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString()
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       conditionType: "HASHLOCK_TRANSFER",
       lockHash,
+      timelock,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
@@ -146,12 +155,14 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString()
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       conditionType: "HASHLOCK_TRANSFER",
       lockHash,
+      timelock,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
@@ -164,4 +175,27 @@ describe("HashLock Transfers", () => {
       } as ResolveHashLockTransferParameters),
     ).to.eventually.be.rejectedWith(/No sender app installed for lockHash/);
   });
+
+  it("cannot resolve a hashlock if timelock is expired", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const preImage = hexlify(randomBytes(32));
+    const timelock = (await provider.getBlockNumber()).toString()
+
+    const lockHash = soliditySha256(["bytes32"], [preImage]);
+    await clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: "HASHLOCK_TRANSFER",
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar" },
+    } as HashLockTransferParameters);
+    await expect(
+      clientB.resolveCondition({
+        conditionType: "HASHLOCK_TRANSFER",
+        preImage
+      } as ResolveHashLockTransferParameters),
+    ).to.eventually.be.rejectedWith(/Could not install app on receiver side./);
+  });  
 });
