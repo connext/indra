@@ -273,13 +273,13 @@ test-runner: test-runner-staging
 
 test-runner-release: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
