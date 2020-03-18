@@ -1,24 +1,15 @@
 import { AppRegistry } from "./app";
-import { Address, BigNumber, Network, Transaction, TransactionResponse, Xpub } from "./basic";
+import { Address, BigNumber, Network, Transaction, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
-import { MinimalTransaction } from "./commitments";
 import {
   NetworkContext,
-  ResolveLinkedTransferResponse,
   ResolveFastSignedTransferResponse,
+  ResolveHashLockTransferResponse,
+  ResolveLinkedTransferResponse,
 } from "./contracts";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
-<<<<<<< HEAD
 import { MethodResults } from "./methods";
-=======
-import { ProtocolTypes } from "./protocol";
-import {
-  ResolveLinkedTransferResponse,
-  ResolveFastSignedTransferResponse,
-  ResolveHashLockTransferResponse,
-} from "./apps";
->>>>>>> 845-store-refactor
 
 ////////////////////////////////////
 // Misc
@@ -169,10 +160,6 @@ export interface INodeApiClient {
   getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-<<<<<<< HEAD
-  withdraw(tx: MinimalTransaction): Promise<TransactionResponse>;
-=======
->>>>>>> 845-store-refactor
   fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;

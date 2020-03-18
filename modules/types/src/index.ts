@@ -19,7 +19,12 @@ export {
   MethodResults,
 } from "./methods";
 export * from "./node";
-export { ProtocolName, ProtocolNames, ProtocolParam, ProtocolParams } from "./protocol";
+export {
+  ProtocolName,
+  ProtocolNames,
+  ProtocolParam,
+  ProtocolParams,
+} from "./protocol";
 export * from "./state";
 export * from "./store";
 export * from "./transfer";

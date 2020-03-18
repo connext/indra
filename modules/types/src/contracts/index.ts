@@ -1,11 +1,13 @@
 import { 
+  CoinBalanceRefundAppState,
+  FastSignedTransferAppAction,
   FastSignedTransferAppState,
+  HashLockTransferAppAction,
+  HashLockTransferAppState,
+  SimpleLinkedTransferAppAction,
   SimpleLinkedTransferAppState,
   SimpleSwapAppState,
-  FastSignedTransferAppAction,
-  SimpleLinkedTransferAppAction,
 } from "./apps";
-import { CoinBalanceRefundAppState } from "./funding";
 
 export * from "./adjudicator";
 export * from "./apps";
@@ -14,10 +16,12 @@ export * from "./misc";
 
 export type AppAction =
   | FastSignedTransferAppAction
+  | HashLockTransferAppAction
   | SimpleLinkedTransferAppAction;
 
 export type AppState = 
   | CoinBalanceRefundAppState
   | FastSignedTransferAppState
+  | HashLockTransferAppState
   | SimpleLinkedTransferAppState
   | SimpleSwapAppState;

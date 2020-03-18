@@ -1,8 +1,14 @@
 import { Signature } from "ethers/utils";
 
 import { Address, BigNumberish, HexString } from "./basic";
-import { AppIdentity, NetworkContext } from "./contracts";
+import { AppIdentity, MultisigOperation, NetworkContext } from "./contracts";
 import { enumify } from "./utils";
+
+// Multisig
+export interface EthereumCommitment {
+  hashToSign(): string;
+  getSignedTransaction(signatures: Signature[]): MinimalTransaction;
+}
 
 export const CommitmentType = enumify({
   Conditional: "conditional",
@@ -19,6 +25,10 @@ export type MinimalTransaction = {
   to: string;
   value: BigNumberish;
   data: string;
+};
+
+export type MultisigTransaction = MinimalTransaction & {
+  operation: MultisigOperation;
 };
 
 export type SetStateCommitmentJSON = {
