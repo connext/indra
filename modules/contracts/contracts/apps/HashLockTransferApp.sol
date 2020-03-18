@@ -1,7 +1,6 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
@@ -21,7 +20,6 @@ contract HashLockTransferApp is CounterfactualApp {
         bytes32 lockHash;
         bytes32 preImage;
         uint256 timelock;
-        uint256 turnNum; // even is receiver?
         bool finalized;
     }
 
@@ -42,14 +40,13 @@ contract HashLockTransferApp is CounterfactualApp {
         bytes32 generatedHash = sha256(abi.encode(action.preImage));
 
         require(!state.finalized, "Cannot take action on finalized state");
-        require(state.timelock <= block.number, "Cannot take action if timelock is expired");
+        require(block.number < state.timelock, "Cannot take action if timelock is expired");
         require(state.lockHash == generatedHash, "Hash generated from preimage does not match hash in state");
         
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;
         state.preImage = action.preImage;
         state.finalized = true;
-        state.turnNum += 1;
 
         return abi.encode(state);
     }
@@ -63,7 +60,7 @@ contract HashLockTransferApp is CounterfactualApp {
 
         // If payment hasn't been unlocked, require that the timelock is expired
         if (!state.finalized) {
-            require(state.timelock > block.number, "Cannot revert payment if timelock is unexpired");
+            require(block.number >= state.timelock, "Cannot revert payment if timelock is unexpired");
         }
 
         return abi.encode(state.coinTransfers);
@@ -71,20 +68,18 @@ contract HashLockTransferApp is CounterfactualApp {
 
     function getTurnTaker(
         bytes calldata encodedState,
-        address[] calldata participants // length == 2!
+        address[] calldata participants
     )
         external
-        pure
+        view
         returns (address)
     {
-        return participants[
-            abi.decode(encodedState, (AppState)).turnNum % 2
-        ];
+        return participants[1]; // receiver should always be indexed at [1]
     }
 
     function isStateTerminal(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bool)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
