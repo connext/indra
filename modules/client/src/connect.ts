@@ -1,6 +1,7 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
+import { signMessage } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
   CF_PATH,
@@ -119,8 +120,8 @@ export const connect = async (
     }
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
-    const getSignature = async (nonce: string) => {
-      return channelProvider.send("chan_nodeAuth", { message: nonce });
+    const getSignature = async (message: string) => {
+      return channelProvider.send("chan_nodeAuth", { message });
     };
 
     const messagingUrl = `nats://${channelProvider.config.nodeUrl
@@ -171,9 +172,10 @@ export const connect = async (
       log.debug(`Creating channelProvider with xpub: ${xpub}`);
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
-    const getSignature = async nonce => {
+    const getSignature = async message => {
       const wallet = new Wallet(await keyGen("0"));
-      return wallet.signMessage(nonce);
+      const { chainId } = await wallet.provider.getNetwork();
+      return signMessage(wallet.privateKey, message, chainId);
     };
 
     const messagingUrl = `nats://${nodeUrl
