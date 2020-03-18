@@ -114,6 +114,7 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
 export class AppInstanceRepository extends Repository<AppInstance> {
   findByIdentityHash(identityHash: string): Promise<AppInstance | undefined> {
     return this.findOne({
+      // @ts-ignore TS2589: Type instantiation is excessively deep and possibly infinite.
       where: { identityHash },
       relations: ["channel"],
     });
@@ -171,6 +172,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
     app.channel = channel;
 
+    // @ts-ignore TS2589: Type instantiation is excessively deep and possibly infinite.
     await this.save(app);
   }
 
