@@ -19,6 +19,7 @@ import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.ent
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
 import { Withdraw } from "../withdraw/withdraw.entity";
+import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -55,6 +56,7 @@ export const entities = [
   SetStateCommitmentEntity,
   SetupCommitmentEntity,
   Withdraw,
+  WithdrawCommitment,
 ];
 
 export const migrations = [
