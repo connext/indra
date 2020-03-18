@@ -58,7 +58,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
   let network: NetworkContextForTestSuite;
   let appRegistry: Contract;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     jest.setTimeout(10000);
     network = global["network"];
     wallet = global["wallet"];
@@ -114,7 +114,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
             { to: multisigOwnerKeys[1].address, amount: WeiPerEther },
           ],
         ],
-        0,
+        1,
         stateChannel.freeBalance.timeout, // Re-use ETH FreeBalance timeout
         OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         undefined,

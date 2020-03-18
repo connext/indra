@@ -1,4 +1,4 @@
-import { AppInstanceJson } from "@connext/types";
+import { EventNames, AppInstanceJson } from "@connext/types";
 import { One, Two, Zero } from "ethers/constants";
 
 import { Node } from "../../node";
@@ -28,7 +28,7 @@ const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 function assertUninstallMessage(senderId: string, appInstanceId: string, msg: UninstallMessage) {
   assertNodeMessage(msg, {
     from: senderId,
-    type: "UNINSTALL_EVENT",
+    type: EventNames.UNINSTALL_EVENT,
     data: {
       appInstanceId,
     },
@@ -62,7 +62,7 @@ describe("Uninstalling coin balance refund app", () => {
   });
 
   // will timeout if it goes through this path, params are incorrect
-  it("should fail if you trying to uninstall coin balance refund app", async () => {
+  it("should fail if you try to uninstall coin balance refund app", async () => {
     await expect(
       nodeB.rpcRouter.dispatch(constructUninstallRpc(coinBalanceAppId)),
     ).rejects.toThrowError(USE_RESCIND_DEPOSIT_RIGHTS);
@@ -121,7 +121,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
-      nodeB.once("UNINSTALL_EVENT", async (msg: UninstallMessage) => {
+      nodeB.once(EventNames.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
         assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
@@ -155,7 +155,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
-      nodeB.once("UNINSTALL_EVENT", async (msg: UninstallMessage) => {
+      nodeB.once(EventNames.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
         assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
@@ -189,7 +189,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
-      nodeB.once("UNINSTALL_EVENT", async (msg: UninstallMessage) => {
+      nodeB.once(EventNames.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
         assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);

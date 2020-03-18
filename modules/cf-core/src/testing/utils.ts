@@ -16,7 +16,7 @@ import {
   SolidityValueType,
   UninstallMessage,
 } from "@connext/types";
-import { Contract, Wallet } from "ethers";
+import { Contract } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 import { JsonRpcResponse, Rpc } from "rpc-server";
@@ -838,20 +838,12 @@ export async function transferERC20Tokens(
   contractABI: ContractABI = DolphinCoin.abi,
   amount: BigNumber = One,
 ): Promise<BigNumber> {
-  const deployerAccount = new Wallet(
-    global["wallet"].fundedPrivateKey,
-    global["wallet"].provider,
-  );
-
+  const deployerAccount = global["wallet"];
   const contract = new Contract(tokenAddress, contractABI, deployerAccount);
-
   const balanceBefore: BigNumber = await contract.functions.balanceOf(toAddress);
-
   await contract.functions.transfer(toAddress, amount);
   const balanceAfter: BigNumber = await contract.functions.balanceOf(toAddress);
-
   expect(balanceAfter.sub(balanceBefore)).toEqual(amount);
-
   return balanceAfter;
 }
 
