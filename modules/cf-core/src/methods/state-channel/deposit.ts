@@ -11,7 +11,7 @@ import {
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BaseProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -43,7 +43,7 @@ import { xkeyKthAddress } from "../../xkeys";
 
 import { NodeController } from "../controller";
 
-const DEPOSIT_RETRY_COUNT = 3;
+const DEPOSIT_RETRY_COUNT = 1;
 
 interface DepositContext {
   initialState: SolidityValueType;
@@ -245,17 +245,16 @@ export async function makeDeposit(
       if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
         const tx: TransactionRequest = {
           to: multisigAddress,
-          value: bigNumberify(amount),
+          value: amount,
           gasLimit: 30000,
           gasPrice: await provider.getGasPrice(),
-          nonce: provider.getTransactionCount(signerAddress, `pending`),
+          nonce: await provider.getTransactionCount(signerAddress, `pending`),
         };
-
         txResponse = await signer.sendTransaction(tx);
       } else {
         const erc20Contract = new Contract(tokenAddress!, ERC20.abi, signer);
-        txResponse = await erc20Contract.functions.transfer(multisigAddress, bigNumberify(amount), {
-          nonce: provider.getTransactionCount(signerAddress, `pending`),
+        txResponse = await erc20Contract.functions.transfer(multisigAddress, amount, {
+          nonce: await provider.getTransactionCount(signerAddress, `pending`),
         });
       }
       start = Date.now();

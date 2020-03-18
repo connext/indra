@@ -1,3 +1,4 @@
+import { DefaultApp, MethodResults, OutcomeType } from "@connext/types";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { One, AddressZero, Zero } from "ethers/constants";
@@ -5,7 +6,7 @@ import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { mkHash, mkXpub } from "../test/utils";
-import { CFCoreTypes, AppInstanceJson } from "../util";
+import { AppInstanceJson } from "../util";
 
 import { Channel } from "./channel.entity";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -15,14 +16,13 @@ import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { BigNumber } from "ethers/utils";
-import { DefaultApp, OutcomeType } from "@connext/types";
 
 class MockCFCoreService {
   cfCore = {
     freeBalanceAddress: mkAddress("0xabcdef"),
   };
 
-  async deposit(): Promise<CFCoreTypes.DepositResult> {
+  async deposit(): Promise<MethodResults.Deposit> {
     return {
       multisigBalance: One,
       tokenAddress: AddressZero,
@@ -30,7 +30,7 @@ class MockCFCoreService {
     };
   }
 
-  async proposeAndWaitForAccepted(): Promise<CFCoreTypes.ProposeInstallResult> {
+  async proposeAndWaitForAccepted(): Promise<MethodResults.ProposeInstall> {
     return {
       appInstanceId: mkHash("0xabc"),
     };
