@@ -1,4 +1,4 @@
-import { Interface, Signature } from "ethers/utils";
+import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { AppIdentity, MultisigOperation, MultisigTransaction, NetworkContext } from "../types";
@@ -14,22 +14,8 @@ export class SetupCommitment extends MultisigCommitment {
     public readonly multisigAddress: string,
     public readonly multisigOwners: string[],
     public readonly freeBalanceAppIdentity: AppIdentity,
-    private _signatures: Signature[] = [],
   ) {
     super(multisigAddress, multisigOwners);
-  }
-
-  get signatures() {
-    return this._signatures;
-  }
-
-  set signatures(sigs: Signature[]) {
-    if (sigs.length !== 2) {
-      throw new Error(
-        `Setup commitment received incorrect number of sigs. Expected 2, got ${sigs.length}`,
-      );
-    }
-    this._signatures = sigs;
   }
 
   public getTransactionDetails(): MultisigTransaction {
