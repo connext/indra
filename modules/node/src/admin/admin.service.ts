@@ -235,7 +235,6 @@ export class AdminService {
     const oldChannelRecords = await this.cfCoreRepository.get(
       `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`,
     );
-    console.log("migrateChannelStore: ", oldChannelRecords);
     const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
     for (const channelJSON of channelJSONs) {
       // create blank setup commitment
