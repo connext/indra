@@ -26,6 +26,20 @@ describe("HashLock Transfers", () => {
   let tokenAddress: string;
   const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
 
+  before(async () => {
+    const currBlock = await provider.getBlockNumber();
+    // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
+    // so make sure the current block
+    const TIMEOUT_BUFFER = 100;
+    if (currBlock > TIMEOUT_BUFFER) {
+      // no adjustment needed, return
+      return;
+    }
+    for (let index = currBlock; index <= TIMEOUT_BUFFER + 1; index++) {
+      await provider.send("evm_mine", []);
+    }
+  });
+
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
     clientB = await createClient({ id: "B" });
@@ -196,6 +210,6 @@ describe("HashLock Transfers", () => {
         conditionType: "HASHLOCK_TRANSFER",
         preImage,
       } as ResolveHashLockTransferParameters),
-    ).to.eventually.be.rejectedWith(/invalid BigNumber value/);
+    ).to.be.rejectedWith(/Cannot resolve hash lock transfer with expired timelock/);
   });
 });
