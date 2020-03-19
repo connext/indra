@@ -290,9 +290,9 @@ export class ConnextListener extends ConnextEventEmitter {
         stringify(appInstance),
       );
     } catch (e) {
-      console.log('e: ', e);
       this.log.error(`Caught error: ${e.toString()}`);
       await this.connext.rejectInstallApp(appInstanceId);
+      throw e;
     }
   };
 
