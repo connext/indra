@@ -2,8 +2,10 @@ import { CF_PATH } from "@connext/types";
 import {
   decryptWithPrivateKey,
   encryptWithPublicKey,
-  signMessage,
-  verifyMessage,
+  signEthereumMessage,
+  signChannelMessage,
+  verifyEthereumMessage,
+  verifyChannelMessage,
   signDigest,
   recoverAddress,
 } from "@connext/crypto";
@@ -66,13 +68,13 @@ describe("crypto", () => {
 
   test("we should be able to sign Ethereum messages", async () => {
     const sig1 = await wallet.signMessage(arrayify(testNonce));
-    const sig2 = await signMessage(wallet.privateKey, testNonce);
+    const sig2 = await signEthereumMessage(wallet.privateKey, testNonce);
     expect(sig1).toEqual(sig2);
   });
 
   test("we should be able to recover Ethereum messages", async () => {
-    const sig = await signMessage(wallet.privateKey, testNonce);
-    const address = await verifyMessage(testNonce, sig);
+    const sig = await signEthereumMessage(wallet.privateKey, testNonce);
+    const address = await verifyEthereumMessage(testNonce, sig);
     expect(address).toEqual(wallet.address);
   });
 
@@ -86,6 +88,17 @@ describe("crypto", () => {
   test("we should be able to recover ECDSA digests", async () => {
     const sig = await signDigest(wallet.privateKey, testNonce);
     const address = await recoverAddress(testNonce, sig);
+    expect(address).toEqual(wallet.address);
+  });
+
+  test("we should be able to sign Channel messages", async () => {
+    const sig = await signChannelMessage(wallet.privateKey, testNonce);
+    expect(sig).toBeTruthy();
+  });
+
+  test("we should be able to recover Channel messages", async () => {
+    const sig = await signChannelMessage(wallet.privateKey, testNonce);
+    const address = await verifyChannelMessage(testNonce, sig);
     expect(address).toEqual(wallet.address);
   });
 });

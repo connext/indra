@@ -19,6 +19,7 @@ import {
 } from "eccrypto-js";
 
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
+export const CHAN_SIGN_PREFIX = "\x19Channel Signed Message:\n";
 
 export function toBuffer(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
@@ -52,10 +53,10 @@ export function getAddress(publicKey: Buffer | string): string {
   return toChecksumAddress(address);
 }
 
-export function hashMessage(message: Buffer | string): string {
+export function hashMessage(message: Buffer | string, prefix: string): string {
   const data = toBuffer(message);
   const length = utf8ToBuffer(`${data.length}`);
-  const hash = keccak256(concatBuffers(utf8ToBuffer(ETH_SIGN_PREFIX), length, data));
+  const hash = keccak256(concatBuffers(utf8ToBuffer(prefix), length, data));
   return bufferToHex(hash, true);
 }
 
@@ -84,9 +85,24 @@ export async function signDigest(
 export async function signMessage(
   privateKey: Buffer | string,
   message: Buffer | string,
+  prefix: string,
 ): Promise<string> {
-  const hash = hashMessage(message);
+  const hash = hashMessage(message, prefix);
   return signDigest(privateKey, hash);
+}
+
+export async function signEthereumMessage(
+  privateKey: Buffer | string,
+  message: Buffer | string,
+): Promise<string> {
+  return signMessage(privateKey, message, ETH_SIGN_PREFIX);
+}
+
+export async function signChannelMessage(
+  privateKey: Buffer | string,
+  message: Buffer | string,
+): Promise<string> {
+  return signMessage(privateKey, message, ETH_SIGN_PREFIX);
 }
 
 export async function recoverPublicKey(
@@ -106,8 +122,23 @@ export async function recoverAddress(
 export async function verifyMessage(
   message: Buffer | string,
   sig: Buffer | string,
+  prefix: string,
 ): Promise<string> {
-  return recoverAddress(hashMessage(message), sig);
+  return recoverAddress(hashMessage(message, prefix), sig);
+}
+
+export async function verifyEthereumMessage(
+  message: Buffer | string,
+  sig: Buffer | string,
+): Promise<string> {
+  return verifyMessage(message, sig, ETH_SIGN_PREFIX);
+}
+
+export async function verifyChannelMessage(
+  message: Buffer | string,
+  sig: Buffer | string,
+): Promise<string> {
+  return verifyMessage(message, sig, CHAN_SIGN_PREFIX);
 }
 
 export async function encryptWithPublicKey(publicKey: string, message: string): Promise<string> {
