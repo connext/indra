@@ -22,7 +22,6 @@ export const replaceUrlPort = (url: string, port: number, delimiter: string = ":
 };
 
 export const formatMessagingUrl = (nodeUrl: string) => {
-  console.log("nodeUrl: ", nodeUrl);
   // for backwards-compatiblity
   let url = nodeUrl.replace("/messaging", "");
   // replace url protocol
@@ -55,7 +54,6 @@ export const createMessagingService = async (
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<MessagingService> => {
   const messagingUrl = formatMessagingUrl(nodeUrl);
-  console.log("messagingUrl: ", messagingUrl);
   logger.debug(`Creating messaging service client ${messagingUrl}`);
   const config: MessagingConfig = {
     messagingUrl,
