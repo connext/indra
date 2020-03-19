@@ -88,7 +88,8 @@ export interface IStoreServiceOld {
 export const STORE_SCHEMA_VERSION = 1;
 
 export interface IStoreService {
-  getSchemaVersion(): number;
+  getSchemaVersion(): Promise<number>;
+  setSchemaVersion(version?: number): Promise<void>;
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
