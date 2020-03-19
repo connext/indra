@@ -13,7 +13,7 @@ export function convertHashLockTransferParameters<To extends NumericTypeName>(
   to: To,
   obj: HashLockTransferParameters<any>,
 ): HashLockTransferParameters<NumericTypes[To]> {
-  return convertAssetAmountWithId(to, obj);
+  return convertFields(getType(obj.amount), to, ["timelock", "amount"], { ...obj })
 }
 
 export function convertHashLockTransferAppState<To extends NumericTypeName>(
@@ -21,7 +21,7 @@ export function convertHashLockTransferAppState<To extends NumericTypeName>(
   obj: HashLockTransferAppState<any>,
 ): HashLockTransferAppState<NumericTypes[To]> {
   return {
-    ...convertFields(getType(obj.turnNum), to, ["turnNum"], { ...obj }),
+    ...convertFields(getType(obj.timelock), to, ["timelock"], { ...obj }),
     coinTransfers: convertCoinTransfers(to, obj.coinTransfers),
   };
 }

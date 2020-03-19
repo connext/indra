@@ -49,7 +49,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function isStateTerminal(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bool)
     {
         AppState memory appState = abi.decode(encodedState, (AppState));
@@ -65,7 +65,7 @@ contract HighRollerApp is CounterfactualApp {
         address[] calldata participants
     )
         external
-        pure
+        view
         returns (address)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -77,7 +77,7 @@ contract HighRollerApp is CounterfactualApp {
         bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory appState = abi.decode(encodedState, (AppState));
@@ -147,7 +147,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory appState = abi.decode(encodedState, (AppState));
@@ -184,7 +184,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function highRoller(bytes32 randomness)
         public
-        pure
+        view
         returns(uint8 playerFirstTotal, uint8 playerSecondTotal)
     {
         (
@@ -199,7 +199,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function getPlayerRolls(bytes32 randomness)
         public // NOTE: This is used in app-root.tsx for the clientside dapp
-        pure
+        view
         returns(uint8 playerFirstRollOne, uint8 playerFirstRollTwo, uint8 playerSecondRollOne, uint8 playerSecondRollTwo)
     {
         (
@@ -216,7 +216,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function getWinningAmounts(uint256 num1, uint256 num2)
         internal
-        pure
+        view
         returns (LibOutcome.TwoPartyFixedOutcome)
     {
         bytes32 randomSalt = calculateRandomSalt(num1, num2);
@@ -237,7 +237,7 @@ contract HighRollerApp is CounterfactualApp {
 
     function calculateRandomSalt(uint256 num1, uint256 num2)
         internal
-        pure
+        view
         returns (bytes32)
     {
         return keccak256(abi.encodePacked(num1 * num2));
@@ -250,7 +250,7 @@ contract HighRollerApp is CounterfactualApp {
     ///      string (e.g., 0x08, 0x10) by incrementing by 8 bytes each time.
     function cutBytes32(bytes32 h)
         internal
-        pure
+        view
         returns (bytes8 q1, bytes8 q2, bytes8 q3, bytes8 q4)
     {
         assembly {
@@ -268,7 +268,7 @@ contract HighRollerApp is CounterfactualApp {
     /// @dev Splits this by using modulo 6 to get the uint
     function bytes8toDiceRoll(bytes8 q)
       internal
-      pure
+      view
       returns (uint8)
     {
         return uint8(uint64(q) % 6);

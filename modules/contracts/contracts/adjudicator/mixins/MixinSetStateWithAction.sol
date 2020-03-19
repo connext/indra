@@ -108,7 +108,7 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
         SignedAction memory action
     )
         private
-        pure
+        view
         returns (bool)
     {
         address turnTaker = LibAppCaller.getTurnTaker(

@@ -52,7 +52,7 @@ contract TicTacToeApp is CounterfactualApp {
 
     function isStateTerminal(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bool)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -65,7 +65,7 @@ contract TicTacToeApp is CounterfactualApp {
         address[] calldata participants
     )
         external
-        pure
+        view
         returns (address)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -76,7 +76,7 @@ contract TicTacToeApp is CounterfactualApp {
         bytes calldata encodedState, bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -121,7 +121,7 @@ contract TicTacToeApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
       external
-      pure
+      view
       returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -148,7 +148,7 @@ contract TicTacToeApp is CounterfactualApp {
         uint256 y
     )
         internal
-        pure
+        view
         returns (AppState memory)
     {
         require(state.board[x][y] == 0, "playMove: square is not empty");
@@ -163,7 +163,7 @@ contract TicTacToeApp is CounterfactualApp {
 
     function assertBoardIsFull(AppState memory preState)
         internal
-        pure
+        view
     {
         for (uint256 i = 0; i < 3; i++) {
             for (uint256 j = 0; j < 3; j++) {
@@ -180,7 +180,7 @@ contract TicTacToeApp is CounterfactualApp {
         WinClaim memory winClaim
     )
         internal
-        pure
+        view
     {
         uint256 expectedSquareState = playerId + 1;
         if (winClaim.winClaimType == WinClaimType.COL) {
