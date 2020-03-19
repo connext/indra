@@ -83,7 +83,6 @@ export const connect = async (
 
     const getSignature = async (message: string) => {
       const sig = await channelProvider.send("chan_signDigest", { message });
-      console.log("sig: ", sig);
       return sig;
     };
 
@@ -132,7 +131,6 @@ export const connect = async (
     const getSignature = async message => {
       const signingKey = new SigningKey(await keyGen("0"));
       const sig = joinSignature(signingKey.signDigest(message));
-      console.log("sig: ", sig);
       return sig;
     };
 
