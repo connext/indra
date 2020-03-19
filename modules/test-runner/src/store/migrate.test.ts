@@ -161,7 +161,7 @@ describe("Store Migrations", () => {
     await dbClient.query("truncate table node_records cascade;");
     await dbClient.query("truncate table channel cascade;");
     await dbClient.query("truncate table app_instance cascade;");
-    await dbClient.query("truncate table setup_commitment_entity cascade;");
+    await dbClient.query("truncate table setup_commitment cascade;");
   });
 
   it("node can migrate from v0 to v1", async () => {
