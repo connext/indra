@@ -36,6 +36,7 @@ import {
   IConnextClient,
   INodeApiClient,
 } from "./types";
+import { SigningKey, joinSignature } from "ethers/utils";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -81,7 +82,7 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      const sig = await channelProvider.send("chan_nodeAuth", { message });
+      const sig = await channelProvider.send("chan_signDigest", { message });
       console.log("sig: ", sig);
       return sig;
     };
@@ -129,11 +130,9 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const wallet = new Wallet(await keyGen("0"));
-      const sig = await signMessage(wallet.privateKey, message);
-      console.log("smart client sig: ", sig);
-      const ethersSig = await wallet.signMessage(message);
-      console.log("smart client ethersSig: ", ethersSig);
+      const signingKey = new SigningKey(await keyGen("0"));
+      const sig = joinSignature(signingKey.signDigest(message));
+      console.log("sig: ", sig);
       return sig;
     };
 

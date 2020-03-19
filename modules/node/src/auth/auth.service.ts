@@ -1,7 +1,7 @@
 import { MessagingAuthService } from "@connext/messaging";
 // import { getMessagingPrefix } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
-import { hexlify, randomBytes, verifyMessage, recoverPublicKey } from "ethers/utils";
+import { hexlify, randomBytes, verifyMessage, recoverPublicKey, recoverAddress } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
@@ -57,7 +57,7 @@ export class AuthService {
     this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
-    const addr = verifyMessage(nonce, signedNonce);
+    const addr = recoverAddress(nonce, signedNonce);
     console.log("nonce: ", nonce);
     console.log("signedNonce: ", signedNonce);
     console.log("addr: ", addr);
