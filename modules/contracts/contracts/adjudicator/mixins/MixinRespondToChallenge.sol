@@ -67,7 +67,7 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, LibAppCaller
         SignedAction memory action
     )
         private
-        pure
+        view
         returns (bool)
     {
         address turnTaker = getTurnTaker(
