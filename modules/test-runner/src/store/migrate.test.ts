@@ -98,7 +98,7 @@ describe("Store Migrations", () => {
     }
   });
 
-  it.only("client can migrate from v0 to v1", async () => {
+  it("client can migrate from v0 to v1", async () => {
     // load up existing store by writing values to a file
     const fileStorage = new KeyValueStorage(new FileStorage(ConnextClientStorePrefix));
     await fileStorage.clear();
