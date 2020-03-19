@@ -90,8 +90,12 @@ export class ConnextStore implements IClientStore {
     }
   }
 
-  getSchemaVersion(): number {
-    return this.schemaVersion;
+  async getSchemaVersion(): Promise<number> {
+    return this.internalStore.getSchemaVersion();
+  }
+
+  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+    return this.internalStore.setSchemaVersion(version);
   }
 
   get channelPrefix(): string {

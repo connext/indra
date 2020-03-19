@@ -12,7 +12,6 @@ import {
 } from "@connext/types";
 
 export class MemoryStorage implements IClientStore {
-  private schemaVersion: number = STORE_SCHEMA_VERSION;
   channels: Map<string, StateChannelJSON> = new Map();
   private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
   private conditionalTransactionCommitment: Map<
@@ -28,8 +27,13 @@ export class MemoryStorage implements IClientStore {
 
   constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
 
-  getSchemaVersion(): number {
-    return this.schemaVersion;
+  async getSchemaVersion(): Promise<number> {
+    return Promise.resolve(STORE_SCHEMA_VERSION);
+  }
+
+  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+    console.warn(`Method not implemented for memory storage`);
+    return Promise.resolve();
   }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {

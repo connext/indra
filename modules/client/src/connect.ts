@@ -7,6 +7,7 @@ import {
   CREATE_CHANNEL_EVENT,
   StateSchemaVersion,
   CoinBalanceRefundAppState,
+  STORE_SCHEMA_VERSION,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -242,6 +243,18 @@ export const connect = async (
   ]);
 
   log.debug(`Channel is available`);
+
+  // Make sure our store schema is up-to-date
+  const schemaVersion = await store.getSchemaVersion();
+  if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
+    console.warn("Store schema is out-of-date, restoring an up-to-date client state");
+    await client.restoreState();
+    console.warn(`restored!`);
+    // increment / update store schema version, defaults to types const
+    // of `STORE_SCHEMA_VERSION`
+    await client.store.setSchemaVersion();
+    console.warn(`schema version updated!`);
+  }
 
   try {
     await client.getFreeBalance();

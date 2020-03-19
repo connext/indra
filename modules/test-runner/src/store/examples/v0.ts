@@ -1,12 +1,15 @@
 // Description -- free balance app installed, no active apps
+export const MNEMONIC_V0_1 =
+  "usual sense execute bleak giant school runway age wash alien virus vibrant";
+export const XPUB_V0_1 = "xpub661MyMwAqRbcGxL2is6iyms2GhezmMXThyEZpvTGPfNvfiUq5hAyKGtch3TEGpM8SQA3EKun4mvSUVJekMgMVuNozJeALrrdUVhcNCpgAeG";
 export const CHANNEL_KEY_VO_1 =
-  "INDRA_NODE_CF_CORE/xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6/channel/0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994";
+  "INDRA_NODE_CF_CORE/xpub661MyMwAqRbcGxL2is6iyms2GhezmMXThyEZpvTGPfNvfiUq5hAyKGtch3TEGpM8SQA3EKun4mvSUVJekMgMVuNozJeALrrdUVhcNCpgAeG/channel/0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994";
 
 export const CHANNEL_VALUE_VO_1 = {
-  "INDRA_NODE_CF_CORE/xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6/channel/0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994": {
+  "INDRA_NODE_CF_CORE/xpub661MyMwAqRbcGxL2is6iyms2GhezmMXThyEZpvTGPfNvfiUq5hAyKGtch3TEGpM8SQA3EKun4mvSUVJekMgMVuNozJeALrrdUVhcNCpgAeG/channel/0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994": {
     multisigAddress: "0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994",
     userNeuteredExtendedKeys: [
-      "xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6",
+      "xpub661MyMwAqRbcGxL2is6iyms2GhezmMXThyEZpvTGPfNvfiUq5hAyKGtch3TEGpM8SQA3EKun4mvSUVJekMgMVuNozJeALrrdUVhcNCpgAeG",
       "xpub6EahuqCg3qVXgL1oh33w6gfUYrKh4gBoMacUa8oJvRpzg1inb9aZ73fS1iAP2pKrRf3pkbmTSyuybLhLhYXVVPF9VvVbgjCeaQcfi8M5qpV",
     ],
     appInstances: [],
@@ -49,14 +52,17 @@ export const CHANNEL_VALUE_VO_1 = {
 };
 
 // Description -- free balance app installed, no active apps
+export const MNEMONIC_V0_2 = "wet topic erase object they fat trial tent rebuild area joy ceiling";
+export const XPUB_V0_2 =
+  "xpub6EBMQUSnGZBHh7xMmcP2u26v7zp1b69QgtCqV6WNWYfzTi5BioRGQYW1Js9ua1BmkzWJipKqLmGwcYUmXAKveWKQCNUg5rfXgC6gpDyYraS";
 export const CHANNEL_KEY_VO_2 =
-  "INDRA_NODE_CF_CORE/xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6/channel/0x9E746946146Da59D4d0daBfEA159ed791FB42FD1";
+  "INDRA_NODE_CF_CORE/xpub6EBMQUSnGZBHh7xMmcP2u26v7zp1b69QgtCqV6WNWYfzTi5BioRGQYW1Js9ua1BmkzWJipKqLmGwcYUmXAKveWKQCNUg5rfXgC6gpDyYraS/channel/0x9E746946146Da59D4d0daBfEA159ed791FB42FD1";
 
 export const CHANNEL_VALUE_VO_2 = {
-  "INDRA_NODE_CF_CORE/xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6/channel/0x9E746946146Da59D4d0daBfEA159ed791FB42FD1": {
+  "INDRA_NODE_CF_CORE/xpub6EBMQUSnGZBHh7xMmcP2u26v7zp1b69QgtCqV6WNWYfzTi5BioRGQYW1Js9ua1BmkzWJipKqLmGwcYUmXAKveWKQCNUg5rfXgC6gpDyYraS/channel/0x9E746946146Da59D4d0daBfEA159ed791FB42FD1": {
     multisigAddress: "0x9E746946146Da59D4d0daBfEA159ed791FB42FD1",
     userNeuteredExtendedKeys: [
-      "xpub6E3tjd9js7QMrBtYo7f157D7MwauL6MWdLzKekFaRBb3bvaQnUPjHKJcdNhiqSjhmwa6TcTjV1wSDTgvz52To2ZjhGMiQFbYie2N2LZpNx6",
+      "xpub6EBMQUSnGZBHh7xMmcP2u26v7zp1b69QgtCqV6WNWYfzTi5BioRGQYW1Js9ua1BmkzWJipKqLmGwcYUmXAKveWKQCNUg5rfXgC6gpDyYraS",
       "xpub6E37ACnYHvmaHmkHsWrLKGc3ibkBppwhhBptWfv3dRW4t72LQtuo8eDegvqqwPtf2agT6FXJBfSHPxokbvaBqNeZS1FPkEvKjHVc77p5s9e",
     ],
     appInstances: [],

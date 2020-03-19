@@ -20,8 +20,11 @@ class MockStoreServiceOld implements CFCoreTypes.IStoreServiceOld {
 }
 
 class MockStoreService implements CFCoreTypes.IStoreService {
-  getSchemaVersion(): number {
-    return STORE_SCHEMA_VERSION;
+  getSchemaVersion(): Promise<number> {
+    return Promise.resolve(STORE_SCHEMA_VERSION);
+  }
+  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+    return Promise.resolve();
   }
   getAllChannels(): Promise<StateChannelJSON[]> {
     return Promise.resolve([]);

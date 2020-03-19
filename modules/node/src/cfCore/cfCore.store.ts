@@ -36,8 +36,12 @@ export class CFCoreStore implements IStoreService {
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
   ) {}
 
-  getSchemaVersion(): number {
-    return this.schemaVersion;
+  getSchemaVersion(): Promise<number> {
+    return Promise.resolve(this.schemaVersion);
+  }
+
+  setSchemaVersion(): Promise<void> {
+    throw new Error("Method not implemented");
   }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
