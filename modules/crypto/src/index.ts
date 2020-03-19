@@ -15,8 +15,9 @@ import {
   recover,
   isHexString,
   arrayToBuffer,
-  removeHexPrefix,
 } from "eccrypto-js";
+
+export * from "eccrypto-js";
 
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
 export const CHAN_SIGN_PREFIX = "\x19Channel Signed Message:\n";
@@ -47,7 +48,7 @@ export function toChecksumAddress(address: string): string {
 
 export function getAddress(publicKey: Buffer | string): string {
   const buf = toBuffer(publicKey);
-  const hex = addHexPrefix(bufferToHex(buf).slice(4));
+  const hex = addHexPrefix(bufferToHex(buf).slice(2));
   const hash = keccak256(hexToBuffer(hex));
   const address = bufferToHex(hash, true).substring(26);
   return toChecksumAddress(address);
@@ -106,7 +107,7 @@ export async function recoverPublicKey(
   digest: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return bufferToHex(await recover(toBuffer(digest), toBuffer(sig), true), true);
+  return bufferToHex(await recover(toBuffer(digest), toBuffer(sig)), true);
 }
 
 export async function recoverAddress(
