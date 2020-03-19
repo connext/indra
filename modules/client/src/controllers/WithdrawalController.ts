@@ -181,6 +181,7 @@ export class WithdrawalController extends AbstractController {
     const minTx: CFCoreTypes.MinimalTransaction = commitment.getSignedTransaction();
     const value = { tx: minTx, retry: 0 };
     await this.connext.channelProvider.send(chan_setUserWithdrawal, { ...value });
+    await this.connext.channelProvider.send(chan_setUserWithdrawal, { withdrawalObject: value });
     return;
   }
 }
