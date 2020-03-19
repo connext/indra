@@ -24,7 +24,7 @@ describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
-  const provider = new providers.JsonRpcProvider(env.ethProviderUrl)
+  const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
 
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
@@ -41,7 +41,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString()
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
@@ -85,7 +85,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString()
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
@@ -129,7 +129,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString()
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
@@ -155,7 +155,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
-    const timelock = ((await provider.getBlockNumber()) + 5000).toString()
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
@@ -180,22 +180,22 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
-    const timelock = (await provider.getBlockNumber()).toString()
+    const timelock = await provider.getBlockNumber();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       conditionType: "HASHLOCK_TRANSFER",
       lockHash,
-      timelock,
+      timelock: timelock.toString(),
       assetId: transfer.assetId,
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
     await expect(
       clientB.resolveCondition({
         conditionType: "HASHLOCK_TRANSFER",
-        preImage
+        preImage,
       } as ResolveHashLockTransferParameters),
-    ).to.eventually.be.rejectedWith(/Could not install app on receiver side./);
-  });  
+    ).to.eventually.be.rejectedWith(/invalid BigNumber value/);
+  });
 });
