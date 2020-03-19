@@ -2,16 +2,15 @@ import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { getAddress } from "ethers/utils";
 
-import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, SwapRateProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
+import { AuthService } from "../auth/auth.service";
 
 import { SwapRateService } from "./swapRate.service";
 
 export class SwapRateMessaging extends AbstractMessagingProvider {
   constructor(
-    private readonly config: ConfigService,
     log: LoggerService,
     messaging: MessagingService,
     private readonly swapRateService: SwapRateService,
@@ -21,26 +20,24 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   }
 
   async getLatestSwapRate(subject: string): Promise<string> {
-    const from = subject.split(".")[1];
-    const to = subject.split(".")[2];
+    const [, , from, to] = subject.split(".");
     return this.swapRateService.getOrFetchRate(getAddress(from), getAddress(to));
   }
 
   async setupSubscriptions(): Promise<void> {
-    super.connectRequestReponse(`*.swap-rate`, this.getLatestSwapRate.bind(this));
+    super.connectRequestReponse(`*.swap-rate.>`, this.getLatestSwapRate.bind(this));
   }
 }
 
 export const swapRateProviderFactory: FactoryProvider<Promise<MessagingService>> = {
-  inject: [ConfigService, LoggerService, MessagingProviderId, SwapRateService],
+  inject: [AuthService, LoggerService, MessagingProviderId, SwapRateService],
   provide: SwapRateProviderId,
   useFactory: async (
-    config: ConfigService,
     log: LoggerService,
     messaging: MessagingService,
     swapRateService: SwapRateService,
   ): Promise<MessagingService> => {
-    const swapRate = new SwapRateMessaging(config, log, messaging, swapRateService);
+    const swapRate = new SwapRateMessaging(log, messaging, swapRateService);
     await swapRate.setupSubscriptions();
     return messaging;
   },

@@ -130,9 +130,8 @@ export class NodeApiClient implements INodeApiClient {
     return (await this.send(`${this.userPublicIdentifier}.transfer.get-pending`)) || [];
   }
 
-  // TODO: do we want this? thought this would be a blocking operation...
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
-    return await this.send(`swap-rate.${from}.${to}`);
+    return await this.send(`${this.userPublicIdentifier}.swap-rate.${from}.${to}`);
   }
 
   public async getTransferHistory(): Promise<Transfer[]> {

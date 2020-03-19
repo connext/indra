@@ -53,14 +53,10 @@ export class AuthService {
     }
 
     const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
-    console.log("xpubAddress: ", xpubAddress);
     this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
     const addr = recoverAddress(nonce, signedNonce);
-    console.log("nonce: ", nonce);
-    console.log("signedNonce: ", signedNonce);
-    console.log("addr: ", addr);
     if (addr !== xpubAddress) {
       throw new Error(`verification failed`);
     }
