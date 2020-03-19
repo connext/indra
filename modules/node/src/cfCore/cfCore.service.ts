@@ -501,6 +501,20 @@ export class CFCoreService {
     return apps;
   }
 
+  async getHashLockTransferAppsForReceiverByLockHash(
+    lockHash: string,
+  ): Promise<AppInstanceJson | undefined> {
+    const apps = await this.getHashLockTransferAppsByLockHash(lockHash);
+    return apps.find(app => {
+      const appState = convertHashLockTransferAppState(
+        "bignumber",
+        app.latestState as HashLockTransferAppStateBigNumber,
+      );
+      // sender is node
+      return appState.coinTransfers[0].to === this.cfCore.freeBalanceAddress;
+    });
+  }
+
   // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
   async getFastSignedTransferAppsByPaymentId(paymentId: string): Promise<AppInstanceJson[]> {
     const channels = await this.channelRepository.findAll();

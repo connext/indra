@@ -8,7 +8,7 @@ contract TwoPartyFixedOutcomeApp {
 
     function computeOutcome(bytes calldata)
         external
-        pure
+        view
         returns (bytes memory)
     {
         return abi.encode(

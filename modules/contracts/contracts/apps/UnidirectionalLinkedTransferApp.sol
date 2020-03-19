@@ -68,7 +68,7 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bytes memory)
     {
         return abi.encode(abi.decode(encodedState, (AppState)).transfers);
@@ -79,7 +79,7 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
         bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(
@@ -164,7 +164,7 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
         address[] calldata participants
     )
         external
-        pure
+        view
         returns (address)
     {
         return participants[
@@ -174,7 +174,7 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
 
     function isStateTerminal(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bool)
     {
         return abi.decode(encodedState, (AppState)).finalized;

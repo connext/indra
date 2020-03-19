@@ -118,7 +118,7 @@ contract UnidirectionalTransferApp is CounterfactualApp {
         address[] calldata participants
     )
         external
-        pure
+        view
         returns (address)
     {
         return participants[
@@ -128,7 +128,7 @@ contract UnidirectionalTransferApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (
           bytes memory // Encoded version of a LibOutcome.CoinTransfer[2]
         )
@@ -141,7 +141,7 @@ contract UnidirectionalTransferApp is CounterfactualApp {
         bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(
@@ -208,7 +208,7 @@ contract UnidirectionalTransferApp is CounterfactualApp {
 
     function isStateTerminal(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bool)
     {
         return abi.decode(encodedState, (AppState)).finalized;

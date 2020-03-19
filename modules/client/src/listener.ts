@@ -272,7 +272,8 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case HashLockTransferApp: {
-          validateHashLockTransferApp(params, from, this.connext.publicIdentifier);
+          const blockNumber = await this.connext.ethProvider.getBlockNumber();
+          validateHashLockTransferApp(params, blockNumber, from, this.connext.publicIdentifier);
           break;
         }
         default: {
