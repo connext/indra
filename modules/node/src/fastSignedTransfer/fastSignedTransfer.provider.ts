@@ -1,9 +1,4 @@
-import {
-  Transfer,
-  replaceBN,
-  ResolveFastSignedTransferResponse,
-  PendingFastSignedTransfer,
-} from "@connext/types";
+import { replaceBN, ResolveFastSignedTransferResponse } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 import { MessagingService } from "@connext/messaging";

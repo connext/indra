@@ -6,7 +6,7 @@ contract CounterfactualApp {
 
     function isStateTerminal(bytes calldata)
         external
-        pure
+        view
         returns (bool)
     {
         revert("The isStateTerminal method has no implementation for this App");
@@ -14,7 +14,7 @@ contract CounterfactualApp {
 
     function getTurnTaker(bytes calldata, address[] calldata)
         external
-        pure
+        view
         returns (address)
     {
         revert("The getTurnTaker method has no implementation for this App");
@@ -22,7 +22,7 @@ contract CounterfactualApp {
 
     function applyAction(bytes calldata, bytes calldata)
         external
-        pure
+        view
         returns (bytes memory)
     {
         revert("The applyAction method has no implementation for this App");
@@ -30,7 +30,7 @@ contract CounterfactualApp {
 
     function computeOutcome(bytes calldata)
         external
-        pure
+        view
         returns (bytes memory)
     {
         revert("The computeOutcome method has no implementation for this App");

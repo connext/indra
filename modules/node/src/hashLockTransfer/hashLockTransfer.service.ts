@@ -17,6 +17,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { xpubToAddress } from "../util";
+import { TIMEOUT_BUFFER } from "../constants";
 
 @Injectable()
 export class HashLockTransferService {
@@ -38,12 +39,13 @@ export class HashLockTransferService {
 
     // TODO: could there be more than 1? how to handle that case?
     const [senderApp] = await this.cfCoreService.getHashLockTransferAppsByLockHash(lockHash);
-    const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
-      senderApp.multisigAddress,
-    );
     if (!senderApp) {
       throw new Error(`No sender app installed for lockHash: ${lockHash}`);
     }
+
+    const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
+      senderApp.multisigAddress,
+    );
 
     const appState = convertHashLockTransferAppState(
       "bignumber",
@@ -54,6 +56,7 @@ export class HashLockTransferService {
 
     // sender amount
     const amount = appState.coinTransfers[0].amount;
+    const timelock = appState.timelock.sub(TIMEOUT_BUFFER)
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
@@ -120,7 +123,7 @@ export class HashLockTransferService {
       ],
       lockHash,
       preImage: HashZero,
-      turnNum: Zero,
+      timelock,
       finalized: false,
     };
 

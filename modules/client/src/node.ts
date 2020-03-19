@@ -3,15 +3,14 @@ import {
   ILoggerService,
   ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
+  GetHashLockTransferResponse,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
-import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify, delay } from "./lib";
 import {
   AppRegistry,
-  CFCoreTypes,
   ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
@@ -136,6 +135,12 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getTransferHistory(): Promise<Transfer[]> {
     return (await this.send(`${this.userPublicIdentifier}.transfer.get-history`)) || [];
+  }
+
+  public async getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse> {
+    return await this.send(`transfer.get-hashlock.${this.userPublicIdentifier}`, {
+      lockHash,
+    });
   }
 
   // TODO: right now node doesnt return until the deposit has completed

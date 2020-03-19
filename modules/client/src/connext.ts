@@ -21,6 +21,7 @@ import {
   ResolveLinkedTransferParameters,
   ResolveFastSignedTransferParameters,
   ResolveHashLockTransferParameters,
+  GetHashLockTransferResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -433,6 +434,10 @@ export class ConnextClient implements IConnextClient {
       default:
         throw new Error(`Condition type ${(params as any).conditionType} invalid`);
     }
+  };
+
+  public getHashLockTransfer = async (lockHash: string): Promise<GetHashLockTransferResponse> => {
+    return await this.node.getHashLockTransfer(lockHash);
   };
 
   public getLatestWithdrawal = async (): Promise<

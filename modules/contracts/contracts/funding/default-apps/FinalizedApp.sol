@@ -8,7 +8,7 @@ contract FinalizedApp is IdentityApp {
 
     function isStateTerminal(bytes calldata)
         external
-        pure
+        view
         returns (bool)
     {
         return true;

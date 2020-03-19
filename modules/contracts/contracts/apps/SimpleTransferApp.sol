@@ -18,7 +18,7 @@ contract SimpleTransferApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
