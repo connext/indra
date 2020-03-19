@@ -52,7 +52,10 @@ export class ConfigService implements OnModuleInit {
   }
 
   getEthWallet(): Wallet {
-    return Wallet.fromMnemonic(this.getMnemonic()).connect(this.getEthProvider());
+    if (!this.wallet) {
+      throw new Error(`Wallet does not exist.`);
+    }
+    return this.wallet;
   }
 
   async getEthNetwork(): Promise<EthNetwork> {
@@ -153,7 +156,8 @@ export class ConfigService implements OnModuleInit {
       return this.publicIdentifier;
     }
     const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
-    return hdNode.neuter().extendedKey;
+    this.publicIdentifier = hdNode.neuter().extendedKey;
+    return this.publicIdentifier;
   }
 
   getLogLevel(): number {
