@@ -4,6 +4,8 @@ import {
   convertFastSignedTransferAppState,
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
+  convertHashLockTransferAppState,
+  SupportedApplication,
 } from "@connext/apps";
 import {
   ConnextNodeStorePrefix,

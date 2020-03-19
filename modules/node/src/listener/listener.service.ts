@@ -169,9 +169,6 @@ export default class ListenerService implements OnModuleInit {
           data.from,
         );
       },
-      WITHDRAWAL_STARTED_EVENT: () => {},
-      WITHDRAWAL_CONFIRMED_EVENT: () => {},
-      WITHDRAWAL_FAILED_EVENT: () => {},
     };
   }
 
