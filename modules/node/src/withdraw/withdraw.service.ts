@@ -6,7 +6,7 @@ import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { CFCoreTypes, xpubToAddress } from "../util";
+import { CFCoreTypes, xkeyKthAddress } from "../util";
 import {
   TransactionResponse,
   AppInstanceJson,
@@ -59,7 +59,7 @@ export class WithdrawService {
     );
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
+      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
     ) {
       throw new Error(
         `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
@@ -233,7 +233,7 @@ export class WithdrawService {
 
     const transfers: CoinTransfer[] = [
       { amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress },
-      { amount: Zero.toString(), to: xpubToAddress(channel.userPublicIdentifier) },
+      { amount: Zero.toString(), to: xkeyKthAddress(channel.userPublicIdentifier) },
     ];
 
     const initialState: WithdrawAppState = {
@@ -241,7 +241,7 @@ export class WithdrawService {
       signatures: [withdrawerSignatureOnCommitment, HashZero],
       signers: [
         this.cfCoreService.cfCore.freeBalanceAddress,
-        xpubToAddress(channel.userPublicIdentifier),
+        xkeyKthAddress(channel.userPublicIdentifier),
       ],
       data: commitment.hashToSign(),
       finalized: false,

@@ -34,7 +34,7 @@ import {
   CFCoreTypes,
   InstallMessage,
   RejectProposalMessage,
-  xpubToAddress,
+  xkeyKthAddress,
 } from "../util";
 import { ChannelRepository } from "../channel/channel.repository";
 
@@ -81,7 +81,7 @@ export class CFCoreService {
         // but need the free balance address in the multisig
         const obj = {};
         obj[this.cfCore.freeBalanceAddress] = Zero;
-        obj[xpubToAddress(userPubId)] = Zero;
+        obj[xkeyKthAddress(userPubId)] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);

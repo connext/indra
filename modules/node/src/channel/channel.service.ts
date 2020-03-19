@@ -25,7 +25,7 @@ import { MessagingClientProviderId } from "../constants";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { xpubToAddress } from "../util";
+import { xkeyKthAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
@@ -112,7 +112,7 @@ export class ChannelService {
     );
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
+      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
     ) {
       throw new Error(
         `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
@@ -147,7 +147,7 @@ export class ChannelService {
     );
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
+      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
     ) {
       throw new Error(
         `Cannot withdraw, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
@@ -449,8 +449,8 @@ export class ChannelService {
       );
     }
     if (
-      !creationData.data.owners.includes(xpubToAddress(existing.nodePublicIdentifier)) ||
-      !creationData.data.owners.includes(xpubToAddress(existing.userPublicIdentifier))
+      !creationData.data.owners.includes(xkeyKthAddress(existing.nodePublicIdentifier)) ||
+      !creationData.data.owners.includes(xkeyKthAddress(existing.userPublicIdentifier))
     ) {
       throw new Error(
         `Channel has already been created with different owners! ${stringify(

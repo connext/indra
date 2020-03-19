@@ -6,7 +6,7 @@ import { Channel } from "../channel/channel.entity";
 import { AppInstance, AppType } from "./appInstance.entity";
 import { bigNumberify } from "ethers/utils";
 import { Zero, AddressZero } from "ethers/constants";
-import { xkeysToSortedKthAddresses, safeJsonParse, sortAddresses } from "../util";
+import { xkeysToSortedKthAddresses, safeJsonParse, sortAddresses, xkeyKthAddress } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
@@ -212,7 +212,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       // new instance, save initial state as latest
       freeBalanceSaved.initialState = freeBalance.latestState;
       // save participants
-      const userFreeBalance = xkeysToSortedKthAddresses([channel.userPublicIdentifier])[0];
+      const userFreeBalance = xkeyKthAddress(channel.userPublicIdentifier);
       freeBalanceSaved.userParticipantAddress = freeBalance.participants.filter(
         p => p === userFreeBalance,
       )[0];
