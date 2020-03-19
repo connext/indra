@@ -126,7 +126,7 @@ describe("Reclaim", () => {
       await nats.subscribe(`transfer.${paymentId}.reclaimed`, () => {
         res();
       });
-      clientA.transfer({
+      await clientA.transfer({
         amount: One.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
