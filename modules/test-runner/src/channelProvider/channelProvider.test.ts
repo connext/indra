@@ -36,7 +36,7 @@ describe("ChannelProvider", () => {
     await client.messaging.disconnect();
   });
 
-  it.only("Happy case: remote client can be instantiated with a channelProvider", async () => {
+  it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
     const _nodePublicIdentifier = remoteClient.config.nodePublicIdentifier;
     const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
