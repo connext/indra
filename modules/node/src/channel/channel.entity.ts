@@ -1,14 +1,32 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { CriticalStateChannelAddresses } from "@connext/types";
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  OneToOne,
+} from "typeorm";
 
+import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsXpub } from "../util";
+import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
+import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Entity()
 export class Channel {
   @PrimaryGeneratedColumn()
   id!: number;
+
+  @Column("integer")
+  schemaVersion!: number;
+
+  @Column("json")
+  addresses!: CriticalStateChannelAddresses;
 
   @Column("text")
   @IsXpub()
@@ -19,7 +37,7 @@ export class Channel {
   @IsXpub()
   nodePublicIdentifier!: string;
 
-  @Column("text")
+  @Column("text", { unique: true })
   @IsEthAddress()
   multisigAddress!: string;
 
@@ -28,6 +46,28 @@ export class Channel {
 
   @Column("boolean", { default: false })
   collateralizationInFlight!: boolean;
+
+  @OneToMany(
+    (type: any) => AppInstance,
+    (appInstance: AppInstance) => appInstance.channel,
+    { cascade: true },
+  )
+  appInstances!: AppInstance[];
+
+  @Column("integer")
+  monotonicNumProposedApps!: number;
+
+  @OneToMany(
+    (type: any) => WithdrawCommitment,
+    (withdrawalCommitment: WithdrawCommitment) => withdrawalCommitment.channel,
+  )
+  withdrawalCommitments!: WithdrawCommitment[];
+
+  @OneToOne(
+    (type: any) => WithdrawCommitment,
+    (commitment: SetupCommitment) => commitment.channel,
+  )
+  setupCommitment!: SetupCommitment;
 
   @ManyToMany(
     (type: any) => RebalanceProfile,

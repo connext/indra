@@ -26,7 +26,7 @@ graph LR
     IO_SEND_AND_WAIT
     IO_SEND
     OP_SIGN
-    WRITE_COMMITMENT-->storeServiceSet
+    PERSIST_COMMITMENT-->storeServiceSet
     IO_SEND_AND_WAIT-->send
     IO_SEND-->send
   end
@@ -66,5 +66,5 @@ graph LR
     runProtocol-->IO_SEND_AND_WAIT
     runProtocol-->IO_SEND
     runProtocol-->OP_SIGN
-    runProtocol-->WRITE_COMMITMENT
+    runProtocol-->PERSIST_COMMITMENT
   end

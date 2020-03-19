@@ -10,4 +10,4 @@ export type CoinBalanceRefundAppStateBigNumber = CoinBalanceRefundAppState<BigNu
 
 export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
 
-export const CoinBalanceRefundAppStateEncoding = `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`;
+export const coinBalanceRefundAppStateEncoding = `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`;

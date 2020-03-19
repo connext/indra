@@ -1,7 +1,7 @@
 import {
   DEPOSIT_STARTED_EVENT,
   DEPOSIT_FAILED_EVENT,
-  CoinBalanceRefundAppStateEncoding,
+  coinBalanceRefundAppStateEncoding,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
@@ -49,10 +49,6 @@ export async function installBalanceRefundApp(
 
   const stateChannel = await store.getStateChannel(multisigAddress);
 
-  const stateChannelsMap = new Map<string, StateChannel>([
-    [stateChannel.multisigAddress, stateChannel],
-  ]);
-
   const depositContext = await getDepositContext(
     params,
     publicIdentifier,
@@ -82,7 +78,7 @@ export async function installBalanceRefundApp(
     disableLimit: true,
   };
 
-  await protocolRunner.initiateProtocol(Protocol.Install, stateChannelsMap, installProtocolParams);
+  await protocolRunner.initiateProtocol(Protocol.Install, installProtocolParams);
 }
 
 export async function makeDeposit(
@@ -193,18 +189,13 @@ export async function uninstallBalanceRefundApp(
     throw new Error(NOT_YOUR_BALANCE_REFUND_APP);
   }
 
-  await protocolRunner.initiateProtocol(
-    Protocol.Uninstall,
-    // https://github.com/counterfactual/monorepo/issues/747
-    new Map<string, StateChannel>([[stateChannel.multisigAddress, stateChannel]]),
-    {
-      initiatorXpub: publicIdentifier,
-      responderXpub: peerAddress,
-      multisigAddress: stateChannel.multisigAddress,
-      appIdentityHash: refundApp.identityHash,
-      blockNumberToUseIfNecessary,
-    },
-  );
+  await protocolRunner.initiateProtocol(Protocol.Uninstall, {
+    initiatorXpub: publicIdentifier,
+    responderXpub: peerAddress,
+    multisigAddress: stateChannel.multisigAddress,
+    appIdentityHash: refundApp.identityHash,
+    blockNumberToUseIfNecessary,
+  });
 }
 
 async function getDepositContext(
@@ -232,7 +223,7 @@ async function getDepositContext(
     initialState,
     appInterface: {
       addr: networkContext.CoinBalanceRefundApp,
-      stateEncoding: CoinBalanceRefundAppStateEncoding,
+      stateEncoding: coinBalanceRefundAppStateEncoding,
       actionEncoding: undefined,
     },
   };

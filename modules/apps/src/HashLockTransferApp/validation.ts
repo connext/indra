@@ -26,8 +26,10 @@ export const validateHashLockTransferApp = (
     return transfer.to === responderFreeBalanceAddress;
   })[0];
 
-  if(initialState.timelock.lt(blockNumber)) {
-    throw new Error(`Cannot install an app with an expired timelock. Timelock in state: ${initialState.timelock}. Current block: ${blockNumber}`);
+  if (initialState.timelock.lt(blockNumber)) {
+    throw new Error(
+      `Cannot install an app with an expired timelock. Timelock in state: ${initialState.timelock}. Current block: ${blockNumber}`,
+    );
   }
 
   unidirectionalCoinTransferValidation(

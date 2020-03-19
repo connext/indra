@@ -6,6 +6,7 @@ import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
+import { bigNumberify } from "ethers/utils";
 
 const { xpubToAddress } = utils;
 
@@ -76,5 +77,7 @@ export const requestDepositRights = async (
     clientIsRecipient ? client.freeBalanceAddress : xpubToAddress(client.nodePublicIdentifier),
   );
   expect(coinBalanceAppState.tokenAddress).to.be.eq(assetId);
-  expect(coinBalanceAppState.threshold.toString()).to.be.eq(multisigBalance.toString());
+  expect(bigNumberify(coinBalanceAppState.threshold).toString()).to.be.eq(
+    multisigBalance.toString(),
+  );
 };

@@ -1,9 +1,7 @@
 import { utils } from "ethers";
 
-import { WrappedAsyncStorage, WrappedLocalStorage } from "../wrappers";
-
 import { ASYNC_STORAGE_TEST_KEY } from "./constants";
-import { IAsyncStorage, ChannelsMap, WrappedStorage } from "./types";
+import { IAsyncStorage, ChannelsMap } from "./types";
 
 export function arrayify(value: string | ArrayLike<number> | utils.Hexable): Uint8Array {
   return utils.arrayify(value);
@@ -30,14 +28,32 @@ export function toUtf8String(bytes: utils.Arrayish, ignoreErrors?: boolean | und
 
 export function safeJsonParse(value: any): any {
   try {
-    return JSON.parse(value);
+    // assert null --> undefined conversion
+    return convertObjectValuesRecursive(JSON.parse(value), null, undefined);
   } catch {
     return value;
   }
 }
 
+function convertObjectValuesRecursive(obj: object, target: any, replacement: any): any {
+  const ret = { ...obj };
+  Object.keys(ret).forEach(key => {
+    if (ret[key] === target) {
+      ret[key] = replacement;
+    } else if (typeof ret[key] === "object" && !Array.isArray(ret[key])) {
+      ret[key] = convertObjectValuesRecursive(ret[key], target, replacement);
+    }
+  });
+  return ret;
+}
+
 export function safeJsonStringify(value: any): string {
-  return typeof value === "string" ? value : JSON.stringify(value);
+  // make sure undefined are converted to null
+  return typeof value === "string"
+    ? value
+    : JSON.stringify(value, (key: string, value: any) =>
+        typeof value === "undefined" ? null : value,
+      );
 }
 
 export function removeAsyncStorageTest(
@@ -62,25 +78,6 @@ export function isAsyncStorage(storage: Storage | IAsyncStorage): boolean {
   );
   removeAsyncStorageTest(storage, promiseTest);
   return result;
-}
-
-export function wrapAsyncStorage(
-  asyncStorage: IAsyncStorage,
-  asyncStorageKey?: string,
-): WrappedStorage {
-  const storage: WrappedStorage = new WrappedAsyncStorage(asyncStorage, asyncStorageKey);
-  return storage;
-}
-
-export function wrapLocalStorage(localStorage: Storage): WrappedStorage {
-  const storage: WrappedStorage = new WrappedLocalStorage(localStorage);
-  return storage;
-}
-
-export function wrapStorage(storage: any, asyncStorageKey?: string): WrappedStorage {
-  return isAsyncStorage(storage)
-    ? wrapAsyncStorage(storage, asyncStorageKey)
-    : wrapLocalStorage(storage);
 }
 
 export function reduceChannelsMap(entries: [string, any][]): ChannelsMap {

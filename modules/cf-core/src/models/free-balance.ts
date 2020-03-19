@@ -198,6 +198,7 @@ export function createFreeBalance(
   userNeuteredExtendedKeys: string[],
   coinBucketAddress: string,
   freeBalanceTimeout: number,
+  multisigAddress: string,
 ) {
   const sortedTopLevelKeys = xkeysToSortedKthAddresses(
     userNeuteredExtendedKeys,
@@ -221,12 +222,12 @@ export function createFreeBalance(
     /* participants */ sortedTopLevelKeys,
     /* defaultTimeout */ freeBalanceTimeout,
     /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
-    /* isVirtualApp */ false,
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
     /* latestState */ serializeFreeBalanceState(initialState),
     /* latestVersionNumber */ 0,
     /* latestTimeout */ HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout,
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
+    /* multisigAddr */ multisigAddress,
   );
 }
 

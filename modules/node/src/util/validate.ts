@@ -38,6 +38,24 @@ export function IsEthAddress(validationOptions?: ValidationOptions): Function {
   };
 }
 
+export const isKeccak256Hash = (address: string): boolean => isValidHex(address, 32);
+
+export function IsKeccak256Hash(validationOptions?: ValidationOptions): Function {
+  return function(object: Object, propertyName: string): void {
+    registerDecorator({
+      name: "isKeccak256Hash",
+      options: validationOptions,
+      propertyName,
+      target: object.constructor,
+      validator: {
+        validate(value: any): boolean {
+          return isKeccak256Hash(value);
+        },
+      },
+    });
+  };
+}
+
 export const isEthSignature = (signature: string): boolean => isValidHex(signature, 65);
 
 export function IsEthSignature(validationOptions?: ValidationOptions): Function {

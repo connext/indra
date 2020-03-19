@@ -12,7 +12,9 @@ export default class GetAllChannelAddressesController extends NodeController {
     requestHandler: RequestHandler,
   ): Promise<CFCoreTypes.GetChannelAddressesResult> {
     return {
-      multisigAddresses: [...(await requestHandler.store.getStateChannelsMap()).keys()],
+      multisigAddresses: [
+        ...(await requestHandler.store.getAllChannels()).map(sc => sc.multisigAddress),
+      ],
     };
   }
 }

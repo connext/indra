@@ -14,6 +14,7 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
 
 import ListenerService from "./listener.service";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Module({
   controllers: [],
@@ -28,7 +29,12 @@ import ListenerService from "./listener.service";
     MessagingModule,
     MessagingModule,
     TransferModule,
-    TypeOrmModule.forFeature([LinkedTransferRepository, ChannelRepository, AppRegistryRepository]),
+    TypeOrmModule.forFeature([
+      LinkedTransferRepository,
+      ChannelRepository,
+      AppRegistryRepository,
+      AppInstanceRepository,
+    ]),
   ],
   providers: [ListenerService],
 })

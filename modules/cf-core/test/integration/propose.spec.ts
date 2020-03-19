@@ -21,17 +21,18 @@ const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 async function assertEqualProposedApps(
   nodeA: Node,
   nodeB: Node,
+  multisigAddress: string,
   expectedAppIds: string[],
 ): Promise<void> {
-  const proposedA = await getProposedAppInstances(nodeA);
-  const proposedB = await getProposedAppInstances(nodeB);
+  const proposedA = await getProposedAppInstances(nodeA, multisigAddress);
+  const proposedB = await getProposedAppInstances(nodeB, multisigAddress);
   expect(proposedB.length).toEqual(proposedA.length);
   expect(proposedB.length).toEqual(expectedAppIds.length);
   expect(proposedA).toEqual(proposedB);
   // check each appID
   for (const id of expectedAppIds) {
-    const appA = await getAppInstanceProposal(nodeA, id);
-    const appB = await getAppInstanceProposal(nodeB, id);
+    const appA = await getAppInstanceProposal(nodeA, id, multisigAddress);
+    const appB = await getAppInstanceProposal(nodeB, id, multisigAddress);
     expect(appA).toEqual(appB);
   }
 }
@@ -71,7 +72,7 @@ describe("Node method follows spec - propose install", () => {
         // make sure message has the right structure
         assertNodeMessage(msg, expectedMessageB, ["data.appInstanceId"]);
         // both nodes should have 1 app, they should be the same
-        await assertEqualProposedApps(nodeA, nodeB, [msg.data.appInstanceId]);
+        await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [msg.data.appInstanceId]);
         done();
       });
 

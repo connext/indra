@@ -9,7 +9,7 @@ import {
   INodeApiClient,
   KeyGen,
   Network,
-  Store,
+  IClientStore,
 } from "@connext/types";
 
 // This type is only ever used inside the client,
@@ -24,7 +24,7 @@ export type InternalClientOptions = {
   messaging: IMessagingService;
   network: Network;
   node: INodeApiClient;
-  store: Store;
+  store: IClientStore;
   token: Contract;
   xpub: string;
 };
@@ -39,6 +39,7 @@ export {
   CFChannelProviderOptions,
   CFCoreChannel,
   CFCoreTypes,
+  chan_setUserWithdrawal,
   ChannelAppSequences,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
@@ -68,7 +69,6 @@ export {
   IConnextClient,
   INodeApiClient,
   InstallMessage,
-  InstallVirtualMessage,
   inverse,
   IRpcConnection,
   isBN,
@@ -90,7 +90,6 @@ export {
   PendingAsyncTransfer,
   ProposeMessage,
   ProtocolTypes,
-  RejectInstallVirtualMessage,
   RejectProposalMessage,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
@@ -112,7 +111,6 @@ export {
   Transfer,
   TransferParameters,
   UninstallMessage,
-  UninstallVirtualMessage,
   UpdateStateMessage,
   weiToToken,
   WithdrawParameters,

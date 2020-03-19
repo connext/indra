@@ -1,12 +1,10 @@
 import { Address, BigNumber, BigNumberish, SolidityValueType } from "./basic";
-import { CFCoreChannel } from "./channel";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "./contracts";
-import { CFCoreTypes } from "./cfCore";
 
 ////////////////////////////////////
 ////// App Instances
@@ -47,7 +45,6 @@ export type AppInstanceInfo = {
   timeout: BigNumber;
   proposedByIdentifier: string; // xpub
   proposedToIdentifier: string; // xpub
-  intermediaryIdentifier?: string;
   // Interpreter-related Fields:
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
   multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
@@ -60,12 +57,11 @@ export type AppInstanceJson = {
   participants: string[];
   defaultTimeout: number;
   appInterface: AppInterface;
-  isVirtualApp: boolean;
   appSeqNo: number;
   latestState: SolidityValueType;
   latestVersionNumber: number;
   latestTimeout: number;
-  outcomeType: number;
+  outcomeType: string;
   // Derived from:
   // contracts/funding/interpreters/TwoPartyFixedOutcomeInterpreter.sol#L10
   twoPartyOutcomeInterpreterParams?: {
@@ -93,7 +89,6 @@ export type AppInstanceProposal = {
   initialState: SolidityValueType;
   initiatorDeposit: string;
   initiatorDepositTokenAddress: string;
-  intermediaryIdentifier?: string;
   outcomeType: OutcomeType;
   proposedByIdentifier: string;
   proposedToIdentifier: string;

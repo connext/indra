@@ -9,12 +9,10 @@ import {
   GetFreeBalanceStateController,
   GetAppInstanceStateController,
   GetTokenIndexedFreeBalancesController,
-  InstallVirtualAppInstanceController,
   InstallAppInstanceController,
   ProposeInstallAppInstanceController,
   RejectInstallController,
   TakeActionController,
-  UninstallVirtualController,
   UninstallController,
   UpdateStateController,
 } from "./app-instance";
@@ -39,14 +37,12 @@ const controllers = [
   CreateChannelController,
   DepositController,
   InstallAppInstanceController,
-  InstallVirtualAppInstanceController,
   ProposeInstallAppInstanceController,
   RejectInstallController,
   RescindDepositRightsController,
   RequestDepositRightsController,
   TakeActionController,
   UninstallController,
-  UninstallVirtualController,
   UpdateStateController,
 
   /**

@@ -3,7 +3,8 @@ import {
   CriticalStateChannelAddresses,
   StateChannelJSON,
 } from "@connext/types";
-import { Injectable } from "@nestjs/common";
+import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
+import { HashZero, AddressZero, Zero } from "ethers/constants";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -15,6 +16,9 @@ import { LoggerService } from "../logger/logger.service";
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { CFCoreStore } from "../cfCore/cfCore.store";
+import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
+import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -22,12 +26,14 @@ export interface RepairCriticalAddressesResponse {
 }
 
 @Injectable()
-export class AdminService {
+export class AdminService implements OnApplicationBootstrap {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
+    private readonly cfCoreStore: CFCoreStore,
+    private readonly setupCommitment: SetupCommitmentRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
@@ -222,5 +228,55 @@ export class AdminService {
       this.log.warn(`${output.broken.length} channels could not be repaired`);
     }
     return output;
+  }
+
+  async migrateChannelStore(): Promise<boolean> {
+    const oldChannelRecords = await this.cfCoreRepository.get(
+      `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`,
+    );
+    const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
+    this.log.log(`Found ${channelJSONs.length} old channel records`);
+    for (const channelJSON of channelJSONs) {
+      try {
+        this.log.log(`Found channel to migrate: ${channelJSON.multisigAddress}`);
+        // create blank setup commitment
+        const setup = new SetupCommitment();
+        setup.multisigAddress = channelJSON.multisigAddress;
+        setup.to = AddressZero;
+        setup.value = Zero;
+        setup.data = HashZero;
+        await this.setupCommitment.save(setup);
+
+        await this.cfCoreStore.saveStateChannel(channelJSON);
+        for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
+          await this.cfCoreStore.saveAppProposal(channelJSON.multisigAddress, proposedApp);
+        }
+
+        for (const [, appInstance] of channelJSON.appInstances) {
+          await this.cfCoreStore.saveAppInstance(channelJSON.multisigAddress, appInstance);
+        }
+
+        await this.cfCoreStore.saveFreeBalance(
+          channelJSON.multisigAddress,
+          channelJSON.freeBalanceAppInstance,
+        );
+
+        // delete old channel record
+        const removed = await this.cfCoreRepository.delete({
+          path: `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${channelJSON.multisigAddress}`,
+        });
+        this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
+        this.log.log(`Removed ${removed.affected} old records after migrating`);
+      } catch (e) {
+        this.log.error(`Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()}`);
+      }
+    }
+    return true;
+  }
+
+  async onApplicationBootstrap() {
+    this.log.log(`onApplicationBootstrap migrating channel store.`);
+    await this.migrateChannelStore();
+    this.log.log(`onApplicationBootstrap completed migrating channel store.`);
   }
 }

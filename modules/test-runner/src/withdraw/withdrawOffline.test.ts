@@ -22,8 +22,6 @@ import {
   ZERO_ZERO_ZERO_FIVE_ETH,
 } from "../util";
 
-const { withdrawalKey } = utils;
-
 describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
@@ -107,9 +105,7 @@ describe("Withdraw offline tests", () => {
       withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero);
     });
 
-    // TODO: fix with new store PR (3/16)
-    // make sure withdrawal is in the store
-    const val = await client.store.get(withdrawalKey(client.publicIdentifier));
+    const val = await client.store.getUserWithdrawal!();
     expect(val).to.not.be.undefined;
     expect(val.tx).to.not.be.undefined;
     expect(val.retry).to.be.equal(0);
@@ -131,7 +127,7 @@ describe("Withdraw offline tests", () => {
     });
 
     // make sure the withdrawal has been handled
-    const resubmitted = await reconnected.store.get(withdrawalKey(client.publicIdentifier));
+    const resubmitted = await client.store.getUserWithdrawal!();
     expect(resubmitted).to.not.be.ok;
   });
 });

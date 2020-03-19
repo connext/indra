@@ -55,7 +55,7 @@ export default class UpdateStateController extends NodeController {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, newState } = params;
 
-    const sc = await store.getChannelFromAppInstanceID(appInstanceId);
+    const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
@@ -83,17 +83,13 @@ async function runUpdateStateProtocol(
   responderXpub: string,
   newState: SolidityValueType,
 ) {
-  const stateChannel = await store.getChannelFromAppInstanceID(appIdentityHash);
+  const stateChannel = await store.getStateChannelFromAppInstanceID(appIdentityHash);
 
-  const stateChannelsMap = await protocolRunner.initiateProtocol(
-    Protocol.Update,
-    new Map<string, StateChannel>([[stateChannel.multisigAddress, stateChannel]]),
-    {
-      initiatorXpub,
-      responderXpub,
-      appIdentityHash,
-      newState,
-      multisigAddress: stateChannel.multisigAddress,
-    },
-  );
+  await protocolRunner.initiateProtocol(Protocol.Update, {
+    initiatorXpub,
+    responderXpub,
+    appIdentityHash,
+    newState,
+    multisigAddress: stateChannel.multisigAddress,
+  });
 }

@@ -1,59 +1,166 @@
-import { ConnextStore, FileStorage, MemoryStorage } from "@connext/store";
-import { IAsyncStorage, StoreFactoryOptions, StorePair } from "@connext/types";
-import { BigNumber } from "ethers/utils";
-import localStorage from "localStorage";
+import {
+  ConnextStore,
+  KeyValueStorage,
+  WrappedLocalStorage,
+  FileStorage,
+  WrappedAsyncStorage,
+} from "@connext/store";
+import {
+  StoreFactoryOptions,
+  StorePair,
+  StoreType,
+  StoreTypes,
+  ASYNCSTORAGE,
+  WrappedStorage,
+  LOCALSTORAGE,
+  FILESTORAGE,
+  AppInstanceProposal,
+  StateChannelJSON,
+  AppInstanceJson,
+  OutcomeType,
+  ProtocolTypes,
+  SetStateCommitmentJSON,
+  NetworkContext,
+  ConditionalTransactionCommitmentJSON,
+} from "@connext/types";
+import { BigNumber, hexlify, randomBytes } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import uuid from "uuid";
 
 import { expect } from "../";
+import { One } from "ethers/constants";
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
-export const ASYNCSTORAGE = "ASYNCSTORAGE";
-export const FILESTORAGE = "FILESTORAGE";
-export const LOCALSTORAGE = "LOCALSTORAGE";
-export const MEMORYSTORAGE = "MEMORYSTORAGE";
+export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
 
-const StoreTypes = {
-  [ASYNCSTORAGE]: ASYNCSTORAGE,
-  [FILESTORAGE]: FILESTORAGE,
-  [LOCALSTORAGE]: LOCALSTORAGE,
-  [MEMORYSTORAGE]: MEMORYSTORAGE,
+export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
+  identityHash: "identityHashApp",
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  participants: ["sender", "receiver"],
+  defaultTimeout: 0,
+  appInterface: {
+    addr: TEST_STORE_ETH_ADDRESS,
+    actionEncoding: `action encoding`,
+    stateEncoding: `state encoding`,
+  },
+  appSeqNo: 1,
+  latestVersionNumber: 2,
+  latestTimeout: 3,
+  latestState: {
+    counter: 4,
+  },
+  outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+  twoPartyOutcomeInterpreterParams: undefined,
+  singleAssetTwoPartyCoinTransferInterpreterParams: undefined,
+  multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
 };
-type StoreType = keyof typeof StoreTypes;
 
-export function createStore(
-  type: StoreType,
-  opts?: StoreFactoryOptions,
-  storageOpts?: any,
-): { store: ConnextStore; storage: Storage | IAsyncStorage } {
-  let storage;
+export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
+  abiEncodings: {
+    actionEncoding: `action encoding`,
+    stateEncoding: `state encoding`,
+  },
+  appDefinition: TEST_STORE_ETH_ADDRESS,
+  appSeqNo: 1,
+  identityHash: "identityHashProposal",
+  initialState: {
+    counter: 4,
+  },
+  initiatorDeposit: "10",
+  initiatorDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
+  outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
+  proposedByIdentifier: "xpub1",
+  proposedToIdentifier: "xpub2",
+  responderDeposit: "11",
+  responderDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
+  timeout: "123456",
+  twoPartyOutcomeInterpreterParams: undefined,
+  singleAssetTwoPartyCoinTransferInterpreterParams: undefined,
+  multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
+};
 
-  switch (type.toUpperCase()) {
-    case LOCALSTORAGE:
-      storage = localStorage;
-      break;
+export const TEST_STORE_CHANNEL: StateChannelJSON = {
+  schemaVersion: 1,
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  addresses: {
+    multisigMastercopy: TEST_STORE_ETH_ADDRESS,
+    proxyFactory: TEST_STORE_ETH_ADDRESS,
+  },
+  userNeuteredExtendedKeys: ["xpub1", "xpub2"],
+  proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
+  appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
+  freeBalanceAppInstance: TEST_STORE_APP_INSTANCE,
+  monotonicNumProposedApps: 2,
+};
 
+export const TEST_STORE_MINIMAL_TX: ProtocolTypes.MinimalTransaction = {
+  to: TEST_STORE_ETH_ADDRESS,
+  value: One,
+  data: hexlify(randomBytes(64)),
+};
+
+export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
+  appIdentity: {
+    channelNonce: TEST_STORE_APP_INSTANCE.appSeqNo,
+    participants: TEST_STORE_APP_INSTANCE.participants,
+    appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
+    defaultTimeout: 35,
+  },
+  appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  appStateHash: "setStateAppStateHash",
+  challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
+  timeout: 17,
+  versionNumber: 23,
+  signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
+};
+
+export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitmentJSON = {
+  appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
+  freeBalanceAppIdentityHash: "conditionalFreeBalance",
+  interpreterAddr: TEST_STORE_ETH_ADDRESS,
+  interpreterParams: "conditionalInterpreter",
+  multisigAddress: TEST_STORE_ETH_ADDRESS,
+  multisigOwners: TEST_STORE_CHANNEL.userNeuteredExtendedKeys,
+  networkContext: {} as NetworkContext,
+  signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
+};
+
+export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions = {}) {
+  switch (type) {
     case ASYNCSTORAGE:
-      storage = new MockAsyncStorage(storageOpts);
-      break;
-
+      return new KeyValueStorage(
+        new WrappedAsyncStorage(
+          new MockAsyncStorage(),
+          opts.prefix,
+          opts.separator,
+          opts.asyncStorageKey,
+        ),
+      );
+    case LOCALSTORAGE:
+      return new KeyValueStorage(new WrappedLocalStorage(opts.prefix, opts.separator));
     case FILESTORAGE:
-      storage = new FileStorage(storageOpts);
-      break;
-
-    case MEMORYSTORAGE:
-      storage = new MemoryStorage(storageOpts);
-      break;
-
+      return new KeyValueStorage(
+        new FileStorage(opts.prefix, opts.separator, opts.fileExt, opts.fileDir),
+      );
     default:
-      throw new Error(`Unable to create test store of type: ${type}`);
+      throw new Error(`Unable to create KeyValueStore from type: ${type}`);
+  }
+}
+
+export function createConnextStore(type: StoreType, opts: StoreFactoryOptions = {}): ConnextStore {
+  if (!Object.values(StoreTypes).includes(type)) {
+    throw new Error(`Unrecognized type: ${type}`);
   }
 
-  const store = new ConnextStore(storage, opts);
+  if (type === ASYNCSTORAGE) {
+    opts.storage = new MockAsyncStorage();
+  }
+
+  const store = new ConnextStore(type, opts);
   expect(store).to.be.instanceOf(ConnextStore);
 
-  return { store, storage };
+  return store;
 }
 
 export function createArray(length: number = 10): string[] {
@@ -68,11 +175,11 @@ export function generateStorePairs(length: number = 10): StorePair[] {
 }
 
 export async function setAndGet(
-  store: ConnextStore,
+  store: KeyValueStorage,
   pair: StorePair = TEST_STORE_PAIR,
 ): Promise<void> {
-  await store.set([pair]);
-  const value = await store.get(pair.path);
+  await store.setItem(pair.path, pair.value);
+  const value = await store.getItem(pair.path);
   if (typeof pair.value === "object" && !BigNumber.isBigNumber(pair.value)) {
     expect(value).to.be.deep.equal(pair.value);
     return;
@@ -80,25 +187,22 @@ export async function setAndGet(
   expect(value).to.be.equal(pair.value);
 }
 
-export async function setAndGetMultiple(store: ConnextStore, length: number = 10): Promise<void> {
+export async function setAndGetMultiple(
+  store: KeyValueStorage,
+  length: number = 10,
+): Promise<void> {
   const pairs = generateStorePairs(length);
   expect(pairs.length).to.equal(length);
-  await store.set(pairs);
-  await Promise.all(
-    pairs.map(
-      async (pair: StorePair, index: number): Promise<void> => {
-        const value = await store.get(pair.path);
-        expect(value).to.be.equal(pairs[index].value);
-      },
-    ),
-  );
+  for (const pair of pairs) {
+    await setAndGet(store, pair);
+  }
 }
 
 export async function testAsyncStorageKey(
-  storage: IAsyncStorage,
+  storage: WrappedStorage,
   asyncStorageKey: string,
 ): Promise<void> {
-  const keys = await storage.getAllKeys();
+  const keys = await storage.getKeys();
   expect(keys.length).to.equal(1);
   expect(keys[0]).to.equal(asyncStorageKey);
 }

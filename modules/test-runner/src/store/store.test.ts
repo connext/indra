@@ -1,86 +1,437 @@
 import {
-  ConnextStore,
-  MemoryStorage,
-  PATH_CHANNEL,
-  PATH_PROPOSED_APP_INSTANCE_ID,
-  StorePair,
-} from "@connext/store";
-import { hexlify, randomBytes } from "ethers/utils";
-
-import {
-  createArray,
-  createStore,
   expect,
   MockBackupService,
-  setAndGet,
-  setAndGetMultiple,
-  MEMORYSTORAGE,
+  createConnextStore,
+  env,
+  TEST_STORE_ETH_ADDRESS,
+  TEST_STORE_CHANNEL,
+  TEST_STORE_APP_INSTANCE,
+  TEST_STORE_MINIMAL_TX,
+  TEST_STORE_SET_STATE_COMMITMENT,
+  TEST_STORE_CONDITIONAL_COMMITMENT,
 } from "../util";
+import { StoreTypes, StoreType, MEMORYSTORAGE, STORE_SCHEMA_VERSION } from "@connext/types";
 
-describe("Store", () => {
-  let memoryStorage: MemoryStorage;
-  let store: ConnextStore;
+describe("ConnextStore", () => {
+  const fileDir = env.storeDir;
 
-  beforeEach(async () => {
-    const { store: testStore, storage } = createStore(MEMORYSTORAGE);
-    memoryStorage = storage as MemoryStorage;
-    store = testStore;
+  describe("getSchemaVersion", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const schema = await store.getSchemaVersion();
+        expect(schema).to.be.eq(0);
+        await store.setSchemaVersion();
+        const updated = await store.getSchemaVersion();
+        expect(updated).to.be.eq(STORE_SCHEMA_VERSION);
+        await store.clear();
+      });
+    });
   });
 
-  it("happy case: set & get the same path consecutively", async () => {
-    await Promise.all(createArray(5).map(() => setAndGet(store)));
+  describe("getStateChannel", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = TEST_STORE_CHANNEL;
+        await store.saveStateChannel(channel);
+        const retrieved = await store.getStateChannel(channel.multisigAddress);
+        expect(retrieved).to.deep.eq(channel);
+        await store.clear();
+      });
+    });
   });
 
-  it("happy case: get channels map indexed by multisigAddress", async () => {
-    const xpub =
-      "xpub6FLhjUvMxAuTfCrrNYFJ8qxq4Tx7FuYWVgbRv1TwBhfbtasEZP8EQcmD62jrhaaywiBkxcbEGHciBFwcf56B2mrtUnCBa92L3XbDzf85J4A";
-    const multisigAddress1 = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
-    const multisigAddress2 = "0x829BD824B016326A401d083B33D092293333A831";
-    const path = `${xpub}/${PATH_CHANNEL}`;
-    const pairs: StorePair[] = [
-      { path: `${path}/${multisigAddress1}`, value: { multisigAddress: multisigAddress1 } },
-      { path: `${path}/${multisigAddress2}`, value: { multisigAddress: multisigAddress2 } },
-    ];
-    await store.set(pairs);
-    const expected = {
-      [multisigAddress1]: pairs[0].value,
-      [multisigAddress2]: pairs[1].value,
-    };
-    const retrieved = await store.get(path);
-    expect(retrieved).to.deep.equal(expected);
+  describe("saveStateChannel", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = TEST_STORE_CHANNEL;
+        const nullValue = await store.getStateChannel(channel.multisigAddress);
+        expect(nullValue).to.be.undefined;
+        await store.saveStateChannel(channel);
+        const retrieved = await store.getStateChannel(channel.multisigAddress);
+        expect(retrieved).to.deep.eq(channel);
+        // edit channel
+        await store.saveStateChannel({ ...channel, monotonicNumProposedApps: 14 });
+        const edited = await store.getStateChannel(channel.multisigAddress);
+        expect(edited).to.deep.eq({ ...channel, monotonicNumProposedApps: 14 });
+        await store.clear();
+      });
+    });
   });
 
-  it("happy case: reset the whole store state", async () => {
-    expect((await memoryStorage.getAllKeys()).length).to.equal(0);
-    await setAndGet(store);
-    expect((await memoryStorage.getAllKeys()).length).to.be.greaterThan(0);
-    await store.reset();
-    expect(await memoryStorage.getAllKeys()).to.deep.equal([]);
+  describe("getStateChannelByOwners", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = TEST_STORE_CHANNEL;
+        const owners = channel.userNeuteredExtendedKeys;
+        const nullValue = await store.getStateChannelByOwners(owners);
+        expect(nullValue).to.be.undefined;
+        await store.saveStateChannel(channel);
+        const retrieved = await store.getStateChannelByOwners(owners);
+        expect(retrieved).to.deep.eq(channel);
+        await store.clear();
+      });
+    });
   });
 
-  it("happy case: backup state when provided a backupService", async () => {
-    // create store with backup service
-    const backupService = new MockBackupService();
-    const { store } = createStore(MEMORYSTORAGE, { backupService });
-    // generate value to properly set and backup
-    const pair: StorePair = {
-      path: `/xpub/channel/${hexlify(randomBytes(20))}`,
-      value: { freeBalanceAppInstance: { test: "pls" } },
-    };
-    await store.set([pair], true);
-    // restore and check states restored
-    const statesRestored = await store.restore();
-    expect(statesRestored).to.deep.equal([pair]);
-    // check store is properly setup
-    expect(await store.get(pair.path)).to.deep.equal(pair.value);
+  describe("getStateChannelByAppInstanceId", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = TEST_STORE_CHANNEL;
+        const appInstanceId = channel.appInstances[0][0];
+        const nullValue = await store.getStateChannelByAppInstanceId(appInstanceId);
+        expect(nullValue).to.be.undefined;
+        await store.saveStateChannel(channel);
+        const retrieved = await store.getStateChannelByAppInstanceId(appInstanceId);
+        expect(retrieved).to.deep.eq(channel);
+        await store.clear();
+      });
+    });
   });
 
-  it("happy case: restore empty state without backupService", async () => {
-    await setAndGetMultiple(store);
-    // restore
-    const statesRestored = await store.restore();
-    // expect that store has proper prefix
-    expect(statesRestored).to.be.deep.equal([]);
-    expect(await memoryStorage.getAllKeys()).to.be.deep.equal([]);
+  describe("getAppInstance", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const app = TEST_STORE_CHANNEL.appInstances[0][1];
+        const multisigAddress = channel.multisigAddress;
+        await store.saveStateChannel(channel);
+        const nullValue = await store.getAppInstance(app.identityHash);
+        expect(nullValue).to.be.undefined;
+        await store.saveAppInstance(multisigAddress, app);
+        const retrieved = await store.getAppInstance(app.identityHash);
+        expect(retrieved).to.deep.eq(app);
+        const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.appInstances).to.deep.eq([[app.identityHash, app]]);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("saveAppInstance", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const app = TEST_STORE_CHANNEL.appInstances[0][1];
+        const multisigAddress = channel.multisigAddress;
+        await store.saveStateChannel(channel);
+        const edited = { ...app, latestVersionNumber: 14 };
+        await store.saveAppInstance(multisigAddress, app);
+        const retrieved = await store.getAppInstance(app.identityHash);
+        expect(retrieved).to.deep.eq(app);
+        await store.saveAppInstance(multisigAddress, edited);
+        const editedRetrieved = await store.getAppInstance(app.identityHash);
+        expect(editedRetrieved).to.deep.eq(edited);
+        const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.appInstances).to.deep.eq([[app.identityHash, edited]]);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("removeAppInstance", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const app = TEST_STORE_CHANNEL.appInstances[0][1];
+        const multisigAddress = channel.multisigAddress;
+        await store.saveStateChannel(channel);
+        await store.saveAppInstance(multisigAddress, app);
+        await store.removeAppInstance(multisigAddress, app.identityHash);
+        const retrieved = await store.getAppInstance(app.identityHash);
+        expect(retrieved).to.be.undefined;
+        const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.appInstances).to.deep.eq([]);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getAppProposal", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
+        const multisigAddress = channel.multisigAddress;
+        await store.saveStateChannel(channel);
+        const nullValue = await store.getAppProposal(proposal.identityHash);
+        expect(nullValue).to.be.undefined;
+        await store.saveAppProposal(multisigAddress, proposal);
+        const retrieved = await store.getAppProposal(proposal.identityHash);
+        expect(retrieved).to.deep.eq(proposal);
+        const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.proposedAppInstances).to.deep.eq([[proposal.identityHash, proposal]]);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("saveAppProposal", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
+        const multisigAddress = channel.multisigAddress;
+        await store.saveStateChannel(channel);
+        const edited = { ...proposal, appSeqNo: 17 };
+        await store.saveAppProposal(multisigAddress, proposal);
+        const retrieved = await store.getAppProposal(proposal.identityHash);
+        expect(retrieved).to.deep.eq(proposal);
+        await store.saveAppProposal(multisigAddress, edited);
+        const editedRetrieved = await store.getAppProposal(proposal.identityHash);
+        expect(editedRetrieved).to.deep.eq(edited);
+        const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.proposedAppInstances).to.deep.eq([[proposal.identityHash, edited]]);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("removeAppProposal", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
+        const multisigAddress = channel.multisigAddress;
+        await store.saveStateChannel(channel);
+        await store.saveAppProposal(multisigAddress, proposal);
+        await store.removeAppProposal(multisigAddress, proposal.identityHash);
+        const retrieved = await store.getAppProposal(proposal.identityHash);
+        expect(retrieved).to.be.undefined;
+        const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.proposedAppInstances).to.deep.eq([]);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getFreeBalance", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const freeBalance = channel.freeBalanceAppInstance!;
+        const multisigAddress = channel.multisigAddress;
+        const nullValue = await store.getFreeBalance(multisigAddress);
+        expect(nullValue).to.deep.eq(undefined);
+        await store.saveStateChannel(channel);
+        await store.saveFreeBalance(multisigAddress, freeBalance);
+        const retrieved = await store.getFreeBalance(multisigAddress);
+        expect(retrieved).to.deep.eq(freeBalance);
+        const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.freeBalanceAppInstance).to.deep.eq(freeBalance);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("saveFreeBalance", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
+        const freeBalance = channel.freeBalanceAppInstance!;
+        const multisigAddress = channel.multisigAddress;
+        const edited = { ...freeBalance, latestVersionNumber: 8 };
+        await store.saveStateChannel(channel);
+        await store.saveFreeBalance(multisigAddress, freeBalance);
+        const retrieved = await store.getFreeBalance(multisigAddress);
+        expect(retrieved).to.deep.eq(freeBalance);
+        await store.saveFreeBalance(multisigAddress, edited);
+        const editedRetrieved = await store.getFreeBalance(multisigAddress);
+        expect(editedRetrieved).to.deep.eq(edited);
+        const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.freeBalanceAppInstance).to.deep.eq(edited);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getSetupCommitment", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const setup = TEST_STORE_MINIMAL_TX;
+        const multisigAddress = TEST_STORE_ETH_ADDRESS;
+        expect(await store.getSetupCommitment(multisigAddress)).to.be.undefined;
+        await store.saveSetupCommitment(multisigAddress, setup);
+        const retrieved = await store.getSetupCommitment(multisigAddress);
+        expect(retrieved).to.containSubset(setup);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("saveSetupCommitment", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const setup = TEST_STORE_MINIMAL_TX;
+        const edited = { ...TEST_STORE_MINIMAL_TX, value: 5 };
+        const multisigAddress = TEST_STORE_ETH_ADDRESS;
+        await store.saveSetupCommitment(multisigAddress, setup);
+        const retrieved = await store.getSetupCommitment(multisigAddress);
+        expect(retrieved).to.containSubset(setup);
+        await store.saveSetupCommitment(multisigAddress, edited);
+        const editedRetrieved = await store.getSetupCommitment(multisigAddress);
+        expect(editedRetrieved).to.containSubset(edited);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getLatestSetStateCommitment", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const setState = TEST_STORE_SET_STATE_COMMITMENT;
+        const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
+        expect(await store.getLatestSetStateCommitment(appIdentityHash)).to.be.undefined;
+        await store.saveLatestSetStateCommitment(appIdentityHash, setState);
+        const retrieved = await store.getLatestSetStateCommitment(appIdentityHash);
+        expect(retrieved).to.containSubset(setState);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("saveLatestSetStateCommitment", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const setState = TEST_STORE_SET_STATE_COMMITMENT;
+        const edited = { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: 9 };
+        const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
+        await store.saveLatestSetStateCommitment(appIdentityHash, setState);
+        const retrieved = await store.getLatestSetStateCommitment(appIdentityHash);
+        expect(retrieved).to.containSubset(setState);
+        await store.saveLatestSetStateCommitment(appIdentityHash, edited);
+        const editedRetrieved = await store.getLatestSetStateCommitment(appIdentityHash);
+        expect(editedRetrieved).to.containSubset(edited);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getConditionalTransactionCommitment", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const setState = TEST_STORE_SET_STATE_COMMITMENT;
+        const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
+        expect(await store.getLatestSetStateCommitment(appIdentityHash)).to.be.undefined;
+        await store.saveLatestSetStateCommitment(appIdentityHash, setState);
+        const retrieved = await store.getLatestSetStateCommitment(appIdentityHash);
+        expect(retrieved).to.containSubset(setState);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("saveConditionalTransactionCommitment", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const conditional = TEST_STORE_CONDITIONAL_COMMITMENT;
+        const edited = { ...conditional, freeBalanceAppIdentityHash: "0xtesting" };
+        const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
+        await store.saveConditionalTransactionCommitment(appIdentityHash, conditional);
+        const retrieved = await store.getConditionalTransactionCommitment(appIdentityHash);
+        expect(retrieved).to.containSubset(conditional);
+        await store.saveConditionalTransactionCommitment(appIdentityHash, edited);
+        const editedRetrieved = await store.getConditionalTransactionCommitment(appIdentityHash);
+        expect(editedRetrieved).to.containSubset(edited);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("getWithdrawalCommitment", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const withdraw = TEST_STORE_MINIMAL_TX;
+        const multisigAddress = TEST_STORE_ETH_ADDRESS;
+        expect(await store.getWithdrawalCommitment(multisigAddress)).to.be.undefined;
+        await store.saveWithdrawalCommitment(multisigAddress, withdraw);
+        const retrieved = await store.getWithdrawalCommitment(multisigAddress);
+        expect(retrieved).to.containSubset(withdraw);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("saveWithdrawalCommitment", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const withdraw = TEST_STORE_MINIMAL_TX;
+        const edited = { ...TEST_STORE_MINIMAL_TX, value: 5 };
+        const multisigAddress = TEST_STORE_ETH_ADDRESS;
+        await store.saveWithdrawalCommitment(multisigAddress, withdraw);
+        const retrieved = await store.getWithdrawalCommitment(multisigAddress);
+        expect(retrieved).to.containSubset(withdraw);
+        await store.saveWithdrawalCommitment(multisigAddress, edited);
+        const editedRetrieved = await store.getWithdrawalCommitment(multisigAddress);
+        expect(editedRetrieved).to.containSubset(edited);
+        await store.clear();
+      });
+    });
+  });
+
+  describe("clear", () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should work`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const multisigAddress = TEST_STORE_ETH_ADDRESS;
+        await store.saveStateChannel(TEST_STORE_CHANNEL);
+        const retrieved = await store.getStateChannel(multisigAddress);
+        expect(retrieved).to.containSubset(TEST_STORE_CHANNEL);
+        await store.clear();
+        expect(await store.getStateChannel(multisigAddress)).to.containSubset(undefined);
+      });
+    });
+  });
+
+  describe("restore", async () => {
+    Object.keys(StoreTypes).forEach(type => {
+      it(`${type} - should restore empty state when not provided with a backup service`, async () => {
+        const store = createConnextStore(type as StoreType, { fileDir });
+        const multisigAddress = TEST_STORE_ETH_ADDRESS;
+        await store.saveStateChannel(TEST_STORE_CHANNEL);
+        const retrieved = await store.getStateChannel(multisigAddress);
+        expect(retrieved).to.containSubset(TEST_STORE_CHANNEL);
+
+        await expect(store.restore()).to.be.rejectedWith(`No backup provided, store cleared`);
+        expect(await store.getStateChannel(multisigAddress)).to.containSubset(undefined);
+      });
+
+      if (type === MEMORYSTORAGE) {
+        return;
+      }
+
+      it(`${type} - should backup state when provided with a backup service`, async () => {
+        const store = createConnextStore(type as StoreType, {
+          backupService: new MockBackupService(),
+          fileDir,
+        });
+        const multisigAddress = TEST_STORE_ETH_ADDRESS;
+        await store.saveStateChannel(TEST_STORE_CHANNEL);
+        const retrieved = await store.getStateChannel(multisigAddress);
+        expect(retrieved).to.containSubset(TEST_STORE_CHANNEL);
+        await store.restore();
+        expect(await store.getStateChannel(multisigAddress)).to.containSubset(TEST_STORE_CHANNEL);
+      });
+    });
   });
 });

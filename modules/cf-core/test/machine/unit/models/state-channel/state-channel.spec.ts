@@ -4,6 +4,7 @@ import { getAddress, hexlify, randomBytes } from "ethers/utils";
 import { StateChannel } from "../../../../../src/models";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../../mocks";
+import { bigNumberifyJson } from "../../../../../src";
 
 describe("StateChannel", () => {
   it("should be able to instantiate", () => {
@@ -66,10 +67,6 @@ describe("StateChannel", () => {
       expect(json.multisigAddress).toEqual(multisigAddress);
     });
 
-    it("should have a singleAssetTwoPartyIntermediaryAgreements array", () => {
-      expect(json.singleAssetTwoPartyIntermediaryAgreements).toEqual([]);
-    });
-
     it("should have the correct critical state channel addresses", () => {
       expect(json.addresses.proxyFactory).toEqual(sc.addresses.proxyFactory);
       expect(sc.addresses.proxyFactory).toEqual(ProxyFactory);
@@ -101,7 +98,14 @@ describe("StateChannel", () => {
     });
 
     it("should work", () => {
-      expect(rehydrated).toEqual(sc);
+      for (const prop of Object.keys(sc)) {
+        if (typeof sc[prop] === "function" || prop === "freeBalanceAppInstance") {
+          // skip fns
+          // free balance asserted below
+          continue;
+        }
+        expect(rehydrated[prop]).toEqual(sc[prop]);
+      }
     });
 
     it("should have app instance maps", () => {
@@ -113,7 +117,8 @@ describe("StateChannel", () => {
     });
 
     it("should have a free balance app instance", () => {
-      expect(rehydrated.freeBalance).toEqual(sc.freeBalance);
+      // will fail because of { _hex: "" } vs BigNumber comparison
+      expect(rehydrated.freeBalance).toMatchObject(bigNumberifyJson(sc.freeBalance));
     });
 
     it("should not change the user xpubs", () => {
@@ -122,12 +127,6 @@ describe("StateChannel", () => {
 
     it("should not change the multisig address", () => {
       expect(rehydrated.multisigAddress).toEqual(sc.multisigAddress);
-    });
-
-    it("should have a singleAssetTwoPartyIntermediaryAgreements array", () => {
-      expect(rehydrated.singleAssetTwoPartyIntermediaryAgreements).toEqual(
-        sc.singleAssetTwoPartyIntermediaryAgreements,
-      );
     });
   });
 });
