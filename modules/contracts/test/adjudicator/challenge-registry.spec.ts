@@ -68,6 +68,7 @@ describe("ChallengeRegistry", () => {
   let isStateFinalized: () => Promise<boolean>;
   let verifyChallenge: (expected: Challenge) => Promise<void>;
   let verifyEmptyChallenge: () => Promise<void>;
+  let verifyVersionNumber: (expected: BigNumberish) => Promise<void>;
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
@@ -122,6 +123,10 @@ describe("ChallengeRegistry", () => {
       });
     };
 
+    verifyVersionNumber = async (expectedVersionNumber: BigNumberish) => {
+      const { versionNumber } = await getChallenge();
+      expect(versionNumber).to.be.eq(expectedVersionNumber);
+    }
 
     cancelChallenge = async () => {
       const digest = computeAppChallengeHash(
@@ -177,7 +182,6 @@ describe("ChallengeRegistry", () => {
     it("should work when a challenge is submitted for the first time", async () => {
       await verifyEmptyChallenge();
 
-      const sender = await wallet.getAddress();
       const versionNumber = 3;
       const state = randomState();
       const timeout = 4;
@@ -186,10 +190,40 @@ describe("ChallengeRegistry", () => {
 
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
-        latestSubmitter: sender,
+        latestSubmitter: await wallet.getAddress(),
         appStateHash: appStateToHash(state),
         versionNumber: versionNumber,
         finalizesAt: await provider.getBlockNumber() + timeout,
+      });
+    });
+
+    it("should work when a challenge with a higher version number is submmitted", async () => {
+      const versionNumber = 3;
+      const state = randomState();
+      const timeout = 4;
+
+      await setStateWithSignatures(versionNumber, state, timeout);
+
+      await verifyChallenge({
+        status: ChallengeStatus.IN_DISPUTE,
+        latestSubmitter: await wallet.getAddress(),
+        appStateHash: appStateToHash(state),
+        versionNumber: versionNumber,
+        finalizesAt: await provider.getBlockNumber() + timeout,
+      });
+
+      const newVersionNumber = 4;
+      const newState = randomState();
+      const newTimeout = 2;
+
+      await setStateWithSignatures(newVersionNumber, newState, newTimeout);
+
+      await verifyChallenge({
+        status: ChallengeStatus.IN_DISPUTE,
+        latestSubmitter: await wallet.getAddress(),
+        appStateHash: appStateToHash(newState),
+        versionNumber: newVersionNumber,
+        finalizesAt: await provider.getBlockNumber() + newTimeout,
       });
     });
   });
