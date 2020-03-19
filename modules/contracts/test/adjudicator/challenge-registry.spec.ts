@@ -167,7 +167,7 @@ describe("ChallengeRegistry", () => {
       });
     };
 
-    /* TODO: doesn't work currently
+    /* TODO [OLD]: doesn't work currently
     sendSignedFinalizationToChain = async () =>
       await setStateWithSignatures(
         (await latestVersionNumber()) + 1,
@@ -177,7 +177,7 @@ describe("ChallengeRegistry", () => {
     */
   });
 
-  describe.only("setState -- happy case", () => {
+  describe("setState -- happy case", () => {
     it("should work when a challenge is submitted for the first time", async () => {
       await verifyEmptyChallenge();
 
@@ -227,6 +227,7 @@ describe("ChallengeRegistry", () => {
     });
   });
 
+  // Old stuff
   describe("updating app state", () => {
     describe("with signing keys", async () => {
       it("should work with higher versionNumber", async () => {
@@ -266,7 +267,7 @@ describe("ChallengeRegistry", () => {
     });
   });
 
-  /* TODO: doesn't work currently
+  /* TODO [OLD]: doesn't work currently
   describe("finalizing app state", async () => {
     it("should work with keys", async () => {
       expect(await isStateFinalized()).to.be.false;
@@ -276,7 +277,7 @@ describe("ChallengeRegistry", () => {
   });
   */
 
-  /* TODO: doesn't work currently
+  /* TODO [OLD]: doesn't work currently
   describe("waiting for timeout", async () => {
     it("should block updates after the timeout", async () => {
       expect(await isStateFinalized()).to.be.false;
@@ -296,35 +297,4 @@ describe("ChallengeRegistry", () => {
   });
   */
 
-  it("is possible to call setState to put state on-chain", async () => {
-    // Tell the ChallengeRegistry to start timer
-    const state = hexlify(randomBytes(32));
-
-    await setStateWithSignatures(1, state);
-
-    await verifyChallenge({
-      status: ChallengeStatus.IN_DISPUTE,
-      latestSubmitter: await wallet.getAddress(),
-      appStateHash: keccak256(state),
-      versionNumber: 1,
-      finalizesAt: await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT,
-    });
-
-    // Verify the correct data was put on-chain
-    /*
-    const {
-      status,
-      latestSubmitter,
-      appStateHash,
-      versionNumber,
-      finalizesAt,
-    } = await getChallenge();
-
-    expect(status).to.be.eq(1);
-    expect(latestSubmitter).to.be.eq(await wallet.getAddress());
-    expect(appStateHash).to.be.eq(keccak256(state));
-    expect(versionNumber).to.be.eq(1);
-    expect(finalizesAt).to.be.eq((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT);
-   */
-  });
 });
