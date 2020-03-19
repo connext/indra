@@ -12,7 +12,7 @@ import {
 } from "../util";
 import { StoreTypes, StoreType, MEMORYSTORAGE, STORE_SCHEMA_VERSION } from "@connext/types";
 
-describe.only("ConnextStore", () => {
+describe("ConnextStore", () => {
   const fileDir = env.storeDir;
 
   describe("getSchemaVersion", () => {
