@@ -18,7 +18,7 @@ import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repos
 import { ChannelRepository } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
-import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
+import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -235,12 +235,12 @@ export class AdminService implements OnApplicationBootstrap {
       `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`,
     );
     const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
-    this.log.log(`Found ${channelJSONs.length} old channel records`)
+    this.log.log(`Found ${channelJSONs.length} old channel records`);
     for (const channelJSON of channelJSONs) {
       try {
         this.log.log(`Found channel to migrate: ${channelJSON.multisigAddress}`);
         // create blank setup commitment
-        const setup = new SetupCommitmentEntity();
+        const setup = new SetupCommitment();
         setup.multisigAddress = channelJSON.multisigAddress;
         setup.to = AddressZero;
         setup.value = Zero;
@@ -268,7 +268,7 @@ export class AdminService implements OnApplicationBootstrap {
         this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
         this.log.log(`Removed ${removed.affected} old records after migrating`);
       } catch (e) {
-        this.log.error(`Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()}`)
+        this.log.error(`Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()}`);
       }
     }
     return true;

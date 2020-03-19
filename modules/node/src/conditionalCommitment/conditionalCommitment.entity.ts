@@ -4,7 +4,7 @@ import { OneToOne, JoinColumn, PrimaryGeneratedColumn, Entity, Column } from "ty
 import { Signature } from "ethers/utils";
 
 @Entity()
-export class ConditionalTransactionCommitmentEntity {
+export class ConditionalTransactionCommitment {
   @PrimaryGeneratedColumn()
   id!: number;
 

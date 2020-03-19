@@ -5,7 +5,7 @@ import { Channel } from "../channel/channel.entity";
 import { IsBytes32, IsEthAddress } from "../util";
 
 @Entity()
-export class SetupCommitmentEntity {
+export class SetupCommitment {
   @PrimaryGeneratedColumn()
   id!: number;
 

@@ -42,7 +42,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse> {
-    return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
+    const channel = await this.channelRepository.findByUserPublicIdentifier(pubId);
+    return {
+      available: channel.available,
+      collateralizationInFlight: channel.collateralizationInFlight,
+      multisigAddress: channel.multisigAddress,
+      nodePublicIdentifier: channel.nodePublicIdentifier,
+      userPublicIdentifier: channel.userPublicIdentifier,
+    };
   }
 
   async createChannel(pubId: string): Promise<CFCoreTypes.CreateChannelResult> {

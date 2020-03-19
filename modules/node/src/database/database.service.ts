@@ -11,13 +11,13 @@ import {
   AnonymizedOnchainTransaction,
 } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { SetStateCommitmentEntity } from "../setStateCommitment/setStateCommitment.entity";
-import { ConditionalTransactionCommitmentEntity } from "../conditionalCommitment/conditionalCommitment.entity";
+import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
+import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { Transfer } from "../transfer/transfer.entity";
 import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
-import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
+import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { Withdraw } from "../withdraw/withdraw.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 
@@ -38,8 +38,8 @@ import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-
 import { fastSignedTransfer1583682931763 } from "../../migrations/1583682931763-fast-signed-transfer";
 import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm-sync";
 import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
-import { cfCoreStoreUpdate1584381845220 } from "../../migrations/1584381845220-cf-core-store-update";
 import { initWithdrawApp1584466373728 } from "../../migrations/1584466373728-init-withdraw-app";
+import { cfCoreStoreUpdate1584633495374 } from "../../migrations/1584633495374-cf-core-store-update";
 
 export const entities = [
   AppInstance,
@@ -52,9 +52,9 @@ export const entities = [
   Transfer,
   AnonymizedOnchainTransaction,
   AnonymizedTransfer,
-  ConditionalTransactionCommitmentEntity,
-  SetStateCommitmentEntity,
-  SetupCommitmentEntity,
+  ConditionalTransactionCommitment,
+  SetStateCommitment,
+  SetupCommitment,
   Withdraw,
   WithdrawCommitment,
 ];
@@ -76,8 +76,8 @@ export const migrations = [
   fastSignedTransfer1583682931763,
   typeormSync1584364675207,
   typeormSync21584369931723,
-  cfCoreStoreUpdate1584381845220,
   initWithdrawApp1584466373728,
+  cfCoreStoreUpdate1584633495374,
 ];
 
 @Injectable()
