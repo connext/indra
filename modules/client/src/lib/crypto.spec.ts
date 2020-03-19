@@ -1,13 +1,21 @@
 import { CF_PATH } from "@connext/types";
-import { decryptWithPrivateKey, encryptWithPublicKey } from "@connext/crypto";
+import {
+  decryptWithPrivateKey,
+  encryptWithPublicKey,
+  signMessage,
+  verifyMessage,
+  signDigest,
+  recoverAddress,
+} from "@connext/crypto";
 import * as EthCrypto from "eth-crypto";
 import { Wallet } from "ethers";
-import { computePublicKey } from "ethers/utils";
+import { SigningKey, computePublicKey, arrayify, joinSignature } from "ethers/utils";
 
 const prvKey = Wallet.createRandom().privateKey;
 const pubKey = computePublicKey(prvKey).replace(/^0x/, "");
 const shortMessage = "123456789012345";
 const longMessage = "1234567890123456";
+const testNonce = "0xc25e3daddb2ff17ff60ad2611ba2ee93";
 
 // Mnemonic was pulled from the testnet daicard that received a test async transfer
 const wallet = Wallet.fromMnemonic(
@@ -39,9 +47,14 @@ describe("crypto", () => {
 
   test("our crypto stuff & eth-crypto should be able to decrypt each other", async () => {
     const myEncrypted = await encryptWithPublicKey(pubKey, shortMessage);
-    const ethEncrypted = EthCrypto.cipher.stringify(await EthCrypto.encryptWithPublicKey(pubKey, shortMessage));
+    const ethEncrypted = EthCrypto.cipher.stringify(
+      await EthCrypto.encryptWithPublicKey(pubKey, shortMessage),
+    );
     const myDecrypted = await decryptWithPrivateKey(prvKey, ethEncrypted);
-    const ethDecrypted = await EthCrypto.decryptWithPrivateKey(prvKey, EthCrypto.cipher.parse(myEncrypted));
+    const ethDecrypted = await EthCrypto.decryptWithPrivateKey(
+      prvKey,
+      EthCrypto.cipher.parse(myEncrypted),
+    );
     expect(myDecrypted).toEqual(ethDecrypted);
     expect(myDecrypted).toEqual(shortMessage);
   });
@@ -49,5 +62,30 @@ describe("crypto", () => {
   test("we should be able decrypt messages that were encrypted in a browser", async () => {
     const decrypted = await decryptWithPrivateKey(example.prvKey, example.encryptedMessage);
     expect(decrypted).toEqual(example.message);
+  });
+
+  test("we should be able to sign Ethereum messages", async () => {
+    const sig1 = await wallet.signMessage(arrayify(testNonce));
+    const sig2 = await signMessage(wallet.privateKey, testNonce);
+    expect(sig1).toEqual(sig2);
+  });
+
+  test("we should be able to recover Ethereum messages", async () => {
+    const sig = await signMessage(wallet.privateKey, testNonce);
+    const address = await verifyMessage(testNonce, sig);
+    expect(address).toEqual(wallet.address);
+  });
+
+  test("we should be able to sign ECDSA digests", async () => {
+    const signingKey = new SigningKey(wallet.privateKey);
+    const sig1 = joinSignature(signingKey.signDigest(arrayify(testNonce)));
+    const sig2 = await signDigest(wallet.privateKey, testNonce);
+    expect(sig1).toEqual(sig2);
+  });
+
+  test("we should be able to recover ECDSA digests", async () => {
+    const sig = await signDigest(wallet.privateKey, testNonce);
+    const address = await recoverAddress(testNonce, sig);
+    expect(address).toEqual(wallet.address);
   });
 });

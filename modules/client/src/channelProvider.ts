@@ -53,7 +53,8 @@ export const createCFChannelProvider = async ({
     signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
-  const connection = new CFCoreRpcConnection(cfCore, store, await keyGen("0"));
+  const wallet = new Wallet(await keyGen("0")).connect(ethProvider);
+  const connection = new CFCoreRpcConnection(cfCore, store, wallet);
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
   return channelProvider;
 };
@@ -66,10 +67,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   // TODO: replace this when signing keys are added!
   public wallet: Wallet;
 
-  constructor(cfCore: CFCore, store: Store, authKey: any) {
+  constructor(cfCore: CFCore, store: Store, wallet: Wallet) {
     super();
     this.cfCore = cfCore;
-    this.wallet = authKey ? new Wallet(authKey) : null;
+    this.wallet = wallet;
     this.store = store;
   }
 
@@ -87,8 +88,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         result = await this.signWithdrawCommitment(params.message);
         break;
       case chan_nodeAuth:
-          result = await this.walletSign(params.message);
-          break;
+        result = await this.walletSign(params.message);
+        break;
       case chan_restoreState:
         result = await this.restoreState(params.path);
         break;
@@ -126,14 +127,13 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private walletSign = async (message: string): Promise<string> => {
-    const { chainId } = await this.wallet.provider.getNetwork();
-    return signMessage(this.wallet.privateKey, message, chainId);
+    return signMessage(this.wallet.privateKey, message);
   };
 
   private signWithdrawCommitment = async (message: string): Promise<string> => {
     const key = new SigningKey(this.wallet.privateKey);
     return joinSignature(key.signDigest(message));
-  }
+  };
 
   private storeGet = async (path: string): Promise<any> => {
     return this.store.get(path);
