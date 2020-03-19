@@ -30,7 +30,7 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
 }
 
 export const swapRateProviderFactory: FactoryProvider<Promise<MessagingService>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, SwapRateService],
+  inject: [LoggerService, MessagingProviderId, SwapRateService],
   provide: SwapRateProviderId,
   useFactory: async (
     log: LoggerService,
