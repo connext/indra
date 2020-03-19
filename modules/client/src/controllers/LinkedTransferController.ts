@@ -156,7 +156,6 @@ export class LinkedTransferController extends AbstractController {
       timeout: Zero,
     };
     const appId = await this.proposeAndInstallLedgerApp(proposeInstallParams);
-    console.log('appId: ', appId);
 
     if (!appId) {
       throw new Error(`App was not installed`);
