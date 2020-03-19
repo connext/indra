@@ -14,7 +14,6 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
   }
 
   async get(path: string): Promise<StringKeyValue | string | undefined> {
-    console.log("path: ", path);
     // log.info(`Getting path from store: ${path}`);
     let res: any;
     // FIXME: this queries for all channels or proposed app instances, which
@@ -25,7 +24,6 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       res = await this.createQueryBuilder("node_records")
         .where("node_records.path like :path", { path: `%${path}%` })
         .getMany();
-      console.log("res: ", res);
       const nestedRecords = res.map((record: CFCoreRecord) => {
         const existingKey = Object.keys(record.value)[0];
         const leafKey = existingKey.split("/").pop()!;
