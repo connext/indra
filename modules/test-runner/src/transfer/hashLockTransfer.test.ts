@@ -20,7 +20,7 @@ import {
 } from "../util";
 import { providers } from "ethers";
 
-describe.only("HashLock Transfers", () => {
+describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
