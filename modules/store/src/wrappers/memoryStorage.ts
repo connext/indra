@@ -25,14 +25,17 @@ export class MemoryStorage implements IClientStore {
   private freeBalances: Map<string, AppInstanceJson> = new Map();
   private setupCommitments: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
 
+  private schemaVersion: number = 0;
+
   constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
 
   async getSchemaVersion(): Promise<number> {
-    return Promise.resolve(STORE_SCHEMA_VERSION);
+    return Promise.resolve(this.schemaVersion);
   }
 
   setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
     console.warn(`Method not implemented for memory storage`);
+    this.schemaVersion = version;
     return Promise.resolve();
   }
 
