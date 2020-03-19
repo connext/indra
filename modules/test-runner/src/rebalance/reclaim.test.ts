@@ -65,7 +65,10 @@ describe("Reclaim", () => {
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = hexlify(randomBytes(32));
-      await nats.subscribe(`transfer.${paymentId}.reclaimed`, res);
+      await nats.subscribe(
+        `${clientA.nodePublicIdentifier}.channel.*.transfer.${paymentId}.reclaimed`,
+        res,
+      );
       clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
