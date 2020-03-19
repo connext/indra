@@ -3,7 +3,6 @@ import {
   INSTALL_EVENT,
   UNINSTALL_EVENT,
   CREATE_CHANNEL_EVENT,
-  WITHDRAWAL_STARTED_EVENT,
   UPDATE_STATE_EVENT,
   INSTALL_VIRTUAL_EVENT,
   UNINSTALL_VIRTUAL_EVENT,
@@ -29,8 +28,6 @@ import {
   UninstallProtocolParams,
   UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams,
-  WithdrawStartedMessage,
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
@@ -162,15 +159,6 @@ async function getOutgoingEventDataFromProtocol(
           stateChannelsMap.get((params as SetupProtocolParams).multisigAddress)!.multisigOwners,
         ),
       };
-    case Protocol.Withdraw:
-      // NOTE: responder will only ever emit a withdraw started
-      // event. does not include tx hash
-      // determine if the withdraw is finishing or if it is starting
-      return {
-        ...baseEvent,
-        type: WITHDRAWAL_STARTED_EVENT,
-        data: getWithdrawEventData(params as WithdrawProtocolParams),
-      } as WithdrawStartedMessage;
     case Protocol.TakeAction:
     case Protocol.Update:
       return {
@@ -257,18 +245,6 @@ function getUninstallEventData({ appIdentityHash: appInstanceId }: UninstallProt
   return { appInstanceId };
 }
 
-function getWithdrawEventData(params: WithdrawProtocolParams) {
-  const { multisigAddress, tokenAddress, recipient, amount } = params;
-  return {
-    params: {
-      multisigAddress,
-      tokenAddress,
-      recipient,
-      amount,
-    },
-  };
-}
-
 function getSetupEventData(
   { initiatorXpub: counterpartyXpub, multisigAddress }: SetupProtocolParams,
   owners: string[],
@@ -276,131 +252,3 @@ function getSetupEventData(
   return { multisigAddress, owners, counterpartyXpub };
 }
 
-/**
- * Produces an array of queues that the client must halt execution on
- * for some particular protocol and its set of parameters/
- *
- * @param {string} protocol - string name of the protocol
- * @param {ProtocolParameters} params - parameters relevant for the protocol
- * @param {Store} store - the store the client is connected to
- * @param {RequestHandler} requestHandler - the request handler object of the client
- *
- * @returns {Promise<string[]>} - list of the names of the queues
- */
-async function getQueueNamesListByProtocolName(
-  protocol: string,
-  params: ProtocolParameters,
-  requestHandler: RequestHandler,
-): Promise<string[]> {
-  const { networkContext, provider, publicIdentifier, store } = requestHandler;
-
-  async function multisigAddressFor(xpubs: string[]) {
-    // allow generated multisig for setup protocol only!
-
-    // in propose, you may need to generate a multisig address for
-    // initiator and responder if it is a virtual app. but in the `install`
-    // step, these channels should have been persisted with end participants,
-    // and previously exist for intermediaries.
-    const allowed = protocol === Protocol.Setup;
-    return await store.getMultisigAddressWithCounterparty(
-      xpubs,
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
-      allowed ? provider : undefined,
-    );
-  }
-
-  switch (protocol) {
-    /**
-     * Queue on the multisig address of the direct channel.
-     */
-    case Protocol.Install:
-    case Protocol.Setup:
-    case Protocol.Withdraw:
-    case Protocol.Propose:
-      const { multisigAddress } = params as
-        | InstallProtocolParams
-        | SetupProtocolParams
-        | WithdrawProtocolParams;
-
-      return [multisigAddress];
-
-    /**
-     * Queue on the appInstanceId of the AppInstance.
-     */
-    case Protocol.TakeAction:
-    case Protocol.Update:
-      const { appIdentityHash } = params as TakeActionProtocolParams | UpdateProtocolParams;
-
-      return [appIdentityHash];
-
-    case Protocol.Uninstall:
-      const {
-        multisigAddress: addr,
-        appIdentityHash: appInstanceId,
-      } = params as UninstallProtocolParams;
-
-      return [addr, appInstanceId];
-
-    /**
-     * Queue on the multisig addresses of both direct channels involved.
-     */
-    case Protocol.InstallVirtualApp:
-      const {
-        initiatorXpub,
-        intermediaryXpub,
-        responderXpub,
-      } = params as InstallVirtualAppProtocolParams;
-
-      if (publicIdentifier === intermediaryXpub) {
-        return [
-          await multisigAddressFor([initiatorXpub, intermediaryXpub]),
-          await multisigAddressFor([responderXpub, intermediaryXpub]),
-        ];
-      }
-
-      if (publicIdentifier === responderXpub) {
-        return [
-          await multisigAddressFor([responderXpub, intermediaryXpub]),
-          await multisigAddressFor([responderXpub, initiatorXpub]),
-        ];
-      }
-
-    /**
-     * Queue on the multisig addresses of both direct channels involved,
-     * as well as on the app itself
-     */
-    case Protocol.UninstallVirtualApp:
-      const {
-        initiatorXpub: initiator,
-        intermediaryXpub: intermediary,
-        responderXpub: responder,
-        targetAppIdentityHash,
-      } = params as UninstallVirtualAppProtocolParams;
-
-      if (publicIdentifier === intermediary) {
-        return [
-          await multisigAddressFor([initiator, intermediary]),
-          await multisigAddressFor([responder, intermediary]),
-          targetAppIdentityHash,
-        ];
-      }
-
-      if (publicIdentifier === responder) {
-        return [
-          await multisigAddressFor([responder, intermediary]),
-          await multisigAddressFor([responder, initiator]),
-          targetAppIdentityHash,
-        ];
-      }
-
-    // NOTE: This file is only reachable if a protocol message is sent
-    // from an initiator to an intermediary, an intermediary to
-    // a responder, or an initiator to a responder. It is never possible
-    // for the publicIdentifier to be the initiatorXpub, so we ignore
-    // that case.
-
-    default:
-      throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
-  }
-}

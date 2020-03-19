@@ -16,9 +16,11 @@
   },
   "devDependencies": {
     "@connext/cf-core": "5.2.1",
+    "@connext/contracts": "1.0.5",
     "@connext/types": "5.2.1",
     "ethers": "4.0.45",
     "rollup": "1.31.1",
+    "@rollup/plugin-json": "4.0.2",
     "rollup-plugin-typescript2": "0.26.0",
     "typescript": "3.7.5"
   }

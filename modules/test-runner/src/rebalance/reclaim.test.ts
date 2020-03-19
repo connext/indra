@@ -1,7 +1,7 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
@@ -64,14 +64,13 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      await nats.subscribe(
-        `indra.node.${clientA.nodePublicIdentifier}.reclaim.${clientA.multisigAddress}`,
-        res,
-      );
+      const paymentId = hexlify(randomBytes(32));
+      await nats.subscribe(`transfer.${paymentId}.reclaimed`, res);
       clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
         recipient: clientB.publicIdentifier,
+        paymentId,
       });
     });
 
@@ -119,14 +118,14 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      await nats.subscribe(
-        `indra.node.${clientA.nodePublicIdentifier}.reclaim.${clientA.multisigAddress}`,
-        res,
-      );
+      const paymentId = hexlify(randomBytes(32));
+      // TODO
+      await nats.subscribe(`transfer.${paymentId}.reclaimed`, res);
       clientA.transfer({
         amount: One.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
+        paymentId,
       });
     });
 

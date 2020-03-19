@@ -49,5 +49,3 @@ export type TransferAction = {
   finalize: boolean;
   transferAmount: BigNumber;
 };
-
-export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };

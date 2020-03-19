@@ -82,6 +82,19 @@ export function sortSignaturesBySignerAddress(
   return ret;
 }
 
+export function sortStringSignaturesBySignerAddress(
+  digest: string,
+  signatures: string[],
+): string[] {
+  const ret = signatures.slice();
+    ret.sort((sigA, sigB) => {
+      const addrA = recoverAddress(digest, sigA);
+      const addrB = recoverAddress(digest, sigB);
+      return new BigNumber(addrA).lt(addrB) ? -1 : 1;
+    });
+  return ret;
+}
+
 /**
  * Sorts signatures in ascending order of signer address
  * and converts them into bytes

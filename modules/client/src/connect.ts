@@ -7,7 +7,7 @@ import {
   CF_PATH,
   CREATE_CHANNEL_EVENT,
   StateSchemaVersion,
-  CoinBalanceRefundState,
+  CoinBalanceRefundAppState,
 } from "@connext/types";
 import { Contract, providers, Wallet } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -289,13 +289,9 @@ export const connect = async (
   );
   for (const coinBalance of coinBalanceRefundApps) {
     await client.uninstallCoinBalanceIfNeeded(
-      (coinBalance.latestState as CoinBalanceRefundState).tokenAddress,
+      (coinBalance.latestState as CoinBalanceRefundAppState).tokenAddress,
     );
   }
-
-  // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
-  log.debug("Resubmitting active withdrawals");
-  await client.resubmitActiveWithdrawal();
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting

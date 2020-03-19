@@ -28,6 +28,7 @@ export * from "./FastSignedTransfer";
 export * from "./HashLockTransferApp";
 export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleTwoPartySwapApp";
+export * from "./WithdrawApp";
 
 export type ConditionalTransferParameters =
   | LinkedTransferParameters

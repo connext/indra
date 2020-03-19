@@ -2,7 +2,7 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
 import { AssetAmount, RebalanceProfile } from "./channel";
-import { DepositParameters, WithdrawParameters } from "./inputs";
+import { DepositParameters } from "./inputs";
 import { CoinTransfer } from "./app";
 
 /////////////////////////////////////////////
@@ -92,6 +92,23 @@ export function makeChecksumOrEthAddress(address: string | undefined): string {
     return AddressZero;
   }
   return makeChecksum(address);
+}
+
+export function convertCoinTransfersToObjIfNeeded(transfers: any): CoinTransfer[] {
+  if(typeof transfers[0].amount != "undefined") {
+    return transfers;
+  } else {
+    return [
+      {
+        to: transfers[0][0],
+        amount: transfers[0][1],
+      },
+      {
+        to: transfers[1][0],
+        amount: transfers[1][1],
+      }
+    ]
+  }
 }
 
 type GenericAmountObject<T> = any & {
@@ -185,17 +202,9 @@ function convertDepositParametersToAsset<To extends NumericTypeName>(
   return convertAssetAmountWithId(to, obj);
 }
 
-function convertWithdrawParametersToAsset<To extends NumericTypeName>(
-  to: To,
-  obj: WithdrawParameters<any>,
-): WithdrawParameters<NumericTypes[To]> {
-  return convertAssetAmountWithId(to, obj);
-}
-
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert = {
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
   RebalanceProfile: convertRebalanceProfile,
-  Withdraw: convertWithdrawParametersToAsset,
 };

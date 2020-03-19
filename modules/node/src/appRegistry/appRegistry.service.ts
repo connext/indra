@@ -4,18 +4,22 @@ import {
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
   validateFastSignedTransferApp,
+  validateWithdrawApp,
   validateHashLockTransferApp,
 } from "@connext/apps";
 import {
-  AppInstanceJson,
-  SimpleLinkedTransferAppStateBigNumber,
   CoinBalanceRefundApp,
   SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
   FastSignedTransferApp,
+  WithdrawApp,
+  AppInstanceJson,
+  SimpleLinkedTransferAppStateBigNumber,
+  WithdrawAppStateBigNumber,
   HashLockTransferApp,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
+import { MessagingService } from "@connext/messaging";
 import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
@@ -30,10 +34,10 @@ import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { Channel } from "../channel/channel.entity";
+import { WithdrawService } from "../withdraw/withdraw.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { MessagingService } from "@connext/messaging";
 
 @Injectable()
 export class AppRegistryService implements OnModuleInit {
@@ -45,6 +49,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly swapRateService: SwapRateService,
     private readonly linkedTransferService: LinkedTransferService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
+    private readonly withdrawService: WithdrawService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
@@ -154,6 +159,10 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
+      case WithdrawApp: {
+        validateWithdrawApp(proposeInstallParams, from, this.cfCoreService.cfCore.publicIdentifier);
+        break;
+      }
       case HashLockTransferApp: {
         validateHashLockTransferApp(
           proposeInstallParams,
@@ -208,6 +217,24 @@ export class AppRegistryService implements OnModuleInit {
       }
       case FastSignedTransferApp:
         break;
+      case WithdrawApp: {
+        this.log.debug(`Doing withdrawal post-install tasks`);
+        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
+        const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
+        this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
+        await this.withdrawService.saveWithdrawal(
+          appInstanceId,
+          bigNumberify(proposeInstallParams.initiatorDeposit),
+          proposeInstallParams.initiatorDepositTokenAddress,
+          initialState.transfers[0].to,
+          initialState.data,
+          initialState.signatures[0],
+          initialState.signatures[1],
+          appInstance.multisigAddress,
+        );
+        this.withdrawService.handleUserWithdraw(appInstance);
+        break;
+      }
       default:
         this.log.debug(`No post-install actions configured.`);
     }

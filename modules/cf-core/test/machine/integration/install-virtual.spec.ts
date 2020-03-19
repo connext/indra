@@ -72,7 +72,7 @@ beforeAll(async () => {
 
   twoPartyFixedOutcomeAppDefinition = await new ContractFactory(
     TwoPartyFixedOutcomeApp.abi,
-    TwoPartyFixedOutcomeApp.evm.bytecode,
+    TwoPartyFixedOutcomeApp.bytecode,
     wallet,
   ).deploy();
 

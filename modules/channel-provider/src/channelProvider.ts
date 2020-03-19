@@ -1,6 +1,6 @@
 import {
   chan_config,
-  chan_nodeAuth,
+  chan_signWithdrawCommitment,
   chan_restoreState,
   chan_storeGet,
   chan_storeSet,
@@ -11,6 +11,7 @@ import {
   IRpcConnection,
   JsonRpcRequest,
   StorePair,
+  chan_nodeAuth,
 } from "@connext/types";
 
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
@@ -57,9 +58,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case chan_storeGet:
         result = await this.get(params.path);
         break;
-      case chan_nodeAuth:
-        result = await this.signMessage(params.message);
+      case chan_signWithdrawCommitment:
+        result = await this.signWithdrawCommitment(params.message);
         break;
+      case chan_nodeAuth:
+          result = await this.signMessage(params.message);
+          break;
       case chan_config:
         result = this.config;
         break;
@@ -128,6 +132,9 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return this._send(chan_nodeAuth, { message });
   };
 
+  public signWithdrawCommitment = async (message: string): Promise<string> => {
+    return this._send(chan_signWithdrawCommitment, { message });
+  };
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 

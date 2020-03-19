@@ -6,11 +6,10 @@ import {
   CoinBalanceRefundApp,
   StateChannelJSON,
 } from "@connext/types";
-import { MessagingService } from "@connext/messaging";
-import { Injectable, HttpService, Inject } from "@nestjs/common";
+import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
@@ -19,12 +18,11 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
-import { MessagingProviderId } from "../constants";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -48,10 +46,9 @@ export class ChannelService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelRepository: ChannelRepository,
     private readonly configService: ConfigService,
-    private readonly onchainTransactionService: OnchainTransactionService,
+    private readonly withdrawService: WithdrawService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
-    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
   ) {
@@ -149,27 +146,9 @@ export class ChannelService {
       await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
     }
 
-    await this.proposeCoinBalanceRefund(assetId, channel);
+    await this.withdrawService.withdraw(channel.multisigAddress, amount, assetId);
 
-    const res = await this.cfCoreService.generateWithdrawCommitment(
-      channel.multisigAddress,
-      amount,
-      getAddress(assetId),
-    );
-    const tx = await this.onchainTransactionService.sendWithdrawalCommitment(
-      channel,
-      res.transaction,
-    );
-    tx.wait().then(async txReceipt => {
-      const reclaimSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${channel.multisigAddress}.reclaim`;
-      await this.messagingService.publish(reclaimSubject, {
-        amount: amount.toString(),
-        assetId,
-        status: txReceipt.status,
-        transactionHash: txReceipt.transactionHash,
-      });
-    });
-    return tx;
+    return {} as TransactionResponse; //TODO ARJUN temporary!!
   }
 
   private async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
@@ -501,42 +480,6 @@ export class ChannelService {
     };
   }
 
-  async withdrawForClient(
-    userPublicIdentifier: string,
-    tx: CFCoreTypes.MinimalTransaction,
-  ): Promise<TransactionResponse> {
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
-    );
-
-    const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
-      channel.multisigAddress,
-    );
-    this.log.debug(`Deploy multisig tx: ${deployTx}`);
-
-    const provider = this.configService.getEthProvider();
-    if (deployTx !== HashZero) {
-      this.log.debug(`Waiting for deployment transaction...`);
-      provider.waitForTransaction(deployTx);
-      this.log.debug(`Deployment transaction complete!`);
-    } else {
-      this.log.debug(`Multisig already deployed, proceeding with withdrawal`);
-    }
-
-    const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
-    return txRes;
-  }
-
-  async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
-    }
-    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
-
-    return state;
-  }
-
   async getDataFromRebalancingService(
     userPublicIdentifier: string,
     assetId: string,
@@ -568,5 +511,45 @@ export class ChannelService {
       lowerBoundReclaim: bigNumberify(rebalancingTargets.lowerBoundReclaim),
       upperBoundReclaim: bigNumberify(rebalancingTargets.upperBoundReclaim),
     };
+  }
+
+  async getRebalanceProfileForChannelAndAsset(
+    userPublicIdentifier: string,
+    assetId: string = AddressZero,
+  ): Promise<RebalanceProfile | undefined> {
+    // try to get rebalance profile configured
+    let profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
+      userPublicIdentifier,
+      assetId,
+    );
+    return profile;
+  }
+
+  async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
+
+    return state;
+  }
+
+  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
+    }
+    const { data: state } = await this.cfCoreService.getStateChannel(multisigAddress);
+
+    return state;
+  }
+
+  async getAllChannels(): Promise<Channel[]> {
+    const channels = await this.channelRepository.findAll();
+    if (!channels) {
+      throw new Error(`No channels found. This should never happen`);
+    }
+    return channels;
   }
 }

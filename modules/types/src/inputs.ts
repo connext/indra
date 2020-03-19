@@ -29,16 +29,10 @@ export type RescindDepositRightsParameters = RequestDepositRightsParameters;
 
 export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
 
-////// Withdraw types
-export type WithdrawParameters<T = string> = DepositParameters<T> & {
-  userSubmitted?: boolean;
-  recipient?: Address; // if not provided, will default to signer addr
-};
-export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
-
 ////// Generic transfer types
 export type TransferParameters<T = string> = DepositParameters<T> & {
   recipient: Address;
   meta?: object;
+  paymentId?: string;
 };
 export type TransferParametersBigNumber = TransferParameters<BigNumber>;

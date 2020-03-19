@@ -33,97 +33,97 @@ export type NetworkContextForTestSuite = NetworkContext & {
 export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> => {
   const coinBalanceRefundContract = await new ContractFactory(
     CoinBalanceRefundApp.abi,
-    CoinBalanceRefundApp.evm.bytecode,
+    CoinBalanceRefundApp.bytecode,
     wallet,
   ).deploy();
 
   const dolphinCoin = await new ContractFactory(
     DolphinCoin.abi,
-    DolphinCoin.evm.bytecode,
+    DolphinCoin.bytecode,
     wallet,
   ).deploy();
 
   const identityApp = await new ContractFactory(
     IdentityApp.abi,
-    IdentityApp.evm.bytecode,
+    IdentityApp.bytecode,
     wallet,
   ).deploy();
 
   const mvmContract = await new ContractFactory(
     MinimumViableMultisig.abi,
-    MinimumViableMultisig.evm.bytecode,
+    MinimumViableMultisig.bytecode,
     wallet,
   ).deploy();
 
   const proxyFactoryContract = await new ContractFactory(
     ProxyFactory.abi,
-    ProxyFactory.evm.bytecode,
+    ProxyFactory.bytecode,
     wallet,
   ).deploy();
 
   const coinTransferETHInterpreter = await new ContractFactory(
     MultiAssetMultiPartyCoinTransferInterpreter.abi,
-    MultiAssetMultiPartyCoinTransferInterpreter.evm.bytecode,
+    MultiAssetMultiPartyCoinTransferInterpreter.bytecode,
     wallet,
   ).deploy();
 
   const twoPartyFixedOutcomeInterpreter = await new ContractFactory(
     TwoPartyFixedOutcomeInterpreter.abi,
-    TwoPartyFixedOutcomeInterpreter.evm.bytecode,
+    TwoPartyFixedOutcomeInterpreter.bytecode,
     wallet,
   ).deploy();
 
   const challengeRegistry = await new ContractFactory(
     ChallengeRegistry.abi,
-    ChallengeRegistry.evm.bytecode,
+    ChallengeRegistry.bytecode,
     wallet,
   ).deploy();
 
   const conditionalTransactionDelegateTarget = await new ContractFactory(
     ConditionalTransactionDelegateTarget.abi,
-    ConditionalTransactionDelegateTarget.evm.bytecode,
+    ConditionalTransactionDelegateTarget.bytecode,
     wallet,
   ).deploy();
 
   const twoPartyFixedOutcomeFromVirtualAppETHInterpreter = await new ContractFactory(
     TwoPartyFixedOutcomeFromVirtualAppInterpreter.abi,
-    TwoPartyFixedOutcomeFromVirtualAppInterpreter.evm.bytecode,
+    TwoPartyFixedOutcomeFromVirtualAppInterpreter.bytecode,
     wallet,
   ).deploy();
 
   const tttContract = await new ContractFactory(
     TicTacToeApp.abi,
-    TicTacToeApp.evm.bytecode,
+    TicTacToeApp.bytecode,
     wallet,
   ).deploy();
 
   const transferContract = await new ContractFactory(
     UnidirectionalTransferApp.abi,
-    UnidirectionalTransferApp.evm.bytecode,
+    UnidirectionalTransferApp.bytecode,
     wallet,
   ).deploy();
 
   const simpleTransferContract = await new ContractFactory(
     SimpleTransferApp.abi,
-    SimpleTransferApp.evm.bytecode,
+    SimpleTransferApp.bytecode,
     wallet,
   ).deploy();
 
   const linkContract = await new ContractFactory(
     UnidirectionalLinkedTransferApp.abi,
-    UnidirectionalLinkedTransferApp.evm.bytecode,
+    UnidirectionalLinkedTransferApp.bytecode,
     wallet,
   ).deploy();
 
   const timeLockedPassThrough = await new ContractFactory(
     TimeLockedPassThrough.abi,
-    TimeLockedPassThrough.evm.bytecode,
+    TimeLockedPassThrough.bytecode,
     wallet,
   ).deploy();
 
   const singleAssetTwoPartyCoinTransferInterpreter = await new ContractFactory(
     SingleAssetTwoPartyCoinTransferInterpreter.abi,
-    SingleAssetTwoPartyCoinTransferInterpreter.evm.bytecode,
+    SingleAssetTwoPartyCoinTransferInterpreter.bytecode,
     wallet,
   ).deploy();
 

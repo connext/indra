@@ -42,7 +42,7 @@ export class TestRunner {
 
     this.identityApp = await new ContractFactory(
       IdentityApp.abi,
-      IdentityApp.evm.bytecode,
+      IdentityApp.bytecode,
       wallet,
     ).deploy();
 

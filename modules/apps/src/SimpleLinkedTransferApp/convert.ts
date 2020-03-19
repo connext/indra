@@ -8,6 +8,7 @@ import {
   ResolveLinkedTransferToRecipientParameters,
   SimpleLinkedTransferAppState,
   convertAmountField,
+  convertCoinTransfersToObjIfNeeded,
 } from "@connext/types";
 
 export function convertLinkedTransferParameters<To extends NumericTypeName>(
@@ -42,6 +43,7 @@ export function convertLinkedTransferAppState<To extends NumericTypeName>(
   to: To,
   obj: SimpleLinkedTransferAppState<any>,
 ): SimpleLinkedTransferAppState<NumericTypes[To]> {
+  obj.coinTransfers = convertCoinTransfersToObjIfNeeded(obj.coinTransfers);
   return convertAssetAmountWithId(to, {
     ...obj,
     coinTransfers: [

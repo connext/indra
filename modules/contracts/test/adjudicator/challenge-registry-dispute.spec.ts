@@ -64,10 +64,9 @@ describe("ChallengeRegistry Challenge", () => {
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
+    await wallet.getTransactionCount();
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
-      gasLimit: 6000000, // override default of 4 million
-    });
+    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
 
     appDefinition = await waffle.deployContract(wallet, AppWithAction);
   });

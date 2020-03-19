@@ -18,16 +18,20 @@ describe("Deposits", () => {
     const balance = await getOnchainBalance(client.multisigAddress);
     expect(balance).to.be.eq("0");
     await new Promise(
-      async (res: any): Promise<any> => {
+      async (res: any, rej: any): Promise<any> => {
         ethProvider.on(client.multisigAddress, async () => {
-          const balance = await getOnchainBalance(client.multisigAddress);
-          expect(balance).to.be.eq("1");
-          await client.rescindDepositRights({ assetId: AddressZero });
-          const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(
-            AddressZero,
-          );
-          expect(postDeposit).to.be.eq("1");
-          res();
+          try {
+            const balance = await getOnchainBalance(client.multisigAddress);
+            expect(balance).to.be.eq("1");
+            await client.rescindDepositRights({ assetId: AddressZero });
+            const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(
+              AddressZero,
+            );
+            expect(postDeposit).to.be.eq("1");
+            res();
+          } catch (e) {
+            rej(e);
+          }
         });
         await sendOnchainValue(client.multisigAddress, 1);
       },
@@ -45,14 +49,18 @@ describe("Deposits", () => {
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
         ethProvider.on(client.multisigAddress, async () => {
-          const balance = await getOnchainBalance(client.multisigAddress, tokenAddress);
-          expect(balance).to.be.eq("1");
-          await client.rescindDepositRights({ assetId: tokenAddress });
-          const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(
-            tokenAddress,
-          );
-          expect(postDeposit).to.be.eq("1");
-          res();
+          try {
+            const balance = await getOnchainBalance(client.multisigAddress, tokenAddress);
+            expect(balance).to.be.eq("1");
+            await client.rescindDepositRights({ assetId: tokenAddress });
+            const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(
+              tokenAddress,
+            );
+            expect(postDeposit).to.be.eq("1");
+            res();
+          } catch (e) {
+            rej(e);
+          }
         });
         await sendOnchainValue(client.multisigAddress, 1, tokenAddress);
       },

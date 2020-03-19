@@ -38,6 +38,24 @@ export function IsEthAddress(validationOptions?: ValidationOptions): Function {
   };
 }
 
+export const isEthSignature = (signature: string): boolean => isValidHex(signature, 65);
+
+export function IsEthSignature(validationOptions?: ValidationOptions): Function {
+  return function(object: Object, propertyName: string): void {
+    registerDecorator({
+      name: "isEthSignature",
+      options: validationOptions,
+      propertyName,
+      target: object.constructor,
+      validator: {
+        validate(value: any): boolean {
+          return isEthSignature(value);
+        },
+      },
+    });
+  };
+}
+
 export const isBytes32 = (address: string): boolean => isValidHex(address, 32);
 
 export function IsBytes32(validationOptions?: ValidationOptions): Function {

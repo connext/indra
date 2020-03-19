@@ -7,11 +7,11 @@ import {
 } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
+import { WithdrawService } from "../withdraw/withdraw.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
@@ -59,13 +59,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
       getAddress(data.assetId),
       RebalanceType.COLLATERALIZE,
     ) as unknown)) as CFCoreTypes.DepositResult;
-  }
-
-  async withdraw(
-    pubId: string,
-    data: { tx: CFCoreTypes.MinimalTransaction },
-  ): Promise<TransactionResponse> {
-    return await this.channelService.withdrawForClient(pubId, data.tx);
   }
 
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
@@ -124,11 +117,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
       this.authService.parseXpub(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      "*.channel.withdraw",
-      this.authService.parseXpub(this.withdraw.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "*.channel.request-collateral",
+      "channel.request-collateral.>",
       this.authService.parseXpub(this.requestCollateral.bind(this)),
     );
     // TODO what do we do about admin token?
