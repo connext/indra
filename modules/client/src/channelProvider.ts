@@ -130,7 +130,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private signWithdrawCommitment = async (message: string): Promise<string> => {
-    return signDigest(this.wallet.privateKey, Buffer.from(message));
+    return signDigest(this.wallet.privateKey, message);
   };
 
   private storeGet = async (path: string): Promise<any> => {
