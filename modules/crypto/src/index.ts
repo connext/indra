@@ -13,9 +13,9 @@ import {
   concatBuffers,
   addHexPrefix,
   recover,
-  sha3,
   isHexString,
   arrayToBuffer,
+  removeHexPrefix,
 } from "eccrypto-js";
 
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
@@ -33,7 +33,7 @@ export function toBuffer(input: any[] | Buffer | string | Uint8Array): Buffer {
 
 export function toChecksumAddress(address: string): string {
   const addr = hexToBuffer(address.toLowerCase());
-  const hash = bufferToHex(sha3(addr));
+  const hash = bufferToHex(keccak256(addr));
   let checksum = "";
   for (let i = 0; i < address.length; i++) {
     if (parseInt(hash[i], 16) > 7) {
@@ -75,11 +75,8 @@ export function joinSignature(sig: EthSignature): string {
   );
 }
 
-export async function signDigest(
-  privateKey: Buffer | string,
-  digest: Buffer | string,
-): Promise<string> {
-  return bufferToHex(await sign(toBuffer(privateKey), toBuffer(digest), true), true);
+export async function signDigest(privateKey: Buffer | string, digest: Buffer): Promise<string> {
+  return bufferToHex(await sign(toBuffer(privateKey), digest, true), true);
 }
 
 export async function signMessage(
@@ -88,7 +85,7 @@ export async function signMessage(
   prefix: string,
 ): Promise<string> {
   const hash = hashMessage(message, prefix);
-  return signDigest(privateKey, hash);
+  return signDigest(privateKey, toBuffer(hash));
 }
 
 export async function signEthereumMessage(
