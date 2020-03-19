@@ -34,7 +34,6 @@ export class MemoryStorage implements IClientStore {
   }
 
   setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
-    console.warn(`Method not implemented for memory storage`);
     this.schemaVersion = version;
     return Promise.resolve();
   }
