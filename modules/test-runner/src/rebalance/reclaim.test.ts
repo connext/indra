@@ -68,16 +68,13 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = hexlify(randomBytes(32))
-      await nats.subscribe(
-        `transfer.${paymentId}.reclaimed`,
-        res,
-      );
+      const paymentId = hexlify(randomBytes(32));
+      await nats.subscribe(`transfer.${paymentId}.reclaimed`, res);
       clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
         recipient: clientB.publicIdentifier,
-        paymentId
+        paymentId,
       });
     });
 
@@ -125,16 +122,15 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = hexlify(randomBytes(32))
-      await nats.subscribe(
-        `transfer.${paymentId}.reclaimed`,
-        res,
-      );
+      const paymentId = hexlify(randomBytes(32));
+      await nats.subscribe(`transfer.${paymentId}.reclaimed`, () => {
+        res();
+      });
       clientA.transfer({
         amount: One.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
-        paymentId
+        paymentId,
       });
     });
 
@@ -143,11 +139,13 @@ describe("Reclaim", () => {
     expect(
       freeBalancePost[nodeFreeBalanceAddress].gte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ) &&
-        freeBalancePost[nodeFreeBalanceAddress].lte(
-          bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-        ),
-    ).to.be.ok;
+      ),
+    ).to.be.true;
+    expect(
+      freeBalancePost[nodeFreeBalanceAddress].lte(
+        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+      ),
+    ).to.be.true;
   });
 
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
