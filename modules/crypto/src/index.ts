@@ -33,8 +33,7 @@ export function toBuffer(input: any[] | Buffer | string | Uint8Array): Buffer {
 }
 
 export function toChecksumAddress(address: string): string {
-  const addr = hexToBuffer(address.toLowerCase());
-  const hash = bufferToHex(keccak256(addr));
+  const hash = bufferToHex(keccak256(utf8ToBuffer(address)));
   let checksum = "";
   for (let i = 0; i < address.length; i++) {
     if (parseInt(hash[i], 16) > 7) {
