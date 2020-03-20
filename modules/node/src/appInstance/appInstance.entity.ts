@@ -105,6 +105,9 @@ export class AppInstance {
   @IsEthAddress()
   nodeParticipantAddress?: string;
 
+  @Column("json", { nullable: true })
+  meta?: object;
+
   // Interpreter-related Fields
   @Column("json", { nullable: true })
   outcomeInterpreterParameters?: any;

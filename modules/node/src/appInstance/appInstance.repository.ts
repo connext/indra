@@ -177,6 +177,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     app.proposedToIdentifier = appProposal.proposedToIdentifier;
     app.proposedByIdentifier = appProposal.proposedByIdentifier;
     app.outcomeType = appProposal.outcomeType;
+    app.meta = appProposal.meta;
 
     app.channel = channel;
 
@@ -277,6 +278,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       participants,
       singleAssetTwoPartyCoinTransferInterpreterParams,
       twoPartyOutcomeInterpreterParams,
+      meta,
     } = appJson;
     let app = await this.findByIdentityHash(identityHash);
     if (!app) {
@@ -297,6 +299,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     app.latestState = latestState;
     app.latestTimeout = latestTimeout;
     app.latestVersionNumber = latestVersionNumber;
+    app.meta = meta;
 
     // interpreter params
     switch (OutcomeType[app.outcomeType]) {

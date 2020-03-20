@@ -163,6 +163,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
+      meta,
     } = params as ProposeInstallProtocolParams;
 
     const {
@@ -189,6 +190,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDeposit: initiatorDeposit.toHexString(),
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
+      meta,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
       initiatorDepositTokenAddress:
         responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
