@@ -41,10 +41,11 @@ export class cfCoreStoreUpdate1584633495374 implements MigrationInterface {
       `ALTER TABLE "channel" ADD "monotonicNumProposedApps" integer`,
       undefined,
     );
-    await queryRunner.query(
-      `ALTER TABLE "channel" ADD CONSTRAINT "UQ_b0e29ab6bff34fb58e8fb63dd48" UNIQUE ("multisigAddress")`,
-      undefined,
-    );
+    // TODO: fix
+    // await queryRunner.query(
+    //   `ALTER TABLE "channel" ADD CONSTRAINT "UQ_b0e29ab6bff34fb58e8fb63dd48" UNIQUE ("multisigAddress")`,
+    //   undefined,
+    // );
     await queryRunner.query(
       `ALTER TABLE "withdraw_commitment" ADD CONSTRAINT "FK_6fa1849645b99a7e063abb4d5b0" FOREIGN KEY ("channelId") REFERENCES "channel"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
       undefined,
