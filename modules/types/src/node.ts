@@ -72,34 +72,11 @@ export type CreateChannelResponse = {
 // TODO: why was this changed?
 export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
 
-////////////////////////////////////
-///////// NODE API CLIENT
-
-export interface VerifyNonceDtoType {
-  sig: string;
-  userPublicIdentifier: string;
-}
-
-export interface PendingAsyncTransfer {
-  assetId: string;
-  amount: string;
-  encryptedPreImage: string;
-  linkedHash: string;
-  paymentId: string;
-}
-
-export interface PendingFastSignedTransfer {
-  assetId: string;
-  amount: string;
-  paymentId: string;
-  signer: string;
-}
-
-enum LinkedTransferStatus {
+export enum LinkedTransferStatus {
   PENDING = "PENDING",
   REDEEMED = "REDEEMED",
   FAILED = "FAILED",
-  RECLAIMED = "RECLAIMED",
+  UNLOCKED = "UNLOCKED",
 }
 
 export interface FetchedLinkedTransfer {
@@ -108,10 +85,20 @@ export interface FetchedLinkedTransfer {
   amount: string;
   assetId: string;
   senderPublicIdentifier: string;
-  receiverPublicIdentifier: string;
-  type: string;
+  receiverPublicIdentifier?: string;
   status: LinkedTransferStatus;
   meta: any;
+  encryptedPreImage?: string;
+}
+export type GetLinkedTransferResponse = FetchedLinkedTransfer;
+export type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
+
+////////////////////////////////////
+///////// NODE API CLIENT
+
+export interface VerifyNonceDtoType {
+  sig: string;
+  userPublicIdentifier: string;
 }
 
 export interface NodeInitializationParameters {
@@ -144,11 +131,11 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
-  getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
+  getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse>;
   getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
+  fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;

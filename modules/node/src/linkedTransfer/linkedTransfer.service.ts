@@ -45,7 +45,7 @@ export class LinkedTransferService {
 
     // check that we have recorded this transfer in our db
     // TODO: handle offline case
-    const [senderApp] = await this.appInstanceRepository.findLinkedTransferAppsByPaymentId(
+    const [senderApp] = await this.appInstanceRepository.findLinkedTransferAppsByPaymentIdAndType(
       paymentId,
     );
     if (!senderApp) {

@@ -4,6 +4,7 @@ import {
   ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
   GetHashLockTransferResponse,
+  GetPendingAsyncTransfersResponse,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { Transaction } from "ethers/utils";
@@ -20,7 +21,6 @@ import {
   makeChecksumOrEthAddress,
   NodeInitializationParameters,
   RebalanceProfile,
-  PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
   Transfer,
@@ -125,7 +125,7 @@ export class NodeApiClient implements INodeApiClient {
     return await this.send(`${this.userPublicIdentifier}.channel.get`);
   }
 
-  public async getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]> {
+  public async getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse> {
     return (await this.send(`${this.userPublicIdentifier}.transfer.get-pending`)) || [];
   }
 

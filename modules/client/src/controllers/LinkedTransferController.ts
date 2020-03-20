@@ -135,6 +135,6 @@ export class LinkedTransferController extends AbstractController {
       await this.connext.messaging.flush();
     }
     this.connext.emit(CREATE_TRANSFER, eventData);
-    return { appId };
+    return { appId, paymentId, preImage };
   };
 }

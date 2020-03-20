@@ -23,6 +23,8 @@ export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumb
 // Client Controller Response
 export type LinkedTransferResponse = {
   appId: string;
+  paymentId: string;
+  preImage: string;
 };
 
 // Client Resolve Params

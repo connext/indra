@@ -84,7 +84,6 @@ export {
   NodeInitializationParameters,
   NodeMessageWrappedProtocolMessage,
   RebalanceProfile,
-  PendingAsyncTransfer,
   ProposeMessage,
   ProtocolTypes,
   RejectProposalMessage,

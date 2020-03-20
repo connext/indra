@@ -31,12 +31,12 @@ import {
   GetConfigResponse,
   RequestCollateralResponse,
   Transfer,
+  GetLinkedTransferResponse,
 } from "./node";
 import { ProtocolTypes } from "./protocol";
-import { IBackupServiceAPI, IClientStore, StoreType, WithdrawalMonitorObject } from "./store";
+import { IBackupServiceAPI, IClientStore, StoreType } from "./store";
 import { CFCoreTypes } from "./cfCore";
 import { SwapParameters, WithdrawParameters } from "./apps";
-import { TransactionResponse } from "ethers/providers";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
@@ -111,7 +111,7 @@ export interface IConnextClient {
   // TODO: do we really need to expose all of these?
   isAvailable(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
-  getLinkedTransfer(paymentId: string): Promise<Transfer>;
+  getLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
   getAppRegistry(
     appDetails?:

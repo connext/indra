@@ -23,6 +23,7 @@ import {
   WithdrawResponse,
   GetHashLockTransferResponse,
   LinkedTransferResponse,
+  GetLinkedTransferResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -261,7 +262,7 @@ export class ConnextClient implements IConnextClient {
     return this.channelProvider.config;
   };
 
-  public getLinkedTransfer = async (paymentId: string): Promise<Transfer> => {
+  public getLinkedTransfer = async (paymentId: string): Promise<GetLinkedTransferResponse> => {
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
