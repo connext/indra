@@ -25,7 +25,7 @@ export class Channel {
   @Column("integer", { default: 0 })
   schemaVersion!: number;
 
-  @Column("json")
+  @Column("json", { nullable: true })
   addresses!: CriticalStateChannelAddresses;
 
   @Column("text")
@@ -54,7 +54,7 @@ export class Channel {
   )
   appInstances!: AppInstance[];
 
-  @Column("integer")
+  @Column("integer", { nullable: true })
   monotonicNumProposedApps!: number;
 
   @OneToMany(

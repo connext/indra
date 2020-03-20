@@ -36,9 +36,9 @@ export class cfCoreStoreUpdate1584633495374 implements MigrationInterface {
       `ALTER TABLE "channel" ADD "schemaVersion" integer NOT NULL DEFAULT ${0}`,
       undefined,
     );
-    await queryRunner.query(`ALTER TABLE "channel" ADD "addresses" json NOT NULL`, undefined);
+    await queryRunner.query(`ALTER TABLE "channel" ADD "addresses" json`, undefined);
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD "monotonicNumProposedApps" integer NOT NULL`,
+      `ALTER TABLE "channel" ADD "monotonicNumProposedApps" integer`,
       undefined,
     );
     await queryRunner.query(
