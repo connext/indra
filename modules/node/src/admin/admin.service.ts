@@ -151,13 +151,11 @@ export class AdminService implements OnApplicationBootstrap {
    * Add these critical addresses to the channel's state
    */
   async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
-    const states = (
-      await Promise.all(
-        (await this.getAllChannels()).map(channel =>
-          this.cfCoreService.getStateChannel(channel.multisigAddress),
-        ),
-      )
-    ).map(state => state.data);
+    const states = await Promise.all(
+      (await this.getAllChannels()).map(channel =>
+        this.cfCoreStore.getStateChannel(channel.multisigAddress),
+      ),
+    );
     const output: RepairCriticalAddressesResponse = { fixed: [], broken: [] };
     this.log.info(`Scanning ${states.length} channels to see if any need to be repaired..`);
     // First loop: Identify all channels that need to be repaired
@@ -185,7 +183,7 @@ export class AdminService implements OnApplicationBootstrap {
     const brokenMultisigs = JSON.parse(JSON.stringify(output.broken));
     // Second loop: attempt to repair broken channels
     for (const brokenMultisig of brokenMultisigs) {
-      const { data: state } = await this.cfCoreService.getStateChannel(brokenMultisig);
+      const state = await this.cfCoreStore.getStateChannel(brokenMultisig);
       this.log.info(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
       const criticalAddresses = await scanForCriticalAddresses(
         state.userNeuteredExtendedKeys,
@@ -208,18 +206,16 @@ export class AdminService implements OnApplicationBootstrap {
         );
       }
       this.log.info(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
-      const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${brokenMultisig}`;
-      const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
-      cfCoreRecord["addresses"] = {
+      const channel = await this.channelRepository.findByMultisigAddress(state.multisigAddress);
+      if (!channel) {
+        this.log.warn(`Channel ${state.multisigAddress} could not be found, returning`);
+        continue;
+      }
+      channel.addresses = {
         proxyFactory: criticalAddresses.proxyFactory,
-        multisigMastercopy: criticalAddresses.multisigMastercopy,
+        multisigMastercopy: criticalAddresses.multisigAddress,
       } as CriticalStateChannelAddresses;
-      await this.cfCoreRepository.set([
-        {
-          path: repoPath,
-          value: cfCoreRecord,
-        },
-      ]);
+      await this.channelRepository.save(channel);
       // Move this channel from broken to fixed
       output.fixed.push(brokenMultisig);
       output.broken = output.broken.filter(multisig => multisig === brokenMultisig);
@@ -288,6 +284,8 @@ export class AdminService implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     this.log.log(`onApplicationBootstrap migrating channel store.`);
     await this.migrateChannelStore();
+    // TODO: remove
+    await this.repairCriticalStateChannelAddresses();
     this.log.log(`onApplicationBootstrap completed migrating channel store.`);
   }
 }
