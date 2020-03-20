@@ -32,7 +32,7 @@ import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
 
-describe("Async Transfers", () => {
+describe.only("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -261,5 +261,22 @@ describe("Async Transfers", () => {
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
+  });
+
+  it.only("Experimental: Average latency of 10 async transfers with Eth", async () => {
+    let runTime: number[] = [];
+    let sum = 0;
+    const numberOfRuns = 5;
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
+    await requestCollateral(clientB, transfer.assetId);
+    for (let i = 0; i < numberOfRuns; i++) {
+      const start = Date.now();
+      await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+      runTime[i] = Date.now() - start;
+      console.log(`Run: ${i}, Runtime: ${runTime[i]}`)
+      sum = sum + runTime[i];
+    }
+    console.log(`Average = ${sum/numberOfRuns} ms`)
   });
 });
