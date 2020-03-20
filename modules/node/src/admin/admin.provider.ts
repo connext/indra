@@ -131,7 +131,7 @@ class AdminMessaging extends AbstractMessagingProvider {
 
     await super.connectRequestReponse(
       "admin.migrate-channel-store",
-      this.authService.useAdminToken(this.migrateChannelStore.bind(this)),
+      this.migrateChannelStore.bind(this),
     );
   }
 }
