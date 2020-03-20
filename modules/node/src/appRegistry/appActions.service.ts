@@ -24,6 +24,7 @@ import {
   SignedTransferAppAction,
   SignedTransferAppState,
   SimpleSignedTransferApp,
+  AppInstanceJson,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { soliditySha256 } from "ethers/utils";
@@ -51,7 +52,7 @@ export class AppActionsService {
 
   async handleAppAction(
     appName: SupportedApplication,
-    appInstanceId: string,
+    app: AppInstanceJson,
     newState: AppState,
     action: AppAction,
     from: string,
@@ -59,7 +60,7 @@ export class AppActionsService {
     switch (appName) {
       case FastSignedTransferApp: {
         await this.handleFastSignedTransferAppAction(
-          appInstanceId,
+          app,
           newState as FastSignedTransferAppState,
           action as FastSignedTransferAppAction,
           from,
@@ -68,7 +69,7 @@ export class AppActionsService {
       }
       case SimpleLinkedTransferApp: {
         await this.handleSimpleLinkedTransferAppAction(
-          appInstanceId,
+          app,
           newState as SimpleLinkedTransferAppState,
           action as SimpleLinkedTransferAppAction,
           from,
@@ -77,7 +78,7 @@ export class AppActionsService {
       }
       case WithdrawApp: {
         await this.handleWithdrawAppAction(
-          appInstanceId,
+          app,
           action as WithdrawAppAction,
           newState as WithdrawAppState,
         );
@@ -85,7 +86,7 @@ export class AppActionsService {
       }
       case HashLockTransferApp: {
         await this.handleHashLockTransferAppAction(
-          appInstanceId,
+          app,
           newState as HashLockTransferAppState,
           action as HashLockTransferAppAction,
           from,
@@ -94,7 +95,7 @@ export class AppActionsService {
       }
       case SimpleSignedTransferApp: {
         await this.handleSignedTransferAppAction(
-          appInstanceId,
+          app,
           newState as SignedTransferAppState,
           action as SignedTransferAppAction,
           from,
@@ -105,7 +106,7 @@ export class AppActionsService {
   }
 
   private async handleFastSignedTransferAppAction(
-    appInstanceId: string,
+    appInstance: AppInstanceJson,
     newState: FastSignedTransferAppState,
     action: FastSignedTransferAppAction,
     from: string,
@@ -130,7 +131,7 @@ export class AppActionsService {
         });
         if (!senderApp) {
           throw new Error(
-            `Action UNLOCK taken on FastSignedTransferApp without corresponding sender app! ${appInstanceId}`,
+            `Action UNLOCK taken on FastSignedTransferApp without corresponding sender app! ${appInstance.identityHash}`,
           );
         }
         const senderAppState = convertFastSignedTransferAppState(
@@ -154,7 +155,7 @@ export class AppActionsService {
   }
 
   private async handleSimpleLinkedTransferAppAction(
-    appInstanceId: string,
+    appInstance: AppInstanceJson,
     newState: SimpleLinkedTransferAppState,
     action: SimpleLinkedTransferAppAction,
     from: string,
@@ -175,13 +176,13 @@ export class AppActionsService {
   }
 
   private async handleWithdrawAppAction(
-    appInstanceId: string,
+    appInstance: AppInstanceJson,
     action: WithdrawAppAction,
     state: WithdrawAppState,
   ): Promise<void> {
-    let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstanceId);
+    let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
     if (!withdraw) {
-      throw new Error(`No withdraw entity found for this appInstanceId: ${appInstanceId}`);
+      throw new Error(`No withdraw entity found for this appInstanceId: ${appInstance.identityHash}`);
     }
     withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(
       withdraw,
@@ -189,7 +190,6 @@ export class AppActionsService {
     );
 
     const stateBigNumber = convertWithrawAppState("bignumber", state);
-    const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
     if (!appInstance) {
       throw new Error(`No channel exists for multisigAddress ${appInstance.multisigAddress}`);
     }
@@ -206,12 +206,12 @@ export class AppActionsService {
     commitment.signatures = stateBigNumber.signatures as any;
     const tx = await commitment.getSignedTransaction();
 
-    this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstanceId}`);
+    this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstance.identityHash}`);
     await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
   }
 
   private async handleHashLockTransferAppAction(
-    appInstanceId: string,
+    appInstance: AppInstanceJson,
     newState: HashLockTransferAppState,
     action: HashLockTransferAppAction,
     from: string,
@@ -230,7 +230,7 @@ export class AppActionsService {
     });
     if (!senderApp) {
       throw new Error(
-        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstanceId}`,
+        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstance.identityHash}`,
       );
     }
 
@@ -244,7 +244,7 @@ export class AppActionsService {
   }
 
   private async handleSignedTransferAppAction(
-    appInstanceId: string,
+    appInstance: AppInstanceJson,
     newState: SignedTransferAppState,
     action: SignedTransferAppAction,
     from: string,
@@ -253,7 +253,7 @@ export class AppActionsService {
 
     if (!senderApp) {
       throw new Error(
-        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstanceId}`,
+        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstance.identityHash}`,
       );
     }
 
