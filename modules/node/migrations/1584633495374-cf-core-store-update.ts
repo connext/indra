@@ -33,7 +33,7 @@ export class cfCoreStoreUpdate1584633495374 implements MigrationInterface {
       undefined,
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD "schemaVersion" integer NOT NULL`,
+      `ALTER TABLE "channel" ADD "schemaVersion" integer NOT NULL DEFAULT ${0}`,
       undefined,
     );
     await queryRunner.query(`ALTER TABLE "channel" ADD "addresses" json NOT NULL`, undefined);

@@ -22,7 +22,7 @@ export class Channel {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("integer")
+  @Column("integer", { default: 0 })
   schemaVersion!: number;
 
   @Column("json")
