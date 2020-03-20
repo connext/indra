@@ -44,7 +44,6 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
-    console.log(`[update] initiating update of: ${appIdentityHash}`);
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -110,7 +109,6 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
-    console.log(`[update] responding to update of: ${appIdentityHash}`);
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);

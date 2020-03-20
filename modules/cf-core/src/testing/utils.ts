@@ -16,7 +16,8 @@ import {
   SolidityValueType,
   UninstallMessage,
 } from "@connext/types";
-import { Contract } from "ethers";
+import { Contract, Wallet } from "ethers";
+import { JsonRpcProvider } from "ethers/providers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 import { JsonRpcResponse, Rpc } from "rpc-server";
@@ -52,6 +53,12 @@ const {
   UnidirectionalLinkedTransferApp,
   UnidirectionalTransferApp,
 } = global[`network`] as NetworkContextForTestSuite;
+
+export const newWallet = (wallet: Wallet) =>
+  new Wallet(
+    wallet.privateKey,
+    new JsonRpcProvider((wallet.provider as JsonRpcProvider).connection.url),
+  );
 
 export function createAppInstanceProposalForTest(appInstanceId: string): AppInstanceProposal {
   return {

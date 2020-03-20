@@ -14,6 +14,7 @@ import { IdentityApp } from "./contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
 import { MessageRouter } from "./message-router";
 import { MiniNode } from "./mininode";
+import { newWallet } from "./utils";
 
 expect.extend({ toBeEq });
 
@@ -37,10 +38,9 @@ export class TestRunner {
   private mr!: MessageRouter;
 
   async connectToGanache(): Promise<void> {
-    const wallet = global["wallet"];
+    const wallet = newWallet(global["wallet"]);
     const network = global["network"];
-    const provider = network.provider;
-    this.provider = provider;
+    this.provider = wallet.provider as JsonRpcProvider;
 
     this.identityApp = await new ContractFactory(
       IdentityApp.abi,
@@ -48,9 +48,9 @@ export class TestRunner {
       wallet,
     ).deploy();
 
-    this.mininodeA = new MiniNode(network, provider, new Store(new MemoryStoreService()));
-    this.mininodeB = new MiniNode(network, provider, new Store(new MemoryStoreService()));
-    this.mininodeC = new MiniNode(network, provider, new Store(new MemoryStoreService()));
+    this.mininodeA = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
+    this.mininodeB = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
+    this.mininodeC = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
 
     this.multisigAB = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
@@ -58,7 +58,7 @@ export class TestRunner {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
       },
-      provider,
+      this.provider,
     );
 
     this.multisigAC = await getCreate2MultisigAddress(
@@ -67,7 +67,7 @@ export class TestRunner {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
       },
-      provider,
+      this.provider,
     );
 
     this.multisigBC = await getCreate2MultisigAddress(
@@ -76,7 +76,7 @@ export class TestRunner {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
       },
-      provider,
+      this.provider,
     );
 
     this.mr = new MessageRouter([this.mininodeA, this.mininodeB, this.mininodeC]);

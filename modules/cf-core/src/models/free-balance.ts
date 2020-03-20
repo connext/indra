@@ -169,7 +169,6 @@ export class FreeBalanceClass {
       }
       ret[tokenAddress] = ret2;
     }
-    console.table(ret);
   }
 
   public increment(increments: TokenIndexedCoinTransferMap) {

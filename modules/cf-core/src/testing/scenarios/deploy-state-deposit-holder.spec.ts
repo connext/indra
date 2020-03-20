@@ -20,7 +20,6 @@ describe("Node method follows spec - deploy state deposit holder", () => {
     provider = global["wallet"].provider;
     nodeA = context["A"].node;
     nodeB = context["B"].node;
-
     multisigAddress = await createChannel(nodeA, nodeB);
     expect(multisigAddress).toBeDefined();
   });

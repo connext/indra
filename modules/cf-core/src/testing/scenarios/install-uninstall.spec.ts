@@ -22,6 +22,7 @@ async function runDirectInstallUninstallTest(
   await tr.connectToGanache();
 
   await tr.setup();
+
   await tr.unsafeFund();
 
   if (testFundingType === TestFundingType.SPLIT) {

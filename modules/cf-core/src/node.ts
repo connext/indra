@@ -427,7 +427,7 @@ export class Node {
    */
   private async handleReceivedMessage(msg: NodeMessage) {
     if (!Object.values(EventNames).includes(msg.type)) {
-      console.error(`Received message with unknown event type: ${msg.type}`);
+      this.log.error(`Received message with unknown event type: ${msg.type}`);
     }
 
     const isProtocolMessage = (msg: NodeMessage) => msg.type === EventNames.PROTOCOL_MESSAGE_EVENT;
@@ -455,9 +455,12 @@ export class Node {
     try {
       promise.resolve(msg);
     } catch (error) {
-      console.error(
-        "Error while executing callback registered by IO_SEND_AND_WAIT middleware hook",
-        { error, msg },
+      this.log.error(
+        `Error while executing callback registered by IO_SEND_AND_WAIT middleware hook error ${
+          JSON.stringify(error, null, 2)
+        } msg ${
+          JSON.stringify(msg, null, 2)
+        }`,
       );
     }
   }

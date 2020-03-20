@@ -1,6 +1,6 @@
 import { CF_PATH, IMessagingService, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
-import { Provider, TransactionRequest } from "ethers/providers";
+import { JsonRpcProvider, Provider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -52,7 +52,7 @@ export async function setup(
   const setupContext: SetupContext = {};
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
-  const provider = global["wallet"].provider;
+  const provider = new JsonRpcProvider(global["wallet"].provider.connection.url);
 
   const extendedPrvKeyA = A_EXTENDED_PRIVATE_KEY;
   let extendedPrvKeyB = B_EXTENDED_PRIVATE_KEY;

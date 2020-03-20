@@ -24,7 +24,7 @@ import {
   NetworkContextForTestSuite,
   ProxyFactory,
 } from "../contracts";
-import { transferERC20Tokens } from "../utils";
+import { transferERC20Tokens, newWallet } from "../utils";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "../random-signing-keys";
@@ -53,16 +53,14 @@ const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
  */
 describe("Scenario: install AppInstance, set state, put on-chain", () => {
   let context: Context;
-  let provider: JsonRpcProvider;
   let wallet: Wallet;
   let network: NetworkContextForTestSuite;
   let appRegistry: Contract;
 
   beforeAll(() => {
-    jest.setTimeout(10000);
+    jest.setTimeout(20000);
     network = global["network"];
-    wallet = global["wallet"];
-    provider = network.provider;
+    wallet = newWallet(global["wallet"]);
     context = { network: global["network"] } as Context;
     appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
   });
@@ -170,7 +168,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for (const _ of Array(identityAppInstance.timeout)) {
-        await provider.send("evm_mine", []);
+        await (wallet.provider as JsonRpcProvider).send("evm_mine", []);
       }
 
       await appRegistry.functions.setOutcome(
@@ -207,14 +205,14 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS,
       });
 
-      expect(await provider.getBalance(proxyAddress)).toBeEq(WeiPerEther);
-      expect(await provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
-      expect(await provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(Zero);
+      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(Zero);
 
       const erc20Contract = new Contract(
         erc20TokenAddress,
         DolphinCoin.abi,
-        provider,
+        wallet.provider,
       );
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
@@ -237,9 +235,9 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS,
       });
 
-      expect(await provider.getBalance(proxyAddress)).toBeEq(Zero);
-      expect(await provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
-      expect(await provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(Zero);
+      expect(await wallet.provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(WeiPerEther);
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(Zero);
       expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[0].address)).toBeEq(
