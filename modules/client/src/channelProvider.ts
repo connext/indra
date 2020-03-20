@@ -137,13 +137,13 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
-    return this.store.getUserWithdrawal!();
+    return this.store.getUserWithdrawal();
   };
 
   private storeSetUserWithdrawal = async (
     value: WithdrawalMonitorObject | undefined,
   ): Promise<void> => {
-    return this.store.setUserWithdrawal!(value);
+    return this.store.setUserWithdrawal(value);
   };
 
   private setStateChannel = async (channel: StateChannelJSON): Promise<void> => {

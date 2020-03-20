@@ -10,7 +10,6 @@ import {
   toBN,
 } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
-import { soliditySha256 } from "ethers/utils";
 
 import { xpubToAddress } from "../lib";
 
@@ -22,11 +21,8 @@ export class HashLockTransferController extends AbstractController {
   ): Promise<HashLockTransferResponse> => {
     // convert params + validate
     const amount = toBN(params.amount);
-    const { assetId, preImage, meta } = params;
-
-    // install the transfer application
-    const lockHash = soliditySha256(["bytes32"], [preImage]);
-    console.log("lockHash: ", lockHash);
+    const timelock = toBN(params.timelock);
+    const { assetId, lockHash, meta } = params;
 
     const initialState: HashLockTransferAppState = {
       coinTransfers: [
@@ -39,9 +35,9 @@ export class HashLockTransferController extends AbstractController {
           to: xpubToAddress(this.connext.nodePublicIdentifier),
         },
       ],
+      timelock,
       lockHash,
       preImage: HashZero,
-      turnNum: Zero,
       finalized: false,
     };
 
@@ -88,7 +84,6 @@ export class HashLockTransferController extends AbstractController {
 
     return {
       appId,
-      preImage,
     };
   };
 }

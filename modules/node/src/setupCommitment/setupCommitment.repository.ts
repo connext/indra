@@ -2,10 +2,10 @@ import { MinimalTransaction } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 import { EntityRepository, Repository } from "typeorm";
 
-import { SetupCommitmentEntity } from "./setupCommitment.entity";
+import { SetupCommitment } from "./setupCommitment.entity";
 import { Channel } from "../channel/channel.entity";
 
-export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitmentEntity) => {
+export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitment) => {
   return {
     to: commitment.to,
     value: commitment.value,
@@ -13,9 +13,9 @@ export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitme
   };
 };
 
-@EntityRepository(SetupCommitmentEntity)
-export class SetupCommitmentEntityRepository extends Repository<SetupCommitmentEntity> {
-  findByMultisigAddress(multisigAddress: string): Promise<SetupCommitmentEntity> {
+@EntityRepository(SetupCommitment)
+export class SetupCommitmentRepository extends Repository<SetupCommitment> {
+  findByMultisigAddress(multisigAddress: string): Promise<SetupCommitment> {
     return this.findOne({
       where: { multisigAddress },
       relations: ["channel"],
@@ -34,10 +34,10 @@ export class SetupCommitmentEntityRepository extends Repository<SetupCommitmentE
     multisigAddress: string,
     commitment: MinimalTransaction,
     channel?: Channel,
-  ): Promise<SetupCommitmentEntity> {
+  ): Promise<SetupCommitment> {
     let commitmentEnt = await this.findByMultisigAddress(multisigAddress);
     if (!commitmentEnt) {
-      commitmentEnt = new SetupCommitmentEntity();
+      commitmentEnt = new SetupCommitment();
       commitmentEnt.multisigAddress = multisigAddress;
     }
     commitmentEnt.channel = channel;

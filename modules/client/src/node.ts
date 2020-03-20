@@ -5,6 +5,7 @@ import {
   ILoggerService,
   ResolveHashLockTransferResponse,
   ResolveFastSignedTransferResponse,
+  GetHashLockTransferResponse,
 } from "@connext/types";
 import { getAddress, Transaction } from "ethers/utils";
 import uuid from "uuid";
@@ -134,6 +135,12 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getTransferHistory(): Promise<TransferInfo[]> {
     return (await this.send(`transfer.get-history.${this.userPublicIdentifier}`)) || [];
+  }
+
+  public async getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse> {
+    return await this.send(`transfer.get-hashlock.${this.userPublicIdentifier}`, {
+      lockHash,
+    });
   }
 
   // TODO: right now node doesnt return until the deposit has completed

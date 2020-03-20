@@ -17,7 +17,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "../types";
-import { appIdentityToHash, bigNumberifyJson, prettyPrintObject } from "../utils";
+import { appIdentityToHash, bigNumberifyJson, prettyPrintObject, deBigNumberifyJson } from "../utils";
 
 /**
  * Representation of an AppInstance.
@@ -53,6 +53,7 @@ export class AppInstance {
     public readonly latestVersionNumber: number, // app nonce
     public readonly latestTimeout: number,
     public readonly outcomeType: OutcomeType,
+    public readonly multisigAddress: string,
     private readonly twoPartyOutcomeInterpreterParamsInternal?:
       TwoPartyFixedOutcomeInterpreterParams,
     private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
@@ -91,7 +92,22 @@ export class AppInstance {
     return this.singleAssetTwoPartyCoinTransferInterpreterParamsInternal!;
   }
   public static fromJson(json: AppInstanceJson) {
-    const deserialized = bigNumberifyJson(json);
+    const deserialized: AppInstanceJson = bigNumberifyJson(json);
+
+    const interpreterParams = {
+      twoPartyOutcomeInterpreterParams:
+        deserialized.twoPartyOutcomeInterpreterParams
+          ? bigNumberifyJson(deserialized.twoPartyOutcomeInterpreterParams)
+          : undefined,
+      singleAssetTwoPartyCoinTransferInterpreterParams:
+        deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
+          ? bigNumberifyJson(deserialized.singleAssetTwoPartyCoinTransferInterpreterParams)
+          : undefined,
+      multiAssetMultiPartyCoinTransferInterpreterParams:
+        deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
+          ? bigNumberifyJson(deserialized.multiAssetMultiPartyCoinTransferInterpreterParams)
+          : undefined,
+    };
 
     return new AppInstance(
       deserialized.participants,
@@ -101,10 +117,11 @@ export class AppInstance {
       deserialized.latestState,
       deserialized.latestVersionNumber,
       deserialized.latestTimeout,
-      deserialized.outcomeType,
-      deserialized.twoPartyOutcomeInterpreterParams,
-      deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
-      deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+      deserialized.outcomeType as any, // OutcomeType is enum, so gives attitude
+      deserialized.multisigAddress,
+      interpreterParams.twoPartyOutcomeInterpreterParams,
+      interpreterParams.multiAssetMultiPartyCoinTransferInterpreterParams,
+      interpreterParams.singleAssetTwoPartyCoinTransferInterpreterParams,
     );
   }
 
@@ -112,21 +129,25 @@ export class AppInstance {
     // removes any fields which have an `undefined` value, as that's invalid JSON
     // an example would be having an `undefined` value for the `actionEncoding`
     // of an AppInstance that's not turn based
-    return bigNumberifyJson({
+    return deBigNumberifyJson({
+      identityHash: this.identityHash,
       participants: this.participants,
       defaultTimeout: this.defaultTimeout,
-      appInterface: this.appInterface,
+      appInterface: {
+        ...this.appInterface,
+        actionEncoding: this.appInterface.actionEncoding || null,
+      },
       appSeqNo: this.appSeqNo,
       latestState: this.latestState,
       latestVersionNumber: this.latestVersionNumber,
       latestTimeout: this.latestTimeout,
       outcomeType: this.outcomeType,
-      twoPartyOutcomeInterpreterParams: this.twoPartyOutcomeInterpreterParamsInternal,
-      multiAssetMultiPartyCoinTransferInterpreterParams: this
-        .multiAssetMultiPartyCoinTransferInterpreterParamsInternal,
-      singleAssetTwoPartyCoinTransferInterpreterParams: this
-        .singleAssetTwoPartyCoinTransferInterpreterParamsInternal,
-      identityHash: this.identityHash,
+      multisigAddress: this.multisigAddress,
+      twoPartyOutcomeInterpreterParams: this.twoPartyOutcomeInterpreterParamsInternal || null,
+      multiAssetMultiPartyCoinTransferInterpreterParams:
+        this.multiAssetMultiPartyCoinTransferInterpreterParamsInternal || null,
+      singleAssetTwoPartyCoinTransferInterpreterParams:
+        this.singleAssetTwoPartyCoinTransferInterpreterParamsInternal || null,
     });
   }
 

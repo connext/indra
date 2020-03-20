@@ -16,7 +16,7 @@ import { AppType } from "../appInstance/appInstance.entity";
 const log = new LoggerService("ChannelRepository");
 
 export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
-  return {
+  const json: StateChannelJSON = {
     addresses: channel.addresses,
     appInstances: channel.appInstances
       .filter(app => app.type === AppType.INSTANCE)
@@ -33,6 +33,7 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
     schemaVersion: channel.schemaVersion,
     userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier],
   };
+  return json;
 };
 
 @EntityRepository(Channel)

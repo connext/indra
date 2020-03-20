@@ -11,6 +11,7 @@ export enum Network {
 // to account for 3 IO_SEND_AND_WAITs by intermediary in
 // the install virtual protocol
 export const LOCK_SERVICE_TTL = 90_000;
+export const TIMEOUT_BUFFER = 100;
 
 // PROVIDERS
 export const AdminMessagingProviderId = "ADMIN_MESSAGING";

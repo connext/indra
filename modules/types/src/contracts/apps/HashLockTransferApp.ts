@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers/utils";
+import { BigNumber, BigNumberish } from "ethers/utils";
 
 import { CoinTransfer } from "../funding";
 import {
@@ -18,7 +18,7 @@ export type HashLockTransferAppState = {
   coinTransfers: CoinTransfer[];
   lockHash: string;
   preImage: string;
-  turnNum: BigNumber;
+  timelock: BigNumber;
   finalized: boolean;
 };
 
@@ -27,7 +27,7 @@ export const HashLockTransferAppStateEncoding = tidy(`tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
   bytes32 lockHash,
   bytes32 preImage,
-  uint256 turnNum,
+  uint256 timelock,
   bool finalized
 )`);
 
@@ -43,8 +43,9 @@ export const HashLockTransferAppActionEncoding = `tuple(bytes32 preImage)`;
 // Client Controller Params
 export type HashLockTransferParameters = {
   conditionType: typeof HashLockTransfer;
-  amount: BigNumber;
-  preImage: string;
+  amount: BigNumberish;
+  timelock: BigNumberish;
+  lockHash: string;
   assetId?: string;
   meta?: object;
 };
@@ -52,7 +53,6 @@ export type HashLockTransferParameters = {
 // Client Controller Response
 export type HashLockTransferResponse = {
   appId: string;
-  preImage: string;
 };
 
 // Client Resolve Params
@@ -69,3 +69,14 @@ export type ResolveHashLockTransferResponse = {
   assetId: string;
   meta?: object;
 };
+
+// Getter
+export type GetHashLockTransferResponse =
+  | {
+      sender: string;
+      assetId: string;
+      amount: string;
+      lockHash: string;
+      meta?: any;
+    }
+  | undefined;

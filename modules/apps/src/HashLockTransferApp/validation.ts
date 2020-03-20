@@ -5,6 +5,7 @@ import { unidirectionalCoinTransferValidation } from "../shared";
 
 export const validateHashLockTransferApp = (
   params: MethodParams.ProposeInstall,
+  blockNumber: number,
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
 ) => {
@@ -20,6 +21,12 @@ export const validateHashLockTransferApp = (
   const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === responderFreeBalanceAddress;
   })[0];
+
+  if (initialState.timelock.lt(blockNumber)) {
+    throw new Error(
+      `Cannot install an app with an expired timelock. Timelock in state: ${initialState.timelock}. Current block: ${blockNumber}`,
+    );
+  }
 
   unidirectionalCoinTransferValidation(
     initiatorDeposit,

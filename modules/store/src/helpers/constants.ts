@@ -22,3 +22,4 @@ export const COMMITMENT_KEY = "_commitment"; // included in all commitments
 export const PROPOSED_APP_KEY = "proposed";
 export const FREE_BALANCE_KEY = "freebalance";
 export const SETUP_COMMITMENT_KEY = "setup_commitment";
+export const STORE_SCHEMA_VERSION_KEY = "version";

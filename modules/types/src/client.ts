@@ -12,6 +12,7 @@ import {
   SwapParameters,
   WithdrawParameters,
   WithdrawResponse,
+  GetHashLockTransferResponse,
 } from "./contracts";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { EventNames } from "./events";
@@ -154,6 +155,7 @@ export interface IConnextClient {
   isAvailable(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
   getLinkedTransfer(paymentId: string): Promise<TransferInfo>;
+  getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
   getAppRegistry(
     appDetails?:
       | {

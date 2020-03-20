@@ -15,17 +15,17 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsXpub } from "../util";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
-import { SetupCommitmentEntity } from "../setupCommitment/setupCommitment.entity";
+import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Entity()
 export class Channel {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("integer")
+  @Column("integer", { default: 0 })
   schemaVersion!: number;
 
-  @Column("json")
+  @Column("json", { nullable: true })
   addresses!: CriticalStateChannelAddresses;
 
   @Column("text")
@@ -37,7 +37,7 @@ export class Channel {
   @IsXpub()
   nodePublicIdentifier!: string;
 
-  @Column("text")
+  @Column("text", { unique: true })
   @IsEthAddress()
   multisigAddress!: string;
 
@@ -54,7 +54,7 @@ export class Channel {
   )
   appInstances!: AppInstance[];
 
-  @Column("integer")
+  @Column("integer", { nullable: true })
   monotonicNumProposedApps!: number;
 
   @OneToMany(
@@ -65,9 +65,9 @@ export class Channel {
 
   @OneToOne(
     (type: any) => WithdrawCommitment,
-    (commitment: SetupCommitmentEntity) => commitment.channel,
+    (commitment: SetupCommitment) => commitment.channel,
   )
-  setupCommitment!: SetupCommitmentEntity;
+  setupCommitment!: SetupCommitment;
 
   @ManyToMany(
     (type: any) => RebalanceProfile,

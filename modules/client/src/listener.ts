@@ -301,7 +301,8 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case HashLockTransferAppName: {
-          validateHashLockTransferApp(params, from, this.connext.publicIdentifier);
+          const blockNumber = await this.connext.ethProvider.getBlockNumber();
+          validateHashLockTransferApp(params, blockNumber, from, this.connext.publicIdentifier);
           break;
         }
         default: {
@@ -320,6 +321,7 @@ export class ConnextListener extends ConnextEventEmitter {
     } catch (e) {
       this.log.error(`Caught error: ${e.message}`);
       await this.connext.rejectInstallApp(appInstanceId);
+      throw e;
     }
   };
 

@@ -74,7 +74,7 @@ export type AppInstanceJson = {
   latestState: SolidityValueType;
   latestVersionNumber: number;
   latestTimeout: number;
-  outcomeType: number;
+  outcomeType: string;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?:
     TwoPartyFixedOutcomeInterpreterParams

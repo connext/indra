@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, toBN } from "@connext/types";
+import { EventNames, IConnextClient, toBN } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
 import { before, describe, after } from "mocha";
@@ -69,11 +69,12 @@ describe("Reclaim", () => {
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = hexlify(randomBytes(32));
-      await nats.subscribe(
-        `transfer.${paymentId}.reclaimed`,
-        res,
-      );
-      clientA.transfer({
+      clientA.on(EventNames.UPDATE_STATE_EVENT, async(data) => {
+        if(data.newState.data) {
+          res();
+        }
+      });
+      await clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
         recipient: clientB.publicIdentifier,
@@ -84,14 +85,12 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
     // expect this could be checked pre or post the rest of the transfer
     // so try to pre-emptively avoid race conditions
-    expect(
-      freeBalancePost[nodeFreeBalanceAddress].gte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ) &&
-        freeBalancePost[nodeFreeBalanceAddress].lte(
-          bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-        ),
-    ).to.be.ok;
+    expect(freeBalancePost[nodeFreeBalanceAddress].gte(
+      bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
+    )).to.be.true;
+    expect(freeBalancePost[nodeFreeBalanceAddress].lte(
+      bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+    )).to.be.true;
   });
 
   it("happy case: node should reclaim tokens after async transfer", async () => {
@@ -127,11 +126,12 @@ describe("Reclaim", () => {
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = hexlify(randomBytes(32));
-      await nats.subscribe(
-        `transfer.${paymentId}.reclaimed`,
-        res,
-      );
-      clientA.transfer({
+      clientA.on(EventNames.UPDATE_STATE_EVENT, async(data) => {
+        if(data.newState.data) {
+          res();
+        }
+      });
+      await clientA.transfer({
         amount: One.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
@@ -142,17 +142,16 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer
     // so try to pre-emptively avoid race conditions
-    expect(
-      freeBalancePost[nodeFreeBalanceAddress].gte(
-        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ) &&
-        freeBalancePost[nodeFreeBalanceAddress].lte(
-          bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-        ),
-    ).to.be.ok;
+    expect(freeBalancePost[nodeFreeBalanceAddress].gte(
+      bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
+    )).to.be.true;
+    expect(freeBalancePost[nodeFreeBalanceAddress].lte(
+      bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+    )).to.be.true;
   });
 
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
 
   it.skip("happy case: node should reclaim tokens after linked transfer", async () => {});
+
 });

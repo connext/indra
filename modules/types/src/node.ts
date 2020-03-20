@@ -6,6 +6,7 @@ import {
   ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
   ResolveLinkedTransferResponse,
+  GetHashLockTransferResponse,
 } from "./contracts";
 import { ILoggerService } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
@@ -156,6 +157,7 @@ export interface INodeApiClient {
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
+  getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
   getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
   getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
   getLatestWithdrawal(): Promise<Transaction>;

@@ -1,10 +1,10 @@
 import { SetStateCommitmentJSON } from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
 
-import { SetStateCommitmentEntity } from "./setStateCommitment.entity";
+import { SetStateCommitment } from "./setStateCommitment.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
 
-export const setStateToJson = (entity: SetStateCommitmentEntity): SetStateCommitmentJSON => {
+export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJSON => {
   return {
     appIdentity: entity.appIdentity as any,
     appIdentityHash: entity.app.identityHash,
@@ -16,16 +16,16 @@ export const setStateToJson = (entity: SetStateCommitmentEntity): SetStateCommit
   };
 };
 
-@EntityRepository(SetStateCommitmentEntity)
-export class SetStateCommitmentRepository extends Repository<SetStateCommitmentEntity> {
-  findByAppIdentityHash(appIdentityHash: string): Promise<SetStateCommitmentEntity | undefined> {
+@EntityRepository(SetStateCommitment)
+export class SetStateCommitmentRepository extends Repository<SetStateCommitment> {
+  findByAppIdentityHash(appIdentityHash: string): Promise<SetStateCommitment | undefined> {
     return this.createQueryBuilder("set_state")
       .leftJoinAndSelect("set_state.app", "app")
       .where("app.identityHash = :appIdentityHash", { appIdentityHash })
       .getOne();
   }
 
-  findByAppStateHash(appStateHash: string): Promise<SetStateCommitmentEntity | undefined> {
+  findByAppStateHash(appStateHash: string): Promise<SetStateCommitment | undefined> {
     return this.findOne({
       where: {
         appStateHash,
@@ -49,7 +49,7 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitmentE
   ): Promise<void> {
     let entity = await this.findByAppIdentityHash(app.identityHash);
     if (!entity) {
-      entity = new SetStateCommitmentEntity();
+      entity = new SetStateCommitment();
       entity.app = app;
       entity.appIdentity = commitment.appIdentity;
     }

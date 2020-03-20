@@ -20,7 +20,10 @@ describe("ConnextStore", () => {
       it(`${type} - should work`, async () => {
         const store = createConnextStore(type as StoreType, { fileDir });
         const schema = await store.getSchemaVersion();
-        expect(schema).to.containSubset(STORE_SCHEMA_VERSION);
+        expect(schema).to.be.eq(0);
+        await store.setSchemaVersion();
+        const updated = await store.getSchemaVersion();
+        expect(updated).to.be.eq(STORE_SCHEMA_VERSION);
         await store.clear();
       });
     });

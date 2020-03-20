@@ -101,11 +101,11 @@ export function sortStringSignaturesBySignerAddress(
   signatures: string[],
 ): string[] {
   const ret = signatures.slice();
-    ret.sort((sigA, sigB) => {
-      const addrA = recoverAddress(digest, sigA);
-      const addrB = recoverAddress(digest, sigB);
-      return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-    });
+  ret.sort((sigA, sigB) => {
+    const addrA = recoverAddress(digest, sigA);
+    const addrB = recoverAddress(digest, sigB);
+    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
+  });
   return ret;
 }
 

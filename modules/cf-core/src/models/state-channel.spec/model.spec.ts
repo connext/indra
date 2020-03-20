@@ -3,6 +3,7 @@ import { getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
+import { bigNumberifyJson } from "../../utils";
 
 import { StateChannel } from "../state-channel";
 
@@ -99,8 +100,10 @@ describe("StateChannel", () => {
 
     it("should work", () => {
       for (const prop of Object.keys(sc)) {
-        if (typeof sc[prop] === "function") {
-          continue; // are functions supposed to be equal?! bc the .toEqual test fails..
+        if (typeof sc[prop] === "function" || prop === "freeBalanceAppInstance") {
+          // skip fns
+          // free balance asserted below
+          continue;
         }
         expect(rehydrated[prop]).toEqual(sc[prop]);
       }
@@ -115,7 +118,8 @@ describe("StateChannel", () => {
     });
 
     it("should have a free balance app instance", () => {
-      expect(rehydrated.freeBalance).toEqual(sc.freeBalance);
+      // will fail because of { _hex: "" } vs BigNumber comparison
+      expect(rehydrated.freeBalance).toMatchObject(bigNumberifyJson(sc.freeBalance));
     });
 
     it("should not change the user xpubs", () => {

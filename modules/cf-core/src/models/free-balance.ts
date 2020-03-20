@@ -200,6 +200,7 @@ export function createFreeBalance(
   userNeuteredExtendedKeys: string[],
   coinBucketAddress: string,
   freeBalanceTimeout: number,
+  multisigAddress: string,
 ) {
   const sortedTopLevelKeys = xkeysToSortedKthAddresses(
     userNeuteredExtendedKeys,
@@ -228,6 +229,7 @@ export function createFreeBalance(
     /* latestVersionNumber */ 0,
     /* latestTimeout */ HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout,
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
+    /* multisigAddr */ multisigAddress,
   );
 }
 

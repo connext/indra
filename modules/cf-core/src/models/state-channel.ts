@@ -7,16 +7,12 @@ import {
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";
-import { prettyPrintObject } from "../utils";
+import { prettyPrintObject, deBigNumberifyJson } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { AppInstanceProposal } from "./app-instance-proposal";
 import { AppInstance } from "./app-instance";
-import {
-  createFreeBalance,
-  FreeBalanceClass,
-  TokenIndexedCoinTransferMap,
-} from "./free-balance";
+import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
 import { flipTokenIndexedBalances, sortAddresses } from "./utils";
 
 const ERRORS = {
@@ -68,7 +64,6 @@ export class StateChannel {
 
   public getAppInstance(appInstanceIdentityHash: string): AppInstance {
     if (this.hasFreeBalance && appInstanceIdentityHash === this.freeBalance.identityHash) {
-      console.log(`[channel] returning free balance app`);
       return this.freeBalance;
     }
     if (!this.appInstances.has(appInstanceIdentityHash)) {
@@ -331,6 +326,7 @@ export class StateChannel {
         userNeuteredExtendedKeys,
         freeBalanceAppAddress,
         freeBalanceTimeout || HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout,
+        multisigAddress,
       ),
       1,
     );
@@ -472,7 +468,7 @@ export class StateChannel {
   }
 
   toJson(): StateChannelJSON {
-    return {
+    return deBigNumberifyJson({
       multisigAddress: this.multisigAddress,
       addresses: this.addresses,
       userNeuteredExtendedKeys: this.userNeuteredExtendedKeys,
@@ -488,10 +484,10 @@ export class StateChannel {
       // does not have a FreeBalance before the `setup` protocol gets run
       freeBalanceAppInstance: this.freeBalanceAppInstance
         ? this.freeBalanceAppInstance.toJson()
-        : undefined,
+        : null,
       monotonicNumProposedApps: this.monotonicNumProposedApps,
       schemaVersion: this.schemaVersion,
-    };
+    });
   }
 
   /**

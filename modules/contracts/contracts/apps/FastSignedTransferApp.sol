@@ -54,7 +54,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         address[2] calldata participants
     )
         external
-        pure
+        view
         returns (address)
     {
         return participants[
@@ -64,7 +64,7 @@ contract FastSignedTransferApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -80,7 +80,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(
@@ -112,7 +112,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         Action memory action
     )
         internal
-        pure
+        view
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 0, "Only senders can create locked payments.");
@@ -142,7 +142,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         Action memory action
     )
         internal
-        pure
+        view
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 1, "Only receivers can unlock transfers.");
@@ -164,7 +164,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         Action memory action
     )
         internal
-        pure
+        view
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 1, "Only receivers can reject payments.");
@@ -179,7 +179,7 @@ contract FastSignedTransferApp is CounterfactualApp {
         AppState memory state
     )
         internal
-        pure
+        view
         returns (AppState memory)
     {
         state.amount = 0;

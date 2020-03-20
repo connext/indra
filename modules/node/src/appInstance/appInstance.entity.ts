@@ -13,7 +13,7 @@ export enum AppType {
   UNINSTALLED = "UNINSTALLED", // removed app
 }
 
-@Entity("app_instance")
+@Entity()
 export class AppInstance {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -34,7 +34,7 @@ export class AppInstance {
   @Column("integer")
   appSeqNo!: number;
 
-  @Column("text")
+  @Column("text", { unique: true })
   @IsKeccak256Hash()
   identityHash!: string;
 

@@ -23,7 +23,7 @@ contract NimApp is CounterfactualApp {
 
     function isStateTerminal(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bool)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -36,7 +36,7 @@ contract NimApp is CounterfactualApp {
         address[] calldata participants
     )
         external
-        pure
+        view
         returns (address)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -47,7 +47,7 @@ contract NimApp is CounterfactualApp {
         bytes calldata encodedState, bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -68,7 +68,7 @@ contract NimApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -82,7 +82,7 @@ contract NimApp is CounterfactualApp {
 
     function isWin(AppState memory state)
         internal
-        pure
+        view
         returns (bool)
     {
         return (

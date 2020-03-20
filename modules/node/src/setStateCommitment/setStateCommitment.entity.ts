@@ -5,7 +5,7 @@ import { Signature } from "ethers/utils";
 import { AppInstance } from "../appInstance/appInstance.entity";
 
 @Entity()
-export class SetStateCommitmentEntity {
+export class SetStateCommitment {
   @PrimaryGeneratedColumn()
   id!: number;
 

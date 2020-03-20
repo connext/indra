@@ -10,8 +10,11 @@ import {
 } from "@connext/types";
 
 export class MockStoreService implements IStoreService {
-  getSchemaVersion(): number {
-    return STORE_SCHEMA_VERSION;
+  getSchemaVersion(): Promise<number> {
+    return Promise.resolve(STORE_SCHEMA_VERSION);
+  }
+  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+    return Promise.resolve();
   }
   getAllChannels(): Promise<StateChannelJSON[]> {
     return Promise.resolve([]);

@@ -191,7 +191,9 @@ export class AppActionsService {
       },
       appInstance.multisigAddress,
     );
-    const tx = commitment.getSignedTransaction(state.signatures);
+    // TODO: remove any casting by using Signature type
+    commitment.signatures = state.signatures as any;
+    const tx = commitment.getSignedTransaction();
 
     this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstanceId}`);
     await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);

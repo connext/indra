@@ -33,7 +33,7 @@ import {
   CFCore,
   InstallMessage,
   RejectProposalMessage,
-  xpubToAddress,
+  xkeyKthAddress,
 } from "../util";
 import { ChannelRepository } from "../channel/channel.repository";
 
@@ -80,7 +80,7 @@ export class CFCoreService {
         // but need the free balance address in the multisig
         const obj = {};
         obj[this.cfCore.freeBalanceAddress] = Zero;
-        obj[xpubToAddress(userPubId)] = Zero;
+        obj[xkeyKthAddress(userPubId)] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);
@@ -495,6 +495,17 @@ export class CFCoreService {
       }
     }
     return apps;
+  }
+
+  async getHashLockTransferAppsForReceiverByLockHash(
+    lockHash: string,
+  ): Promise<AppInstanceJson | undefined> {
+    const apps = await this.getHashLockTransferAppsByLockHash(lockHash);
+    return apps.find(app => {
+      const appState = app.latestState as HashLockTransferAppState;
+      // sender is node
+      return appState.coinTransfers[0].to === this.cfCore.freeBalanceAddress;
+    });
   }
 
   // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY

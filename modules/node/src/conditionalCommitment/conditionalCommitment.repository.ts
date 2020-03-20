@@ -1,10 +1,10 @@
 import { EntityRepository, Repository } from "typeorm";
-import { ConditionalTransactionCommitmentEntity } from "./conditionalCommitment.entity";
+import { ConditionalTransactionCommitment } from "./conditionalCommitment.entity";
 import { ConditionalTransactionCommitmentJSON, ContractAddresses } from "@connext/types";
 import { AppInstance } from "../appInstance/appInstance.entity";
 
 export const convertConditionalCommitmentToJson = (
-  commitment: ConditionalTransactionCommitmentEntity,
+  commitment: ConditionalTransactionCommitment,
   networkContext: ContractAddresses,
 ): ConditionalTransactionCommitmentJSON => {
   return {
@@ -19,22 +19,20 @@ export const convertConditionalCommitmentToJson = (
   };
 };
 
-@EntityRepository(ConditionalTransactionCommitmentEntity)
+@EntityRepository(ConditionalTransactionCommitment)
 export class ConditionalTransactionCommitmentRepository extends Repository<
-  ConditionalTransactionCommitmentEntity
+  ConditionalTransactionCommitment
 > {
   findByAppIdentityHash(
     appIdentityHash: string,
-  ): Promise<ConditionalTransactionCommitmentEntity | undefined> {
+  ): Promise<ConditionalTransactionCommitment | undefined> {
     return this.createQueryBuilder("conditional")
       .leftJoinAndSelect("conditional.app", "app")
       .where("app.identityHash = :appIdentityHash", { appIdentityHash })
       .getOne();
   }
 
-  findByMultisigAddress(
-    multisigAddress: string,
-  ): Promise<ConditionalTransactionCommitmentEntity[]> {
+  findByMultisigAddress(multisigAddress: string): Promise<ConditionalTransactionCommitment[]> {
     return this.find({
       where: {
         multisigAddress,
@@ -44,7 +42,7 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
 
   async getConditionalTransactionCommitment(
     appIdentityHash: string,
-  ): Promise<ConditionalTransactionCommitmentEntity | undefined> {
+  ): Promise<ConditionalTransactionCommitment | undefined> {
     const commitment = await this.findByAppIdentityHash(appIdentityHash);
     if (!commitment) {
       return undefined;
@@ -55,10 +53,10 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
   async saveConditionalTransactionCommitment(
     app: AppInstance,
     commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<ConditionalTransactionCommitmentEntity> {
+  ): Promise<ConditionalTransactionCommitment> {
     let commitmentEntity = await this.findByAppIdentityHash(app.identityHash);
     if (!commitmentEntity) {
-      commitmentEntity = new ConditionalTransactionCommitmentEntity();
+      commitmentEntity = new ConditionalTransactionCommitment();
       commitmentEntity.app = app;
       commitmentEntity.freeBalanceAppIdentityHash = commitment.freeBalanceAppIdentityHash;
       commitmentEntity.multisigAddress = commitment.multisigAddress;

@@ -93,6 +93,9 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* latestVersionNumber */ 0,
     /* latestTimeout */ Math.ceil(1000 * Math.random()),
     /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+    /* multisig */ stateChannel
+      ? stateChannel.multisigAddress
+      : getAddress(hexlify(randomBytes(20))),
     /* twoPartyOutcomeInterpreterParams */ {
       playerAddrs: [AddressZero, AddressZero],
       amount: Zero,

@@ -36,7 +36,7 @@ contract AppWithAction is CounterfactualApp {
         address[] calldata participants
     )
         external
-        pure
+        view
         returns (address)
     {
         State memory state = abi.decode(encodedState, (State));
@@ -45,7 +45,7 @@ contract AppWithAction is CounterfactualApp {
 
     function computeOutcome(bytes calldata)
         external
-        pure
+        view
         returns (bytes memory)
     {
         return abi.encode(TwoPartyFixedOutcome.SEND_TO_ADDR_ONE);
@@ -56,7 +56,7 @@ contract AppWithAction is CounterfactualApp {
         bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory ret)
     {
         State memory state = abi.decode(encodedState, (State));
@@ -74,7 +74,7 @@ contract AppWithAction is CounterfactualApp {
 
     function isStateTerminal(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bool)
     {
         State memory state = abi.decode(encodedState, (State));

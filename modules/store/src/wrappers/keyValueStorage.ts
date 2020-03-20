@@ -18,6 +18,7 @@ import {
   SET_STATE_COMMITMENT_KEY,
   SETUP_COMMITMENT_KEY,
   WITHDRAWAL_COMMITMENT_KEY,
+  STORE_SCHEMA_VERSION_KEY,
 } from "../helpers";
 
 function properlyConvertChannelNullVals(json: any): StateChannelJSON {
@@ -35,11 +36,18 @@ function properlyConvertChannelNullVals(json: any): StateChannelJSON {
  * This class wraps a general key value storage service to become an `IStoreService`
  */
 export class KeyValueStorage implements WrappedStorage, IClientStore {
-  private schemaVersion: number = STORE_SCHEMA_VERSION;
   constructor(private readonly storage: WrappedStorage) {}
 
-  getSchemaVersion(): number {
-    return this.schemaVersion;
+  async getSchemaVersion(): Promise<number> {
+    const strVal = await this.storage.getItem(STORE_SCHEMA_VERSION_KEY);
+    return parseInt(strVal || "0", 10);
+  }
+
+  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+    if (STORE_SCHEMA_VERSION < version) {
+      throw new Error(`Unrecognized store version: ${version}`);
+    }
+    return this.storage.setItem(STORE_SCHEMA_VERSION_KEY, version.toString());
   }
 
   getKeys(): Promise<string[]> {

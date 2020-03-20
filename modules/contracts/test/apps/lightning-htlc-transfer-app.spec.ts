@@ -1,4 +1,3 @@
-/* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import {
   CoinTransfer,
@@ -12,8 +11,8 @@ import {
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
-import { Zero, One } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, soliditySha256 } from "ethers/utils";
+import { Zero } from "ethers/constants";
+import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
 
 import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
 
@@ -60,6 +59,7 @@ describe("LightningHTLCTransferApp", () => {
   let transferAmount: BigNumber;
   let preImage: string;
   let lockHash: string;
+  let timelock: BigNumber;
   let preState: HashLockTransferAppState;
 
   async function computeOutcome(state: HashLockTransferAppState): Promise<string> {
@@ -85,7 +85,7 @@ describe("LightningHTLCTransferApp", () => {
     expect(decoded[1].amount.toString()).eq(postState.coinTransfers[1].amount.toString());
   }
 
-  before(async () => {
+  beforeEach(async () => {
     const wallet = (await provider.getWallets())[0];
     lightningHTLCTransferApp = await waffle.deployContract(wallet, LightningHTLCTransferApp);
 
@@ -94,6 +94,7 @@ describe("LightningHTLCTransferApp", () => {
     transferAmount = new BigNumber(10000);
     preImage = mkHash("0xb");
     lockHash = createLockHash(preImage);
+    timelock = bigNumberify(await provider.getBlockNumber()).add(100);
     preState = {
       coinTransfers: [
         {
@@ -106,14 +107,14 @@ describe("LightningHTLCTransferApp", () => {
         },
       ],
       lockHash,
+      timelock,
       preImage: mkHash("0x0"),
-      turnNum: Zero,
       finalized: false,
     };
   });
 
   describe("update state", () => {
-    it("will redeem a payment with correct hash", async () => {
+    it("will redeem a payment with correct hash within timelock", async () => {
       const action: HashLockTransferAppAction = {
         preImage,
       };
@@ -134,73 +135,56 @@ describe("LightningHTLCTransferApp", () => {
         ],
         lockHash,
         preImage,
-        turnNum: One,
+        timelock,
         finalized: true,
       };
+
+      expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
+      expect(afterActionState.coinTransfers[0].amount)
+        .to.eq(expectedPostState.coinTransfers[0].amount);
+      expect(afterActionState.coinTransfers[1].amount)
+        .to.eq(expectedPostState.coinTransfers[1].amount);
+
 
       ret = await computeOutcome(afterActionState);
       validateOutcome(ret, expectedPostState);
     });
 
-    it("will revert a payment with incorrect hash", async () => {
+    it("will revert action with incorrect hash", async () => {
       const action: HashLockTransferAppAction = {
         preImage: mkHash("0xc"), // incorrect hash
       };
 
-      let ret = await applyAction(preState, action);
-      const afterActionState = decodeAppState(ret);
-
-      const expectedPostState: HashLockTransferAppState = {
-        coinTransfers: [
-          {
-            amount: transferAmount,
-            to: senderAddr,
-          },
-          {
-            amount: Zero,
-            to: receiverAddr,
-          },
-        ],
-        lockHash,
-        preImage: mkHash("0xc"),
-        turnNum: One,
-        finalized: true,
-      };
-
-      ret = await computeOutcome(afterActionState);
-      validateOutcome(ret, expectedPostState);
+      await expect(applyAction(preState, action)).revertedWith("Hash generated from preimage does not match hash in state");
     });
 
-    it("will revert a payment that is not finalized", async () => {
+    it("will revert action if already finalized", async () => {
       const action: HashLockTransferAppAction = {
         preImage,
       };
+      preState.finalized = true;
 
-      let ret = await applyAction(preState, action);
-      const afterActionState = decodeAppState(ret);
-      expect(afterActionState.finalized).to.be.true;
-
-      const modifiedPostState: HashLockTransferAppState = {
-        coinTransfers: [
-          {
-            amount: transferAmount,
-            to: senderAddr,
-          },
-          {
-            amount: Zero,
-            to: receiverAddr,
-          },
-        ],
-        lockHash,
-        preImage: mkHash("0xc"),
-        turnNum: One,
-        finalized: false,
-      };
-
-      ret = await computeOutcome(modifiedPostState);
-      validateOutcome(ret, modifiedPostState);
+      await expect(applyAction(preState, action)).revertedWith("Cannot take action on finalized state");
     });
 
-    // TODO how can we test that only the receiver can unlock the payment?
+    it("will revert action if timeout has expired", async () => {
+      const action: HashLockTransferAppAction = {
+        preImage,
+      };
+      preState.timelock = bigNumberify(await provider.getBlockNumber());
+
+      await expect(applyAction(preState, action)).revertedWith("Cannot take action if timelock is expired");
+    });
+
+    it("will revert outcome that is not finalized with unexpired timelock", async () => {
+      await expect(computeOutcome(preState)).revertedWith("Cannot revert payment if timelock is unexpired");
+    });
+
+    it("will refund payment that is not finalized with expired timelock", async () => {
+      preState.timelock = bigNumberify(await provider.getBlockNumber());
+      let ret = await computeOutcome(preState);
+
+      validateOutcome(ret, preState);
+    });
   });
 });

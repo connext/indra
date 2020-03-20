@@ -34,8 +34,6 @@ export class ConnextStore implements IClientStore {
   private separator: string = DEFAULT_STORE_SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
 
-  private schemaVersion: number = STORE_SCHEMA_VERSION;
-
   constructor(storageType: StoreType, opts: StoreFactoryOptions = {}) {
     this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
     this.separator = opts.separator || DEFAULT_STORE_SEPARATOR;
@@ -90,8 +88,12 @@ export class ConnextStore implements IClientStore {
     }
   }
 
-  getSchemaVersion(): number {
-    return this.schemaVersion;
+  async getSchemaVersion(): Promise<number> {
+    return this.internalStore.getSchemaVersion();
+  }
+
+  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+    return this.internalStore.setSchemaVersion(version);
   }
 
   get channelPrefix(): string {

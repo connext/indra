@@ -50,7 +50,7 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   latestState: {
     counter: 4,
   },
-  outcomeType: 5,
+  outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   twoPartyOutcomeInterpreterParams: undefined,
   singleAssetTwoPartyCoinTransferInterpreterParams: undefined,
   multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
