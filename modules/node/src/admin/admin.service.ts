@@ -248,6 +248,11 @@ export class AdminService implements OnApplicationBootstrap {
           channelJSON.multisigAddress,
         );
         if (channel) {
+          // update the addresses
+          channel.addresses = channelJSON.addresses || {
+            proxyFactory: "",
+            multisigMastercopy: "",
+          }; // dummy value for extra old channels
           // update the store version
           channel.schemaVersion = await this.cfCoreStore.getSchemaVersion();
           await this.channelRepository.save(channel);
@@ -284,8 +289,6 @@ export class AdminService implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     this.log.log(`onApplicationBootstrap migrating channel store.`);
     await this.migrateChannelStore();
-    // TODO: remove
-    await this.repairCriticalStateChannelAddresses();
     this.log.log(`onApplicationBootstrap completed migrating channel store.`);
   }
 }
