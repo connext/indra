@@ -228,12 +228,29 @@ export class AdminService implements OnApplicationBootstrap {
     return output;
   }
 
+  /**
+   * Store Migration v0 --> v1: 3/20/2020
+   *
+   * Migrate from the key/value cf-core store to the v1 of the api driven store:
+   * https://github.com/ConnextProject/indra/blob/baad8edf906cb16e18c8fd5422b4f7e28fa816fb/modules/types/src/store.ts#L90
+   *
+   * Does not delete the records in case something goes awry, but instead allows
+   * admins to decide when they want to drop the legacy `node_records` table.
+   *
+   * Some ideally enforced database constraints were relaxed to allow the
+   * migrations to happen in prod via the admin function. A migration to restore
+   * these constraints will be needed.
+   */
   async migrateChannelStore(): Promise<boolean> {
     const prefix = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`;
     const oldChannelRecords = await this.cfCoreRepository.get(prefix);
     const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
     this.log.log(`Found ${channelJSONs.length} old channel records`);
     for (const channelJSON of channelJSONs) {
+      if (channelJSON.userNeuteredExtendedKeys.length === 3) {
+        // just ignore virtual channels
+        continue;
+      }
       try {
         this.log.log(`Found channel to migrate: ${channelJSON.multisigAddress}`);
         // create blank setup commitment
