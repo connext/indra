@@ -37,7 +37,7 @@ export const createCFChannelProvider = async ({
   logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
-    messaging as any,
+    messaging,
     store,
     networkContext,
     nodeConfig,
