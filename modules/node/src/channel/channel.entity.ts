@@ -7,6 +7,8 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   OneToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
@@ -80,4 +82,10 @@ export class Channel {
     (tx: OnchainTransaction) => tx.channel,
   )
   transactions!: OnchainTransaction[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

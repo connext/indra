@@ -5,6 +5,7 @@ import {
   AppAction,
   convertHashLockTransferAppState,
   convertFastSignedTransferAppState,
+  convertLinkedTransferAppState,
 } from "@connext/apps";
 import {
   FastSignedTransferApp,
@@ -144,17 +145,24 @@ export class AppActionsService {
     action: SimpleLinkedTransferAppAction,
     from: string,
   ): Promise<void> {
-    let [senderApp] = await this.appInstanceRepository.findLinkedTransferAppsByPaymentId(
+    let transferApps = await this.appInstanceRepository.findLinkedTransferAppsByPaymentIdAndType(
       newState.paymentId,
+    );
+    // TODO: REPLACE WITH DB QUERY
+    const senderApp = transferApps.find(
+      app =>
+        convertLinkedTransferAppState("bignumber", app.latestState as SimpleLinkedTransferAppState)
+          .coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress,
     );
 
     // take action and uninstall
+    this.log.error(`Unlocking transfer ${senderApp.identityHash}`);
     await this.cfCoreService.takeAction(senderApp.identityHash, {
       preImage: action.preImage,
     } as SimpleLinkedTransferAppAction);
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
-    this.log.info(`Reclaimed collateral from ${senderApp.identityHash}`);
+    this.log.error(`Unlocked transfer ${senderApp.identityHash}`);
   }
 
   private async handleWithdrawAppAction(

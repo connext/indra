@@ -328,7 +328,29 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     return this.save(app);
   }
 
-  async findLinkedTransferAppsByPaymentId(paymentId: string): Promise<AppInstance[]> {
+  async findLinkedTransferAppsByPaymentIdAndType(
+    paymentId: string,
+    type: AppType = AppType.INSTANCE,
+  ): Promise<AppInstance[]> {
+    const res = await this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere("app_instance.type = :type", { type })
+      .getMany();
+    return res;
+  }
+
+  // TODO: FIGURE OUT HOW TO MAKE THESE QUERIES WORK
+  async findActiveLinkedTransferAppsByPaymentIdAndSender(
+    paymentId: string,
+    sender: string,
+  ): Promise<AppInstance[]> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
@@ -340,7 +362,21 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       .getMany();
-    console.log("res: ", res);
+    return res;
+  }
+
+  async findLinkedTransferAppsByPaymentId(paymentId: string): Promise<AppInstance[]> {
+    const res = await this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .printSql()
+      .getMany();
     return res;
   }
 }

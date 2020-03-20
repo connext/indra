@@ -39,6 +39,7 @@ import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm
 import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
 import { initWithdrawApp1584466373728 } from "../../migrations/1584466373728-init-withdraw-app";
 import { cfCoreStoreUpdate1584633495374 } from "../../migrations/1584633495374-cf-core-store-update";
+import { createdUpdated1584722683650 } from "../../migrations/1584722683650-created-updated";
 
 export const entities = [
   AppInstance,
@@ -76,6 +77,7 @@ export const migrations = [
   typeormSync21584369931723,
   initWithdrawApp1584466373728,
   cfCoreStoreUpdate1584633495374,
+  createdUpdated1584722683650,
 ];
 
 @Injectable()
