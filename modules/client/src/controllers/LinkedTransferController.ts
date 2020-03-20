@@ -13,15 +13,12 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import { CFCoreTypes, LinkedTransferParameters, LinkedTransferResponse } from "../types";
 import {
-  invalid32ByteHexString,
-  invalidAddress,
   invalidXpub,
-  notLessThanOrEqualTo,
-  notNegative,
   validate,
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { BigNumber } from "ethers/utils";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
@@ -36,16 +33,6 @@ export class LinkedTransferController extends AbstractController {
       meta,
       recipient,
     } = convertLinkedTransferParameters(`bignumber`, params);
-
-    const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    validate(
-      notNegative(amount),
-      invalidAddress(assetId),
-      notLessThanOrEqualTo(amount, preTransferBal),
-      invalid32ByteHexString(paymentId),
-      invalid32ByteHexString(preImage),
-    );
 
     const submittedMeta = { ...(meta || {}) };
     if (recipient) {
@@ -71,11 +58,11 @@ export class LinkedTransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: xpubToAddress(this.connext.publicIdentifier),
+          to: this.connext.freeBalanceAddress,
         },
         {
           amount: Zero,
-          to: xpubToAddress(this.connext.nodePublicIdentifier),
+          to: this.connext.nodeFreeBalanceAddress,
         },
       ],
       linkedHash,

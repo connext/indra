@@ -67,6 +67,7 @@ export interface IConnextClient {
   freeBalanceAddress: string;
   multisigAddress: string;
   nodePublicIdentifier: string;
+  nodeFreeBalanceAddress: string;
   publicIdentifier: string;
   signerAddress: string;
 

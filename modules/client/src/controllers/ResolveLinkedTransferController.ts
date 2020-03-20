@@ -28,7 +28,6 @@ export class ResolveLinkedTransferController extends AbstractController {
     // because this function is only used internally, it is safe to add
     // the amount / assetId to the api params without breaking interfaces
     const { paymentId, preImage } = params;
-    validate(invalid32ByteHexString(paymentId), invalid32ByteHexString(preImage));
 
     this.log.info(`Resolving link transfer with id ${params.paymentId}`);
 
