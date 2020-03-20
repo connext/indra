@@ -1,5 +1,5 @@
 import { SetupCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress } from "../machine";
+import { Opcode, Protocol, xkeyKthAddress, Commitment } from "../machine";
 import { StateChannel } from "../models";
 import { Context, ProtocolMessage, ProtocolExecutionFlow, SetupProtocolParams } from "../types";
 import { logTime } from "../utils";
@@ -7,7 +7,8 @@ import { logTime } from "../utils";
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.Setup;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
+const { Setup } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -72,10 +73,16 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
-    // 33 ms
-    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
+    setupCommitment.signatures = [responderSignature, initiatorSignature];
 
-    context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
+    // 33 ms
+    yield [
+      PERSIST_COMMITMENT,
+      Setup,
+      setupCommitment.getSignedTransaction(),
+      stateChannel.multisigAddress,
+    ];
+    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
     logTime(log, start, `Finished initiating`);
   },
 
@@ -119,6 +126,14 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // 49 ms
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
+    setupCommitment.signatures = [responderSignature, initiatorSignature];
+
+    yield [
+      PERSIST_COMMITMENT,
+      Setup,
+      setupCommitment.getSignedTransaction(),
+      stateChannel.multisigAddress,
+    ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     yield [
@@ -133,8 +148,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
     logTime(log, start, `Finished responding`);
   },
 };

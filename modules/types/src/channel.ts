@@ -29,7 +29,6 @@ export type AssetAmount<T = string> = {
 export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
 export type CFCoreChannel = {
-  id: number;
   nodePublicIdentifier: string;
   userPublicIdentifier: string;
   multisigAddress: string;

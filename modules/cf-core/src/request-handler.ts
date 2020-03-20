@@ -25,25 +25,22 @@ export class RequestHandler {
   private readonly methods = new Map();
   private readonly events = new Map();
 
-  store: Store;
   router!: RpcRouter;
 
   constructor(
     readonly publicIdentifier: string,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
-    readonly storeService: CFCoreTypes.IStoreService,
+    readonly store: Store,
     readonly messagingService: CFCoreTypes.IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
     readonly provider: BaseProvider,
     readonly wallet: Signer,
-    storeKeyPrefix: string,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
     public readonly log: ILoggerService,
   ) {
-    this.store = new Store(storeService, storeKeyPrefix);
     this.log = this.log.newContext("CF-RequestHandler");
   }
 

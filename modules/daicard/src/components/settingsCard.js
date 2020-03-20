@@ -52,13 +52,13 @@ export const SettingsCard = style(
 
     const generateNewAddress = async () => {
       setIsBurning(true);
-      store && (await store.reset()); // remove anything in the store related to the old channel
+      store && (await store.clear()); // remove anything in the store related to the old channel
       localStorage.removeItem("mnemonic", mnemonic);
       window.location.reload();
     };
 
     const recoverAddressFromMnemonic = async () => {
-      store && (await store.reset()); // remove anything in the store related to the old channel
+      store && (await store.clear()); // remove anything in the store related to the old channel
       localStorage.setItem("mnemonic", mnemonic);
       window.location.reload();
     };

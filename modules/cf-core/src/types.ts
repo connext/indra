@@ -2,7 +2,7 @@ import { ILoggerService, NetworkContext, ProtocolMessage, SolidityValueType } fr
 import { BaseProvider } from "ethers/providers";
 
 import { Opcode } from "./machine";
-import { StateChannel } from "./models";
+import { Store } from "./store";
 
 export type ProtocolExecutionFlow = {
   [x: number]: (context: Context) => AsyncIterableIterator<any[]>;
@@ -16,11 +16,11 @@ export type Instruction = Function | Opcode;
 
 /// Arguments passed to a protocol execulion flow
 export interface Context {
+  store: Store;
   log: ILoggerService;
   message: ProtocolMessage;
   network: NetworkContext;
   provider: BaseProvider;
-  stateChannelsMap: Map<string, StateChannel>;
 }
 
 export type TakeActionProtocolParams = {
@@ -38,6 +38,9 @@ export {
   AppInstanceProposal,
   AppInterface,
   CFCoreTypes,
+  Commitment,
+  ConditionalTransactionCommitmentJSON,
+  coinBalanceRefundAppStateEncoding,
   CoinBalanceRefundAppState,
   CreateChannelMessage,
   DeployedContractNetworksFileEntry,
@@ -48,8 +51,6 @@ export {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   InstallMessage,
   InstallProtocolParams,
-  InstallVirtualAppProtocolParams,
-  InstallVirtualMessage,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
@@ -64,8 +65,8 @@ export {
   ProtocolMessage,
   ProtocolParameters,
   ProtocolTypes,
-  RejectInstallVirtualMessage,
   RejectProposalMessage,
+  SetStateCommitmentJSON,
   SetupProtocolParams,
   SignedStateHashUpdate,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
@@ -76,11 +77,8 @@ export {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   UninstallMessage,
   UninstallProtocolParams,
-  UninstallVirtualAppProtocolParams,
-  UninstallVirtualMessage,
   UpdateProtocolParams,
   UpdateStateMessage,
-  virtualAppAgreementEncoding,
   EthereumCommitment,
   MultisigOperation,
   MultisigTransaction,

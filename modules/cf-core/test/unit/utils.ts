@@ -41,12 +41,14 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
       stateEncoding: "tuple(address foo, uint256 bar)",
       actionEncoding: undefined,
     },
-    /* isVirtualApp */ false,
     /* appSeqNo */ stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
     /* latestState */ { foo: AddressZero, bar: bigNumberify(0) },
     /* latestVersionNumber */ 0,
     /* latestTimeout */ Math.ceil(1000 * Math.random()),
     /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+    /* multisig */ stateChannel
+      ? stateChannel.multisigAddress
+      : getAddress(hexlify(randomBytes(20))),
     /* twoPartyOutcomeInterpreterParams */ {
       playerAddrs: [AddressZero, AddressZero],
       amount: Zero,

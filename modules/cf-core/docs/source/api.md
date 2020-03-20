@@ -98,27 +98,6 @@ Errors: (TODO)
 
 - Counterparty rejected installation
 
-### Method: `installVirtual`
-
-Install a virtual app instance.
-
-Params:
-
-- `appInstanceId: string`
-  - ID of the app instance to install
-  - Counterparty must have called `proposedInstall` and generated this ID
-- `intermediaryIdentifier: string`
-  - Node identifier of hub to route the virtual app installation through
-
-Result:
-
-- `appInstance:`[`AppInstanceInfo`](#data-type-appinstanceinfo)
-  - Successfully installed app instance
-
-Errors: (TODO)
-
-- Counterparty rejected installation
-
 ### Method: `getState`
 
 Get the latest state of an app instance.
@@ -465,8 +444,6 @@ An instance of an installed app.
   - Amount of the asset deposited by the counterparty
 - `timeout: BigNumber`
   - Number of blocks until a submitted state for this app is considered finalized
-- `intermediaryIdentifier?: string`
-  - Xpub of a hub to route the virtual app installation through. Undefined if app instance is not virtual.
 
 ### Data Type: `AppABIEncodings`
 

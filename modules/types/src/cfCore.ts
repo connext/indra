@@ -2,6 +2,7 @@ import { ProtocolTypes } from "./protocol";
 import { EventName as exEventName } from "./events";
 import { NodeMessage as exNodeMessage, CFMessagingService } from "./messaging";
 import { IStoreService as exIStoreService } from "./store";
+import { IStoreServiceOld as exIStoreServiceOld } from "./store";
 
 // Legacy CFCoreTypes, to be dissolved & incorporated into the rest of our types.
 // This copy is preserved for now to maintain backwards compatibility
@@ -12,6 +13,7 @@ export namespace CFCoreTypes {
   export type MethodName = ProtocolTypes.MethodName;
   export type NodeMessage = exNodeMessage;
   export type IStoreService = exIStoreService;
+  export type IStoreServiceOld = exIStoreServiceOld;
   export type IMessagingService = CFMessagingService;
 
   export type CreateChannelParams = ProtocolTypes.CreateChannelParams;
@@ -43,8 +45,6 @@ export namespace CFCoreTypes {
   export type ILockService = ProtocolTypes.ILockService;
   export type InstallParams = ProtocolTypes.InstallParams;
   export type InstallResult = ProtocolTypes.InstallResult;
-  export type InstallVirtualParams = ProtocolTypes.InstallVirtualParams;
-  export type InstallVirtualResult = ProtocolTypes.InstallVirtualResult;
   export type IPrivateKeyGenerator = ProtocolTypes.IPrivateKeyGenerator;
   export type MethodParams = ProtocolTypes.MethodParams;
   export type MethodRequest = ProtocolTypes.MethodRequest;
@@ -53,8 +53,6 @@ export namespace CFCoreTypes {
   export type MinimalTransaction = ProtocolTypes.MinimalTransaction;
   export type ProposeInstallParams = ProtocolTypes.ProposeInstallParams;
   export type ProposeInstallResult = ProtocolTypes.ProposeInstallResult;
-  export type ProposeInstallVirtualParams = ProtocolTypes.ProposeInstallVirtualParams;
-  export type ProposeInstallVirtualResult = ProtocolTypes.ProposeInstallVirtualResult;
   export type RejectInstallEventData = ProtocolTypes.RejectInstallEventData;
   export type RejectInstallParams = ProtocolTypes.RejectInstallParams;
   export type RejectInstallResult = ProtocolTypes.RejectInstallResult;
@@ -68,8 +66,6 @@ export namespace CFCoreTypes {
   export type UninstallEventData = ProtocolTypes.UninstallEventData;
   export type UninstallParams = ProtocolTypes.UninstallParams;
   export type UninstallResult = ProtocolTypes.UninstallResult;
-  export type UninstallVirtualParams = ProtocolTypes.UninstallVirtualParams;
-  export type UninstallVirtualResult = ProtocolTypes.UninstallVirtualResult;
   export type UpdateStateEventData = ProtocolTypes.UpdateStateEventData;
   export type UpdateStateParams = ProtocolTypes.UpdateStateParams;
   export type UpdateStateResult = ProtocolTypes.UpdateStateResult;
