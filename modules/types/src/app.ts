@@ -62,6 +62,7 @@ export type AppInstanceJson = {
   latestVersionNumber: number;
   latestTimeout: number;
   outcomeType: string;
+  meta?: object;
   // Derived from:
   // contracts/funding/interpreters/TwoPartyFixedOutcomeInterpreter.sol#L10
   twoPartyOutcomeInterpreterParams?: {
@@ -95,6 +96,7 @@ export type AppInstanceProposal = {
   responderDeposit: string;
   responderDepositTokenAddress: string;
   timeout: string;
+  meta?: object;
   // Interpreter-related Fields
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
   multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
