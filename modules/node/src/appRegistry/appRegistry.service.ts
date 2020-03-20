@@ -164,7 +164,7 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case HashLockTransferApp: {
-        const blockNumber = await (this.configService.getEthProvider()).getBlockNumber()
+        const blockNumber = await this.configService.getEthProvider().getBlockNumber();
         validateHashLockTransferApp(
           proposeInstallParams,
           blockNumber,

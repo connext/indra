@@ -9,17 +9,17 @@ import { LockService } from "../lock/lock.service";
 import { LoggerService } from "../logger/logger.service";
 import { CFCore } from "../util/cfCore";
 
-import { CFCoreRecordRepository } from "./cfCore.repository";
+import { CFCoreStore } from "./cfCore.store";
 
 export const cfCoreProviderFactory: Provider = {
-  inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreRecordRepository],
+  inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreStore],
   provide: CFCoreProviderId,
   useFactory: async (
     config: ConfigService,
     lockService: LockService,
     log: LoggerService,
     messaging: MessagingService,
-    store: CFCoreRecordRepository,
+    store: CFCoreStore,
   ): Promise<CFCore> => {
     const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
     const publicExtendedKey = config.getPublicIdentifier();

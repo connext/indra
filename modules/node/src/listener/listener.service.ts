@@ -1,15 +1,14 @@
+import { AppAction } from "@connext/apps";
 import {
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
-  INSTALL_VIRTUAL_EVENT,
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
-  UNINSTALL_VIRTUAL_EVENT,
   UPDATE_STATE_EVENT,
   ProtocolTypes,
 } from "@connext/types";
@@ -30,19 +29,18 @@ import {
   DepositFailedMessage,
   DepositStartedMessage,
   InstallMessage,
-  InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
   UninstallMessage,
-  UninstallVirtualMessage,
   UpdateStateMessage,
 } from "../util/cfCore";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { AppActionsService } from "../appRegistry/appActions.service";
-import { AppAction } from "@connext/apps";
+import { AppType } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
@@ -57,9 +55,10 @@ export default class ListenerService implements OnModuleInit {
     private readonly channelService: ChannelService,
     private readonly linkedTransferService: LinkedTransferService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
+    private readonly log: LoggerService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly log: LoggerService,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("ListenerService");
   }
@@ -95,10 +94,6 @@ export default class ListenerService implements OnModuleInit {
       INSTALL_EVENT: async (data: InstallMessage): Promise<void> => {
         this.logEvent(INSTALL_EVENT, data);
       },
-      // TODO: make cf return app instance id and app def?
-      INSTALL_VIRTUAL_EVENT: async (data: InstallVirtualMessage): Promise<void> => {
-        this.logEvent(INSTALL_VIRTUAL_EVENT, data);
-      },
       PROPOSE_INSTALL_EVENT: (data: ProposeMessage): void => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           this.log.debug(`Received proposal from our own node. Doing nothing.`);
@@ -116,6 +111,17 @@ export default class ListenerService implements OnModuleInit {
       },
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         this.logEvent(REJECT_INSTALL_EVENT, data);
+
+        // update app status
+        const rejectedApp = await this.appInstanceRepository.findByIdentityHash(
+          data.data.appInstanceId,
+        );
+        if (!rejectedApp) {
+          this.log.debug(`No app found`);
+          return;
+        }
+        rejectedApp.type = AppType.REJECTED;
+        await this.appInstanceRepository.save(rejectedApp);
 
         const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
           data.data.appInstanceId,
@@ -141,9 +147,6 @@ export default class ListenerService implements OnModuleInit {
           }
           throw e;
         }
-      },
-      UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
-        this.logEvent(UNINSTALL_VIRTUAL_EVENT, data);
       },
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {

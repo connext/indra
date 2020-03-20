@@ -34,12 +34,14 @@ import {
   CFCoreTypes,
   InstallMessage,
   RejectProposalMessage,
-  xpubToAddress,
+  xkeyKthAddress,
 } from "../util";
 import { ChannelRepository } from "../channel/channel.repository";
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
+import { AppType } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 Injectable();
 export class CFCoreService {
@@ -51,6 +53,7 @@ export class CFCoreService {
     private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.cfCore = cfCore;
     this.log.setContext("CFCoreService");
@@ -79,7 +82,7 @@ export class CFCoreService {
         // but need the free balance address in the multisig
         const obj = {};
         obj[this.cfCore.freeBalanceAddress] = Zero;
-        obj[xpubToAddress(userPubId)] = Zero;
+        obj[xkeyKthAddress(userPubId)] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);
@@ -209,13 +212,22 @@ export class CFCoreService {
     try {
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
+          let promiseCounter = 0;
+          const incrementAndResolve = () => {
+            promiseCounter += 1;
+            if (promiseCounter === 2) {
+              console.warn(`resolving`);
+              res();
+            }
+          };
           boundReject = this.rejectInstallTransfer.bind(null, rej);
           const subject = `${params.proposedToIdentifier}.channel.${multisigAddress}.app-instance.*.proposal.accept`;
           this.log.debug(`Subscribing to: ${subject}`);
-          await this.messagingProvider.subscribe(subject, res);
+          await this.messagingProvider.subscribe(subject, incrementAndResolve);
           this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
+          incrementAndResolve();
           this.log.debug(`waiting for client to publish proposal results`);
         },
       );
@@ -313,6 +325,13 @@ export class CFCoreService {
     });
     this.log.info(`rejectInstallApp succeeded for app ${appInstanceId}`);
     this.log.debug(`rejectInstallApp result: ${stringify(rejectRes.result.result)}`);
+    // update app status
+    const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
+    if (!rejectedApp) {
+      throw new Error(`No app found after being rejected for app ${appInstanceId}`);
+    }
+    rejectedApp.type = AppType.REJECTED;
+    await this.appInstanceRepository.save(rejectedApp);
     return rejectRes.result.result as CFCoreTypes.RejectInstallResult;
   }
 
@@ -394,7 +413,9 @@ export class CFCoreService {
         app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
         app.latestState[`tokenAddress`] === tokenAddress,
     );
-    this.log.info(`Got coinBalanceRefundApps for multisig ${multisigAddress}`);
+    this.log.info(
+      `Got ${coinBalanceRefundAppArray.length} coinBalanceRefundApps for multisig ${multisigAddress}`,
+    );
     this.log.debug(`CoinBalanceRefundApps result: ${stringify(coinBalanceRefundAppArray)}`);
     if (coinBalanceRefundAppArray.length > 1) {
       throw new Error(
@@ -443,8 +464,7 @@ export class CFCoreService {
     return appInstance as AppInstanceJson;
   }
 
-  async getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult> {
-    // check the app is actually installed, or returned undefined
+  async getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult | undefined> {
     const stateResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: ProtocolTypes.chan_getState,

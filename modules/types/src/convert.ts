@@ -1,5 +1,5 @@
 import { AddressZero } from "ethers/constants";
-import { BigNumber, getAddress } from "ethers/utils";
+import { BigNumber, getAddress, bigNumberify } from "ethers/utils";
 
 import { AssetAmount, RebalanceProfile } from "./channel";
 import { DepositParameters } from "./inputs";
@@ -10,11 +10,14 @@ import { CoinTransfer } from "./app";
 
 /////////////////////////////////////////////
 ////// LOW LEVEL HELPERS
+
+export type SerializedBigNumber = { _hex: string };
 export interface NumericTypes {
   str: string;
   bignumber: BigNumber;
   number: number;
   any: any;
+  bignumberObj: SerializedBigNumber;
 }
 
 export type NumericTypeName = keyof NumericTypes;
@@ -22,6 +25,7 @@ export type NumericTypeName = keyof NumericTypes;
 export const getType = (input: any): NumericTypeName => {
   if (typeof input === "string") return "str";
   if (BigNumber.isBigNumber(input)) return "bignumber";
+  if (typeof input === "object" && !!input["_hex"]) return "bignumberObj";
   if (typeof input === "number") return "number"; // used for testing purposes
   throw new Error(`Unknown input type: ${typeof input}, value: ${JSON.stringify(input)}`);
 };
@@ -31,6 +35,14 @@ const castFunctions: any = {
   "number-bignumber": (x: number): BigNumber => new BigNumber(x),
   "number-str": (x: number): string => x.toString(),
   "str-bignumber": (x: string): BigNumber => new BigNumber(x),
+  "bignumberObj-bignumber": (x: SerializedBigNumber): BigNumber => bigNumberify(x as any),
+  "bignumberObj-string": (x: SerializedBigNumber): string => bigNumberify(x as any).toString(),
+  "bignumberObj-number": (x: SerializedBigNumber): number => bigNumberify(x as any).toNumber(),
+  "bignumber-bignumberObj": (x: BigNumber): SerializedBigNumber => JSON.parse(JSON.stringify(x)),
+  "string-bignumberObj": (x: string): SerializedBigNumber =>
+    JSON.parse(JSON.stringify(bigNumberify(x))),
+  "number-bignumberObj": (x: number): SerializedBigNumber =>
+    JSON.parse(JSON.stringify(bigNumberify(x))),
 };
 
 export const convertFields = (
@@ -95,7 +107,7 @@ export function makeChecksumOrEthAddress(address: string | undefined): string {
 }
 
 export function convertCoinTransfersToObjIfNeeded(transfers: any): CoinTransfer[] {
-  if(typeof transfers[0].amount != "undefined") {
+  if (typeof transfers[0].amount != "undefined") {
     return transfers;
   } else {
     return [
@@ -106,8 +118,8 @@ export function convertCoinTransfersToObjIfNeeded(transfers: any): CoinTransfer[
       {
         to: transfers[1][0],
         amount: transfers[1][1],
-      }
-    ]
+      },
+    ];
   }
 }
 

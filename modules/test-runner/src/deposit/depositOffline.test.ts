@@ -178,7 +178,7 @@ describe("Deposit offline tests", () => {
       `indra.node.${client.nodePublicIdentifier}.proposalAccepted.${client.multisigAddress}`,
       async () => {
         // delete the client store
-        client.store.reset && client.store.reset();
+        client.store.clear();
       },
     );
     await makeDepositCall({

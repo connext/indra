@@ -16,14 +16,16 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { xpubToAddress } from "../util";
+import { xkeyKthAddress } from "../util";
 import { TIMEOUT_BUFFER } from "../constants";
+import { ConfigService } from "../config/config.service";
 
 @Injectable()
 export class HashLockTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
   ) {
@@ -56,7 +58,19 @@ export class HashLockTransferService {
 
     // sender amount
     const amount = appState.coinTransfers[0].amount;
-    const timelock = appState.timelock.sub(TIMEOUT_BUFFER)
+    const timelock = appState.timelock.sub(TIMEOUT_BUFFER);
+    if (timelock.lte(Zero)) {
+      throw new Error(
+        `Cannot resolve hash lock transfer with 0 or negative timelock: ${timelock.toString()}`,
+      );
+    }
+    const provider = this.configService.getEthProvider();
+    const currBlock = await provider.getBlockNumber();
+    if (timelock.lt(currBlock)) {
+      throw new Error(
+        `Cannot resolve hash lock transfer with expired timelock: ${timelock.toString()}, block: ${currBlock}`,
+      );
+    }
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
@@ -118,7 +132,7 @@ export class HashLockTransferService {
         },
         {
           amount: Zero,
-          to: xpubToAddress(userPubId),
+          to: xkeyKthAddress(userPubId),
         },
       ],
       lockHash,

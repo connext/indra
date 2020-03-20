@@ -1,7 +1,12 @@
 import { BigNumber as ethersBN, BigNumberish, Interface, ParamType } from "ethers/utils";
 
 export { Contract } from "ethers";
-export { BaseProvider, JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
+export {
+  BaseProvider,
+  JsonRpcProvider,
+  TransactionReceipt,
+  TransactionResponse,
+} from "ethers/providers";
 export { BigNumberish, Network, Transaction } from "ethers/utils";
 
 export type BigNumber = ethersBN;
@@ -34,6 +39,9 @@ interface SolidityABIEncoderV2SArray extends Array<SolidityValueType> {}
 // around in protocol messages and include this in transaction data in challenges,
 // we impose some restrictions on the type; they must be serializable both as
 // JSON and as solidity structs.
-export type SolidityValueType = SolidityPrimitiveType | SolidityABIEncoderV2Struct | SolidityABIEncoderV2SArray;
+export type SolidityValueType =
+  | SolidityPrimitiveType
+  | SolidityABIEncoderV2Struct
+  | SolidityABIEncoderV2SArray;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;

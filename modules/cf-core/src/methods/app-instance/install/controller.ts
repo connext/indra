@@ -22,7 +22,7 @@ export default class InstallController extends NodeController {
     const { store } = requestHandler;
     const { appInstanceId } = params;
 
-    const sc = await store.getChannelFromAppInstanceID(appInstanceId);
+    const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     return [sc.multisigAddress];
   }

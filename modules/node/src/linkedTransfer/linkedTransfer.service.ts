@@ -17,7 +17,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { MessagingProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
-import { xpubToAddress } from "../util";
+import { xkeyKthAddress } from "../util";
 import { Channel } from "../channel/channel.entity";
 
 import { LinkedTransferRepository } from "./linkedTransfer.repository";
@@ -168,7 +168,7 @@ export class LinkedTransferService {
         },
         {
           amount: Zero,
-          to: xpubToAddress(userPubId),
+          to: xkeyKthAddress(userPubId),
         },
       ],
       linkedHash: transfer.linkedHash,

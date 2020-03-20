@@ -1,17 +1,14 @@
+import { PersistAppType } from "@connext/types";
 import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress } from "../machine";
-import {
-  Context,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-  TakeActionProtocolParams,
-} from "../types";
+import { Opcode, Protocol, xkeyKthAddress, Commitment, ProtocolExecutionFlow } from "../machine";
+import { Context, ProtocolMessage, TakeActionProtocolParams } from "../types";
 import { logTime } from "../utils";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
 
 const protocol = Protocol.TakeAction;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
+const { SetState } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -21,7 +18,7 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
  */
 export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { stateChannelsMap, provider, message, network } = context;
+    const { store, provider, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart;
@@ -36,7 +33,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       action,
     } = params as TakeActionProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       appIdentityHash,
@@ -50,7 +47,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
@@ -81,17 +78,17 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     assertIsValidSignature(responderEphemeralKey, setStateCommitment, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    // add signatures and write commitment to store
+    setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
     logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { stateChannelsMap, provider, message, network } = context;
+    const { store, provider, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart;
@@ -110,7 +107,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       action,
     } = params as TakeActionProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       appIdentityHash,
@@ -124,7 +121,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
@@ -137,7 +134,12 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    // add signatures and write commitment to store
+    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
 
     yield [
       IO_SEND,
@@ -151,11 +153,6 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
     logTime(log, start, `Finished responding`);
   },
 };

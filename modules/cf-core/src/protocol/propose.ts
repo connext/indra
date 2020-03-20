@@ -1,9 +1,10 @@
+import { PersistAppType } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { appIdentityToHash, SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress } from "../machine";
-import { AppInstanceProposal, StateChannel } from "../models";
+import { xkeyKthAddress, Commitment, Opcode, Protocol, appIdentityToHash } from "../machine";
+import { SetStateCommitment } from "../ethereum";
+import { AppInstanceProposal } from "../models";
 import {
   Context,
   ProposeInstallProtocolParams,
@@ -13,13 +14,15 @@ import {
 import { logTime } from "../utils";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../methods";
 
 const protocol = Protocol.Propose;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
+const { SetState } = Commitment;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, network, stateChannelsMap } = context;
+    const { message, network, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart;
@@ -42,13 +45,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
     } = params as ProposeInstallProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
-      ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(
-          multisigAddress,
-          { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
-          [initiatorXpub, responderXpub],
-        );
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -77,10 +74,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
-
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
@@ -127,15 +122,27 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Validated responder's sig on initial state`);
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
+    // add signatures to commitment and save
+    setStateCommitment.signatures = [
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState,
+    ];
+
+    // will also save the app array into the state channel
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Proposal,
       postProtocolStateChannel,
-    );
+      appInstanceProposal,
+    ];
+
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+
     logTime(log, start, `Finished Initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, network, stateChannelsMap } = context;
+    const { message, network, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart;
@@ -162,13 +169,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
-      ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(
-          multisigAddress,
-          { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
-          [initiatorXpub, responderXpub],
-        );
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -196,7 +197,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
@@ -220,8 +221,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     );
     logTime(log, substart, `Validated initiator's sig on initial state`);
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
-
     const responderSignatureOnInitialState = yield [
       OP_SIGN,
       setStateCommitment,
@@ -241,10 +240,19 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
+    setStateCommitment.signatures = [
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState,
+    ];
+
+    // will also save the app array into the state channel
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.Proposal,
       postProtocolStateChannel,
-    );
+      appInstanceProposal,
+    ];
+    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
     logTime(log, start, `Finished responding`);
   },
 };

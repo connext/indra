@@ -8,11 +8,11 @@ export async function uninstallAppInstanceFromChannel(
   responderXpub: string,
   appInstanceId: string,
 ): Promise<void> {
-  const stateChannel = await store.getChannelFromAppInstanceID(appInstanceId);
+  const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
   const appInstance = stateChannel.getAppInstance(appInstanceId);
 
-  await protocolRunner.initiateProtocol(Protocol.Uninstall, await store.getStateChannelsMap(), {
+  await protocolRunner.initiateProtocol(Protocol.Uninstall, {
     initiatorXpub,
     responderXpub,
     multisigAddress: stateChannel.multisigAddress,

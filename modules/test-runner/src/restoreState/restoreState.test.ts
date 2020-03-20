@@ -36,7 +36,7 @@ describe("Restore State", () => {
     expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
-    clientA.store.reset && clientA.store.reset();
+    clientA.store.clear();
 
     // check that getting balances will now error
     await expect(clientA.getFreeBalance(AddressZero)).to.be.rejectedWith(

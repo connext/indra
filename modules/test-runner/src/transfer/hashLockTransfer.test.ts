@@ -26,12 +26,21 @@ describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
-  let nats: Client;
+  const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
 
   before(async () => {
-    nats = getNatsClient();
+    const currBlock = await provider.getBlockNumber();
+    // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
+    // so make sure the current block
+    const TIMEOUT_BUFFER = 100;
+    if (currBlock > TIMEOUT_BUFFER) {
+      // no adjustment needed, return
+      return;
+    }
+    for (let index = currBlock; index <= TIMEOUT_BUFFER + 1; index++) {
+      await provider.send("evm_mine", []);
+    }
   });
-  const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
 
   beforeEach(async () => {
     clientA = await createClient({ id: "A" });
@@ -187,14 +196,14 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = hexlify(randomBytes(32));
-    const timelock = (await provider.getBlockNumber()).toString();
+    const timelock = await provider.getBlockNumber();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       conditionType: "HASHLOCK_TRANSFER",
       lockHash,
-      timelock,
+      timelock: timelock.toString(),
       assetId: transfer.assetId,
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
@@ -203,6 +212,6 @@ describe("HashLock Transfers", () => {
         conditionType: "HASHLOCK_TRANSFER",
         preImage,
       } as ResolveHashLockTransferParameters),
-    ).to.eventually.be.rejectedWith(/Could not install app on receiver side./);
+    ).to.be.rejectedWith(/Cannot resolve hash lock transfer with expired timelock/);
   });
 });

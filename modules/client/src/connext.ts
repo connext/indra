@@ -2,25 +2,27 @@ import { SupportedApplication, AppActionBigNumber, AppStateBigNumber } from "@co
 import { MessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
-  IChannelProvider,
-  LINKED_TRANSFER_TO_RECIPIENT,
-  ILoggerService,
-  chan_storeGet,
-  chan_storeSet,
+  chan_getUserWithdrawal,
   chan_restoreState,
-  TransactionResponse,
-  LinkedTransferToRecipientResponse,
-  LINKED_TRANSFER,
+  chan_setStateChannel,
+  chan_setUserWithdrawal,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   FAST_SIGNED_TRANSFER,
   FastSignedTransferParameters,
-  WithdrawParameters,
-  WithdrawResponse,
   HASHLOCK_TRANSFER,
-  ResolveLinkedTransferParameters,
+  IChannelProvider,
+  IClientStore,
+  ILoggerService,
+  LINKED_TRANSFER,
+  LINKED_TRANSFER_TO_RECIPIENT,
+  LinkedTransferToRecipientResponse,
   ResolveFastSignedTransferParameters,
   ResolveHashLockTransferParameters,
+  ResolveLinkedTransferParameters,
+  TransactionResponse,
+  WithdrawParameters,
+  WithdrawResponse,
   GetHashLockTransferResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
@@ -69,7 +71,6 @@ import {
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
-  Store,
   SwapParameters,
   Transfer,
   TransferParameters,
@@ -97,7 +98,7 @@ export class ConnextClient implements IConnextClient {
   public nodePublicIdentifier: string;
   public publicIdentifier: string;
   public signerAddress: Address;
-  public store: Store;
+  public store: IClientStore;
   public token: Contract;
 
   private opts: InternalClientOptions;
@@ -190,8 +191,6 @@ export class ConnextClient implements IConnextClient {
 
   /**
    * Checks if the coin balance refund app is installed.
-   *
-   * NOTE: should probably take assetId into account
    */
   public getBalanceRefundApp = async (
     assetId: string = AddressZero,
@@ -328,6 +327,9 @@ export class ConnextClient implements IConnextClient {
     params: CheckDepositRightsParameters,
   ): Promise<CheckDepositRightsResponse> => {
     const refundApp = await this.getBalanceRefundApp(params.assetId);
+    if (!refundApp) {
+      throw new Error(`No balance refund app installed for ${params.assetId}`);
+    }
     const multisigBalance =
       !refundApp.latestState["tokenAddress"] &&
       refundApp.latestState["tokenAddress"] !== AddressZero
@@ -443,8 +445,7 @@ export class ConnextClient implements IConnextClient {
   public getLatestWithdrawal = async (): Promise<
     { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
   > => {
-    const path = withdrawalKey(this.publicIdentifier);
-    const value = await this.channelProvider.send(chan_storeGet, { path });
+    const value = await this.channelProvider.send(chan_getUserWithdrawal, {});
 
     if (!value || value === "undefined") {
       return undefined;
@@ -476,8 +477,8 @@ export class ConnextClient implements IConnextClient {
           async (blockNumber: number): Promise<void> => {
             const transaction = await this.checkForUserWithdrawal(blockNumber);
             if (transaction) {
-              await this.channelProvider.send(chan_storeSet, {
-                pairs: [{ path: withdrawalKey(this.publicIdentifier), value: undefined }],
+              await this.channelProvider.send(chan_setUserWithdrawal, {
+                withdrawalObject: undefined,
               });
               this.ethProvider.removeAllListeners("block");
               resolve(transaction);
@@ -503,23 +504,20 @@ export class ConnextClient implements IConnextClient {
   // Restore State
 
   public restoreState = async (): Promise<void> => {
-    const path = `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`;
-    let state;
     try {
-      state = await this.channelProvider.send(chan_restoreState, { path });
+      await this.channelProvider.send(chan_restoreState, {});
       this.log.info(`Found state to restore from store's backup`);
-      this.log.debug(`Restored state: ${stringify(state.path)}`);
     } catch (e) {
-      state = await this.node.restoreState(this.publicIdentifier);
+      const state = await this.node.restoreState(this.publicIdentifier);
       if (!state) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
       this.log.debug(`Found state to restore from node`);
       this.log.debug(`Restored state: ${stringify(state)}`);
+      await this.channelProvider.send(chan_setStateChannel, {
+        state,
+      });
     }
-    await this.channelProvider.send(chan_storeSet, {
-      pairs: [{ path, value: state }],
-    });
     await this.restart();
   };
 
@@ -633,14 +631,14 @@ export class ConnextClient implements IConnextClient {
     multisigAddress?: string,
   ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined> => {
     return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstances, {
-      multisigAddress,
+      multisigAddress: multisigAddress || this.multisigAddress,
     } as CFCoreTypes.GetProposedAppInstancesParams);
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstances, {
+    return await this.channelProvider.send(ProtocolTypes.chan_getProposedAppInstance, {
       appInstanceId,
     } as CFCoreTypes.GetProposedAppInstanceParams);
   };
@@ -726,20 +724,6 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  public installVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.InstallVirtualResult> => {
-    // check the app isnt actually installed
-    const alreadyInstalled = await this.appInstalled(appInstanceId);
-    if (alreadyInstalled) {
-      throw new Error(alreadyInstalled);
-    }
-    return await this.channelProvider.send(ProtocolTypes.chan_installVirtual, {
-      appInstanceId,
-      intermediaryIdentifier: this.nodePublicIdentifier,
-    } as CFCoreTypes.InstallVirtualParams);
-  };
-
   public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
     // check the app isnt actually installed
     const alreadyInstalled = await this.appInstalled(appInstanceId);
@@ -761,22 +745,6 @@ export class ConnextClient implements IConnextClient {
     return await this.channelProvider.send(ProtocolTypes.chan_uninstall, {
       appInstanceId,
     } as CFCoreTypes.UninstallParams);
-  };
-
-  public uninstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
-    // check the app is actually installed
-    const err = await this.appNotInstalled(appInstanceId);
-    if (err) {
-      this.log.error(err);
-      throw new Error(err);
-    }
-
-    return await this.channelProvider.send(ProtocolTypes.chan_uninstallVirtual, {
-      appInstanceId,
-      intermediaryIdentifier: this.nodePublicIdentifier,
-    } as CFCoreTypes.UninstallVirtualParams);
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {

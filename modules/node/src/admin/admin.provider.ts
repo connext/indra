@@ -84,6 +84,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.repairCriticalStateChannelAddresses();
   }
 
+  async migrateChannelStore(): Promise<any> {
+    return await this.adminService.migrateChannelStore();
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
@@ -123,6 +127,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.repair-critical-addresses",
       this.authService.parseXpub(this.repairCriticalStateChannelAddresses.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.migrate-channel-store",
+      this.authService.useAdminToken(this.migrateChannelStore.bind(this)),
     );
   }
 }

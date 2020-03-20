@@ -51,7 +51,7 @@ export abstract class AbstractController {
 
     try {
       // 1676 ms TODO: why does this step take so long?
-      const res = await Promise.race([
+      await Promise.race([
         delayAndThrow(
           CF_METHOD_TIMEOUT,
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,

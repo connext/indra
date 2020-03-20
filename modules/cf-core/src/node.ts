@@ -1,4 +1,12 @@
-import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS, ILoggerService, nullLogger } from "@connext/types";
+import {
+  PROTOCOL_MESSAGE_EVENT,
+  NODE_EVENTS,
+  ILoggerService,
+  nullLogger,
+  ProtocolTypes,
+  AppInstanceProposal,
+  PersistAppType,
+} from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
@@ -8,8 +16,8 @@ import { createRpcRouter } from "./methods";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
-import { Opcode, Protocol, ProtocolRunner } from "./machine";
-import { getFreeBalanceAddress, StateChannel } from "./models";
+import { Opcode, Commitment, ProtocolRunner } from "./machine";
+import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
@@ -21,6 +29,12 @@ import {
   ProtocolMessage,
 } from "./types";
 import { timeout } from "./utils";
+import { Store } from "./store";
+import {
+  ConditionalTransactionCommitment,
+  MultisigCommitment,
+  SetStateCommitment,
+} from "./ethereum";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -48,6 +62,7 @@ export class Node {
   private signer!: SigningKey;
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
+  private store!: Store;
 
   static async create(
     messagingService: CFCoreTypes.IMessagingService,
@@ -99,6 +114,7 @@ export class Node {
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
+    this.store = new Store(this.storeService);
     this.protocolRunner = this.buildProtocolRunner();
   }
 
@@ -110,13 +126,12 @@ export class Node {
       this.publicIdentifier,
       this.incoming,
       this.outgoing,
-      this.storeService,
+      this.store,
       this.messagingService,
       this.protocolRunner,
       this.networkContext,
       this.provider,
       new AutoNonceWallet(this.signer.privateKey, this.provider),
-      `${this.nodeConfig.STORE_KEY_PREFIX}/${this.publicIdentifier}`,
       this.blocksNeededForConfirmation!,
       new ProcessQueue(this.lockService),
       this.log,
@@ -150,6 +165,7 @@ export class Node {
     const protocolRunner = new ProtocolRunner(
       this.networkContext,
       this.provider,
+      this.store,
       this.log.newContext("CF-ProtocolRunner"),
     );
 
@@ -212,13 +228,6 @@ export class Node {
       return (msg as NodeMessageWrappedProtocolMessage).data;
     });
 
-    protocolRunner.register(Opcode.WRITE_COMMITMENT, async (args: any[]) => {
-      const { store } = this.requestHandler;
-
-      const [protocol, commitment, ...key] = args;
-      await store.setCommitment([protocol, ...key], commitment);
-    });
-
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
       const { store } = this.requestHandler;
       const [stateChannels] = args;
@@ -227,6 +236,94 @@ export class Node {
         await store.saveStateChannel(stateChannel);
       }
     });
+
+    protocolRunner.register(
+      Opcode.PERSIST_COMMITMENT,
+      async (
+        args: [
+          Commitment,
+          MultisigCommitment | SetStateCommitment | ProtocolTypes.MinimalTransaction,
+          string,
+        ],
+      ) => {
+        const { store } = this.requestHandler;
+
+        const [commitmentType, commitment, ...res] = args;
+
+        switch (commitmentType) {
+          case Commitment.Setup:
+            const [multisigAddress] = res;
+            await store.saveSetupCommitment(
+              multisigAddress,
+              commitment as ProtocolTypes.MinimalTransaction,
+            );
+            break;
+
+          case Commitment.Withdraw:
+            const [multisig] = res;
+            await store.saveWithdrawalCommitment(
+              multisig,
+              commitment as ProtocolTypes.MinimalTransaction,
+            );
+            break;
+
+          case Commitment.SetState:
+            const [appIdentityHash] = res;
+            await store.saveLatestSetStateCommitment(
+              appIdentityHash,
+              commitment as SetStateCommitment,
+            );
+            break;
+
+          case Commitment.Conditional:
+            const [appId] = res;
+            await store.saveConditionalTransactionCommitment(
+              appId,
+              commitment as ConditionalTransactionCommitment,
+            );
+            break;
+
+          default:
+            throw new Error(`Unrecognized commitment type: ${commitmentType}`);
+        }
+        return;
+      },
+    );
+
+    protocolRunner.register(
+      Opcode.PERSIST_APP_INSTANCE,
+      async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
+        const { store } = this.requestHandler;
+        const [type, postProtocolChannel, app] = args;
+
+        // always persist the free balance
+        // this will error if channel does not exist
+        await store.saveFreeBalance(postProtocolChannel);
+
+        switch (type) {
+          case PersistAppType.Proposal:
+            await store.saveAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            break;
+          case PersistAppType.Reject:
+            await store.removeAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            break;
+
+          case PersistAppType.Instance:
+            if (app.identityHash === postProtocolChannel.freeBalance.identityHash) {
+              break;
+            }
+            await store.saveAppInstance(postProtocolChannel, app as AppInstance);
+            break;
+
+          case PersistAppType.Uninstall:
+            await store.removeAppInstance(postProtocolChannel, app as AppInstance);
+            break;
+
+          default:
+            throw new Error(`Unrecognized app persistence call: ${type}`);
+        }
+      },
+    );
 
     return protocolRunner;
   }

@@ -78,8 +78,8 @@ describe("Withdrawal", () => {
   it("client successfully withdraws tokens and eth concurrently", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
-    // withdraw (dont await first for concurrency). Note: don't withdraw same assetId twice bc 
-    // utils compare initial and final balance only
+    // withdraw (dont await first for concurrency). Note: don't withdraw
+    // same assetId twice bc utils compare only initial / final balances
     withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
   });

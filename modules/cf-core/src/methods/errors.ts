@@ -114,6 +114,12 @@ export const NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID = (id: string): string
 export const NO_STATE_CHANNEL_FOR_MULTISIG_ADDR = (multisigAddress: string): string =>
   `Call to getStateChannel failed when searching for multisig address: ${multisigAddress}. This probably means that the StateChannel does not exist yet.`;
 
+export const NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID = (appInstanceId: string): string =>
+  `Call to getStateChannel failed when searching for app instance id: ${appInstanceId}.`;
+
+export const NO_STATE_CHANNEL_FOR_OWNERS = (owners: string): string =>
+  `Call to getStateChannel failed when searching by owners: ${owners}.`;
+
 export const NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT =
   "The multisig deployment transaction does not have a hash";
 

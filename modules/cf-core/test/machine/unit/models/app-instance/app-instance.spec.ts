@@ -19,12 +19,12 @@ describe("AppInstance", () => {
         stateEncoding: "tuple(address foo, uint256 bar)",
         actionEncoding: undefined,
       },
-      false,
       Math.ceil(Math.random() * 2e10),
       { foo: getAddress(hexlify(randomBytes(20))), bar: 0 },
       /* versionNumber */ 999,
       Math.ceil(1000 * Math.random()),
       OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+      getAddress(hexlify(randomBytes(20))),
       {
         playerAddrs: [AddressZero, AddressZero],
         amount: Zero,

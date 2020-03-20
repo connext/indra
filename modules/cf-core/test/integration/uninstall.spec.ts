@@ -42,8 +42,8 @@ describe("Uninstalling coin balance refund app", () => {
   let coinBalanceAppId: string;
 
   const assertAppsPresent = async (expected: number) => {
-    const appsA = await getApps(nodeA);
-    const appsB = await getApps(nodeB);
+    const appsA = await getApps(nodeA, multisigAddress);
+    const appsB = await getApps(nodeB, multisigAddress);
     expect(appsA.length).toEqual(expected);
     expect(appsB.length).toEqual(expected);
     return appsA.map((app: AppInstanceJson) => app.identityHash);
@@ -111,6 +111,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       [appInstanceId] = await installApp(
         nodeA,
         nodeB,
+        multisigAddress,
         TicTacToeApp,
         initialState,
         depositAmount,
@@ -125,7 +126,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
         expect(balancesSeenByB[nodeA.freeBalanceAddress]).toBeEq(Two);
         expect(balancesSeenByB[nodeB.freeBalanceAddress]).toBeEq(Zero);
-        expect(await getInstalledAppInstances(nodeB)).toEqual([]);
+        expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
         done();
       });
 
@@ -135,7 +136,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       expect(balancesSeenByA[nodeA.freeBalanceAddress]).toBeEq(Two);
       expect(balancesSeenByA[nodeB.freeBalanceAddress]).toBeEq(Zero);
 
-      expect(await getInstalledAppInstances(nodeA)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
     });
 
     it("installs an app with the TwoPartyFixedOutcome outcome and expects Node B to win total", async done => {
@@ -144,6 +145,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       [appInstanceId] = await installApp(
         nodeA,
         nodeB,
+        multisigAddress,
         TicTacToeApp,
         initialState,
         depositAmount,
@@ -158,7 +160,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
         expect(balancesSeenByB[nodeB.freeBalanceAddress]).toBeEq(Two);
         expect(balancesSeenByB[nodeA.freeBalanceAddress]).toBeEq(Zero);
-        expect(await getInstalledAppInstances(nodeB)).toEqual([]);
+        expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
         done();
       });
 
@@ -168,7 +170,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       expect(balancesSeenByA[nodeB.freeBalanceAddress]).toBeEq(Two);
       expect(balancesSeenByA[nodeA.freeBalanceAddress]).toBeEq(Zero);
 
-      expect(await getInstalledAppInstances(nodeA)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
     });
 
     it("installs an app with the TwoPartyFixedOutcome outcome and expects the funds to be split between the nodes", async done => {
@@ -177,6 +179,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       [appInstanceId] = await installApp(
         nodeA,
         nodeB,
+        multisigAddress,
         TicTacToeApp,
         initialState,
         depositAmount,
@@ -191,7 +194,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         const balancesSeenByB = await getFreeBalanceState(nodeB, multisigAddress);
         expect(balancesSeenByB[nodeA.freeBalanceAddress]).toBeEq(depositAmount);
         expect(balancesSeenByB[nodeB.freeBalanceAddress]).toBeEq(depositAmount);
-        expect(await getInstalledAppInstances(nodeB)).toEqual([]);
+        expect(await getInstalledAppInstances(nodeB, multisigAddress)).toEqual([]);
         done();
       });
 
@@ -201,7 +204,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       expect(balancesSeenByA[nodeA.freeBalanceAddress]).toBeEq(depositAmount);
       expect(balancesSeenByA[nodeB.freeBalanceAddress]).toBeEq(depositAmount);
 
-      expect(await getInstalledAppInstances(nodeA)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
     });
   });
 });

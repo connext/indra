@@ -55,10 +55,6 @@ describe("StateChannel::setupChannel", () => {
       expect(fb).not.toBe(undefined);
     });
 
-    it("should not be a virtual app", () => {
-      expect(fb.isVirtualApp).toBe(false);
-    });
-
     it("should have versionNumber 0 to start", () => {
       expect(fb.versionNumber).toBe(0);
     });

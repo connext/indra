@@ -66,7 +66,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
     }
     default: {
       throw Error(
-        "computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType",
+        `computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType: ${outcomeType}`,
       );
     }
   }

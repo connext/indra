@@ -21,7 +21,7 @@ import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { xpubToAddress } from "../util";
+import { xkeyKthAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
@@ -96,7 +96,7 @@ export class ChannelService {
     );
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
+      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
     ) {
       throw new Error(
         `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
@@ -131,7 +131,7 @@ export class ChannelService {
     );
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
+      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
     ) {
       throw new Error(
         `Cannot withdraw, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
@@ -418,33 +418,29 @@ export class ChannelService {
    * @param creationData event data
    */
   async makeAvailable(creationData: CreateChannelMessage): Promise<void> {
-    let existing = await this.channelRepository.findByMultisigAddress(
+    const existing = await this.channelRepository.findByMultisigAddress(
       creationData.data.multisigAddress,
     );
-    if (existing) {
-      if (
-        !creationData.data.owners.includes(xpubToAddress(existing.nodePublicIdentifier)) ||
-        !creationData.data.owners.includes(xpubToAddress(existing.userPublicIdentifier))
-      ) {
-        throw new Error(
-          `Channel has already been created with different owners! ${stringify(
-            existing,
-          )}. Event data: ${stringify(creationData)}`,
-        );
-      }
-      if (existing.available) {
-        this.log.debug(`Channel is already available, doing nothing`);
-        return;
-      }
-      this.log.debug(`Channel already exists in database, marking as available`);
-    } else {
-      this.log.info(`Creating new channel for multisig ${creationData.data.multisigAddress}`);
-      this.log.debug(`Creating channel from data ${stringify(creationData)}`);
-      existing = new Channel();
-      existing.userPublicIdentifier = creationData.data.counterpartyXpub;
-      existing.nodePublicIdentifier = this.cfCoreService.cfCore.publicIdentifier;
-      existing.multisigAddress = creationData.data.multisigAddress;
+    if (!existing) {
+      throw new Error(
+        `Did not find existing channel, meaning "PERSIST_STATE_CHANNEL" failed in setup protocol`,
+      );
     }
+    if (
+      !creationData.data.owners.includes(xkeyKthAddress(existing.nodePublicIdentifier)) ||
+      !creationData.data.owners.includes(xkeyKthAddress(existing.userPublicIdentifier))
+    ) {
+      throw new Error(
+        `Channel has already been created with different owners! ${stringify(
+          existing,
+        )}. Event data: ${stringify(creationData)}`,
+      );
+    }
+    if (existing.available) {
+      this.log.debug(`Channel is already available, doing nothing`);
+      return;
+    }
+    this.log.debug(`Channel already exists in database, marking as available`);
     existing.available = true;
     await this.channelRepository.save(existing);
   }

@@ -90,7 +90,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
-    const testnetTokenConfig = this.get("INDRA_TESTNET_TOKEN_CONFIG")
+    const testnetTokenConfig: TokenConfig[] = this.get("INDRA_TESTNET_TOKEN_CONFIG")
       ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
       : [];
     const currentChainId = (await this.getEthNetwork()).chainId;
