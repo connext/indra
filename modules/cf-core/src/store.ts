@@ -285,6 +285,14 @@ export class Store {
     multisigAddress: string,
     commitment: MinimalTransaction,
   ) {
+    if (
+      typeof commitment === "undefined" ||
+      typeof commitment.to === "undefined" ||
+      typeof commitment.value === "undefined" ||
+      typeof commitment.data === "undefined"
+    ) {
+      throw new Error(`Attempted to save invalid setup commitment: ${JSON.stringify(commitment, null, 2)}`);
+    }
     return this.storeService.saveSetupCommitment(multisigAddress, commitment);
   }
 

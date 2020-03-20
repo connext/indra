@@ -43,7 +43,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(pubId);
-    return ({
+    return !channel ? undefined : ({
       id: channel.id,
       available: channel.available,
       collateralizationInFlight: channel.collateralizationInFlight,

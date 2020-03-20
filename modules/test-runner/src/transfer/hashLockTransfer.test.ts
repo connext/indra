@@ -1,3 +1,4 @@
+/* global before */
 import {
   EventNames,
   ConditionalTransferTypes,
@@ -27,7 +28,7 @@ describe("HashLock Transfers", () => {
   let tokenAddress: string;
   const provider = new providers.JsonRpcProvider(env.ethProviderUrl);
 
-  beforeAll(async () => {
+  before(async () => {
     const currBlock = await provider.getBlockNumber();
     // the node uses a `TIMEOUT_BUFFER` on recipient of 100 blocks
     // so make sure the current block

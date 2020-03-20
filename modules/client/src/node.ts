@@ -8,7 +8,7 @@ import {
   GetHashLockTransferResponse,
 } from "@connext/types";
 import { getAddress, Transaction } from "ethers/utils";
-import uuid from "uuid";
+import { v4 as uuid } from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
@@ -323,7 +323,7 @@ export class NodeApiClient implements INodeApiClient {
     );
     const payload = {
       ...data,
-      id: uuid.v4(),
+      id: uuid(),
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
       throw new Error("We are not doing auth right now, this should not ever happen!");

@@ -88,7 +88,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-    yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
     logTime(log, start, `Finished initiating`);
   },
 
@@ -136,7 +135,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-    yield [PERSIST_COMMITMENT, Setup, setupCommitment, stateChannel.freeBalance.identityHash];
 
     yield [
       IO_SEND,
