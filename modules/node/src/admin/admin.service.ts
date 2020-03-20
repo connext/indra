@@ -277,12 +277,7 @@ export class AdminService implements OnApplicationBootstrap {
           channelJSON.freeBalanceAppInstance,
         );
 
-        // delete old channel record
-        const removed = await this.cfCoreRepository.delete({
-          path: `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${channelJSON.multisigAddress}`,
-        });
         this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
-        this.log.log(`Removed ${removed.affected} old records after migrating`);
       } catch (e) {
         this.log.error(`Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()}`);
       }
