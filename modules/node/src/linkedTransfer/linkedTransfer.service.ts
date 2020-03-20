@@ -18,11 +18,10 @@ import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { MessagingProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { xkeyKthAddress } from "../util";
-import { Channel } from "../channel/channel.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
-import { LinkedTransferRepository } from "./linkedTransfer.repository";
-import { LinkedTransfer, LinkedTransferStatus } from "./linkedTransfer.entity";
 import { MessagingService } from "@connext/messaging";
+import { convertLinkedTransferAppState } from "@connext/apps";
 
 @Injectable()
 export class LinkedTransferService {
@@ -32,46 +31,9 @@ export class LinkedTransferService {
     private readonly log: LoggerService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly channelRepository: ChannelRepository,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("LinkedTransferService");
-  }
-
-  async saveLinkedTransfer(
-    senderPubId: string,
-    assetId: string,
-    amount: BigNumber,
-    appInstanceId: string,
-    linkedHash: string,
-    paymentId: string,
-    encryptedPreImage: string,
-    recipientPublicIdentifier?: string,
-    meta?: object,
-  ): Promise<LinkedTransfer> {
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      senderPubId,
-    );
-    let receiverChannel: Channel;
-    if (recipientPublicIdentifier) {
-      receiverChannel = await this.channelRepository.findByUserPublicIdentifier(
-        recipientPublicIdentifier,
-      );
-    }
-
-    const transfer = new LinkedTransfer();
-    transfer.senderAppInstanceId = appInstanceId;
-    transfer.amount = amount;
-    transfer.assetId = assetId;
-    transfer.linkedHash = linkedHash;
-    transfer.paymentId = paymentId;
-    transfer.senderChannel = senderChannel;
-    transfer.status = LinkedTransferStatus.PENDING;
-    transfer.encryptedPreImage = encryptedPreImage;
-    transfer.recipientPublicIdentifier = recipientPublicIdentifier;
-    transfer.meta = meta;
-    transfer.receiverChannel = receiverChannel;
-
-    return await this.linkedTransferRepository.save(transfer);
   }
 
   async resolveLinkedTransfer(
@@ -82,16 +44,19 @@ export class LinkedTransferService {
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
     // check that we have recorded this transfer in our db
-    const transfer = await this.linkedTransferRepository.findByPaymentIdOrThrow(paymentId);
-
-    const { assetId, amount } = transfer;
-    const amountBN = bigNumberify(amount);
-
-    if (transfer.status !== LinkedTransferStatus.PENDING) {
-      throw new Error(
-        `Transfer with paymentId ${paymentId} cannot be redeemed with status: ${transfer.status}`,
-      );
+    // TODO: handle offline case
+    const [senderApp] = await this.appInstanceRepository.findLinkedTransferAppsByPaymentId(
+      paymentId,
+    );
+    if (!senderApp) {
+      throw new Error(`Sender app was not found with paymentId: ${paymentId}`);
     }
+
+    const { assetId, amount, linkedHash } = convertLinkedTransferAppState(
+      "bignumber",
+      senderApp.latestState as SimpleLinkedTransferAppState,
+    );
+    const amountBN = bigNumberify(amount);
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
 
@@ -171,7 +136,7 @@ export class LinkedTransferService {
           to: xkeyKthAddress(userPubId),
         },
       ],
-      linkedHash: transfer.linkedHash,
+      linkedHash,
       paymentId,
       preImage: HashZero,
     };
@@ -179,10 +144,10 @@ export class LinkedTransferService {
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
-      transfer.amount,
-      transfer.assetId,
+      amount,
+      assetId,
       Zero,
-      transfer.assetId,
+      assetId,
       SimpleLinkedTransferApp,
     );
 
@@ -190,79 +155,17 @@ export class LinkedTransferService {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
-    transfer.paymentId = paymentId;
-    transfer.recipientPublicIdentifier = userPubId;
-    transfer.receiverChannel = channel;
-    await this.linkedTransferRepository.save(transfer);
-
     return {
       appId: receiverAppInstallRes.appInstanceId,
-      sender: transfer.senderChannel.userPublicIdentifier,
-      meta: transfer.meta,
+      sender: senderApp.channel.userPublicIdentifier,
+      meta: {}, // TODO:
       paymentId,
-      amount: transfer.amount,
-      assetId: transfer.assetId,
+      amount,
+      assetId,
     };
   }
 
-  async reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
-    appInstanceId: string,
-  ): Promise<void> {
-    const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(appInstanceId);
-    if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
-      throw new Error(
-        `Could not find transfer with REDEEMED status for receiver app id: ${appInstanceId}`,
-      );
-    }
-    this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
-    await this.reclaimLinkedTransferCollateral(transfer);
-  }
-
-  async reclaimLinkedTransferCollateralByPaymentId(paymentId: string): Promise<void> {
-    const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
-    if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
-      throw new Error(`Could not find transfer with REDEEMED status for paymentId: ${paymentId}`);
-    }
-    this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
-    await this.reclaimLinkedTransferCollateral(transfer);
-  }
-
-  private async reclaimLinkedTransferCollateral(transfer: LinkedTransfer): Promise<void> {
-    if (transfer.status !== LinkedTransferStatus.REDEEMED) {
-      throw new Error(
-        `Transfer with id ${transfer.paymentId} has not been redeemed, status: ${transfer.status}`,
-      );
-    }
-
-    const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
-    // if action has been taken on the app, then there will be a preImage
-    // in the latest state, and you just have to uninstall
-    if ((app.latestState as SimpleLinkedTransferAppState).preImage !== transfer.preImage) {
-      this.log.info(`Reclaiming linked transfer ${transfer.paymentId}`);
-      this.log.debug(
-        `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
-      );
-      await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
-        preImage: transfer.preImage,
-      });
-    }
-    this.log.debug(
-      `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
-    );
-    this.log.debug(`Action taken, uninstalling app. ${Date.now()}`);
-
-    // mark as reclaimed so the listener doesnt try to reclaim again
-    await this.linkedTransferRepository.markAsReclaimed(transfer);
-    await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-    const reclaimedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${transfer.senderChannel.multisigAddress}.transfer.${transfer.paymentId}.reclaimed`;
-    await this.messagingService.publish(reclaimedSubject, {});
-  }
-
-  async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
-    );
-    return await this.linkedTransferRepository.findReclaimable(channel);
+  async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<any> {
+    throw new Error(`Unimplemented`);
   }
 }

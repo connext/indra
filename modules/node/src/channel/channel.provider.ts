@@ -11,7 +11,6 @@ import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
-import { WithdrawService } from "../withdraw/withdraw.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
@@ -111,7 +110,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return onchainTx;
   }
 
-  async getStatesForRestore(pubId: string): Promise<StateChannelJSON> {
+  async getChannelStateForRestore(pubId: string): Promise<StateChannelJSON> {
     return await this.channelService.getStateChannel(pubId);
   }
 
@@ -143,7 +142,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "*.channel.restore-states",
-      this.authService.parseXpub(this.getStatesForRestore.bind(this)),
+      this.authService.parseXpub(this.getChannelStateForRestore.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.latestWithdrawal",

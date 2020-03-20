@@ -14,9 +14,7 @@ import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 import { TransferRepository } from "../transfer/transfer.repository";
 
-import { LinkedTransfer } from "./linkedTransfer.entity";
 import { LinkedTransferService } from "./linkedTransfer.service";
-import { LinkedTransferRepository } from "./linkedTransfer.repository";
 
 export class LinkedTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -25,7 +23,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     messaging: MessagingService,
     private readonly linkedTransferService: LinkedTransferService,
     private readonly transferRepository: TransferRepository,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {
     super(log, messaging);
     log.setContext("LinkedTransferMessaging");
@@ -60,11 +57,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   }
 
   async getPendingTransfers(pubId: string): Promise<PendingAsyncTransfer[]> {
-    const transfers = await this.linkedTransferRepository.findPendingByRecipient(pubId);
-    return transfers.map((transfer: LinkedTransfer) => {
-      const { assetId, amount, encryptedPreImage, linkedHash, paymentId } = transfer;
-      return { amount: amount.toString(), assetId, encryptedPreImage, linkedHash, paymentId };
-    });
+    throw new Error("Not implemented");
   }
 
   async setupSubscriptions(): Promise<void> {
@@ -90,7 +83,6 @@ export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
     MessagingProviderId,
     LinkedTransferService,
     TransferRepository,
-    LinkedTransferRepository,
   ],
   provide: LinkedTransferProviderId,
   useFactory: async (
@@ -99,7 +91,6 @@ export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
     messaging: MessagingService,
     linkedTransferService: LinkedTransferService,
     transferRepository: TransferRepository,
-    linkedTransferRepository: LinkedTransferRepository,
   ): Promise<void> => {
     const transfer = new LinkedTransferMessaging(
       authService,
@@ -107,7 +98,6 @@ export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
       messaging,
       linkedTransferService,
       transferRepository,
-      linkedTransferRepository,
     );
     await transfer.setupSubscriptions();
   },

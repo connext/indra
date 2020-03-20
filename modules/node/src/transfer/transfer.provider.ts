@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { Transfer, stringify } from "@connext/types";
+import { Transfer } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
@@ -33,18 +33,19 @@ export class TransferMessaging extends AbstractMessagingProvider {
   async clientCheckIn(pubId: string): Promise<void> {
     // reclaim collateral from redeemed transfers
     // eslint-disable-next-line max-len
-    const reclaimableLinkedTransfers = await this.linkedTransferService.getLinkedTransfersForReclaim(
-      pubId,
-    );
-    for (const transfer of reclaimableLinkedTransfers) {
-      try {
-        await this.linkedTransferService.reclaimLinkedTransferCollateralByPaymentId(
-          transfer.paymentId,
-        );
-      } catch (e) {
-        this.log.error(`Error reclaiming linked transfer: ${stringify(e.stack || e.message)}`);
-      }
-    }
+    // TODO: FIX
+    // const reclaimableLinkedTransfers = await this.linkedTransferService.getLinkedTransfersForReclaim(
+    //   pubId,
+    // );
+    // for (const transfer of reclaimableLinkedTransfers) {
+    //   try {
+    //     await this.linkedTransferService.reclaimLinkedTransferCollateralByPaymentId(
+    //       transfer.paymentId,
+    //     );
+    //   } catch (e) {
+    //     this.log.error(`Error reclaiming linked transfer: ${stringify(e.stack || e.message)}`);
+    //   }
+    // }
   }
 
   async setupSubscriptions(): Promise<void> {

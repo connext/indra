@@ -36,8 +36,6 @@ import {
   UpdateStateMessage,
 } from "../util/cfCore";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
-import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
@@ -56,7 +54,6 @@ export default class ListenerService implements OnModuleInit {
     private readonly linkedTransferService: LinkedTransferService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
@@ -122,31 +119,9 @@ export default class ListenerService implements OnModuleInit {
         }
         rejectedApp.type = AppType.REJECTED;
         await this.appInstanceRepository.save(rejectedApp);
-
-        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
-          data.data.appInstanceId,
-        );
-        if (!transfer) {
-          this.log.debug(`Transfer not found`);
-          return;
-        }
-        transfer.status = LinkedTransferStatus.FAILED;
-        await this.linkedTransferRepository.save(transfer);
       },
       UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
         this.logEvent(UNINSTALL_EVENT, data);
-        // check if app being uninstalled is a receiver app for a transfer
-        // if so, try to uninstall the sender app
-        try {
-          await this.linkedTransferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
-            data.data.appInstanceId,
-          );
-        } catch (e) {
-          if (e.message.includes(`Could not find transfer`)) {
-            return;
-          }
-          throw e;
-        }
       },
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {

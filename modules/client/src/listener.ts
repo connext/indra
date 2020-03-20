@@ -226,7 +226,7 @@ export class ConnextListener extends ConnextEventEmitter {
         transferMeta: { encryptedPreImage },
         amount,
         assetId,
-      }: CreateTransferEventData<"LINKED_TRANSFER_TO_RECIPIENT"> = data;
+      }: CreateTransferEventData<"LINKED_TRANSFER"> = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }

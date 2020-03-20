@@ -9,7 +9,6 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { TransferModule } from "../transfer/transfer.module";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 
@@ -29,7 +28,6 @@ import { AdminService } from "./admin.service";
     TransferModule,
     TypeOrmModule.forFeature([
       CFCoreRecordRepository,
-      LinkedTransferRepository,
       ChannelRepository,
       SetupCommitmentRepository,
     ]),

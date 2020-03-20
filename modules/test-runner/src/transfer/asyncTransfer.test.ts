@@ -1,6 +1,6 @@
 /* global before after */
 import { utils } from "@connext/client";
-import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, CF_PATH } from "@connext/types";
+import { IConnextClient, CF_PATH, LINKED_TRANSFER } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
@@ -234,7 +234,7 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+        conditionType: LINKED_TRANSFER,
         paymentId,
         preImage: hexlify(randomBytes(32)),
         recipient: clientB.publicIdentifier,
@@ -250,7 +250,7 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+        conditionType: LINKED_TRANSFER,
         paymentId: hexlify(randomBytes(32)),
         preImage,
         recipient: clientB.publicIdentifier,

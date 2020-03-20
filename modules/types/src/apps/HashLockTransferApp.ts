@@ -75,3 +75,8 @@ export type HashLockTransferAppStateBigNumber = HashLockTransferAppState<BigNumb
 export type HashLockTransferAppAction = {
   preImage: string;
 };
+
+// Event Data
+export type CreatedLinkedTransferMeta = {
+  encryptedPreImage?: string;
+};

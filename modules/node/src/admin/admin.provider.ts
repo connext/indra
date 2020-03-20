@@ -8,7 +8,6 @@ import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
-import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 
@@ -62,13 +61,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getAllChannels();
   }
 
-  async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
+  async getAllLinkedTransfers(): Promise<any> {
     return await this.adminService.getAllLinkedTransfers();
   }
 
-  async getLinkedTransferByPaymentId(data: {
-    paymentId: string;
-  }): Promise<LinkedTransfer | undefined> {
+  async getLinkedTransferByPaymentId(data: { paymentId: string }): Promise<any> {
     const { paymentId } = data;
     if (!paymentId) {
       throw new RpcException(`No paymentId supplied: ${stringify(data)}`);

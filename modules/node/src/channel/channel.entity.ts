@@ -14,7 +14,6 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsXpub } from "../util";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
-import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Entity()
@@ -75,18 +74,6 @@ export class Channel {
   )
   @JoinTable()
   rebalanceProfiles!: RebalanceProfile[];
-
-  @OneToMany(
-    (type: any) => LinkedTransfer,
-    (transfer: LinkedTransfer) => transfer.senderChannel,
-  )
-  senderLinkedTransfers!: LinkedTransfer[];
-
-  @OneToMany(
-    (type: any) => LinkedTransfer,
-    (transfer: LinkedTransfer) => transfer.receiverChannel,
-  )
-  receiverLinkedTransfers!: LinkedTransfer[];
 
   @OneToMany(
     (type: any) => OnchainTransaction,

@@ -11,10 +11,8 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { LoggerService } from "../logger/logger.service";
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { ChannelRepository } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
@@ -36,7 +34,6 @@ export class AdminService implements OnApplicationBootstrap {
     private readonly setupCommitment: SetupCommitmentRepository,
     private readonly channelRepository: ChannelRepository,
     private readonly cfCoreRepository: CFCoreRecordRepository,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {
     this.log.setContext("AdminService");
   }
@@ -68,14 +65,14 @@ export class AdminService implements OnApplicationBootstrap {
 
   /** Get all transfers */
   // @hunter -- see notes in transfer service fns
-  async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
-    return await this.linkedTransferRepository.findAll();
+  async getAllLinkedTransfers(): Promise<any> {
+    throw new Error(`Not implemented`);
   }
 
   /** Get transfer */
   // @hunter -- see notes in transfer service fns
-  async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
-    return await this.linkedTransferRepository.findByPaymentId(paymentId);
+  async getLinkedTransferByPaymentId(paymentId: string): Promise<any> {
+    throw new Error(`Not implemented`);
   }
 
   /////////////////////////////////////////

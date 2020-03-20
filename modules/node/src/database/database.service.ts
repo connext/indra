@@ -16,7 +16,6 @@ import { ConditionalTransactionCommitment } from "../conditionalCommitment/condi
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { Transfer } from "../transfer/transfer.entity";
 import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
-import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { Withdraw } from "../withdraw/withdraw.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
@@ -47,7 +46,6 @@ export const entities = [
   Channel,
   CFCoreRecord,
   RebalanceProfile,
-  LinkedTransfer,
   OnchainTransaction,
   Transfer,
   AnonymizedOnchainTransaction,
