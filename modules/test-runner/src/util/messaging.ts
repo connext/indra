@@ -10,11 +10,11 @@ import {
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
-import { Wallet } from "ethers";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import { Logger } from "./logger";
 
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
+import { SigningKey, joinSignature } from "ethers/utils";
 
 const log = new Logger("Messaging", env.logLevel);
 
@@ -37,6 +37,7 @@ export type TestMessagingConfig = {
   };
   count: DetailedMessageCounter;
   forbiddenSubjects: string[];
+  mnemonic: string;
 };
 
 export const RECEIVED = "RECEIVED";
@@ -103,7 +104,7 @@ const zeroCounter = (): MessageCounter => {
   return { sent: 0, received: 0 };
 };
 
-const defaultOpts = (): TestMessagingConfig => {
+const defaultOpts = (): Omit<TestMessagingConfig, "mnemonic"> => {
   return {
     nodeUrl: env.nodeUrl,
     messagingConfig: {
@@ -131,11 +132,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   private protocolDefaults: {
     [protocol: string]: DetailedMessageCounter;
   };
-  public options: TestMessagingConfig;
   private countInternal: DetailedMessageCounter;
   private forbiddenSubjects: string[];
+  public options: TestMessagingConfig;
 
-  constructor(opts: Partial<TestMessagingConfig> = {}) {
+  constructor(opts: Partial<TestMessagingConfig> & { mnemonic: string }) {
     super();
     const defaults = defaultOpts();
     // create options
@@ -145,12 +146,16 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       count: combineObjects(opts.count, defaults.count),
       protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
       forbiddenSubjects: opts.forbiddenSubjects || defaults.forbiddenSubjects,
+      mnemonic: opts.mnemonic!,
     };
 
-    const hdNode = fromMnemonic(Wallet.createRandom().mnemonic).derivePath(CF_PATH);
+    const hdNode = fromMnemonic(this.options.mnemonic).derivePath(CF_PATH);
+    const getSignature = async (message: string) => {
+      const signingKey = new SigningKey(hdNode.derivePath("0").privateKey);
+      const sig = joinSignature(signingKey.signDigest(message));
+      return sig;
+    };
     const xpub = hdNode.neuter().extendedKey;
-    const getSignature = (nonce: string): Promise<string> =>
-      Promise.resolve(new Wallet(hdNode.derivePath("0").privateKey).signMessage(nonce));
 
     const getBearerToken = async (
       xpub: string,
@@ -159,18 +164,22 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       try {
         const nonce = await axios.get(`${this.options.nodeUrl}/auth/${xpub}`);
         const sig = await getSignature(nonce.data);
-        const bearerToken: string = await axios.post(`${this.options.nodeUrl}/auth`, {
-          sig,
-          userPublicIdentifier: xpub,
-        } as VerifyNonceDtoType);
-        return bearerToken;
+        const bearerToken: AxiosResponse<string> = await axios.post(
+          `${this.options.nodeUrl}/auth`,
+          {
+            sig,
+            userPublicIdentifier: xpub,
+          } as VerifyNonceDtoType,
+        );
+        return bearerToken.data;
       } catch (e) {
         return e;
       }
     };
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
-    this.connection = new MessagingService(this.options.messagingConfig, xpub, () =>
+    const key = `INDRA.4447`;
+    this.connection = new MessagingService(this.options.messagingConfig, key, () =>
       getBearerToken(xpub, getSignature),
     );
     this.protocolDefaults = this.options.protocolDefaults;

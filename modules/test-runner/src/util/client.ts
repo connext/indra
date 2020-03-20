@@ -110,12 +110,13 @@ export const createClientWithMessagingLimits = async (
   const { protocol, ceiling, delay, forbiddenSubjects } = opts;
   const messageOptions: any = { forbiddenSubjects: forbiddenSubjects || [] };
   // no defaults specified, exit early
+  const mnemonic = Wallet.createRandom().mnemonic;
   if (Object.keys(opts).length === 0) {
-    const messaging = new TestMessagingService();
+    const messaging = new TestMessagingService({ mnemonic });
     expect(messaging.install.ceiling).to.be.undefined;
     expect(messaging.count.received).to.be.equal(0);
     expect(messaging.count.sent).to.be.equal(0);
-    return await createClient({ messaging });
+    return await createClient({ messaging, mnemonic });
   }
   if (protocol === "any") {
     // assign the ceiling for the general message count
@@ -129,7 +130,7 @@ export const createClientWithMessagingLimits = async (
       },
     };
   }
-  const messaging = new TestMessagingService(messageOptions);
+  const messaging = new TestMessagingService({ ...messageOptions, mnemonic });
   // verification of messaging settings
   const expected = {
     sent: 0,
@@ -141,5 +142,5 @@ export const createClientWithMessagingLimits = async (
     ? expect(messaging.count).to.containSubset(expected)
     : expect(messaging[protocol]).to.containSubset(expected);
   expect(messaging.options).to.containSubset(messageOptions);
-  return await createClient({ messaging });
+  return await createClient({ messaging, mnemonic });
 };
