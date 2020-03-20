@@ -10,7 +10,7 @@ import {
 } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
-import { BaseProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
+import { JsonRpcProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -237,7 +237,6 @@ export async function makeDeposit(
   const signerAddress = await signer.getAddress();
 
   let txResponse: TransactionResponse;
-
   let retryCount = DEPOSIT_RETRY_COUNT;
   const errors: string[] = [];
   while (retryCount > 0) {
@@ -342,7 +341,7 @@ export async function uninstallBalanceRefundApp(
 async function getDepositContext(
   params: MethodParams.Deposit,
   publicIdentifier: string,
-  provider: BaseProvider,
+  provider: JsonRpcProvider,
   networkContext: NetworkContext,
   tokenAddress: string,
 ): Promise<DepositContext> {

@@ -16,7 +16,7 @@ describe("Node", () => {
     const node = await Node.create(
       memoryMessagingService,
       new MemoryStoreService(),
-      global["networkContext"],
+      global["network"],
       { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
       new JsonRpcProvider(global["ganacheURL"]),
       undefined,

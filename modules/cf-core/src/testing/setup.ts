@@ -52,7 +52,7 @@ export async function setup(
   const setupContext: SetupContext = {};
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
-  const provider = global["network"].provider;
+  const provider = global["wallet"].provider;
 
   const extendedPrvKeyA = A_EXTENDED_PRIVATE_KEY;
   let extendedPrvKeyB = B_EXTENDED_PRIVATE_KEY;

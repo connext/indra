@@ -1,6 +1,6 @@
 import { EventNames, ILoggerService, IMessagingService, MethodName } from "@connext/types";
 import { Signer } from "ethers";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
 import { eventNameToImplementation, methodNameToImplementation } from "./methods";
@@ -35,7 +35,7 @@ export class RequestHandler {
     readonly messagingService: IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
-    readonly provider: BaseProvider,
+    readonly provider: JsonRpcProvider,
     readonly wallet: Signer,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
