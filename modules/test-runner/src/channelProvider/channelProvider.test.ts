@@ -50,21 +50,17 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // DEPOSIT FLOW
     await fundChannel(client, input.amount, input.assetId);
-    console.log(`FUNDED`);
     await remoteClient.requestCollateral(output.assetId);
-    console.log(`COLLATERAL`);
 
     ////////////////////////////////////////
     // SWAP FLOW
     await swapAsset(remoteClient, input, output, nodeFreeBalanceAddress);
-    console.log(`SWAP`);
 
     ////////////////////////////////////////
     // TRANSFER FLOW
     const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
     const clientB = await createClient();
     await clientB.requestCollateral(tokenAddress);
-    console.log(`COLLATERAL`);
 
     const transferFinished = Promise.all([
       new Promise(async resolve => {
@@ -87,7 +83,6 @@ describe("ChannelProvider", () => {
     });
 
     await transferFinished;
-    console.log(`TRANSFER`);
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
