@@ -19,6 +19,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -37,6 +38,7 @@ export class AdminService implements OnApplicationBootstrap {
     private readonly channelRepository: ChannelRepository,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AdminService");
   }
@@ -227,9 +229,8 @@ export class AdminService implements OnApplicationBootstrap {
   }
 
   async migrateChannelStore(): Promise<boolean> {
-    const oldChannelRecords = await this.cfCoreRepository.get(
-      `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`,
-    );
+    const prefix = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`;
+    const oldChannelRecords = await this.cfCoreRepository.get(prefix);
     const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
     this.log.log(`Found ${channelJSONs.length} old channel records`);
     for (const channelJSON of channelJSONs) {
@@ -260,12 +261,15 @@ export class AdminService implements OnApplicationBootstrap {
         // otherwise, save channel and new channel will have schema
         await this.cfCoreStore.saveStateChannel(channelJSON);
 
+        const savedChannel = await this.channelRepository.findByMultisigAddress(
+          channelJSON.multisigAddress,
+        );
         for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
           await this.cfCoreStore.saveAppProposal(channelJSON.multisigAddress, proposedApp);
         }
 
-        for (const [, appInstance] of channelJSON.appInstances) {
-          await this.cfCoreStore.saveAppInstance(channelJSON.multisigAddress, appInstance);
+        for (const [, appInstance] of channelJSON.appInstances || []) {
+          await this.appInstanceRepository.saveAppInstance(savedChannel, appInstance, true);
         }
 
         await this.cfCoreStore.saveFreeBalance(

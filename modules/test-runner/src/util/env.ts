@@ -1,4 +1,6 @@
 import { config } from "dotenv";
+import { HDNode } from "ethers/utils";
+import { CF_PATH } from "@connext/types";
 config();
 
 export const env = {
@@ -15,4 +17,9 @@ export const env = {
   nodeUrl: process.env.INDRA_NODE_URL || "",
   storeDir: process.env.STORE_DIR || "",
   adminToken: process.env.INDRA_ADMIN_TOKEN || "foo",
+  nodePubId: process.env.INDRA_ETH_MNEMONIC
+    ? HDNode.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!)
+        .derivePath(CF_PATH)
+        .neuter().extendedKey
+    : "",
 };
