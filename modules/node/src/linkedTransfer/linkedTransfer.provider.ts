@@ -49,11 +49,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const transferApps = await this.appInstanceRepository.findLinkedTransferAppsByPaymentId(
       data.paymentId,
     );
-    console.log("transferApps: ", transferApps);
-    console.log(
-      "transferApps: ",
-      transferApps.map(app => app.latestState["coinTransfers"]),
-    );
 
     if (transferApps.length === 0) {
       return undefined;
@@ -67,13 +62,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
         convertLinkedTransferAppState("bignumber", app.latestState as SimpleLinkedTransferAppState)
           .coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress,
     );
-    console.log("senderApp: ", senderApp);
     const receiverApp = transferApps.find(
       app =>
         convertLinkedTransferAppState("bignumber", app.latestState as SimpleLinkedTransferAppState)
           .coinTransfers[0].to === this.cfCoreService.cfCore.freeBalanceAddress,
     );
-    console.log("receiverApp: ", receiverApp);
 
     if (!senderApp) {
       return undefined;
@@ -83,10 +76,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     // if sender app is uninstalled, transfer has been unlocked by node
     if (senderApp.type === AppType.UNINSTALLED) {
       status = "UNLOCKED" as LinkedTransferStatus;
-      // if receiver app is uninstalled, sender may have been offline when receiver redeemed
     } else if (!receiverApp) {
       status = "PENDING" as LinkedTransferStatus;
     } else if (receiverApp?.type === AppType.UNINSTALLED) {
+      // if receiver app is uninstalled, sender may have been offline when receiver redeemed
       status = "REDEEMED" as LinkedTransferStatus;
     } else if (receiverApp?.type === AppType.REJECTED) {
       status = "FAILED" as LinkedTransferStatus;
@@ -105,8 +98,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       paymentId: latestState.paymentId,
       senderPublicIdentifier: senderApp.channel.userPublicIdentifier,
       status,
-      encryptedPreImage: "blah",
-      receiverPublicIdentifier: "blah",
+      encryptedPreImage: senderApp.meta
+        ? (senderApp.meta as any).encryptedPreImage
+        : senderApp.meta,
+      receiverPublicIdentifier: senderApp.meta ? (senderApp.meta as any).recipient : senderApp.meta,
     };
   }
 
