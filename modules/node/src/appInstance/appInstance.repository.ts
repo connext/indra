@@ -1,7 +1,13 @@
-import { AppInstanceJson, AppInstanceProposal, OutcomeType, stringify } from "@connext/types";
+import {
+  AppInstanceJson,
+  AppInstanceProposal,
+  OutcomeType,
+  SimpleLinkedTransferApp,
+} from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
+import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
 import { bigNumberify } from "ethers/utils";
@@ -187,14 +193,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   }
 
   async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
-    const app = await this.findByMultisigAddressAndType(multisigAddress, AppType.FREE_BALANCE);
-    if (!app || app.length === 0) {
-      return undefined;
-    }
-    if (app.length > 1) {
-      throw new Error(`Multiple free balance apps found for ${multisigAddress}`);
-    }
-    return convertAppToInstanceJSON(app[0], app[0].channel);
+    const [app] = await this.findByMultisigAddressAndType(multisigAddress, AppType.FREE_BALANCE);
+    return convertAppToInstanceJSON(app, app.channel);
   }
 
   async saveFreeBalance(channel: Channel, freeBalance: AppInstanceJson): Promise<AppInstance> {
@@ -326,5 +326,21 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     }
     app.type = AppType.UNINSTALLED;
     return this.save(app);
+  }
+
+  async findLinkedTransferAppsByPaymentId(paymentId: string): Promise<AppInstance[]> {
+    const res = await this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
+      .getMany();
+    console.log("res: ", res);
+    return res;
   }
 }
