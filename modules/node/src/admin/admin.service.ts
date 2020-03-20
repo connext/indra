@@ -247,7 +247,18 @@ export class AdminService implements OnApplicationBootstrap {
         setup.data = HashZero;
         await this.setupCommitment.save(setup);
 
+        // check if channel exists
+        const channel = await this.channelRepository.findByMultisigAddress(
+          channelJSON.multisigAddress,
+        );
+        if (channel) {
+          // update the store version
+          channel.schemaVersion = await this.cfCoreStore.getSchemaVersion();
+          await this.channelRepository.save(channel);
+        }
+        // otherwise, save channel and new channel will have schema
         await this.cfCoreStore.saveStateChannel(channelJSON);
+
         for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
           await this.cfCoreStore.saveAppProposal(channelJSON.multisigAddress, proposedApp);
         }
