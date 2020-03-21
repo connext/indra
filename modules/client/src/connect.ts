@@ -131,7 +131,7 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const sig = signDigestWithEthers(await keyGen("0x"), message);
+      const sig = signDigestWithEthers(await keyGen("0"), message);
       return sig;
     };
 
