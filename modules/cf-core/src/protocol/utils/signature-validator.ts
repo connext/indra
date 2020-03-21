@@ -15,12 +15,14 @@ export function assertIsValidSignature(
     throw Error("assertIsValidSignature received an undefined signature");
   }
 
+  const hash = commitment.hashToSign();
+
   // recoverAddress: 83 ms, hashToSign: 7 ms
-  const signer = recoverAddress(commitment.hashToSign(), signature);
+  const signer = recoverAddress(hash, signature);
 
   if (getAddress(expectedSigner) !== signer) {
     throw Error(
-      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitment.hashToSign()}.`,
+      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${hash}.`,
     );
   }
 }

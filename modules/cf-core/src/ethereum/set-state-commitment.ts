@@ -90,13 +90,12 @@ export class SetStateCommitment implements EthereumCommitment {
 
   private getSignedStateHashUpdate(): SignedStateHashUpdate {
     this.assertSignatures();
+    const hash = this.hashToSign();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(this.hashToSign(), this.signatures).map(
-        joinSignature,
-      ),
+      signatures: sortSignaturesBySignerAddress(hash, this.signatures).map(joinSignature),
     };
   }
 

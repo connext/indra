@@ -244,7 +244,7 @@ export class WithdrawService {
         this.cfCoreService.cfCore.freeBalanceAddress,
         xkeyKthAddress(channel.userPublicIdentifier),
       ],
-      data: commitment.hashToSign(),
+      data: hash,
       finalized: false,
     };
 
