@@ -17,6 +17,7 @@ import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from
 import { StateChannel } from "./models";
 import { xkeyKthAddress } from "./machine";
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods";
+import memoize from "memoizee";
 
 export const logTime = (log: ILoggerService, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -78,7 +79,6 @@ export async function sleep(timeInMilliseconds: number) {
  * NOTE: if the encoding of the multisig owners is changed YOU WILL break all
  * existing channels
  */
-// TODO: memoize?
 export const getCreate2MultisigAddress = async (
   owners: string[],
   addresses: CriticalStateChannelAddresses,
@@ -99,7 +99,7 @@ export const getCreate2MultisigAddress = async (
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
-  return getAddress(
+  return memoizedGetAddress(
     solidityKeccak256(
       ["bytes1", "address", "uint256", "bytes32"],
       [
@@ -125,6 +125,15 @@ export const getCreate2MultisigAddress = async (
     ).slice(-40),
   );
 };
+
+const memoizedGetAddress = memoize(
+  (params: any): string => getAddress(params),
+  {
+    max: 100,
+    maxAge: 60 * 1000,
+    primitive: true,
+  },
+);
 
 export const scanForCriticalAddresses = async (
   ownerXpubs: string[],
