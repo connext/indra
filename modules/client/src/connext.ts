@@ -217,7 +217,10 @@ export class ConnextClient implements IConnextClient {
     const channelProvider = await createCFChannelProvider({
       ethProvider: this.ethProvider,
       keyGen: this.keyGen,
-      lockService: { acquireLock: this.node.acquireLock.bind(this.node) },
+      lockService: { 
+        acquireLock: this.node.acquireLock.bind(this.node),
+        releaseLock: this.node.releaseLock.bind(this.node),
+      },
       messaging: this.messaging as any,
       contractAddresses: this.config.contractAddresses,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },

@@ -29,7 +29,6 @@ import {
 import { ProtocolRunner } from "./machine";
 import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
-import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import {
@@ -81,7 +80,7 @@ export class Node {
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
-    lockService?: ILockService,
+    lockService: CFCoreTypes.ILockService,
     publicExtendedKey?: string,
     privateKeyGenerator?: IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,
@@ -102,8 +101,8 @@ export class Node {
       provider,
       networkContext,
       blocksNeededForConfirmation,
-      logger,
       lockService,
+      logger,
     );
 
     return await node.asynchronouslySetupUsingRemoteServices();
@@ -118,8 +117,8 @@ export class Node {
     private readonly provider: JsonRpcProvider,
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
+    private readonly lockService: ILockService,
     public readonly log: ILoggerService = nullLogger,
-    private readonly lockService?: ILockService,
   ) {
     this.log = log.newContext("CF-Node");
     this.networkContext.provider = this.provider;
@@ -148,7 +147,7 @@ export class Node {
         new JsonRpcProvider(this.provider.connection.url),
       ),
       this.blocksNeededForConfirmation!,
-      new ProcessQueue(this.lockService),
+      this.lockService,
       this.log,
     );
     this.registerMessagingConnection();

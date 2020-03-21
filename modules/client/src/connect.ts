@@ -150,7 +150,11 @@ export const connect = async (
     channelProvider = await createCFChannelProvider({
       ethProvider,
       keyGen,
-      lockService: { acquireLock: node.acquireLock.bind(node) },
+      lockService: 
+        { 
+          acquireLock: node.acquireLock.bind(node),
+          releaseLock: node.releaseLock.bind(node),
+        },
       messaging,
       contractAddresses: config.contractAddresses,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },

@@ -7,34 +7,27 @@ export class MemoryLockService implements ILockService {
 
   async acquireLock(
     lockName: string,
-    callback: (...args: any[]) => any,
-    timeout: number,
-  ): Promise<any> {
-    const lock = this.getOrCreateLock(lockName);
+    timeout?: number,
+  ): Promise<string> {
+    let lock
+    if (!this.locks.has(lockName)) {
+      this.locks.set(lockName, new Lock(lockName));
+      lock = this.locks.get(lockName)!;
+    }
 
     let retval = null;
     let rejectReason = null;
     let unlockKey = "";
-
-    try {
-      unlockKey = await lock.acquireLock(timeout);
-      retval = await callback();
-    } catch (e) {
-      // TODO: check exception... if the lock failed
-      rejectReason = e;
-    } finally {
-      await lock.releaseLock(unlockKey);
-    }
-
-    if (rejectReason) throw rejectReason;
-
-    return retval;
+    
+    return lock.acquireLock(timeout);
   }
 
-  private getOrCreateLock(lockName: string) {
-    if (!this.locks.has(lockName)) {
-      this.locks.set(lockName, new Lock(lockName));
-    }
-    return this.locks.get(lockName)!;
+  async releaseLock(
+    lockName: string,
+    lockValue: string,
+  ): Promise<any> {
+    const lock = this.locks.get(lockName)
+    //@ts-ignore
+    return lock.releaseLock(lockName, lockValue);
   }
 }

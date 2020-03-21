@@ -158,7 +158,8 @@ export interface INodeApiClient {
   userPublicIdentifier: string | undefined;
   nodePublicIdentifier: string | undefined;
 
-  acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
+  acquireLock(lockName: string, timeout?: number): Promise<string>;
+  releaseLock(lockName: string, lockValue: string): Promise<void>;
   appRegistry(
     appDetails?:
       | {

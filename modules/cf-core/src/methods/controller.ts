@@ -14,9 +14,15 @@ export abstract class NodeController extends Controller {
 
     const lockNames = await this.getRequiredLockNames(requestHandler, params);
 
-    const createExecutionPromise = () => this.executeMethodImplementation(requestHandler, params);
+    const lockValues: string[] = await Promise.all(lockNames.map((name)=> {
+      return requestHandler.lockService.acquireLock(name);
+    }));
 
-    const ret = await requestHandler.processQueue.addTask(lockNames, createExecutionPromise);
+    const ret = await this.executeMethodImplementation(requestHandler, params);
+
+    await Promise.all(lockNames.map((name, index)=> {
+      return requestHandler.lockService.releaseLock(name, lockValues[index]);
+    }));
 
     await this.afterExecution(requestHandler, params);
 

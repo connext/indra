@@ -37,7 +37,7 @@ export const cfCoreProviderFactory: Provider = {
       contractAddresses,
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
-      { acquireLock: lockService.lockedOperation.bind(lockService) },
+      lockService,
       publicExtendedKey,
       // key gen fn
       (uniqueId: string): Promise<string> => {
