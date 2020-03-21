@@ -72,20 +72,14 @@ export type CreateChannelResponse = {
 // TODO: why was this changed?
 export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
 
-export enum LinkedTransferStatus {
+export const enum LinkedTransferStatus {
   PENDING = "PENDING",
   REDEEMED = "REDEEMED",
   FAILED = "FAILED",
   UNLOCKED = "UNLOCKED",
 }
 
-export enum TransferType {
-  P2P = "P2P",
-  LINKED = "LINKED",
-  FAST_SIGNED = "FAST_SIGNED",
-}
-
-export interface FetchedLinkedTransfer {
+export type FetchedLinkedTransfer<T = any> = {
   paymentId: string;
   createdAt: Date;
   amount: string;
@@ -93,11 +87,10 @@ export interface FetchedLinkedTransfer {
   senderPublicIdentifier: string;
   receiverPublicIdentifier?: string;
   status: LinkedTransferStatus;
-  meta: any;
+  meta: T;
   encryptedPreImage?: string;
-  type: TransferType.LINKED;
-}
-export type GetLinkedTransferResponse = FetchedLinkedTransfer;
+};
+export type GetLinkedTransferResponse<T = any> = FetchedLinkedTransfer<T>;
 export type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
 
 ////////////////////////////////////

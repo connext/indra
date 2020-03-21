@@ -69,7 +69,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     if (!senderApp) {
       return undefined;
     }
-    console.log(LinkedTransferStatus);
 
     // if sender app is uninstalled, transfer has been unlocked by node
     const status = appStatusesToLinkedTransferStatus(senderApp.type, receiverApp?.type);
@@ -87,10 +86,8 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       paymentId: latestState.paymentId,
       senderPublicIdentifier: senderApp.channel.userPublicIdentifier,
       status,
-      encryptedPreImage: encryptedPreImage || "",
-      receiverPublicIdentifier: recipient || "",
-      type: "LINKED" as any, // TransferType.LINKED
-      // ^^ TODO: why does enum from types not work?
+      encryptedPreImage: encryptedPreImage,
+      receiverPublicIdentifier: recipient,
     };
   }
 
