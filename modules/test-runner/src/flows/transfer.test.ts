@@ -1,4 +1,8 @@
-import { IConnextClient } from "@connext/types";
+import {
+  IConnextClient,
+  ReceiveTransferFinishedEventData,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+} from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { Client } from "ts-nats";
 import { before } from "mocha";
@@ -9,9 +13,11 @@ import {
   fundChannel,
   requestCollateral,
   TOKEN_AMOUNT_SM,
+  expect,
 } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 import { getNatsClient } from "../util/nats";
+import { bigNumberify } from "ethers/utils";
 
 describe("Full Flow: Transfer", () => {
   let clientA: IConnextClient;
@@ -78,5 +84,39 @@ describe("Full Flow: Transfer", () => {
     await asyncTransferAsset(clientB, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
     await asyncTransferAsset(clientC, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
     await asyncTransferAsset(clientD, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
+  });
+
+  it("Client receives transfers concurrently", () => {
+    return new Promise(async (res, rej) => {
+      await fundChannel(clientA, bigNumberify(5));
+      await fundChannel(clientB, bigNumberify(5));
+      await fundChannel(clientC, bigNumberify(5));
+      let transferCount = 0;
+      clientA.on(
+        "RECEIVE_TRANSFER_FINISHED_EVENT",
+        async (data: ReceiveTransferFinishedEventData) => {
+          console.log("CLIENTA RECEIVED TRANSFER, data: ", data);
+          transferCount += 1;
+          if (transferCount === 2) {
+            expect(transferCount).to.eq(2);
+            res();
+          }
+        },
+      );
+
+      clientA.on(RECEIVE_TRANSFER_FAILED_EVENT, () =>
+        rej(`Received transfer failed event on clientA`),
+      );
+      clientB.on(RECEIVE_TRANSFER_FAILED_EVENT, () =>
+        rej(`Received transfer failed event on clientA`),
+      );
+      clientC.on(RECEIVE_TRANSFER_FAILED_EVENT, () =>
+        rej(`Received transfer failed event on clientA`),
+      );
+      await Promise.all([
+        clientB.transfer({ amount: "1", recipient: clientA.publicIdentifier }),
+        clientC.transfer({ amount: "1", recipient: clientA.publicIdentifier }),
+      ]);
+    });
   });
 });
