@@ -12,6 +12,7 @@ import {
   recoverAddress,
   Signature,
   solidityKeccak256,
+  SigningKey,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -285,3 +286,8 @@ export function assertSufficientFundsWithinFreeBalance(
     );
   }
 }
+
+export const signDigestWithEthers = (privateKey: string, digest: string) => {
+  const signingKey = new SigningKey(privateKey);
+  return joinSignature(signingKey.signDigest(digest));
+};

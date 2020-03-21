@@ -25,6 +25,7 @@
     "@connext/apps": "6.0.0-alpha.0",
     "@connext/cf-core": "6.0.0-alpha.0",
     "@connext/contracts": "1.0.5",
+    "@connext/crypto": "6.0.0-alpha.0",
     "@connext/messaging": "6.0.0-alpha.0",
     "@connext/types": "6.0.0-alpha.0",
     "@nestjs/common": "7.0.2",
