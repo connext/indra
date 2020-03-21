@@ -21,24 +21,26 @@ import { xkeyKthAddress } from "../util";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { convertLinkedTransferAppState } from "@connext/apps";
-import { AppType } from "../appInstance/appInstance.entity";
+import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 
-export const appStatusesToLinkedTransferStatus = (
+const appStatusesToLinkedTransferStatus = (
   senderAppType: AppType,
   receiverAppType?: AppType,
-): LinkedTransferStatus => {
-  // if sender app is uninstalled, transfer has been unlocked by node
-  if (senderAppType === AppType.UNINSTALLED) {
+): LinkedTransferStatus | undefined => {
+  if (!senderAppType) {
+    return undefined;
+  } else if (senderAppType === AppType.UNINSTALLED) {
+    // if sender app is uninstalled, transfer has been unlocked by node
     return LinkedTransferStatus.UNLOCKED;
   } else if (!receiverAppType) {
     return LinkedTransferStatus.PENDING;
   } else if (receiverAppType === AppType.UNINSTALLED) {
     // if receiver app is uninstalled, sender may have been offline when receiver redeemed
     return LinkedTransferStatus.REDEEMED;
-  } else if (receiverAppType === AppType.REJECTED) {
+  } else if (senderAppType === AppType.REJECTED || receiverAppType === AppType.REJECTED) {
     return LinkedTransferStatus.FAILED;
   } else {
-    throw new Error(`Could not determine status`);
+    throw new Error(`Unable to determine status`);
   }
 };
 
@@ -183,7 +185,55 @@ export class LinkedTransferService {
     };
   }
 
-  async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<any> {
-    throw new Error(`Unimplemented`);
+  async findSenderAndReceiverAppsWithStatus(
+    paymentId: string,
+  ): Promise<
+    { senderApp: AppInstance; receiverApp: AppInstance; status: LinkedTransferStatus } | undefined
+  > {
+    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+      paymentId,
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+      paymentId,
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    // if sender app is uninstalled, transfer has been unlocked by node
+    const status = appStatusesToLinkedTransferStatus(senderApp?.type, receiverApp?.type);
+
+    return { senderApp, receiverApp, status };
+  }
+
+  // reclaimable transfer:
+  // sender app is installed with meta containing recipient information
+  // preImage is HashZero
+  // receiver app has never been installed
+  //
+  // eg:
+  // sender installs app, goes offline
+  // receiver redeems, app is installed and uninstalled
+  // if we don't check for uninstalled receiver app, receiver can keep redeeming
+  async getLinkedTransfersForRedeem(userPublicIdentifier: string): Promise<AppInstance[]> {
+    const transfers = await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
+      userPublicIdentifier,
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    console.log('transfers: ', transfers);
+    let redeemableTransfers = transfers;
+    for (const transfer of transfers) {
+      // sender is node
+      const existingReceiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+        transfer.latestState["paymentId"],
+        this.cfCoreService.cfCore.freeBalanceAddress,
+      );
+      // if it has ever existed, transfer is not redeemable
+      if (existingReceiverApp) {
+        // filter out bad transfer
+        redeemableTransfers = redeemableTransfers.filter(
+          app => app.latestState["paymentId"] !== transfer.latestState["paymentId"],
+        );
+      }
+    }
+    return redeemableTransfers;
   }
 }
