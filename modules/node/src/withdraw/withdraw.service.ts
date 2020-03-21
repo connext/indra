@@ -94,9 +94,9 @@ export class WithdrawService {
     );
 
     // Sign commitment
-    const key = new SigningKey(this.configService.getEthWallet().privateKey);
+    const signingKey = new SigningKey(this.configService.getEthWallet().privateKey);
     const counterpartySignatureOnWithdrawCommitment = joinSignature(
-      key.signDigest(generatedCommitment.hashToSign()),
+      signingKey.signDigest(generatedCommitment.hashToSign()),
     );
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
