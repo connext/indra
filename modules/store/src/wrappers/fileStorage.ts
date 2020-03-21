@@ -57,7 +57,11 @@ export class FileStorage implements WrappedStorage {
   async setItem(key: string, data: string): Promise<void> {
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
-      await this.backupService.backup({ path: key, value: data });
+      try {
+        await this.backupService.backup({ path: key, value: data });
+      } catch (e) {
+        console.error(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
+      }
     }
     const filePath = await this.getFilePath(key);
     return fsWrite(filePath, data);

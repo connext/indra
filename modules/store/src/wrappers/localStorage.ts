@@ -24,7 +24,11 @@ export class WrappedLocalStorage implements WrappedStorage {
   async setItem(key: string, value: string): Promise<void> {
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
-      await this.backupService.backup({ path: key, value });
+      try {
+        await this.backupService.backup({ path: key, value });
+      } catch (e) {
+        console.error(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
+      }
     }
     this.localStorage.setItem(`${this.prefix}${this.separator}${key}`, value);
   }
