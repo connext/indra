@@ -47,6 +47,7 @@ export class LinkedTransferController extends AbstractController {
       invalid32ByteHexString(preImage),
     );
 
+    const submittedMeta = { ...(meta || {}) };
     if (recipient) {
       validate(invalidXpub(recipient));
       // set recipient and encrypted pre-image on linked transfer
@@ -57,8 +58,8 @@ export class LinkedTransferController extends AbstractController {
       );
 
       // add encrypted preImage to meta so node can store it in the DB
-      params.meta["encryptedPreImage"] = encryptedPreImage;
-      params.meta["recipient"] = recipient;
+      submittedMeta["encryptedPreImage"] = encryptedPreImage;
+      submittedMeta["recipient"] = recipient;
     }
 
     // install the transfer application
@@ -97,7 +98,7 @@ export class LinkedTransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      meta,
+      meta: submittedMeta,
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
@@ -117,12 +118,12 @@ export class LinkedTransferController extends AbstractController {
       paymentId,
       sender: this.connext.publicIdentifier,
       recipient,
-      meta,
+      meta, // TODO: include encrypted preimage / recipient?
       transferMeta: {},
     } as CreateTransferEventData<"LINKED_TRANSFER">;
 
     if (recipient) {
-      eventData.transferMeta.encryptedPreImage = params.meta.encryptedPreImage;
+      eventData.transferMeta.encryptedPreImage = submittedMeta.encryptedPreImage;
 
       // publish encrypted secret for receiver
       await this.connext.messaging.publish(
