@@ -1,7 +1,6 @@
 import { MessagingAuthService } from "@connext/messaging";
-// import { getMessagingPrefix } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
-import { hexlify, randomBytes, verifyMessage, recoverPublicKey, recoverAddress } from "ethers/utils";
+import { hexlify, randomBytes, recoverAddress } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
