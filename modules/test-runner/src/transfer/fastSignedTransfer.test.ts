@@ -130,9 +130,8 @@ describe.skip("Fast Signed Transfer", () => {
 
       const data = hexlify(randomBytes(32));
 
-      const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = signDigestWithEthers(withdrawerSigningKey.privateKey, digest);
+      const signature = signDigestWithEthers(signerWallet.privateKey, digest);
 
       const res = await clientB.resolveCondition({
         conditionType: FAST_SIGNED_TRANSFER,
