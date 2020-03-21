@@ -3,6 +3,7 @@ import {
   AppInstanceProposal,
   OutcomeType,
   SimpleLinkedTransferApp,
+  convertCoinTransfers,
 } from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
 
@@ -328,7 +329,17 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       app.userParticipantAddress = participants.filter(p => p === userAddr)[0];
       app.nodeParticipantAddress = participants.filter(p => p !== userAddr)[0];
     }
-    app.latestState = latestState;
+
+    // TODO: THIS SHOULD PROB BE DONE UPSTREAM
+    let latestStateFixed = latestState;
+    if (latestState["coinTransfers"]) {
+      latestStateFixed["coinTransfers"] = convertCoinTransfers(
+        "bignumber",
+        latestState["coinTransfers"],
+      );
+    }
+
+    app.latestState = latestStateFixed;
     app.latestTimeout = latestTimeout;
     app.latestVersionNumber = latestVersionNumber;
 
@@ -394,7 +405,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,0}' = '"${sender}"'`)
+      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${sender}"'`)
       .getOne();
     return res;
   }
@@ -412,7 +423,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",1,0}' = '"${sender}"'`)
+      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${sender}"'`)
       .getOne();
     return res;
   }
@@ -432,7 +443,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       // node is receiver of transfer
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,0}' = '"${nodeFreeBalanceAddress}"'`,
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
       )
       // meta for transfer recipient
       .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipient}"}'`)
