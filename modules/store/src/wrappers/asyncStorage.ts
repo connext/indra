@@ -67,7 +67,11 @@ export class WrappedAsyncStorage implements WrappedStorage {
     await this.loadData();
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
-      await this.backupService.backup({ path: key, value });
+      try {
+        await this.backupService.backup({ path: key, value });
+      } catch (e) {
+        console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
+      }
     }
     this.data[`${this.prefix}${this.separator}${key}`] = value;
     await this.persist();
