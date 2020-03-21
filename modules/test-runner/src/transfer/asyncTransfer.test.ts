@@ -27,7 +27,7 @@ import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
 
-describe("Async Transfers", () => {
+describe.only("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -48,7 +48,7 @@ describe("Async Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("happy case: client A transfers eth to client B through node", async () => {
+  it("happy case: client A transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
