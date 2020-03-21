@@ -38,19 +38,21 @@ export class SetStateCommitment implements EthereumCommitment {
     this.participantSignatures = sigs;
   }
 
-  public hashToSign(): string {
-    return keccak256(
-      solidityPack(
-        ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-        [
-          "0x19",
-          appIdentityToHash(this.appIdentity),
-          this.versionNumber,
-          this.timeout,
-          this.appStateHash,
-        ],
-      ),
+  public encode(): string {
+    return solidityPack(
+      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
+      [
+        "0x19",
+        appIdentityToHash(this.appIdentity),
+        this.versionNumber,
+        this.timeout,
+        this.appStateHash,
+      ],
     );
+  }
+
+  public hashToSign(): string {
+    return keccak256(this.encode());
   }
 
   public getSignedTransaction(): CFCoreTypes.MinimalTransaction {

@@ -64,6 +64,7 @@ export interface DeployedContractNetworksFileEntry {
 
 // Multisig
 export interface EthereumCommitment {
+  encode(): string;
   hashToSign(): string;
   getSignedTransaction(): ProtocolTypes.MinimalTransaction;
 }

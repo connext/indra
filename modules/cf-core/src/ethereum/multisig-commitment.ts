@@ -58,14 +58,16 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return { to: this.multisigAddress, value: 0, data: txData };
   }
 
-  public hashToSign(): string {
+  public encode(): string {
     const { to, value, data, operation } = this.getTransactionDetails();
-    return keccak256(
-      solidityPack(
-        ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
-        ["0x19", this.multisigOwners, to, value, data, operation],
-      ),
+    return solidityPack(
+      ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
+      ["0x19", this.multisigOwners, to, value, data, operation],
     );
+  }
+
+  public hashToSign(): string {
+    return keccak256(this.encode());
   }
 
   private assertSignatures() {

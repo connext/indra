@@ -46,7 +46,7 @@ export class WithdrawalController extends AbstractController {
     await this.cleanupPendingDeposit(params.assetId);
 
     const withdrawCommitment = await this.createWithdrawCommitment(params);
-    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(
+    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
       withdrawCommitment.hashToSign(),
     );
 
@@ -83,7 +83,7 @@ export class WithdrawalController extends AbstractController {
     } as WithdrawParameters<BigNumber>);
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
       generatedCommitment.hashToSign(),
     );
     await this.connext.takeAction(appInstance.identityHash, {

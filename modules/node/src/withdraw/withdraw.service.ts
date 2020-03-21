@@ -94,7 +94,7 @@ export class WithdrawService {
     );
 
     // Get Private Key
-    const { privateKey } = this.configService.getEthWallet();
+    const privateKey = this.configService.getEthWallet().privateKey;
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
@@ -227,7 +227,7 @@ export class WithdrawService {
       channel.multisigAddress,
     );
 
-    const { privateKey } = this.configService.getEthWallet();
+    const privateKey = this.configService.getEthWallet().privateKey;
     const hash = commitment.hashToSign();
 
     const withdrawerSignatureOnCommitment = signDigestWithEthers(privateKey, hash);

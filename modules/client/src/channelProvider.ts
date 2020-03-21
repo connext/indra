@@ -1,8 +1,8 @@
 import {
-  chan_nodeAuth,
+  chan_signMessage,
   chan_getUserWithdrawal,
   chan_setUserWithdrawal,
-  chan_signWithdrawCommitment,
+  chan_signDigest,
   chan_setStateChannel,
   chan_restoreState,
   IChannelProvider,
@@ -83,11 +83,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-      case chan_signWithdrawCommitment:
-        result = await this.signWithdrawCommitment(params.message);
+      case chan_signDigest:
+        result = await this.signDigest(params.message);
         break;
-      case chan_nodeAuth:
-        result = await this.walletSign(params.message);
+      case chan_signMessage:
+        result = await this.signMessage(params.message);
         break;
       case chan_restoreState:
         result = await this.restoreState();
@@ -128,11 +128,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
-  private walletSign = async (message: string): Promise<string> => {
+  private signMessage = async (message: string): Promise<string> => {
     return signEthereumMessage(this.authKey, message);
   };
 
-  private signWithdrawCommitment = async (message: string): Promise<string> => {
+  private signDigest = async (message: string): Promise<string> => {
     return signDigestWithEthers(this.authKey, message);
   };
 
