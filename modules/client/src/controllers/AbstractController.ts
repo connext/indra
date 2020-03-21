@@ -3,6 +3,8 @@ import {
   IChannelProvider,
   ILoggerService,
   REJECT_INSTALL_EVENT,
+  InstallMessage,
+  INSTALL_EVENT,
 } from "@connext/types";
 import { providers } from "ethers";
 
@@ -57,11 +59,9 @@ export abstract class AbstractController {
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
-          boundResolve = this.resolveInstall.bind(null, res, rej, appInstanceId);
+          boundResolve = this.resolveInstall.bind(null, res, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
-          const installSubject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`;
-          this.log.debug(`subscribing to ${installSubject}`);
-          this.connext.messaging.subscribe(installSubject, boundResolve);
+          this.listener.on(INSTALL_EVENT, boundResolve, appInstanceId);
           this.listener.on(REJECT_INSTALL_EVENT, boundReject);
         }),
       ]);
@@ -134,22 +134,13 @@ export abstract class AbstractController {
 
   private resolveInstall = (
     res: (value?: unknown) => void,
-    rej: (message?: Error) => void,
     appInstanceId: string,
     message: any,
   ): void => {
-    // TODO: why is it sometimes data vs data.data?
-    const appInstance = message.data.data ? message.data.data : message.data;
-
-    if (appInstance.identityHash !== appInstanceId) {
-      // not our app
-      const msg = `Caught install event for different app ${stringify(
-        message,
-      )}, expected ${appInstanceId}. This should not happen.`;
-      this.log.warn(msg);
-      return rej(new Error(msg));
+    const data = message.data ? message.data : message;
+    if (data.params.appInstanceId === appInstanceId) {
+      res();
     }
-    res(message);
   };
 
   private rejectInstall = (
