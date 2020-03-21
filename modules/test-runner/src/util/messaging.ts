@@ -36,7 +36,6 @@ export type TestMessagingConfig = {
     [protocol: string]: DetailedMessageCounter;
   };
   count: DetailedMessageCounter;
-  forbiddenSubjects: string[];
   mnemonic: string;
 };
 
@@ -123,7 +122,6 @@ const defaultOpts = (): Omit<TestMessagingConfig, "mnemonic"> => {
       withdraw: defaultCount(),
     },
     count: defaultCount(),
-    forbiddenSubjects: [],
   };
 };
 
@@ -133,7 +131,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     [protocol: string]: DetailedMessageCounter;
   };
   private countInternal: DetailedMessageCounter;
-  private forbiddenSubjects: string[];
   public options: TestMessagingConfig;
 
   constructor(opts: Partial<TestMessagingConfig> & { mnemonic: string }) {
@@ -145,7 +142,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
       count: combineObjects(opts.count, defaults.count),
       protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
-      forbiddenSubjects: opts.forbiddenSubjects || defaults.forbiddenSubjects,
       mnemonic: opts.mnemonic!,
     };
 
@@ -184,7 +180,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     );
     this.protocolDefaults = this.options.protocolDefaults;
     this.countInternal = this.options.count;
-    this.forbiddenSubjects = this.options.forbiddenSubjects;
   }
 
   ////////////////////////////////////////
@@ -239,8 +234,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // return connection callback
     return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
       this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
-      // make sure that client is allowed to send message
-      this.subjectForbidden(subject, "receive");
       // wait out delay
       await this.awaitDelay();
       if (
@@ -286,9 +279,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     this.emit(SEND, { subject: to, data: msg } as MessagingEventData);
-    // make sure that client is allowed to send message
-    this.subjectForbidden(to, "send");
-
     // wait out delay
     await this.awaitDelay(true);
     if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
@@ -361,7 +351,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   async publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
-    this.subjectForbidden(subject, "publish");
     this.emit(PUBLISH, { data, subject } as MessagingEventData);
     return await this.connection.publish(subject, data);
   }
@@ -377,7 +366,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // make sure that client is allowed to send message
 
     this.emit(REQUEST, { data, subject } as MessagingEventData);
-    this.subjectForbidden(subject, "request");
     return await this.connection.request(subject, timeout, data);
   }
 
@@ -394,25 +382,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   ////////////////////////////////////////
   // Private methods
-  private subjectForbidden(to: string, operation?: string): boolean {
-    let hasSubject = false;
-    this.forbiddenSubjects.forEach(subject => {
-      if (hasSubject) {
-        return;
-      }
-      // this.forbiddenSubjects may include prefixes, ie it could be
-      // `transfer.recipient` when the subject the client uses in `node.ts`
-      // is `transfer.recipient.${client.publicIdentifier}`
-      hasSubject = to.includes(subject);
-    });
-    if (hasSubject) {
-      const msg = `Subject is forbidden, refusing to ${operation || "send"} data to subject: ${to}`;
-      this.emit(SUBJECT_FORBIDDEN, { subject: to } as MessagingEventData);
-      throw new Error(msg);
-    }
-    return hasSubject;
-  }
-
   private getProtocol(msg: any): string | undefined {
     if (!msg.data) {
       // no .data field found, cannot find protocol of msg

@@ -101,14 +101,13 @@ export type ClientTestMessagingInputOpts = {
   ceiling: Partial<MessageCounter>; // set ceiling of sent/received
   protocol: string; // use "any" to limit any messages by count
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
-  forbiddenSubjects: string[];
 };
 
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay, forbiddenSubjects } = opts;
-  const messageOptions: any = { forbiddenSubjects: forbiddenSubjects || [] };
+  const { protocol, ceiling, delay } = opts;
+  const messageOptions: any = {};
   // no defaults specified, exit early
   const mnemonic = Wallet.createRandom().mnemonic;
   if (Object.keys(opts).length === 0) {

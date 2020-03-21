@@ -13,7 +13,6 @@ import {
   createClientWithMessagingLimits,
   delay,
   expect,
-  FORBIDDEN_SUBJECT_ERROR,
   fundChannel,
   getMnemonic,
   getProtocolFromData,
@@ -22,7 +21,6 @@ import {
   RECEIVED,
   REQUEST,
   requestCollateral,
-  SUBJECT_FORBIDDEN,
   TestMessagingService,
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
@@ -30,7 +28,7 @@ import {
 } from "../util";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
-import { before, after } from "mocha";
+import { before } from "mocha";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,
@@ -42,22 +40,6 @@ const fundForTransfers = async (
   const tokenAddress = senderClient.config.contractAddresses.Token;
   await fundChannel(senderClient, amount, assetId || tokenAddress);
   await requestCollateral(receiverClient, assetId || tokenAddress);
-};
-
-const getLinkedApp = async (client: IConnextClient, onlyOne: boolean = true): Promise<any> => {
-  const registeredApp = client.appRegistry.filter(
-    (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
-  )[0];
-  const linkedApps = (await client.getAppInstances()).filter(
-    app => app.appInterface.addr === registeredApp.appDefinitionAddress,
-  );
-  // make sure the state is correct
-  if (onlyOne) {
-    expect(linkedApps.length).to.be.equal(1);
-    return linkedApps[0];
-  }
-  expect(linkedApps).to.be.ok;
-  return linkedApps;
 };
 
 const verifyTransfer = async (
@@ -92,48 +74,6 @@ describe("Async transfer offline tests", () => {
     clock && clock.reset && clock.reset();
     await senderClient.messaging.disconnect();
     await receiverClient.messaging.disconnect();
-  });
-
-  /**
-   * Will have a transfer saved on the hub, but nothing sent to recipient.
-   *
-   * Recipient should be able to claim payment regardless.
-   */
-  it("sender successfully installs transfer, goes offline before sending paymentId/preImage, and stays offline", async () => {
-    // create the sender client and receiver clients + fund
-    senderClient = await createClientWithMessagingLimits({
-      forbiddenSubjects: [`transfer.send-async.`],
-    });
-    receiverClient = await createClientWithMessagingLimits();
-    const tokenAddress = senderClient.config.contractAddresses.Token;
-    await fundForTransfers(receiverClient, senderClient);
-    // make the transfer call, should fail when sending info to node, but
-    // will retry. fast forward through NATS_TIMEOUT
-    (senderClient.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
-      // fast forward here
-      clock.tick(89_000);
-    });
-    await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
-    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
-    // make sure that the app is installed with the hub/sender
-    const senderLinkedApp = await getLinkedApp(senderClient);
-    const { paymentId } = senderLinkedApp.latestState as any;
-    // verify the saved transfer information
-    const expectedTransfer = {
-      amount: TOKEN_AMOUNT_SM.toString(),
-      receiverPublicIdentifier: receiverClient.publicIdentifier,
-      paymentId,
-      senderPublicIdentifier: senderClient.publicIdentifier,
-      status: "PENDING",
-      type: "LINKED",
-    };
-    await verifyTransfer(senderClient, expectedTransfer);
-    const receiverLinkedApp = await getLinkedApp(receiverClient, false);
-    expect(receiverLinkedApp.length).to.equal(0);
-    // make sure recipient can still redeem payment
-    await receiverClient.reclaimPendingAsyncTransfers();
-    await verifyTransfer(receiverClient, { ...expectedTransfer, status: "REDEEMED" });
   });
 
   /**
