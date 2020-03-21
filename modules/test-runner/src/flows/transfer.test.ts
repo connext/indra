@@ -95,7 +95,6 @@ describe("Full Flow: Transfer", () => {
       clientA.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
         async (data: ReceiveTransferFinishedEventData) => {
-          console.log("CLIENTA RECEIVED TRANSFER, data: ", data);
           transferCount += 1;
           if (transferCount === 2) {
             expect(transferCount).to.eq(2);
