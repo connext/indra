@@ -58,7 +58,6 @@ export async function asyncTransferAsset(
       ]),
       new Promise((resolve: Function): void => {
         clientA.once(UNINSTALL_EVENT, data => {
-          console.log("data: ", data);
           if (data.appInstanceId === senderAppId) {
             resolve();
           }
