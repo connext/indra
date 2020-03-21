@@ -1,3 +1,4 @@
+import { convertLinkedTransferAppState } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import {
   ResolveLinkedTransferResponse,
@@ -17,10 +18,8 @@ import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
-import { LinkedTransferService } from "./linkedTransfer.service";
-import { AppType } from "../appInstance/appInstance.entity";
+import { LinkedTransferService, appStatusesToLinkedTransferStatus } from "./linkedTransfer.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { convertLinkedTransferAppState } from "@connext/apps";
 
 export class LinkedTransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -55,7 +54,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     }
 
     // determine status
-    let status: LinkedTransferStatus;
     // node receives transfer in sender app
     const senderApp = transferApps.find(
       app =>
@@ -74,16 +72,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     console.log(LinkedTransferStatus);
 
     // if sender app is uninstalled, transfer has been unlocked by node
-    if (senderApp.type === AppType.UNINSTALLED) {
-      status = "UNLOCKED" as LinkedTransferStatus;
-    } else if (!receiverApp) {
-      status = "PENDING" as LinkedTransferStatus;
-    } else if (receiverApp?.type === AppType.UNINSTALLED) {
-      // if receiver app is uninstalled, sender may have been offline when receiver redeemed
-      status = "REDEEMED" as LinkedTransferStatus;
-    } else if (receiverApp?.type === AppType.REJECTED) {
-      status = "FAILED" as LinkedTransferStatus;
-    }
+    const status = appStatusesToLinkedTransferStatus(senderApp.type, receiverApp?.type);
 
     const latestState = convertLinkedTransferAppState(
       "bignumber",
@@ -123,7 +112,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   }
 
   async getPendingTransfers(pubId: string): Promise<GetPendingAsyncTransfersResponse[]> {
-    throw new Error("Not implemented");
+    throw new Error("linkedTransfer.provider#getPendingTransfers not implemented");
   }
 
   async setupSubscriptions(): Promise<void> {

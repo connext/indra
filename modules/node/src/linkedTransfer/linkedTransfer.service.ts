@@ -7,10 +7,11 @@ import {
   SimpleLinkedTransferAppStateBigNumber,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferApp,
+  LinkedTransferStatus,
 } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -22,6 +23,24 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { MessagingService } from "@connext/messaging";
 import { convertLinkedTransferAppState } from "@connext/apps";
+import { AppType } from "../appInstance/appInstance.entity";
+
+export const appStatusesToLinkedTransferStatus = (
+  senderAppType: AppType,
+  receiverAppType?: AppType,
+): LinkedTransferStatus => {
+  // if sender app is uninstalled, transfer has been unlocked by node
+  if (senderAppType === AppType.UNINSTALLED) {
+    return LinkedTransferStatus.UNLOCKED;
+  } else if (!receiverAppType) {
+    return LinkedTransferStatus.PENDING;
+  } else if (receiverAppType === AppType.UNINSTALLED) {
+    // if receiver app is uninstalled, sender may have been offline when receiver redeemed
+    return LinkedTransferStatus.REDEEMED;
+  } else if (receiverAppType === AppType.REJECTED) {
+    return LinkedTransferStatus.FAILED;
+  }
+};
 
 @Injectable()
 export class LinkedTransferService {
