@@ -11,7 +11,7 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
 import { bigNumberify } from "ethers/utils";
-import { Zero, AddressZero } from "ethers/constants";
+import { Zero, AddressZero, HashZero } from "ethers/constants";
 import { safeJsonParse, sortAddresses, xkeyKthAddress } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
@@ -282,7 +282,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       participants,
       singleAssetTwoPartyCoinTransferInterpreterParams,
       twoPartyOutcomeInterpreterParams,
-      meta,
     } = appJson;
     let app = await this.findByIdentityHash(identityHash);
     if (!app) {
@@ -332,7 +331,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     app.latestState = latestState;
     app.latestTimeout = latestTimeout;
     app.latestVersionNumber = latestVersionNumber;
-    app.meta = meta;
 
     // interpreter params
     switch (OutcomeType[app.outcomeType]) {
@@ -383,10 +381,10 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   }
 
   // TODO: FIGURE OUT HOW TO MAKE THESE QUERIES WORK
-  async findActiveLinkedTransferAppsByPaymentIdAndSender(
+  async findLinkedTransferAppByPaymentIdAndSender(
     paymentId: string,
     sender: string,
-  ): Promise<AppInstance[]> {
+  ): Promise<AppInstance> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
         AppRegistry,
@@ -396,7 +394,50 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,0}' = '"${sender}"'`)
+      .getOne();
+    return res;
+  }
+
+  async findLinkedTransferAppByPaymentIdAndReceiver(
+    paymentId: string,
+    sender: string,
+  ): Promise<AppInstance> {
+    const res = await this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",1,0}' = '"${sender}"'`)
+      .getOne();
+    return res;
+  }
+
+  async findActiveLinkedTransferAppsToRecipient(
+    recipient: string,
+    nodeFreeBalanceAddress: string,
+  ): Promise<AppInstance[]> {
+    const res = await this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
+      // node is receiver of transfer
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,0}' = '"${nodeFreeBalanceAddress}"'`,
+      )
+      // meta for transfer recipient
+      .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipient}"}'`)
+      // preImage is HashZero
+      .andWhere(`app_instance."latestState"::JSONB @> '{"preImage": "${HashZero}"}'`)
       .getMany();
     return res;
   }
