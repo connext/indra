@@ -96,19 +96,6 @@ export function sortStringSignaturesBySignerAddress(
   return ret;
 }
 
-/**
- * Sorts signatures in ascending order of signer address
- * and converts them into bytes
- *
- * @param signatures An array of etherium signatures
- */
-export function signaturesToBytesSortedBySignerAddress(
-  digest: string,
-  ...signatures: Signature[]
-): string {
-  return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
-}
-
 export function prettyPrintObject(object: any) {
   return JSON.stringify(object, null, JSON_STRINGIFY_SPACE);
 }

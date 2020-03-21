@@ -15,8 +15,8 @@ describe("Signature Validator Helper", () => {
     commitment = {
       hashToSign: () => HashZero,
     } as EthereumCommitment;
-
-    signature = signer.signDigest(commitment.hashToSign());
+    const commitmentHash = commitment.hashToSign();
+    signature = signer.signDigest(commitmentHash);
   });
 
   it("validates signatures correctly", () => {

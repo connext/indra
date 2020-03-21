@@ -1,7 +1,6 @@
 import { BaseProvider, BigNumber } from "./basic";
 import { CoinBalanceRefundApp } from "./apps";
 import { ProtocolTypes } from "./protocol";
-import { Signature } from "ethers/utils";
 
 ////////////////////////////////////////
 // Generic contract ops & network config
@@ -64,6 +63,7 @@ export interface DeployedContractNetworksFileEntry {
 
 // Multisig
 export interface EthereumCommitment {
+  signatures: string[];
   encode(): string;
   hashToSign(): string;
   getSignedTransaction(): ProtocolTypes.MinimalTransaction;

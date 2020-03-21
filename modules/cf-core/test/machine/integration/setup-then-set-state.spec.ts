@@ -89,9 +89,10 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         freeBalance.versionNumber,
         freeBalance.timeout,
       );
+      const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [
-        multisigOwnerKeys[0].signDigest(setStateCommitment.hashToSign()),
-        multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign()),
+        multisigOwnerKeys[0].signDigest(setStateCommitmentHash),
+        multisigOwnerKeys[1].signDigest(setStateCommitmentHash),
       ];
 
       const setStateTx = setStateCommitment.getSignedTransaction();
@@ -113,10 +114,11 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         stateChannel.multisigOwners,
         stateChannel.freeBalance.identity,
       );
+      const setupCommitmentHash = setupCommitment.hashToSign();
 
       setupCommitment.signatures = [
-        multisigOwnerKeys[0].signDigest(setupCommitment.hashToSign()),
-        multisigOwnerKeys[1].signDigest(setupCommitment.hashToSign()),
+        multisigOwnerKeys[0].signDigest(setupCommitmentHash),
+        multisigOwnerKeys[1].signDigest(setupCommitmentHash),
       ];
 
       const setupTx = setupCommitment.getSignedTransaction();

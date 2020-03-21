@@ -152,9 +152,11 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         identityAppInstance.timeout,
       );
 
+      const setStateCommitmentHash = setStateCommitment.hashToSign();
+
       setStateCommitment.signatures = [
-        uniqueAppSigningKeys[0].signDigest(setStateCommitment.hashToSign()),
-        uniqueAppSigningKeys[1].signDigest(setStateCommitment.hashToSign()),
+        uniqueAppSigningKeys[0].signDigest(setStateCommitmentHash),
+        uniqueAppSigningKeys[1].signDigest(setStateCommitmentHash),
       ];
 
       await wallet.sendTransaction({
@@ -169,9 +171,10 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         stateChannel.freeBalance.versionNumber,
         stateChannel.freeBalance.timeout,
       );
+      const setStateCommitmentForFreeBalanceHash = setStateCommitmentForFreeBalance.hashToSign();
       setStateCommitmentForFreeBalance.signatures = [
-        multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
-        multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
+        multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalanceHash),
+        multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalanceHash),
       ];
 
       await wallet.sendTransaction({
@@ -205,10 +208,10 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
           [identityAppInstance.multiAssetMultiPartyCoinTransferInterpreterParams!],
         ),
       );
-
+      const conditionalTransactionHash = conditionalTransaction.hashToSign();
       conditionalTransaction.signatures = [
-        multisigOwnerKeys[0].signDigest(conditionalTransaction.hashToSign()),
-        multisigOwnerKeys[1].signDigest(conditionalTransaction.hashToSign()),
+        multisigOwnerKeys[0].signDigest(conditionalTransactionHash),
+        multisigOwnerKeys[1].signDigest(conditionalTransactionHash),
       ];
       const multisigDelegateCallTx = conditionalTransaction.getSignedTransaction();
 

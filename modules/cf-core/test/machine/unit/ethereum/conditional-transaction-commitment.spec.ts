@@ -19,6 +19,7 @@ import { createAppInstanceForTest } from "../../../unit/utils";
 import { getRandomExtendedPubKey, getRandomHDNodes } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";
 import { Store } from "../../../../src/store";
+import { signDigestWithEthers } from "../../../../src/utils";
 
 describe("ConditionalTransactionCommitment", () => {
   let tx: MultisigTransaction;
@@ -85,9 +86,10 @@ describe("ConditionalTransactionCommitment", () => {
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
+      const hash = randomBytes(20).toString();
       commitment.signatures = [
-        new SigningKey(hdNodes[0]).signDigest(randomBytes(20)),
-        new SigningKey(hdNodes[1]).signDigest(randomBytes(20)),
+        new SigningKey(hdNodes[0]).signDigest(hash),
+        new SigningKey(hdNodes[1]).signDigest(hash),
       ];
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);

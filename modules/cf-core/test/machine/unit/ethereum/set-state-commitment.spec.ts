@@ -37,9 +37,10 @@ describe("Set State Commitment", () => {
       appInstance.versionNumber,
       appInstance.timeout,
     );
+    const commitmentHash = commitment.hashToSign();
     commitment.signatures = [
-      new SigningKey(hdNodes[0].privateKey).signDigest(commitment.hashToSign()),
-      new SigningKey(hdNodes[1].privateKey).signDigest(commitment.hashToSign()),
+      new SigningKey(hdNodes[0].privateKey).signDigest(commitmentHash),
+      new SigningKey(hdNodes[1].privateKey).signDigest(commitmentHash),
     ];
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
