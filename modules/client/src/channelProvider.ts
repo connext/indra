@@ -1,4 +1,5 @@
 import {
+  chan_sign,
   chan_signDigest,
   chan_getUserWithdrawal,
   chan_setUserWithdrawal,
@@ -20,6 +21,7 @@ import {
   IRpcConnection,
   JsonRpcRequest,
 } from "./types";
+import { signChannelMessage } from "@connext/crypto";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -81,6 +83,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
+      case chan_sign:
+        result = await this.signMessage(params.message);
+        break;
       case chan_signDigest:
         result = await this.signDigest(params.message);
         break;
@@ -123,6 +128,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
+  private signMessage = async (message: string): Promise<string> => {
+    return signChannelMessage(this.authKey, message);
+  };
+
   private signDigest = async (message: string): Promise<string> => {
     return signDigestWithEthers(this.authKey, message);
   };

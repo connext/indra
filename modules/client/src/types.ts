@@ -35,6 +35,7 @@ export {
   AppInstanceJson,
   AppRegistry,
   BigNumber,
+  chan_signDigest,
   calculateExchange,
   CFChannelProviderOptions,
   CFCoreChannel,
