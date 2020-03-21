@@ -1,7 +1,6 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-import { signMessage } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
   CF_PATH,
@@ -10,7 +9,7 @@ import {
   CoinBalanceRefundAppState,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 
@@ -25,9 +24,11 @@ import {
   logTime,
   stringify,
   isWalletProvided,
+  signDigestWithEthers,
 } from "./lib";
 import { NodeApiClient } from "./node";
 import {
+  chan_signDigest,
   CFCoreTypes,
   ClientOptions,
   ConnextClientStorePrefix,
@@ -83,7 +84,7 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      const sig = await channelProvider.send("chan_signDigest", { message });
+      const sig = await channelProvider.send(chan_signDigest, { message });
       return sig;
     };
 
@@ -130,8 +131,7 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const signingKey = new SigningKey(await keyGen("0"));
-      const sig = joinSignature(signingKey.signDigest(message));
+      const sig = signDigestWithEthers(await keyGen("0"), message);
       return sig;
     };
 

@@ -1,5 +1,13 @@
 import { ILogger, ClientOptions } from "@connext/types";
-import { BigNumber, bigNumberify, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import {
+  BigNumber,
+  bigNumberify,
+  hexlify,
+  randomBytes,
+  solidityKeccak256,
+  joinSignature,
+  SigningKey,
+} from "ethers/utils";
 import { isNullOrUndefined } from "util";
 import { RINKEBY_NETWORK, MAINNET_NETWORK } from "./constants";
 
@@ -122,3 +130,8 @@ export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
   }
   return !!(opts.mnemonic || (opts.xpub && opts.keyGen));
 }
+
+export const signDigestWithEthers = (privateKey: string, digest: string) => {
+  const key = new SigningKey(privateKey);
+  return joinSignature(key.signDigest(digest));
+};

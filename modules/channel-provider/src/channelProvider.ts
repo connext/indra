@@ -1,5 +1,6 @@
 import {
   chan_config,
+  chan_sign,
   chan_signDigest,
   chan_restoreState,
   chan_getUserWithdrawal,
@@ -58,6 +59,9 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         break;
       case chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
+        break;
+      case chan_sign:
+        result = await this.signMessage(params.message);
         break;
       case chan_signDigest:
         result = await this.signDigest(params.message);
@@ -129,12 +133,13 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
   public signMessage(message: string): Promise<string> {
-    throw new Error("Method not implemented.");
+    return this._send(chan_sign, { message });
   }
 
   public signDigest = async (message: string): Promise<string> => {
     return this._send(chan_signDigest, { message });
   };
+
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 
@@ -149,7 +154,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   };
 
   public restoreState = async (): Promise<void> => {
-    return this._send(chan_restoreState, { });
+    return this._send(chan_restoreState, {});
   };
 
   public setStateChannel = async (state: StateChannelJSON): Promise<void> => {
