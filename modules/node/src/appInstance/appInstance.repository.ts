@@ -12,7 +12,7 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppInstance, AppType } from "./appInstance.entity";
 import { bigNumberify } from "ethers/utils";
 import { Zero, AddressZero } from "ethers/constants";
-import { xkeysToSortedKthAddresses, safeJsonParse, sortAddresses, xkeyKthAddress } from "../util";
+import { safeJsonParse, sortAddresses, xkeyKthAddress } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
@@ -268,7 +268,11 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     return convertAppToInstanceJSON(app, app.channel);
   }
 
-  async saveAppInstance(channel: Channel, appJson: AppInstanceJson): Promise<AppInstance> {
+  async saveAppInstance(
+    channel: Channel,
+    appJson: AppInstanceJson,
+    isMigration: boolean = false, // will create new apps
+  ): Promise<AppInstance> {
     const {
       identityHash,
       latestState,
@@ -282,7 +286,32 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     } = appJson;
     let app = await this.findByIdentityHash(identityHash);
     if (!app) {
-      throw new Error(`Did not find app with identity hash: ${identityHash}`);
+      if (!isMigration) {
+        throw new Error(`Did not find app with identity hash: ${identityHash}`);
+      }
+      // create app from appJSON
+      app = new AppInstance();
+      app.identityHash = identityHash;
+      app.type = AppType.PROPOSAL; // other fields will be updated
+      app.stateEncoding = appJson.appInterface.stateEncoding;
+      app.actionEncoding = appJson.appInterface.actionEncoding;
+      app.appDefinition = appJson.appInterface.addr;
+      app.appSeqNo = appJson.appSeqNo;
+      app.channel = channel;
+      app.outcomeType = OutcomeType[appJson.outcomeType];
+      // new instance, save initial state as latest
+      app.initialState = appJson.latestState;
+      app.timeout = appJson.defaultTimeout;
+
+      // fill in dummy values, no way to calculate these
+      // and app is already installed, so proposal specific
+      // fields are no longer needed
+      app.initiatorDeposit = Zero;
+      app.initiatorDepositTokenAddress = AddressZero;
+      app.responderDeposit = Zero;
+      app.responderDepositTokenAddress = AddressZero;
+      app.proposedToIdentifier = channel.userPublicIdentifier;
+      app.proposedByIdentifier = channel.nodePublicIdentifier;
     }
     if (app.type === AppType.INSTANCE && app.latestVersionNumber === latestVersionNumber) {
       // app was not updated, return
@@ -292,7 +321,11 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     if (app.type !== AppType.INSTANCE) {
       app.type = AppType.INSTANCE;
       // save participants
-      const userAddr = xkeysToSortedKthAddresses([channel.userPublicIdentifier], app.appSeqNo)[0];
+      let userAddr = xkeyKthAddress(channel.userPublicIdentifier, app.appSeqNo);
+      // for migrations, this could be the free balance addr (3/19/2020)
+      if (!participants.filter(p => p === userAddr)[0] && !isMigration) {
+        userAddr = xkeyKthAddress(channel.userPublicIdentifier);
+      }
       app.userParticipantAddress = participants.filter(p => p === userAddr)[0];
       app.nodeParticipantAddress = participants.filter(p => p !== userAddr)[0];
     }
