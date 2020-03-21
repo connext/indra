@@ -57,19 +57,22 @@ export class LinkedTransferService {
   }
 
   async resolveLinkedTransfer(
-    userPubId: string,
+    userPublicIdentifier: string,
     paymentId: string,
   ): Promise<ResolveLinkedTransferResponseBigNumber> {
-    this.log.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId})`);
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
+    this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
 
-    // check that we have recorded this transfer in our db
     // TODO: handle offline case
-    const [senderApp] = await this.appInstanceRepository.findLinkedTransferAppsByPaymentIdAndType(
+    // node is receiver in sender app
+    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
+      this.cfCoreService.cfCore.freeBalanceAddress,
     );
     if (!senderApp) {
-      throw new Error(`Sender app was not found with paymentId: ${paymentId}`);
+      throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
     const { assetId, amount, linkedHash } = convertLinkedTransferAppState(
@@ -83,8 +86,8 @@ export class LinkedTransferService {
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(
-      userPubId,
-      channel.multisigAddress,
+      userPublicIdentifier,
+      receiverChannel.multisigAddress,
       assetId,
     );
     if (freeBal[freeBalanceAddr].lt(amountBN)) {
@@ -102,18 +105,18 @@ export class LinkedTransferService {
               );
               return;
             }
-            if (msg.data.multisigAddress !== channel.multisigAddress) {
+            if (msg.data.multisigAddress !== receiverChannel.multisigAddress) {
               // do not reject promise here, since theres a chance the event is
               // emitted for node collateralizing another users' channel
               this.log.debug(
-                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
+                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${receiverChannel.multisigAddress}`,
               );
               return;
             }
             // make sure free balance is appropriate
             const fb = await this.cfCoreService.getFreeBalance(
-              userPubId,
-              channel.multisigAddress,
+              userPublicIdentifier,
+              receiverChannel.multisigAddress,
               assetId,
             );
             if (fb[freeBalanceAddr].lt(amountBN)) {
@@ -129,7 +132,7 @@ export class LinkedTransferService {
         });
         try {
           await this.channelService.rebalance(
-            userPubId,
+            userPublicIdentifier,
             assetId,
             RebalanceType.COLLATERALIZE,
             amountBN,
@@ -140,7 +143,12 @@ export class LinkedTransferService {
       });
     } else {
       // request collateral normally without awaiting
-      this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
+      this.channelService.rebalance(
+        userPublicIdentifier,
+        assetId,
+        RebalanceType.COLLATERALIZE,
+        amountBN,
+      );
     }
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
@@ -153,7 +161,7 @@ export class LinkedTransferService {
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(userPubId),
+          to: xkeyKthAddress(userPublicIdentifier),
         },
       ],
       linkedHash,
@@ -162,7 +170,7 @@ export class LinkedTransferService {
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      channel,
+      receiverChannel,
       initialState,
       amount,
       assetId,
@@ -175,14 +183,15 @@ export class LinkedTransferService {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    return {
+    const returnRes: ResolveLinkedTransferResponseBigNumber = {
       appId: receiverAppInstallRes.appInstanceId,
       sender: senderApp.channel.userPublicIdentifier,
-      meta: {}, // TODO:
+      meta: senderApp.meta,
       paymentId,
       amount,
       assetId,
     };
+    return returnRes;
   }
 
   async findSenderAndReceiverAppsWithStatus(
@@ -218,7 +227,6 @@ export class LinkedTransferService {
       userPublicIdentifier,
       this.cfCoreService.cfCore.freeBalanceAddress,
     );
-    console.log('transfers: ', transfers);
     let redeemableTransfers = transfers;
     for (const transfer of transfers) {
       // sender is node
