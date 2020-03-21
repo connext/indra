@@ -130,6 +130,7 @@ export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
   }
   return !!(opts.mnemonic || (opts.xpub && opts.keyGen));
 }
+
 export const signDigestWithEthers = (privateKey: string, digest: string) => {
   const key = new SigningKey(privateKey);
   return joinSignature(key.signDigest(digest));
