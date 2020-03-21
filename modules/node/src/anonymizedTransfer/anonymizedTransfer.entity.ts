@@ -1,6 +1,6 @@
 import { ViewColumn, ViewEntity } from "typeorm";
-
-import { TransferType } from "../transfer/transfer.entity";
+// TODO: why is this not working :( in expression
+import { TransferType } from "@connext/types";
 
 @ViewEntity({
   expression: `
@@ -13,7 +13,7 @@ import { TransferType } from "../transfer/transfer.entity";
     "peer_to_peer_transfer"."createdAt" as "createdAt",
     "peer_to_peer_transfer"."meta" as "meta",
     "peer_to_peer_transfer"."status"::TEXT as "status",
-    '${TransferType.P2P}' AS "type"
+    'P2P' AS "type"
   FROM peer_to_peer_transfer
     LEFT JOIN "channel" "receiver_channel" ON "receiver_channel"."id" = "peer_to_peer_transfer"."receiverChannelId"
     LEFT JOIN "channel" "sender_channel" ON "sender_channel"."id" = "peer_to_peer_transfer"."senderChannelId"
@@ -27,7 +27,7 @@ import { TransferType } from "../transfer/transfer.entity";
     "linked_transfer"."createdAt" as "createdAt",
     "linked_transfer"."meta" as "meta",
     "linked_transfer"."status"::TEXT as "status",
-    '${TransferType.LINKED}' AS "type"
+    'LINKED' AS "type"
   FROM linked_transfer
     LEFT JOIN "channel" "receiver_channel" ON "receiver_channel"."id" = "linked_transfer"."receiverChannelId"
     LEFT JOIN "channel" "sender_channel" ON "sender_channel"."id" = "linked_transfer"."senderChannelId";
@@ -53,7 +53,7 @@ export class AnonymizedTransfer {
   receiverChannelIdentifier!: string;
 
   @ViewColumn()
-  type!: string;
+  type!: TransferType;
 
   @ViewColumn()
   status!: string;

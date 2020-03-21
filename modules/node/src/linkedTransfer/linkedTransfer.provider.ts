@@ -6,6 +6,7 @@ import {
   SimpleLinkedTransferAppState,
   LinkedTransferStatus,
   GetPendingAsyncTransfersResponse,
+  // TransferType,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -14,7 +15,6 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
-import { TransferRepository } from "../transfer/transfer.repository";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
@@ -85,23 +85,23 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       status = "FAILED" as LinkedTransferStatus;
     }
 
-    // TODO: get meta and return recipient
     const latestState = convertLinkedTransferAppState(
       "bignumber",
       senderApp.latestState as SimpleLinkedTransferAppState,
     );
+    const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     return {
       amount: latestState.amount.toString(),
-      meta: { todo: "fixme" },
+      meta: meta || {},
       assetId: latestState.assetId,
       createdAt: senderApp.createdAt,
       paymentId: latestState.paymentId,
       senderPublicIdentifier: senderApp.channel.userPublicIdentifier,
       status,
-      encryptedPreImage: senderApp.meta
-        ? (senderApp.meta as any).encryptedPreImage
-        : senderApp.meta,
-      receiverPublicIdentifier: senderApp.meta ? (senderApp.meta as any).recipient : senderApp.meta,
+      encryptedPreImage: encryptedPreImage || "",
+      receiverPublicIdentifier: recipient || "",
+      type: "LINKED" as any, // TransferType.LINKED
+      // ^^ TODO: why does enum from types not work?
     };
   }
 

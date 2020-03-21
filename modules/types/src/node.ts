@@ -79,6 +79,12 @@ export enum LinkedTransferStatus {
   UNLOCKED = "UNLOCKED",
 }
 
+export enum TransferType {
+  P2P = "P2P",
+  LINKED = "LINKED",
+  FAST_SIGNED = "FAST_SIGNED",
+}
+
 export interface FetchedLinkedTransfer {
   paymentId: string;
   createdAt: Date;
@@ -89,6 +95,7 @@ export interface FetchedLinkedTransfer {
   status: LinkedTransferStatus;
   meta: any;
   encryptedPreImage?: string;
+  type: TransferType.LINKED;
 }
 export type GetLinkedTransferResponse = FetchedLinkedTransfer;
 export type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];

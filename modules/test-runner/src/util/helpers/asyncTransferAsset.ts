@@ -24,6 +24,7 @@ export async function asyncTransferAsset(
   assetId: string,
   nats: Client,
 ): Promise<ExistingBalancesAsyncTransfer> {
+  const SENDER_INPUT_META = { hello: "world" };
   const nodeFreeBalanceAddress = xkeyKthAddress(clientA.nodePublicIdentifier);
   const {
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
@@ -63,7 +64,7 @@ export async function asyncTransferAsset(
   const { paymentId: senderPaymentId } = await clientA.transfer({
     amount: transferAmount.toString(),
     assetId,
-    meta: { hello: "world" },
+    meta: { ...SENDER_INPUT_META },
     recipient: clientB.publicIdentifier,
   });
   log.info(`transfer() returned in ${Date.now() - start}ms`);
@@ -95,22 +96,18 @@ export async function asyncTransferAsset(
   }
 
   const paymentA = await clientA.getLinkedTransfer(paymentId);
-  console.log("paymentA: ", paymentA);
   const paymentB = await clientB.getLinkedTransfer(paymentId);
-  console.log("paymentB: ", paymentB);
   expect(paymentA).to.deep.include({
     amount: transferAmount.toString(),
     assetId,
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,
     senderPublicIdentifier: clientA.publicIdentifier,
-    status: "RECLAIMED",
-    type: "LINKED",
+    status: "REDEEMED", // LinkedTransferStatus.REDEEMED
+    type: "LINKED", // TransferType.LINKED
+    meta: { ...SENDER_INPUT_META },
   });
-  expect(paymentA.meta).to.deep.include({
-    hello: "world",
-  });
-  expect(paymentA.meta.encryptedPreImage).to.be.ok;
+  expect(paymentA.encryptedPreImage).to.be.ok;
 
   expect(paymentA).to.deep.include(paymentB);
 
