@@ -11,10 +11,8 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signMessage } from "@connext/crypto";
-import { Wallet } from "ethers";
 
-import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
+import { CFCore, deBigNumberifyJson, xpubToAddress, signDigestWithEthers } from "./lib";
 import {
   CFChannelProviderOptions,
   CFCoreTypes,
@@ -22,7 +20,6 @@ import {
   IRpcConnection,
   JsonRpcRequest,
 } from "./types";
-import { SigningKey, joinSignature } from "ethers/utils";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -54,8 +51,7 @@ export const createCFChannelProvider = async ({
     signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
-  const wallet = new Wallet(await keyGen("0")).connect(ethProvider);
-  const connection = new CFCoreRpcConnection(cfCore, store, wallet);
+  const connection = new CFCoreRpcConnection(cfCore, store, await keyGen("0"));
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
   return channelProvider;
 };
@@ -66,12 +62,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public store: IClientStore;
 
   // TODO: replace this when signing keys are added!
-  public wallet: Wallet;
+  public authKey: string;
 
-  constructor(cfCore: CFCore, store: IClientStore, wallet: Wallet) {
+  constructor(cfCore: CFCore, store: IClientStore, authKey: string) {
     super();
     this.cfCore = cfCore;
-    this.wallet = wallet;
+    this.authKey = authKey;
     this.store = store;
   }
 
@@ -127,13 +123,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
-  private walletSign = async (message: string): Promise<string> => {
-    return signMessage(this.wallet.privateKey, message);
-  };
-
   private signDigest = async (message: string): Promise<string> => {
-    const key = new SigningKey(this.wallet.privateKey);
-    return joinSignature(key.signDigest(message));
+    return signDigestWithEthers(this.authKey, message);
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
