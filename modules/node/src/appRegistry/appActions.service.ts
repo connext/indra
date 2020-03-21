@@ -145,14 +145,9 @@ export class AppActionsService {
     action: SimpleLinkedTransferAppAction,
     from: string,
   ): Promise<void> {
-    let transferApps = await this.appInstanceRepository.findLinkedTransferAppsByPaymentIdAndType(
-      newState.paymentId,
-    );
-    // TODO: REPLACE WITH DB QUERY
-    const senderApp = transferApps.find(
-      app =>
-        convertLinkedTransferAppState("bignumber", app.latestState as SimpleLinkedTransferAppState)
-          .coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress,
+    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+      (newState as SimpleLinkedTransferAppState).paymentId,
+      this.cfCoreService.cfCore.freeBalanceAddress,
     );
 
     // take action and uninstall
