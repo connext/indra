@@ -9,19 +9,17 @@ import {
   SimpleLinkedTransferApp,
   LinkedTransferStatus,
 } from "@connext/types";
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
-import { MessagingProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { xkeyKthAddress } from "../util";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
-import { MessagingService } from "@connext/messaging";
 import { convertLinkedTransferAppState } from "@connext/apps";
 import { AppType } from "../appInstance/appInstance.entity";
 
@@ -39,6 +37,8 @@ export const appStatusesToLinkedTransferStatus = (
     return LinkedTransferStatus.REDEEMED;
   } else if (receiverAppType === AppType.REJECTED) {
     return LinkedTransferStatus.FAILED;
+  } else {
+    throw new Error(`Could not determine status`);
   }
 };
 
@@ -48,7 +48,6 @@ export class LinkedTransferService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly log: LoggerService,
-    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
