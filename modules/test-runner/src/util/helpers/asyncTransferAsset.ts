@@ -4,6 +4,7 @@ import {
   RECEIVE_TRANSFER_FAILED_EVENT,
   RECEIVE_TRANSFER_FINISHED_EVENT,
   UNINSTALL_EVENT,
+  LinkedTransferStatus,
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
@@ -37,31 +38,37 @@ export async function asyncTransferAsset(
 
   let paymentId: string;
 
-  const transferFinished = Promise.all([
-    Promise.race([
-      new Promise((resolve: Function): void => {
-        clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
-          expect(data).to.deep.include({
-            amount: transferAmount.toString(),
-            sender: clientA.publicIdentifier,
+  const transferFinished = (senderAppId: string) =>
+    Promise.all([
+      Promise.race([
+        new Promise((resolve: Function): void => {
+          clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+            expect(data).to.deep.include({
+              amount: transferAmount.toString(),
+              sender: clientA.publicIdentifier,
+            });
+            resolve();
           });
-          resolve();
+        }),
+        new Promise((resolve: Function, reject: Function): void => {
+          clientB.once(RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
+            reject(msg.error);
+          });
+        }),
+      ]),
+      new Promise((resolve: Function): void => {
+        clientA.once(UNINSTALL_EVENT, data => {
+          console.log("data: ", data);
+          if (data.appInstanceId === senderAppId) {
+            resolve();
+          }
         });
       }),
-      new Promise((resolve: Function, reject: Function): void => {
-        clientB.once(RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
-          reject(msg.error);
-        });
-      }),
-    ]),
-    new Promise((resolve: Function): void => {
-      clientA.once(UNINSTALL_EVENT, () => resolve());
-    }),
-  ]);
+    ]);
 
   let start = Date.now();
   log.info(`call client.transfer()`);
-  const { paymentId: senderPaymentId } = await clientA.transfer({
+  const { paymentId: senderPaymentId, appId } = await clientA.transfer({
     amount: transferAmount.toString(),
     assetId,
     meta: { ...SENDER_INPUT_META },
@@ -70,7 +77,7 @@ export async function asyncTransferAsset(
   log.info(`transfer() returned in ${Date.now() - start}ms`);
   paymentId = senderPaymentId;
 
-  await transferFinished;
+  await transferFinished(appId);
   log.info(`Got transfer finished event in ${Date.now() - start}ms`);
 
   expect((await clientB.getAppInstances()).length).to.be.eq(0);
@@ -103,8 +110,7 @@ export async function asyncTransferAsset(
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,
     senderPublicIdentifier: clientA.publicIdentifier,
-    status: "REDEEMED", // LinkedTransferStatus.REDEEMED
-    type: "LINKED", // TransferType.LINKED
+    status: LinkedTransferStatus.REDEEMED,
     meta: { ...SENDER_INPUT_META },
   });
   expect(paymentA.encryptedPreImage).to.be.ok;
