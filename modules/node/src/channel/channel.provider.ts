@@ -127,11 +127,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
       "*.channel.request-collateral",
       this.authService.parseXpub(this.requestCollateral.bind(this)),
     );
-    // TODO what do we do about admin token?
-    await super.connectRequestReponse(
-      "*.channel.add-profile",
-      this.authService.parseXpub(this.addRebalanceProfile.bind(this)),
-    );
     await super.connectRequestReponse(
       "*.channel.get-profile",
       this.authService.parseXpub(this.getRebalanceProfile.bind(this)),

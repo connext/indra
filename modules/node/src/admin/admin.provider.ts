@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { StateChannelJSON, stringify } from "@connext/types";
+import { StateChannelJSON, stringify, RebalanceProfile, convert } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -8,15 +8,17 @@ import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
+import { ChannelService } from "../channel/channel.service";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
-    private readonly adminService: AdminService,
     private readonly authService: AuthService,
     public readonly log: LoggerService,
     messaging: MessagingService,
+    private readonly adminService: AdminService,
+    private readonly channelService: ChannelService,
   ) {
     super(log, messaging);
   }
@@ -85,6 +87,12 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.migrateChannelStore();
   }
 
+  async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
+    const [, xpub, ...rest] = subject.split(".");
+    const profile = convert.RebalanceProfile("bignumber", data.profile);
+    await this.channelService.addRebalanceProfileToChannel(xpub, profile);
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
@@ -130,19 +138,25 @@ class AdminMessaging extends AbstractMessagingProvider {
       "admin.migrate-channel-store",
       this.migrateChannelStore.bind(this),
     );
+
+    await super.connectRequestReponse(
+      "admin.*.channel.add-profile",
+      this.addRebalanceProfile.bind(this),
+    );
   }
 }
 
 export const adminProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AdminService, AuthService, LoggerService, MessagingProviderId],
+  inject: [AuthService, LoggerService, MessagingProviderId, AdminService, ChannelService],
   provide: AdminMessagingProviderId,
   useFactory: async (
-    adminService: AdminService,
     authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
+    adminService: AdminService,
+    channelService: ChannelService,
   ): Promise<void> => {
-    const admin = new AdminMessaging(adminService, authService, log, messaging);
+    const admin = new AdminMessaging(authService, log, messaging, adminService, channelService);
     await admin.setupSubscriptions();
   },
 };

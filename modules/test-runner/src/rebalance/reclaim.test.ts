@@ -65,11 +65,11 @@ describe("Reclaim", () => {
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = hexlify(randomBytes(32));
-      clientA.on(UPDATE_STATE_EVENT, async(data) => {
-        if(data.newState.data) {
+      clientA.on(UPDATE_STATE_EVENT, async data => {
+        if (data.newState.data) {
           res();
         }
-      })
+      });
       await clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
@@ -80,8 +80,16 @@ describe("Reclaim", () => {
 
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
-    expect(freeBalancePost[nodeFreeBalanceAddress].gte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim))).to.be.true;
-    expect(freeBalancePost[nodeFreeBalanceAddress].lte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One))).to.be.true
+    expect(
+      freeBalancePost[nodeFreeBalanceAddress].gte(
+        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
+      ),
+    ).to.be.true;
+    expect(
+      freeBalancePost[nodeFreeBalanceAddress].lte(
+        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+      ),
+    ).to.be.true;
   });
 
   it("happy case: node should reclaim tokens after async transfer", async () => {
@@ -117,11 +125,11 @@ describe("Reclaim", () => {
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = hexlify(randomBytes(32));
-      clientA.on(UPDATE_STATE_EVENT, async(data) => {
-        if(data.newState.data) {
+      clientA.on(UPDATE_STATE_EVENT, async data => {
+        if (data.newState.data) {
           res();
         }
-      })
+      });
       await clientA.transfer({
         amount: One.toString(),
         assetId: tokenAddress,
@@ -132,8 +140,16 @@ describe("Reclaim", () => {
 
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
-    expect(freeBalancePost[nodeFreeBalanceAddress].gte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim))).to.be.true;
-    expect(freeBalancePost[nodeFreeBalanceAddress].lte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One))).to.be.true
+    expect(
+      freeBalancePost[nodeFreeBalanceAddress].gte(
+        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
+      ),
+    ).to.be.true;
+    expect(
+      freeBalancePost[nodeFreeBalanceAddress].lte(
+        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+      ),
+    ).to.be.true;
   });
 
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
