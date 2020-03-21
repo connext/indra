@@ -7,7 +7,6 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, FastSignedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
-import { TransferRepository } from "../transfer/transfer.repository";
 
 import { FastSignedTransferService } from "./fastSignedTransfer.service";
 
@@ -17,7 +16,6 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     log: LoggerService,
     messaging: MessagingService,
     private readonly fastSignedTransferService: FastSignedTransferService,
-    private readonly transferRepository: TransferRepository,
   ) {
     super(log, messaging);
     log.setContext("FastSignedTransferMessaging");
@@ -52,27 +50,19 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
 }
 
 export const fastSignedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    AuthService,
-    LoggerService,
-    MessagingProviderId,
-    FastSignedTransferService,
-    TransferRepository,
-  ],
+  inject: [AuthService, LoggerService, MessagingProviderId, FastSignedTransferService],
   provide: FastSignedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
     fastSignedTransferService: FastSignedTransferService,
-    transferRepository: TransferRepository,
   ): Promise<void> => {
     const transfer = new FastSignedTransferMessaging(
       authService,
       logging,
       messaging,
       fastSignedTransferService,
-      transferRepository,
     );
     await transfer.setupSubscriptions();
   },

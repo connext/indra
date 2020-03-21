@@ -9,7 +9,6 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
-import { TransferRepository } from "../transfer/transfer.repository";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
@@ -25,12 +24,7 @@ import { linkedTransferProviderFactory } from "./linkedTransfer.provider";
     ConfigModule,
     LoggerModule,
     MessagingModule,
-    TypeOrmModule.forFeature([
-      ChannelRepository,
-      AppRegistryRepository,
-      TransferRepository,
-      AppInstanceRepository,
-    ]),
+    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository, AppInstanceRepository]),
   ],
   providers: [LinkedTransferService, linkedTransferProviderFactory],
 })

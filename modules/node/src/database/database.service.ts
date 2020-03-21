@@ -14,8 +14,6 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
-import { Transfer } from "../transfer/transfer.entity";
-import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { Withdraw } from "../withdraw/withdraw.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
@@ -49,9 +47,7 @@ export const entities = [
   CFCoreRecord,
   RebalanceProfile,
   OnchainTransaction,
-  Transfer,
   AnonymizedOnchainTransaction,
-  AnonymizedTransfer,
   ConditionalTransactionCommitment,
   SetStateCommitment,
   SetupCommitment,

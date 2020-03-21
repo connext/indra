@@ -8,22 +8,19 @@ import { MessagingProviderId, TransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 
-import { TransferRepository } from "./transfer.repository";
-
 export class TransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
     private readonly linkedTransferService: LinkedTransferService,
-    private readonly transferRepository: TransferRepository,
   ) {
     super(log, messaging);
     this.log.setContext("TransferMessaging");
   }
 
   async getTransferHistory(pubId: string): Promise<Transfer[]> {
-    return await this.transferRepository.findByPublicIdentifier(pubId);
+    throw new Error("Unimplemented");
   }
 
   /**
@@ -62,28 +59,15 @@ export class TransferMessaging extends AbstractMessagingProvider {
 }
 
 export const transferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    AuthService,
-    LoggerService,
-    MessagingProviderId,
-    LinkedTransferService,
-    TransferRepository,
-  ],
+  inject: [AuthService, LoggerService, MessagingProviderId, LinkedTransferService],
   provide: TransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
     linkedTransferService: LinkedTransferService,
-    transferRepository: TransferRepository,
   ): Promise<void> => {
-    const transfer = new TransferMessaging(
-      authService,
-      logging,
-      messaging,
-      linkedTransferService,
-      transferRepository,
-    );
+    const transfer = new TransferMessaging(authService, logging, messaging, linkedTransferService);
     await transfer.setupSubscriptions();
   },
 };

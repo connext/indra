@@ -13,7 +13,6 @@ import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
 import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransfer.module";
 
 import { transferProviderFactory } from "./transfer.provider";
-import { TransferRepository } from "./transfer.repository";
 import { TransferService } from "./transfer.service";
 
 @Module({
@@ -28,7 +27,7 @@ import { TransferService } from "./transfer.service";
     LoggerModule,
     LinkedTransferModule,
     MessagingModule,
-    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository, TransferRepository]),
+    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository]),
   ],
   providers: [TransferService, transferProviderFactory],
 })
