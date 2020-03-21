@@ -5,8 +5,8 @@ import {
   GetLinkedTransferResponse,
   replaceBN,
   SimpleLinkedTransferAppState,
-  LinkedTransferStatus,
   GetPendingAsyncTransfersResponse,
+  LinkedTransferStatus,
   // TransferType,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
@@ -18,7 +18,7 @@ import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
-import { LinkedTransferService, appStatusesToLinkedTransferStatus } from "./linkedTransfer.service";
+import { LinkedTransferService } from "./linkedTransfer.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 
 export class LinkedTransferMessaging extends AbstractMessagingProvider {
@@ -38,40 +38,21 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     data: { paymentId: string },
   ): Promise<GetLinkedTransferResponse | undefined> {
+    const { paymentId } = data;
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
-    this.log.info(`Got fetch link request for: ${data.paymentId}`);
-    // should really only ever be 1 active at a time
-    // TODO: is this always true?
-    // might need to check for duplicate paymentIds when we create a transfer
-    const transferApps = await this.appInstanceRepository.findLinkedTransferAppsByPaymentId(
-      data.paymentId,
-    );
-
-    if (transferApps.length === 0) {
-      return undefined;
-    }
+    this.log.info(`Got fetch link request for: ${paymentId}`);
 
     // determine status
     // node receives transfer in sender app
-    const senderApp = transferApps.find(
-      app =>
-        convertLinkedTransferAppState("bignumber", app.latestState as SimpleLinkedTransferAppState)
-          .coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress,
-    );
-    const receiverApp = transferApps.find(
-      app =>
-        convertLinkedTransferAppState("bignumber", app.latestState as SimpleLinkedTransferAppState)
-          .coinTransfers[0].to === this.cfCoreService.cfCore.freeBalanceAddress,
-    );
-
+    const {
+      senderApp,
+      status,
+    } = await this.linkedTransferService.findSenderAndReceiverAppsWithStatus(paymentId);
     if (!senderApp) {
       return undefined;
     }
-
-    // if sender app is uninstalled, transfer has been unlocked by node
-    const status = appStatusesToLinkedTransferStatus(senderApp.type, receiverApp?.type);
 
     const latestState = convertLinkedTransferAppState(
       "bignumber",
@@ -108,8 +89,29 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     };
   }
 
-  async getPendingTransfers(pubId: string): Promise<GetPendingAsyncTransfersResponse[]> {
-    throw new Error("linkedTransfer.provider#getPendingTransfers not implemented");
+  async getPendingTransfers(
+    userPublicIdentifier: string,
+  ): Promise<GetPendingAsyncTransfersResponse> {
+    const transfers = await this.linkedTransferService.getLinkedTransfersForRedeem(
+      userPublicIdentifier,
+    );
+    return transfers.map(transfer => {
+      const state = convertLinkedTransferAppState(
+        "bignumber",
+        transfer.latestState as SimpleLinkedTransferAppState,
+      );
+      return {
+        paymentId: state.paymentId,
+        createdAt: transfer.createdAt,
+        amount: state.amount.toString(),
+        assetId: state.assetId,
+        senderPublicIdentifier: transfer.channel.userPublicIdentifier,
+        receiverPublicIdentifier: transfer.meta["recipient"],
+        status: LinkedTransferStatus.PENDING,
+        meta: transfer.meta,
+        encryptedPreImage: transfer.meta["encryptedPreImage"],
+      };
+    });
   }
 
   async setupSubscriptions(): Promise<void> {
