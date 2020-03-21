@@ -26,13 +26,7 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
   ): Promise<string[]> {
-    const app = await requestHandler.store.getAppInstance(
-      params.appInstanceId,
-    );
-    if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
-    }
-    return [app.multisigAddress, params.appInstanceId];
+    return [params.appInstanceId];
   }
 
   protected async beforeExecution(
