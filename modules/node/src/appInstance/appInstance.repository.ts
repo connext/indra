@@ -333,10 +333,12 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     // TODO: THIS SHOULD PROB BE DONE UPSTREAM
     let latestStateFixed = latestState;
     if (latestState["coinTransfers"]) {
-      latestStateFixed["coinTransfers"] = convertCoinTransfers(
-        "bignumber",
-        latestState["coinTransfers"],
-      );
+      if (app.outcomeType === OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER) {
+        latestStateFixed["coinTransfers"] = convertCoinTransfers(
+          "bignumber",
+          latestState["coinTransfers"],
+        );
+      }
     }
 
     app.latestState = latestStateFixed;
