@@ -24,6 +24,7 @@ import {
   logTime,
   stringify,
   isWalletProvided,
+  signDigestWithEthers,
 } from "./lib";
 import { NodeApiClient } from "./node";
 import {
@@ -130,8 +131,7 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const signingKey = new SigningKey(await keyGen("0"));
-      const sig = joinSignature(signingKey.signDigest(message));
+      const sig = signDigestWithEthers(await keyGen("0x"), message);
       return sig;
     };
 
