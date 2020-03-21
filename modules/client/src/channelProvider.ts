@@ -12,7 +12,7 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signEthereumMessage } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress, signDigestWithEthers } from "./lib";
 import {
@@ -129,7 +129,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private signMessage = async (message: string): Promise<string> => {
-    return signEthereumMessage(this.authKey, message);
+    return signChannelMessage(this.authKey, message);
   };
 
   private signDigest = async (message: string): Promise<string> => {

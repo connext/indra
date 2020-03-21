@@ -1,13 +1,6 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
-import {
-  getAddress,
-  hexlify,
-  Interface,
-  randomBytes,
-  TransactionDescription,
-  SigningKey,
-} from "ethers/utils";
+import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { appIdentityToHash, ConditionalTransactionCommitment } from "../../../../src/ethereum";
@@ -88,8 +81,8 @@ describe("ConditionalTransactionCommitment", () => {
       expect(retrieved).toMatchObject(commitment);
       const hash = randomBytes(20).toString();
       commitment.signatures = [
-        new SigningKey(hdNodes[0]).signDigest(hash),
-        new SigningKey(hdNodes[1]).signDigest(hash),
+        signDigestWithEthers(hdNodes[0].privateKey, hash),
+        signDigestWithEthers(hdNodes[1].privateKey, hash),
       ];
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);

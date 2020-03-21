@@ -14,7 +14,8 @@ import {
 } from "@connext/crypto";
 import * as EthCrypto from "eth-crypto";
 import { Wallet } from "ethers";
-import { SigningKey, computePublicKey, arrayify, joinSignature } from "ethers/utils";
+import { computePublicKey, arrayify } from "ethers/utils";
+import { signDigestWithEthers } from "./utils";
 
 const prvKey = Wallet.createRandom().privateKey;
 const pubKey = removeHexPrefix(computePublicKey(prvKey));
@@ -83,8 +84,7 @@ describe("crypto", () => {
   });
 
   test("we should be able to sign ECDSA digests", async () => {
-    const signingKey = new SigningKey(wallet.privateKey);
-    const sig1 = joinSignature(signingKey.signDigest(arrayify(digest)));
+    const sig1 = signDigestWithEthers(wallet.privateKey, arrayify(digest).toString());
     const sig2 = await signDigest(wallet.privateKey, digest);
     expect(sig1).toEqual(sig2);
   });

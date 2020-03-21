@@ -12,6 +12,7 @@ import { ChallengeRegistry } from "../../contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "./random-signing-keys";
+import { signDigestWithEthers } from "../../../src/utils";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -65,8 +66,8 @@ describe("set state on free balance", () => {
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     setStateCommitment.signatures = [
-      multisigOwnerKeys[0].signDigest(setStateCommitmentHash),
-      multisigOwnerKeys[1].signDigest(setStateCommitmentHash),
+      signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+      signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
     ];
 
     const setStateTx = setStateCommitment.getSignedTransaction();

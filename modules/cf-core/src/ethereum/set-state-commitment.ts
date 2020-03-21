@@ -1,4 +1,4 @@
-import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
+import { Interface, keccak256, solidityPack } from "ethers/utils";
 
 import { ChallengeRegistry } from "../contracts";
 import {
@@ -22,14 +22,14 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly versionNumber: number, // app nonce
     public readonly timeout: number,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
-    private participantSignatures: Signature[] = [],
+    private participantSignatures: string[] = [],
   ) {}
 
-  get signatures(): Signature[] {
+  get signatures(): string[] {
     return this.participantSignatures;
   }
 
-  set signatures(sigs: Signature[]) {
+  set signatures(sigs: string[]) {
     if (sigs.length < 2) {
       throw new Error(
         `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
@@ -95,7 +95,7 @@ export class SetStateCommitment implements EthereumCommitment {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(hash, this.signatures).map(joinSignature),
+      signatures: sortSignaturesBySignerAddress(hash, this.signatures),
     };
   }
 

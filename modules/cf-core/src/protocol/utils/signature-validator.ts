@@ -5,7 +5,7 @@ import { EthereumCommitment } from "../../types";
 export function assertIsValidSignature(
   expectedSigner: string,
   commitment?: EthereumCommitment,
-  signature?: Signature,
+  signature?: string,
 ) {
   if (commitment === undefined) {
     throw Error("assertIsValidSignature received an undefined commitment");
