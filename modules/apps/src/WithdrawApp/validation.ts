@@ -48,8 +48,8 @@ export const validateWithdrawApp = (
 
   if (initialState.signatures[1] != HashZero) {
     throw new Error(
-      `Cannot install a withdraw app with a populated signatures[1] field. Signatures[1]: ${initialState.signatures[1]}`,,
-    );;
+      `Cannot install a withdraw app with a populated signatures[1] field. Signatures[1]: ${initialState.signatures[1]}`,
+    );
   }
 
   if (
@@ -57,14 +57,14 @@ export const validateWithdrawApp = (
     initialState.signers[1] != responderFreeBalanceAddress
   ) {
     throw new Error(
-      `Cannot install a withdraw app if signers[] do not match multisig participant addresses. Signers[]: ${initialState.signers}`,,
-    );;
+      `Cannot install a withdraw app if signers[] do not match multisig participant addresses. Signers[]: ${initialState.signers}`,
+    );
   }
 
   if (!initialState.transfers[1].amount.eq(Zero)) {
     throw new Error(
-      `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1].amount.toString()}`,,
-    );;
+      `Cannot install a withdraw app with nonzero recipient amount. ${initialState.transfers[1].amount.toString()}`,
+    );
   }
 
   let recovered = recoverAddress(initialState.data, initialState.signatures[0]);
@@ -73,6 +73,6 @@ export const validateWithdrawApp = (
     throw new Error(
       `Cannot install withdraw app - incorrect signer recovered from initiator sig on data. 
          Recovered: ${recovered}, Expected: ${initialState.signers[0]}`,
-    );;
+    );
   }
 };
