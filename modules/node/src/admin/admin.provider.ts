@@ -51,7 +51,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getStateChannelByUserPublicIdentifier(userPublicIdentifier);
   }
 
-  async getStateChannelByMultisig(data: { multisigAddress: string }): Promise<StateChannelJSON> {
+  async getStateChannelByMultisig(
+    subject: string,
+    data: { multisigAddress: string },
+  ): Promise<StateChannelJSON> {
     const { multisigAddress } = data;
     if (!multisigAddress) {
       throw new RpcException(`No multisig address supplied: ${stringify(data)}`);
@@ -96,42 +99,39 @@ class AdminMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
-      this.authService.parseXpub(this.getNoFreeBalance.bind(this)),
+      this.getNoFreeBalance.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.get-state-channel-by-xpub",
-      this.authService.parseXpub(this.getStateChannelByUserPublicIdentifier.bind(this)),
+      this.getStateChannelByUserPublicIdentifier.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.get-state-channel-by-multisig",
-      this.authService.parseXpub(this.getStateChannelByMultisig.bind(this)),
+      this.getStateChannelByMultisig.bind(this),
     );
 
-    await super.connectRequestReponse(
-      "admin.get-all-channels",
-      this.authService.parseXpub(this.getAllChannels.bind(this)),
-    );
+    await super.connectRequestReponse("admin.get-all-channels", this.getAllChannels.bind(this));
 
     await super.connectRequestReponse(
       "admin.get-all-linked-transfers",
-      this.authService.parseXpub(this.getAllLinkedTransfers.bind(this)),
+      this.getAllLinkedTransfers.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.get-linked-transfer-by-payment-id",
-      this.authService.parseXpub(this.getLinkedTransferByPaymentId.bind(this)),
+      this.getLinkedTransferByPaymentId.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.get-channels-for-merging",
-      this.authService.parseXpub(this.getChannelsForMerging.bind(this)),
+      this.getChannelsForMerging.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.repair-critical-addresses",
-      this.authService.parseXpub(this.repairCriticalStateChannelAddresses.bind(this)),
+      this.repairCriticalStateChannelAddresses.bind(this),
     );
 
     await super.connectRequestReponse(
