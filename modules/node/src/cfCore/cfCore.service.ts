@@ -18,6 +18,7 @@ import {
   HashLockTransferAppStateBigNumber,
   FastSignedTransferApp,
   FastSignedTransferAppState,
+  INSTALL_EVENT,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -252,6 +253,7 @@ export class CFCoreService {
     meta: object = {},
   ): Promise<CFCoreTypes.ProposeInstallResult | undefined> {
     let boundReject: (reason?: any) => void;
+    let boundResolve: (reason?: any) => void;
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(app, network.chainId);
@@ -282,13 +284,11 @@ export class CFCoreService {
     try {
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
-          boundReject = this.rejectInstallTransfer.bind(null, rej);
-          this.messagingProvider.subscribe(
-            `${channel.userPublicIdentifier}.channel.${channel.multisigAddress}.app-instance.*.install`,
-            this.resolveInstallTransfer.bind(null, res),
-          );
-          this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
           proposeRes = await this.proposeInstallApp(params);
+          boundResolve = this.resolveInstallTransfer.bind(null, res, proposeRes.appInstanceId);
+          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          this.cfCore.on(INSTALL_EVENT, boundResolve);
+          this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
         },
       );
       this.log.info(`App was installed successfully: ${proposeRes.appInstanceId}`);
@@ -298,7 +298,7 @@ export class CFCoreService {
       this.log.error(`Error installing app: ${e.message}`, e.stack);
       return undefined;
     } finally {
-      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, channel);
+      this.cleanupInstallListeners(boundReject, boundResolve);
     }
   }
 
@@ -563,9 +563,12 @@ export class CFCoreService {
 
   private resolveInstallTransfer = (
     res: (value?: unknown) => void,
+    appInstanceId: string,
     message: InstallMessage,
   ): InstallMessage => {
-    res(message);
+    if (appInstanceId === message.data.params.appInstanceId) {
+      res(message);
+    }
     return message;
   };
 
@@ -576,10 +579,8 @@ export class CFCoreService {
     return rej(`Install failed. Event data: ${stringify(msg)}`);
   };
 
-  private cleanupInstallListeners = (boundReject: any, appId: string, channel: Channel): void => {
-    this.messagingProvider.unsubscribe(
-      `${channel.userPublicIdentifier}.channel.${channel.multisigAddress}.app-instance.*.install`,
-    );
+  private cleanupInstallListeners = (boundReject: any, boundResolve: any): void => {
+    this.cfCore.off(INSTALL_EVENT, boundResolve);
     this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
   };
 
