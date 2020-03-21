@@ -70,7 +70,7 @@ export class WrappedAsyncStorage implements WrappedStorage {
       try {
         await this.backupService.backup({ path: key, value });
       } catch (e) {
-        console.error(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
+        console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
       }
     }
     this.data[`${this.prefix}${this.separator}${key}`] = value;

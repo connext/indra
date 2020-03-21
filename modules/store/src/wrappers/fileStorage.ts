@@ -60,7 +60,7 @@ export class FileStorage implements WrappedStorage {
       try {
         await this.backupService.backup({ path: key, value: data });
       } catch (e) {
-        console.error(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
+        console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
       }
     }
     const filePath = await this.getFilePath(key);
