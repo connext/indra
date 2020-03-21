@@ -12,9 +12,9 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signEthereumMessage, signDigest } from "@connext/crypto";
+import { signEthereumMessage } from "@connext/crypto";
 
-import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
+import { CFCore, deBigNumberifyJson, xpubToAddress, signDigestWithEthers } from "./lib";
 import {
   CFChannelProviderOptions,
   CFCoreTypes,
@@ -133,7 +133,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private signWithdrawCommitment = async (message: string): Promise<string> => {
-    return signDigest(this.authKey, message);
+    return signDigestWithEthers(this.authKey, message);
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
