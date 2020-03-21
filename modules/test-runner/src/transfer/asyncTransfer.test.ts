@@ -27,7 +27,7 @@ import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
 
-describe.only("Async Transfers", () => {
+describe("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -62,7 +62,7 @@ describe.only("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it.only("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
+  it("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
     const receiverMnemonic = Wallet.createRandom().mnemonic;
     const receiverXpub = HDNode.fromMnemonic(receiverMnemonic)
       .derivePath(CF_PATH)
