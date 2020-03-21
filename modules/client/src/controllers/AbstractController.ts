@@ -48,7 +48,7 @@ export abstract class AbstractController {
     ]);
     const { appInstanceId } = proposeRes as CFCoreTypes.ProposeInstallResult;
 
-    let boundResolve: (value?: any) => void;
+    // let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
     try {
@@ -59,9 +59,14 @@ export abstract class AbstractController {
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
-          boundResolve = this.resolveInstall.bind(null, res, appInstanceId);
+          // boundResolve = this.resolveInstall.bind(null, res, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
-          this.listener.on(INSTALL_EVENT, boundResolve, appInstanceId);
+
+          // set up install nats subscription
+          const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`;
+          this.connext.messaging.subscribe(subject, res);
+
+          // this.listener.on(INSTALL_EVENT, boundResolve, appInstanceId);
           this.listener.on(REJECT_INSTALL_EVENT, boundReject);
         }),
       ]);
@@ -132,16 +137,16 @@ export abstract class AbstractController {
     }
   };
 
-  private resolveInstall = (
-    res: (value?: unknown) => void,
-    appInstanceId: string,
-    message: any,
-  ): void => {
-    const data = message.data ? message.data : message;
-    if (data.params.appInstanceId === appInstanceId) {
-      res();
-    }
-  };
+  // private resolveInstall = (
+  //   res: (value?: unknown) => void,
+  //   appInstanceId: string,
+  //   message: any,
+  // ): void => {
+  //   const data = message.data ? message.data : message;
+  //   if (data.params.appInstanceId === appInstanceId) {
+  //     res();
+  //   }
+  // };
 
   private rejectInstall = (
     rej: (message?: Error) => void,
