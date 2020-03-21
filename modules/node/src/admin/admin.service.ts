@@ -234,9 +234,6 @@ export class AdminService implements OnApplicationBootstrap {
    * Migrate from the key/value cf-core store to the v1 of the api driven store:
    * https://github.com/ConnextProject/indra/blob/baad8edf906cb16e18c8fd5422b4f7e28fa816fb/modules/types/src/store.ts#L90
    *
-   * Does not delete the records in case something goes awry, but instead allows
-   * admins to decide when they want to drop the legacy `node_records` table.
-   *
    * Some ideally enforced database constraints were relaxed to allow the
    * migrations to happen in prod via the admin function. A migration to restore
    * these constraints will be needed.
@@ -295,6 +292,11 @@ export class AdminService implements OnApplicationBootstrap {
         );
 
         this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
+        // delete old channel record
+        const removed = await this.cfCoreRepository.delete({
+          path: `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${channelJSON.multisigAddress}`,
+        });
+        this.log.log(`Removed ${removed.affected} old records after migrating`);
       } catch (e) {
         this.log.error(`Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()}`);
       }
