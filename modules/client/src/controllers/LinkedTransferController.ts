@@ -49,6 +49,16 @@ export class LinkedTransferController extends AbstractController {
 
     if (recipient) {
       validate(invalidXpub(recipient));
+      // set recipient and encrypted pre-image on linked transfer
+      const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
+      const encryptedPreImage = await encryptWithPublicKey(
+        recipientPublicKey.replace(/^0x/, ``),
+        preImage,
+      );
+
+      // add encrypted preImage to meta so node can store it in the DB
+      params.meta["encryptedPreImage"] = encryptedPreImage;
+      params.meta["recipient"] = recipient;
     }
 
     // install the transfer application
@@ -112,18 +122,7 @@ export class LinkedTransferController extends AbstractController {
     } as CreateTransferEventData<"LINKED_TRANSFER">;
 
     if (recipient) {
-      // set recipient and encrypted pre-image on linked transfer
-      const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
-      const encryptedPreImage = await encryptWithPublicKey(
-        recipientPublicKey.replace(/^0x/, ``),
-        preImage,
-      );
-
-      // add encrypted preImage to meta so node can store it in the DB
-      params.meta["encryptedPreImage"] = encryptedPreImage;
-      params.meta["recipient"] = recipient;
-
-      eventData.transferMeta.encryptedPreImage = encryptedPreImage;
+      eventData.transferMeta.encryptedPreImage = params.meta.encryptedPreImage;
 
       // publish encrypted secret for receiver
       await this.connext.messaging.publish(
