@@ -280,9 +280,13 @@ export class LinkedTransferService {
       // if receiverApp exists, sender can be unlocked
       if (receiverApp) {
         this.log.log(`Found transfer to unlock, paymentId ${senderApp.latestState["paymentId"]}`);
-        await this.cfCoreService.takeAction(senderApp.identityHash, {
-          preImage: receiverApp.latestState["preImage"],
-        } as SimpleLinkedTransferAppAction);
+        const preImage: string = senderApp.latestState["preImage"];
+        if (preImage === HashZero) {
+          // no action has been taken, but is not uninstalled
+          await this.cfCoreService.takeAction(senderApp.identityHash, {
+            preImage,
+          });
+        }
         await this.cfCoreService.uninstallApp(senderApp.identityHash);
         unlockedAppIds.push(senderApp.identityHash);
         this.log.log(`Unlocked transfer from app ${senderApp.identityHash}`);

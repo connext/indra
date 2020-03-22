@@ -504,8 +504,10 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
       )
-      // preImage is HashZero
-      .andWhere(`app_instance."latestState"::JSONB @> '{"preImage": "${HashZero}"}'`)
+      // preimage can be HashZero or empty, if its HashZero, then the
+      // node should takeAction + uninstall. if its not HashZero, then
+      // the node should just uninstall. If the node has completed the
+      // transfer, then the type would be AppType.UNINSTALLED
       .getMany();
     return res;
   }
