@@ -1,5 +1,5 @@
 import { getDirectoryFiles, isDirectorySync } from "@connext/store";
-import uuid from "uuid";
+import { v4 as uuid } from "uuid";
 
 import {
   env,
@@ -93,7 +93,7 @@ describe("KeyValueStorage", () => {
   });
 
   it("happy case: FileStorage should create a store directory", async () => {
-    const id = uuid.v4();
+    const id = uuid();
     expect(isDirectorySync(`${fileDir}/${id}`)).to.be.false;
     const store = createKeyValueStore(FILESTORAGE, {
       asyncStorageKey,
@@ -107,8 +107,8 @@ describe("KeyValueStorage", () => {
   it("happy case: FileStorage should create a file per key inside directory", async () => {
     const store = createKeyValueStore(FILESTORAGE, { asyncStorageKey, fileDir });
 
-    const key1 = uuid.v4();
-    const key2 = uuid.v4();
+    const key1 = uuid();
+    const key2 = uuid();
     expect(key1).to.not.equal(key2);
     await Promise.all([store.setItem(key2, testValue), store.setItem(key1, testValue)]);
 
@@ -143,7 +143,7 @@ describe("KeyValueStorage", () => {
     });
     const storeB = createKeyValueStore(FILESTORAGE, { asyncStorageKey, fileDir });
 
-    const key = uuid.v4();
+    const key = uuid();
     await Promise.all([storeA.setItem(key, testValue), storeB.setItem(key, testValue)]);
 
     const files = await getDirectoryFiles(fileDir);

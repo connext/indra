@@ -25,7 +25,7 @@ import {
 } from "@connext/types";
 import { BigNumber, hexlify, randomBytes } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
-import uuid from "uuid";
+import { v4 as uuid } from "uuid";
 
 import { expect } from "../";
 import { One } from "ethers/constants";
@@ -169,7 +169,7 @@ export function createArray(length: number = 10): string[] {
 
 export function generateStorePairs(length: number = 10): StorePair[] {
   return createArray(length).map(() => {
-    const id = uuid.v1();
+    const id = uuid();
     return { path: `path-${id}`, value: `value-${id}` };
   });
 }
