@@ -79,7 +79,7 @@ describe("ConditionalTransactionCommitment", () => {
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
-      const hash = Buffer.from(randomBytes(20)).toString("hex");
+      const hash = "0x" + Buffer.from(randomBytes(20)).toString("hex");
       commitment.signatures = [
         signDigestWithEthers(hdNodes[0].privateKey, hash),
         signDigestWithEthers(hdNodes[1].privateKey, hash),
