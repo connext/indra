@@ -5,7 +5,8 @@ import { DecString, HexString } from "./basic";
 
 export const isBN = BigNumber.isBigNumber;
 
-export const toBN = (n: BigNumberish) => bigNumberify(n.toString());
+export const toBN = (n: BigNumberish) =>
+  bigNumberify((n && (n as any)._hex) ? (n as any)._hex : n.toString());
 
 export const toWad = (n: any) => parseEther(n.toString());
 
