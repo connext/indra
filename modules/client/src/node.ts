@@ -161,9 +161,12 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return await this.send(`${this.userPublicIdentifier}.transfer.fetch-linked`, {
+    console.warn(`[client] sending request to transfer`);
+    const ret = await this.send(`${this.userPublicIdentifier}.transfer.fetch-linked`, {
       paymentId,
     });
+    console.warn(`[client] sent!`);
+    return ret;
   }
 
   public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
@@ -259,11 +262,14 @@ export class NodeApiClient implements INodeApiClient {
       } catch (e) {
         error = e;
         if (e.message.startsWith(sendFailed)) {
-          this.log.warn(
+          console.warn(
             `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`,
           );
+          console.warn(`[client] disconnecting...`);
           await this.messaging.disconnect();
+          console.warn(`[client] disconnected! reconnecting...`);
           await this.messaging.connect();
+          console.warn(`[client] connected!`);
           if (attempt + 1 <= NATS_ATTEMPTS) {
             await delay(NATS_TIMEOUT); // Wait at least a NATS_TIMEOUT before retrying
           }
@@ -277,8 +283,8 @@ export class NodeApiClient implements INodeApiClient {
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
     const start = Date.now();
-    this.log.debug(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
+    console.warn(
+      `[client] Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
     );
     const payload = {
       ...data,
@@ -288,6 +294,7 @@ export class NodeApiClient implements INodeApiClient {
     try {
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
     } catch (e) {
+      console.log(`[client] failed`);
       throw new Error(`${sendFailed}: ${e.message}`);
     }
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;

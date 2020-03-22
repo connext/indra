@@ -16,19 +16,15 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
-import { CFCoreService } from "../cfCore/cfCore.service";
 
 export class LinkedTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
     messaging: MessagingService,
-    private readonly cfCoreService: CFCoreService,
     private readonly linkedTransferService: LinkedTransferService,
-    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     super(log, messaging);
     log.setContext("LinkedTransferMessaging");
@@ -38,6 +34,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     data: { paymentId: string },
   ): Promise<GetLinkedTransferResponse | undefined> {
+    this.log.warn(
+      `\n\n******* fetching transfer` +
+        `   - pubId: ${pubId}\n` +
+        `   - data: ${JSON.stringify(data, null, 2)}`,
+    );
     const { paymentId } = data;
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
@@ -131,30 +132,19 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 }
 
 export const linkedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    AuthService,
-    LoggerService,
-    MessagingProviderId,
-    CFCoreService,
-    LinkedTransferService,
-    AppInstanceRepository,
-  ],
+  inject: [AuthService, LoggerService, MessagingProviderId, LinkedTransferService],
   provide: LinkedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
-    cfCoreService: CFCoreService,
     linkedTransferService: LinkedTransferService,
-    appInstanceRepository: AppInstanceRepository,
   ): Promise<void> => {
     const transfer = new LinkedTransferMessaging(
       authService,
       logging,
       messaging,
-      cfCoreService,
       linkedTransferService,
-      appInstanceRepository,
     );
     await transfer.setupSubscriptions();
   },
