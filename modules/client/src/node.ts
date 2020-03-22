@@ -254,7 +254,9 @@ export class NodeApiClient implements INodeApiClient {
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
     let error;
+    const log = subject.includes(`fetch-linked`);
     for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
+      log && console.log(`Trying to send attempt ${attempt}/${NATS_ATTEMPTS}...`)
       try {
         return await this.sendAttempt(subject, data);
       } catch (e) {
@@ -286,9 +288,13 @@ export class NodeApiClient implements INodeApiClient {
       id: uuid.v4(),
     };
     let msg: any;
+    const log = subject.includes(`fetch-linked`);
     try {
+      log && console.log(`[client] fetching transfer...`);
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
+      log && console.log(`[client] got linked transfer`);
     } catch (e) {
+      log && console.log(`[client] failed: ${e.message}`);
       throw new Error(`${sendFailed}: ${e.message}`);
     }
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;

@@ -1,6 +1,5 @@
 import {
   IConnextClient,
-  DefaultApp,
   RECEIVE_TRANSFER_FINISHED_EVENT,
   UPDATE_STATE_EVENT,
   LinkedTransferStatus,
@@ -48,7 +47,9 @@ const verifyTransfer = async (
   expected: any, //Partial<Transfer> type uses `null` not `undefined`
 ): Promise<void> => {
   expect(expected.paymentId).to.be.ok;
+  console.log(`[test] fetching linked transfer`);
   const transfer = await client.getLinkedTransfer(expected.paymentId);
+  console.log(`[test] got linked transfer!`);
   // verify the saved transfer information
   expect(transfer).to.containSubset(expected);
   expect(transfer.encryptedPreImage).to.be.ok;
@@ -143,7 +144,7 @@ describe("Async transfer offline tests", () => {
    * Ideally, the node takes action +  uninstalls these apps on `connect`,
    * and money is returned to the hubs channel (redeemed payment)
    */
-  it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later", async () => {
+  it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later (sender offline for take action)", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     receiverClient = await createClientWithMessagingLimits();
@@ -199,9 +200,7 @@ describe("Async transfer offline tests", () => {
    * Ideally, the node takes action +  uninstalls these apps on `connect`,
    * and money is returned to the hubs channel (redeemed payment)
    */
-  // TODO: RS: i dont really understand this test, if the sender goes offline after updating state,
-  // it will not be able to complete the linked transfer, so senderClient.transfer would never resolve
-  it.skip("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action, with sender but sender is offline but then comes online later", async () => {
+  it.only("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later (sender offline for uninstall)", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       ceiling: { sent: 1 }, // for deposit app
@@ -210,10 +209,12 @@ describe("Async transfer offline tests", () => {
     receiverClient = await createClientWithMessagingLimits();
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
+    console.log(`[test] receiver and sender funded!`);
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise((resolve: Function) =>
       receiverClient.once(RECEIVE_TRANSFER_FINISHED_EVENT, () => {
+        console.log(`[test] received transfer finished event!`);
         resolve();
       }),
     );
@@ -221,10 +222,13 @@ describe("Async transfer offline tests", () => {
     // disconnect messaging on take action event
     const actionTaken = new Promise((resolve: Function) => {
       senderClient.once(UPDATE_STATE_EVENT, async () => {
+        console.log(`[test] caught action event!`);
         await received;
         await (senderClient.messaging as TestMessagingService).disconnect();
+        console.log(`[test] disonnected sender messaging service!`);
         // fast forward 3 min so protocols are stale on client
         clock.tick(60_000 * 3);
+        console.log(`[test] fast forwarded!`);
         resolve();
       });
     });
@@ -233,6 +237,7 @@ describe("Async transfer offline tests", () => {
       assetId: tokenAddress,
       recipient: receiverClient.publicIdentifier,
     });
+    console.log(`[test] sent transfer!`);
     // wait for transfer to finish + messaging to be disconnected
     await actionTaken;
     // verify transfer
@@ -244,15 +249,19 @@ describe("Async transfer offline tests", () => {
       status: "REDEEMED",
       type: "LINKED",
     };
+    console.log(`[test] verifying receiver transfer...`);
     await verifyTransfer(receiverClient, expected);
+    console.log(`[test] verified receiver transfer!`);
     // reconnect the sender
     const reconnected = await createClient({
       mnemonic: getMnemonic(senderClient.publicIdentifier),
     });
+    console.log(`[test] reconnected sender client!`);
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
     expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
     // make sure the transfer is properly reclaimed
     await verifyTransfer(reconnected, { ...expected, status: "UNLOCKED" });
+    console.log(`[test] verified sender transfer!`);
   });
 });
