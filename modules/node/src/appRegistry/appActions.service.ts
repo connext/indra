@@ -151,13 +151,13 @@ export class AppActionsService {
     );
 
     // take action and uninstall
-    this.log.error(`Unlocking transfer ${senderApp.identityHash}`);
+    this.log.log(`Unlocking transfer ${senderApp.identityHash}`);
     await this.cfCoreService.takeAction(senderApp.identityHash, {
       preImage: action.preImage,
     } as SimpleLinkedTransferAppAction);
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
-    this.log.error(`Unlocked transfer ${senderApp.identityHash}`);
+    this.log.log(`Unlocked transfer ${senderApp.identityHash}`);
   }
 
   private async handleWithdrawAppAction(
