@@ -115,7 +115,7 @@ export class Node {
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
-    this.store = new Store(this.storeService);
+    this.store = new Store(this.storeService, this.log);
     this.protocolRunner = this.buildProtocolRunner();
   }
 
@@ -175,13 +175,12 @@ export class Node {
         throw new Error("OP_SIGN middleware received wrong number of arguments.");
       }
 
-      const [commitment, overrideKeyIndex] = args;
+      const [commitmentHash, overrideKeyIndex] = args;
       const keyIndex = overrideKeyIndex || 0;
 
       const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
-      const hash = commitment.hashToSign();
 
-      return await signDigest(privateKey, hash);
+      return signDigest(privateKey, commitmentHash);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {
@@ -300,11 +299,18 @@ export class Node {
 
         // always persist the free balance
         // this will error if channel does not exist
-        await store.saveFreeBalance(postProtocolChannel);
+        // 25ms
+        try {
+          await store.saveFreeBalance(postProtocolChannel);
+        } catch(e) {
+          throw new Error(`Setup protocol has not been run`);
+        }
 
         switch (type) {
-          case PersistAppType.Proposal:
+          case PersistAppType.Proposal: {
+            // 48ms
             await store.saveAppProposal(postProtocolChannel, app as AppInstanceProposal);
+          }
             break;
           case PersistAppType.Reject:
             await store.removeAppProposal(postProtocolChannel, app as AppInstanceProposal);
@@ -314,10 +320,12 @@ export class Node {
             if (app.identityHash === postProtocolChannel.freeBalance.identityHash) {
               break;
             }
+            // 24ms
             await store.saveAppInstance(postProtocolChannel, app as AppInstance);
             break;
 
           case PersistAppType.Uninstall:
+            // 17ms
             await store.removeAppInstance(postProtocolChannel, app as AppInstance);
             break;
 
