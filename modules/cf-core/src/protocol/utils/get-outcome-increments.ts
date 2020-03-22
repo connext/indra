@@ -16,7 +16,8 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../../types";
-import { wait } from "../../utils";
+import { wait, logTime } from "../../utils";
+import { ILoggerService } from "@connext/types";
 
 /**
  * Get the outcome of the app instance given, decode it according
@@ -29,11 +30,16 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   provider: BaseProvider,
   encodedOutcomeOverride: string = "",
   blockNumberToUseIfNecessary?: number,
+  log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
   const { outcomeType } = appInstance;
 
+  let checkpoint = Date.now();
   const encodedOutcome =
     encodedOutcomeOverride || (await appInstance.computeOutcomeWithCurrentState(provider));
+
+  if(log)
+    logTime(log, checkpoint, `Computed outcome with current state`)
 
   // FIXME: This is a very sketchy way of handling this edge-case
   if (appInstance.state["threshold"] !== undefined) {
@@ -56,6 +62,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
       return handleSingleAssetTwoPartyCoinTransfer(
         encodedOutcome,
         appInstance.singleAssetTwoPartyCoinTransferInterpreterParams,
+        log
       );
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
@@ -166,9 +173,11 @@ function handleMultiAssetMultiPartyCoinTransfer(
 function handleSingleAssetTwoPartyCoinTransfer(
   encodedOutcome: string,
   interpreterParams: SingleAssetTwoPartyCoinTransferInterpreterParams,
+  log?: ILoggerService,
 ): TokenIndexedCoinTransferMap {
   const { tokenAddress } = interpreterParams;
 
+  // 0ms
   const [
     { to: to1, amount: amount1 },
     { to: to2, amount: amount2 },

@@ -10,6 +10,7 @@ describe("Signature Validator Helper", () => {
   let signer: SigningKey;
   let signature: string;
   let commitment: EthereumCommitment;
+  let commitmentHash: string;
 
   beforeEach(async () => {
     signer = new SigningKey(createRandom32ByteHexString());
@@ -22,13 +23,13 @@ describe("Signature Validator Helper", () => {
   });
 
   it("validates signatures correctly", async () => {
-    await expect(assertIsValidSignature(signer.address, commitment, signature)).resolves.toBe(
+    await expect(assertIsValidSignature(signer.address, commitmentHash, signature)).resolves.toBe(
       undefined,
     );
   });
 
   it("throws if signature is undefined", async () => {
-    await expect(assertIsValidSignature(signer.address, commitment, undefined)).rejects.toThrow(
+    await expect(assertIsValidSignature(signer.address, commitmentHash, undefined)).rejects.toThrow(
       "assertIsValidSignature received an undefined signature",
     );
   });
@@ -44,7 +45,7 @@ describe("Signature Validator Helper", () => {
     const wrongHash = HashZero.replace("00", "11"); // 0x11000...
     const signature = await signDigest(signer.privateKey, wrongHash);
     const wrongSigner = await recoverAddressWithEthers(rightHash, signature);
-    await expect(assertIsValidSignature(signer.address, commitment, signature)).rejects.toThrow(
+    await expect(assertIsValidSignature(signer.address, commitmentHash, signature)).rejects.toThrow(
       `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}.`,
     );
   });
