@@ -17,10 +17,8 @@ import {
   expect,
   fundChannel,
   TOKEN_AMOUNT,
-  getNatsClient,
   env,
 } from "../util";
-import { Client } from "ts-nats";
 
 describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
