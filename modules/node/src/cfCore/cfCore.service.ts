@@ -214,7 +214,6 @@ export class CFCoreService {
           const incrementAndResolve = () => {
             promiseCounter += 1;
             if (promiseCounter === 2) {
-              console.warn(`resolving`);
               res();
             }
           };

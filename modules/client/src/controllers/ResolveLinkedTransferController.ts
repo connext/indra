@@ -1,7 +1,7 @@
 import {
+  ConditionalTransferTypes,
   EventNames,
   ReceiveTransferFinishedEventData,
-  ConditionalTransferTypes,
 } from "@connext/types";
 
 import { ResolveLinkedTransferParameters, ResolveLinkedTransferResponse } from "../types";

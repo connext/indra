@@ -2,10 +2,11 @@ import { SupportedApplications } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
 import {
   ChannelMethods,
-  ILoggerService,
-  ResolveHashLockTransferResponse,
-  ResolveFastSignedTransferResponse,
   GetHashLockTransferResponse,
+  ILoggerService,
+  parseBN,
+  ResolveFastSignedTransferResponse,
+  ResolveHashLockTransferResponse,
 } from "@connext/types";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
@@ -356,6 +357,6 @@ export class NodeApiClient implements INodeApiClient {
       start,
       `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
     );
-    return !response || isEmptyObj ? undefined : response;
+    return (!response || isEmptyObj) ? undefined : parseBN(response);
   }
 }

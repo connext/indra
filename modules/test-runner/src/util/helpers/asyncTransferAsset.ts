@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, EventNames } from "@connext/types";
+import { EventNames, IConnextClient } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
@@ -36,7 +36,7 @@ export async function asyncTransferAsset(
       new Promise((resolve: Function): void => {
         clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, data => {
           expect(data).to.deep.include({
-            amount: transferAmount.toString(),
+            amount: transferAmount,
             sender: clientA.publicIdentifier,
           });
           resolve();
@@ -56,7 +56,7 @@ export async function asyncTransferAsset(
   let start = Date.now();
   log.info(`call client.transfer()`);
   const { paymentId: senderPaymentId } = await clientA.transfer({
-    amount: transferAmount.toString(),
+    amount: transferAmount,
     assetId,
     meta: { hello: "world" },
     recipient: clientB.publicIdentifier,
@@ -98,7 +98,7 @@ export async function asyncTransferAsset(
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);
   expect(paymentA).to.deep.include({
-    amount: transferAmount.toString(),
+    amount: transferAmount,
     assetId,
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,
