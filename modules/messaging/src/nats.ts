@@ -3,6 +3,7 @@ import {
   ILoggerService,
   IMessagingService,
   MessagingConfig,
+  parseBN,
   nullLogger,
 } from "@connext/types";
 import * as nats from "ts-nats";
@@ -50,7 +51,7 @@ export class NatsMessagingService implements IMessagingService {
         if (err || !msg || !msg.data) {
           this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
         } else {
-          const data = typeof msg.data === `string` ? JSON.parse(msg).data : msg.data;
+          const data = parseBN(typeof msg.data === `string` ? JSON.parse(msg).data : msg.data);
           this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
           callback(data as NodeMessage);
         }
@@ -92,7 +93,7 @@ export class NatsMessagingService implements IMessagingService {
         if (err || !msg || !msg.data) {
           this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
         } else {
-          const data = typeof msg === `string` ? JSON.parse(msg) : msg;
+          const data = parseBN(typeof msg === `string` ? JSON.parse(msg) : msg);
           this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
           callback(data as NodeMessage);
         }

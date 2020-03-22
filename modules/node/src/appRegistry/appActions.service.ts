@@ -185,7 +185,7 @@ export class AppActionsService {
 
     const commitment = await this.cfCoreService.createWithdrawCommitment(
       {
-        amount: state.transfers[0].amount,
+        amount: state.transfers[0][1], // TODO: should be [0].amount
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: this.cfCoreService.cfCore.freeBalanceAddress,
       },

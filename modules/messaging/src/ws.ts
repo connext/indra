@@ -4,6 +4,7 @@ import {
   IMessagingService,
   MessagingConfig,
   nullLogger,
+  parseBN,
 } from "@connext/types";
 import * as wsNats from "websocket-nats";
 
@@ -47,7 +48,7 @@ export class WsMessagingService implements IMessagingService {
     this.subscriptions[subject] = this.connection.subscribe(
       this.prependKey(`${subject}.>`),
       (msg: any): void => {
-        const data = typeof msg === `string` ? JSON.parse(msg) : msg;
+        const data = parseBN(typeof msg === `string` ? JSON.parse(msg) : msg);
         this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
         callback(data as NodeMessage);
       },
@@ -79,7 +80,7 @@ export class WsMessagingService implements IMessagingService {
         { max: 1, timeout },
         (response: any): any => {
           this.log.debug(`Request for ${subject} returned: ${response}`);
-          resolve({ data: JSON.parse(response) });
+          resolve({ data: parseBN(JSON.parse(response)) });
         },
       );
     });
@@ -91,7 +92,7 @@ export class WsMessagingService implements IMessagingService {
   ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = this.connection.subscribe(subject, (msg: any): void => {
-      const data = typeof msg === `string` ? JSON.parse(msg) : msg;
+      const data = parseBN(typeof msg === `string` ? JSON.parse(msg) : msg);
       this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
       callback(data as NodeMessage);
     });

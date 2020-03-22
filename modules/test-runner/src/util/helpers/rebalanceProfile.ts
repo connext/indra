@@ -22,7 +22,7 @@ export const addRebalanceProfile = async (
 
   if (assertProfile) {
     const returnedProfile = await client.getRebalanceProfile(profile.assetId);
-    expect(returnedProfile).to.deep.eq(profile);
+    expect(returnedProfile).to.deep.include(profile);
   }
 
   return msg.data;
