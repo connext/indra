@@ -1,6 +1,6 @@
 import { AbiCoder, hexlify } from "ethers/utils";
 
-import { Address, BaseProvider } from "../basic";
+import { Address, JsonRpcProvider } from "../basic";
 import { enumify } from "../utils";
 
 export const tidy = (str: string): string =>
@@ -48,7 +48,7 @@ export interface NetworkContext {
   SingleAssetTwoPartyCoinTransferInterpreter: Address;
   TimeLockedPassThrough: Address;
   TwoPartyFixedOutcomeInterpreter: Address;
-  provider: BaseProvider;
+  provider: JsonRpcProvider;
 }
 
 // Keep in sync with above

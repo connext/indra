@@ -1,5 +1,5 @@
 import { EthereumCommitment } from "@connext/types";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress, recoverAddress, Signature } from "ethers/utils";
 
 import {
@@ -50,7 +50,7 @@ export function assertIsValidSignature(
  */
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
-  provider: BaseProvider,
+  provider: JsonRpcProvider,
   encodedOutcomeOverride: string = "",
   blockNumberToUseIfNecessary?: number,
 ): Promise<TokenIndexedCoinTransferMap> {
@@ -109,7 +109,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
 async function handleRefundAppOutcomeSpecialCase(
   encodedOutcome: string,
   appInstance: AppInstance,
-  provider: BaseProvider,
+  provider: JsonRpcProvider,
   blockNumberToUseIfNecessary?: number,
 ): Promise<TokenIndexedCoinTransferMap> {
   let mutableOutcome = encodedOutcome;

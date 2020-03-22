@@ -1,7 +1,7 @@
 import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
-import { Provider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import {
   BigNumber,
   bigNumberify,
@@ -155,7 +155,7 @@ export async function sleep(timeInMilliseconds: number) {
 export const getCreate2MultisigAddress = async (
   owners: string[],
   addresses: CriticalStateChannelAddresses,
-  ethProvider: Provider,
+  ethProvider: JsonRpcProvider,
   legacyKeygen?: boolean,
   toxicBytecode?: string,
 ): Promise<string> => {
@@ -202,7 +202,7 @@ export const getCreate2MultisigAddress = async (
 export const scanForCriticalAddresses = async (
   ownerXpubs: string[],
   expectedMultisig: string,
-  ethProvider: Provider,
+  ethProvider: JsonRpcProvider,
   moreAddressHistory?: {
     ProxyFactory: string[];
     MinimumViableMultisig: string[];

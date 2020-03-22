@@ -1,5 +1,5 @@
 import { Contract } from "ethers";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 import { Memoize } from "typescript-memoize";
 
@@ -242,17 +242,17 @@ export class AppInstance {
     });
   }
 
-  public async computeOutcome(state: SolidityValueType, provider: BaseProvider): Promise<string> {
+  public async computeOutcome(state: SolidityValueType, provider: JsonRpcProvider): Promise<string> {
     return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
   }
 
-  public async computeOutcomeWithCurrentState(provider: BaseProvider): Promise<string> {
+  public async computeOutcomeWithCurrentState(provider: JsonRpcProvider): Promise<string> {
     return this.computeOutcome(this.state, provider);
   }
 
   public async computeStateTransition(
     action: SolidityValueType,
-    provider: BaseProvider,
+    provider: JsonRpcProvider,
   ): Promise<SolidityValueType> {
     const ret: SolidityValueType = {};
 
@@ -284,7 +284,7 @@ export class AppInstance {
     return defaultAbiCoder.decode([this.appInterface.stateEncoding], encodedSolidityValueType)[0];
   }
 
-  public toEthersContract(provider: BaseProvider) {
+  public toEthersContract(provider: JsonRpcProvider) {
     return new Contract(this.appInterface.addr, CounterfactualApp.abi, provider);
   }
 }

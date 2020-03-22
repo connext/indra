@@ -2,7 +2,6 @@ import { BigNumber as ethersBN, BigNumberish, Interface, ParamType } from "ether
 
 export { Contract } from "ethers";
 export {
-  BaseProvider,
   JsonRpcProvider,
   TransactionReceipt,
   TransactionResponse,

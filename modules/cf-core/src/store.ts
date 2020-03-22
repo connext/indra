@@ -1,5 +1,5 @@
 import { AppInstanceJson, MinimalTransaction } from "@connext/types";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 
 import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
@@ -26,7 +26,7 @@ export class Store {
     owners: string[],
     proxyFactory: string,
     multisigMastercopy: string,
-    provider?: BaseProvider,
+    provider?: JsonRpcProvider,
   ): Promise<string> {
     try {
       const stateChannel = await this.getStateChannelByOwners(owners);

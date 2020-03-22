@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import { hexlify, randomBytes, HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
@@ -44,7 +44,7 @@ describe("Can handle correct & incorrect installs", () => {
     store = new Store(new MemoryStoreService());
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
-      {} as BaseProvider,
+      {} as JsonRpcProvider,
       store,
       nullLogger,
     );

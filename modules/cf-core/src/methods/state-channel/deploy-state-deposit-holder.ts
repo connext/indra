@@ -2,7 +2,7 @@ import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { ILoggerService } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
-import { JsonRpcProvider, Provider, TransactionResponse } from "ethers/providers";
+import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { Interface } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -165,7 +165,7 @@ async function sendMultisigDeployTx(
 
 async function checkForCorrectOwners(
   tx: TransactionResponse,
-  provider: Provider,
+  provider: JsonRpcProvider,
   xpubs: string[],
   multisigAddress: string,
 ): Promise<boolean> {

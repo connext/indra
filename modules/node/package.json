@@ -25,21 +25,12 @@
     "@connext/apps": "6.0.0-alpha.0",
     "@connext/cf-core": "6.0.0-alpha.0",
     "@connext/contracts": "1.0.5",
-<<<<<<< HEAD
-    "@connext/messaging": "5.2.1",
-    "@connext/types": "5.2.1",
+    "@connext/messaging": "6.0.0-alpha.0",
+    "@connext/types": "6.0.0-alpha.0",
     "@nestjs/common": "7.0.3",
     "@nestjs/core": "7.0.3",
     "@nestjs/microservices": "7.0.3",
     "@nestjs/platform-express": "7.0.3",
-=======
-    "@connext/messaging": "6.0.0-alpha.0",
-    "@connext/types": "6.0.0-alpha.0",
-    "@nestjs/common": "7.0.2",
-    "@nestjs/core": "7.0.2",
-    "@nestjs/microservices": "7.0.2",
-    "@nestjs/platform-express": "7.0.2",
->>>>>>> staging
     "@nestjs/typeorm": "7.0.0",
     "@openzeppelin/contracts": "2.5.0",
     "@uniswap/sdk": "^1.0.0-beta.4",
@@ -59,19 +50,11 @@
     "uuid": "7.0.2"
   },
   "devDependencies": {
-<<<<<<< HEAD
-    "@connext/client": "5.2.1",
+    "@connext/client": "6.0.0-alpha.0",
     "@nestjs/testing": "7.0.3",
     "@types/express": "4.17.3",
     "@types/jest": "25.1.4",
     "@types/node": "13.9.1",
-=======
-    "@connext/client": "6.0.0-alpha.0",
-    "@nestjs/testing": "7.0.2",
-    "@types/express": "4.17.2",
-    "@types/jest": "25.1.2",
-    "@types/node": "13.7.1",
->>>>>>> staging
     "@types/supertest": "2.0.8",
     "concurrently": "5.1.0",
     "jest": "25.1.0",

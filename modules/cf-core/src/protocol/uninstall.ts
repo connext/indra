@@ -1,5 +1,5 @@
 import { CommitmentTypes, PersistAppType, ProtocolNames, ProtocolParams } from "@connext/types";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -152,7 +152,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 async function computeStateTransition(
   params: ProtocolParams.Uninstall,
   store: Store,
-  provider: BaseProvider,
+  provider: JsonRpcProvider,
 ) {
   const { appIdentityHash, multisigAddress, blockNumberToUseIfNecessary } = params;
   const stateChannel = await store.getStateChannel(multisigAddress);

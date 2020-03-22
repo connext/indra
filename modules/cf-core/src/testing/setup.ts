@@ -1,6 +1,6 @@
 import { CF_PATH, IMessagingService, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
-import { JsonRpcProvider, Provider, TransactionRequest } from "ethers/providers";
+import { JsonRpcProvider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -131,7 +131,7 @@ export async function setup(
   return setupContext;
 }
 
-export async function generateNewFundedWallet(fundedPrivateKey: string, provider: Provider) {
+export async function generateNewFundedWallet(fundedPrivateKey: string, provider: JsonRpcProvider) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const wallet = Wallet.createRandom().connect(provider);
 
@@ -145,7 +145,7 @@ export async function generateNewFundedWallet(fundedPrivateKey: string, provider
 
 export async function generateNewFundedExtendedPrvKeys(
   fundedPrivateKey: string,
-  provider: Provider,
+  provider: JsonRpcProvider,
 ) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const A_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();
