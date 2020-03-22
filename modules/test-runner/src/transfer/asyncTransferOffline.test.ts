@@ -47,9 +47,7 @@ const verifyTransfer = async (
   expected: any, //Partial<Transfer> type uses `null` not `undefined`
 ): Promise<void> => {
   expect(expected.paymentId).to.be.ok;
-  console.log(`[test] fetching linked transfer`);
   const transfer = await client.getLinkedTransfer(expected.paymentId);
-  console.log(`[test] got linked transfer!`);
   // verify the saved transfer information
   expect(transfer).to.containSubset(expected);
   expect(transfer.encryptedPreImage).to.be.ok;
