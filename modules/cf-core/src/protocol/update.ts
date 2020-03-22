@@ -34,8 +34,10 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     } = params as UpdateProtocolParams;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const preAppIstance = preProtocolStateChannel.getAppInstance(appIdentityHash)
 
-    const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
+    console.log(`[update] initiating update of: ${appIdentityHash}`);
+    const postProtocolStateChannel = preProtocolStateChannel.setState(preAppIstance, newState);
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
@@ -48,8 +50,9 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       appInstance.versionNumber,
       appInstance.timeout,
     );
+    const setStateCommitmentHash = setStateCommitment.hashToSign();
 
-    const initiatorSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
+    const initiatorSignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
 
     substart = Date.now();
     const {
@@ -70,7 +73,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Received responder's sig`);
 
     substart = Date.now();
-    await assertIsValidSignature(responderEphemeralKey, setStateCommitment, responderSignature);
+    await assertIsValidSignature(responderEphemeralKey, setStateCommitmentHash, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
@@ -102,8 +105,10 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     } = params as UpdateProtocolParams;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const preAppIstance = preProtocolStateChannel.getAppInstance(appIdentityHash)
 
-    const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
+    console.log(`[update] responding to update of: ${appIdentityHash}`);
+    const postProtocolStateChannel = preProtocolStateChannel.setState(preAppIstance, newState);
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
@@ -116,12 +121,13 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       appInstance.versionNumber,
       appInstance.timeout,
     );
+    const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     substart = Date.now();
-    await assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);
+    await assertIsValidSignature(initiatorEphemeralKey, setStateCommitmentHash, initiatorSignature);
     logTime(log, substart, `Verified initator's sig`);
 
-    const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
+    const responderSignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 

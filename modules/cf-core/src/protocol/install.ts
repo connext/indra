@@ -50,8 +50,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    let substart;
-    log.debug(`Initiation started`);
+    log.warn(`Initiation started for Install protocol`);
 
     const {
       responderXpub,
@@ -63,8 +62,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorXpub,
     } = params as InstallProtocolParams;
 
+    // 10ms
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
+    // 0ms
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
       initiatorXpub,
@@ -72,6 +73,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorBalanceDecrement,
     );
 
+    // 0ms
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
       responderXpub,
@@ -79,24 +81,30 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
+    // 7ms
     const postProtocolStateChannel = computeStateChannelTransition(
       preProtocolStateChannel,
       params as InstallProtocolParams,
     );
 
+    // 0ms
     const newAppInstance = postProtocolStateChannel.mostRecentlyInstalledAppInstance();
 
+    // 2ms
     const conditionalTransactionData = constructConditionalTransactionData(
       network,
       postProtocolStateChannel,
     );
+    const conditionalTransactionDataHash = conditionalTransactionData.hashToSign();
 
+    // 0ms
     const responderFreeBalanceAddress = xkeyKthAddress(responderXpub, 0);
 
+    // 6ms
     // free balance addr signs conditional transactions
-    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
+    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionDataHash];
 
-    substart = Date.now();
+    // 124ms
     const {
       customData: {
         signature: counterpartySignatureOnConditionalTransaction,
@@ -115,22 +123,21 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
       } as ProtocolMessage,
     ];
-    logTime(log, substart, `Received responder's sigs on conditional tx & balance update`);
 
+    // 7ms
     // free balance addr signs conditional transactions
-    substart = Date.now();
     await assertIsValidSignature(
       responderFreeBalanceAddress,
-      conditionalTransactionData,
+      conditionalTransactionDataHash,
       counterpartySignatureOnConditionalTransaction,
     );
-    logTime(log, substart, `Validated responder's sig on conditional tx`);
 
     conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
     ];
 
+    // 12ms
     yield [
       PERSIST_COMMITMENT,
       Conditional,
@@ -145,18 +152,19 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.freeBalance.versionNumber,
       postProtocolStateChannel.freeBalance.timeout,
     );
+    const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
 
+    // 7ms
     // always use free balance key to sign free balance update
-    substart = Date.now();
     await assertIsValidSignature(
       responderFreeBalanceAddress,
-      freeBalanceUpdateData,
+      freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
-    logTime(log, substart, `Validated responder's sig on free balance update`);
 
+    // 12ms
     // always use free balance key to sign free balance update
-    const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
+    const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // add signatures to commitment
     freeBalanceUpdateData.signatures = [
@@ -164,6 +172,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
     ];
 
+    // 10ms
     yield [
       PERSIST_COMMITMENT,
       SetState,
@@ -171,9 +180,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.freeBalance.identityHash,
     ];
 
+    // 91ms (!)
     yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
 
-    substart = Date.now();
+    // 51ms
     yield [
       IO_SEND_AND_WAIT,
       {
@@ -186,7 +196,8 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessage,
     ];
-    logTime(log, substart, `Received responder's confirmation that they received our sig`);
+    
+    // 335ms
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -211,8 +222,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    let substart;
-    log.debug(`Response started`);
+    log.warn(`Response started for install`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = signature;
@@ -227,8 +237,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress,
     } = params as InstallProtocolParams;
 
+    // 8ms
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
+    // 1ms
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
       initiatorXpub,
@@ -236,6 +248,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorBalanceDecrement,
     );
 
+    // 0ms
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
       responderXpub,
@@ -243,36 +256,42 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderBalanceDecrement,
     );
 
+    // 5ms
     const postProtocolStateChannel = computeStateChannelTransition(
       preProtocolStateChannel,
       params as InstallProtocolParams,
     );
 
+    // 0ms
     const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorXpub, 0);
 
+    // 0ms
     const newAppInstance = postProtocolStateChannel.mostRecentlyInstalledAppInstance();
 
+    // 1ms
     const conditionalTransactionData = constructConditionalTransactionData(
       network,
       postProtocolStateChannel,
     );
+    const conditionalTransactionDataHash = conditionalTransactionData.hashToSign();
 
+    // 7ms
     // multisig owner always signs conditional tx
-    substart = Date.now();
     await assertIsValidSignature(
       initiatorFreeBalanceAddress,
-      conditionalTransactionData,
+      conditionalTransactionDataHash,
       counterpartySignatureOnConditionalTransaction,
     );
-    logTime(log, substart, `Validated initiator's sig on conditional tx data`);
 
-    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
+    // 5ms
+    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionDataHash];
 
     conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
     ];
 
+    // 12ms
     yield [
       PERSIST_COMMITMENT,
       Conditional,
@@ -287,10 +306,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.freeBalance.versionNumber,
       postProtocolStateChannel.freeBalance.timeout,
     );
+    const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
 
-    const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
+    // 8ms
+    const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
-    substart = Date.now();
+    // 154ms
     const {
       customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
     } = yield [
@@ -306,16 +327,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
       } as ProtocolMessage,
     ];
-    logTime(log, substart, `Received initiator's sig on free balance update`);
 
+    // 7ms
     // always use freeBalanceAddress to sign updates
-    substart = Date.now();
     await assertIsValidSignature(
       initiatorFreeBalanceAddress,
-      freeBalanceUpdateData,
+      freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
-    logTime(log, substart, `Validated initiator's sig on free balance update`);
 
     // add signature
     freeBalanceUpdateData.signatures = [
@@ -323,6 +342,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
     ];
 
+    // 13ms
     yield [
       PERSIST_COMMITMENT,
       SetState,
@@ -330,6 +350,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.freeBalance.identityHash,
     ];
 
+    // 50ms
     yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
 
     const m4 = {
@@ -342,7 +363,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       seq: UNASSIGNED_SEQ_NO,
     } as ProtocolMessage;
 
+    // 0ms
     yield [IO_SEND, m4];
+    
+    // 272ms
     logTime(log, start, `Finished responding`);
   },
 };

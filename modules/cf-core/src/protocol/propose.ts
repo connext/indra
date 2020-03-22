@@ -24,7 +24,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { message, network, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
-    let substart;
+    let substart = start;
     log.debug(`Initiation started`);
 
     const { processID, params } = message;
@@ -45,8 +45,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       meta,
     } = params as ProposeInstallProtocolParams;
 
+    // 13ms
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
+    // 7ms
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
       abiEncodings,
@@ -73,8 +75,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       meta,
     };
 
+    // 0 ms
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
+    // 2ms
     const setStateCommitment = new SetStateCommitment(
       network.ChallengeRegistry,
       {
@@ -89,12 +93,16 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       0,
       timeout.toNumber(),
     );
+    const setStateCommitmentHash = setStateCommitment.hashToSign();
 
+    substart = Date.now();
+    // 6ms
     const initiatorSignatureOnInitialState = yield [
       OP_SIGN,
-      setStateCommitment,
+      setStateCommitmentHash,
       appInstanceProposal.appSeqNo,
     ];
+    logTime(log, substart, `Signed initial state initiator propose`);
 
     const m1 = {
       protocol,
@@ -107,9 +115,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
-    substart = Date.now();
+    substart = Date.now()
+
+    // 200ms
     const m2 = yield [IO_SEND_AND_WAIT, m1];
     logTime(log, substart, `Received responder's m2`);
+    substart = Date.now()
 
     const {
       customData: { signature: responderSignatureOnInitialState },
@@ -118,10 +129,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
     await assertIsValidSignature(
       xkeyKthAddress(responderXpub, appInstanceProposal.appSeqNo),
-      setStateCommitment,
+      setStateCommitmentHash,
       responderSignatureOnInitialState,
     );
-    logTime(log, substart, `Validated responder's sig on initial state`);
+    logTime(log, substart, `Asserted valid signture initiator propose`);
+
 
     // add signatures to commitment and save
     setStateCommitment.signatures = [
@@ -129,6 +141,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
+    substart = Date.now()
+
+    // 78 ms(!)
     // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
@@ -136,18 +151,22 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
     ];
+    logTime(log, substart, `Persisted app instance`);
+    substart = Date.now()
 
+    // 14 ms
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
 
-    logTime(log, start, `Finished Initiating`);
+    // Total 298ms
+    logTime(log, start, `Finished Initiating proposal`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { message, network, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
-    let substart;
-    log.debug(`Response started`);
+    let substart = start;
+    log.warn(`Response started`);
 
     const { params, processID } = message;
 
@@ -171,8 +190,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
+    // 11ms
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
+    // 16ms
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
       abiEncodings,
@@ -199,6 +220,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     };
 
+    // 2ms
     const setStateCommitment = new SetStateCommitment(
       network.ChallengeRegistry,
       {
@@ -213,23 +235,29 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       0,
       timeout.toNumber(),
     );
+    const setStateCommitmentHash = setStateCommitment.hashToSign();
 
+    // 0ms
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
     substart = Date.now();
     await assertIsValidSignature(
       xkeyKthAddress(initiatorXpub, appInstanceProposal.appSeqNo),
-      setStateCommitment,
+      setStateCommitmentHash,
       initiatorSignatureOnInitialState,
     );
-    logTime(log, substart, `Validated initiator's sig on initial state`);
+    logTime(log, substart, `asserted valid signature responder propose`);
 
+    substart = Date.now();
+    // 12ms
     const responderSignatureOnInitialState = yield [
       OP_SIGN,
-      setStateCommitment,
+      setStateCommitmentHash,
       appInstanceProposal.appSeqNo,
     ];
+    logTime(log, substart, `Signed initial state responder propose`);
 
+    // 0ms
     yield [
       IO_SEND,
       {
@@ -248,6 +276,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
+    substart = Date.now()
+
+    // 98ms
     // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
@@ -255,7 +286,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
     ];
+    logTime(log, substart, `Persisted app instance`);
+    substart = Date.now()
+
+    // 11ms
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+
+    // 154ms
     logTime(log, start, `Finished responding`);
   },
 };
