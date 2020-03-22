@@ -283,9 +283,6 @@ export class NodeApiClient implements INodeApiClient {
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
     const start = Date.now();
-    console.warn(
-      `[client] Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
-    );
     const payload = {
       ...data,
       id: uuid.v4(),
@@ -294,7 +291,6 @@ export class NodeApiClient implements INodeApiClient {
     try {
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
     } catch (e) {
-      console.log(`[client] failed`);
       throw new Error(`${sendFailed}: ${e.message}`);
     }
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;

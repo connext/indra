@@ -34,11 +34,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     data: { paymentId: string },
   ): Promise<GetLinkedTransferResponse | undefined> {
-    this.log.warn(
-      `\n\n******* fetching transfer` +
-        `   - pubId: ${pubId}\n` +
-        `   - data: ${JSON.stringify(data, null, 2)}`,
-    );
     const { paymentId } = data;
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
