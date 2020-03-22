@@ -60,9 +60,5 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }
-
-    if (typeof this.signatures[0] === "string") {
-      throw new Error(`Expected Signature type, not string`);
-    }
   }
 }

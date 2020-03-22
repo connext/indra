@@ -11,6 +11,8 @@ import {
   keccak256,
   utf8ToBuffer,
   removeHexPrefix,
+  bufferToHex,
+  addHexPrefix,
 } from "@connext/crypto";
 import * as EthCrypto from "eth-crypto";
 import { Wallet } from "ethers";
@@ -84,7 +86,7 @@ describe("crypto", () => {
   });
 
   test("we should be able to sign ECDSA digests", async () => {
-    const sig1 = signDigestWithEthers(wallet.privateKey, arrayify(digest).toString());
+    const sig1 = signDigestWithEthers(wallet.privateKey, bufferToHex(digest, true));
     const sig2 = await signDigest(wallet.privateKey, digest);
     expect(sig1).toEqual(sig2);
   });
