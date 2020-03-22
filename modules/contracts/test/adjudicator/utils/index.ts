@@ -1,5 +1,5 @@
 import { AppIdentity } from "@connext/types";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { BigNumber, BigNumberish, defaultAbiCoder, keccak256, solidityPack } from "ethers/utils";
@@ -69,7 +69,7 @@ export async function sortSignaturesBySignerAddress(
 ): Promise<string[]> {
   return (
     await Promise.all(
-      signatures.slice().map(async sig => ({ sig, addr: await recoverAddress(digest, sig) })),
+      signatures.slice().map(async sig => ({ sig, addr: await verifyChannelMessage(digest, sig) })),
     )
   )
     .sort((A, B) => {

@@ -1,6 +1,6 @@
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 import { BigNumber } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
@@ -16,7 +16,7 @@ export async function sortSignaturesBySignerAddress(
 ): Promise<string[]> {
   return (
     await Promise.all(
-      signatures.slice().map(async sig => ({ sig, addr: await recoverAddress(digest, sig) })),
+      signatures.slice().map(async sig => ({ sig, addr: await verifyChannelMessage(digest, sig) })),
     )
   )
     .sort((A, B) => {

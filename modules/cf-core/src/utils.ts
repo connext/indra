@@ -1,5 +1,5 @@
 import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { Provider } from "ethers/providers";
@@ -62,7 +62,7 @@ export async function sortSignaturesBySignerAddress(
 ): Promise<string[]> {
   return (
     await Promise.all(
-      signatures.slice().map(async sig => ({ sig, addr: await recoverAddress(digest, sig) })),
+      signatures.slice().map(async sig => ({ sig, addr: await verifyChannelMessage(digest, sig) })),
     )
   )
     .sort((A, B) => {
