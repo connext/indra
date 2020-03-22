@@ -15,6 +15,7 @@ import {
   recover,
   isHexString,
   arrayToBuffer,
+  removeHexPrefix,
 } from "eccrypto-js";
 
 export * from "eccrypto-js";
@@ -33,6 +34,7 @@ export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
 }
 
 export function toChecksumAddress(address: string): string {
+  address = removeHexPrefix(address);
   const hash = bufferToHex(keccak256(utf8ToBuffer(address)));
   let checksum = "";
   for (let i = 0; i < address.length; i++) {
@@ -49,7 +51,7 @@ export function getEthereumAddress(publicKey: Buffer | string): string {
   const buf = bufferify(publicKey);
   const hex = addHexPrefix(bufferToHex(buf).slice(2));
   const hash = keccak256(hexToBuffer(hex));
-  const address = bufferToHex(hash, true).substring(26);
+  const address = addHexPrefix(bufferToHex(hash).substring(24));
   return toChecksumAddress(address);
 }
 
