@@ -8,6 +8,7 @@ import {
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferApp,
   LinkedTransferStatus,
+  SimpleLinkedTransferAppAction,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
@@ -223,25 +224,70 @@ export class LinkedTransferService {
   // receiver redeems, app is installed and uninstalled
   // if we don't check for uninstalled receiver app, receiver can keep redeeming
   async getLinkedTransfersForRedeem(userPublicIdentifier: string): Promise<AppInstance[]> {
-    const transfers = await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
+    const transfersFromNodeToUser = await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
       userPublicIdentifier,
       this.cfCoreService.cfCore.freeBalanceAddress,
     );
-    let redeemableTransfers = transfers;
-    for (const transfer of transfers) {
-      // sender is node
-      const existingReceiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
-        transfer.latestState["paymentId"],
-        this.cfCoreService.cfCore.freeBalanceAddress,
-      );
-      // if it has ever existed, transfer is not redeemable
-      if (existingReceiverApp) {
-        // filter out bad transfer
-        redeemableTransfers = redeemableTransfers.filter(
-          app => app.latestState["paymentId"] !== transfer.latestState["paymentId"],
-        );
+    const existingReceiverApps = (
+      await Promise.all(
+        transfersFromNodeToUser.map(
+          async transfer =>
+            await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+              transfer.latestState["paymentId"],
+              this.cfCoreService.cfCore.freeBalanceAddress,
+            ),
+        ),
+      )
+    )
+      // remove nulls
+      .filter(transfer => !!transfer);
+    const alreadyRedeemedPaymentIds = existingReceiverApps.map(app => app.latestState["paymentId"]);
+    const redeemableTransfers = transfersFromNodeToUser.filter(
+      transfer => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
+    );
+    return redeemableTransfers;
+  }
+
+  // unlockable transfer:
+  // sender app is installed with node as recipient
+  // preImage is HashZero
+  // receiver app with same paymentId is uninstalled
+  // preImage on receiver app is used to unlock sender transfer
+  //
+  // eg:
+  // sender installs app, goes offline
+  // receiver redeems, app is installed and uninstalled
+  // sender comes back online, node can unlock transfer
+  async unlockLinkedTransfersFromUser(userPublicIdentifier: string): Promise<string[]> {
+    // eslint-disable-next-line max-len
+    const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
+      xkeyKthAddress(userPublicIdentifier),
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    const receiverRedeemed = await Promise.all(
+      transfersFromUserToNode.map(async transfer =>
+        this.appInstanceRepository.findRedeemedLinkedTransferAppByPaymentIdFromNode(
+          transfer.latestState["paymentId"],
+          this.cfCoreService.cfCore.freeBalanceAddress,
+        ),
+      ),
+    );
+    const unlockedAppIds: string[] = [];
+    // map sender and receiver transfers
+    for (const { senderApp, receiverApp } of transfersFromUserToNode.map((senderApp, index) => {
+      return { senderApp, receiverApp: receiverRedeemed[index] };
+    })) {
+      // if receiverApp exists, sender can be unlocked
+      if (receiverApp) {
+        this.log.log(`Found transfer to unlock, paymentId ${senderApp.latestState["paymentId"]}`);
+        await this.cfCoreService.takeAction(senderApp.identityHash, {
+          preImage: receiverApp.latestState["preImage"],
+        } as SimpleLinkedTransferAppAction);
+        await this.cfCoreService.uninstallApp(senderApp.identityHash);
+        unlockedAppIds.push(senderApp.identityHash);
+        this.log.log(`Unlocked transfer from app ${senderApp.identityHash}`);
       }
     }
-    return redeemableTransfers;
+    return unlockedAppIds;
   }
 }

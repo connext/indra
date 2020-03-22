@@ -25,24 +25,12 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   /**
    * Check in endpoint for client to call when it comes online to handle pending tasks
-   * @param pubId
+   * @param userPublicIdentifier
    */
-  async clientCheckIn(pubId: string): Promise<void> {
+  async clientCheckIn(userPublicIdentifier: string): Promise<void> {
     // reclaim collateral from redeemed transfers
     // eslint-disable-next-line max-len
-    // TODO: FIX
-    // const reclaimableLinkedTransfers = await this.linkedTransferService.getLinkedTransfersForReclaim(
-    //   pubId,
-    // );
-    // for (const transfer of reclaimableLinkedTransfers) {
-    //   try {
-    //     await this.linkedTransferService.reclaimLinkedTransferCollateralByPaymentId(
-    //       transfer.paymentId,
-    //     );
-    //   } catch (e) {
-    //     this.log.error(`Error reclaiming linked transfer: ${stringify(e.stack || e.message)}`);
-    //   }
-    // }
+    await this.linkedTransferService.unlockLinkedTransfersFromUser(userPublicIdentifier);
   }
 
   async setupSubscriptions(): Promise<void> {
