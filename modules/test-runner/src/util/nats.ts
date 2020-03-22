@@ -7,7 +7,7 @@ import { env } from "./env";
 let natsClient: Client | undefined = undefined;
 
 export const getNatsClient = (): Client => {
-  if (!natsClient) {
+  if (!natsClient || natsClient.isClosed()) {
     throw new Error(`NATS is not connected, use connectNats first`);
   }
 
