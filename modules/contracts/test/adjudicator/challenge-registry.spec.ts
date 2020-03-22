@@ -90,7 +90,7 @@ describe("ChallengeRegistry", () => {
 
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
-        sortSignaturesBySignerAddress(digest, [
+        await sortSignaturesBySignerAddress(digest, [
           await signDigest(ALICE.privateKey, digest),
           await signDigest(BOB.privateKey, digest),
         ]),
