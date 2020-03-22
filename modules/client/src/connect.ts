@@ -317,7 +317,11 @@ export const connect = async (
   }
 
   // check in with node to do remaining work
-  await client.clientCheckIn();
+  try {
+    await client.clientCheckIn();
+  } catch (e) {
+    log.error(`Could not complete node check-in: ${e}... will attempt again on next connection`);
+  }
 
   logTime(log, start, `Client successfully connected`);
   return client;
