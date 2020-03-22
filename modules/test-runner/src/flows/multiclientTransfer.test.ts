@@ -40,6 +40,7 @@ describe("Full Flow: Multi-client transfer", () => {
       received: 0,
     };
     const startTime = Date.now();
+    console.log("startTime", startTime);
     await new Promise(async (res, rej) => {
       await fundChannel(gateway, bigNumberify(100));
       gateway.on(
