@@ -74,7 +74,7 @@ describe("ConditionalTransactionCommitment", () => {
   });
 
   describe("storage", () => {
-    it.only("should be stored correctly", async () => {
+    it("should be stored correctly", async () => {
       const store = new Store(new MemoryStoreService());
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
