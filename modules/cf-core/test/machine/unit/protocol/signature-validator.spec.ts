@@ -1,23 +1,23 @@
 import { HashZero } from "ethers/constants";
-import { hexlify, randomBytes, recoverAddress, Signature, SigningKey } from "ethers/utils";
+import { hexlify, randomBytes, recoverAddress, SigningKey } from "ethers/utils";
+import { signDigest } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../../../src/types";
 import { assertIsValidSignature } from "../../../../src/protocol/utils/signature-validator";
-import { signDigestWithEthers } from "../../../../src/utils";
 
 describe("Signature Validator Helper", () => {
   let signer: SigningKey;
   let signature: string;
   let commitment: EthereumCommitment;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     signer = new SigningKey(hexlify(randomBytes(32)));
 
     commitment = {
       hashToSign: () => HashZero,
     } as EthereumCommitment;
     const commitmentHash = commitment.hashToSign();
-    signature = signDigestWithEthers(signer.privateKey, commitmentHash);
+    signature = await signDigest(signer.privateKey, commitmentHash);
   });
 
   it("validates signatures correctly", () => {
@@ -36,10 +36,10 @@ describe("Signature Validator Helper", () => {
     );
   });
 
-  it("throws if the signature is wrong", () => {
+  it("throws if the signature is wrong", async () => {
     const rightHash = commitment.hashToSign();
     const wrongHash = HashZero.replace("00", "11"); // 0x11000...
-    const signature = signDigestWithEthers(signer.privateKey, wrongHash);
+    const signature = await signDigest(signer.privateKey, wrongHash);
     const wrongSigner = recoverAddress(rightHash, signature);
     expect(() => assertIsValidSignature(signer.address, commitment, signature)).toThrow(
       `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}`,

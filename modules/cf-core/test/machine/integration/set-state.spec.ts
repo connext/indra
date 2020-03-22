@@ -1,6 +1,7 @@
 import { NetworkContext } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, WeiPerEther } from "ethers/constants";
+import { signDigest } from "@connext/crypto";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
 import { SetStateCommitment } from "../../../src/ethereum";
@@ -12,7 +13,6 @@ import { ChallengeRegistry } from "../../contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "./random-signing-keys";
-import { signDigestWithEthers } from "../../../src/utils";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -66,8 +66,8 @@ describe("set state on free balance", () => {
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     setStateCommitment.signatures = [
-      signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
-      signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
+      await signDigest(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+      await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
     ];
 
     const setStateTx = setStateCommitment.getSignedTransaction();

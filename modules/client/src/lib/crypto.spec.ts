@@ -12,12 +12,15 @@ import {
   utf8ToBuffer,
   removeHexPrefix,
   bufferToHex,
-  addHexPrefix,
 } from "@connext/crypto";
 import * as EthCrypto from "eth-crypto";
 import { Wallet } from "ethers";
-import { computePublicKey, arrayify } from "ethers/utils";
-import { signDigestWithEthers } from "./utils";
+import { computePublicKey, arrayify, joinSignature, SigningKey } from "ethers/utils";
+
+const signDigestWithEthers = (privateKey: string, digest: string) => {
+  const signingKey = new SigningKey(privateKey);
+  return joinSignature(signingKey.signDigest(arrayify(digest)));
+};
 
 const prvKey = Wallet.createRandom().privateKey;
 const pubKey = removeHexPrefix(computePublicKey(prvKey));

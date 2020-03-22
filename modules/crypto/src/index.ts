@@ -22,18 +22,14 @@ export * from "eccrypto-js";
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
 export const CHAN_SIGN_PREFIX = "\x19Channel Signed Message:\n";
 
-export function anyToBuffer(input: any[] | Buffer | string | Uint8Array): Buffer {
+export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
     ? isHexString(input)
       ? hexToBuffer(input)
       : utf8ToBuffer(input)
-    : Buffer.isBuffer(input)
-    ? input
-    : arrayToBuffer(new Uint8Array(input));
-}
-
-export function ensureBuffer(value: Buffer | string): Buffer {
-  return Buffer.isBuffer(value) ? value : utf8ToBuffer(value);
+    : !Buffer.isBuffer(input)
+    ? arrayToBuffer(new Uint8Array(input))
+    : input;
 }
 
 export function toChecksumAddress(address: string): string {
@@ -50,7 +46,7 @@ export function toChecksumAddress(address: string): string {
 }
 
 export function getEthereumAddress(publicKey: Buffer | string): string {
-  const buf = anyToBuffer(publicKey);
+  const buf = bufferify(publicKey);
   const hex = addHexPrefix(bufferToHex(buf).slice(2));
   const hash = keccak256(hexToBuffer(hex));
   const address = bufferToHex(hash, true).substring(26);
@@ -58,9 +54,9 @@ export function getEthereumAddress(publicKey: Buffer | string): string {
 }
 
 export function hashMessage(message: Buffer | string, prefix: string): string {
-  const data = ensureBuffer(message);
-  const length = anyToBuffer(`${data.length}`);
-  const hash = keccak256(concatBuffers(anyToBuffer(prefix), length, data));
+  const data = bufferify(message);
+  const length = bufferify(`${data.length}`);
+  const hash = keccak256(concatBuffers(bufferify(prefix), length, data));
   return bufferToHex(hash, true);
 }
 
@@ -83,7 +79,7 @@ export async function signDigest(
   privateKey: Buffer | string,
   digest: Buffer | string,
 ): Promise<string> {
-  return bufferToHex(await sign(anyToBuffer(privateKey), ensureBuffer(digest), true), true);
+  return bufferToHex(await sign(bufferify(privateKey), bufferify(digest), true), true);
 }
 
 export async function signMessage(
@@ -92,7 +88,7 @@ export async function signMessage(
   prefix: string,
 ): Promise<string> {
   const hash = hashMessage(message, prefix);
-  return signDigest(privateKey, anyToBuffer(hash));
+  return signDigest(privateKey, bufferify(hash));
 }
 
 export async function signEthereumMessage(
@@ -113,7 +109,7 @@ export async function recoverPublicKey(
   digest: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return bufferToHex(await recover(anyToBuffer(digest), anyToBuffer(sig)), true);
+  return bufferToHex(await recover(bufferify(digest), bufferify(sig)), true);
 }
 
 export async function recoverAddress(

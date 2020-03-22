@@ -4,6 +4,7 @@ import {
   NetworkContext,
   OutcomeType,
 } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -30,7 +31,6 @@ import { transferERC20Tokens } from "../../integration/utils";
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "./random-signing-keys";
-import { signDigestWithEthers } from "../../../src/utils";
 
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
 // gas needed, so we hard-code this number to ensure the tx completes
@@ -156,8 +156,8 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       const setStateCommitmentHash = setStateCommitment.hashToSign();
 
       setStateCommitment.signatures = [
-        signDigestWithEthers(uniqueAppSigningKeys[0].privateKey, setStateCommitmentHash),
-        signDigestWithEthers(uniqueAppSigningKeys[1].privateKey, setStateCommitmentHash),
+        await signDigest(uniqueAppSigningKeys[0].privateKey, setStateCommitmentHash),
+        await signDigest(uniqueAppSigningKeys[1].privateKey, setStateCommitmentHash),
       ];
 
       await wallet.sendTransaction({
@@ -174,8 +174,8 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       );
       const setStateCommitmentForFreeBalanceHash = setStateCommitmentForFreeBalance.hashToSign();
       setStateCommitmentForFreeBalance.signatures = [
-        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentForFreeBalanceHash),
-        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentForFreeBalanceHash),
+        await signDigest(multisigOwnerKeys[0].privateKey, setStateCommitmentForFreeBalanceHash),
+        await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentForFreeBalanceHash),
       ];
 
       await wallet.sendTransaction({
@@ -211,8 +211,8 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       );
       const conditionalTransactionHash = conditionalTransaction.hashToSign();
       conditionalTransaction.signatures = [
-        signDigestWithEthers(multisigOwnerKeys[0].privateKey, conditionalTransactionHash),
-        signDigestWithEthers(multisigOwnerKeys[1].privateKey, conditionalTransactionHash),
+        await signDigest(multisigOwnerKeys[0].privateKey, conditionalTransactionHash),
+        await signDigest(multisigOwnerKeys[1].privateKey, conditionalTransactionHash),
       ];
       const multisigDelegateCallTx = conditionalTransaction.getSignedTransaction();
 
@@ -252,11 +252,11 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       );
 
       freeBalanceConditionalTransaction.signatures = [
-        signDigestWithEthers(
+        await signDigest(
           multisigOwnerKeys[0].privateKey,
           freeBalanceConditionalTransaction.hashToSign(),
         ),
-        signDigestWithEthers(
+        await signDigest(
           multisigOwnerKeys[1].privateKey,
           freeBalanceConditionalTransaction.hashToSign(),
         ),

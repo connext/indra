@@ -1,4 +1,5 @@
 import { NetworkContext } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -10,7 +11,7 @@ import { SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
 import { xkeysToSortedKthSigningKeys } from "../../../src/machine";
 import { StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
-import { getCreate2MultisigAddress, signDigestWithEthers } from "../../../src/utils";
+import { getCreate2MultisigAddress } from "../../../src/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
@@ -91,8 +92,8 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       );
       const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [
-        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
-        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
+        await signDigest(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+        await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
       ];
 
       const setStateTx = setStateCommitment.getSignedTransaction();
@@ -117,8 +118,8 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       const setupCommitmentHash = setupCommitment.hashToSign();
 
       setupCommitment.signatures = [
-        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
-        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
+        await signDigest(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
+        await signDigest(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
       ];
 
       const setupTx = setupCommitment.getSignedTransaction();

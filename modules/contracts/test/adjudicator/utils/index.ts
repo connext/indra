@@ -5,12 +5,9 @@ import {
   BigNumber,
   BigNumberish,
   defaultAbiCoder,
-  joinSignature,
   keccak256,
   recoverAddress,
-  SigningKey,
   solidityPack,
-  arrayify,
 } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
@@ -81,13 +78,3 @@ export function sortSignaturesBySignerAddress(digest: string, signatures: string
   });
   return ret;
 }
-
-/**
- * Signs digest with ethers SigningKey
- *
- * @param signatures An array of etherium signatures
- */
-export const signDigestWithEthers = (privateKey: string, digest: string) => {
-  const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(arrayify(digest)));
-};

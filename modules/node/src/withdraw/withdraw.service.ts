@@ -1,12 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { WithdrawApp } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { CFCoreTypes, xkeyKthAddress, signDigestWithEthers } from "../util";
+import { CFCoreTypes, xkeyKthAddress } from "../util";
 import {
   TransactionResponse,
   AppInstanceJson,
@@ -98,7 +99,7 @@ export class WithdrawService {
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = signDigestWithEthers(privateKey, hash);
+    const counterpartySignatureOnWithdrawCommitment = await signDigest(privateKey, hash);
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -230,7 +231,7 @@ export class WithdrawService {
     const privateKey = this.configService.getEthWallet().privateKey;
     const hash = commitment.hashToSign();
 
-    const withdrawerSignatureOnCommitment = signDigestWithEthers(privateKey, hash);
+    const withdrawerSignatureOnCommitment = await signDigest(privateKey, hash);
 
     const transfers: CoinTransfer[] = [
       { amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress },
