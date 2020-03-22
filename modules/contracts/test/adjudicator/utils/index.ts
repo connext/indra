@@ -10,6 +10,7 @@ import {
   recoverAddress,
   SigningKey,
   solidityPack,
+  arrayify,
 } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
@@ -88,5 +89,5 @@ export function sortSignaturesBySignerAddress(digest: string, signatures: string
  */
 export const signDigestWithEthers = (privateKey: string, digest: string) => {
   const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(digest));
+  return joinSignature(signingKey.signDigest(arrayify(digest)));
 };

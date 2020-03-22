@@ -1,4 +1,4 @@
-import { SigningKey, joinSignature, getAddress } from "ethers/utils";
+import { SigningKey, joinSignature, getAddress, arrayify } from "ethers/utils";
 
 import { isEthAddress } from "./validate";
 
@@ -25,5 +25,5 @@ export const safeJsonParse = (value: any): any => {
 
 export const signDigestWithEthers = (privateKey: string, digest: string) => {
   const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(digest));
+  return joinSignature(signingKey.signDigest(arrayify(digest)));
 };
