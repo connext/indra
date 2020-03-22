@@ -2,7 +2,6 @@ import {
   chan_signMessage,
   chan_getUserWithdrawal,
   chan_setUserWithdrawal,
-  chan_signDigest,
   chan_setStateChannel,
   chan_restoreState,
   IChannelProvider,
@@ -12,7 +11,7 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signChannelMessage, signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
@@ -83,9 +82,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-      case chan_signDigest:
-        result = await this.signDigest(params.message);
-        break;
       case chan_signMessage:
         result = await this.signMessage(params.message);
         break;
@@ -130,10 +126,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///// PRIVATE METHODS
   private signMessage = async (message: string): Promise<string> => {
     return signChannelMessage(this.authKey, message);
-  };
-
-  private signDigest = async (message: string): Promise<string> => {
-    return signDigest(this.authKey, message);
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {

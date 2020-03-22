@@ -1,6 +1,6 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -91,8 +91,8 @@ describe("ChallengeRegistry", () => {
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
         await sortSignaturesBySignerAddress(digest, [
-          await signDigest(ALICE.privateKey, digest),
-          await signDigest(BOB.privateKey, digest),
+          await signChannelMessage(ALICE.privateKey, digest),
+          await signChannelMessage(BOB.privateKey, digest),
         ]),
       );
     };
@@ -114,8 +114,8 @@ describe("ChallengeRegistry", () => {
         versionNumber,
         appStateHash: stateHash,
         signatures: await sortSignaturesBySignerAddress(digest, [
-          await signDigest(ALICE.privateKey, digest),
-          await signDigest(BOB.privateKey, digest),
+          await signChannelMessage(ALICE.privateKey, digest),
+          await signChannelMessage(BOB.privateKey, digest),
         ]),
       });
     };

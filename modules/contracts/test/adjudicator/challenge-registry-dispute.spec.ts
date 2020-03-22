@@ -1,7 +1,7 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -98,8 +98,8 @@ describe("ChallengeRegistry Challenge", () => {
         appStateHash: stateHash,
         timeout: ONCHAIN_CHALLENGE_TIMEOUT,
         signatures: await sortSignaturesBySignerAddress(digest, [
-          await signDigest(ALICE.privateKey, digest),
-          await signDigest(BOB.privateKey, digest),
+          await signChannelMessage(ALICE.privateKey, digest),
+          await signChannelMessage(BOB.privateKey, digest),
         ]),
       });
     };
@@ -121,7 +121,7 @@ describe("ChallengeRegistry Challenge", () => {
     expect(await latestVersionNumber()).to.eq(1);
 
     const thingToSign = keccak256(encodeAction(ACTION));
-    const signature = await signDigest(BOB.privateKey, thingToSign);
+    const signature = await signChannelMessage(BOB.privateKey, thingToSign);
 
     expect(await latestState()).to.be.eql(keccak256(encodeState(PRE_STATE)));
 
@@ -134,7 +134,7 @@ describe("ChallengeRegistry Challenge", () => {
     await setState(1, encodeState(PRE_STATE));
 
     const thingToSign = keccak256(encodeAction(ACTION));
-    const signature = await signDigest(ALICE.privateKey, thingToSign);
+    const signature = await signChannelMessage(ALICE.privateKey, thingToSign);
 
     await expect(respondToChallenge(PRE_STATE, ACTION, signature)).to.be.revertedWith(
       "Action must have been signed by correct turn taker",

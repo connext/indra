@@ -1,5 +1,5 @@
 import { NetworkContext } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -92,8 +92,8 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       );
       const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [
-        await signDigest(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
-        await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
+        await signChannelMessage(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+        await signChannelMessage(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
       ];
 
       const setStateTx = await setStateCommitment.getSignedTransaction();
@@ -118,8 +118,8 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       const setupCommitmentHash = setupCommitment.hashToSign();
 
       setupCommitment.signatures = [
-        await signDigest(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
-        await signDigest(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
+        await signChannelMessage(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
+        await signChannelMessage(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
       ];
 
       const setupTx = await setupCommitment.getSignedTransaction();

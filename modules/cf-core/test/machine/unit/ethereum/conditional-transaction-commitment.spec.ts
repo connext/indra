@@ -1,5 +1,5 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
@@ -81,8 +81,8 @@ describe("ConditionalTransactionCommitment", () => {
       expect(retrieved).toMatchObject(commitment);
       const hash = "0x" + Buffer.from(randomBytes(32)).toString("hex");
       commitment.signatures = [
-        await signDigest(hdNodes[0].privateKey, hash),
-        await signDigest(hdNodes[1].privateKey, hash),
+        await signChannelMessage(hdNodes[0].privateKey, hash),
+        await signChannelMessage(hdNodes[1].privateKey, hash),
       ];
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
