@@ -396,7 +396,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   // TODO: FIGURE OUT HOW TO MAKE THESE QUERIES WORK
   async findLinkedTransferAppByPaymentIdAndSender(
     paymentId: string,
-    sender: string,
+    senderFreeBalanceAddress: string,
   ): Promise<AppInstance> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -407,14 +407,16 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${sender}"'`)
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderFreeBalanceAddress}"'`,
+      )
       .getOne();
     return res;
   }
 
   async findLinkedTransferAppByPaymentIdAndReceiver(
     paymentId: string,
-    sender: string,
+    receiverFreeBalanceAddress: string,
   ): Promise<AppInstance> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -425,7 +427,33 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${sender}"'`)
+      // receiver is recipient
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverFreeBalanceAddress}"'`,
+      )
+      .getOne();
+    return res;
+  }
+
+  async findRedeemedLinkedTransferAppByPaymentIdFromNode(
+    paymentId: string,
+    nodeFreeBalanceAddress: string,
+  ): Promise<AppInstance> {
+    const res = await this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      // if uninstalled, redeemed
+      .andWhere("app_instance.type = :type", { type: AppType.UNINSTALLED })
+      .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
+      // node is sender
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+      )
       .getOne();
     return res;
   }
@@ -449,6 +477,33 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       )
       // meta for transfer recipient
       .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipient}"}'`)
+      // preImage is HashZero
+      .andWhere(`app_instance."latestState"::JSONB @> '{"preImage": "${HashZero}"}'`)
+      .getMany();
+    return res;
+  }
+
+  async findActiveLinkedTransferAppsFromSenderToNode(
+    senderFreeBalanceAddress: string,
+    nodeFreeBalanceAddress: string,
+  ): Promise<AppInstance[]> {
+    const res = await this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
+      // sender is sender of transfer
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderFreeBalanceAddress}"'`,
+      )
+      // node is receiver of transfer
+      .andWhere(
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+      )
       // preImage is HashZero
       .andWhere(`app_instance."latestState"::JSONB @> '{"preImage": "${HashZero}"}'`)
       .getMany();
