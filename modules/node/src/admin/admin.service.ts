@@ -19,6 +19,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 export interface RepairCriticalAddressesResponse {
   fixed: string[];
@@ -37,6 +38,7 @@ export class AdminService implements OnApplicationBootstrap {
     private readonly channelRepository: ChannelRepository,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AdminService");
   }
@@ -226,13 +228,26 @@ export class AdminService implements OnApplicationBootstrap {
     return output;
   }
 
+  /**
+   * Store Migration v0 --> v1: 3/20/2020
+   *
+   * Migrate from the key/value cf-core store to the v1 of the api driven store:
+   * https://github.com/ConnextProject/indra/blob/baad8edf906cb16e18c8fd5422b4f7e28fa816fb/modules/types/src/store.ts#L90
+   *
+   * Some ideally enforced database constraints were relaxed to allow the
+   * migrations to happen in prod via the admin function. A migration to restore
+   * these constraints will be needed.
+   */
   async migrateChannelStore(): Promise<boolean> {
-    const oldChannelRecords = await this.cfCoreRepository.get(
-      `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`,
-    );
+    const prefix = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel`;
+    const oldChannelRecords = await this.cfCoreRepository.get(prefix);
     const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
     this.log.log(`Found ${channelJSONs.length} old channel records`);
     for (const channelJSON of channelJSONs) {
+      if (channelJSON.userNeuteredExtendedKeys.length === 3) {
+        // just ignore virtual channels
+        continue;
+      }
       try {
         this.log.log(`Found channel to migrate: ${channelJSON.multisigAddress}`);
         // create blank setup commitment
@@ -248,6 +263,11 @@ export class AdminService implements OnApplicationBootstrap {
           channelJSON.multisigAddress,
         );
         if (channel) {
+          // update the addresses
+          channel.addresses = channelJSON.addresses || {
+            proxyFactory: "",
+            multisigMastercopy: "",
+          }; // dummy value for extra old channels
           // update the store version
           channel.schemaVersion = await this.cfCoreStore.getSchemaVersion();
           await this.channelRepository.save(channel);
@@ -255,12 +275,15 @@ export class AdminService implements OnApplicationBootstrap {
         // otherwise, save channel and new channel will have schema
         await this.cfCoreStore.saveStateChannel(channelJSON);
 
+        const savedChannel = await this.channelRepository.findByMultisigAddress(
+          channelJSON.multisigAddress,
+        );
         for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
           await this.cfCoreStore.saveAppProposal(channelJSON.multisigAddress, proposedApp);
         }
 
-        for (const [, appInstance] of channelJSON.appInstances) {
-          await this.cfCoreStore.saveAppInstance(channelJSON.multisigAddress, appInstance);
+        for (const [, appInstance] of channelJSON.appInstances || []) {
+          await this.appInstanceRepository.saveAppInstance(savedChannel, appInstance, true);
         }
 
         await this.cfCoreStore.saveFreeBalance(
@@ -268,11 +291,11 @@ export class AdminService implements OnApplicationBootstrap {
           channelJSON.freeBalanceAppInstance,
         );
 
+        this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
         // delete old channel record
         const removed = await this.cfCoreRepository.delete({
           path: `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${channelJSON.multisigAddress}`,
         });
-        this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
         this.log.log(`Removed ${removed.affected} old records after migrating`);
       } catch (e) {
         this.log.error(`Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()}`);
@@ -284,8 +307,6 @@ export class AdminService implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     this.log.log(`onApplicationBootstrap migrating channel store.`);
     await this.migrateChannelStore();
-    // TODO: remove
-    await this.repairCriticalStateChannelAddresses();
     this.log.log(`onApplicationBootstrap completed migrating channel store.`);
   }
 }

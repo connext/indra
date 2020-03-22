@@ -79,7 +79,6 @@ export class CFCoreStore implements IStoreService {
       )[0];
       channel.multisigAddress = stateChannel.multisigAddress;
       channel.addresses = stateChannel.addresses;
-      channel.schemaVersion = this.schemaVersion;
     }
     // update nonce
     channel.monotonicNumProposedApps = stateChannel.monotonicNumProposedApps;

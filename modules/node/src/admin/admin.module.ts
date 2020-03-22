@@ -15,6 +15,7 @@ import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.re
 
 import { adminProviderFactory } from "./admin.provider";
 import { AdminService } from "./admin.service";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Module({
   controllers: [],
@@ -32,6 +33,7 @@ import { AdminService } from "./admin.service";
       LinkedTransferRepository,
       ChannelRepository,
       SetupCommitmentRepository,
+      AppInstanceRepository,
     ]),
   ],
   providers: [AdminService, adminProviderFactory],
