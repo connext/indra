@@ -22,11 +22,11 @@ import memoize from "memoizee";
 export const logTime = (log: ILoggerService, start: number, msg: string) => {
   const diff = Date.now() - start;
   const message = `${msg} in ${diff} ms`;
-  if (diff < 10) {
+  if (diff < 5) {
     log.debug(message);
-  } else if (diff < 100) {
+  } else if (diff < 50) {
     log.info(message);
-  } else if (diff < 1000) {
+  } else if (diff < 250) {
     log.warn(message);
   } else {
     log.error(message);
@@ -127,7 +127,7 @@ export const getCreate2MultisigAddress = async (
 };
 
 const memoizedGetAddress = memoize(
-  (params: any): string => getAddress(params),
+  (params: string): string => getAddress(params),
   {
     max: 100,
     maxAge: 60 * 1000,
