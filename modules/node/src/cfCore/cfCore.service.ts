@@ -16,6 +16,7 @@ import {
   MethodParams,
   MethodResults,
   parseBN,
+  SolidityValueType,
   StateChannelJSON,
   stringify,
   toBN,
@@ -495,7 +496,7 @@ export class CFCoreService {
           apps.push({
             ...app,
             multisigAddress: channel.multisigAddress,
-            latestState: parseBN(app.latestState),
+            latestState: parseBN(app.latestState) as SolidityValueType,
           });
         }
       }

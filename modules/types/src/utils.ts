@@ -3,7 +3,8 @@ import { toBN } from "./math";
 // stolen from https://github.com/microsoft/TypeScript/issues/3192#issuecomment-261720275
 export const enumify = <T extends {[index: string]: U}, U extends string>(x: T): T => x;
 
-export const parseBN = (obj: object | string): object =>
+// TODO: dedup this + cf-core/src/utils
+export const parseBN = (obj: any): object =>
   typeof obj === "string" ? obj : JSON.parse(
     JSON.stringify(obj),
     (key: string, value: any): any => (value && value["_hex"]) ? toBN(value._hex) : value,
