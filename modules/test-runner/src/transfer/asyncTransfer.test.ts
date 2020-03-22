@@ -169,9 +169,7 @@ describe("Async Transfers", () => {
         assetId,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(
-      `Value "${assetId}" is not a valid eth address, Value (${amount}) is not less than or equal to 0`,
-    );
+    ).to.be.rejectedWith(`invalid address`);
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
   });

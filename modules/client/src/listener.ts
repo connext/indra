@@ -6,6 +6,7 @@ import {
   ILoggerService,
   MethodNames,
   MethodParams,
+  parseBN,
   SimpleLinkedTransferAppName,
   WithdrawAppName,
   WithdrawAppState,
@@ -214,7 +215,7 @@ export class ConnextListener extends ConnextEventEmitter {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
-    this.emit(event, data);
+    this.emit(event, parseBN(data));
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {

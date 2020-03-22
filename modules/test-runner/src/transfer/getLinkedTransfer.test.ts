@@ -35,7 +35,7 @@ describe("Get Linked Transfer", () => {
     expect(linkedTransfer).to.be.ok;
 
     expect(linkedTransfer).to.deep.include({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
       receiverPublicIdentifier: null,
@@ -60,7 +60,7 @@ describe("Get Linked Transfer", () => {
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
     expect(linkedTransfer).to.deep.include({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
       receiverPublicIdentifier: clientB.publicIdentifier,
@@ -76,7 +76,7 @@ describe("Get Linked Transfer", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
       conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
       paymentId,

@@ -15,8 +15,10 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
+  parseBN,
   StateChannelJSON,
   stringify,
+  toBN,
   WithdrawParameters,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
@@ -167,7 +169,8 @@ export class CFCoreService {
     params: WithdrawParameters,
     multisigAddress: string,
   ): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
-    const { assetId, amount, recipient } = params;
+    const amount = toBN(params.amount);
+    const { assetId, recipient } = params;
     const channel = await this.getStateChannel(multisigAddress);
     if (assetId === AddressZero) {
       return new WithdrawETHCommitment(
@@ -489,7 +492,11 @@ export class CFCoreService {
         const appState = app.latestState as HashLockTransferAppState;
         if (appState.lockHash === lockHash) {
           // TODO: FIX THIS IN CF CORE
-          apps.push({ ...app, multisigAddress: channel.multisigAddress });
+          apps.push({
+            ...app,
+            multisigAddress: channel.multisigAddress,
+            latestState: parseBN(app.latestState),
+          });
         }
       }
     }

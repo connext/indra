@@ -124,7 +124,7 @@ describe("Async transfer offline tests", () => {
     const { paymentId } = senderLinkedApp.latestState as any;
     // verify the saved transfer information
     const expectedTransfer = {
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderPublicIdentifier: senderClient.publicIdentifier,
@@ -218,7 +218,7 @@ describe("Async transfer offline tests", () => {
       }),
     );
     const { paymentId } = await senderClient.transfer({
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
       recipient: receiverClient.publicIdentifier,
     });
@@ -230,7 +230,7 @@ describe("Async transfer offline tests", () => {
     clock.tick(60_000 * 3);
     // verify transfer
     const expected = {
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderPublicIdentifier: senderClient.publicIdentifier,
@@ -291,7 +291,7 @@ describe("Async transfer offline tests", () => {
       });
     });
     const { paymentId } = await senderClient.transfer({
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
       recipient: receiverClient.publicIdentifier,
     });
@@ -299,7 +299,7 @@ describe("Async transfer offline tests", () => {
     await actionTaken;
     // verify transfer
     const expected = {
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderPublicIdentifier: senderClient.publicIdentifier,

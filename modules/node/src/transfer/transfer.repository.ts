@@ -21,10 +21,10 @@ export class TransferRepository extends Repository<Transfer> {
     ) as TransferInfo[];
   }
 
-  async findByPaymentId(paymentId: string): Promise<TransferInfo> {
+  async findByPaymentId(paymentId: string): Promise<TransferInfo | undefined> {
     const transfer = await this.findOne({
       where: { paymentId },
     });
-    return { ...transfer, amount: toBN(transfer.amount) };
+    return transfer ? { ...transfer, amount: toBN(transfer.amount) } : undefined;
   }
 }
