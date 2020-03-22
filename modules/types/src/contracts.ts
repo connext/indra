@@ -66,7 +66,7 @@ export interface EthereumCommitment {
   signatures: string[];
   encode(): string;
   hashToSign(): string;
-  getSignedTransaction(): ProtocolTypes.MinimalTransaction;
+  getSignedTransaction(): Promise<ProtocolTypes.MinimalTransaction>;
 }
 
 export enum MultisigOperation {

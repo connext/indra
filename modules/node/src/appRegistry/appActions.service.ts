@@ -196,17 +196,16 @@ export class AppActionsService {
       throw new Error(`No channel exists for multisigAddress ${appInstance.multisigAddress}`);
     }
 
-    const commitment = await this.cfCoreService.createWithdrawCommitment(
+    const commitment = (await this.cfCoreService.createWithdrawCommitment(
       {
         amount: stateBigNumber.transfers[0].amount,
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: this.cfCoreService.cfCore.freeBalanceAddress,
       },
       appInstance.multisigAddress,
-    );
-    // TODO: remove any casting by using Signature type
-    commitment.signatures = stateBigNumber.signatures as any;
-    const tx = commitment.getSignedTransaction();
+    )) as any;
+    commitment.signatures = stateBigNumber.signatures;
+    const tx = await commitment.getSignedTransaction();
 
     this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstanceId}`);
     await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);

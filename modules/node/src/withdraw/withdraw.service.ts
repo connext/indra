@@ -85,14 +85,14 @@ export class WithdrawService {
     let state = appInstance.latestState as WithdrawAppState<BigNumber>;
 
     // Create the same commitment from scratch
-    const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
+    const generatedCommitment = (await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: state.transfers[0].to,
       } as WithdrawParameters<BigNumber>,
       appInstance.multisigAddress,
-    );
+    )) as any;
 
     // Get Private Key
     const privateKey = this.configService.getEthWallet().privateKey;
@@ -122,9 +122,8 @@ export class WithdrawService {
     await this.cfCoreService.uninstallApp(appInstance.identityHash);
 
     // Get a finalized minTx object and put it onchain
-    // TODO: remove any casting by using Signature type
     generatedCommitment.signatures = state.signatures as any;
-    const signedWithdrawalCommitment = generatedCommitment.getSignedTransaction();
+    const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
     const transaction = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,

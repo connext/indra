@@ -21,17 +21,19 @@ describe("Signature Validator Helper", () => {
   });
 
   it("validates signatures correctly", () => {
-    expect(() => assertIsValidSignature(signer.address, commitment, signature)).not.toThrow();
+    expect(
+      async () => await assertIsValidSignature(signer.address, commitment, signature),
+    ).not.toThrow();
   });
 
   it("throws if signature is undefined", () => {
-    expect(() => assertIsValidSignature(signer.address, commitment, undefined)).toThrow(
+    expect(async () => await assertIsValidSignature(signer.address, commitment, undefined)).toThrow(
       "assertIsValidSignature received an undefined signature",
     );
   });
 
   it("throws if commitment is undefined", () => {
-    expect(() => assertIsValidSignature(signer.address, undefined, signature)).toThrow(
+    expect(async () => await assertIsValidSignature(signer.address, undefined, signature)).toThrow(
       "assertIsValidSignature received an undefined commitment",
     );
   });
@@ -41,7 +43,7 @@ describe("Signature Validator Helper", () => {
     const wrongHash = HashZero.replace("00", "11"); // 0x11000...
     const signature = await signDigest(signer.privateKey, wrongHash);
     const wrongSigner = recoverAddress(rightHash, signature);
-    expect(() => assertIsValidSignature(signer.address, commitment, signature)).toThrow(
+    expect(async () => await assertIsValidSignature(signer.address, commitment, signature)).toThrow(
       `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}`,
     );
   });
