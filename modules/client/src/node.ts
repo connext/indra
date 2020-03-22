@@ -138,7 +138,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse> {
-    return await this.send(`transfer.get-hashlock.${this.userPublicIdentifier}`, {
+    return await this.send(`${this.userPublicIdentifier}.transfer.get-hashlock`, {
       lockHash,
     });
   }
@@ -161,11 +161,9 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    console.warn(`[client] sending request to transfer`);
     const ret = await this.send(`${this.userPublicIdentifier}.transfer.fetch-linked`, {
       paymentId,
     });
-    console.warn(`[client] sent!`);
     return ret;
   }
 
@@ -184,7 +182,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse> {
-    return await this.send(`transfer.resolve-hashlock.${this.userPublicIdentifier}`, {
+    return await this.send(`${this.userPublicIdentifier}.transfer.resolve-hashlock`, {
       lockHash,
     });
   }
