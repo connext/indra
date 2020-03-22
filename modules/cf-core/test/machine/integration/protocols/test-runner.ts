@@ -190,7 +190,6 @@ export class TestRunner {
       xkeyKthAddress(this.mininodeA.xpub, 1),
       xkeyKthAddress(this.mininodeB.xpub, 1),
     ]);
-    console.log("participants", participants);
 
     await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
       appInterface: {
@@ -255,7 +254,6 @@ export class TestRunner {
       xkeyKthAddress(this.mininodeA.xpub, 1),
       xkeyKthAddress(this.mininodeB.xpub, 1),
     ]);
-    console.log("participants", participants);
 
     await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
       participants,
