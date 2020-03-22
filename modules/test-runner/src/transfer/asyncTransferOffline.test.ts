@@ -1,6 +1,5 @@
 import {
   IConnextClient,
-  DefaultApp,
   RECEIVE_TRANSFER_FINISHED_EVENT,
   UPDATE_STATE_EVENT,
   LinkedTransferStatus,
@@ -199,9 +198,7 @@ describe("Async transfer offline tests", () => {
    * Ideally, the node takes action +  uninstalls these apps on `connect`,
    * and money is returned to the hubs channel (redeemed payment)
    */
-  // TODO: RS: i dont really understand this test, if the sender goes offline after updating state,
-  // it will not be able to complete the linked transfer, so senderClient.transfer would never resolve
-  it.skip("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action, with sender but sender is offline but then comes online later", async () => {
+  it("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later", async () => {
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       ceiling: { sent: 1 }, // for deposit app
