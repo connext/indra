@@ -118,11 +118,11 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async createChannel(): Promise<CreateChannelResponse> {
-    return await this.send(`${this.userPublicIdentifier}.channel.create`);
+    return this.send(`${this.userPublicIdentifier}.channel.create`);
   }
 
   public async getChannel(): Promise<GetChannelResponse> {
-    return await this.send(`${this.userPublicIdentifier}.channel.get`);
+    return this.send(`${this.userPublicIdentifier}.channel.get`);
   }
 
   public async getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse> {
@@ -130,7 +130,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
-    return await this.send(`${this.userPublicIdentifier}.swap-rate.${from}.${to}`);
+    return this.send(`${this.userPublicIdentifier}.swap-rate.${from}.${to}`);
   }
 
   public async getTransferHistory(): Promise<Transfer[]> {
@@ -138,7 +138,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse> {
-    return await this.send(`${this.userPublicIdentifier}.transfer.get-hashlock`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.get-hashlock`, {
       lockHash,
     });
   }
@@ -147,7 +147,7 @@ export class NodeApiClient implements INodeApiClient {
   // which exceeds the timeout.....
   public async requestCollateral(assetId: string): Promise<RequestCollateralResponse | void> {
     try {
-      return await this.send(`${this.userPublicIdentifier}.channel.request-collateral`, {
+      return this.send(`${this.userPublicIdentifier}.channel.request-collateral`, {
         assetId,
       });
     } catch (e) {
@@ -161,14 +161,13 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    const ret = await this.send(`${this.userPublicIdentifier}.transfer.fetch-linked`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.fetch-linked`, {
       paymentId,
     });
-    return ret;
   }
 
   public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
-    return await this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
       paymentId,
     });
   }
@@ -176,25 +175,25 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveFastSignedTransfer(
     paymentId: string,
   ): Promise<ResolveFastSignedTransferResponse> {
-    return await this.send(`${this.userPublicIdentifier}.transfer.resolve-fast-signed`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.resolve-fast-signed`, {
       paymentId,
     });
   }
 
   public async resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse> {
-    return await this.send(`${this.userPublicIdentifier}.transfer.resolve-hashlock`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.resolve-hashlock`, {
       lockHash,
     });
   }
 
   public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
-    return await this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
+    return this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
       assetId: makeChecksumOrEthAddress(assetId),
     });
   }
 
   public async verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences> {
-    return await this.send(`${this.userPublicIdentifier}.channel.verify-app-sequence`, {
+    return this.send(`${this.userPublicIdentifier}.channel.verify-app-sequence`, {
       userAppSequenceNumber: appSequenceNumber,
     });
   }
@@ -203,7 +202,7 @@ export class NodeApiClient implements INodeApiClient {
   // TODO -- What needs to happen here for JWT auth refactor?
   public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
     try {
-      return await this.send(`online.${recipientPublicIdentifier}`);
+      return this.send(`online.${recipientPublicIdentifier}`);
     } catch (e) {
       if (e.message.startsWith("Request timed out")) {
         return false;
@@ -242,11 +241,11 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getLatestWithdrawal(): Promise<Transaction> {
-    return await this.send(`${this.userPublicIdentifier}.channel.latestWithdrawal`);
+    return this.send(`${this.userPublicIdentifier}.channel.latestWithdrawal`);
   }
 
   public async clientCheckIn(): Promise<void> {
-    return await this.send(`${this.userPublicIdentifier}.client.check-in`);
+    return this.send(`${this.userPublicIdentifier}.client.check-in`);
   }
 
   ////////////////////////////////////////
@@ -254,9 +253,7 @@ export class NodeApiClient implements INodeApiClient {
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
     let error;
-    const log = subject.includes(`fetch-linked`);
     for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
-      log && console.log(`Trying to send attempt ${attempt}/${NATS_ATTEMPTS}...`)
       try {
         return await this.sendAttempt(subject, data);
       } catch (e) {
@@ -265,11 +262,8 @@ export class NodeApiClient implements INodeApiClient {
           console.warn(
             `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`,
           );
-          console.warn(`[client] disconnecting...`);
           await this.messaging.disconnect();
-          console.warn(`[client] disconnected! reconnecting...`);
           await this.messaging.connect();
-          console.warn(`[client] connected!`);
           if (attempt + 1 <= NATS_ATTEMPTS) {
             await delay(NATS_TIMEOUT); // Wait at least a NATS_TIMEOUT before retrying
           }
@@ -288,13 +282,9 @@ export class NodeApiClient implements INodeApiClient {
       id: uuid.v4(),
     };
     let msg: any;
-    const log = subject.includes(`fetch-linked`);
     try {
-      log && console.log(`[client] fetching transfer...`);
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
-      log && console.log(`[client] got linked transfer`);
     } catch (e) {
-      log && console.log(`[client] failed: ${e.message}`);
       throw new Error(`${sendFailed}: ${e.message}`);
     }
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
