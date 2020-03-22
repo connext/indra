@@ -13,7 +13,6 @@ describe("Get Linked Transfer", () => {
   });
 
   afterEach(async () => {
-    console.log(clientA.messaging);
     await clientA.messaging.disconnect();
   });
 
