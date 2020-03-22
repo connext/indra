@@ -174,9 +174,9 @@ export class WithdrawalController extends AbstractController {
     signatures: string[],
   ): Promise<void> {
     // set the withdrawal tx in the store
-    const commitment = await this.createWithdrawCommitment(params);
-    commitment.signatures = signatures as any;
-    const minTx: CFCoreTypes.MinimalTransaction = commitment.getSignedTransaction();
+    const commitment = (await this.createWithdrawCommitment(params)) as any;
+    commitment.signatures = signatures;
+    const minTx: CFCoreTypes.MinimalTransaction = await commitment.getSignedTransaction();
     const value = { tx: minTx, retry: 0 };
     await this.connext.channelProvider.send(chan_setUserWithdrawal, { ...value });
     await this.connext.channelProvider.send(chan_setUserWithdrawal, { withdrawalObject: value });

@@ -7,6 +7,7 @@ import {
   AppInstanceProposal,
   PersistAppType,
 } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import { BaseProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
@@ -28,7 +29,7 @@ import {
   NodeMessageWrappedProtocolMessage,
   ProtocolMessage,
 } from "./types";
-import { timeout, signDigestWithEthers } from "./utils";
+import { timeout } from "./utils";
 import { Store } from "./store";
 import {
   ConditionalTransactionCommitment,
@@ -180,7 +181,7 @@ export class Node {
       const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
       const hash = commitment.hashToSign();
 
-      return signDigestWithEthers(privateKey, hash);
+      return await signDigest(privateKey, hash);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {

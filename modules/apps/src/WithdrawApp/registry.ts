@@ -1,4 +1,9 @@
-import { OutcomeType, WithdrawAppStateEncoding, WithdrawAppActionEncoding, WithdrawApp } from "@connext/types";
+import {
+  OutcomeType,
+  WithdrawAppStateEncoding,
+  WithdrawAppActionEncoding,
+  WithdrawApp,
+} from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
 

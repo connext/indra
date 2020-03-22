@@ -1,14 +1,5 @@
 import { ILogger } from "@connext/types";
-import {
-  BigNumber,
-  bigNumberify,
-  hexlify,
-  randomBytes,
-  solidityKeccak256,
-  joinSignature,
-  SigningKey,
-  arrayify,
-} from "ethers/utils";
+import { BigNumber, bigNumberify, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
 export const logTime = (log: ILogger, start: number, msg: string) => {
@@ -110,8 +101,3 @@ export const createRandom32ByteHexString = (): string => {
 
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
-
-export const signDigestWithEthers = (privateKey: string, digest: string) => {
-  const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(arrayify(digest)));
-};

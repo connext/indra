@@ -55,12 +55,15 @@ export class SetStateCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
-  public getSignedTransaction(): CFCoreTypes.MinimalTransaction {
-    this.assertSignatures();
+  public async getSignedTransaction(): Promise<CFCoreTypes.MinimalTransaction> {
+    await this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.functions.setState.encode([this.appIdentity, this.getSignedStateHashUpdate()]),
+      data: iface.functions.setState.encode([
+        this.appIdentity,
+        await this.getSignedStateHashUpdate(),
+      ]),
     };
   }
 
@@ -88,18 +91,18 @@ export class SetStateCommitment implements EthereumCommitment {
     );
   }
 
-  private getSignedStateHashUpdate(): SignedStateHashUpdate {
-    this.assertSignatures();
+  private async getSignedStateHashUpdate(): Promise<SignedStateHashUpdate> {
+    await this.assertSignatures();
     const hash = this.hashToSign();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(hash, this.signatures),
+      signatures: await sortSignaturesBySignerAddress(hash, this.signatures),
     };
   }
 
-  private assertSignatures() {
+  private async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }

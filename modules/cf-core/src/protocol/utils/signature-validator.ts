@@ -1,8 +1,9 @@
-import { getAddress, recoverAddress, Signature } from "ethers/utils";
+import { getAddress } from "ethers/utils";
+import { recoverAddress } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../types";
 
-export function assertIsValidSignature(
+export async function assertIsValidSignature(
   expectedSigner: string,
   commitment?: EthereumCommitment,
   signature?: string,
@@ -18,7 +19,7 @@ export function assertIsValidSignature(
   const hash = commitment.hashToSign();
 
   // recoverAddress: 83 ms, hashToSign: 7 ms
-  const signer = recoverAddress(hash, signature);
+  const signer = await recoverAddress(hash, signature);
 
   if (getAddress(expectedSigner) !== signer) {
     throw Error(

@@ -1,5 +1,6 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
+import { signDigest } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -11,7 +12,6 @@ import {
   computeAppChallengeHash,
   expect,
   sortSignaturesBySignerAddress,
-  signDigestWithEthers,
 } from "./utils";
 
 type Challenge = {
@@ -90,9 +90,9 @@ describe("ChallengeRegistry", () => {
 
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
-        sortSignaturesBySignerAddress(digest, [
-          await signDigestWithEthers(ALICE.privateKey, digest),
-          await signDigestWithEthers(BOB.privateKey, digest),
+        await sortSignaturesBySignerAddress(digest, [
+          await signDigest(ALICE.privateKey, digest),
+          await signDigest(BOB.privateKey, digest),
         ]),
       );
     };
@@ -113,9 +113,9 @@ describe("ChallengeRegistry", () => {
         timeout,
         versionNumber,
         appStateHash: stateHash,
-        signatures: sortSignaturesBySignerAddress(digest, [
-          await signDigestWithEthers(ALICE.privateKey, digest),
-          await signDigestWithEthers(BOB.privateKey, digest),
+        signatures: await sortSignaturesBySignerAddress(digest, [
+          await signDigest(ALICE.privateKey, digest),
+          await signDigest(BOB.privateKey, digest),
         ]),
       });
     };

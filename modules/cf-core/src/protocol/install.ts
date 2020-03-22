@@ -119,7 +119,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // free balance addr signs conditional transactions
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       responderFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
@@ -148,7 +148,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // always use free balance key to sign free balance update
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       responderFreeBalanceAddress,
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
@@ -259,7 +259,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // multisig owner always signs conditional tx
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       initiatorFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
@@ -310,7 +310,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // always use freeBalanceAddress to sign updates
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       initiatorFreeBalanceAddress,
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,

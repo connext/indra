@@ -1,4 +1,5 @@
 import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
+import { recoverAddress } from "@connext/crypto";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { Provider } from "ethers/providers";
@@ -7,12 +8,8 @@ import {
   bigNumberify,
   getAddress,
   Interface,
-  joinSignature,
   keccak256,
-  recoverAddress,
   solidityKeccak256,
-  SigningKey,
-  arrayify,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -57,29 +54,21 @@ export const deBigNumberifyJson = (json: object) =>
 /**
  * Sorts signatures in ascending order of signer address
  *
- * @param signatures An array of etherium signatures
+ * @param signatures An array of ethereum signatures
  */
-export function sortSignaturesBySignerAddress(digest: string, signatures: string[]): string[] {
-  const ret = signatures.slice();
-  ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, sigA);
-    const addrB = recoverAddress(digest, sigB);
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-  });
-  return ret;
-}
-
-export function sortStringSignaturesBySignerAddress(
+export async function sortSignaturesBySignerAddress(
   digest: string,
   signatures: string[],
-): string[] {
-  const ret = signatures.slice();
-  ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, sigA);
-    const addrB = recoverAddress(digest, sigB);
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-  });
-  return ret;
+): Promise<string[]> {
+  return (
+    await Promise.all(
+      signatures.slice().map(async sig => ({ sig, addr: await recoverAddress(digest, sig) })),
+    )
+  )
+    .sort((A, B) => {
+      return new BigNumber(A.addr).lt(B.addr) ? -1 : 1;
+    })
+    .map(x => x.sig);
 }
 
 export function prettyPrintObject(object: any) {
@@ -259,8 +248,3 @@ export function assertSufficientFundsWithinFreeBalance(
     );
   }
 }
-
-export const signDigestWithEthers = (privateKey: string, digest: string) => {
-  const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(arrayify(digest)));
-};

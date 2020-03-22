@@ -71,7 +71,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Received responder's sig`);
 
     substart = Date.now();
-    assertIsValidSignature(responderEphemeralKey, setStateCommitment, responderSignature);
+    await assertIsValidSignature(responderEphemeralKey, setStateCommitment, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
@@ -120,7 +120,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     substart = Date.now();
-    assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);
+    await assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);
     logTime(log, substart, `Verified initator's sig`);
 
     const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];

@@ -1,12 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { WithdrawApp } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { CFCoreTypes, xkeyKthAddress, signDigestWithEthers } from "../util";
+import { CFCoreTypes, xkeyKthAddress } from "../util";
 import {
   TransactionResponse,
   AppInstanceJson,
@@ -84,21 +85,21 @@ export class WithdrawService {
     let state = appInstance.latestState as WithdrawAppState<BigNumber>;
 
     // Create the same commitment from scratch
-    const generatedCommitment = await this.cfCoreService.createWithdrawCommitment(
+    const generatedCommitment = (await this.cfCoreService.createWithdrawCommitment(
       {
         amount: state.transfers[0].amount,
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: state.transfers[0].to,
       } as WithdrawParameters<BigNumber>,
       appInstance.multisigAddress,
-    );
+    )) as any;
 
     // Get Private Key
     const privateKey = this.configService.getEthWallet().privateKey;
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = signDigestWithEthers(privateKey, hash);
+    const counterpartySignatureOnWithdrawCommitment = await signDigest(privateKey, hash);
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -121,9 +122,8 @@ export class WithdrawService {
     await this.cfCoreService.uninstallApp(appInstance.identityHash);
 
     // Get a finalized minTx object and put it onchain
-    // TODO: remove any casting by using Signature type
     generatedCommitment.signatures = state.signatures as any;
-    const signedWithdrawalCommitment = generatedCommitment.getSignedTransaction();
+    const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
     const transaction = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,
@@ -230,7 +230,7 @@ export class WithdrawService {
     const privateKey = this.configService.getEthWallet().privateKey;
     const hash = commitment.hashToSign();
 
-    const withdrawerSignatureOnCommitment = signDigestWithEthers(privateKey, hash);
+    const withdrawerSignatureOnCommitment = await signDigest(privateKey, hash);
 
     const transfers: CoinTransfer[] = [
       { amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress },

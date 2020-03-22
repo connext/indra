@@ -66,7 +66,9 @@ class MockStoreService implements CFCoreTypes.IStoreService {
   saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
-  getSetupCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
     return Promise.resolve(undefined);
   }
   saveSetupCommitment(
