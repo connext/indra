@@ -57,6 +57,7 @@
     "nodemon": "2.0.2",
     "supertest": "4.0.2",
     "ts-jest": "25.2.0",
+    "ts-natsutil": "1.0.4",
     "ts-node": "8.6.2",
     "tsconfig-paths": "3.9.0",
     "typescript": "3.7.5",
