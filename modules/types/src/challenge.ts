@@ -7,7 +7,7 @@ export type SetStateCommitmentJSON = {
   readonly appIdentityHash: string;
   readonly appStateHash: string;
   readonly challengeRegistryAddress: string;
-  readonly signatures: string[];
+  readonly signatures: Signature[];
   readonly timeout: number;
   readonly versionNumber: number;
 };
@@ -20,5 +20,5 @@ export type ConditionalTransactionCommitmentJSON = {
   readonly multisigAddress: string;
   readonly multisigOwners: string[];
   readonly networkContext: NetworkContext;
-  readonly signatures: string[];
+  readonly signatures: Signature[];
 };

@@ -7,7 +7,6 @@ import {
   solidityKeccak256,
   joinSignature,
   SigningKey,
-  arrayify,
 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
@@ -112,6 +111,6 @@ export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
 
 export const signDigestWithEthers = (privateKey: string, digest: string) => {
-  const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(arrayify(digest)));
+  const key = new SigningKey(privateKey);
+  return joinSignature(key.signDigest(digest));
 };

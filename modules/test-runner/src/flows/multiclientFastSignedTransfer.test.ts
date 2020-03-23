@@ -2,11 +2,19 @@ import {
   IConnextClient,
   ReceiveTransferFinishedEventData,
   FastSignedTransferParameters,
+  delay,
   CREATE_TRANSFER,
   CreateTransferEventData,
   ResolveFastSignedTransferParameters,
 } from "@connext/types";
-import { bigNumberify, hexlify, randomBytes, solidityKeccak256, SigningKey } from "ethers/utils";
+import {
+  bigNumberify,
+  hexlify,
+  randomBytes,
+  solidityKeccak256,
+  joinSignature,
+  SigningKey,
+} from "ethers/utils";
 import { before, after } from "mocha";
 import { Client } from "ts-nats";
 
@@ -14,7 +22,6 @@ import { env, expect, Logger, createClient, fundChannel, connectNats, closeNats 
 import { Wallet } from "ethers";
 import { One, AddressZero } from "ethers/constants";
 import { clientA } from "../benchmarking/flamegraphPrep";
-import { signDigestWithEthers } from "@connext/cf-core/dist/src/utils";
 
 describe("Full Flow: Multi-client transfer", () => {
   let log = new Logger("MultiClientTransfer", env.logLevel);
@@ -135,7 +142,7 @@ describe("Full Flow: Multi-client transfer", () => {
           }
           const data = hexlify(randomBytes(32));
           const digest = solidityKeccak256(["bytes32", "bytes32"], [data, eventData.paymentId]);
-          const signature = signDigestWithEthers(withdrawerSigningKey!.privateKey, digest);
+          const signature = joinSignature(withdrawerSigningKey!.signDigest(digest));
 
           await indexer!.resolveCondition({
             conditionType: "FAST_SIGNED_TRANSFER",

@@ -3,11 +3,10 @@ import { hexlify, randomBytes, recoverAddress, Signature, SigningKey } from "eth
 
 import { EthereumCommitment } from "../../../../src/types";
 import { assertIsValidSignature } from "../../../../src/protocol/utils/signature-validator";
-import { signDigestWithEthers } from "../../../../src/utils";
 
 describe("Signature Validator Helper", () => {
   let signer: SigningKey;
-  let signature: string;
+  let signature: Signature;
   let commitment: EthereumCommitment;
 
   beforeEach(() => {
@@ -16,8 +15,8 @@ describe("Signature Validator Helper", () => {
     commitment = {
       hashToSign: () => HashZero,
     } as EthereumCommitment;
-    const commitmentHash = commitment.hashToSign();
-    signature = signDigestWithEthers(signer.privateKey, commitmentHash);
+
+    signature = signer.signDigest(commitment.hashToSign());
   });
 
   it("validates signatures correctly", () => {
@@ -39,7 +38,7 @@ describe("Signature Validator Helper", () => {
   it("throws if the signature is wrong", () => {
     const rightHash = commitment.hashToSign();
     const wrongHash = HashZero.replace("00", "11"); // 0x11000...
-    const signature = signDigestWithEthers(signer.privateKey, wrongHash);
+    const signature = signer.signDigest(wrongHash);
     const wrongSigner = recoverAddress(rightHash, signature);
     expect(() => assertIsValidSignature(signer.address, commitment, signature)).toThrow(
       `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}`,

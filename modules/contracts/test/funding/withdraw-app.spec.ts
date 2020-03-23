@@ -1,21 +1,13 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import {
-  WithdrawAppState,
-  WithdrawAppAction,
-  CoinTransfer,
-  singleAssetTwoPartyCoinTransferEncoding,
-  WithdrawAppStateEncoding,
-  WithdrawAppActionEncoding,
-} from "@connext/types";
+import { WithdrawAppState, WithdrawAppAction, CoinTransfer, singleAssetTwoPartyCoinTransferEncoding, WithdrawAppStateEncoding, WithdrawAppActionEncoding } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { BigNumber, defaultAbiCoder, SigningKey } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, joinSignature, SigningKey } from "ethers/utils";
 
-import WithdrawApp from "../../build/WithdrawApp.json";
+import WithdrawApp from "../../build/WithdrawApp.json"
 import { Zero, HashZero } from "ethers/constants";
-import { signDigestWithEthers } from "../adjudicator/utils";
 
 const { expect } = chai;
 
@@ -39,7 +31,7 @@ const encodeAppState = (
 
 const encodeAppAction = (state: WithdrawAppAction): string => {
   return defaultAbiCoder.encode([WithdrawAppActionEncoding], [state]);
-};
+}
 
 describe("WithdrawApp", async () => {
   let provider = buidler.provider;
@@ -52,14 +44,17 @@ describe("WithdrawApp", async () => {
   const data = mkHash("0xa"); // TODO: test this with real withdrawal commitment hash?
   const withdrawerSigningKey = new SigningKey(withdrawerWallet.privateKey);
   const counterpartySigningKey = new SigningKey(counterpartyWallet.privateKey);
-
+  
   const computeOutcome = async (state: WithdrawAppState<string>): Promise<string> => {
     return await withdrawApp.functions.computeOutcome(encodeAppState(state));
-  };
-
+  }
+  
   const applyAction = async (state: any, action: WithdrawAppAction): Promise<string> => {
-    return await withdrawApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
-  };
+    return await withdrawApp.functions.applyAction(
+      encodeAppState(state),
+      encodeAppAction(action),
+    );
+  }
 
   const createInitialState = (): WithdrawAppState<string> => {
     return {
@@ -73,20 +68,21 @@ describe("WithdrawApp", async () => {
           to: counterpartyWallet.address,
         },
       ],
-      signatures: [signDigestWithEthers(withdrawerSigningKey.privateKey, data), HashZero],
+      signatures: [joinSignature(withdrawerSigningKey.signDigest(data)), HashZero],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
       data,
       finalized: false,
     };
-  };
+  }
 
   const createAction = (): WithdrawAppAction => {
     return {
-      signature: signDigestWithEthers(counterpartySigningKey.privateKey, data),
+      signature: joinSignature(counterpartySigningKey.signDigest(data))
     };
-  };
+  }
 
-  beforeEach(async () => {});
+  beforeEach(async () => {
+  });
 
   describe("It zeroes withdrawer balance if state is finalized (w/ valid signatures)", async () => {
     let initialState = createInitialState();
@@ -104,7 +100,7 @@ describe("WithdrawApp", async () => {
     expect(decoded[0].amount).eq(Zero.toString());
     expect(decoded[1].to).eq(initialState.transfers[1].to);
     expect(decoded[1].amount).eq(Zero);
-  });
+  })
 
   describe("It cancels the withdrawal if state is not finalized", async () => {
     let initialState = createInitialState();
@@ -117,7 +113,7 @@ describe("WithdrawApp", async () => {
     expect(decoded[0].amount).eq(initialState.transfers[0].amount);
     expect(decoded[1].to).eq(initialState.transfers[1].to);
     expect(decoded[1].amount).eq(Zero.toString());
-  });
+  })
 
   describe("It reverts the action if state is finalized", async () => {
     let initialState = createInitialState();
@@ -128,24 +124,22 @@ describe("WithdrawApp", async () => {
     expect(afterActionState.signatures[1]).to.eq(action.signature);
     expect(afterActionState.finalized).to.be.true;
 
-    await expect(applyAction(afterActionState, action)).revertedWith(
-      "cannot take action on a finalized state",
-    );
-  });
+    await expect(applyAction(afterActionState, action)).revertedWith("cannot take action on a finalized state")
+  })
 
   describe("It reverts the action if withdrawer signature is invalid", async () => {
     let initialState = createInitialState();
     let action = createAction();
 
     initialState.signatures[0] = mkHash("0x0");
-    await expect(applyAction(initialState, action)).revertedWith("invalid withdrawer signature");
-  });
+    await expect(applyAction(initialState, action)).revertedWith("invalid withdrawer signature")
+  })
 
   describe("It reverts the action if counterparty signature is invalid", async () => {
     let initialState = createInitialState();
     let action = createAction();
 
     action.signature = HashZero;
-    await expect(applyAction(initialState, action)).revertedWith("invalid counterparty signature");
-  });
+    await expect(applyAction(initialState, action)).revertedWith("invalid counterparty signature")
+  })
 });

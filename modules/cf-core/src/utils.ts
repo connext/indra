@@ -10,9 +10,8 @@ import {
   joinSignature,
   keccak256,
   recoverAddress,
+  Signature,
   solidityKeccak256,
-  SigningKey,
-  arrayify,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -53,17 +52,31 @@ export const deBigNumberifyJson = (json: object) =>
   JSON.parse(JSON.stringify(json), (key, val) =>
     val && BigNumber.isBigNumber(val) ? val.toHexString() : val,
   );
+/**
+ * Converts an array of signatures into a single string
+ *
+ * @param signatures An array of etherium signatures
+ */
+export function signaturesToBytes(...signatures: Signature[]): string {
+  return signatures
+    .map(joinSignature)
+    .map(s => s.substr(2))
+    .reduce((acc, v) => acc + v, "0x");
+}
 
 /**
  * Sorts signatures in ascending order of signer address
  *
  * @param signatures An array of etherium signatures
  */
-export function sortSignaturesBySignerAddress(digest: string, signatures: string[]): string[] {
+export function sortSignaturesBySignerAddress(
+  digest: string,
+  signatures: Signature[],
+): Signature[] {
   const ret = signatures.slice();
   ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, sigA);
-    const addrB = recoverAddress(digest, sigB);
+    const addrA = recoverAddress(digest, signaturesToBytes(sigA));
+    const addrB = recoverAddress(digest, signaturesToBytes(sigB));
     return new BigNumber(addrA).lt(addrB) ? -1 : 1;
   });
   return ret;
@@ -80,6 +93,19 @@ export function sortStringSignaturesBySignerAddress(
     return new BigNumber(addrA).lt(addrB) ? -1 : 1;
   });
   return ret;
+}
+
+/**
+ * Sorts signatures in ascending order of signer address
+ * and converts them into bytes
+ *
+ * @param signatures An array of etherium signatures
+ */
+export function signaturesToBytesSortedBySignerAddress(
+  digest: string,
+  ...signatures: Signature[]
+): string {
+  return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
 }
 
 export function prettyPrintObject(object: any) {
@@ -259,8 +285,3 @@ export function assertSufficientFundsWithinFreeBalance(
     );
   }
 }
-
-export const signDigestWithEthers = (privateKey: string, digest: string) => {
-  const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(arrayify(digest)));
-};

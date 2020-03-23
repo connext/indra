@@ -1,6 +1,6 @@
 import {
   chan_config,
-  chan_signDigest,
+  chan_signWithdrawCommitment,
   chan_restoreState,
   chan_getUserWithdrawal,
   chan_setUserWithdrawal,
@@ -11,7 +11,7 @@ import {
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
-  chan_signMessage,
+  chan_nodeAuth,
   StateChannelJSON,
   WithdrawalMonitorObject,
 } from "@connext/types";
@@ -60,12 +60,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
         break;
-      case chan_signDigest:
-        result = await this.signDigest(params.message);
+      case chan_signWithdrawCommitment:
+        result = await this.signWithdrawCommitment(params.message);
         break;
-      case chan_signMessage:
-        result = await this.signMessage(params.message);
-        break;
+      case chan_nodeAuth:
+          result = await this.signMessage(params.message);
+          break;
       case chan_config:
         result = this.config;
         break;
@@ -134,11 +134,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// // SIGNING METHODS
 
   public signMessage = async (message: string): Promise<string> => {
-    return this._send(chan_signMessage, { message });
+    return this._send(chan_nodeAuth, { message });
   };
 
-  public signDigest = async (message: string): Promise<string> => {
-    return this._send(chan_signDigest, { message });
+  public signWithdrawCommitment = async (message: string): Promise<string> => {
+    return this._send(chan_signWithdrawCommitment, { message });
   };
   /// ////////////////////////////////////////////
   /// // STORE METHODS
@@ -154,7 +154,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   };
 
   public restoreState = async (): Promise<void> => {
-    return this._send(chan_restoreState, {});
+    return this._send(chan_restoreState, { });
   };
 
   public setStateChannel = async (state: StateChannelJSON): Promise<void> => {

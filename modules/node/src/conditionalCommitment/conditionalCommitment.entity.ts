@@ -27,7 +27,7 @@ export class ConditionalTransactionCommitment {
   multisigOwners!: string[];
 
   @Column("json", { nullable: true })
-  signatures!: string[];
+  signatures!: Signature[];
 
   @OneToOne((type: any) => AppInstance)
   @JoinColumn()

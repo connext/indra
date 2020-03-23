@@ -3,7 +3,14 @@ import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { BigNumberish, hexlify, keccak256, randomBytes } from "ethers/utils";
+import {
+  BigNumberish,
+  hexlify,
+  joinSignature,
+  keccak256,
+  randomBytes,
+  SigningKey,
+} from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 import {
@@ -11,7 +18,6 @@ import {
   computeAppChallengeHash,
   expect,
   sortSignaturesBySignerAddress,
-  signDigestWithEthers,
 } from "./utils";
 
 type Challenge = {
@@ -91,9 +97,9 @@ describe("ChallengeRegistry", () => {
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
         sortSignaturesBySignerAddress(digest, [
-          await signDigestWithEthers(ALICE.privateKey, digest),
-          await signDigestWithEthers(BOB.privateKey, digest),
-        ]),
+          await new SigningKey(ALICE.privateKey).signDigest(digest),
+          await new SigningKey(BOB.privateKey).signDigest(digest),
+        ]).map(joinSignature),
       );
     };
 
@@ -114,9 +120,9 @@ describe("ChallengeRegistry", () => {
         versionNumber,
         appStateHash: stateHash,
         signatures: sortSignaturesBySignerAddress(digest, [
-          await signDigestWithEthers(ALICE.privateKey, digest),
-          await signDigestWithEthers(BOB.privateKey, digest),
-        ]),
+          await new SigningKey(ALICE.privateKey).signDigest(digest),
+          await new SigningKey(BOB.privateKey).signDigest(digest),
+        ]).map(joinSignature),
       });
     };
 

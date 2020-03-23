@@ -26,7 +26,7 @@ import {
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";
-import { chan_signMessage } from "@connext/types";
+import { chan_nodeAuth } from "@connext/types";
 
 // Include our access token when interacting with these subjects
 const guardedSubjects = [];
@@ -280,9 +280,7 @@ export class NodeApiClient implements INodeApiClient {
       if (unsignedToken.expiry < Date.now()) {
         throw new Error("Got expired authentication nonce from hub - this shouldnt happen!");
       }
-      const sig = await this.channelProvider.send(chan_signMessage, {
-        message: unsignedToken.nonce,
-      });
+      const sig = await this.channelProvider.send(chan_nodeAuth, { message: unsignedToken.nonce });
       this._authToken = token = {
         expiry: unsignedToken.expiry,
         value: `${unsignedToken.nonce}:${sig}`,

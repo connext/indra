@@ -1,6 +1,13 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
-import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
+import {
+  getAddress,
+  hexlify,
+  Interface,
+  randomBytes,
+  TransactionDescription,
+  SigningKey,
+} from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { appIdentityToHash, ConditionalTransactionCommitment } from "../../../../src/ethereum";
@@ -12,7 +19,6 @@ import { createAppInstanceForTest } from "../../../unit/utils";
 import { getRandomExtendedPubKey, getRandomHDNodes } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";
 import { Store } from "../../../../src/store";
-import { signDigestWithEthers } from "../../../../src/utils";
 
 describe("ConditionalTransactionCommitment", () => {
   let tx: MultisigTransaction;
@@ -79,10 +85,9 @@ describe("ConditionalTransactionCommitment", () => {
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
-      const hash = "0x" + Buffer.from(randomBytes(20)).toString("hex");
       commitment.signatures = [
-        signDigestWithEthers(hdNodes[0].privateKey, hash),
-        signDigestWithEthers(hdNodes[1].privateKey, hash),
+        new SigningKey(hdNodes[0]).signDigest(randomBytes(20)),
+        new SigningKey(hdNodes[1]).signDigest(randomBytes(20)),
       ];
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);

@@ -1,4 +1,4 @@
-import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
 
 import { ChallengeRegistry } from "../contracts";
 import {
@@ -22,14 +22,14 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly versionNumber: number, // app nonce
     public readonly timeout: number,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
-    private participantSignatures: string[] = [],
+    private participantSignatures: Signature[] = [],
   ) {}
 
-  get signatures(): string[] {
+  get signatures(): Signature[] {
     return this.participantSignatures;
   }
 
-  set signatures(sigs: string[]) {
+  set signatures(sigs: Signature[]) {
     if (sigs.length < 2) {
       throw new Error(
         `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
@@ -38,21 +38,19 @@ export class SetStateCommitment implements EthereumCommitment {
     this.participantSignatures = sigs;
   }
 
-  public encode(): string {
-    return solidityPack(
-      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-      [
-        "0x19",
-        appIdentityToHash(this.appIdentity),
-        this.versionNumber,
-        this.timeout,
-        this.appStateHash,
-      ],
-    );
-  }
-
   public hashToSign(): string {
-    return keccak256(this.encode());
+    return keccak256(
+      solidityPack(
+        ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
+        [
+          "0x19",
+          appIdentityToHash(this.appIdentity),
+          this.versionNumber,
+          this.timeout,
+          this.appStateHash,
+        ],
+      ),
+    );
   }
 
   public getSignedTransaction(): CFCoreTypes.MinimalTransaction {
@@ -90,12 +88,13 @@ export class SetStateCommitment implements EthereumCommitment {
 
   private getSignedStateHashUpdate(): SignedStateHashUpdate {
     this.assertSignatures();
-    const hash = this.hashToSign();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(hash, this.signatures),
+      signatures: sortSignaturesBySignerAddress(this.hashToSign(), this.signatures).map(
+        joinSignature,
+      ),
     };
   }
 

@@ -6,7 +6,7 @@ import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { CFCoreTypes, xkeyKthAddress, signDigestWithEthers } from "../util";
+import { CFCoreTypes, xkeyKthAddress } from "../util";
 import {
   TransactionResponse,
   AppInstanceJson,
@@ -18,7 +18,7 @@ import {
   WithdrawAppAction,
 } from "@connext/types";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { SigningKey, joinSignature, bigNumberify } from "ethers/utils";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
@@ -93,12 +93,11 @@ export class WithdrawService {
       appInstance.multisigAddress,
     );
 
-    // Get Private Key
-    const privateKey = this.configService.getEthWallet().privateKey;
-
     // Sign commitment
-    const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = signDigestWithEthers(privateKey, hash);
+    const key = new SigningKey(this.configService.getEthWallet().privateKey);
+    const counterpartySignatureOnWithdrawCommitment = joinSignature(
+      key.signDigest(generatedCommitment.hashToSign()),
+    );
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -227,10 +226,10 @@ export class WithdrawService {
       channel.multisigAddress,
     );
 
-    const privateKey = this.configService.getEthWallet().privateKey;
-    const hash = commitment.hashToSign();
-
-    const withdrawerSignatureOnCommitment = signDigestWithEthers(privateKey, hash);
+    const signingKey = new SigningKey(this.configService.getEthWallet().privateKey);
+    const withdrawerSignatureOnCommitment = joinSignature(
+      signingKey.signDigest(commitment.hashToSign()),
+    );
 
     const transfers: CoinTransfer[] = [
       { amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress },
@@ -244,7 +243,7 @@ export class WithdrawService {
         this.cfCoreService.cfCore.freeBalanceAddress,
         xkeyKthAddress(channel.userPublicIdentifier),
       ],
-      data: hash,
+      data: commitment.hashToSign(),
       finalized: false,
     };
 

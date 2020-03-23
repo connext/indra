@@ -10,13 +10,20 @@ import {
   delay,
   ResolveConditionResponse,
 } from "@connext/types";
-import { hexlify, randomBytes, bigNumberify, BigNumber, solidityKeccak256 } from "ethers/utils";
+import {
+  hexlify,
+  randomBytes,
+  bigNumberify,
+  BigNumber,
+  solidityKeccak256,
+  SigningKey,
+  joinSignature,
+} from "ethers/utils";
 import { Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 
 import { createClient, fundChannel, expect } from "../util";
 import { xkeyKthAddress } from "@connext/cf-core";
-import { signDigestWithEthers } from "@connext/cf-core/dist/src/utils";
 
 describe.skip("Fast Signed Transfer", () => {
   let clientA: IConnextClient;
@@ -73,8 +80,9 @@ describe.skip("Fast Signed Transfer", () => {
 
     const data = hexlify(randomBytes(32));
 
+    const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = signDigestWithEthers(signerWallet.privateKey, digest);
+    const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
 
     let resolveCondition: ResolveConditionResponse;
     await new Promise(async resolve => {
@@ -130,8 +138,9 @@ describe.skip("Fast Signed Transfer", () => {
 
       const data = hexlify(randomBytes(32));
 
+      const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = signDigestWithEthers(signerWallet.privateKey, digest);
+      const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
 
       const res = await clientB.resolveCondition({
         conditionType: FAST_SIGNED_TRANSFER,
