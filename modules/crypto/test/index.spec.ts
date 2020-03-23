@@ -12,14 +12,27 @@ import {
   utf8ToBuffer,
   removeHexPrefix,
   bufferToHex,
-} from "@connext/crypto";
+  addHexPrefix,
+  isHexString,
+} from "../src";
 import * as EthCrypto from "eth-crypto";
-import { Wallet } from "ethers";
-import { computePublicKey, arrayify, joinSignature, SigningKey } from "ethers/utils";
+import { Wallet, utils } from "ethers";
+import { computePublicKey, arrayify, joinSignature, SigningKey, verifyMessage } from "ethers/utils";
+
+function sanitizeHexString(hex: string): string {
+  return isHexString(hex) ? addHexPrefix(hex) : hex;
+}
 
 const signDigestWithEthers = (privateKey: string, digest: string) => {
+  digest = sanitizeHexString(digest);
   const signingKey = new SigningKey(privateKey);
   return joinSignature(signingKey.signDigest(arrayify(digest)));
+};
+
+const recoverAddressWithEthers = (signature: string, digest: string) => {
+  signature = sanitizeHexString(signature);
+  digest = sanitizeHexString(digest);
+  return utils.recoverAddress(arrayify(digest), signature);
 };
 
 const prvKey = Wallet.createRandom().privateKey;
@@ -27,7 +40,9 @@ const pubKey = removeHexPrefix(computePublicKey(prvKey));
 const shortMessage = "123456789012345";
 const longMessage = "1234567890123456";
 const testMessage = "test message to sign";
+const testMessageArr = arrayify(Buffer.from(testMessage));
 const digest = keccak256(utf8ToBuffer(testMessage));
+const digestHex = bufferToHex(digest, true);
 
 // Mnemonic was pulled from the testnet daicard that received a test async transfer
 const wallet = Wallet.fromMnemonic(
@@ -77,27 +92,31 @@ describe("crypto", () => {
   });
 
   test("we should be able to sign Ethereum messages", async () => {
-    const sig1 = await wallet.signMessage(arrayify(Buffer.from(testMessage)));
+    const sig1 = await wallet.signMessage(testMessageArr);
     const sig2 = await signEthereumMessage(wallet.privateKey, testMessage);
     expect(sig1).toEqual(sig2);
   });
 
   test("we should be able to recover Ethereum messages", async () => {
     const sig = await signEthereumMessage(wallet.privateKey, testMessage);
-    const address = await verifyEthereumMessage(testMessage, sig);
-    expect(address).toEqual(wallet.address);
+    const recovered1 = await verifyMessage(testMessageArr, sig);
+    const recovered2 = await verifyEthereumMessage(testMessage, sig);
+    expect(recovered2).toEqual(recovered1);
+    expect(recovered2).toEqual(wallet.address);
   });
 
   test("we should be able to sign ECDSA digests", async () => {
-    const sig1 = signDigestWithEthers(wallet.privateKey, bufferToHex(digest, true));
+    const sig1 = signDigestWithEthers(wallet.privateKey, digestHex);
     const sig2 = await signDigest(wallet.privateKey, digest);
     expect(sig1).toEqual(sig2);
   });
 
-  test("we should be able to recover ECDSA digests", async () => {
+  test.skip("we should be able to recover ECDSA digests", async () => {
     const sig = await signDigest(wallet.privateKey, digest);
-    const address = await recoverAddress(digest, sig);
-    expect(address).toEqual(wallet.address);
+    const recovered1 = await recoverAddressWithEthers(digestHex, sig);
+    const recovered2 = await recoverAddress(digest, sig);
+    expect(recovered2).toEqual(recovered1);
+    expect(recovered2).toEqual(wallet.address);
   });
 
   test("we should be able to sign Channel messages", async () => {
@@ -107,7 +126,7 @@ describe("crypto", () => {
 
   test("we should be able to recover Channel messages", async () => {
     const sig = await signChannelMessage(wallet.privateKey, testMessage);
-    const address = await verifyChannelMessage(testMessage, sig);
-    expect(address).toEqual(wallet.address);
+    const recovered = await verifyChannelMessage(testMessage, sig);
+    expect(recovered).toEqual(wallet.address);
   });
 });
