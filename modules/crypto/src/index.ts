@@ -47,12 +47,12 @@ export function toChecksumAddress(address: string): string {
   return addHexPrefix(checksum);
 }
 
-export function getEthereumAddress(publicKey: Buffer | string): string {
+export function getAddress(publicKey: Buffer | string, noChecksum = false): string {
   const buf = bufferify(publicKey);
   const hex = addHexPrefix(bufferToHex(buf).slice(2));
   const hash = keccak256(hexToBuffer(hex));
   const address = addHexPrefix(bufferToHex(hash).substring(24));
-  return toChecksumAddress(address);
+  return noChecksum ? address : toChecksumAddress(address);
 }
 
 export function hashMessage(message: Buffer | string, prefix: string): string {
@@ -118,7 +118,7 @@ export async function recoverAddress(
   digest: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return getEthereumAddress(await recoverPublicKey(digest, sig));
+  return getAddress(await recoverPublicKey(digest, sig));
 }
 
 export async function verifyMessage(
