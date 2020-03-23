@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@connext/types": "6.0.0-alpha.0",
-    "ethers": "4.0.45",
+    "ethers": "4.0.46",
     "pisa-client": "0.1.4-connext-beta.1",
     "uuid": "3.4.0"
   },

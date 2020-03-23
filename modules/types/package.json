@@ -14,7 +14,7 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "ethers": "4.0.45",
+    "ethers": "4.0.46",
     "eventemitter3": "4.0.0"
   },
   "devDependencies": {

@@ -36,7 +36,7 @@
     "@uniswap/sdk": "1.0.0-beta.4",
     "class-validator": "0.11.0",
     "dotenv": "8.2.0",
-    "ethers": "4.0.45",
+    "ethers": "4.0.46",
     "human-standard-token-abi": "2.0.0",
     "interval-promise": "1.4.0",
     "ioredis": "4.16.0",
