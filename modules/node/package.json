@@ -46,7 +46,7 @@
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.4",
     "ts-nats": "1.2.12",
-    "ts-natsutil": "0.1.22",
+    "ts-natsutil": "0.1.23",
     "typeorm": "0.2.24"
   },
   "devDependencies": {
