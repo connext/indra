@@ -1,17 +1,14 @@
 import { CriticalStateChannelAddresses } from "@connext/types";
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinTable,
   ManyToMany,
   OneToMany,
   OneToOne,
-<<<<<<< HEAD
   PrimaryGeneratedColumn,
-=======
-  CreateDateColumn,
   UpdateDateColumn,
->>>>>>> nats-messaging-refactor
 } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";

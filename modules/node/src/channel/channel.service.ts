@@ -1,17 +1,10 @@
 import {
   ChannelAppSequences,
-<<<<<<< HEAD
   CoinBalanceRefundAppName,
-  GetConfigResponse,
   maxBN,
   MethodParams,
   MethodResults,
-=======
-  maxBN,
-  RebalanceProfileBigNumber,
-  stringify,
-  CoinBalanceRefundApp,
->>>>>>> nats-messaging-refactor
+  RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
   stringify,
 } from "@connext/types";
@@ -376,7 +369,7 @@ export class ChannelService {
 
   async addRebalanceProfileToChannel(
     userPubId: string,
-    profile: RebalanceProfile,
+    profile: RebalanceProfileType,
   ): Promise<RebalanceProfile> {
     const {
       assetId,

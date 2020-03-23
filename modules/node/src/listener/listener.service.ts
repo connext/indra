@@ -185,31 +185,13 @@ export default class ListenerService implements OnModuleInit {
       },
     );
 
-<<<<<<< HEAD
-    this.cfCoreService.registerCfCoreListener(MethodNames.chan_uninstall as any, (data: any) => {
-      this.log.debug(
-        `Emitting MethodName.UNINSTALL event: ${JSON.stringify(
-          data.result.result,
-        )} at subject indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${
-          data.result.result.appInstanceId
-        }`,
-      );
-      this.messagingClient
-        .emit(
-          `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
-          data.result.result,
-        )
-        .toPromise();
-    });
-=======
     this.cfCoreService.registerCfCoreListener(
-      ProtocolTypes.chan_uninstall as any,
+      MethodNames.chan_uninstall as any,
       async (data: any) => {
         // TODO: GET CHANNEL MULTISIG
         const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${AddressZero}.app-instance.${data.result.result.appInstanceId}.uninstall`;
         await this.messagingService.publish(uninstallSubject, data.result.result);
       },
     );
->>>>>>> nats-messaging-refactor
   }
 }

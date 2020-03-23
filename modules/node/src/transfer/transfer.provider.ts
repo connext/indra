@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-import { IMessagingService } from "@connext/messaging";
-import { TransferInfo, stringify } from "@connext/types";
-=======
 import { MessagingService } from "@connext/messaging";
-import { Transfer } from "@connext/types";
->>>>>>> nats-messaging-refactor
+import { TransferInfo } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
@@ -24,13 +19,8 @@ export class TransferMessaging extends AbstractMessagingProvider {
     this.log.setContext("TransferMessaging");
   }
 
-<<<<<<< HEAD
   async getTransferHistory(pubId: string): Promise<TransferInfo[]> {
-    return await this.transferRepository.findByPublicIdentifier(pubId);
-=======
-  async getTransferHistory(pubId: string): Promise<Transfer[]> {
     throw new Error("Unimplemented");
->>>>>>> nats-messaging-refactor
   }
 
   /**

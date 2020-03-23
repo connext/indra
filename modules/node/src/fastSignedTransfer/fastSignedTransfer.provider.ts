@@ -1,12 +1,7 @@
-<<<<<<< HEAD
-import { IMessagingService } from "@connext/messaging";
 import {
   stringify,
   ResolveFastSignedTransferResponse,
 } from "@connext/types";
-=======
-import { replaceBN, ResolveFastSignedTransferResponse } from "@connext/types";
->>>>>>> nats-messaging-refactor
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 import { MessagingService } from "@connext/messaging";

@@ -1,19 +1,12 @@
-import { convertLinkedTransferAppState } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import {
-  ResolveLinkedTransferResponse,
-<<<<<<< HEAD
-  TransferInfo,
-  stringify,
-  PendingAsyncTransfer,
-=======
+  bigNumberifyJson,
   GetLinkedTransferResponse,
-  replaceBN,
-  SimpleLinkedTransferAppState,
   GetPendingAsyncTransfersResponse,
   LinkedTransferStatus,
-  // TransferType,
->>>>>>> nats-messaging-refactor
+  ResolveLinkedTransferResponse,
+  SimpleLinkedTransferAppState,
+  stringify,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -39,13 +32,9 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   async getLinkedTransferByPaymentId(
     pubId: string,
     data: { paymentId: string },
-<<<<<<< HEAD
-  ): Promise<TransferInfo> {
-=======
   ): Promise<GetLinkedTransferResponse | undefined> {
     const { paymentId } = data;
->>>>>>> nats-messaging-refactor
-    if (!data.paymentId) {
+    if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     this.log.info(`Got fetch link request for: ${paymentId}`);
@@ -60,13 +49,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    const latestState = convertLinkedTransferAppState(
-      "bignumber",
-      senderApp.latestState as SimpleLinkedTransferAppState,
-    );
+    const latestState = bigNumberifyJson(senderApp.latestState) as SimpleLinkedTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     return {
-      amount: latestState.amount.toString(),
+      amount: latestState.amount,
       meta: meta || {},
       assetId: latestState.assetId,
       createdAt: senderApp.createdAt,
@@ -95,10 +81,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     };
   }
 
-<<<<<<< HEAD
-  async getPendingTransfers(pubId: string): Promise<PendingAsyncTransfer[]> {
-    return this.linkedTransferRepository.findPendingByRecipient(pubId);
-=======
   async getPendingTransfers(
     userPublicIdentifier: string,
   ): Promise<GetPendingAsyncTransfersResponse> {
@@ -106,14 +88,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       userPublicIdentifier,
     );
     return transfers.map(transfer => {
-      const state = convertLinkedTransferAppState(
-        "bignumber",
-        transfer.latestState as SimpleLinkedTransferAppState,
-      );
+      const state = bigNumberifyJson(transfer.latestState) as SimpleLinkedTransferAppState;
       return {
         paymentId: state.paymentId,
         createdAt: transfer.createdAt,
-        amount: state.amount.toString(),
+        amount: state.amount,
         assetId: state.assetId,
         senderPublicIdentifier: transfer.channel.userPublicIdentifier,
         receiverPublicIdentifier: transfer.meta["recipient"],
@@ -122,7 +101,6 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
         encryptedPreImage: transfer.meta["encryptedPreImage"],
       };
     });
->>>>>>> nats-messaging-refactor
   }
 
   async setupSubscriptions(): Promise<void> {

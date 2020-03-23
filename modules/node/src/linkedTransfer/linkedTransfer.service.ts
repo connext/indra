@@ -1,16 +1,12 @@
 import {
   DepositConfirmationMessage,
-  ResolveLinkedTransferResponse,
-  EventNames,
   DepositFailedMessage,
-  SimpleLinkedTransferAppState,
-<<<<<<< HEAD
-  SimpleLinkedTransferAppName,
-=======
-  SimpleLinkedTransferApp,
+  EventNames,
   LinkedTransferStatus,
-  SimpleLinkedTransferAppAction,
->>>>>>> nats-messaging-refactor
+  ResolveLinkedTransferResponse,
+  SimpleLinkedTransferAppName,
+  SimpleLinkedTransferAppState,
+  toBN,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
@@ -23,7 +19,6 @@ import { LoggerService } from "../logger/logger.service";
 import { xkeyKthAddress } from "../util";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
-import { convertLinkedTransferAppState } from "@connext/apps";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 
 const appStatusesToLinkedTransferStatus = (
@@ -62,17 +57,11 @@ export class LinkedTransferService {
   async resolveLinkedTransfer(
     userPublicIdentifier: string,
     paymentId: string,
-<<<<<<< HEAD
   ): Promise<ResolveLinkedTransferResponse> {
-    this.log.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId})`);
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
-=======
-  ): Promise<ResolveLinkedTransferResponseBigNumber> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
     );
->>>>>>> nats-messaging-refactor
 
     // TODO: handle offline case
     // node is receiver in sender app
@@ -84,10 +73,8 @@ export class LinkedTransferService {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
-    const { assetId, amount, linkedHash } = convertLinkedTransferAppState(
-      "bignumber",
-      senderApp.latestState as SimpleLinkedTransferAppState,
-    );
+    const amount = toBN(senderApp.latestState.amount);
+    const { assetId, linkedHash } = senderApp.latestState;
     const amountBN = bigNumberify(amount);
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
@@ -187,20 +174,15 @@ export class LinkedTransferService {
       amount,
       assetId,
       Zero,
-<<<<<<< HEAD
-      transfer.assetId,
-      SimpleLinkedTransferAppName,
-=======
       assetId,
-      SimpleLinkedTransferApp,
->>>>>>> nats-messaging-refactor
+      SimpleLinkedTransferAppName,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    const returnRes: ResolveLinkedTransferResponseBigNumber = {
+    const returnRes: ResolveLinkedTransferResponse = {
       appId: receiverAppInstallRes.appInstanceId,
       sender: senderApp.channel.userPublicIdentifier,
       meta: senderApp.meta,
@@ -225,7 +207,10 @@ export class LinkedTransferService {
       this.cfCoreService.cfCore.freeBalanceAddress,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
-    const status = appStatusesToLinkedTransferStatus(senderApp?.type, receiverApp?.type);
+    const status = appStatusesToLinkedTransferStatus(
+      senderApp ? senderApp.type : undefined,
+      receiverApp ? receiverApp.type : undefined,
+    );
 
     return { senderApp, receiverApp, status };
   }
@@ -240,10 +225,11 @@ export class LinkedTransferService {
   // receiver redeems, app is installed and uninstalled
   // if we don't check for uninstalled receiver app, receiver can keep redeeming
   async getLinkedTransfersForRedeem(userPublicIdentifier: string): Promise<AppInstance[]> {
-    const transfersFromNodeToUser = await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
-      userPublicIdentifier,
-      this.cfCoreService.cfCore.freeBalanceAddress,
-    );
+    const transfersFromNodeToUser =
+      await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
+        userPublicIdentifier,
+        this.cfCoreService.cfCore.freeBalanceAddress,
+      );
     const existingReceiverApps = (
       await Promise.all(
         transfersFromNodeToUser.map(

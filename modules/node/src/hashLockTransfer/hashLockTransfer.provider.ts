@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-import { IMessagingService } from "@connext/messaging";
-=======
-import { convertHashLockTransferAppState } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
->>>>>>> nats-messaging-refactor
 import {
   ResolveHashLockTransferResponse,
   HashLockTransferAppState,

@@ -2,12 +2,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import {
   DepositConfirmationMessage,
   DepositFailedMessage,
-<<<<<<< HEAD
   EventNames,
-=======
-  FastSignedTransferAppStateBigNumber,
-  FastSignedTransferAppActionBigNumber,
->>>>>>> nats-messaging-refactor
   FastSignedTransferActionType,
   FastSignedTransferAppAction,
   FastSignedTransferAppName,
@@ -23,10 +18,6 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
-<<<<<<< HEAD
-=======
-import { convertFastSignedTransferAppState } from "@connext/apps";
->>>>>>> nats-messaging-refactor
 
 @Injectable()
 export class FastSignedTransferService {

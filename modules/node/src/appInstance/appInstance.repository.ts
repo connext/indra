@@ -1,9 +1,9 @@
 import {
   AppInstanceJson,
   AppInstanceProposal,
+  bigNumberifyJson,
   OutcomeType,
-  SimpleLinkedTransferApp,
-  convertCoinTransfers,
+  SimpleLinkedTransferAppName,
 } from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
 
@@ -334,10 +334,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     let latestStateFixed = latestState;
     if (latestState["coinTransfers"]) {
       if (app.outcomeType === OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER) {
-        latestStateFixed["coinTransfers"] = convertCoinTransfers(
-          "bignumber",
-          latestState["coinTransfers"],
-        );
+        latestStateFixed["coinTransfers"] = bigNumberifyJson(latestState["coinTransfers"]);
       }
     }
 
@@ -386,7 +383,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere("app_instance.type = :type", { type })
       .getMany();
@@ -405,7 +402,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
         `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderFreeBalanceAddress}"'`,
@@ -425,7 +422,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       // receiver is recipient
       .andWhere(
@@ -446,7 +443,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       // if uninstalled, redeemed
       .andWhere("app_instance.type = :type", { type: AppType.UNINSTALLED })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
@@ -469,7 +466,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       // node is receiver of transfer
       .andWhere(
@@ -494,7 +491,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       // sender is sender of transfer
       .andWhere(
@@ -520,7 +517,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleLinkedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .printSql()
       .getMany();

@@ -63,14 +63,7 @@ export class Withdraw {
   @ManyToOne((type: any) => Channel)
   channel!: Channel;
 
-<<<<<<< HEAD
-  @OneToOne(
-    (type: any) => OnchainTransaction,
-    { nullable: true },
-  )
-=======
   @OneToOne((type: any) => OnchainTransaction, { nullable: true })
->>>>>>> nats-messaging-refactor
   @JoinColumn()
   onchainTransaction!: OnchainTransaction;
 }

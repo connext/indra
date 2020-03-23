@@ -1,15 +1,8 @@
 import { MessagingService } from "@connext/messaging";
 import {
-<<<<<<< HEAD
   SupportedApplications,
-=======
-  AppActionBigNumber,
-  convertFastSignedTransferAppState,
->>>>>>> nats-messaging-refactor
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
-  convertHashLockTransferAppState,
-  SupportedApplication,
 } from "@connext/apps";
 import {
   AppAction,
@@ -22,20 +15,12 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
-  parseBN,
+  bigNumberifyJson,
   SolidityValueType,
   StateChannelJSON,
   stringify,
-<<<<<<< HEAD
   toBN,
   WithdrawParameters,
-=======
-  HashLockTransferApp,
-  HashLockTransferAppStateBigNumber,
-  FastSignedTransferApp,
-  FastSignedTransferAppState,
-  INSTALL_EVENT,
->>>>>>> nats-messaging-refactor
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -238,21 +223,10 @@ export class CFCoreService {
             }
           };
           boundReject = this.rejectInstallTransfer.bind(null, rej);
-<<<<<<< HEAD
-          this.log.debug(
-            `Subscribing to: indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
-          );
-          await this.messagingProvider.subscribe(
-            `indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
-            incrementAndResolve,
-          );
-          this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
-=======
           const subject = `${params.proposedToIdentifier}.channel.${multisigAddress}.app-instance.*.proposal.accept`;
           this.log.debug(`Subscribing to: ${subject}`);
           await this.messagingProvider.subscribe(subject, incrementAndResolve);
-          this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
->>>>>>> nats-messaging-refactor
+          this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
           incrementAndResolve();
@@ -307,28 +281,17 @@ export class CFCoreService {
       timeout: Zero,
     };
 
-    let proposeRes: ProtocolTypes.ProposeInstallResult;
+    let proposeRes: MethodResults.ProposeInstall;
     try {
-<<<<<<< HEAD
-      await new Promise((res: () => any, rej: (msg: string) => any): void => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
-        this.messagingProvider.subscribe(
-          `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
-          this.resolveInstallTransfer.bind(null, res),
-        );
-        this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
-      });
-=======
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
           proposeRes = await this.proposeInstallApp(params);
           boundResolve = this.resolveInstallTransfer.bind(null, res, proposeRes.appInstanceId);
           boundReject = this.rejectInstallTransfer.bind(null, rej);
-          this.cfCore.on(INSTALL_EVENT, boundResolve);
-          this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
+          this.cfCore.on(EventNames.INSTALL_EVENT, boundResolve);
+          this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
         },
       );
->>>>>>> nats-messaging-refactor
       this.log.info(`App was installed successfully: ${proposeRes.appInstanceId}`);
       this.log.debug(`App install result: ${stringify(proposeRes)}`);
       return proposeRes;
@@ -532,7 +495,7 @@ export class CFCoreService {
           apps.push({
             ...app,
             multisigAddress: channel.multisigAddress,
-            latestState: parseBN(app.latestState) as SolidityValueType,
+            latestState: bigNumberifyJson(app.latestState) as SolidityValueType,
           });
         }
       }
@@ -612,15 +575,9 @@ export class CFCoreService {
     return rej(`Install failed. Event data: ${stringify(msg)}`);
   };
 
-<<<<<<< HEAD
-  private cleanupInstallListeners = (boundReject: any, appId: string, userPubId: string): void => {
-    this.messagingProvider.unsubscribe(`indra.client.${userPubId}.install.${appId}`);
-    this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
-=======
   private cleanupInstallListeners = (boundReject: any, boundResolve: any): void => {
-    this.cfCore.off(INSTALL_EVENT, boundResolve);
-    this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
->>>>>>> nats-messaging-refactor
+    this.cfCore.off(EventNames.INSTALL_EVENT, boundResolve);
+    this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
 
   private cleanupProposalListeners = (

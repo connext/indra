@@ -1,21 +1,7 @@
 import { SupportedApplications } from "@connext/apps";
 import {
   AppAction,
-<<<<<<< HEAD
   AppState,
-=======
-  convertHashLockTransferAppState,
-  convertFastSignedTransferAppState,
-  convertLinkedTransferAppState,
-} from "@connext/apps";
-import {
-  FastSignedTransferApp,
-  SimpleLinkedTransferApp,
-  WithdrawApp,
-  SimpleLinkedTransferAppState,
-  FastSignedTransferAppState,
-  FastSignedTransferAppAction,
->>>>>>> nats-messaging-refactor
   FastSignedTransferActionType,
   FastSignedTransferAppAction,
   FastSignedTransferAppName,
@@ -23,15 +9,12 @@ import {
   HashLockTransferAppAction,
   HashLockTransferAppName,
   HashLockTransferAppState,
+  SimpleLinkedTransferAppAction,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   WithdrawAppAction,
-<<<<<<< HEAD
   WithdrawAppName,
   WithdrawAppState,
-=======
-  SimpleLinkedTransferAppAction,
->>>>>>> nats-messaging-refactor
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { soliditySha256 } from "ethers/utils";

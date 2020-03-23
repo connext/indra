@@ -9,20 +9,14 @@ import {
 } from "@connext/apps";
 import {
   AppInstanceJson,
-<<<<<<< HEAD
   CoinBalanceRefundAppName,
   FastSignedTransferAppName,
+  HashLockTransferAppName,
   MethodParams,
   SimpleLinkedTransferAppName,
-  HashLockTransferAppName,
-  SimpleLinkedTransferAppState,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
-=======
-  WithdrawAppStateBigNumber,
-  HashLockTransferApp,
->>>>>>> nats-messaging-refactor
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -34,7 +28,6 @@ import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
 import { WithdrawService } from "../withdraw/withdraw.service";
@@ -189,42 +182,7 @@ export class AppRegistryService implements OnModuleInit {
     from: string,
   ): Promise<void> {
     switch (registryAppInfo.name) {
-<<<<<<< HEAD
-      case SimpleLinkedTransferAppName: {
-        this.log.debug(`Saving linked transfer`);
-        // eslint-disable-next-line max-len
-        const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppState;
-
-        const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
-        if (isResolving) {
-          const transfer = await this.linkedTransferRepository.findByPaymentId(
-            initialState.paymentId,
-          );
-          transfer.receiverAppInstanceId = appInstanceId;
-          await this.linkedTransferRepository.save(transfer);
-          this.log.debug(`Updated transfer with receiver appId!`);
-        } else {
-          await this.linkedTransferService.saveLinkedTransfer(
-            from,
-            proposeInstallParams.initiatorDepositTokenAddress,
-            bigNumberify(proposeInstallParams.initiatorDeposit),
-            appInstanceId,
-            initialState.linkedHash,
-            initialState.paymentId,
-            proposeInstallParams.meta["encryptedPreImage"],
-            proposeInstallParams.meta["recipient"],
-            proposeInstallParams.meta,
-          );
-          this.log.debug(`Linked transfer saved!`);
-        }
-        break;
-      }
-      case FastSignedTransferAppName:
-        break;
       case WithdrawAppName: {
-=======
-      case WithdrawApp: {
->>>>>>> nats-messaging-refactor
         this.log.debug(`Doing withdrawal post-install tasks`);
         const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
         const initialState = proposeInstallParams.initialState as WithdrawAppState;
