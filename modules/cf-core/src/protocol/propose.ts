@@ -13,11 +13,7 @@ import {
 import { appIdentityToHash, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-<<<<<<< HEAD
 import { assertIsValidSignature } from "./utils";
-=======
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
->>>>>>> nats-messaging-refactor
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
@@ -46,12 +42,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
-<<<<<<< HEAD
-    } = params as ProtocolParams.Propose;
-=======
       meta,
-    } = params as ProposeInstallProtocolParams;
->>>>>>> nats-messaging-refactor
+    } = params as ProtocolParams.Propose;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
@@ -178,12 +170,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
-<<<<<<< HEAD
-    } = params as ProtocolParams.Propose;
-=======
       meta,
-    } = params as ProposeInstallProtocolParams;
->>>>>>> nats-messaging-refactor
+    } = params as ProtocolParams.Propose;
 
     const {
       customData: { signature: initiatorSignatureOnInitialState },

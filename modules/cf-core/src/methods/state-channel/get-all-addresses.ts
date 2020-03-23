@@ -11,8 +11,9 @@ export class GetAllChannelAddressesController extends NodeController {
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
   ): Promise<MethodResults.GetChannelAddresses> {
-    const channels = await requestHandler.store.getAllChannels();
-    const multisigAddresses = channels.map(sc => sc.multisigAddress);
-    return { multisigAddresses };
+    const allChannels = await requestHandler.store.getAllChannels();
+    return {
+      multisigAddresses: Array.from(allChannels.map(sc => sc.multisigAddress)),
+    };
   }
 }

@@ -54,19 +54,13 @@ export class AppInstance {
     public readonly latestTimeout: number,
     public readonly outcomeType: OutcomeType,
     public readonly multisigAddress: string,
-<<<<<<< HEAD
+    public readonly meta?: object,
     private readonly twoPartyOutcomeInterpreterParamsInternal?:
       TwoPartyFixedOutcomeInterpreterParams,
     private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
       MultiAssetMultiPartyCoinTransferInterpreterParams,
     private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
       SingleAssetTwoPartyCoinTransferInterpreterParams,
-=======
-    public readonly meta?: object,
-    private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
-    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
-    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
->>>>>>> nats-messaging-refactor
   ) {}
 
   get twoPartyOutcomeInterpreterParams() {
@@ -251,7 +245,10 @@ export class AppInstance {
     });
   }
 
-  public async computeOutcome(state: SolidityValueType, provider: JsonRpcProvider): Promise<string> {
+  public async computeOutcome(
+    state: SolidityValueType,
+    provider: JsonRpcProvider,
+  ): Promise<string> {
     return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
   }
 

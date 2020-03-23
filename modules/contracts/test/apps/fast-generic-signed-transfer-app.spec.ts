@@ -32,10 +32,6 @@ const encodeAppAction = (action: FastSignedTransferAppAction): string => {
 describe("FastGenericSignedTransferApp", () => {
   let transferApp: Contract;
 
-  async function computeOutcome(state: FastSignedTransferAppState): Promise<string> {
-    return await transferApp.functions.computeOutcome(encodeAppState(state));
-  }
-
   async function takeAction(
     state: FastSignedTransferAppState,
     action: FastSignedTransferAppAction,

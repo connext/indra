@@ -3,7 +3,6 @@ import {
   ILoggerService,
   IMessagingService,
   MessagingConfig,
-  parseBN,
   nullLogger,
 } from "@connext/types";
 import * as natsutil from "ts-natsutil";
@@ -63,38 +62,18 @@ export class MessagingService implements IMessagingService {
     subject: string,
     callback: (msg: NodeMessage) => void,
   ): Promise<void> {
-<<<<<<< HEAD:modules/messaging/src/nats.ts
-    this.assertConnected();
-    this.subscriptions[subject] = await this.connection!.subscribe(
-      this.prependKey(`${subject}.>`),
-      (err: any, msg: any): void => {
-        if (err || !msg || !msg.data) {
-          this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
-        } else {
-          const data = parseBN(typeof msg.data === `string` ? JSON.parse(msg).data : msg.data);
-          this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-          callback(data as NodeMessage);
-        }
-      },
-    );
-  }
-
-  async send(to: string, msg: NodeMessage): Promise<void> {
-    this.assertConnected();
-=======
     await this.service!.subscribe(this.prependKey(`${subject}.>`), (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
         this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
       } else {
         const data = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
         this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-        callback(data as CFCoreTypes.NodeMessage);
+        callback(data as NodeMessage);
       }
     });
   }
 
-  async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
->>>>>>> nats-messaging-refactor:modules/messaging/src/service.ts
+  async send(to: string, msg: NodeMessage): Promise<void> {
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
     this.service!.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
@@ -118,21 +97,6 @@ export class MessagingService implements IMessagingService {
     subject: string,
     callback: (msg: NodeMessage) => void,
   ): Promise<void> {
-<<<<<<< HEAD:modules/messaging/src/nats.ts
-    this.assertConnected();
-    this.subscriptions[subject] = await this.connection!.subscribe(
-      subject,
-      (err: any, msg: any): void => {
-        if (err || !msg || !msg.data) {
-          this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
-        } else {
-          const data = parseBN(typeof msg === `string` ? JSON.parse(msg) : msg);
-          this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
-          callback(data as NodeMessage);
-        }
-      },
-    );
-=======
     await this.service!.subscribe(subject, (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
         this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
@@ -141,10 +105,9 @@ export class MessagingService implements IMessagingService {
         const parsedData = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
         parsedMsg.data = parsedData;
         this.log.debug(`Subscription for ${subject}: ${JSON.stringify(parsedMsg)}`);
-        callback(parsedMsg as CFCoreTypes.NodeMessage);
+        callback(parsedMsg as NodeMessage);
       }
     });
->>>>>>> nats-messaging-refactor:modules/messaging/src/service.ts
   }
 
   async unsubscribe(subject: string): Promise<void> {
