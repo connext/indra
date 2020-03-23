@@ -172,7 +172,7 @@ export class Node {
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
       if (args.length !== 1 && args.length !== 2) {
-        throw Error("OP_SIGN middleware received wrong number of arguments.");
+        throw new Error("OP_SIGN middleware received wrong number of arguments.");
       }
 
       const [commitment, overrideKeyIndex] = args;
@@ -216,7 +216,7 @@ export class Node {
       const msg = await Promise.race([counterpartyResponse, timeout(IO_SEND_AND_WAIT_TIMEOUT)]);
 
       if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
-        throw Error(
+        throw new Error(
           `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`,
         );
       }
@@ -435,7 +435,7 @@ export class Node {
     const key = msg.data.processID;
 
     if (!this.ioSendDeferrals.has(key)) {
-      throw Error("Node received message intended for machine but no handler was present");
+      throw new Error("Node received message intended for machine but no handler was present");
     }
 
     const promise = this.ioSendDeferrals.get(key)!;

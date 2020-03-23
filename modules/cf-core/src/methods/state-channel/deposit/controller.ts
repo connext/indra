@@ -49,11 +49,11 @@ export default class DepositController extends NodeController {
     const channel = await store.getStateChannel(multisigAddress);
 
     if (!channel.addresses.proxyFactory) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
@@ -63,11 +63,11 @@ export default class DepositController extends NodeController {
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
-      throw Error(INCORRECT_MULTISIG_ADDRESS);
+      throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
 
     if (channel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, tokenAddress)) {
-      throw Error(CANNOT_DEPOSIT);
+      throw new Error(CANNOT_DEPOSIT);
     }
 
     if (
@@ -76,7 +76,7 @@ export default class DepositController extends NodeController {
         tokenAddress,
       )
     ) {
-      throw Error(COIN_BALANCE_NOT_PROPOSED);
+      throw new Error(COIN_BALANCE_NOT_PROPOSED);
     }
 
     const address = await requestHandler.getSignerAddress();
@@ -88,17 +88,19 @@ export default class DepositController extends NodeController {
       try {
         balance = await contract.functions.balanceOf(address);
       } catch (e) {
-        throw Error(FAILED_TO_GET_ERC20_BALANCE(tokenAddress, address));
+        throw new Error(FAILED_TO_GET_ERC20_BALANCE(tokenAddress, address));
       }
 
       if (balance.lt(amount)) {
-        throw Error(INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT(address, tokenAddress, amount, balance));
+        throw new Error(
+          INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT(address, tokenAddress, amount, balance),
+        );
       }
     } else {
       const balanceOfSigner = await provider.getBalance(address);
 
       if (balanceOfSigner.lt(amount)) {
-        throw Error(`${INSUFFICIENT_FUNDS}: ${address}`);
+        throw new Error(`${INSUFFICIENT_FUNDS}: ${address}`);
       }
     }
   }

@@ -13,19 +13,19 @@ fi
 exec docker run \
   --entrypoint="bash" \
   $interactive \
-  --name="${project}_test_client" \
+  --name="${project}_test_crypto" \
   --rm \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e
-    echo "Client tester container launched!"
+    echo "Crypto tester container launched!"
     
-    cd modules/client
+    cd modules/crypto
 
     export PATH=./node_modules/.bin:$PATH
 
     function finish {
-      echo && echo "Client tester container exiting.." && exit
+      echo && echo "Crypto tester container exiting.." && exit
     }
     trap finish SIGTERM SIGINT
 

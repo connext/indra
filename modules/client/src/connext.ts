@@ -458,11 +458,11 @@ export class ConnextClient implements IConnextClient {
   > => {
     const value = await this.channelProvider.send(chan_getUserWithdrawal, {});
 
-    if (!value || value === "undefined") {
+    if (!value || typeof value === "undefined") {
       return undefined;
     }
 
-    const noRetry = value.retry === undefined || value.retry === null;
+    const noRetry = typeof value.retry === "undefined" || value.retry === null;
     if (!value.tx || noRetry) {
       const msg = `Can not find tx or retry in store under key ${withdrawalKey(
         this.publicIdentifier,
