@@ -193,6 +193,9 @@ test-client: client
 test-contracts: contracts types crypto
 	bash ops/test/contracts.sh
 
+test-crypto: types crypto
+	bash ops/test/crypto.sh
+
 test-daicard:
 	bash ops/test/ui.sh daicard
 

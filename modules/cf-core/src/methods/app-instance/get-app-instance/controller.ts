@@ -20,7 +20,7 @@ export default class GetAppInstanceDetailsController extends NodeController {
     const { appInstanceId } = params;
 
     if (!appInstanceId) {
-      throw Error(NO_APP_INSTANCE_ID_TO_GET_DETAILS);
+      throw new Error(NO_APP_INSTANCE_ID_TO_GET_DETAILS);
     }
 
     //TODO - This is very dumb, just add multisigAddress to the base app instance type to begin with
