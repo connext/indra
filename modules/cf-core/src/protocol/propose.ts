@@ -115,7 +115,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     } = m2! as ProtocolMessage;
 
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       xkeyKthAddress(responderXpub, appInstanceProposal.appSeqNo),
       setStateCommitment,
       responderSignatureOnInitialState,
@@ -214,7 +214,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       xkeyKthAddress(initiatorXpub, appInstanceProposal.appSeqNo),
       setStateCommitment,
       initiatorSignatureOnInitialState,

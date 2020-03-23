@@ -11,7 +11,7 @@ import { convertWithrawAppState } from "./convert";
 import { BigNumber, recoverAddress } from "ethers/utils";
 import { HashZero, Zero } from "ethers/constants";
 
-export const validateWithdrawApp = (
+export const validateWithdrawApp = async (
   params: CFCoreTypes.ProposeInstallParams,
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
@@ -67,7 +67,7 @@ export const validateWithdrawApp = (
     );
   }
 
-  let recovered = recoverAddress(initialState.data, initialState.signatures[0]);
+  let recovered = await recoverAddress(initialState.data, initialState.signatures[0]);
 
   if (recovered != initialState.signers[0]) {
     throw new Error(

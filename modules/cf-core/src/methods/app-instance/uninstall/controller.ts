@@ -38,19 +38,19 @@ export default class UninstallController extends NodeController {
     const { appInstanceId } = params;
 
     if (!appInstanceId) {
-      throw Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
+      throw new Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
     }
 
     const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     if (sc.freeBalance.identityHash === appInstanceId) {
-      throw Error(CANNOT_UNINSTALL_FREE_BALANCE(sc.multisigAddress));
+      throw new Error(CANNOT_UNINSTALL_FREE_BALANCE(sc.multisigAddress));
     }
 
     // check if its the balance refund app
     const app = await store.getAppInstance(appInstanceId);
     if (app.appInterface.addr === networkContext.CoinBalanceRefundApp) {
-      throw Error(USE_RESCIND_DEPOSIT_RIGHTS);
+      throw new Error(USE_RESCIND_DEPOSIT_RIGHTS);
     }
   }
 
@@ -62,13 +62,13 @@ export default class UninstallController extends NodeController {
     const { appInstanceId } = params;
 
     if (!appInstanceId) {
-      throw Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
+      throw new Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
     }
 
     const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     if (!stateChannel.hasAppInstance(appInstanceId)) {
-      throw Error(APP_ALREADY_UNINSTALLED(appInstanceId));
+      throw new Error(APP_ALREADY_UNINSTALLED(appInstanceId));
     }
 
     const to = getFirstElementInListNotEqualTo(

@@ -97,7 +97,7 @@ describe("ChallengeRegistry Challenge", () => {
         versionNumber,
         appStateHash: stateHash,
         timeout: ONCHAIN_CHALLENGE_TIMEOUT,
-        signatures: sortSignaturesBySignerAddress(digest, [
+        signatures: await sortSignaturesBySignerAddress(digest, [
           await signDigest(ALICE.privateKey, digest),
           await signDigest(BOB.privateKey, digest),
         ]),

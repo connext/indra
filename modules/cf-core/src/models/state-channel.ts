@@ -50,7 +50,7 @@ export class StateChannel {
   ) {
     userNeuteredExtendedKeys.forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
-        throw Error(
+        throw new Error(
           `StateChannel constructor given invalid extended keys: ${prettyPrintObject(
             userNeuteredExtendedKeys,
           )}`,
@@ -76,7 +76,7 @@ export class StateChannel {
       return this.freeBalance;
     }
     if (!this.appInstances.has(appInstanceIdentityHash)) {
-      throw Error(ERRORS.APP_DOES_NOT_EXIST(appInstanceIdentityHash));
+      throw new Error(ERRORS.APP_DOES_NOT_EXIST(appInstanceIdentityHash));
     }
     return this.appInstances.get(appInstanceIdentityHash)!;
   }
@@ -99,7 +99,7 @@ export class StateChannel {
 
   public mostRecentlyInstalledAppInstance(): AppInstance {
     if (this.appInstances.size === 0) {
-      throw Error("There are no installed AppInstances in this StateChannel");
+      throw new Error("There are no installed AppInstances in this StateChannel");
     }
     return [...this.appInstances.values()].reduce((prev, current) =>
       current.appSeqNo > prev.appSeqNo ? current : prev,
@@ -108,7 +108,7 @@ export class StateChannel {
 
   public mostRecentlyProposedAppInstance(): AppInstanceProposal {
     if (this.proposedAppInstances.size === 0) {
-      throw Error("There are no proposed AppInstances in this StateChannel");
+      throw new Error("There are no proposed AppInstances in this StateChannel");
     }
     return [...this.proposedAppInstances.values()].reduce((prev, current) =>
       current.appSeqNo > prev.appSeqNo ? current : prev,
@@ -122,7 +122,7 @@ export class StateChannel {
       },
     );
     if (appInstances.length !== 1) {
-      throw Error(
+      throw new Error(
         `Either 0 or more than 1 AppInstance of addr ${address} exists on channel: ${this.multisigAddress}`,
       );
     }
@@ -136,7 +136,9 @@ export class StateChannel {
       },
     );
     if (appInstances.length === 0) {
-      throw Error(`No AppInstance of addr ${address} exists on channel: ${this.multisigAddress}`);
+      throw new Error(
+        `No AppInstance of addr ${address} exists on channel: ${this.multisigAddress}`,
+      );
     }
     return appInstances;
   }
@@ -219,7 +221,7 @@ export class StateChannel {
       return this.freeBalanceAppInstance;
     }
 
-    throw Error("There is no free balance app instance installed in this state channel");
+    throw new Error("There is no free balance app instance installed in this state channel");
   }
 
   public getMultisigOwnerAddrOf(xpub: string): string {
@@ -228,7 +230,9 @@ export class StateChannel {
     const topLevelKey = xkeyKthAddress(xpub, 0);
 
     if (topLevelKey !== alice && topLevelKey !== bob) {
-      throw Error(`getMultisigOwnerAddrOf received invalid xpub not in multisigOwners: ${xpub}`);
+      throw new Error(
+        `getMultisigOwnerAddrOf received invalid xpub not in multisigOwners: ${xpub}`,
+      );
     }
 
     return topLevelKey;
@@ -240,7 +244,7 @@ export class StateChannel {
     const topLevelKey = xkeyKthAddress(xpub, 0);
 
     if (topLevelKey !== alice && topLevelKey !== bob) {
-      throw Error(
+      throw new Error(
         `getFreeBalanceAddrOf received invalid xpub without free balance account: ${xpub}`,
       );
     }
@@ -423,7 +427,7 @@ export class StateChannel {
     const participants = this.getSigningKeysFor(appInstance.appSeqNo);
 
     if (!participants.every((v, idx) => v === appInstance.participants[idx])) {
-      throw Error("AppInstance passed to installApp has incorrect participants");
+      throw new Error("AppInstance passed to installApp has incorrect participants");
     }
 
     /// Add modified FB and new AppInstance to appInstances
@@ -458,7 +462,7 @@ export class StateChannel {
     const appToBeUninstalled = this.getAppInstance(appInstanceIdentityHash);
 
     if (appToBeUninstalled.identityHash !== appInstanceIdentityHash) {
-      throw Error(
+      throw new Error(
         `Consistency error: app stored under key ${appInstanceIdentityHash} has identityHah ${appToBeUninstalled.identityHash}`,
       );
     }
@@ -466,7 +470,7 @@ export class StateChannel {
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
     if (!appInstances.delete(appToBeUninstalled.identityHash)) {
-      throw Error(
+      throw new Error(
         `Consistency error: managed to call get on ${appInstanceIdentityHash} but failed to call delete`,
       );
     }

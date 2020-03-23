@@ -124,7 +124,7 @@ export class WithdrawService {
     // Get a finalized minTx object and put it onchain
     // TODO: remove any casting by using Signature type
     generatedCommitment.signatures = state.signatures as any;
-    const signedWithdrawalCommitment = generatedCommitment.getSignedTransaction();
+    const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
     const transaction = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
       signedWithdrawalCommitment,

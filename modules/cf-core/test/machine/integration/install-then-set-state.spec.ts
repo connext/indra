@@ -161,7 +161,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       ];
 
       await wallet.sendTransaction({
-        ...setStateCommitment.getSignedTransaction(),
+        ...(await setStateCommitment.getSignedTransaction()),
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
@@ -179,7 +179,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       ];
 
       await wallet.sendTransaction({
-        ...setStateCommitmentForFreeBalance.getSignedTransaction(),
+        ...(await setStateCommitmentForFreeBalance.getSignedTransaction()),
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
@@ -214,7 +214,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         await signDigest(multisigOwnerKeys[0].privateKey, conditionalTransactionHash),
         await signDigest(multisigOwnerKeys[1].privateKey, conditionalTransactionHash),
       ];
-      const multisigDelegateCallTx = conditionalTransaction.getSignedTransaction();
+      const multisigDelegateCallTx = await conditionalTransaction.getSignedTransaction();
 
       await wallet.sendTransaction({
         to: proxyAddress,
@@ -262,7 +262,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         ),
       ];
 
-      const multisigDelegateCallTx2 = freeBalanceConditionalTransaction.getSignedTransaction();
+      const multisigDelegateCallTx2 = await freeBalanceConditionalTransaction.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...multisigDelegateCallTx2,

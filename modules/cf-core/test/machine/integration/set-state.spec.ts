@@ -70,7 +70,7 @@ describe("set state on free balance", () => {
       await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
     ];
 
-    const setStateTx = setStateCommitment.getSignedTransaction();
+    const setStateTx = await setStateCommitment.getSignedTransaction();
 
     await wallet.sendTransaction({
       ...setStateTx,

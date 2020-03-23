@@ -7,14 +7,19 @@ export const expect = chai.use(solidity).expect;
 /**
  * Sorts signatures in ascending order of signer address
  *
- * @param signatures An array of etherium signatures
+ * @param signatures An array of ethereum signatures
  */
-export function sortSignaturesBySignerAddress(digest: string, signatures: string[]): string[] {
-  const ret = signatures.slice();
-  ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, sigA);
-    const addrB = recoverAddress(digest, sigB);
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-  });
-  return ret;
+export async function sortSignaturesBySignerAddress(
+  digest: string,
+  signatures: string[],
+): Promise<string[]> {
+  return (
+    await Promise.all(
+      signatures.slice().map(async sig => ({ sig, addr: await recoverAddress(digest, sig) })),
+    )
+  )
+    .sort((A, B) => {
+      return new BigNumber(A.addr).lt(B.addr) ? -1 : 1;
+    })
+    .map(x => x.sig);
 }
