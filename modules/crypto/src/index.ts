@@ -47,12 +47,16 @@ export function toChecksumAddress(address: string): string {
   return addHexPrefix(checksum);
 }
 
-export function getAddress(publicKey: Buffer | string, noChecksum = false): string {
+export function getLowercaseAddress(publicKey: Buffer | string): string {
   const buf = bufferify(publicKey);
   const hex = addHexPrefix(bufferToHex(buf).slice(2));
   const hash = keccak256(hexToBuffer(hex));
-  const address = addHexPrefix(bufferToHex(hash).substring(24));
-  return noChecksum ? address : toChecksumAddress(address);
+  return addHexPrefix(bufferToHex(hash).substring(24));
+}
+
+export function getAddress(publicKey: Buffer | string): string {
+  const address = getLowercaseAddress(publicKey);
+  return toChecksumAddress(address);
 }
 
 export function hashMessage(message: Buffer | string, prefix: string): string {
