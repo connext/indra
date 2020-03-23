@@ -1,5 +1,4 @@
-import { getAddress } from "ethers/utils";
-import { recoverAddress } from "@connext/crypto";
+import { recoverAddress, getLowerCaseAddress } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../types";
 
@@ -21,7 +20,7 @@ export async function assertIsValidSignature(
   // recoverAddress: 83 ms, hashToSign: 7 ms
   const signer = await recoverAddress(hash, signature);
 
-  if (getAddress(expectedSigner) !== signer) {
+  if (getLowerCaseAddress(expectedSigner) !== signer) {
     throw Error(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${hash}.`,
     );

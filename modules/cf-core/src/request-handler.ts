@@ -148,6 +148,6 @@ export class RequestHandler {
 
   public async getSignerAddress(): Promise<string> {
     const signer = await this.getSigner();
-    return await signer.getAddress();
+    return (await signer.getAddress()).toLowerCase();
   }
 }

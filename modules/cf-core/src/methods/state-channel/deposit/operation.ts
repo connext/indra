@@ -92,7 +92,7 @@ export async function makeDeposit(
   let start;
 
   const signer = await requestHandler.getSigner();
-  const signerAddress = await signer.getAddress();
+  const signerAddress = (await signer.getAddress()).toLowerCase();
 
   let txResponse: TransactionResponse;
 

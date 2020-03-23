@@ -5,7 +5,8 @@ import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { One, Zero } from "ethers/constants";
-import { BigNumber, BigNumberish, defaultAbiCoder, getAddress } from "ethers/utils";
+import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.json";
 
@@ -40,7 +41,7 @@ type UnidirectionalTransferAppAction = {
 };
 
 function mkAddress(prefix: string = "0xa"): string {
-  return getAddress(prefix.padEnd(42, "0"));
+  return getLowerCaseAddress(prefix.padEnd(42, "0"));
 }
 
 const singleAssetTwoPartyCoinTransferEncoding = `

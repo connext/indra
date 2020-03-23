@@ -1,5 +1,5 @@
 import { AddressZero } from "ethers/constants";
-import { BigNumber, getAddress, bigNumberify } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { AssetAmount, RebalanceProfile } from "./channel";
 import { DepositParameters } from "./inputs";
@@ -86,24 +86,13 @@ export const convertFields = (
  * overloading definitions
  */
 
-// will return the address as input if it cannot be checksum-d
-// this function does no *explicit* validation on addresses,
-// and instead just asserts they are properly checcksum-d
-export function makeChecksum(address: string): string {
-  try {
-    return getAddress(address);
-  } catch (e) {
-    return address;
-  }
-}
-
 // if the address is undefined, uses the AddressZero constant to
 // represent the ethereum asset
 export function makeChecksumOrEthAddress(address: string | undefined): string {
   if (!address) {
     return AddressZero;
   }
-  return makeChecksum(address);
+  return address;
 }
 
 export function convertCoinTransfersToObjIfNeeded(transfers: any): CoinTransfer[] {

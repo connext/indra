@@ -1,4 +1,4 @@
-import { getAddress } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import { isEthAddress } from "./validate";
 
@@ -6,7 +6,7 @@ export const normalizeEthAddresses = (obj: any): any => {
   const res = {};
   Object.entries(obj).forEach(([key, value]: any): any => {
     if (isEthAddress(value as string)) {
-      res[key] = getAddress(value as any);
+      res[key] = getLowerCaseAddress(value as any);
       return;
     }
     res[key] = value;

@@ -1,5 +1,6 @@
 import { Zero } from "ethers/constants";
-import { getAddress, hexlify, randomBytes } from "ethers/utils";
+import { hexlify, randomBytes } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../../src/constants";
 import { AppInstance, StateChannel } from "../../../../../src/models";
@@ -8,7 +9,7 @@ import { generateRandomNetworkContext } from "../../../mocks";
 import { AppInstanceProposal } from "@connext/types";
 
 describe("StateChannel::setupChannel", () => {
-  const multisigAddress = getAddress(hexlify(randomBytes(20)));
+  const multisigAddress = getLowerCaseAddress(hexlify(randomBytes(20)));
   const xpubs = getRandomExtendedPubKeys(2);
 
   let sc: StateChannel;

@@ -1,7 +1,7 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { signDigest } from "@connext/crypto";
+import { signDigest, getLowerCaseAddress } from "@connext/crypto";
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
-import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
+import { hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { appIdentityToHash, ConditionalTransactionCommitment } from "../../../../src/ethereum";
@@ -37,7 +37,7 @@ describe("ConditionalTransactionCommitment", () => {
       proxyFactory: networkContext.ProxyFactory,
       multisigMastercopy: networkContext.MinimumViableMultisig,
     },
-    getAddress(hexlify(randomBytes(20))),
+    getLowerCaseAddress(hexlify(randomBytes(20))),
     [interaction.sender, interaction.receiver],
   );
 

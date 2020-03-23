@@ -210,7 +210,7 @@ describe("ChallengeRegistry", () => {
     } = await getChallenge();
 
     expect(status).to.be.eq(1);
-    expect(latestSubmitter).to.be.eq(await wallet.getAddress());
+    expect(latestSubmitter).to.be.eq(wallet.address.toLowerCase());
     expect(appStateHash).to.be.eq(keccak256(state));
     expect(challengeCounter).to.be.eq(1);
     expect(finalizesAt).to.be.eq((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT);

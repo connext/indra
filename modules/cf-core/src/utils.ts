@@ -1,16 +1,9 @@
 import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
-import { recoverAddress } from "@connext/crypto";
+import { recoverAddress, getLowerCaseAddress } from "@connext/crypto";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { Provider } from "ethers/providers";
-import {
-  BigNumber,
-  bigNumberify,
-  getAddress,
-  Interface,
-  keccak256,
-  solidityKeccak256,
-} from "ethers/utils";
+import { BigNumber, bigNumberify, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
@@ -120,7 +113,7 @@ export const getCreate2MultisigAddress = async (
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
-  return getAddress(
+  return getLowerCaseAddress(
     solidityKeccak256(
       ["bytes1", "address", "uint256", "bytes32"],
       [

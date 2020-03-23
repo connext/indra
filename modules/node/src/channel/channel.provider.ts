@@ -8,7 +8,7 @@ import {
   convert,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { getAddress } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
@@ -72,7 +72,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     // do not allow clients to specify an amount to collateralize with
     return (await (this.channelService.rebalance(
       pubId,
-      getAddress(data.assetId),
+      getLowerCaseAddress(data.assetId),
       RebalanceType.COLLATERALIZE,
     ) as unknown)) as CFCoreTypes.DepositResult;
   }
