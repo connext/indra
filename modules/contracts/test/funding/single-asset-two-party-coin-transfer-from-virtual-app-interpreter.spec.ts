@@ -5,9 +5,9 @@ import { Contract, Wallet } from "ethers";
 import DolphinCoin from "../../build/DolphinCoin.json";
 import SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter from "../../build/SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter.json";
 import { AddressZero, One, Zero } from "ethers/constants";
-import { BigNumber, BigNumberish, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
+import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
 
-import { expect } from "./utils/index";
+import { expect, createRandomAddress } from "./utils/index";
 
 type CoinTransfer = {
   to: string;
@@ -88,9 +88,9 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
   });
 
   it("Can distribute ETH coins correctly in full", async () => {
-    const to = hexlify(randomBytes(20));
-    const randomAddress = hexlify(randomBytes(20));
-    const lender = hexlify(randomBytes(20));
+    const to = createRandomAddress();
+    const randomAddress = createRandomAddress();
+    const lender = createRandomAddress();
     const capitalProvided = One;
 
     await interpretOutcomeAndExecuteEffect(
@@ -114,9 +114,9 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
   //        has something to do with the fact that `address payable` is used but
   //        I'm not entirely sure.
   it.skip("Can distribute ETH coins correctly partially", async () => {
-    const to = hexlify(randomBytes(20));
-    const randomAddress = hexlify(randomBytes(20));
-    const lender = hexlify(randomBytes(20));
+    const to = createRandomAddress();
+    const randomAddress = createRandomAddress();
+    const lender = createRandomAddress();
     const capitalProvided = One;
     const amount = capitalProvided.div(2);
 
@@ -138,9 +138,9 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
   });
 
   it("Can distribute ERC20 only correctly in full", async () => {
-    const to = hexlify(randomBytes(20));
-    const randomAddress = hexlify(randomBytes(20));
-    const lender = hexlify(randomBytes(20));
+    const to = createRandomAddress();
+    const randomAddress = createRandomAddress();
+    const lender = createRandomAddress();
     const capitalProvided = One;
 
     await interpretOutcomeAndExecuteEffect(
@@ -164,9 +164,9 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
   //        has something to do with the fact that `address payable` is used but
   //        I'm not entirely sure.
   it.skip("Can distribute ERC20 coins correctly partially", async () => {
-    const to = hexlify(randomBytes(20));
-    const randomAddress = hexlify(randomBytes(20));
-    const lender = hexlify(randomBytes(20));
+    const to = createRandomAddress();
+    const randomAddress = createRandomAddress();
+    const lender = createRandomAddress();
     const capitalProvided = One;
     const amount = capitalProvided.div(2);
 

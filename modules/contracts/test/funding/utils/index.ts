@@ -1,7 +1,7 @@
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { verifyChannelMessage } from "@connext/crypto";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, hexlify, randomBytes } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
 
@@ -24,3 +24,15 @@ export async function sortSignaturesBySignerAddress(
     })
     .map(x => x.sig);
 }
+
+export function createRandomBytesHexString(length: number) {
+  return hexlify(randomBytes(length)).toLowerCase();
+}
+
+export function createRandomAddress() {
+  return createRandomBytesHexString(20);
+}
+
+export const createRandom32ByteHexString = (): string => {
+  return createRandomBytesHexString(32);
+};

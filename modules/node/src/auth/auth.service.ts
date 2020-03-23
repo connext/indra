@@ -4,7 +4,7 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
-import { isValidHex, isXpub, isEthAddress } from "../util";
+import { isValidHex, isXpub, isEthAddress, createRandomBytesHexString } from "../util";
 
 const nonceLen = 16;
 const nonceTTL = 2 * 60 * 60 * 1000;
@@ -38,12 +38,10 @@ export class AuthService {
     if (!isEthAddress(address)) {
       return JSON.stringify({ err: `Invalid address: ${address}` });
     }
-    const nonce = hexlify(randomBytes(nonceLen));
+    const nonce = createRandomBytesHexString(nonceLen);
     const expiry = Date.now() + nonceTTL;
     this.nonces[nonce] = { address, expiry };
-    this.log.debug(
-      `getNonce: Gave address ${address} a nonce that expires at ${expiry}: ${nonce}`,
-    );
+    this.log.debug(`getNonce: Gave address ${address} a nonce that expires at ${expiry}: ${nonce}`);
     return nonce;
   }
 
@@ -55,9 +53,7 @@ export class AuthService {
           `Subject's last item isn't a valid eth address: ${subject}`,
         );
         if (authRes) {
-          this.log.error(
-            `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
-          );
+          this.log.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
           return callback(multisig, data);
         }
       }
@@ -72,9 +68,7 @@ export class AuthService {
       this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes) {
-        this.log.error(
-          `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
-        );
+        this.log.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
       }
       return callback(multisig, data);
     };
@@ -110,9 +104,7 @@ export class AuthService {
       const xpubAddress = getAuthAddressFromXpub(xpub);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes && subject.startsWith("channel.restore-states")) {
-        this.log.error(
-          `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
-        );
+        this.log.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
         return callback(xpub, data);
       }
       return authRes || callback(xpub, data);

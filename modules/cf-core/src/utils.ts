@@ -230,7 +230,7 @@ export function assertSufficientFundsWithinFreeBalance(
     Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
-    throw Error(
+    throw new Error(
       INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
         publicIdentifier,
         channel.multisigAddress,

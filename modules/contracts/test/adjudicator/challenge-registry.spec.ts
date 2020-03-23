@@ -4,7 +4,7 @@ import { signChannelMessage } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { BigNumberish, hexlify, keccak256, randomBytes } from "ethers/utils";
+import { BigNumberish, keccak256 } from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 import {
@@ -13,6 +13,7 @@ import {
   expect,
   sortSignaturesBySignerAddress,
 } from "./utils";
+import { createRandomAddress, createRandom32ByteHexString } from "../funding/utils";
 
 type Challenge = {
   status: 0 | 1 | 2;
@@ -64,7 +65,7 @@ describe("ChallengeRegistry", () => {
   beforeEach(async () => {
     const appIdentityTestObject = new AppIdentityTestClass(
       [ALICE.address, BOB.address],
-      hexlify(randomBytes(20)),
+      createRandomAddress(),
       10,
       globalChannelNonce,
     );
@@ -195,7 +196,7 @@ describe("ChallengeRegistry", () => {
 
   it("is possible to call setState to put state on-chain", async () => {
     // Tell the ChallengeRegistry to start timer
-    const state = hexlify(randomBytes(32));
+    const state = createRandom32ByteHexString();
 
     await setStateWithSignatures(1, state);
 

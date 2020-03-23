@@ -24,7 +24,7 @@ export class MessagingServiceFactory {
   }
 
   connect(): void {
-    throw Error("Connect service using NatsMessagingService.connect()");
+    throw new Error("Connect service using NatsMessagingService.connect()");
   }
 
   createService(messagingServiceKey: string): IMessagingService {

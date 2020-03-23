@@ -1,12 +1,11 @@
-import { hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
-import { getLowerCaseAddress } from "@connext/crypto";
+import { Interface, TransactionDescription } from "ethers/utils";
 
 import { appIdentityToHash, SetupCommitment } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
 import { StateChannel } from "../../../../src/models";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../mocks";
+import { generateRandomNetworkContext, createRandomAddress } from "../../mocks";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according
@@ -33,7 +32,7 @@ describe("SetupCommitment", () => {
       proxyFactory: networkContext.ProxyFactory,
       multisigMastercopy: networkContext.MinimumViableMultisig,
     },
-    getLowerCaseAddress(hexlify(randomBytes(20))),
+    createRandomAddress(),
     [interaction.sender, interaction.receiver],
   );
 

@@ -73,7 +73,7 @@ export const methodNameToImplementation = controllers.reduce((acc, controller) =
   }
 
   if (acc[controller.methodName]) {
-    throw Error(`Fatal: Multiple controllers connected to ${controller.methodName}`);
+    throw new Error(`Fatal: Multiple controllers connected to ${controller.methodName}`);
   }
 
   const handler = new controller();

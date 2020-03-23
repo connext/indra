@@ -53,7 +53,7 @@ export default class ProposeInstallController extends NodeController {
     const { initialState } = params;
 
     if (!initialState) {
-      throw Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
+      throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
     }
 
     const {

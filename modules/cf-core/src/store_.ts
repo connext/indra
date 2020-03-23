@@ -93,7 +93,7 @@ export class Store {
     );
 
     if (!stateChannelJson) {
-      throw Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
 
     const channel = StateChannel.fromJson(stateChannelJson);
@@ -266,7 +266,7 @@ export class Store {
         return stateChannel;
       }
 
-      throw Error(e);
+      throw new Error(e);
     }
   }
 }

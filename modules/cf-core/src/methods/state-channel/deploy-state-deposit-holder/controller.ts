@@ -38,11 +38,11 @@ export default class DeployStateDepositHolderController extends NodeController {
     const channel = await store.getStateChannel(multisigAddress);
 
     if (!channel.addresses.proxyFactory) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
@@ -52,7 +52,7 @@ export default class DeployStateDepositHolderController extends NodeController {
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
-      throw Error(INCORRECT_MULTISIG_ADDRESS);
+      throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
   }
 
@@ -77,7 +77,7 @@ export default class DeployStateDepositHolderController extends NodeController {
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
-      throw Error(INCORRECT_MULTISIG_ADDRESS);
+      throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
 
     // Check if the contract has already been deployed on-chain
@@ -105,7 +105,7 @@ async function sendMultisigDeployTx(
   const provider = signer.provider as JsonRpcProvider;
 
   if (!provider) {
-    throw Error(`wallet must have a provider`);
+    throw new Error(`wallet must have a provider`);
   }
 
   const signerAddress = (await signer.getAddress()).toLowerCase();
@@ -128,7 +128,7 @@ async function sendMultisigDeployTx(
       );
 
       if (!tx.hash) {
-        throw Error(`${NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT}: ${prettyPrintObject(tx)}`);
+        throw new Error(`${NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT}: ${prettyPrintObject(tx)}`);
       }
 
       const ownersAreCorrectlySet = await checkForCorrectOwners(
@@ -158,7 +158,7 @@ async function sendMultisigDeployTx(
     }
   }
 
-  throw Error(`${CHANNEL_CREATION_FAILED}: ${prettyPrintObject(error)}`);
+  throw new Error(`${CHANNEL_CREATION_FAILED}: ${prettyPrintObject(error)}`);
 }
 
 async function checkForCorrectOwners(
