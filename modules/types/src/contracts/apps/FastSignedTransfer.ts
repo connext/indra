@@ -83,7 +83,7 @@ export type FastSignedTransferParameters = {
   amount: BigNumberish;
   assetId?: Address;
   paymentId: HexString;
-  maxAllocation?: HexString;
+  maxAllocation?: BigNumberish;
   signer: string; // address?
   meta?: object;
 };
@@ -107,4 +107,8 @@ export type ResolveFastSignedTransferResponse = {
   assetId: string;
   signer: string;
   meta?: object;
+};
+
+export type CreatedFastSignedTransferMeta = {
+  signer: string;
 };

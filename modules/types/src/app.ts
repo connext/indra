@@ -9,9 +9,12 @@ import {
 } from "./basic";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
+  MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
   TwoPartyFixedOutcomeInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParamsJson,
 } from "./contracts";
 import { enumify } from "./utils";
 
@@ -75,34 +78,14 @@ export type AppInstanceJson = {
   latestVersionNumber: number;
   latestTimeout: number;
   outcomeType: string;
-<<<<<<< HEAD
+  meta?: object;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?:
-    TwoPartyFixedOutcomeInterpreterParams
+    TwoPartyFixedOutcomeInterpreterParamsJson
   multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams
+    MultiAssetMultiPartyCoinTransferInterpreterParamsJson
   singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams
-=======
-  meta?: object;
-  // Derived from:
-  // contracts/funding/interpreters/TwoPartyFixedOutcomeInterpreter.sol#L10
-  twoPartyOutcomeInterpreterParams?: {
-    playerAddrs: [string, string];
-    amount: { _hex: string };
-    tokenAddress: string;
-  };
-  // Derived from:
-  // contracts/funding/interpreters/MultiAssetMultiPartyCoinTransferInterpreter.sol#L18
-  multiAssetMultiPartyCoinTransferInterpreterParams?: {
-    limit: { _hex: string }[];
-    tokenAddresses: string[];
-  };
-  singleAssetTwoPartyCoinTransferInterpreterParams?: {
-    limit: { _hex: string };
-    tokenAddress: string;
-  };
->>>>>>> nats-messaging-refactor
+    SingleAssetTwoPartyCoinTransferInterpreterParamsJson
 };
 
 export type AppInstanceProposal = {
@@ -114,12 +97,12 @@ export type AppInstanceProposal = {
   initiatorDeposit: DecString;
   initiatorDepositTokenAddress: Address;
   outcomeType: OutcomeType;
-<<<<<<< HEAD
   proposedByIdentifier: Xpub;
   proposedToIdentifier: Xpub;
   responderDeposit: DecString;
   responderDepositTokenAddress: Address;
   timeout: HexString;
+  meta?: object;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?:
     TwoPartyFixedOutcomeInterpreterParams;
@@ -127,18 +110,6 @@ export type AppInstanceProposal = {
     MultiAssetMultiPartyCoinTransferInterpreterParams;
   singleAssetTwoPartyCoinTransferInterpreterParams?:
     SingleAssetTwoPartyCoinTransferInterpreterParams;
-=======
-  proposedByIdentifier: string;
-  proposedToIdentifier: string;
-  responderDeposit: string;
-  responderDepositTokenAddress: string;
-  timeout: string;
-  meta?: object;
-  // Interpreter-related Fields
-  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
->>>>>>> nats-messaging-refactor
 };
 
 ////////////////////////////////////

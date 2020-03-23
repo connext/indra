@@ -18,6 +18,8 @@ export type Xpub = string; // eg "xpub6AbC...123" (str length = 111)
 export type BigNumber = ethersBN;
 export const BigNumber = ethersBN;
 
+export type HexObject = { _hex: HexString };
+
 export interface EthSignature {
   r: string;
   s: string;

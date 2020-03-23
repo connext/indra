@@ -7,15 +7,23 @@ import { StateChannelJSON } from "./state";
 import { ILockService } from "./lock";
 import { enumify } from "./utils";
 
+export const chan_config = "chan_config";
+export const chan_sign = "chan_sign";
+export const chan_signDigest = "chan_signDigest";
+export const chan_restoreState = "chan_restoreState";
+export const chan_setUserWithdrawal = "chan_setUserWithdrawal";
+export const chan_getUserWithdrawal = "chan_getUserWithdrawal";
+export const chan_setStateChannel = "chan_setStateChannel";
+
 export const ChannelMethods = enumify({
   ...MethodNames,
   chan_config: "chan_config",
-  chan_nodeAuth: "chan_nodeAuth",
+  chan_sign: "chan_sign",
+  chan_signDigest: "chan_signDigest",
   chan_restoreState: "chan_restoreState",
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
   chan_setStateChannel: "chan_setStateChannel",
-  chan_signWithdrawCommitment: "chan_signWithdrawCommitment",
 });
 export type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
 export type ChannelMethod = keyof typeof ChannelMethods;
@@ -58,32 +66,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
   restoreState(state?: StateChannelJSON): Promise<void>;
 }
 
-<<<<<<< HEAD
-=======
-export const chan_config = "chan_config";
-export const chan_sign = "chan_sign";
-export const chan_signDigest = "chan_signDigest";
-export const chan_restoreState = "chan_restoreState";
-export const chan_setUserWithdrawal = "chan_setUserWithdrawal";
-export const chan_getUserWithdrawal = "chan_getUserWithdrawal";
-export const chan_setStateChannel = "chan_setStateChannel";
-
-// TODO: merge ConnextRpcMethods and RpcMethodNames???
-
-export const ConnextRpcMethods = {
-  [chan_config]: chan_config,
-  [chan_sign]: chan_sign,
-  [chan_signDigest]: chan_signDigest,
-  [chan_restoreState]: chan_restoreState,
-  [chan_getUserWithdrawal]: chan_getUserWithdrawal,
-  [chan_setUserWithdrawal]: chan_setUserWithdrawal,
-  [chan_setStateChannel]: chan_setStateChannel,
-};
-export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
-
-export type ChannelProviderRpcMethod = ConnextRpcMethod | CFCoreTypes.RpcMethodName;
-
->>>>>>> nats-messaging-refactor
 export type ChannelProviderConfig = {
   freeBalanceAddress: string;
   multisigAddress?: string; // may not be deployed yet

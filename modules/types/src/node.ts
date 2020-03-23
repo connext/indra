@@ -9,7 +9,7 @@ import {
   GetHashLockTransferResponse,
 } from "./contracts";
 import { ILoggerService } from "./logger";
-import { IMessagingService, MessagingConfig } from "./messaging";
+import { IMessagingService } from "./messaging";
 import { MethodResults } from "./methods";
 
 ////////////////////////////////////
@@ -92,7 +92,6 @@ export type CreateChannelResponse = {
 // TODO: why was this changed?
 export type RequestCollateralResponse = MethodResults.Deposit | undefined;
 
-<<<<<<< HEAD
 ////////////////////////////////////
 // NODE API CLIENT
 
@@ -111,10 +110,7 @@ export interface PendingFastSignedTransfer {
   signer: string;
 }
 
-enum LinkedTransferStatus {
-=======
 export const enum LinkedTransferStatus {
->>>>>>> nats-messaging-refactor
   PENDING = "PENDING",
   REDEEMED = "REDEEMED",
   FAILED = "FAILED",
@@ -173,13 +169,8 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
-<<<<<<< HEAD
-  getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
-  getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
-=======
   getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse>;
-  getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
->>>>>>> nats-messaging-refactor
+  getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;

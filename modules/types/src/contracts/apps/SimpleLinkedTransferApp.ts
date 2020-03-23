@@ -3,7 +3,7 @@ import { Address, BigNumber, BigNumberish, HexString } from "../../basic";
 import { CoinTransfer } from "../funding";
 import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
 
-import { LinkedTransfer, LinkedTransferToRecipient } from "./common";
+import { LinkedTransfer } from "./common";
 
 export const SimpleLinkedTransferAppName = "SimpleLinkedTransferApp";
 
@@ -46,40 +46,21 @@ export type LinkedTransferParameters = {
   assetId?: string;
   paymentId: string;
   preImage: string;
+  recipient?: string;
   meta?: object;
 };
 
 export type LinkedTransferResponse = {
+  appId: string;
   paymentId: string;
   preImage: string;
-  meta?: object;
 };
 
-export type LinkedTransferToRecipientParameters = Omit<
-  LinkedTransferParameters,
-  "conditionType"
-> & {
-  conditionType: typeof LinkedTransferToRecipient;
-  recipient: string;
-};
-
-export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
-  recipient: string;
-};
-
-export type ResolveLinkedTransferParameters = Omit<
-  LinkedTransferParameters,
-  "amount" | "assetId" | "meta"
->;
-
-export type ResolveLinkedTransferToRecipientParameters = Omit<
-  ResolveLinkedTransferParameters,
-  "recipient" | "conditionType"
-> & {
-  amount: BigNumberish;
-  assetId: string;
-  conditionType: typeof LinkedTransferToRecipient;
-};
+export type ResolveLinkedTransferParameters = {
+  conditionType: typeof LinkedTransfer;
+  paymentId: string;
+  preImage: string;
+}
 
 export type ResolveLinkedTransferResponse = {
   appId: string;

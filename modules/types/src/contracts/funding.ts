@@ -1,4 +1,4 @@
-import { Address, BigNumber, HexString } from "../basic";
+import { Address, BigNumber, HexString, HexObject } from "../basic";
 import { tidy } from "./misc";
 
 ////////////////////////////////////////
@@ -19,6 +19,12 @@ export type MultiAssetMultiPartyCoinTransferInterpreterParams = {
   tokenAddresses: Address[];
 };
 
+export type MultiAssetMultiPartyCoinTransferInterpreterParamsJson = Partial<
+  MultiAssetMultiPartyCoinTransferInterpreterParams
+> & {
+  limit: HexObject[];
+};
+
 export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding = tidy(`tuple(
   uint256[] limit,
   address[] tokenAddresses
@@ -30,6 +36,12 @@ export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding = tidy(`t
 export type SingleAssetTwoPartyCoinTransferInterpreterParams = {
   limit: BigNumber;
   tokenAddress: Address;
+};
+
+export type SingleAssetTwoPartyCoinTransferInterpreterParamsJson = Partial<
+  SingleAssetTwoPartyCoinTransferInterpreterParams
+> & {
+  limit: HexObject;
 };
 
 export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = tidy(`tuple(
@@ -44,6 +56,12 @@ export type TwoPartyFixedOutcomeInterpreterParams = {
   playerAddrs: [Address, Address];
   amount: BigNumber;
   tokenAddress: Address;
+};
+
+export type TwoPartyFixedOutcomeInterpreterParamsJson = Partial<
+  TwoPartyFixedOutcomeInterpreterParams
+> & {
+  amount: HexObject;
 };
 
 // TODO: tokenAddress?!

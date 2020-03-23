@@ -25,8 +25,8 @@ import {
   ChannelAppSequences,
   GetConfigResponse,
   RequestCollateralResponse,
-<<<<<<< HEAD
   TransferInfo,
+  GetLinkedTransferResponse,
 } from "./node";
 import {
   MethodResults,
@@ -81,15 +81,6 @@ export type TransferParameters = DepositParameters & {
 export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };
 
 /////////////////////////////////
-=======
-  Transfer,
-  GetLinkedTransferResponse,
-} from "./node";
-import { ProtocolTypes } from "./protocol";
-import { IBackupServiceAPI, IClientStore, StoreType } from "./store";
-import { CFCoreTypes } from "./cfCore";
-import { SwapParameters, WithdrawParameters } from "./apps";
->>>>>>> nats-messaging-refactor
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
@@ -164,11 +155,7 @@ export interface IConnextClient {
   // TODO: do we really need to expose all of these?
   isAvailable(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
-<<<<<<< HEAD
-  getLinkedTransfer(paymentId: string): Promise<TransferInfo>;
-=======
   getLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
->>>>>>> nats-messaging-refactor
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
   getAppRegistry(
     appDetails?:
