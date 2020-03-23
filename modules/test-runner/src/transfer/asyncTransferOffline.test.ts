@@ -1,13 +1,8 @@
 import {
-  IConnextClient,
-<<<<<<< HEAD
-  DefaultApp,
+  delay,
   EventNames,
-=======
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  UPDATE_STATE_EVENT,
+  IConnextClient,
   LinkedTransferStatus,
->>>>>>> nats-messaging-refactor
 } from "@connext/types";
 import * as lolex from "lolex";
 
@@ -16,7 +11,6 @@ import {
   asyncTransferAsset,
   createClient,
   createClientWithMessagingLimits,
-  delay,
   expect,
   fundChannel,
   getMnemonic,
@@ -82,55 +76,6 @@ describe("Async transfer offline tests", () => {
     await receiverClient.messaging.disconnect();
   });
 
-<<<<<<< HEAD
-  after(() => {
-    closeNats();
-  });
-
-  /**
-   * Will have a transfer saved on the hub, but nothing sent to recipient.
-   *
-   * Recipient should be able to claim payment regardless.
-   */
-  it("sender successfully installs transfer, goes offline before sending paymentId/preImage, and stays offline", async () => {
-    // create the sender client and receiver clients + fund
-    senderClient = await createClientWithMessagingLimits({
-      forbiddenSubjects: [`transfer.send-async.`],
-    });
-    receiverClient = await createClientWithMessagingLimits();
-    const tokenAddress = senderClient.config.contractAddresses.Token;
-    await fundForTransfers(receiverClient, senderClient);
-    // make the transfer call, should fail when sending info to node, but
-    // will retry. fast forward through NATS_TIMEOUT
-    (senderClient.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
-      // fast forward here
-      clock.tick(89_000);
-    });
-    await expect(
-      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress, nats),
-    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
-    // make sure that the app is installed with the hub/sender
-    const senderLinkedApp = await getLinkedApp(senderClient);
-    const { paymentId } = senderLinkedApp.latestState as any;
-    // verify the saved transfer information
-    const expectedTransfer = {
-      amount: TOKEN_AMOUNT_SM,
-      receiverPublicIdentifier: receiverClient.publicIdentifier,
-      paymentId,
-      senderPublicIdentifier: senderClient.publicIdentifier,
-      status: "PENDING",
-      type: "LINKED",
-    };
-    await verifyTransfer(senderClient, expectedTransfer);
-    const receiverLinkedApp = await getLinkedApp(receiverClient, false);
-    expect(receiverLinkedApp.length).to.equal(0);
-    // make sure recipient can still redeem payment
-    await receiverClient.reclaimPendingAsyncTransfers();
-    await verifyTransfer(receiverClient, { ...expectedTransfer, status: "REDEEMED" });
-  });
-
-=======
->>>>>>> nats-messaging-refactor
   /**
    * Should get timeout errors.
    *
@@ -205,13 +150,7 @@ describe("Async transfer offline tests", () => {
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise(resolve =>
-<<<<<<< HEAD
-      receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, () => {
-        resolve();
-      }),
-=======
-      receiverClient.once(RECEIVE_TRANSFER_FINISHED_EVENT, resolve),
->>>>>>> nats-messaging-refactor
+      receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, resolve),
     );
     const { paymentId } = await senderClient.transfer({
       amount: TOKEN_AMOUNT_SM,
@@ -292,12 +231,8 @@ describe("Async transfer offline tests", () => {
     await actionTaken;
     // verify transfer
     const expected = {
-<<<<<<< HEAD
       amount: TOKEN_AMOUNT_SM,
-=======
-      amount: TOKEN_AMOUNT_SM.toString(),
       assetId: tokenAddress,
->>>>>>> nats-messaging-refactor
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderPublicIdentifier: senderClient.publicIdentifier,

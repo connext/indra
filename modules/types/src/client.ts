@@ -33,7 +33,7 @@ import {
   MethodParams,
   MethodName,
 } from "./methods";
-import { IBackupServiceAPI, IClientStore, StoreType } from "./store";
+import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
 
 export type ChannelState = {
   apps: AppInstanceJson[]; // result of getApps()
@@ -91,7 +91,7 @@ export interface ClientOptions {
   mnemonic?: string;
   xpub?: string;
   store?: IClientStore;
-  storeType?: StoreType;
+  storeType?: StoreTypes;
   logger?: ILogger;
   loggerService?: ILoggerService;
   logLevel?: number;

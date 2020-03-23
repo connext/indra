@@ -1,10 +1,9 @@
 import {
-  CreateTransferEventData,
   ConditionalTransferTypes,
   EventNames,
+  EventPayloads,
   FastSignedTransferParameters,
   IConnextClient,
-  ReceiveTransferFinishedEventData,
   ResolveFastSignedTransferParameters,
 } from "@connext/types";
 import { Wallet } from "ethers";
@@ -19,12 +18,7 @@ import {
 import { before } from "mocha";
 import { Client } from "ts-nats";
 
-<<<<<<< HEAD
-import { createClient, fundChannel, connectNats, closeNats } from "../util";
-=======
 import { createClient, fundChannel, getNatsClient } from "../util";
-import { Wallet } from "ethers";
->>>>>>> nats-messaging-refactor
 import { AddressZero } from "ethers/constants";
 
 describe("Full Flow: Multi-client transfer", () => {
@@ -77,7 +71,7 @@ describe("Full Flow: Multi-client transfer", () => {
 
       gateway.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData<any>) => {
+        async (data: EventPayloads.ReceiveTransferFinished) => {
           if (Date.now() - startTime >= DURATION) {
             // sufficient time has elapsed, resolve
             done();
@@ -119,9 +113,8 @@ describe("Full Flow: Multi-client transfer", () => {
 
       gateway.on(
         EventNames.CREATE_TRANSFER,
-        async (eventData: CreateTransferEventData<
-          typeof ConditionalTransferTypes.FastSignedTransfer
-        >) => {
+        async (eventData: EventPayloads.CreateFastTransfer,
+      ) => {
           let withdrawerSigningKey: SigningKey;
           let indexer: IConnextClient;
           let indexerTransfers: {

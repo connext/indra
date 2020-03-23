@@ -1,20 +1,16 @@
-<<<<<<< HEAD
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ConnextEventEmitter, NodeMessage, MessagingConfig } from "@connext/types";
-=======
 import { MessagingService } from "@connext/messaging";
 import {
-  ConnextEventEmitter,
-  CFCoreTypes,
-  MessagingConfig,
-  IMessagingService,
-  VerifyNonceDtoType,
   CF_PATH,
+  ConnextEventEmitter,
+  delay,
+  IMessagingService,
+  MessagingConfig,
+  NodeMessage,
+  VerifyNonceDtoType,
 } from "@connext/types";
->>>>>>> nats-messaging-refactor
 
 import { env } from "./env";
-import { combineObjects, delay } from "./misc";
+import { combineObjects } from "./misc";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import { Logger } from "./logger";
 

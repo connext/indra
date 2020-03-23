@@ -7,7 +7,6 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
-  StoreType,
   StoreTypes,
   WithdrawalMonitorObject,
   WrappedStorage,
@@ -34,20 +33,20 @@ export class ConnextStore implements IClientStore {
   private separator: string = DEFAULT_STORE_SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
 
-  constructor(storageType: StoreType, opts: StoreFactoryOptions = {}) {
+  constructor(storageType: StoreTypes, opts: StoreFactoryOptions = {}) {
     this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
     this.separator = opts.separator || DEFAULT_STORE_SEPARATOR;
     this.backupService = opts.backupService || null;
 
     // set internal storage
     switch (storageType.toUpperCase()) {
-      case StoreTypes.LOCALSTORAGE:
+      case StoreTypes.LocalStorage:
         this.internalStore = new KeyValueStorage(
           new WrappedLocalStorage(this.prefix, this.separator, this.backupService),
         );
         break;
 
-      case StoreTypes.ASYNCSTORAGE:
+      case StoreTypes.AsyncStorage:
         if (!opts.storage) {
           throw new Error(`Must pass in a reference to an 'IAsyncStorage' interface`);
         }
@@ -62,7 +61,7 @@ export class ConnextStore implements IClientStore {
         );
         break;
 
-      case StoreTypes.FILESTORAGE:
+      case StoreTypes.File:
         this.internalStore = new KeyValueStorage(
           new FileStorage(
             this.prefix,
@@ -74,7 +73,7 @@ export class ConnextStore implements IClientStore {
         );
         break;
 
-      case StoreTypes.MEMORYSTORAGE:
+      case StoreTypes.Memory:
         this.internalStore = new MemoryStorage();
         break;
 

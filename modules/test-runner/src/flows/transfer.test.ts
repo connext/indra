@@ -1,7 +1,7 @@
 import {
   IConnextClient,
-  ReceiveTransferFinishedEventData,
-  RECEIVE_TRANSFER_FAILED_EVENT,
+  EventPayloads,
+  EventNames,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { Client } from "ts-nats";
@@ -94,7 +94,7 @@ describe("Full Flow: Transfer", () => {
       let transferCount = 0;
       clientA.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData) => {
+        async (data: EventPayloads.ReceiveTransferFinished) => {
           transferCount += 1;
           if (transferCount === 2) {
             expect(transferCount).to.eq(2);
@@ -103,18 +103,18 @@ describe("Full Flow: Transfer", () => {
         },
       );
 
-      clientA.on(RECEIVE_TRANSFER_FAILED_EVENT, () =>
+      clientA.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
         rej(`Received transfer failed event on clientA`),
       );
-      clientB.on(RECEIVE_TRANSFER_FAILED_EVENT, () =>
+      clientB.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
         rej(`Received transfer failed event on clientA`),
       );
-      clientC.on(RECEIVE_TRANSFER_FAILED_EVENT, () =>
+      clientC.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
         rej(`Received transfer failed event on clientA`),
       );
       await Promise.all([
-        clientB.transfer({ amount: "1", recipient: clientA.publicIdentifier }),
-        clientC.transfer({ amount: "1", recipient: clientA.publicIdentifier }),
+        clientB.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
+        clientC.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
       ]);
     });
   });

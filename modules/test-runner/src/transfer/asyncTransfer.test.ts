@@ -1,14 +1,11 @@
-/* global before after */
 import { utils } from "@connext/client";
-<<<<<<< HEAD
-import { IConnextClient, ConditionalTransferTypes, CF_PATH } from "@connext/types";
-=======
-import { IConnextClient, CF_PATH, LINKED_TRANSFER } from "@connext/types";
->>>>>>> nats-messaging-refactor
+import { ConditionalTransferTypes, CF_PATH, delay, IConnextClient } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
+import { before } from "mocha";
+import { Client } from "ts-nats";
 
 import {
   AssetOptions,
@@ -27,7 +24,6 @@ import {
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { getNatsClient } from "../util/nats";
-import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
 
@@ -236,11 +232,7 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-<<<<<<< HEAD
-        conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
-=======
-        conditionType: LINKED_TRANSFER,
->>>>>>> nats-messaging-refactor
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
         preImage: hexlify(randomBytes(32)),
         recipient: clientB.publicIdentifier,
@@ -256,11 +248,7 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-<<<<<<< HEAD
-        conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
-=======
-        conditionType: LINKED_TRANSFER,
->>>>>>> nats-messaging-refactor
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId: hexlify(randomBytes(32)),
         preImage,
         recipient: clientB.publicIdentifier,

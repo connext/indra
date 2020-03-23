@@ -1,26 +1,19 @@
 import {
   IConnextClient,
-  ReceiveTransferFinishedEventData,
+  EventPayloads,
   EventNames,
   toBN,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
-import { before } from "mocha";
-import { Client } from "ts-nats";
 
-import { expect, createClient, fundChannel, getNatsClient } from "../util";
+import { expect, createClient, fundChannel } from "../util";
 
 // TODO: fix race conditions
 describe.skip("Full Flow: Multi-client transfer", () => {
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
-  let nats: Client;
-
-  before(async () => {
-    nats = getNatsClient();
-  });
 
   beforeEach(async () => {
     gateway = await createClient();
@@ -54,7 +47,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
       await fundChannel(gateway, bigNumberify(100));
       gateway.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData<any>) => {
+        async (data: EventPayloads.ReceiveTransferFinished) => {
           const freeBalance = await gateway.getFreeBalance();
           if (freeBalance[gateway.freeBalanceAddress].isZero()) {
             res();
@@ -81,7 +74,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
 
       indexerA.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData<any>) => {
+        async (data: EventPayloads.ReceiveTransferFinished) => {
           indexerATransfers.received += 1;
           await indexerA.transfer({
             amount: data.amount,
@@ -95,7 +88,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
 
       indexerB.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: ReceiveTransferFinishedEventData<any>) => {
+        async (data: EventPayloads.ReceiveTransferFinished) => {
           indexerBTransfers.received += 1;
           await indexerB.transfer({
             amount: data.amount,

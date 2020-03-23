@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { IConnextClient, ConditionalTransferTypes } from "@connext/types";
-=======
-import { IConnextClient, LINKED_TRANSFER } from "@connext/types";
->>>>>>> nats-messaging-refactor
 import { AddressZero, One } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 
@@ -57,11 +53,7 @@ describe("Get Linked Transfer", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-<<<<<<< HEAD
-      conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
-=======
-      conditionType: LINKED_TRANSFER,
->>>>>>> nats-messaging-refactor
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,
@@ -86,11 +78,7 @@ describe("Get Linked Transfer", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount,
       assetId: AddressZero,
-<<<<<<< HEAD
-      conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
-=======
-      conditionType: LINKED_TRANSFER,
->>>>>>> nats-messaging-refactor
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,

@@ -1,9 +1,10 @@
+import { ConnextStore, FileStorage, safeJsonStringify, KeyValueStorage } from "@connext/store";
 import {
-  STORE_SCHEMA_VERSION,
-  StateChannelJSON,
-  ConnextClientStorePrefix,
-  FILESTORAGE,
   AppInstanceJson,
+  ConnextClientStorePrefix,
+  StateChannelJSON,
+  STORE_SCHEMA_VERSION,
+  StoreTypes,
 } from "@connext/types";
 import { Client as DBClient } from "pg";
 import { before } from "mocha";
@@ -31,7 +32,6 @@ import {
   XPUB_V0_3,
   XPUB_V0_4,
 } from "./examples";
-import { ConnextStore, FileStorage, safeJsonStringify, KeyValueStorage } from "@connext/store";
 
 const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
   const removeIsVirtualTag = (obj: any) => {
@@ -222,7 +222,7 @@ describe("Store Migrations", () => {
     const oldMnemonics = [MNEMONIC_V0_1, MNEMONIC_V0_2, MNEMONIC_V0_3, MNEMONIC_V0_4];
     for (const idx in Array(oldMnemonics.length)) {
       const client = await createClient({
-        store: new ConnextStore(FILESTORAGE),
+        store: new ConnextStore(StoreTypes.File),
         mnemonic: oldMnemonics[idx],
       });
       expect(client).to.be.ok;

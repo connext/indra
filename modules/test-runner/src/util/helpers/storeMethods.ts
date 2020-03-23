@@ -8,12 +8,8 @@ import {
 import {
   StoreFactoryOptions,
   StorePair,
-  StoreType,
   StoreTypes,
-  ASYNCSTORAGE,
   WrappedStorage,
-  LOCALSTORAGE,
-  FILESTORAGE,
   AppInstanceProposal,
   StateChannelJSON,
   AppInstanceJson,
@@ -126,9 +122,9 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
-export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions = {}) {
+export function createKeyValueStore(type: StoreTypes, opts: StoreFactoryOptions = {}) {
   switch (type) {
-    case ASYNCSTORAGE:
+    case StoreTypes.AsyncStorage:
       return new KeyValueStorage(
         new WrappedAsyncStorage(
           new MockAsyncStorage(),
@@ -137,9 +133,9 @@ export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions =
           opts.asyncStorageKey,
         ),
       );
-    case LOCALSTORAGE:
+    case StoreTypes.LocalStorage:
       return new KeyValueStorage(new WrappedLocalStorage(opts.prefix, opts.separator));
-    case FILESTORAGE:
+    case StoreTypes.File:
       return new KeyValueStorage(
         new FileStorage(opts.prefix, opts.separator, opts.fileExt, opts.fileDir),
       );
@@ -148,12 +144,12 @@ export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions =
   }
 }
 
-export function createConnextStore(type: StoreType, opts: StoreFactoryOptions = {}): ConnextStore {
+export function createConnextStore(type: StoreTypes, opts: StoreFactoryOptions = {}): ConnextStore {
   if (!Object.values(StoreTypes).includes(type)) {
     throw new Error(`Unrecognized type: ${type}`);
   }
 
-  if (type === ASYNCSTORAGE) {
+  if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
   }
 

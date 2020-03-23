@@ -1,4 +1,4 @@
-import { IConnextClient, EventNames } from "@connext/types";
+import { delay, EventNames, IConnextClient } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
@@ -6,7 +6,6 @@ import {
   ClientTestMessagingInputOpts,
   createClient,
   createClientWithMessagingLimits,
-  delay,
   ETH_AMOUNT_SM,
   ethProvider,
   expect,

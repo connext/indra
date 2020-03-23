@@ -5,9 +5,18 @@ import {
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
+import { enumify } from "./utils";
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
+
+export const StoreTypes = enumify({
+  AsyncStorage: "AsyncStorage",
+  File: "File",
+  LocalStorage: "LocalStorage",
+  Memory: "Memory",
+});
+export type StoreTypes = (typeof StoreTypes)[keyof typeof StoreTypes];
 
 export type StorePair = {
   path: string;
@@ -37,20 +46,6 @@ export interface WrappedStorage {
   // generates a key for related subject strings
   getKey(...args: string[]): string;
 }
-
-// storage types
-export const ASYNCSTORAGE = "ASYNCSTORAGE";
-export const FILESTORAGE = "FILESTORAGE";
-export const LOCALSTORAGE = "LOCALSTORAGE";
-export const MEMORYSTORAGE = "MEMORYSTORAGE";
-
-export const StoreTypes = {
-  [ASYNCSTORAGE]: ASYNCSTORAGE,
-  [FILESTORAGE]: FILESTORAGE,
-  [LOCALSTORAGE]: LOCALSTORAGE,
-  [MEMORYSTORAGE]: MEMORYSTORAGE,
-};
-export type StoreType = keyof typeof StoreTypes;
 
 export interface FileStorageOptions {
   fileExt?: string;

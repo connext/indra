@@ -1,15 +1,8 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-<<<<<<< HEAD
 import { EventNames, IConnextClient, toBN } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
-import { before, describe, after } from "mocha";
-=======
-import { IConnextClient, UPDATE_STATE_EVENT } from "@connext/types";
-import { AddressZero, One, Two } from "ethers/constants";
-import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
 import { before, describe } from "mocha";
->>>>>>> nats-messaging-refactor
 import { Client } from "ts-nats";
 
 import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
@@ -72,13 +65,8 @@ describe("Reclaim", () => {
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = hexlify(randomBytes(32));
-<<<<<<< HEAD
-      clientA.on(EventNames.UPDATE_STATE_EVENT, async(data) => {
-        if(data.newState.data) {
-=======
-      clientA.on(UPDATE_STATE_EVENT, async data => {
+      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
         if (data.newState.data) {
->>>>>>> nats-messaging-refactor
           res();
         }
       });
@@ -91,16 +79,6 @@ describe("Reclaim", () => {
     });
 
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
-<<<<<<< HEAD
-    // expect this could be checked pre or post the rest of the transfer
-    // so try to pre-emptively avoid race conditions
-    expect(freeBalancePost[nodeFreeBalanceAddress].gte(
-      bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-    )).to.be.true;
-    expect(freeBalancePost[nodeFreeBalanceAddress].lte(
-      bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-    )).to.be.true;
-=======
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
       freeBalancePost[nodeFreeBalanceAddress].gte(
@@ -112,7 +90,6 @@ describe("Reclaim", () => {
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
       ),
     ).to.be.true;
->>>>>>> nats-messaging-refactor
   });
 
   it("happy case: node should reclaim tokens after async transfer", async () => {
@@ -148,13 +125,8 @@ describe("Reclaim", () => {
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
       const paymentId = hexlify(randomBytes(32));
-<<<<<<< HEAD
-      clientA.on(EventNames.UPDATE_STATE_EVENT, async(data) => {
-        if(data.newState.data) {
-=======
-      clientA.on(UPDATE_STATE_EVENT, async data => {
+      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
         if (data.newState.data) {
->>>>>>> nats-messaging-refactor
           res();
         }
       });
@@ -167,16 +139,6 @@ describe("Reclaim", () => {
     });
 
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
-<<<<<<< HEAD
-    // expect this could be checked pre or post the rest of the transfer
-    // so try to pre-emptively avoid race conditions
-    expect(freeBalancePost[nodeFreeBalanceAddress].gte(
-      bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-    )).to.be.true;
-    expect(freeBalancePost[nodeFreeBalanceAddress].lte(
-      bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-    )).to.be.true;
-=======
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
       freeBalancePost[nodeFreeBalanceAddress].gte(
@@ -188,7 +150,6 @@ describe("Reclaim", () => {
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
       ),
     ).to.be.true;
->>>>>>> nats-messaging-refactor
   });
 
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});

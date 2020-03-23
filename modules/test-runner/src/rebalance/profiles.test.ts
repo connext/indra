@@ -1,21 +1,11 @@
-<<<<<<< HEAD
 import { IConnextClient, RebalanceProfile, toBN } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { before, after } from "mocha";
-import { Client } from "ts-nats";
-
-import { createClient, expect } from "../util";
-import { connectNats, closeNats } from "../util/nats";
-=======
-import { IConnextClient, RebalanceProfile } from "@connext/types";
 import { before } from "mocha";
+import { Client } from "ts-nats";
 
 import { createClient, expect } from "../util";
-import { getNatsClient } from "../util/nats";
-import { Client } from "ts-nats";
-import { AddressZero } from "ethers/constants";
->>>>>>> nats-messaging-refactor
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
+import { getNatsClient } from "../util/nats";
 
 describe("Reclaim", () => {
   let client: IConnextClient;
