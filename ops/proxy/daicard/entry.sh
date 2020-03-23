@@ -57,7 +57,7 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
 sed -i 's|$INDRA_URL|'"$indra_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$RELAY_URL|'"http://${indra_url#*://}:4223"'|' /etc/nginx/nginx.conf
+sed -i 's|$MESSAGING_URL|'"http://${indra_url#*://}:4221"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {

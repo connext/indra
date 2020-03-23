@@ -193,7 +193,7 @@ services:
       DOMAINNAME: $INDRA_DOMAINNAME
       EMAIL: $INDRA_EMAIL
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      MESSAGING_URL: http://relay:4223
+      MESSAGING_URL: http://nats:4221
       MODE: prod
     logging:
       driver: "json-file"

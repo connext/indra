@@ -106,7 +106,7 @@ else
     environment:
       DOMAINNAME: localhost
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      MESSAGING_URL: http://relay:4223
+      MESSAGING_URL: http://nats:4221
       MODE: $proxy_mode
       UI_URL: $proxy_ui_url
     networks:
