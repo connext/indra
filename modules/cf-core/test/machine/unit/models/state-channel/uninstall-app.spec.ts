@@ -1,6 +1,4 @@
 import { Zero } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
-import { getLowerCaseAddress } from "@connext/crypto";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../../src/constants";
 import { xkeyKthAddress } from "../../../../../src/machine";
@@ -8,7 +6,7 @@ import { AppInstance, StateChannel } from "../../../../../src/models";
 import { FreeBalanceClass } from "../../../../../src/models/free-balance";
 import { createAppInstanceForTest } from "../../../../unit/utils";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../../mocks";
+import { generateRandomNetworkContext, createRandomAddress } from "../../../mocks";
 
 describe("StateChannel::uninstallApp", () => {
   const networkContext = generateRandomNetworkContext();
@@ -18,7 +16,7 @@ describe("StateChannel::uninstallApp", () => {
   let testApp: AppInstance;
 
   beforeAll(() => {
-    const multisigAddress = getLowerCaseAddress(hexlify(randomBytes(20)));
+    const multisigAddress = createRandomAddress();
     const xpubs = getRandomExtendedPubKeys(2);
 
     sc1 = StateChannel.setupChannel(

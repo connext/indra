@@ -1,15 +1,13 @@
 import { StateChannelJSON } from "@connext/types";
-import { hexlify, randomBytes } from "ethers/utils";
-import { getLowerCaseAddress } from "@connext/crypto";
 
 import { StateChannel } from "../../../../../src/models";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../../mocks";
+import { generateRandomNetworkContext, createRandomAddress } from "../../../mocks";
 import { bigNumberifyJson } from "../../../../../src";
 
 describe("StateChannel", () => {
   it("should be able to instantiate", () => {
-    const multisigAddress = getLowerCaseAddress(hexlify(randomBytes(20)));
+    const multisigAddress = createRandomAddress();
     const xpubs = getRandomExtendedPubKeys(2);
 
     const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
@@ -29,7 +27,7 @@ describe("StateChannel", () => {
   });
 
   describe("should be able to write a channel to a json", () => {
-    const multisigAddress = getLowerCaseAddress(hexlify(randomBytes(20)));
+    const multisigAddress = createRandomAddress();
     const xpubs = getRandomExtendedPubKeys(2);
 
     let sc: StateChannel;
@@ -77,7 +75,7 @@ describe("StateChannel", () => {
   });
 
   describe("should be able to rehydrate from json", () => {
-    const multisigAddress = getLowerCaseAddress(hexlify(randomBytes(20)));
+    const multisigAddress = createRandomAddress();
     const xpubs = getRandomExtendedPubKeys(2);
 
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();

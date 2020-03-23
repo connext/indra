@@ -1,11 +1,11 @@
 import { AppABIEncodings, OutcomeType, SolidityValueType } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
-import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
-import { getLowerCaseAddress } from "@connext/crypto";
+import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { computeRandomExtendedPrvKey } from "../../src/machine/xkeys";
 import { AppInstance, AppInstanceProposal, StateChannel } from "../../src/models";
+import { createRandomAddress } from "../machine/mocks";
 
 export function createAppInstanceProposalForTest(appInstanceId: string): AppInstanceProposal {
   return {
@@ -35,13 +35,10 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
   return new AppInstance(
     /* participants */ stateChannel
       ? stateChannel.getSigningKeysFor(stateChannel.numProposedApps)
-      : [
-          getLowerCaseAddress(hexlify(randomBytes(20))),
-          getLowerCaseAddress(hexlify(randomBytes(20))),
-        ],
+      : [createRandomAddress(), createRandomAddress()],
     /* defaultTimeout */ 0,
     /* appInterface */ {
-      addr: getLowerCaseAddress(hexlify(randomBytes(20))),
+      addr: createRandomAddress(),
       stateEncoding: "tuple(address foo, uint256 bar)",
       actionEncoding: undefined,
     },
@@ -50,9 +47,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* latestVersionNumber */ 0,
     /* latestTimeout */ Math.ceil(1000 * Math.random()),
     /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    /* multisig */ stateChannel
-      ? stateChannel.multisigAddress
-      : getLowerCaseAddress(hexlify(randomBytes(20))),
+    /* multisig */ stateChannel ? stateChannel.multisigAddress : createRandomAddress(),
     /* twoPartyOutcomeInterpreterParams */ {
       playerAddrs: [AddressZero, AddressZero],
       amount: Zero,

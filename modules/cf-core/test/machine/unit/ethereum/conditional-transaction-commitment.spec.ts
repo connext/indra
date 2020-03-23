@@ -1,7 +1,7 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { signDigest, getLowerCaseAddress } from "@connext/crypto";
+import { signDigest } from "@connext/crypto";
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
-import { hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
+import { Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { appIdentityToHash, ConditionalTransactionCommitment } from "../../../../src/ethereum";
@@ -11,7 +11,7 @@ import { FreeBalanceClass } from "../../../../src/models/free-balance";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { getRandomExtendedPubKey, getRandomHDNodes } from "../../integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../mocks";
+import { generateRandomNetworkContext, createRandomAddress } from "../../mocks";
 import { Store } from "../../../../src/store";
 
 describe("ConditionalTransactionCommitment", () => {
@@ -37,7 +37,7 @@ describe("ConditionalTransactionCommitment", () => {
       proxyFactory: networkContext.ProxyFactory,
       multisigMastercopy: networkContext.MinimumViableMultisig,
     },
-    getLowerCaseAddress(hexlify(randomBytes(20))),
+    createRandomAddress(),
     [interaction.sender, interaction.receiver],
   );
 

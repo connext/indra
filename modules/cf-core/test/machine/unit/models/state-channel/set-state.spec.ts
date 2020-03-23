@@ -1,13 +1,11 @@
 import { AddressZero, Zero } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
-import { getLowerCaseAddress } from "@connext/crypto";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../../src/constants";
 import { xkeyKthAddress } from "../../../../../src/machine";
 import { AppInstance, StateChannel } from "../../../../../src/models";
 import { createAppInstanceForTest } from "../../../../unit/utils";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
-import { generateRandomNetworkContext } from "../../../mocks";
+import { generateRandomNetworkContext, createRandomAddress } from "../../../mocks";
 
 const APP_STATE = {
   foo: AddressZero,
@@ -22,7 +20,7 @@ describe("StateChannel::setState", () => {
   let testApp: AppInstance;
 
   beforeAll(() => {
-    const multisigAddress = getLowerCaseAddress(hexlify(randomBytes(20)));
+    const multisigAddress = createRandomAddress();
     const xpubs = getRandomExtendedPubKeys(2);
 
     sc1 = StateChannel.setupChannel(

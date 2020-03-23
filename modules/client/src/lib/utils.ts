@@ -95,8 +95,16 @@ export const withdrawalKey = (xpub: string): string => {
   return `${xpub}/latestNodeSubmittedWithdrawal`;
 };
 
+export function createRandomBytesHexString(length: number) {
+  return hexlify(randomBytes(length)).toLowerCase();
+}
+
+export function createRandomAddress() {
+  return createRandomBytesHexString(20);
+}
+
 export const createRandom32ByteHexString = (): string => {
-  return hexlify(randomBytes(32));
+  return createRandomBytesHexString(32);
 };
 
 export const createPaymentId = createRandom32ByteHexString;
