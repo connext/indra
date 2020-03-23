@@ -1,9 +1,13 @@
 import { getAddress } from "ethers/utils";
-import { recoverAddress } from "@connext/crypto";
+import { isHexString, addHexPrefix, recoverAddress } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../types";
 
-export async function assertIsValidSignature(
+function sanitizeHexString(hex: string): string {
+  return isHexString(hex) ? addHexPrefix(hex) : hex;
+}
+
+export function assertIsValidSignature(
   expectedSigner: string,
   commitment?: EthereumCommitment,
   signature?: string,
@@ -19,7 +23,7 @@ export async function assertIsValidSignature(
   const hash = commitment.hashToSign();
 
   // recoverAddress: 83 ms, hashToSign: 7 ms
-  const signer = await recoverAddress(hash, signature);
+  const signer = await recoverAddress(sanitizeHexString(hash), sanitizeHexString(signature));
 
   if (getAddress(expectedSigner) !== signer) {
     throw Error(
