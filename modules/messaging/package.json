@@ -17,8 +17,8 @@
   },
   "dependencies": {
     "@connext/types": "6.0.0-alpha.0",
-    "ts-nats": "1.2.12",
-    "websocket-nats": "0.3.3"
+    "jsonwebtoken": "8.5.1",
+    "ts-natsutil": "0.1.21"
   },
   "devDependencies": {
     "rollup": "2.1.0",

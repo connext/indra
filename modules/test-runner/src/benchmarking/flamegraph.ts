@@ -1,9 +1,14 @@
 import { connect } from "@connext/client";
+<<<<<<< HEAD
 import { ConnextStore } from "@connext/store";
 import { FILESTORAGE } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { connectNats } from "../util/nats";
+=======
+import { ConnextStore, FileStorage } from "@connext/store";
+import { getNatsClient } from "../util/nats";
+>>>>>>> nats-messaging-refactor
 import { Logger, env, asyncTransferAsset, AssetOptions, ETH_AMOUNT_SM } from "../util";
 
 export default async () => {
@@ -23,7 +28,7 @@ export default async () => {
     store: new ConnextStore(FILESTORAGE),
   });
   const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-  const nats = await connectNats();
+  const nats = getNatsClient();
   log.info("transferring asset");
   await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   log.info("done");

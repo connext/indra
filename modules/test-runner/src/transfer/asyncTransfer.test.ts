@@ -1,6 +1,10 @@
 /* global before after */
 import { utils } from "@connext/client";
+<<<<<<< HEAD
 import { IConnextClient, ConditionalTransferTypes, CF_PATH } from "@connext/types";
+=======
+import { IConnextClient, CF_PATH, LINKED_TRANSFER } from "@connext/types";
+>>>>>>> nats-messaging-refactor
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
@@ -22,7 +26,7 @@ import {
   withdrawFromChannel,
   ZERO_ZERO_ONE_ETH,
 } from "../util";
-import { connectNats, closeNats } from "../util/nats";
+import { getNatsClient } from "../util/nats";
 import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
@@ -34,7 +38,7 @@ describe("Async Transfers", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -46,10 +50,6 @@ describe("Async Transfers", () => {
   afterEach(async () => {
     await clientA.messaging.disconnect();
     await clientB.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it("happy case: client A transfers eth to client B through node", async () => {
@@ -236,7 +236,11 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
+<<<<<<< HEAD
         conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
+=======
+        conditionType: LINKED_TRANSFER,
+>>>>>>> nats-messaging-refactor
         paymentId,
         preImage: hexlify(randomBytes(32)),
         recipient: clientB.publicIdentifier,
@@ -252,7 +256,11 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
+<<<<<<< HEAD
         conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
+=======
+        conditionType: LINKED_TRANSFER,
+>>>>>>> nats-messaging-refactor
         paymentId: hexlify(randomBytes(32)),
         preImage,
         recipient: clientB.publicIdentifier,

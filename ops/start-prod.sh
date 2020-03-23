@@ -25,9 +25,8 @@ registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"
 
 ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
-nats_port="4222"
 node_port="8080"
-number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="6" # NOTE: Gotta update this manually when adding/removing services :(
 
 ####################
 # Helper Functions
@@ -80,6 +79,13 @@ pg_password_file="/run/secrets/$db_secret"
 pg_port="5432"
 pg_user="$project"
 
+# nats bearer auth settings
+nats_jwt_signer_privkey='' # FIXME-- read from configuration
+nats_jwt_signer_pubkey='' # FIXME-- read from configuration
+nats_port="4222"
+nats_ws_port="4221"
+
+# redis settings
 redis_url="redis://redis:6379"
 
 ########################################
@@ -100,11 +106,10 @@ fi
 ethprovider_image="$registry${project}_ethprovider:$version"
 database_image="$registry${project}_database:$version"
 logdna_image="logdna/logspout:v1.2.0"
-nats_image="nats:2.0.0-linux"
+nats_image="provide/nats-server:latest"
 node_image="$registry${project}_node:$version"
 proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
-relay_image="$registry${project}_relay:$version"
 
 pull_if_unavailable "$database_image"
 pull_if_unavailable "$logdna_image"
@@ -112,7 +117,6 @@ pull_if_unavailable "$nats_image"
 pull_if_unavailable "$node_image"
 pull_if_unavailable "$proxy_image"
 pull_if_unavailable "$redis_image"
-pull_if_unavailable "$relay_image"
 
 ########################################
 ## Ethereum Config
@@ -213,7 +217,10 @@ services:
       INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
       INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID: abc123
+      INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: "$nats_jwt_signer_privkey"
+      INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: "$nats_jwt_signer_pubkey"
       INDRA_NATS_SERVERS: nats://nats:$nats_port
+      INDRA_NATS_WS_ENDPOINT: wss://nats:$nats_ws_port
       INDRA_NATS_TOKEN: abc123
       INDRA_PG_DATABASE: $pg_db
       INDRA_PG_HOST: $pg_host
@@ -253,19 +260,16 @@ services:
   nats:
     image: $nats_image
     command: -V
+    environment:
+      JWT_SIGNER_PUBLIC_KEY: "$nats_jwt_signer_pubkey"
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
     ports:
-      - "4222:4222"
-
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    ports:
-      - "4223:4223"
+      - "$nats_port:$nats_port"
+      - "$nats_ws_port:$nats_ws_port"
 
   redis:
     image: $redis_image

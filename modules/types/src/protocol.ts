@@ -14,6 +14,7 @@ type InstallProtocolParams = {
   participants: string[];
   initialState: SolidityValueType;
   appInterface: AppInterface;
+  meta?: Object;
   defaultTimeout: number;
   appSeqNo: number;
   // Outcome Type returned by the app instance, as defined by `appInterface`

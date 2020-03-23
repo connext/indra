@@ -1,5 +1,15 @@
 import {
+<<<<<<< HEAD
   ChannelMethods,
+=======
+  chan_config,
+  chan_sign,
+  chan_signDigest,
+  chan_restoreState,
+  chan_getUserWithdrawal,
+  chan_setUserWithdrawal,
+  chan_setStateChannel,
+>>>>>>> nats-messaging-refactor
   ChannelProviderConfig,
   ConnextEventEmitter,
   IChannelProvider,
@@ -53,6 +63,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
         break;
+<<<<<<< HEAD
       case ChannelMethods.chan_signWithdrawCommitment:
         result = await this.signWithdrawCommitment(params.message);
         break;
@@ -60,6 +71,15 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
           result = await this.signMessage(params.message);
           break;
       case ChannelMethods.chan_config:
+=======
+      case chan_sign:
+        result = await this.signMessage(params.message);
+        break;
+      case chan_signDigest:
+        result = await this.signDigest(params.message);
+        break;
+      case chan_config:
+>>>>>>> nats-messaging-refactor
         result = this.config;
         break;
       case ChannelMethods.chan_restoreState:
@@ -125,7 +145,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
+  public signMessage(message: string): Promise<string> {
+    return this._send(chan_sign, { message });
+  }
 
+<<<<<<< HEAD
   public signMessage = async (message: string): Promise<string> => {
     return this._send(ChannelMethods.chan_nodeAuth, { message });
   };
@@ -133,6 +157,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   public signWithdrawCommitment = async (message: string): Promise<string> => {
     return this._send(ChannelMethods.chan_signWithdrawCommitment, { message });
   };
+=======
+  public signDigest = async (message: string): Promise<string> => {
+    return this._send(chan_signDigest, { message });
+  };
+
+>>>>>>> nats-messaging-refactor
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 
@@ -147,7 +177,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   };
 
   public restoreState = async (): Promise<void> => {
+<<<<<<< HEAD
     return this._send(ChannelMethods.chan_restoreState, { });
+=======
+    return this._send(chan_restoreState, {});
+>>>>>>> nats-messaging-refactor
   };
 
   public setStateChannel = async (state: StateChannelJSON): Promise<void> => {

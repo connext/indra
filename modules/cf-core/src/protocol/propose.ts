@@ -13,7 +13,11 @@ import {
 import { appIdentityToHash, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
+<<<<<<< HEAD
 import { assertIsValidSignature } from "./utils";
+=======
+import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+>>>>>>> nats-messaging-refactor
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
@@ -42,7 +46,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
+<<<<<<< HEAD
     } = params as ProtocolParams.Propose;
+=======
+      meta,
+    } = params as ProposeInstallProtocolParams;
+>>>>>>> nats-messaging-refactor
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
@@ -69,6 +78,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       responderDepositTokenAddress:
         responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      meta,
     };
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
@@ -168,7 +178,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
+<<<<<<< HEAD
     } = params as ProtocolParams.Propose;
+=======
+      meta,
+    } = params as ProposeInstallProtocolParams;
+>>>>>>> nats-messaging-refactor
 
     const {
       customData: { signature: initiatorSignatureOnInitialState },
@@ -194,6 +209,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDeposit: initiatorDeposit.toHexString(),
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
+      meta,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
       initiatorDepositTokenAddress:
         responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,

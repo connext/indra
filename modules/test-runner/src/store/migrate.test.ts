@@ -136,7 +136,6 @@ describe("Store Migrations", () => {
     channelRows.forEach((channelRow, idx) => {
       const [oldKey, oldVal] = oldClientChannels[idx];
       const json = oldVal[oldKey];
-      // console.log(`**** channelRow: ${channelRow}`);
       expect(channelRow).to.containSubset({
         userPublicIdentifier: oldClientXpubs[idx],
         nodePublicIdentifier: nodePubId,

@@ -369,6 +369,7 @@ function computeStateChannelTransition(
     appSeqNo,
     outcomeType,
     disableLimit,
+    meta,
   } = params;
 
   const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorXpub);
@@ -399,6 +400,7 @@ function computeStateChannelTransition(
     /* defaultTimeout */ defaultTimeout,
     /* outcomeType */ outcomeType,
     /* multisig */ stateChannel.multisigAddress,
+    meta,
     twoPartyOutcomeInterpreterParams,
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,

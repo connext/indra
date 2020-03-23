@@ -95,7 +95,7 @@ docker run \
   --name="$nats_host" \
   --network="$network" \
   --rm \
-  nats:2.0.0-linux
+  provide/nats-server:latest
 
 echo "Starting $redis_host.."
 docker run \

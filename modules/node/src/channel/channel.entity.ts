@@ -6,7 +6,12 @@ import {
   ManyToMany,
   OneToMany,
   OneToOne,
+<<<<<<< HEAD
   PrimaryGeneratedColumn,
+=======
+  CreateDateColumn,
+  UpdateDateColumn,
+>>>>>>> nats-messaging-refactor
 } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
@@ -14,7 +19,6 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsXpub } from "../util";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
-import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Entity()
@@ -77,20 +81,14 @@ export class Channel {
   rebalanceProfiles!: RebalanceProfile[];
 
   @OneToMany(
-    (type: any) => LinkedTransfer,
-    (transfer: LinkedTransfer) => transfer.senderChannel,
-  )
-  senderLinkedTransfers!: LinkedTransfer[];
-
-  @OneToMany(
-    (type: any) => LinkedTransfer,
-    (transfer: LinkedTransfer) => transfer.receiverChannel,
-  )
-  receiverLinkedTransfers!: LinkedTransfer[];
-
-  @OneToMany(
     (type: any) => OnchainTransaction,
     (tx: OnchainTransaction) => tx.channel,
   )
   transactions!: OnchainTransaction[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

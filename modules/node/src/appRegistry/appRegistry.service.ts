@@ -9,6 +9,7 @@ import {
 } from "@connext/apps";
 import {
   AppInstanceJson,
+<<<<<<< HEAD
   CoinBalanceRefundAppName,
   FastSignedTransferAppName,
   MethodParams,
@@ -18,22 +19,25 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
+=======
+  WithdrawAppStateBigNumber,
+  HashLockTransferApp,
+>>>>>>> nats-messaging-refactor
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import { Zero } from "ethers/constants";
+import { MessagingService } from "@connext/messaging";
 import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { WithdrawService } from "../withdraw/withdraw.service";
-import { MessagingClientProviderId } from "../constants";
+import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { LoggerService } from "../logger/logger.service";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { Channel } from "../channel/channel.entity";
+import { WithdrawService } from "../withdraw/withdraw.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -46,12 +50,10 @@ export class AppRegistryService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly swapRateService: SwapRateService,
-    private readonly linkedTransferService: LinkedTransferService,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -65,8 +67,9 @@ export class AppRegistryService implements OnModuleInit {
     let appInstance: AppInstanceJson;
 
     // if error, reject install
+    let installerChannel: Channel;
     try {
-      const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
+      installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
       registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
@@ -79,12 +82,8 @@ export class AppRegistryService implements OnModuleInit {
       // TODO: need to validate this still
       if (registryAppInfo.name === CoinBalanceRefundAppName) {
         this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
-        await this.messagingClient
-          .emit(
-            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${installerChannel.multisigAddress}`,
-            proposeInstallParams,
-          )
-          .toPromise();
+        const proposalAcceptedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
+        await this.messagingService.publish(proposalAcceptedSubject, proposeInstallParams);
         return;
       }
 
@@ -124,12 +123,8 @@ export class AppRegistryService implements OnModuleInit {
     // any tasks that need to happen after install, i.e. DB writes
     await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
 
-    await this.messagingClient
-      .emit(
-        `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
-        appInstance,
-      )
-      .toPromise();
+    const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
+    await this.messagingService.publish(installSubject, appInstance);
   }
 
   private async runPreInstallValidation(
@@ -194,6 +189,7 @@ export class AppRegistryService implements OnModuleInit {
     from: string,
   ): Promise<void> {
     switch (registryAppInfo.name) {
+<<<<<<< HEAD
       case SimpleLinkedTransferAppName: {
         this.log.debug(`Saving linked transfer`);
         // eslint-disable-next-line max-len
@@ -226,6 +222,9 @@ export class AppRegistryService implements OnModuleInit {
       case FastSignedTransferAppName:
         break;
       case WithdrawAppName: {
+=======
+      case WithdrawApp: {
+>>>>>>> nats-messaging-refactor
         this.log.debug(`Doing withdrawal post-install tasks`);
         const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
         const initialState = proposeInstallParams.initialState as WithdrawAppState;

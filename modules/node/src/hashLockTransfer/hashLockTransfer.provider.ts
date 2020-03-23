@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 import { IMessagingService } from "@connext/messaging";
+=======
+import { convertHashLockTransferAppState } from "@connext/apps";
+import { MessagingService } from "@connext/messaging";
+>>>>>>> nats-messaging-refactor
 import {
   ResolveHashLockTransferResponse,
   HashLockTransferAppState,
@@ -20,7 +25,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     private readonly hashLockTransferService: HashLockTransferService,
     private readonly cfCoreService: CFCoreService,
     private readonly channelRepository: ChannelRepository,
@@ -65,13 +70,13 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "transfer.resolve-hashlock.>",
-      this.authService.useUnverifiedPublicIdentifier(this.resolveHashLockTransfer.bind(this)),
+      "*.transfer.resolve-hashlock",
+      this.authService.parseXpub(this.resolveHashLockTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "transfer.get-hashlock.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getHashLockTransfer.bind(this)),
+      "*.transfer.get-hashlock",
+      this.authService.parseXpub(this.getHashLockTransfer.bind(this)),
     );
   }
 }
@@ -89,7 +94,7 @@ export const hashLockTransferProviderFactory: FactoryProvider<Promise<void>> = {
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     hashLockTransferService: HashLockTransferService,
     cfCoreService: CFCoreService,
     channelRepository: ChannelRepository,

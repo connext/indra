@@ -22,7 +22,7 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
       .filter(app => app.type === AppType.INSTANCE)
       .map(app => [app.identityHash, convertAppToInstanceJSON(app, channel)]),
     freeBalanceAppInstance: convertAppToInstanceJSON(
-      channel.appInstances.filter(app => app.type === AppType.FREE_BALANCE)[0],
+      channel.appInstances.find(app => app.type === AppType.FREE_BALANCE),
       channel,
     ),
     monotonicNumProposedApps: channel.monotonicNumProposedApps,

@@ -1,16 +1,20 @@
+<<<<<<< HEAD
 import { IMessagingService } from "@connext/messaging";
 import {
   stringify,
   ResolveFastSignedTransferResponse,
 } from "@connext/types";
+=======
+import { replaceBN, ResolveFastSignedTransferResponse } from "@connext/types";
+>>>>>>> nats-messaging-refactor
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
+import { MessagingService } from "@connext/messaging";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, FastSignedTransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
-import { TransferRepository } from "../transfer/transfer.repository";
 
 import { FastSignedTransferService } from "./fastSignedTransfer.service";
 
@@ -18,9 +22,8 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     private readonly fastSignedTransferService: FastSignedTransferService,
-    private readonly transferRepository: TransferRepository,
   ) {
     super(log, messaging);
     log.setContext("FastSignedTransferMessaging");
@@ -48,34 +51,26 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "transfer.resolve-fast-signed.>",
-      this.authService.useUnverifiedPublicIdentifier(this.resolveFastSignedTransfer.bind(this)),
+      "*.transfer.resolve-fast-signed",
+      this.authService.parseXpub(this.resolveFastSignedTransfer.bind(this)),
     );
   }
 }
 
 export const fastSignedTransferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    AuthService,
-    LoggerService,
-    MessagingProviderId,
-    FastSignedTransferService,
-    TransferRepository,
-  ],
+  inject: [AuthService, LoggerService, MessagingProviderId, FastSignedTransferService],
   provide: FastSignedTransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     fastSignedTransferService: FastSignedTransferService,
-    transferRepository: TransferRepository,
   ): Promise<void> => {
     const transfer = new FastSignedTransferMessaging(
       authService,
       logging,
       messaging,
       fastSignedTransferService,
-      transferRepository,
     );
     await transfer.setupSubscriptions();
   },

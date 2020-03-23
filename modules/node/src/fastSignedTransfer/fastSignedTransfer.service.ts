@@ -2,37 +2,39 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import {
   DepositConfirmationMessage,
   DepositFailedMessage,
+<<<<<<< HEAD
   EventNames,
+=======
+  FastSignedTransferAppStateBigNumber,
+  FastSignedTransferAppActionBigNumber,
+>>>>>>> nats-messaging-refactor
   FastSignedTransferActionType,
   FastSignedTransferAppAction,
   FastSignedTransferAppName,
   FastSignedTransferAppState,
   ResolveFastSignedTransferResponse,
 } from "@connext/types";
-import { Injectable, Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
 import { BigNumber, hexZeroPad } from "ethers/utils";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
-import { ConfigService } from "../config/config.service";
-import { MessagingClientProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
+<<<<<<< HEAD
+=======
+import { convertFastSignedTransferAppState } from "@connext/apps";
+>>>>>>> nats-messaging-refactor
 
 @Injectable()
 export class FastSignedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly configService: ConfigService,
     private readonly log: LoggerService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("FastSignedTransferService");
   }
@@ -210,7 +212,7 @@ export class FastSignedTransferService {
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      channel.userPublicIdentifier,
+      channel,
       initialState,
       depositAmount,
       AddressZero,

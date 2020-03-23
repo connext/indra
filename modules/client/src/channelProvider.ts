@@ -1,7 +1,16 @@
 import {
+<<<<<<< HEAD
   ChannelMethods,
   ConnextEventEmitter,
   EventNames,
+=======
+  chan_sign,
+  chan_signDigest,
+  chan_getUserWithdrawal,
+  chan_setUserWithdrawal,
+  chan_setStateChannel,
+  chan_restoreState,
+>>>>>>> nats-messaging-refactor
   IChannelProvider,
   IClientStore,
   MethodName,
@@ -9,7 +18,6 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signEthereumMessage } from "@connext/crypto";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress, signDigestWithEthers } from "./lib";
 import {
@@ -18,6 +26,7 @@ import {
   IRpcConnection,
   JsonRpcRequest,
 } from "./types";
+import { signChannelMessage } from "@connext/crypto";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -32,7 +41,7 @@ export const createCFChannelProvider = async ({
   logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
-    messaging as any,
+    messaging,
     store,
     networkContext,
     nodeConfig,
@@ -79,11 +88,19 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
+<<<<<<< HEAD
       case ChannelMethods.chan_signWithdrawCommitment:
         result = await this.signWithdrawCommitment(params.message);
         break;
       case ChannelMethods.chan_nodeAuth:
         result = await this.walletSign(params.message);
+=======
+      case chan_sign:
+        result = await this.signMessage(params.message);
+        break;
+      case chan_signDigest:
+        result = await this.signDigest(params.message);
+>>>>>>> nats-messaging-refactor
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -124,11 +141,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
-  private walletSign = async (message: string): Promise<string> => {
-    return signEthereumMessage(this.authKey, message);
+  private signMessage = async (message: string): Promise<string> => {
+    return signChannelMessage(this.authKey, message);
   };
 
-  private signWithdrawCommitment = async (message: string): Promise<string> => {
+  private signDigest = async (message: string): Promise<string> => {
     return signDigestWithEthers(this.authKey, message);
   };
 

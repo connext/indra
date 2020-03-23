@@ -3,8 +3,14 @@ import {
   EventPayloads,
   IChannelProvider,
   ILoggerService,
+<<<<<<< HEAD
   MethodParams,
   MethodResults,
+=======
+  REJECT_INSTALL_EVENT,
+  InstallMessage,
+  INSTALL_EVENT,
+>>>>>>> nats-messaging-refactor
 } from "@connext/types";
 import { providers } from "ethers";
 
@@ -48,7 +54,7 @@ export abstract class AbstractController {
     ]);
     const { appInstanceId } = proposeRes as MethodResults.ProposeInstall;
 
-    let boundResolve: (value?: any) => void;
+    // let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
     try {
@@ -59,8 +65,9 @@ export abstract class AbstractController {
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
-          boundResolve = this.resolveInstall.bind(null, res, rej, appInstanceId);
+          // boundResolve = this.resolveInstall.bind(null, res, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
+<<<<<<< HEAD
           this.log.debug(
             `subscribing to indra.node.${this.connext.nodePublicIdentifier}.install.${this.connext.multisigAddress}`,
           );
@@ -69,6 +76,15 @@ export abstract class AbstractController {
             boundResolve,
           );
           this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
+=======
+
+          // set up install nats subscription
+          const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`;
+          this.connext.messaging.subscribe(subject, res);
+
+          // this.listener.on(INSTALL_EVENT, boundResolve, appInstanceId);
+          this.listener.on(REJECT_INSTALL_EVENT, boundReject);
+>>>>>>> nats-messaging-refactor
         }),
       ]);
 
@@ -101,9 +117,8 @@ export abstract class AbstractController {
             this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
 
             // set up proposal accepted nats subscriptions
-            this.log.debug(
-              `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-            );
+            const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.*.proposal.accept`;
+            this.log.debug(`subscribing to ${subject}`);
 
             // it is not clear whether the `proposalAccepted` (indicating
             // the responder is done with the protocol), or the
@@ -118,12 +133,10 @@ export abstract class AbstractController {
                 proposed = true;
               }
             };
+            // TODO: refactor this, its confusing as hell
             const [proposeResult] = await Promise.all([
               this.connext.proposeInstallApp(params),
-              this.connext.messaging.subscribe(
-                `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-                resolveIfProposed,
-              ),
+              this.connext.messaging.subscribe(subject, resolveIfProposed),
             ]);
             appId = proposeResult.appInstanceId;
             resolveIfProposed();
@@ -141,25 +154,16 @@ export abstract class AbstractController {
     }
   };
 
-  private resolveInstall = (
-    res: (value?: unknown) => void,
-    rej: (message?: Error) => void,
-    appInstanceId: string,
-    message: any,
-  ): void => {
-    // TODO: why is it sometimes data vs data.data?
-    const appInstance = message.data.data ? message.data.data : message.data;
-
-    if (appInstance.identityHash !== appInstanceId) {
-      // not our app
-      const msg = `Caught install event for different app ${stringify(
-        message,
-      )}, expected ${appInstanceId}. This should not happen.`;
-      this.log.warn(msg);
-      return rej(new Error(msg));
-    }
-    res(message);
-  };
+  // private resolveInstall = (
+  //   res: (value?: unknown) => void,
+  //   appInstanceId: string,
+  //   message: any,
+  // ): void => {
+  //   const data = message.data ? message.data : message;
+  //   if (data.params.appInstanceId === appInstanceId) {
+  //     res();
+  //   }
+  // };
 
   private rejectInstall = (
     rej: (message?: Error) => void,
@@ -188,14 +192,14 @@ export abstract class AbstractController {
 
   private cleanupInstallListeners = (boundReject: any, appId: string): void => {
     this.connext.messaging.unsubscribe(
-      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
+      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appId}.install`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
 
   private cleanupProposalListeners = (boundReject: any): void => {
     this.connext.messaging.unsubscribe(
-      `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.*.proposal.accept`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };

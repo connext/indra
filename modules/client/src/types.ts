@@ -6,12 +6,12 @@ import {
   IChannelProvider,
   IClientStore,
   ILoggerService,
-  IMessagingService,
   INodeApiClient,
   KeyGen,
   Network,
   Xpub,
 } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
 
 // This type is only ever used inside the client,
 // No need to keep it in the global types package.
@@ -22,7 +22,7 @@ export type InternalClientOptions = {
   ethProvider: JsonRpcProvider;
   keyGen: KeyGen;
   logger: ILoggerService;
-  messaging: IMessagingService;
+  messaging: MessagingService;
   network: Network;
   node: INodeApiClient;
   store: IClientStore;
@@ -35,6 +35,11 @@ export {
   AppInstanceInfo,
   AppInstanceJson,
   AppRegistry,
+<<<<<<< HEAD
+=======
+  BigNumber,
+  chan_signDigest,
+>>>>>>> nats-messaging-refactor
   calculateExchange,
   CFChannelProviderOptions,
   ChannelAppSequences,
@@ -67,14 +72,18 @@ export {
   KeyGen,
   LinkedTransferParameters,
   LinkedTransferResponse,
+<<<<<<< HEAD
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
+=======
+  makeChecksum,
+  makeChecksumOrEthAddress,
+>>>>>>> nats-messaging-refactor
   maxBN,
   minBN,
   NodeInitializationParameters,
   NodeMessageWrappedProtocolMessage,
   RebalanceProfile,
-  PendingAsyncTransfer,
   ProposeMessage,
   RejectProposalMessage,
   RequestCollateralResponse,
@@ -86,7 +95,6 @@ export {
   ResolveConditionResponse,
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
-  ResolveLinkedTransferToRecipientParameters,
   StateChannelJSON,
   Store,
   StorePair,

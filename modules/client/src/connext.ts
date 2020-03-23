@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { SupportedApplications } from "@connext/apps";
 import { IMessagingService } from "@connext/messaging";
+=======
+import { SupportedApplication, AppActionBigNumber, AppStateBigNumber } from "@connext/apps";
+import { MessagingService } from "@connext/messaging";
+>>>>>>> nats-messaging-refactor
 import {
   Address,
   AppAction,
@@ -14,6 +19,7 @@ import {
   IChannelProvider,
   IClientStore,
   ILoggerService,
+<<<<<<< HEAD
   LinkedTransferToRecipientResponse,
   MethodNames,
   MethodParams,
@@ -22,6 +28,9 @@ import {
   RequestDepositRightsParameters,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
+=======
+  LINKED_TRANSFER,
+>>>>>>> nats-messaging-refactor
   ResolveFastSignedTransferParameters,
   ResolveHashLockTransferParameters,
   ResolveLinkedTransferParameters,
@@ -30,6 +39,8 @@ import {
   WithdrawParameters,
   WithdrawResponse,
   GetHashLockTransferResponse,
+  LinkedTransferResponse,
+  GetLinkedTransferResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
@@ -89,7 +100,7 @@ export class ConnextClient implements IConnextClient {
   public freeBalanceAddress: string;
   public listener: ConnextListener;
   public log: ILoggerService;
-  public messaging: IMessagingService;
+  public messaging: MessagingService;
   public multisigAddress: Address;
   public network: Network;
   public node: INodeApiClient;
@@ -256,23 +267,15 @@ export class ConnextClient implements IConnextClient {
     return res;
   };
 
-  public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
-    recipient: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }> => {
-    return await this.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
-      recipient,
-      encryptedPreImage,
-      linkedHash,
-    );
-  };
-
   public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
     return this.channelProvider.config;
   };
 
+<<<<<<< HEAD
   public getLinkedTransfer = async (paymentId: string): Promise<TransferInfo> => {
+=======
+  public getLinkedTransfer = async (paymentId: string): Promise<GetLinkedTransferResponse> => {
+>>>>>>> nats-messaging-refactor
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
@@ -368,21 +371,26 @@ export class ConnextClient implements IConnextClient {
    * Transfer currently uses the conditionalTransfer LinkedTransferToRecipient so that
    * async payments are the default transfer.
    */
-  public transfer = async (
-    params: TransferParameters,
-  ): Promise<LinkedTransferToRecipientResponse> => {
+  public transfer = async (params: TransferParameters): Promise<LinkedTransferResponse> => {
     if (!params.paymentId) {
       params.paymentId = hexlify(randomBytes(32));
     }
+<<<<<<< HEAD
     return this.linkedTransferController.linkedTransferToRecipient({
       amount: toBN(params.amount),
       assetId: params.assetId,
       conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
+=======
+    return this.linkedTransferController.linkedTransfer({
+      amount: params.amount,
+      assetId: params.assetId,
+      conditionType: LINKED_TRANSFER,
+>>>>>>> nats-messaging-refactor
       meta: params.meta,
       paymentId: params.paymentId,
       preImage: hexlify(randomBytes(32)),
       recipient: params.recipient,
-    }) as Promise<LinkedTransferToRecipientResponse>;
+    }) as Promise<LinkedTransferResponse>;
   };
 
   public withdraw = async (params: WithdrawParameters): Promise<WithdrawResponse> => {
@@ -404,8 +412,12 @@ export class ConnextClient implements IConnextClient {
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
     switch (params.conditionType) {
+<<<<<<< HEAD
       case ConditionalTransferTypes.LinkedTransferToRecipient:
       case ConditionalTransferTypes.LinkedTransfer: {
+=======
+      case LINKED_TRANSFER: {
+>>>>>>> nats-messaging-refactor
         return this.resolveLinkedTransferController.resolveLinkedTransfer(
           params as ResolveLinkedTransferParameters,
         );
@@ -432,10 +444,14 @@ export class ConnextClient implements IConnextClient {
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.linkedTransferController.linkedTransfer(params);
       }
+<<<<<<< HEAD
       case ConditionalTransferTypes.LinkedTransferToRecipient: {
         return this.linkedTransferController.linkedTransferToRecipient(params);
       }
       case ConditionalTransferTypes.FastSignedTransfer: {
+=======
+      case FAST_SIGNED_TRANSFER: {
+>>>>>>> nats-messaging-refactor
         return this.fastSignedTransferController.fastSignedTransfer(
           params as FastSignedTransferParameters,
         );

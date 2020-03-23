@@ -1,4 +1,14 @@
 import {
+<<<<<<< HEAD:modules/types/src/contracts/apps/index.ts
+=======
+  ResolveLinkedTransferResponse,
+  LinkedTransferParameters,
+  LinkedTransferResponse,
+  ResolveLinkedTransferParameters,
+  LINKED_TRANSFER,
+} from "./SimpleLinkedTransferApp";
+import {
+>>>>>>> nats-messaging-refactor:modules/types/src/apps/index.ts
   FastSignedTransferParameters,
   FastSignedTransferResponse,
   ResolveFastSignedTransferParameters,
@@ -30,19 +40,16 @@ export * from "./WithdrawApp";
 
 export type ConditionalTransferParameters =
   | LinkedTransferParameters
-  | LinkedTransferToRecipientParameters
   | FastSignedTransferParameters
   | HashLockTransferParameters;
 
 export type ConditionalTransferResponse =
   | LinkedTransferResponse
-  | LinkedTransferToRecipientResponse
   | FastSignedTransferResponse
   | HashLockTransferResponse;
 
 export type ResolveConditionParameters =
   | ResolveLinkedTransferParameters
-  | ResolveLinkedTransferToRecipientParameters
   | ResolveFastSignedTransferParameters
   | ResolveHashLockTransferParameters;
 
@@ -50,3 +57,11 @@ export type ResolveConditionResponse =
   | ResolveLinkedTransferResponse
   | ResolveFastSignedTransferResponse
   | ResolveHashLockTransferResponse;
+<<<<<<< HEAD:modules/types/src/contracts/apps/index.ts
+=======
+
+export type ConditionalTransferTypes =
+  | typeof LINKED_TRANSFER
+  | typeof FAST_SIGNED_TRANSFER
+  | typeof HASHLOCK_TRANSFER;
+>>>>>>> nats-messaging-refactor:modules/types/src/apps/index.ts

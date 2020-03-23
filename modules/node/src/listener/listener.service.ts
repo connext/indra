@@ -1,12 +1,13 @@
 import { AppAction, EventNames, MethodNames, NodeMessage } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { MessagingService } from "@connext/messaging";
+import { AddressZero } from "ethers/constants";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { MessagingClientProviderId } from "../constants";
+import { MessagingProviderId } from "../constants";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import {
   CreateChannelMessage,
@@ -21,8 +22,6 @@ import {
   UpdateStateMessage,
 } from "../util/cfCore";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
-import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
@@ -59,11 +58,10 @@ export default class ListenerService implements OnModuleInit {
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly linkedTransferService: LinkedTransferService,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
+    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ListenerService");
   }
@@ -139,31 +137,9 @@ export default class ListenerService implements OnModuleInit {
         }
         rejectedApp.type = AppType.REJECTED;
         await this.appInstanceRepository.save(rejectedApp);
-
-        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
-          data.data.appInstanceId,
-        );
-        if (!transfer) {
-          this.log.debug(`Transfer not found`);
-          return;
-        }
-        transfer.status = LinkedTransferStatus.FAILED;
-        await this.linkedTransferRepository.save(transfer);
       },
       UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
         this.logEvent(UNINSTALL_EVENT, data);
-        // check if app being uninstalled is a receiver app for a transfer
-        // if so, try to uninstall the sender app
-        try {
-          await this.linkedTransferService.reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
-            data.data.appInstanceId,
-          );
-        } catch (e) {
-          if (e.message.includes(`Could not find transfer`)) {
-            return;
-          }
-          throw e;
-        }
       },
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
@@ -209,6 +185,7 @@ export default class ListenerService implements OnModuleInit {
       },
     );
 
+<<<<<<< HEAD
     this.cfCoreService.registerCfCoreListener(MethodNames.chan_uninstall as any, (data: any) => {
       this.log.debug(
         `Emitting MethodName.UNINSTALL event: ${JSON.stringify(
@@ -224,5 +201,15 @@ export default class ListenerService implements OnModuleInit {
         )
         .toPromise();
     });
+=======
+    this.cfCoreService.registerCfCoreListener(
+      ProtocolTypes.chan_uninstall as any,
+      async (data: any) => {
+        // TODO: GET CHANNEL MULTISIG
+        const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${AddressZero}.app-instance.${data.result.result.appInstanceId}.uninstall`;
+        await this.messagingService.publish(uninstallSubject, data.result.result);
+      },
+    );
+>>>>>>> nats-messaging-refactor
   }
 }

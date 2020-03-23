@@ -10,6 +10,7 @@ import {
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes, soliditySha256 } from "ethers/utils";
+import { providers } from "ethers";
 
 import {
   AssetOptions,
@@ -20,7 +21,6 @@ import {
   TOKEN_AMOUNT,
   env,
 } from "../util";
-import { providers } from "ethers";
 
 describe("HashLock Transfers", () => {
   let clientA: IConnextClient;

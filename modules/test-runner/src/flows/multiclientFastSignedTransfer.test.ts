@@ -16,10 +16,15 @@ import {
   joinSignature,
   SigningKey,
 } from "ethers/utils";
-import { before, after } from "mocha";
+import { before } from "mocha";
 import { Client } from "ts-nats";
 
+<<<<<<< HEAD
 import { createClient, fundChannel, connectNats, closeNats } from "../util";
+=======
+import { createClient, fundChannel, getNatsClient } from "../util";
+import { Wallet } from "ethers";
+>>>>>>> nats-messaging-refactor
 import { AddressZero } from "ethers/constants";
 
 describe("Full Flow: Multi-client transfer", () => {
@@ -31,7 +36,7 @@ describe("Full Flow: Multi-client transfer", () => {
   let signerWalletB: Wallet;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -47,10 +52,6 @@ describe("Full Flow: Multi-client transfer", () => {
     await gateway.messaging.disconnect();
     await indexerA.messaging.disconnect();
     await indexerB.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it.skip("Clients fast signed transfer assets between themselves", async function() {

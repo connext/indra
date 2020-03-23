@@ -6,14 +6,21 @@ import {
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
+import { before } from "mocha";
+import { Client } from "ts-nats";
 
-import { expect, createClient, fundChannel } from "../util";
+import { expect, createClient, fundChannel, getNatsClient } from "../util";
 
 // TODO: fix race conditions
 describe.skip("Full Flow: Multi-client transfer", () => {
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
+  let nats: Client;
+
+  before(async () => {
+    nats = getNatsClient();
+  });
 
   beforeEach(async () => {
     gateway = await createClient();

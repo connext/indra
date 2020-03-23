@@ -1,5 +1,15 @@
 import { xkeyKthAddress } from "@connext/cf-core";
+<<<<<<< HEAD
 import { EventNames, IConnextClient } from "@connext/types";
+=======
+import {
+  IConnextClient,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  UNINSTALL_EVENT,
+  LinkedTransferStatus,
+} from "@connext/types";
+>>>>>>> nats-messaging-refactor
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
@@ -19,6 +29,7 @@ export async function asyncTransferAsset(
   assetId: string,
   nats: Client,
 ): Promise<ExistingBalancesAsyncTransfer> {
+  const SENDER_INPUT_META = { hello: "world" };
   const nodeFreeBalanceAddress = xkeyKthAddress(clientA.nodePublicIdentifier);
   const {
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
@@ -31,6 +42,7 @@ export async function asyncTransferAsset(
 
   let paymentId: string;
 
+<<<<<<< HEAD
   const transferFinished = Promise.all([
     Promise.race([
       new Promise((resolve: Function): void => {
@@ -57,14 +69,47 @@ export async function asyncTransferAsset(
   log.info(`call client.transfer()`);
   const { paymentId: senderPaymentId } = await clientA.transfer({
     amount: transferAmount,
+=======
+  const transferFinished = (senderAppId: string) =>
+    Promise.all([
+      Promise.race([
+        new Promise((resolve: Function): void => {
+          clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+            expect(data).to.deep.include({
+              amount: transferAmount.toString(),
+              sender: clientA.publicIdentifier,
+            });
+            resolve();
+          });
+        }),
+        new Promise((resolve: Function, reject: Function): void => {
+          clientB.once(RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
+            reject(msg.error);
+          });
+        }),
+      ]),
+      new Promise((resolve: Function): void => {
+        clientA.once(UNINSTALL_EVENT, data => {
+          if (data.appInstanceId === senderAppId) {
+            resolve();
+          }
+        });
+      }),
+    ]);
+
+  let start = Date.now();
+  log.info(`call client.transfer()`);
+  const { paymentId: senderPaymentId, appId } = await clientA.transfer({
+    amount: transferAmount.toString(),
+>>>>>>> nats-messaging-refactor
     assetId,
-    meta: { hello: "world" },
+    meta: { ...SENDER_INPUT_META },
     recipient: clientB.publicIdentifier,
   });
   log.info(`transfer() returned in ${Date.now() - start}ms`);
   paymentId = senderPaymentId;
 
-  await transferFinished;
+  await transferFinished(appId);
   log.info(`Got transfer finished event in ${Date.now() - start}ms`);
 
   expect((await clientB.getAppInstances()).length).to.be.eq(0);
@@ -89,12 +134,6 @@ export async function asyncTransferAsset(
     expect(postTransferFreeBalanceNodeB).equal(preTransferFreeBalanceNodeB.sub(transferAmount));
   }
 
-  await new Promise(async res => {
-    await nats.subscribe(`transfer.${paymentId}.reclaimed`, (err, msg) => {
-      res();
-    });
-  });
-
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);
   expect(paymentA).to.deep.include({
@@ -103,13 +142,10 @@ export async function asyncTransferAsset(
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,
     senderPublicIdentifier: clientA.publicIdentifier,
-    status: "RECLAIMED",
-    type: "LINKED",
+    status: LinkedTransferStatus.REDEEMED,
+    meta: { ...SENDER_INPUT_META },
   });
-  expect(paymentA.meta).to.deep.include({
-    hello: "world",
-  });
-  expect(paymentA.meta.encryptedPreImage).to.be.ok;
+  expect(paymentA.encryptedPreImage).to.be.ok;
 
   expect(paymentA).to.deep.include(paymentB);
 

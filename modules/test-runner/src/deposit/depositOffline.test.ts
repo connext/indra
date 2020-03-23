@@ -175,7 +175,7 @@ describe("Deposit offline tests", () => {
     expect(client.messaging).to.be.ok;
     // on proposal accepted message, delete the store
     await (client.messaging as TestMessagingService).subscribe(
-      `indra.node.${client.nodePublicIdentifier}.proposalAccepted.${client.multisigAddress}`,
+      `${client.nodePublicIdentifier}.channel.${client.multisigAddress}.app-instance.*.proposal.accept`,
       async () => {
         // delete the client store
         client.store.clear();

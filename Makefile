@@ -123,12 +123,10 @@ clean: stop
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
 	bash ops/db.sh 'truncate table channel cascade;'
-	bash ops/db.sh 'truncate table channel_payment_profiles_payment_profile cascade;'
-	bash ops/db.sh 'truncate table linked_transfer cascade;'
+	bash ops/db.sh 'truncate table channel_rebalance_profiles_rebalance_profile cascade;'
 	bash ops/db.sh 'truncate table node_records cascade;'
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
-	bash ops/db.sh 'truncate table payment_profile cascade;'
-	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
+	bash ops/db.sh 'truncate table rebalance_profile cascade;'
 	touch modules/node/src/main.ts
 
 reset: stop

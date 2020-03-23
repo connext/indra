@@ -55,6 +55,11 @@ export type Error = {
 export type Message = MethodRequest | MethodResponse | Event | Error;
 
 // The message type for Nodes to communicate with each other.
+
+export const CF_CORE_MESSAGING_PREFIX = "INDRA";
+
+export const getMessagingPrefix = (chainId: number) => `${CF_CORE_MESSAGING_PREFIX}.${chainId}`;
+
 export type NodeMessage = {
   from: string;
   type: EventNames;
@@ -94,6 +99,8 @@ export interface MessagingConfig {
   logger?: ILoggerService;
   messagingUrl: string | string[];
   options?: any;
+  privateKey?: string;
+  publicKey?: string;
   token?: string;
 }
 

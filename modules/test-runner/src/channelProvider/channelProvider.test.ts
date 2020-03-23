@@ -65,7 +65,7 @@ describe("ChannelProvider", () => {
     const transferFinished = Promise.all([
       new Promise(async resolve => {
         await clientB.messaging.subscribe(
-          `indra.node.${client.nodePublicIdentifier}.uninstall.>`,
+          `${client.nodePublicIdentifier}.channel.*.app-instance.*.uninstall`,
           resolve,
         );
       }),

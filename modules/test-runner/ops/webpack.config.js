@@ -1,8 +1,9 @@
-const path = require("path");
-const nodeExternals = require("webpack-node-externals");
+const path = require('path');
+const nodeExternals = require('webpack-node-externals');
+const webpack = require('webpack');
 
 const mode = process.env.MODE === "release" ? "release" : "staging";
-const whitelist = mode === "release" ? "" : /@connext\/.*/;
+const whitelist = mode === "release" ? "" : [/@connext\/.*/, /@provide\/.*/, "ts-natsutil"];
 
 console.log(`Building ${mode}-mode bundle`);
 
@@ -56,4 +57,10 @@ module.exports = {
       },
     ],
   },
+
+  plugins: [
+    new webpack.DefinePlugin({
+      window: {},
+    }),
+  ],
 };

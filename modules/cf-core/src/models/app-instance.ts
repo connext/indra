@@ -54,12 +54,19 @@ export class AppInstance {
     public readonly latestTimeout: number,
     public readonly outcomeType: OutcomeType,
     public readonly multisigAddress: string,
+<<<<<<< HEAD
     private readonly twoPartyOutcomeInterpreterParamsInternal?:
       TwoPartyFixedOutcomeInterpreterParams,
     private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
       MultiAssetMultiPartyCoinTransferInterpreterParams,
     private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
       SingleAssetTwoPartyCoinTransferInterpreterParams,
+=======
+    public readonly meta?: object,
+    private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
+    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
+    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
+>>>>>>> nats-messaging-refactor
   ) {}
 
   get twoPartyOutcomeInterpreterParams() {
@@ -119,6 +126,7 @@ export class AppInstance {
       deserialized.latestTimeout,
       deserialized.outcomeType as any, // OutcomeType is enum, so gives attitude
       deserialized.multisigAddress,
+      deserialized.meta,
       interpreterParams.twoPartyOutcomeInterpreterParams,
       interpreterParams.multiAssetMultiPartyCoinTransferInterpreterParams,
       interpreterParams.singleAssetTwoPartyCoinTransferInterpreterParams,
@@ -143,6 +151,7 @@ export class AppInstance {
       latestTimeout: this.latestTimeout,
       outcomeType: this.outcomeType,
       multisigAddress: this.multisigAddress,
+      meta: this.meta,
       twoPartyOutcomeInterpreterParams: this.twoPartyOutcomeInterpreterParamsInternal || null,
       multiAssetMultiPartyCoinTransferInterpreterParams:
         this.multiAssetMultiPartyCoinTransferInterpreterParamsInternal || null,

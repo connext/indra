@@ -1,4 +1,4 @@
-import { ILogger } from "@connext/types";
+import { ILogger, ClientOptions } from "@connext/types";
 import {
   BigNumber,
   bigNumberify,
@@ -9,6 +9,7 @@ import {
   SigningKey,
 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
+import { RINKEBY_NETWORK, MAINNET_NETWORK } from "./constants";
 
 export const logTime = (log: ILogger, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -109,6 +110,26 @@ export const createRandom32ByteHexString = (): string => {
 
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
+
+export const isNode = () =>
+  typeof process !== "undefined" &&
+  typeof process.versions !== "undefined" &&
+  typeof process.versions.node !== "undefined";
+
+export function isMainnet(network: string): boolean {
+  return network.toLowerCase() === MAINNET_NETWORK.toLowerCase();
+}
+
+export function isRinkeby(network: string): boolean {
+  return network.toLowerCase() === RINKEBY_NETWORK.toLowerCase();
+}
+
+export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
+  if (!opts) {
+    return false;
+  }
+  return !!(opts.mnemonic || (opts.xpub && opts.keyGen));
+}
 
 export const signDigestWithEthers = (privateKey: string, digest: string) => {
   const key = new SigningKey(privateKey);

@@ -23,6 +23,7 @@
     "@connext/messaging": "6.0.0-alpha.0",
     "@connext/store": "6.0.0-alpha.0",
     "@connext/types": "6.0.0-alpha.0",
+    "axios": "0.19.2",
     "core-js": "3.6.4",
     "ethers": "4.0.46",
     "eccrypto": "1.1.3",

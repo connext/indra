@@ -70,7 +70,7 @@ export type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
   nodePublicIdentifier: string;
-  messaging: MessagingConfig;
+  messagingUrl: string[];
   supportedTokenAddresses: string[];
 };
 
@@ -92,6 +92,7 @@ export type CreateChannelResponse = {
 // TODO: why was this changed?
 export type RequestCollateralResponse = MethodResults.Deposit | undefined;
 
+<<<<<<< HEAD
 ////////////////////////////////////
 // NODE API CLIENT
 
@@ -111,25 +112,39 @@ export interface PendingFastSignedTransfer {
 }
 
 enum LinkedTransferStatus {
+=======
+export const enum LinkedTransferStatus {
+>>>>>>> nats-messaging-refactor
   PENDING = "PENDING",
   REDEEMED = "REDEEMED",
   FAILED = "FAILED",
-  RECLAIMED = "RECLAIMED",
+  UNLOCKED = "UNLOCKED",
 }
 
-export interface FetchedLinkedTransfer {
+export type FetchedLinkedTransfer<T = any> = {
   paymentId: string;
   createdAt: Date;
   amount: BigNumber;
   assetId: string;
   senderPublicIdentifier: string;
-  receiverPublicIdentifier: string;
-  type: string;
+  receiverPublicIdentifier?: string;
   status: LinkedTransferStatus;
-  meta: any;
+  meta: T;
+  encryptedPreImage?: string;
+};
+export type GetLinkedTransferResponse<T = any> = FetchedLinkedTransfer<T>;
+export type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
+
+////////////////////////////////////
+///////// NODE API CLIENT
+
+export interface VerifyNonceDtoType {
+  sig: string;
+  userPublicIdentifier: string;
 }
 
 export interface NodeInitializationParameters {
+  nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
   userPublicIdentifier?: string;
@@ -158,23 +173,23 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
+<<<<<<< HEAD
   getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
   getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
+=======
+  getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse>;
+  getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
+>>>>>>> nats-messaging-refactor
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
+  fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
-  subscribeToSwapRates(from: string, to: string, callback: any): void;
-  unsubscribeFromSwapRates(from: string, to: string): void;
+  subscribeToSwapRates(from: string, to: string, callback: any): Promise<void>;
+  unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
   // TODO: fix types
   verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
-  setRecipientAndEncryptedPreImageForLinkedTransfer(
-    recipient: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }>;
 }

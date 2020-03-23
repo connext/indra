@@ -1,22 +1,19 @@
-import { IMessagingService } from "@connext/messaging";
 import {
   MethodResults,
   ChannelAppSequences,
   GetChannelResponse,
-  GetConfigResponse,
   StateChannelJSON,
 } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
-import { WithdrawService } from "../withdraw/withdraw.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { CFCoreService } from "../cfCore/cfCore.service";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
@@ -26,19 +23,13 @@ import { ChannelService, RebalanceType } from "./channel.service";
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    private readonly channelRepository: ChannelRepository,
-    private readonly channelService: ChannelService,
-    private readonly withdrawService: WithdrawService,
-    private readonly cfCoreService: CFCoreService,
-    private readonly onchainTransactionRepository: OnchainTransactionRepository,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
+    private readonly channelService: ChannelService,
+    private readonly channelRepository: ChannelRepository,
+    private readonly onchainTransactionRepository: OnchainTransactionRepository,
   ) {
     super(log, messaging);
-  }
-
-  async getConfig(): Promise<GetConfigResponse> {
-    return await this.channelService.getConfig();
   }
 
   async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse | undefined> {
@@ -95,46 +86,39 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(pubId);
   }
 
-  async getStatesForRestore(pubId: string): Promise<StateChannelJSON> {
+  async getChannelStateForRestore(pubId: string): Promise<StateChannelJSON> {
     return await this.channelService.getStateChannel(pubId);
   }
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "channel.get.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getChannel.bind(this)),
+      "*.channel.get",
+      this.authService.parseXpub(this.getChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.create.>",
-      this.authService.useUnverifiedPublicIdentifier(this.createChannel.bind(this)),
+      "*.channel.create",
+      this.authService.parseXpub(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.request-collateral.>",
-      this.authService.useUnverifiedPublicIdentifier(this.requestCollateral.bind(this)),
+      "*.channel.request-collateral",
+      this.authService.parseXpub(this.requestCollateral.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.add-profile.>",
-      this.authService.useAdminTokenWithPublicIdentifier(this.addRebalanceProfile.bind(this)),
+      "*.channel.get-profile",
+      this.authService.parseXpub(this.getRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.get-profile.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getRebalanceProfile.bind(this)),
+      "*.channel.verify-app-sequence",
+      this.authService.parseXpub(this.verifyAppSequenceNumber.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.verify-app-sequence.>",
-      this.authService.useUnverifiedPublicIdentifier(this.verifyAppSequenceNumber.bind(this)),
+      "*.channel.restore-states",
+      this.authService.parseXpub(this.getChannelStateForRestore.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.restore-states.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getStatesForRestore.bind(this)),
+      "*.channel.latestWithdrawal",
+      this.authService.parseXpub(this.getLatestWithdrawal.bind(this)),
     );
-    await super.connectRequestReponse(
-      "channel.latestWithdrawal.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getLatestWithdrawal.bind(this)),
-    );
-
-    // should move this at some point, this will probably move to be an HTTP endpoint
-    await super.connectRequestReponse("config.get", this.getConfig.bind(this));
   }
 }
 
@@ -144,31 +128,25 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     LoggerService,
     MessagingProviderId,
     ChannelService,
-    CFCoreService,
     ChannelRepository,
     OnchainTransactionRepository,
-    WithdrawService,
   ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     channelService: ChannelService,
-    cfCore: CFCoreService,
     channelRepo: ChannelRepository,
     onchain: OnchainTransactionRepository,
-    withdrawService: WithdrawService,
   ): Promise<void> => {
     const channel = new ChannelMessaging(
       authService,
-      channelRepo,
-      channelService,
-      withdrawService,
-      cfCore,
-      onchain,
       log,
       messaging,
+      channelService,
+      channelRepo,
+      onchain,
     );
     await channel.setupSubscriptions();
   },
