@@ -3,6 +3,7 @@ import "regenerator-runtime/runtime";
 
 import { MessagingService } from "@connext/messaging";
 import {
+  ChannelMethods,
   MethodResults,
   CF_PATH,
   EventNames,
@@ -29,11 +30,6 @@ import {
 } from "./lib";
 import { NodeApiClient } from "./node";
 import {
-<<<<<<< HEAD
-=======
-  chan_signDigest,
-  CFCoreTypes,
->>>>>>> nats-messaging-refactor
   ClientOptions,
   ConnextClientStorePrefix,
   CreateChannelMessage,
@@ -42,7 +38,6 @@ import {
   IConnextClient,
   INodeApiClient,
 } from "./types";
-import { SigningKey, joinSignature } from "ethers/utils";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -88,7 +83,7 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      const sig = await channelProvider.send(chan_signDigest, { message });
+      const sig = await channelProvider.send(ChannelMethods.chan_signDigest, { message });
       return sig;
     };
 
@@ -160,13 +155,8 @@ export const connect = async (
       ethProvider,
       keyGen,
       lockService: { acquireLock: node.acquireLock.bind(node) },
-<<<<<<< HEAD
-      messaging: messaging as any,
-      networkContext: { ...config.contractAddresses, provider: ethProvider },
-=======
       messaging,
       networkContext: config.contractAddresses,
->>>>>>> nats-messaging-refactor
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
       store,

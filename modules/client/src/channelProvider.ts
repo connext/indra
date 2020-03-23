@@ -1,25 +1,17 @@
 import {
-<<<<<<< HEAD
   ChannelMethods,
   ConnextEventEmitter,
   EventNames,
-=======
-  chan_sign,
-  chan_signDigest,
-  chan_getUserWithdrawal,
-  chan_setUserWithdrawal,
-  chan_setStateChannel,
-  chan_restoreState,
->>>>>>> nats-messaging-refactor
   IChannelProvider,
   IClientStore,
   MethodName,
   StateChannelJSON,
   WithdrawalMonitorObject,
+  deBigNumberifyJson,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 
-import { CFCore, deBigNumberifyJson, xpubToAddress, signDigestWithEthers } from "./lib";
+import { CFCore, xpubToAddress, signDigestWithEthers } from "./lib";
 import {
   CFChannelProviderOptions,
   ChannelProviderConfig,
@@ -88,19 +80,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-<<<<<<< HEAD
-      case ChannelMethods.chan_signWithdrawCommitment:
-        result = await this.signWithdrawCommitment(params.message);
-        break;
-      case ChannelMethods.chan_nodeAuth:
-        result = await this.walletSign(params.message);
-=======
-      case chan_sign:
+      case ChannelMethods.chan_sign:
         result = await this.signMessage(params.message);
         break;
-      case chan_signDigest:
+      case ChannelMethods.chan_signDigest:
         result = await this.signDigest(params.message);
->>>>>>> nats-messaging-refactor
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();

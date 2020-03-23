@@ -1,30 +1,17 @@
-<<<<<<< HEAD
-import { SupportedApplications } from "@connext/apps";
-import { IMessagingService } from "@connext/messaging";
-=======
 import { MessagingService } from "@connext/messaging";
->>>>>>> nats-messaging-refactor
 import {
-  ChannelMethods,
-  GetHashLockTransferResponse,
-  ILoggerService,
-  parseBN,
-  ResolveFastSignedTransferResponse,
-  ResolveHashLockTransferResponse,
-<<<<<<< HEAD
-} from "@connext/types";
-import { getAddress, Transaction } from "ethers/utils";
-import { v4 as uuid } from "uuid";
-import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
-=======
+  delay,
   GetHashLockTransferResponse,
   GetPendingAsyncTransfersResponse,
+  ILoggerService,
+  ResolveFastSignedTransferResponse,
+  ResolveHashLockTransferResponse,
+  stringify,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
-import { Transaction } from "ethers/utils";
-import uuid from "uuid";
-import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify, delay } from "./lib";
->>>>>>> nats-messaging-refactor
+import { getAddress, Transaction } from "ethers/utils";
+import { v4 as uuid } from "uuid";
+import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
 import {
   AppRegistry,
   ChannelAppSequences,
@@ -121,21 +108,9 @@ export class NodeApiClient implements INodeApiClient {
     return retVal;
   }
 
-<<<<<<< HEAD
-  public async appRegistry(
-    appDetails?:
-      | {
-          name: SupportedApplications;
-          chainId: number;
-        }
-      | { appDefinitionAddress: string },
-  ): Promise<AppRegistry> {
-    return (await this.send("app-registry", { data: appDetails })) as AppRegistry;
-=======
   public async appRegistry(): Promise<AppRegistry> {
     const response: AxiosResponse<AppRegistry> = await axios.get(`${this.nodeUrl}/app-registry`);
     return response.data;
->>>>>>> nats-messaging-refactor
   }
 
   public async config(): Promise<GetConfigResponse> {
@@ -159,13 +134,8 @@ export class NodeApiClient implements INodeApiClient {
     return this.send(`${this.userPublicIdentifier}.swap-rate.${from}.${to}`);
   }
 
-<<<<<<< HEAD
   public async getTransferHistory(): Promise<TransferInfo[]> {
-    return (await this.send(`transfer.get-history.${this.userPublicIdentifier}`)) || [];
-=======
-  public async getTransferHistory(): Promise<Transfer[]> {
     return (await this.send(`${this.userPublicIdentifier}.transfer.get-history`)) || [];
->>>>>>> nats-messaging-refactor
   }
 
   public async getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse> {
@@ -218,13 +188,8 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
-<<<<<<< HEAD
-    return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
-      assetId: getAddress(assetId),
-=======
     return this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
-      assetId: makeChecksumOrEthAddress(assetId),
->>>>>>> nats-messaging-refactor
+      assetId: getAddress(assetId),
     });
   }
 
@@ -287,38 +252,6 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PRIVATE
 
-<<<<<<< HEAD
-  private async getAuthToken(): Promise<string> {
-    if (!this.channelProvider) {
-      throw new Error(
-        "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
-      );
-    }
-    let token;
-    // If we have a cached token, use it. Otherwise, get a new one.
-    if (this._authToken && this._authToken.expiry < Date.now()) {
-      token = this._authToken;
-    } else {
-      const unsignedToken = await this.send("auth.getNonce", {
-        address: this.channelProvider.signerAddress,
-      });
-      if (unsignedToken.expiry < Date.now()) {
-        throw new Error("Got expired authentication nonce from hub - this shouldnt happen!");
-      }
-      const sig = await this.channelProvider.send(
-        ChannelMethods.chan_nodeAuth,
-        { message: unsignedToken.nonce },
-      );
-      this._authToken = token = {
-        expiry: unsignedToken.expiry,
-        value: `${unsignedToken.nonce}:${sig}`,
-      };
-    }
-    return token.value;
-  }
-
-=======
->>>>>>> nats-messaging-refactor
   private async send(subject: string, data?: any): Promise<any | undefined> {
     let error;
     for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
@@ -371,6 +304,6 @@ export class NodeApiClient implements INodeApiClient {
       start,
       `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
     );
-    return (!response || isEmptyObj) ? undefined : parseBN(response);
+    return (!response || isEmptyObj) ? undefined : response;
   }
 }

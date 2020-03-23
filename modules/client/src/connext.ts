@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 import { SupportedApplications } from "@connext/apps";
-import { IMessagingService } from "@connext/messaging";
-=======
-import { SupportedApplication, AppActionBigNumber, AppStateBigNumber } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
->>>>>>> nats-messaging-refactor
 import {
   Address,
   AppAction,
@@ -19,8 +14,6 @@ import {
   IChannelProvider,
   IClientStore,
   ILoggerService,
-<<<<<<< HEAD
-  LinkedTransferToRecipientResponse,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -28,13 +21,9 @@ import {
   RequestDepositRightsParameters,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
-=======
-  LINKED_TRANSFER,
->>>>>>> nats-messaging-refactor
   ResolveFastSignedTransferParameters,
   ResolveHashLockTransferParameters,
   ResolveLinkedTransferParameters,
-  toBN,
   TransactionResponse,
   WithdrawParameters,
   WithdrawResponse,
@@ -271,11 +260,7 @@ export class ConnextClient implements IConnextClient {
     return this.channelProvider.config;
   };
 
-<<<<<<< HEAD
-  public getLinkedTransfer = async (paymentId: string): Promise<TransferInfo> => {
-=======
   public getLinkedTransfer = async (paymentId: string): Promise<GetLinkedTransferResponse> => {
->>>>>>> nats-messaging-refactor
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
@@ -368,24 +353,17 @@ export class ConnextClient implements IConnextClient {
   };
 
   /**
-   * Transfer currently uses the conditionalTransfer LinkedTransferToRecipient so that
+   * Transfer currently uses the conditionalTransfer LinkedTransfer so that
    * async payments are the default transfer.
    */
   public transfer = async (params: TransferParameters): Promise<LinkedTransferResponse> => {
     if (!params.paymentId) {
       params.paymentId = hexlify(randomBytes(32));
     }
-<<<<<<< HEAD
-    return this.linkedTransferController.linkedTransferToRecipient({
-      amount: toBN(params.amount),
-      assetId: params.assetId,
-      conditionType: ConditionalTransferTypes.LinkedTransferToRecipient,
-=======
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
       assetId: params.assetId,
-      conditionType: LINKED_TRANSFER,
->>>>>>> nats-messaging-refactor
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       meta: params.meta,
       paymentId: params.paymentId,
       preImage: hexlify(randomBytes(32)),
@@ -412,12 +390,7 @@ export class ConnextClient implements IConnextClient {
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
     switch (params.conditionType) {
-<<<<<<< HEAD
-      case ConditionalTransferTypes.LinkedTransferToRecipient:
       case ConditionalTransferTypes.LinkedTransfer: {
-=======
-      case LINKED_TRANSFER: {
->>>>>>> nats-messaging-refactor
         return this.resolveLinkedTransferController.resolveLinkedTransfer(
           params as ResolveLinkedTransferParameters,
         );
@@ -444,14 +417,7 @@ export class ConnextClient implements IConnextClient {
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.linkedTransferController.linkedTransfer(params);
       }
-<<<<<<< HEAD
-      case ConditionalTransferTypes.LinkedTransferToRecipient: {
-        return this.linkedTransferController.linkedTransferToRecipient(params);
-      }
       case ConditionalTransferTypes.FastSignedTransfer: {
-=======
-      case FAST_SIGNED_TRANSFER: {
->>>>>>> nats-messaging-refactor
         return this.fastSignedTransferController.fastSignedTransfer(
           params as FastSignedTransferParameters,
         );

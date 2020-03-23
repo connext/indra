@@ -1,7 +1,7 @@
 import {
   ConditionalTransferTypes,
-  CreateTransferEventData,
   EventNames,
+  EventPayloads,
   HashLockTransferAppName,
   HashLockTransferAppState,
   HashLockTransferParameters,
@@ -71,7 +71,7 @@ export class HashLockTransferController extends AbstractController {
 
     const eventData = {
       type: ConditionalTransferTypes.HashLockTransfer,
-      amount,
+      amount: amount.toString(),
       assetId,
       sender: this.connext.publicIdentifier,
       meta,
@@ -79,7 +79,7 @@ export class HashLockTransferController extends AbstractController {
       transferMeta: {
         lockHash,
       },
-    } as CreateTransferEventData<typeof ConditionalTransferTypes.HashLockTransfer>;
+    } as EventPayloads.CreateHashLockTransfer;
     this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     return {

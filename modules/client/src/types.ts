@@ -35,11 +35,6 @@ export {
   AppInstanceInfo,
   AppInstanceJson,
   AppRegistry,
-<<<<<<< HEAD
-=======
-  BigNumber,
-  chan_signDigest,
->>>>>>> nats-messaging-refactor
   calculateExchange,
   CFChannelProviderOptions,
   ChannelAppSequences,
@@ -72,13 +67,6 @@ export {
   KeyGen,
   LinkedTransferParameters,
   LinkedTransferResponse,
-<<<<<<< HEAD
-  LinkedTransferToRecipientParameters,
-  LinkedTransferToRecipientResponse,
-=======
-  makeChecksum,
-  makeChecksumOrEthAddress,
->>>>>>> nats-messaging-refactor
   maxBN,
   minBN,
   NodeInitializationParameters,

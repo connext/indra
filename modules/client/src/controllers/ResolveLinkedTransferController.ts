@@ -1,7 +1,7 @@
 import {
   ConditionalTransferTypes,
   EventNames,
-  ReceiveTransferFinishedEventData,
+  EventPayloads,
 } from "@connext/types";
 
 import { ResolveLinkedTransferParameters, ResolveLinkedTransferResponse } from "../types";
@@ -46,13 +46,13 @@ export class ResolveLinkedTransferController extends AbstractController {
 
     this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
       type: ConditionalTransferTypes.LinkedTransfer,
-      amount: resolveRes.amount,
+      amount: resolveRes.amount.toString(),
       assetId: resolveRes.assetId,
       paymentId,
       sender: resolveRes.sender,
       recipient: this.connext.publicIdentifier,
       meta: resolveRes.meta,
-    } as ReceiveTransferFinishedEventData<typeof ConditionalTransferTypes.LinkedTransfer>);
+    } as EventPayloads.ReceiveTransferFinished);
 
     return resolveRes;
   };

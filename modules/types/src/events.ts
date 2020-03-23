@@ -11,6 +11,10 @@ import { BigNumber, SolidityValueType } from "./basic";
 import { ChannelMethod } from "./channelProvider";
 import { enumify } from "./utils";
 
+type FastSignedTransfer = typeof ConditionalTransferTypes.FastSignedTransfer;
+type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
+type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
+
 ////////////////////////////////////////
 const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 
@@ -30,9 +34,11 @@ type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = un
   recipient?: string;
   meta: any;
   type: T;
-  transferMeta: T extends typeof ConditionalTransferTypes.LinkedTransfer
+  transferMeta: T extends LinkedTransfer
     ? CreatedLinkedTransferMeta
-    : T extends typeof ConditionalTransferTypes.FastSignedTransfer
+    : T extends HashLockTransfer
+    ? CreatedLinkedTransferMeta
+    : T extends FastSignedTransfer
     ? CreatedFastSignedTransferMeta
     : undefined;
 };
@@ -140,7 +146,10 @@ export type EventNames = (typeof EventNames)[keyof typeof EventNames];
 
 export namespace EventPayloads {
   export type CreateMultisig = CreateMultisigEventData;
-  export type CreateTransfer = CreateTransferEventData;
+  export type CreateLinkedTransfer = CreateTransferEventData<LinkedTransfer>;
+  export type CreateFastTransfer = CreateTransferEventData<FastSignedTransfer>;
+  export type CreateHashLockTransfer = CreateTransferEventData<HashLockTransfer>;
+  export type CreateTransfer = CreateTransferEventData<undefined>;
   export type Install = InstallEventData
   export type ReceiveTransferFinished = ReceiveTransferFinishedEventData;
   export type RejectInstall = RejectInstallEventData

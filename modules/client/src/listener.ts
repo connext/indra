@@ -6,20 +6,10 @@ import {
   ILoggerService,
   MethodNames,
   MethodParams,
-  parseBN,
   SimpleLinkedTransferAppName,
   WithdrawAppName,
   WithdrawAppState,
-<<<<<<< HEAD
-=======
-  BigNumber,
-  WithdrawApp,
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  CreateTransferEventData,
-  FastSignedTransferApp,
-  HashLockTransferApp,
->>>>>>> nats-messaging-refactor
+  EventPayloads,
 } from "@connext/types";
 import {
   commonAppProposalValidation,
@@ -214,13 +204,8 @@ export class ConnextListener extends ConnextEventEmitter {
           },
         } = msg;
         await this.connext.messaging.publish(
-<<<<<<< HEAD
-          `indra.client.${this.connext.publicIdentifier}.uninstall.${appInstance.appInstanceId}`,
-          stringify(appInstance),
-=======
-          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${result.appInstanceId}.uninstall`,
-          stringify(result),
->>>>>>> nats-messaging-refactor
+          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appInstanceId}.uninstall`,
+          appInstance,
         );
       },
     );
@@ -230,7 +215,7 @@ export class ConnextListener extends ConnextEventEmitter {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
-    this.emit(event, parseBN(data));
+    this.emit(event, data);
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
@@ -270,7 +255,7 @@ export class ConnextListener extends ConnextEventEmitter {
         transferMeta: { encryptedPreImage },
         amount,
         assetId,
-      }: CreateTransferEventData<"LINKED_TRANSFER"> = data;
+      }: EventPayloads.CreateTransfer = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }
@@ -299,21 +284,10 @@ export class ConnextListener extends ConnextEventEmitter {
         this.connext.config.supportedTokenAddresses,
       );
       switch (registryAppInfo.name) {
-<<<<<<< HEAD
         case CoinBalanceRefundAppName: {
-          this.log.debug(
-            `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-          );
-          await this.connext.messaging.publish(
-            `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-            stringify(params),
-          );
-=======
-        case CoinBalanceRefundApp: {
           const subject = `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
           this.log.debug(`Sending acceptance message to: ${subject}`);
           await this.connext.messaging.publish(subject, stringify(params));
->>>>>>> nats-messaging-refactor
           return;
         }
         case SimpleLinkedTransferAppName: {

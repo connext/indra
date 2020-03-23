@@ -1,12 +1,12 @@
 import {
-  ResolveFastSignedTransferParameters,
-  EventNames,
   ConditionalTransferTypes,
-  ResolveFastSignedTransferResponse,
-  FastSignedTransferAppAction,
+  EventNames,
+  EventPayloads,
   FastSignedTransferActionType,
+  FastSignedTransferAppAction,
   FastSignedTransferAppState,
-  ReceiveTransferFinishedEventData,
+  ResolveFastSignedTransferParameters,
+  ResolveFastSignedTransferResponse,
 } from "@connext/types";
 
 import { validate, invalid32ByteHexString, invalidEthSignature } from "../validation";
@@ -60,13 +60,13 @@ export class ResolveFastSignedTransferController extends AbstractController {
 
       this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
         paymentId,
-        amount: resolveRes.amount,
+        amount: resolveRes.amount.toString(),
         assetId: resolveRes.assetId,
         sender: resolveRes.sender,
         recipient: this.connext.publicIdentifier,
         meta: resolveRes.meta,
         type: ConditionalTransferTypes.FastSignedTransfer,
-      } as ReceiveTransferFinishedEventData<typeof ConditionalTransferTypes.FastSignedTransfer>);
+      } as EventPayloads.ReceiveTransferFinished);
     } catch (e) {
       this.log.error(
         `Failed to resolve fast signed transfer ${paymentId}: ${e.stack || e.message}`,

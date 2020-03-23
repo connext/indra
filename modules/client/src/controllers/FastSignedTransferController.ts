@@ -2,11 +2,11 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import {
   AppInstanceJson,
   ConditionalTransferTypes,
-  CreateTransferEventData,
   EventNames,
+  EventPayloads,
   FastSignedTransferActionType,
-  FastSignedTransferAppName,
   FastSignedTransferAppAction,
+  FastSignedTransferAppName,
   FastSignedTransferAppState,
   FastSignedTransferParameters,
   MethodParams,
@@ -154,7 +154,7 @@ export class FastSignedTransferController extends AbstractController {
 
     const eventData = {
       type: ConditionalTransferTypes.FastSignedTransfer,
-      amount,
+      amount: amount.toString(),
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,
@@ -162,7 +162,7 @@ export class FastSignedTransferController extends AbstractController {
       transferMeta: {
         signer,
       },
-    } as CreateTransferEventData<typeof ConditionalTransferTypes.FastSignedTransfer>;
+    } as EventPayloads.CreateFastTransfer;
     this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     return { transferAppInstanceId };

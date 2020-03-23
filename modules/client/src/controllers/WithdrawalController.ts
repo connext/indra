@@ -53,14 +53,9 @@ export class WithdrawalController extends AbstractController {
     await this.cleanupPendingDeposit(assetId);
 
     const withdrawCommitment = await this.createWithdrawCommitment(params);
-<<<<<<< HEAD
-    const withdrawerSignatureOnWithdrawCommitment =
-      await this.connext.channelProvider.signWithdrawCommitment(withdrawCommitment.hashToSign());
-=======
     const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
       withdrawCommitment.hashToSign(),
     );
->>>>>>> nats-messaging-refactor
 
     await this.proposeWithdrawApp(
       params,
@@ -95,16 +90,9 @@ export class WithdrawalController extends AbstractController {
     } as WithdrawParameters);
 
     // Dont need to validate anything because we already did it during the propose flow
-<<<<<<< HEAD
-    const counterpartySignatureOnWithdrawCommitment =
-      await this.connext.channelProvider.signWithdrawCommitment(
-        generatedCommitment.hashToSign(),
-      );
-=======
     const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
       generatedCommitment.hashToSign(),
     );
->>>>>>> nats-messaging-refactor
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
     } as WithdrawAppAction);

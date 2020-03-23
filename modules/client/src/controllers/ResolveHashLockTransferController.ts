@@ -1,6 +1,6 @@
 import {
   EventNames,
-  ReceiveTransferFinishedEventData,
+  EventPayloads,
   ResolveHashLockTransferParameters,
   ResolveHashLockTransferResponse,
   ConditionalTransferTypes,
@@ -40,13 +40,13 @@ export class ResolveHashLockTransferController extends AbstractController {
 
     this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
       type: ConditionalTransferTypes.HashLockTransfer,
-      amount: resolveRes.amount,
+      amount: resolveRes.amount.toString(),
       assetId: resolveRes.assetId,
       paymentId: HashZero,
       sender: resolveRes.sender,
       recipient: this.connext.publicIdentifier,
       meta: resolveRes.meta,
-    } as ReceiveTransferFinishedEventData<typeof ConditionalTransferTypes.HashLockTransfer>);
+    } as EventPayloads.ReceiveTransferFinished);
 
     return resolveRes;
   };

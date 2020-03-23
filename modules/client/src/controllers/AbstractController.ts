@@ -3,14 +3,8 @@ import {
   EventPayloads,
   IChannelProvider,
   ILoggerService,
-<<<<<<< HEAD
   MethodParams,
   MethodResults,
-=======
-  REJECT_INSTALL_EVENT,
-  InstallMessage,
-  INSTALL_EVENT,
->>>>>>> nats-messaging-refactor
 } from "@connext/types";
 import { providers } from "ethers";
 
@@ -67,24 +61,13 @@ export abstract class AbstractController {
         new Promise((res: () => any, rej: () => any): void => {
           // boundResolve = this.resolveInstall.bind(null, res, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
-<<<<<<< HEAD
-          this.log.debug(
-            `subscribing to indra.node.${this.connext.nodePublicIdentifier}.install.${this.connext.multisigAddress}`,
-          );
-          this.connext.messaging.subscribe(
-            `indra.node.${this.connext.nodePublicIdentifier}.install.${appInstanceId}`,
-            boundResolve,
-          );
-          this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
-=======
 
           // set up install nats subscription
           const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`;
           this.connext.messaging.subscribe(subject, res);
 
           // this.listener.on(INSTALL_EVENT, boundResolve, appInstanceId);
-          this.listener.on(REJECT_INSTALL_EVENT, boundReject);
->>>>>>> nats-messaging-refactor
+          this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
       ]);
 
