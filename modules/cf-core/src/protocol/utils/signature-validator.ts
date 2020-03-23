@@ -1,11 +1,7 @@
 import { getAddress } from "ethers/utils";
-import { isHexString, addHexPrefix, verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../types";
-
-function sanitizeHexString(hex: string): string {
-  return isHexString(hex) ? addHexPrefix(hex) : hex;
-}
 
 export async function assertIsValidSignature(
   expectedSigner: string,
@@ -23,7 +19,7 @@ export async function assertIsValidSignature(
   const hash = commitment.hashToSign();
 
   // verifyChannelMessage: 83 ms, hashToSign: 7 ms
-  const signer = await verifyChannelMessage(sanitizeHexString(hash), sanitizeHexString(signature));
+  const signer = await verifyChannelMessage(hash, signature);
 
   if (getAddress(expectedSigner) !== signer) {
     throw Error(
