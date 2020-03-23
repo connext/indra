@@ -80,3 +80,8 @@ export type GetHashLockTransferResponse =
       meta?: any;
     }
   | undefined;
+
+// Event Data
+export type CreatedLinkedTransferMeta = {
+  encryptedPreImage?: string;
+};
