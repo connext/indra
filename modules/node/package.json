@@ -38,15 +38,11 @@
     "dotenv": "8.2.0",
     "ethers": "4.0.46",
     "human-standard-token-abi": "2.0.0",
-    "interval-promise": "1.4.0",
     "ioredis": "4.16.0",
     "nats": "1.4.0",
-    "pg": "7.18.2",
     "redlock": "4.1.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.4",
-    "ts-nats": "1.2.12",
-    "ts-natsutil": "0.1.23",
     "typeorm": "0.2.24"
   },
   "devDependencies": {
