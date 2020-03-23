@@ -1,4 +1,5 @@
 import {
+  bigNumberifyJson,
   EventNames,
   ProtocolName,
   ProtocolNames,
@@ -17,7 +18,6 @@ import {
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
 } from "../types";
-import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
 
 /**

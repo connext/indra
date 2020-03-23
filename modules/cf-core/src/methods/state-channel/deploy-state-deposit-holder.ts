@@ -1,4 +1,4 @@
-import { MethodNames, MethodParams, MethodResults } from "@connext/types";
+import { delay, MethodNames, MethodParams, MethodResults, stringify } from "@connext/types";
 import { ILoggerService } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -17,7 +17,7 @@ import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { NetworkContext } from "../../types";
-import { getCreate2MultisigAddress, prettyPrintObject, sleep } from "../../utils";
+import { getCreate2MultisigAddress } from "../../utils";
 import { sortAddresses, xkeysToSortedKthAddresses } from "../../xkeys";
 
 import { NodeController } from "../controller";
@@ -130,7 +130,7 @@ async function sendMultisigDeployTx(
       );
 
       if (!tx.hash) {
-        throw Error(`${NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT}: ${prettyPrintObject(tx)}`);
+        throw Error(`${NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT}: ${stringify(tx)}`);
       }
 
       const ownersAreCorrectlySet = await checkForCorrectOwners(
@@ -145,7 +145,7 @@ async function sendMultisigDeployTx(
           `${CHANNEL_CREATION_FAILED}: Could not confirm, on the ${tryCount} try, that the deployed multisig contract has the expected owners`,
         );
         // wait on a linear backoff interval before retrying
-        await sleep(1000 * tryCount);
+        await delay(1000 * tryCount);
         continue;
       }
 
@@ -160,7 +160,7 @@ async function sendMultisigDeployTx(
     }
   }
 
-  throw Error(`${CHANNEL_CREATION_FAILED}: ${prettyPrintObject(error)}`);
+  throw Error(`${CHANNEL_CREATION_FAILED}: ${stringify(error)}`);
 }
 
 async function checkForCorrectOwners(

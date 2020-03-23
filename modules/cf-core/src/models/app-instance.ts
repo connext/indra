@@ -1,3 +1,4 @@
+import { bigNumberifyJson, deBigNumberifyJson, stringify } from "@connext/types";
 import { Contract } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
@@ -17,7 +18,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "../types";
-import { appIdentityToHash, bigNumberifyJson, prettyPrintObject, deBigNumberifyJson } from "../utils";
+import { appIdentityToHash } from "../utils";
 
 /**
  * Representation of an AppInstance.
@@ -93,20 +94,26 @@ export class AppInstance {
     return this.singleAssetTwoPartyCoinTransferInterpreterParamsInternal!;
   }
   public static fromJson(json: AppInstanceJson) {
-    const deserialized: AppInstanceJson = bigNumberifyJson(json);
+    const deserialized = bigNumberifyJson(json) as AppInstanceJson;
 
     const interpreterParams = {
       twoPartyOutcomeInterpreterParams:
         deserialized.twoPartyOutcomeInterpreterParams
-          ? bigNumberifyJson(deserialized.twoPartyOutcomeInterpreterParams)
+          ? bigNumberifyJson(
+              deserialized.twoPartyOutcomeInterpreterParams,
+            ) as TwoPartyFixedOutcomeInterpreterParams
           : undefined,
       singleAssetTwoPartyCoinTransferInterpreterParams:
         deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
-          ? bigNumberifyJson(deserialized.singleAssetTwoPartyCoinTransferInterpreterParams)
+          ? bigNumberifyJson(
+              deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+            ) as SingleAssetTwoPartyCoinTransferInterpreterParams
           : undefined,
       multiAssetMultiPartyCoinTransferInterpreterParams:
         deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
-          ? bigNumberifyJson(deserialized.multiAssetMultiPartyCoinTransferInterpreterParams)
+          ? bigNumberifyJson(
+              deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
+            ) as MultiAssetMultiPartyCoinTransferInterpreterParams
           : undefined,
     };
 
@@ -231,7 +238,7 @@ export class AppInstance {
       throw Error(
         `Attempted to setState on an app with an invalid state object.
           - appInstanceIdentityHash = ${this.identityHash}
-          - newState = ${prettyPrintObject(newState)}
+          - newState = ${stringify(newState)}
           - encodingExpected = ${this.appInterface.stateEncoding}
           Error: ${e.message}`,
       );

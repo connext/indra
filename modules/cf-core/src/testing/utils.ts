@@ -2,8 +2,10 @@ import {
   AppABIEncodings,
   AppInstanceJson,
   AppInstanceProposal,
+  bigNumberifyJson,
   ContractABI,
   CreateChannelMessage,
+  deBigNumberifyJson,
   EventNames,
   InstallMessage,
   MethodNames,
@@ -31,7 +33,6 @@ import {
   DepositStartedMessage,
   EventEmittedMessage,
 } from "../types";
-import { deBigNumberifyJson, bigNumberifyJson } from "../utils";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
@@ -765,7 +766,7 @@ export async function confirmAppInstanceInstallation(
   proposedParams: ProtocolParams.Propose,
   appInstance: AppInstanceJson,
 ) {
-  const params = bigNumberifyJson(proposedParams);
+  const params = bigNumberifyJson(proposedParams) as ProtocolParams.Propose;
   expect(appInstance.appInterface.addr).toEqual(params.appDefinition);
   expect(appInstance.appInterface.stateEncoding).toEqual(params.abiEncodings.stateEncoding);
   expect(appInstance.appInterface.actionEncoding).toEqual(params.abiEncodings.actionEncoding);

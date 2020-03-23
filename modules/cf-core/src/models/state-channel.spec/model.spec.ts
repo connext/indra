@@ -1,9 +1,8 @@
-import { StateChannelJSON } from "@connext/types";
+import { bigNumberifyJson, StateChannelJSON } from "@connext/types";
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
-import { bigNumberifyJson } from "../../utils";
 
 import { StateChannel } from "../state-channel";
 

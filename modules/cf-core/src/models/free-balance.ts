@@ -1,9 +1,9 @@
+import { stringify } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { AppInterface, OutcomeType } from "../types";
-import { prettyPrintObject } from "../utils";
 import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
 
 import { AppInstance } from "./app-instance";
@@ -180,7 +180,7 @@ export class FreeBalanceClass {
         if (val.lt(Zero)) {
           throw Error(
             `FreeBalanceClass::increment ended up with a negative balance when
-            merging ${prettyPrintObject(t1)} and ${prettyPrintObject(increments[tokenAddress])}`,
+            merging ${stringify(t1)} and ${stringify(increments[tokenAddress])}`,
           );
         }
       }

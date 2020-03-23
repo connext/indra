@@ -1,6 +1,7 @@
+import { delay } from "@connext/types";
+
 import { Node } from "../../node";
 import { UninstallMessage } from "../../types";
-import { timeout } from "../../utils";
 
 import { NetworkContextForTestSuite } from "../contracts";
 import { SetupContext, setupWithMemoryMessagingAndStore } from "../setup";
@@ -51,7 +52,7 @@ describe("Node method follows spec - uninstall", () => {
         expect(msg.data.appInstanceId).toBe(appInstanceId);
 
         // FIXME: There is some timing issue with slow stores @snario noticed
-        await timeout(1000);
+        await delay(1000);
 
         expect(await getInstalledAppInstances(nodeB, multisigAddess)).toEqual([]);
         done();

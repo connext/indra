@@ -7,8 +7,6 @@ export {
 export { MultisigCommitment } from "./ethereum";
 export {
   getCreate2MultisigAddress,
-  bigNumberifyJson,
-  deBigNumberifyJson,
   scanForCriticalAddresses,
 } from "./utils";
 export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./xkeys";

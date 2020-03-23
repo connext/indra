@@ -1,4 +1,10 @@
-import { EventNames, ILoggerService, IMessagingService, MethodName } from "@connext/types";
+import {
+  bigNumberifyJson,
+  EventNames,
+  ILoggerService,
+  IMessagingService,
+  MethodName,
+} from "@connext/types";
 import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -15,7 +21,7 @@ import {
   NodeMessage,
   NodeMessageWrappedProtocolMessage,
 } from "./types";
-import { bigNumberifyJson, logTime } from "./utils";
+import { logTime } from "./utils";
 
 /**
  * This class registers handlers for requests to get or set some information

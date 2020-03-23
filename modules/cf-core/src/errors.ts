@@ -1,7 +1,7 @@
+import { stringify } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "./constants";
-import { prettyPrintObject } from "./utils";
 
 export const APP_ALREADY_UNINSTALLED = (id: string): string =>
   `Cannot uninstall app ${id}, it has already been uninstalled`;
@@ -135,4 +135,4 @@ export const TWO_PARTY_OUTCOME_DIFFERENT_ASSETS = (assetA: string, assetB: strin
 export const WITHDRAWAL_FAILED = "Failed to withdraw funds out of the multisig contract";
 
 export const NO_MULTISIG_FOR_COUNTERPARTIES = (owners: string[]): string =>
-  `Could not find multisig address between counterparties ${prettyPrintObject(owners)}`;
+  `Could not find multisig address between counterparties ${stringify(owners)}`;

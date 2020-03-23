@@ -2,12 +2,13 @@ import {
   CriticalStateChannelAddresses,
   StateChannelJSON,
   StateSchemaVersion,
+  stringify,
+  deBigNumberifyJson,
 } from "@connext/types";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";
-import { prettyPrintObject, deBigNumberifyJson } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { AppInstanceProposal } from "./app-instance-proposal";
@@ -42,7 +43,7 @@ export class StateChannel {
     userNeuteredExtendedKeys.forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
         throw Error(
-          `StateChannel constructor given invalid extended keys: ${prettyPrintObject(
+          `StateChannel constructor given invalid extended keys: ${stringify(
             userNeuteredExtendedKeys,
           )}`,
         );
@@ -530,7 +531,7 @@ export class StateChannel {
       );
     } catch (e) {
       throw new Error(
-        `could not create state channel from json: ${prettyPrintObject(json)}. Error: ${e}`,
+        `could not create state channel from json: ${stringify(json)}. Error: ${e}`,
       );
     }
   }

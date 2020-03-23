@@ -1,4 +1,4 @@
-import { AppInstanceJson, MinimalTransaction } from "@connext/types";
+import { AppInstanceJson, MinimalTransaction, stringify } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import {
@@ -11,7 +11,7 @@ import {
 } from "./errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { IStoreService } from "./types";
-import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
+import { getCreate2MultisigAddress } from "./utils";
 
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
@@ -133,7 +133,7 @@ export class Store {
     const existing = await this.getStateChannelIfExists(stateChannel.multisigAddress);
     if (existing) {
       throw new Error(
-        `Should only call 'saveStateChannel' during setup protocol, found state channel: ${prettyPrintObject(
+        `Should only call 'saveStateChannel' during setup protocol, found state channel: ${stringify(
           existing,
         )}`,
       );

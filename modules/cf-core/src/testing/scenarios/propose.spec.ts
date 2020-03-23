@@ -1,7 +1,6 @@
-import { MethodParams, ProposeMessage } from "@connext/types";
+import { deBigNumberifyJson, MethodParams, ProposeMessage } from "@connext/types";
 
 import { Node } from "../../node";
-import { deBigNumberifyJson } from "../../utils";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";

@@ -1,6 +1,7 @@
 import {
   AppInstanceProposal,
   CommitmentTypes,
+  delay,
   EventNames,
   ILoggerService,
   MethodName,
@@ -36,7 +37,6 @@ import {
   Opcode,
   ProtocolMessage,
 } from "./types";
-import { timeout } from "./utils";
 import { Store } from "./store";
 import {
   ConditionalTransactionCommitment,
@@ -224,7 +224,7 @@ export class Node {
       } as NodeMessageWrappedProtocolMessage);
 
       // 90 seconds is the default lock acquiring time time
-      const msg = await Promise.race([counterpartyResponse, timeout(IO_SEND_AND_WAIT_TIMEOUT)]);
+      const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
 
       if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
         throw Error(

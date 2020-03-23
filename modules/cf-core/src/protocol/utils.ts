@@ -1,4 +1,4 @@
-import { EthereumCommitment } from "@connext/types";
+import { delay, EthereumCommitment } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress, recoverAddress, Signature } from "ethers/utils";
 
@@ -17,7 +17,6 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
-import { wait } from "../utils";
 
 export function assertIsValidSignature(
   expectedSigner: string,
@@ -132,7 +131,7 @@ async function handleRefundAppOutcomeSpecialCase(
 
     attempts += 1;
 
-    await wait(1000 * attempts);
+    await delay(1000 * attempts);
 
     // Note this statement queries the blockchain each time and
     // is the main reason for this 10-iteration while block.

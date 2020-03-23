@@ -4,7 +4,6 @@ import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import {
   BigNumber,
-  bigNumberify,
   defaultAbiCoder,
   getAddress,
   Interface,
@@ -16,7 +15,6 @@ import {
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { JSON_STRINGIFY_SPACE } from "./constants";
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
@@ -51,20 +49,6 @@ export const APP_IDENTITY = `tuple(address[] participants,address appDefinition,
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
   return list.filter(x => x !== test)[0];
 }
-
-export function timeout(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
-
-export const bigNumberifyJson = (json: object) =>
-  JSON.parse(JSON.stringify(json), (key, val) => (val && val["_hex"] ? bigNumberify(val) : val));
-
-export const deBigNumberifyJson = (json: object) =>
-  JSON.parse(JSON.stringify(json), (key, val) =>
-    val && BigNumber.isBigNumber(val) ? val.toHexString() : val,
-  );
 
 /**
  * Converts an array of signatures into a single string
@@ -120,14 +104,6 @@ export function signaturesToBytesSortedBySignerAddress(
   ...signatures: Signature[]
 ): string {
   return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
-}
-
-export function prettyPrintObject(object: any) {
-  return JSON.stringify(object, null, JSON_STRINGIFY_SPACE);
-}
-
-export async function sleep(timeInMilliseconds: number) {
-  return new Promise(resolve => setTimeout(resolve, timeInMilliseconds));
 }
 
 /**
