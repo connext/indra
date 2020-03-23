@@ -1,5 +1,6 @@
 import {
   ConditionalTransferTypes,
+  deBigNumberifyJson,
   EventNames,
   EventPayloads,
   FastSignedTransferActionType,
@@ -58,15 +59,15 @@ export class ResolveFastSignedTransferController extends AbstractController {
         throw new Error(`Transfer amount not present in coin transfer after resolution`);
       }
 
-      this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
+      this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, deBigNumberifyJson({
         paymentId,
-        amount: resolveRes.amount.toString(),
+        amount: resolveRes.amount,
         assetId: resolveRes.assetId,
         sender: resolveRes.sender,
         recipient: this.connext.publicIdentifier,
         meta: resolveRes.meta,
         type: ConditionalTransferTypes.FastSignedTransfer,
-      } as EventPayloads.ReceiveTransferFinished);
+      }) as EventPayloads.ReceiveTransferFinished);
     } catch (e) {
       this.log.error(
         `Failed to resolve fast signed transfer ${paymentId}: ${e.stack || e.message}`,

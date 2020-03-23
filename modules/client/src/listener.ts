@@ -1,4 +1,5 @@
 import {
+  bigNumberifyJson,
   CoinBalanceRefundAppName,
   EventNames,
   FastSignedTransferAppName,
@@ -215,7 +216,7 @@ export class ConnextListener extends ConnextEventEmitter {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
-    this.emit(event, data);
+    this.emit(event, bigNumberifyJson(data));
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
@@ -249,7 +250,7 @@ export class ConnextListener extends ConnextEventEmitter {
       if (typeof data === `string`) {
         data = JSON.parse(data);
       }
-      this.log.debug(`Message data: ${stringify(data)}`);
+      this.log.debug(`Message data: ${JSON.stringify(data, null, 2)}`);
       const {
         paymentId,
         transferMeta: { encryptedPreImage },

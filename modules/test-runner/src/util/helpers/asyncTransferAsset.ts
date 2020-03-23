@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
+import { delay, EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
@@ -38,7 +38,7 @@ export async function asyncTransferAsset(
         new Promise((resolve: Function): void => {
           clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, data => {
             expect(data).to.deep.include({
-              amount: transferAmount.toString(),
+              amount: { _hex: transferAmount.toHexString() },
               sender: clientA.publicIdentifier,
             });
             resolve();

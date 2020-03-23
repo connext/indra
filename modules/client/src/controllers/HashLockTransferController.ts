@@ -1,5 +1,6 @@
 import {
   ConditionalTransferTypes,
+  deBigNumberifyJson,
   EventNames,
   EventPayloads,
   HashLockTransferAppName,
@@ -69,9 +70,9 @@ export class HashLockTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    const eventData = {
+    const eventData = deBigNumberifyJson({
       type: ConditionalTransferTypes.HashLockTransfer,
-      amount: amount.toString(),
+      amount,
       assetId,
       sender: this.connext.publicIdentifier,
       meta,
@@ -79,7 +80,7 @@ export class HashLockTransferController extends AbstractController {
       transferMeta: {
         lockHash,
       },
-    } as EventPayloads.CreateHashLockTransfer;
+    }) as EventPayloads.CreateHashLockTransfer;
     this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     return {

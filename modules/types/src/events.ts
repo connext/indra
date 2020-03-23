@@ -7,7 +7,7 @@ import {
 } from "./contracts";
 
 import { AppInstanceProposal } from "./app";
-import { BigNumber, SolidityValueType } from "./basic";
+import { BigNumber, HexObject, SolidityValueType } from "./basic";
 import { ChannelMethod } from "./channelProvider";
 import { enumify } from "./utils";
 
@@ -27,7 +27,7 @@ type CreateMultisigEventData = {
 const CREATE_TRANSFER = "CREATE_TRANSFER";
 
 type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = undefined> = {
-  amount: string;
+  amount: HexObject;
   assetId: string;
   paymentId: string;
   sender: string;
@@ -72,7 +72,7 @@ const RECEIVE_TRANSFER_FAILED_EVENT = "RECEIVE_TRANSFER_FAILED_EVENT";
 const RECEIVE_TRANSFER_FINISHED_EVENT = "RECEIVE_TRANSFER_FINISHED_EVENT";
 
 type ReceiveTransferFinishedEventData = {
-  amount: string;
+  amount: HexObject;
   assetId: string;
   paymentId: string;
   sender: string;

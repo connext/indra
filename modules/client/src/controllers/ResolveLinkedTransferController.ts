@@ -1,4 +1,5 @@
 import {
+  deBigNumberifyJson,
   ConditionalTransferTypes,
   EventNames,
   EventPayloads,
@@ -44,15 +45,15 @@ export class ResolveLinkedTransferController extends AbstractController {
       throw e;
     }
 
-    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, deBigNumberifyJson({
       type: ConditionalTransferTypes.LinkedTransfer,
-      amount: resolveRes.amount.toString(),
+      amount: resolveRes.amount,
       assetId: resolveRes.assetId,
       paymentId,
       sender: resolveRes.sender,
       recipient: this.connext.publicIdentifier,
       meta: resolveRes.meta,
-    } as EventPayloads.ReceiveTransferFinished);
+    }) as EventPayloads.ReceiveTransferFinished);
 
     return resolveRes;
   };

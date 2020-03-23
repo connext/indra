@@ -39,7 +39,7 @@ export class ConnextStore implements IClientStore {
     this.backupService = opts.backupService || null;
 
     // set internal storage
-    switch (storageType.toUpperCase()) {
+    switch (storageType) {
       case StoreTypes.LocalStorage:
         this.internalStore = new KeyValueStorage(
           new WrappedLocalStorage(this.prefix, this.separator, this.backupService),

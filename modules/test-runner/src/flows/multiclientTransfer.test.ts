@@ -9,8 +9,7 @@ import { bigNumberify } from "ethers/utils";
 
 import { expect, createClient, fundChannel } from "../util";
 
-// TODO: fix race conditions
-describe.skip("Full Flow: Multi-client transfer", () => {
+describe("Full Flow: Multi-client transfer", () => {
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
@@ -58,7 +57,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
           }
           gatewayTransfers.received += 1;
           await gateway.transfer({
-            amount: data.amount,
+            amount: toBN(data.amount),
             assetId: AddressZero,
             recipient: data.sender,
           });
@@ -77,7 +76,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
         async (data: EventPayloads.ReceiveTransferFinished) => {
           indexerATransfers.received += 1;
           await indexerA.transfer({
-            amount: data.amount,
+            amount: toBN(data.amount),
             assetId: AddressZero,
             recipient: data.sender,
           });
@@ -91,7 +90,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
         async (data: EventPayloads.ReceiveTransferFinished) => {
           indexerBTransfers.received += 1;
           await indexerB.transfer({
-            amount: data.amount,
+            amount: toBN(data.amount),
             assetId: AddressZero,
             recipient: data.sender,
           });

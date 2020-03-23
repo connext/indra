@@ -1,4 +1,5 @@
 import {
+  deBigNumberifyJson,
   EventNames,
   EventPayloads,
   ResolveHashLockTransferParameters,
@@ -38,15 +39,15 @@ export class ResolveHashLockTransferController extends AbstractController {
       throw e;
     }
 
-    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, {
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, deBigNumberifyJson({
       type: ConditionalTransferTypes.HashLockTransfer,
-      amount: resolveRes.amount.toString(),
+      amount: resolveRes.amount,
       assetId: resolveRes.assetId,
       paymentId: HashZero,
       sender: resolveRes.sender,
       recipient: this.connext.publicIdentifier,
       meta: resolveRes.meta,
-    } as EventPayloads.ReceiveTransferFinished);
+    }) as EventPayloads.ReceiveTransferFinished);
 
     return resolveRes;
   };

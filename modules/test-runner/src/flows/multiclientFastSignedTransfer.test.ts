@@ -5,6 +5,7 @@ import {
   FastSignedTransferParameters,
   IConnextClient,
   ResolveFastSignedTransferParameters,
+  toBN,
 } from "@connext/types";
 import { Wallet } from "ethers";
 import {
@@ -148,7 +149,7 @@ describe("Full Flow: Multi-client transfer", () => {
           );
 
           await indexer!.transfer({
-            amount: eventData.amount,
+            amount: toBN(eventData.amount),
             assetId: AddressZero,
             recipient: eventData.sender,
           });

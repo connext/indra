@@ -1,6 +1,7 @@
 import {
   ConditionalTransferTypes,
   CreatedLinkedTransferMeta,
+  deBigNumberifyJson,
   EventNames,
   EventPayloads,
   LinkedTransferParameters,
@@ -113,16 +114,18 @@ export class LinkedTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    const eventData = {
+    const eventData = deBigNumberifyJson({
       type: ConditionalTransferTypes.LinkedTransfer,
-      amount: amount.toString(),
+      amount,
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,
       recipient,
       meta, // TODO: include encrypted preimage / recipient?
       transferMeta: {},
-    } as EventPayloads.CreateLinkedTransfer;
+    }) as EventPayloads.CreateLinkedTransfer;
+
+    this.log.info(`Emitting event data: ${JSON.stringify(eventData)}`);
 
     if (recipient) {
       eventData.transferMeta.encryptedPreImage = submittedMeta.encryptedPreImage;
