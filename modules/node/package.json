@@ -40,6 +40,7 @@
     "human-standard-token-abi": "2.0.0",
     "interval-promise": "1.4.0",
     "ioredis": "4.16.0",
+    "jsonwebtoken": "8.5.1",
     "nats": "1.4.0",
     "pg": "7.18.2",
     "redlock": "4.1.0",
