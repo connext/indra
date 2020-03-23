@@ -17,8 +17,7 @@
   },
   "dependencies": {
     "@connext/types": "6.0.0-alpha.0",
-    "jsonwebtoken": "8.5.1",
-    "ts-natsutil": "0.1.21"
+    "ts-natsutil": "1.0.2"
   },
   "devDependencies": {
     "rollup": "2.1.0",

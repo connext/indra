@@ -1,18 +1,9 @@
-<<<<<<< HEAD
-import { MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH } from "@connext/types";
-import { v4 as uuid } from "uuid";
-import { Wallet } from "ethers";
-import { arrayify } from "ethers/utils";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
-=======
 // import { MessagingService } from "@connext/messaging";
 // import { CF_PATH } from "@connext/types";
 // import uuid from "uuid";
 // import { Wallet } from "ethers";
 // import { arrayify } from "ethers/utils";
 // import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
->>>>>>> nats-messaging-refactor
 
 // import { stringify } from "./utils";
 
@@ -133,42 +124,6 @@ import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 //     throw error;
 //   }
 
-<<<<<<< HEAD
-  async sendAttempt(subject, data) {
-    console.log(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
-    );
-    const payload = {
-      ...data,
-      id: uuid(),
-    };
-    payload.token = await this.getToken(subject);
-    let msg;
-    try {
-      msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
-    } catch (e) {
-      throw new Error(`${sendFailed}: ${e.message}`);
-    }
-    let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
-    if (error && error.startsWith("Invalid token")) {
-      console.log("Auth error, token might have expired. Let's get a fresh token & try again.");
-      payload.token = await this.getToken(subject);
-      msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
-      error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
-    }
-    if (!msg.data) {
-      console.log(`Maybe this message is malformed: ${stringify(msg)}`);
-      return undefined;
-    }
-    const { err, response } = msg.data;
-    if (err || error) {
-      throw new Error(`Error sending request. Message: ${stringify(msg)}`);
-    }
-    const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
-    return !response || isEmptyObj ? undefined : response;
-  }
-}
-=======
 //   async sendAttempt(subject, data) {
 //     console.log(
 //       `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
@@ -203,4 +158,3 @@ import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 //     return !response || isEmptyObj ? undefined : response;
 //   }
 // }
->>>>>>> nats-messaging-refactor
