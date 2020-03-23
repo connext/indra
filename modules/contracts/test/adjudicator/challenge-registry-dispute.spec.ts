@@ -4,7 +4,7 @@ import { SolidityValueType } from "@connext/types";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
+import { bigNumberify, defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
@@ -13,8 +13,8 @@ import {
   AppIdentityTestClass,
   computeAppChallengeHash,
   expect,
-  signaturesToBytes,
   sortSignaturesBySignerAddress,
+  signDigestWithEthers,
 } from "./utils";
 
 enum ActionType {
@@ -98,9 +98,9 @@ describe("ChallengeRegistry Challenge", () => {
         appStateHash: stateHash,
         timeout: ONCHAIN_CHALLENGE_TIMEOUT,
         signatures: sortSignaturesBySignerAddress(digest, [
-          await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest),
-        ]).map(joinSignature),
+          await signDigestWithEthers(ALICE.privateKey, digest),
+          await signDigestWithEthers(BOB.privateKey, digest),
+        ]),
       });
     };
 
@@ -120,14 +120,12 @@ describe("ChallengeRegistry Challenge", () => {
 
     expect(await latestVersionNumber()).to.eq(1);
 
-    const signer = new SigningKey(BOB.privateKey);
     const thingToSign = keccak256(encodeAction(ACTION));
-    const signature = await signer.signDigest(thingToSign);
-    const bytes = signaturesToBytes(signature);
+    const signature = await signDigestWithEthers(BOB.privateKey, thingToSign);
 
     expect(await latestState()).to.be.eql(keccak256(encodeState(PRE_STATE)));
 
-    await respondToChallenge(PRE_STATE, ACTION, bytes);
+    await respondToChallenge(PRE_STATE, ACTION, signature);
 
     expect(await latestState()).to.be.eql(HashZero);
   });
@@ -135,12 +133,10 @@ describe("ChallengeRegistry Challenge", () => {
   it("Cannot call respondToChallenge with incorrect turn taker", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    const signer = new SigningKey(ALICE.privateKey);
     const thingToSign = keccak256(encodeAction(ACTION));
-    const signature = await signer.signDigest(thingToSign);
-    const bytes = signaturesToBytes(signature);
+    const signature = await signDigestWithEthers(ALICE.privateKey, thingToSign);
 
-    await expect(respondToChallenge(PRE_STATE, ACTION, bytes)).to.be.revertedWith(
+    await expect(respondToChallenge(PRE_STATE, ACTION, signature)).to.be.revertedWith(
       "Action must have been signed by correct turn taker",
     );
   });

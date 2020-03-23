@@ -46,15 +46,12 @@ export class WithdrawalController extends AbstractController {
     await this.cleanupPendingDeposit(params.assetId);
 
     const withdrawCommitment = await this.createWithdrawCommitment(params);
-    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(
-      withdrawCommitment.hashToSign(),
+    const hash = withdrawCommitment.hashToSign();
+    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
+      hash,
     );
 
-    await this.proposeWithdrawApp(
-      params,
-      withdrawCommitment.hashToSign(),
-      withdrawerSignatureOnWithdrawCommitment,
-    );
+    await this.proposeWithdrawApp(params, hash, withdrawerSignatureOnWithdrawCommitment);
 
     this.connext.listener.emit(EventNames[WITHDRAWAL_STARTED_EVENT], {
       params,
@@ -81,10 +78,11 @@ export class WithdrawalController extends AbstractController {
       assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
       recipient: state.transfers[0].to,
     } as WithdrawParameters<BigNumber>);
+    const hash = generatedCommitment.hashToSign();
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signWithdrawCommitment(
-      generatedCommitment.hashToSign(),
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
+      hash,
     );
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@connext/contracts": "1.0.5",
+    "@connext/crypto": "6.0.0-alpha.0",
     "@connext/types": "6.0.0-alpha.0",
     "ethers": "4.0.45",
     "@openzeppelin/contracts": "2.5.0",

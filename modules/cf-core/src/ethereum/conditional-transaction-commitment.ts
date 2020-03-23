@@ -23,7 +23,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
     public readonly interpreterParams: string,
-    participantSignatures: Signature[] = [],
+    participantSignatures: string[] = [],
   ) {
     super(multisig, multisigOwners, participantSignatures);
   }

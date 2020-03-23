@@ -21,7 +21,7 @@ export class SetStateCommitment {
   challengeRegistryAddress!: string;
 
   @Column("json", { nullable: true })
-  signatures!: Signature[];
+  signatures!: string[];
 
   @Column("integer")
   timeout!: number;
