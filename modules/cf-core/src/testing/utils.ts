@@ -104,12 +104,12 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* multisig */ stateChannel
       ? stateChannel.multisigAddress
       : getAddress(hexlify(randomBytes(20))),
+    /* meta */ undefined,
     /* twoPartyOutcomeInterpreterParams */ {
       playerAddrs: [AddressZero, AddressZero],
       amount: Zero,
       tokenAddress: AddressZero,
     },
-    /* meta */ undefined,
     /* multiAssetMultiPartyCoinTransferInterpreterParams */ undefined,
     /* singleAssetTwoPartyCoinTransferInterpreterParams */ undefined,
   );
