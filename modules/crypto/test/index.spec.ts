@@ -59,7 +59,7 @@ describe("crypto", () => {
     expect(longMessage).toEqual(decrypted);
   });
 
-  test("our crypto stuff & eth-crypto should be able to decrypt each other", async () => {
+  test("we should be able to encrypt and decrypt with eth-crypto package", async () => {
     const myEncrypted = await encryptWithPublicKey(pubKey, shortMessage);
     const ethEncrypted = EthCrypto.cipher.stringify(
       await EthCrypto.encryptWithPublicKey(pubKey, shortMessage),
