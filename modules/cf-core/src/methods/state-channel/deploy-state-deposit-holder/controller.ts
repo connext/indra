@@ -108,7 +108,7 @@ async function sendMultisigDeployTx(
     throw Error(`wallet must have a provider`);
   }
 
-  const signerAddress = await signer.getAddress();
+  const signerAddress = (await signer.getAddress()).toLowerCase();
   const nonce = await provider.getTransactionCount(signerAddress);
 
   let error;

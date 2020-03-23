@@ -1,5 +1,6 @@
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { getFreeBalanceAppInterface, merge } from "../ethereum";
@@ -237,7 +238,7 @@ function deserializeFreeBalanceState(freeBalanceStateJSON: FreeBalanceStateJSON)
     balancesIndexedByToken: (tokenAddresses || []).reduce(
       (acc, tokenAddress, idx) => ({
         ...acc,
-        [getAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
+        [getLowerCaseAddress(tokenAddress)]: balances[idx].map(({ to, amount }) => ({
           to,
           amount: bigNumberify(amount._hex),
         })),

@@ -3,7 +3,8 @@ import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Event, Wallet } from "ethers";
 import { TransactionResponse } from "ethers/providers";
-import { getAddress, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
+import { keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import Echo from "../../build/Echo.json";
 import Proxy from "../../build/Proxy.json";
@@ -21,7 +22,7 @@ describe("ProxyFactory with CREATE2", function() {
   let echo: Contract;
 
   function create2(initcode: string, saltNonce: number = 0, initializer: string = "0x") {
-    return getAddress(
+    return getLowerCaseAddress(
       solidityKeccak256(
         ["bytes1", "address", "uint256", "bytes32"],
         [

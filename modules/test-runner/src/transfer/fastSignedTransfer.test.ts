@@ -35,7 +35,7 @@ describe.skip("Fast Signed Transfer", () => {
   it("Should send a fast signed transfer", async () => {
     const paymentId = hexlify(randomBytes(32));
     const signerWallet = Wallet.createRandom();
-    const signerAddress = await signerWallet.getAddress();
+    const signerAddress = signerWallet.address.toLowerCase();
 
     const initialChannelBalance = bigNumberify(10);
     const transferAmount = One;
@@ -102,7 +102,7 @@ describe.skip("Fast Signed Transfer", () => {
 
   it("Should send multiple fast signed transfers using the same app", async () => {
     const signerWallet = Wallet.createRandom();
-    const signerAddress = await signerWallet.getAddress();
+    const signerAddress = signerWallet.address.toLowerCase();
 
     const initialChannelBalance = bigNumberify(10);
     const transferAmount = One;

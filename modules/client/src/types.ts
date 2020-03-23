@@ -80,7 +80,6 @@ export {
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
-  makeChecksum,
   makeChecksumOrEthAddress,
   maxBN,
   minBN,

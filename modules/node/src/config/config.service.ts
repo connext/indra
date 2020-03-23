@@ -4,7 +4,8 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
+import { Network as EthNetwork, parseEther } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { fromMnemonic } from "ethers/utils/hdnode";
@@ -71,7 +72,7 @@ export class ConfigService implements OnModuleInit {
     const ethAddressBook = this.getEthAddressBook();
     Object.keys(ethAddressBook[chainId]).map(
       (contract: string) =>
-        (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
+        (ethAddresses[contract] = getLowerCaseAddress(ethAddressBook[chainId][contract].address)),
     );
     return ethAddresses as ContractAddresses;
   }
@@ -79,7 +80,7 @@ export class ConfigService implements OnModuleInit {
   async getTokenAddress(): Promise<string> {
     const chainId = (await this.getEthNetwork()).chainId.toString();
     const ethAddressBook = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-    return getAddress(ethAddressBook[chainId].Token.address);
+    return getLowerCaseAddress(ethAddressBook[chainId].Token.address);
   }
 
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {

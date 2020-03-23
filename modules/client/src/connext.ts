@@ -62,7 +62,6 @@ import {
   INodeApiClient,
   InternalClientOptions,
   KeyGen,
-  makeChecksum,
   RebalanceProfile,
   ProtocolTypes,
   RequestCollateralResponse,
@@ -600,7 +599,7 @@ export class ConnextClient implements IConnextClient {
       amount,
       multisigAddress: this.multisigAddress,
       notifyCounterparty,
-      tokenAddress: makeChecksum(assetId),
+      tokenAddress: assetId.toLowerCase(),
     } as CFCoreTypes.DepositParams);
   };
 
@@ -617,11 +616,11 @@ export class ConnextClient implements IConnextClient {
     if (typeof assetId !== "string") {
       throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
     }
-    const normalizedAssetId = makeChecksum(assetId);
+    const normalizedAssetId = assetId.toLowerCase();
     try {
       return await this.channelProvider.send(ProtocolTypes.chan_getFreeBalanceState, {
         multisigAddress: this.multisigAddress,
-        tokenAddress: makeChecksum(assetId),
+        tokenAddress: assetId.toLowerCase(),
       } as CFCoreTypes.GetFreeBalanceStateParams);
     } catch (e) {
       const error = `No free balance exists for the specified token: ${normalizedAssetId}`;

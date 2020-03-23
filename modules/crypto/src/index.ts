@@ -47,11 +47,15 @@ export function toChecksumAddress(address: string): string {
   return addHexPrefix(checksum);
 }
 
-export function getEthereumAddress(publicKey: Buffer | string): string {
+export function getLowerCaseAddress(publicKey: Buffer | string): string {
   const buf = bufferify(publicKey);
   const hex = addHexPrefix(bufferToHex(buf).slice(2));
   const hash = keccak256(hexToBuffer(hex));
-  const address = addHexPrefix(bufferToHex(hash).substring(24));
+  return addHexPrefix(bufferToHex(hash).substring(24));
+}
+
+export function getChecksumAddress(publicKey: Buffer | string, noChecksum = false): string {
+  const address = getLowerCaseAddress(publicKey);
   return toChecksumAddress(address);
 }
 
@@ -118,7 +122,7 @@ export async function recoverAddress(
   digest: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return getEthereumAddress(await recoverPublicKey(digest, sig));
+  return getLowerCaseAddress(await recoverPublicKey(digest, sig));
 }
 
 export async function verifyMessage(

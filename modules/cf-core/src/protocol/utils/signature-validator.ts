@@ -1,5 +1,4 @@
-import { getAddress } from "ethers/utils";
-import { verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage, getLowerCaseAddress } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../types";
 
@@ -21,7 +20,7 @@ export async function assertIsValidSignature(
   // verifyChannelMessage: 83 ms, hashToSign: 7 ms
   const signer = await verifyChannelMessage(hash, signature);
 
-  if (getAddress(expectedSigner) !== signer) {
+  if (getLowerCaseAddress(expectedSigner) !== signer) {
     throw Error(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${hash}.`,
     );

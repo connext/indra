@@ -13,7 +13,8 @@ import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify} from "ethers/utils";
+import { BigNumber, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 import tokenAbi from "human-standard-token-abi";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -129,7 +130,11 @@ export class ChannelService {
 
     await this.proposeCoinBalanceRefund(assetId, channel);
 
-    const res = await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
+    const res = await this.cfCoreService.deposit(
+      multisigAddress,
+      amount,
+      getLowerCaseAddress(assetId),
+    );
     const depositTx = await this.configService.getEthProvider().getTransaction(res.transactionHash);
     await this.onchainTransactionRepository.addCollateralization(depositTx, channel);
     return res;
@@ -221,7 +226,7 @@ export class ChannelService {
     rebalanceType: RebalanceType,
     minimumRequiredCollateral: BigNumber = Zero,
   ): Promise<TransactionResponse | undefined> {
-    const normalizedAssetId = getAddress(assetId);
+    const normalizedAssetId = getLowerCaseAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
@@ -426,7 +431,7 @@ export class ChannelService {
     }
 
     const rebalanceProfile = new RebalanceProfile();
-    rebalanceProfile.assetId = getAddress(assetId);
+    rebalanceProfile.assetId = getLowerCaseAddress(assetId);
     rebalanceProfile.lowerBoundCollateralize = lowerBoundCollateralize;
     rebalanceProfile.upperBoundCollateralize = upperBoundCollateralize;
     rebalanceProfile.lowerBoundReclaim = lowerBoundReclaim;

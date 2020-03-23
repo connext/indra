@@ -1,4 +1,5 @@
-import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
+import { hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import { appIdentityToHash, SetupCommitment } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
@@ -32,7 +33,7 @@ describe("SetupCommitment", () => {
       proxyFactory: networkContext.ProxyFactory,
       multisigMastercopy: networkContext.MinimumViableMultisig,
     },
-    getAddress(hexlify(randomBytes(20))),
+    getLowerCaseAddress(hexlify(randomBytes(20))),
     [interaction.sender, interaction.receiver],
   );
 

@@ -1,6 +1,6 @@
 import { IMessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { getAddress } from "ethers/utils";
+import { getLowerCaseAddress } from "@connext/crypto";
 
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
@@ -23,7 +23,7 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
   async getLatestSwapRate(subject: string): Promise<string> {
     const from = subject.split(".")[1];
     const to = subject.split(".")[2];
-    return this.swapRateService.getOrFetchRate(getAddress(from), getAddress(to));
+    return this.swapRateService.getOrFetchRate(getLowerCaseAddress(from), getLowerCaseAddress(to));
   }
 
   async setupSubscriptions(): Promise<void> {
