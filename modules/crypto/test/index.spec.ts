@@ -12,28 +12,15 @@ import {
   utf8ToBuffer,
   removeHexPrefix,
   bufferToHex,
-  addHexPrefix,
-  isHexString,
 } from "../src";
 import * as EthCrypto from "eth-crypto";
-import { Wallet, utils } from "ethers";
-import { computePublicKey, arrayify, joinSignature, SigningKey, verifyMessage } from "ethers/utils";
+import { Wallet } from "ethers";
+import { computePublicKey, arrayify, joinSignature, SigningKey } from "ethers/utils";
 
-function sanitizeHexString(hex: string): string {
-  return isHexString(hex) ? addHexPrefix(hex) : hex;
-}
-
-const signDigestWithEthers = (privateKey: string, digest: string) => {
-  digest = sanitizeHexString(digest);
+function signDigestWithEthers(privateKey: string, digest: string) {
   const signingKey = new SigningKey(privateKey);
   return joinSignature(signingKey.signDigest(arrayify(digest)));
-};
-
-const recoverAddressWithEthers = (signature: string, digest: string) => {
-  signature = sanitizeHexString(signature);
-  digest = sanitizeHexString(digest);
-  return utils.recoverAddress(arrayify(digest), signature);
-};
+}
 
 const prvKey = Wallet.createRandom().privateKey;
 const pubKey = removeHexPrefix(computePublicKey(prvKey));
@@ -99,10 +86,8 @@ describe("crypto", () => {
 
   test("we should be able to recover Ethereum messages", async () => {
     const sig = await signEthereumMessage(wallet.privateKey, testMessage);
-    const recovered1 = await verifyMessage(testMessageArr, sig);
-    const recovered2 = await verifyEthereumMessage(testMessage, sig);
-    expect(recovered2).toEqual(recovered1);
-    expect(recovered2).toEqual(wallet.address);
+    const recovered = await verifyEthereumMessage(testMessage, sig);
+    expect(recovered).toEqual(wallet.address);
   });
 
   test("we should be able to sign ECDSA digests", async () => {
@@ -111,12 +96,10 @@ describe("crypto", () => {
     expect(sig1).toEqual(sig2);
   });
 
-  test.skip("we should be able to recover ECDSA digests", async () => {
+  test("we should be able to recover ECDSA digests", async () => {
     const sig = await signDigest(wallet.privateKey, digest);
-    const recovered1 = await recoverAddressWithEthers(digestHex, sig);
-    const recovered2 = await recoverAddress(digest, sig);
-    expect(recovered2).toEqual(recovered1);
-    expect(recovered2).toEqual(wallet.address);
+    const recovered = await recoverAddress(digest, sig);
+    expect(recovered).toEqual(wallet.address);
   });
 
   test("we should be able to sign Channel messages", async () => {
