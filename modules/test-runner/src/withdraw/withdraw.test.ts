@@ -50,7 +50,7 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
-    ).to.be.rejectedWith(`invalid BigNumber value`);
+    ).to.be.rejectedWith(`invalid number value`);
   });
 
   it("client tries to withdraw to an invalid recipient address", async () => {
