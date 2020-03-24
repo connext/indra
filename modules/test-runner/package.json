@@ -36,6 +36,7 @@
     "sql-template-strings": "2.2.2",
     "ts-mocha": "6.0.0",
     "ts-nats": "1.2.4",
+    "ts-natsutil": "1.0.4",
     "ts-node": "8.6.2",
     "typescript": "3.7.5",
     "uuid": "3.4.0"
