@@ -43,9 +43,9 @@ function wait_for {
   bash ops/wait-for.sh -t 60 $host 2> /dev/null
 }
 
-wait_for $INDRA_PG_HOST:$INDRA_PG_PORT
-wait_for ${INDRA_ETH_RPC_URL#*://}
-wait_for ${INDRA_NODE_URL#*://}
+wait_for "database" $INDRA_PG_HOST:$INDRA_PG_PORT
+wait_for "ethprovider" ${INDRA_ETH_RPC_URL#*://}
+wait_for "node" ${INDRA_NODE_URL#*://}
 
 bundle=dist/tests.bundle.js
 
