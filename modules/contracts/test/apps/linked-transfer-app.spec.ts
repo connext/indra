@@ -4,9 +4,10 @@ import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
 import UnidirectionalLinkedTransferApp from "../../build/UnidirectionalLinkedTransferApp.json";
+import { createRandom32ByteHexString } from "../funding/utils";
 
 chai.use(waffle.solidity);
 
@@ -150,8 +151,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const amount = new BigNumber(10);
 
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
@@ -210,8 +211,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const amount = new BigNumber(10);
 
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
@@ -223,7 +224,7 @@ describe("LinkedUnidirectionalTransferApp", () => {
     const linkedHash = createLinkedHash(action);
     const suppliedAction: UnidirectionalLinkedTransferAppAction = {
       ...action,
-      preImage: hexlify(randomBytes(32)),
+      preImage: createRandom32ByteHexString(),
     };
 
     /**

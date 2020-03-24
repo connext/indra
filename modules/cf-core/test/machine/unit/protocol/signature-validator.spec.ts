@@ -1,10 +1,11 @@
 import { HashZero } from "ethers/constants";
-import { hexlify, randomBytes, SigningKey } from "ethers/utils";
+import { SigningKey } from "ethers/utils";
 import { signDigest } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../../../src/types";
 import { assertIsValidSignature } from "../../../../src/protocol/utils/signature-validator";
 import { recoverAddressWithEthers } from "../../../../src/utils";
+import { createRandom32ByteHexString } from "../../mocks";
 
 describe("Signature Validator Helper", () => {
   let signer: SigningKey;
@@ -12,7 +13,7 @@ describe("Signature Validator Helper", () => {
   let commitment: EthereumCommitment;
 
   beforeEach(async () => {
-    signer = new SigningKey(hexlify(randomBytes(32)));
+    signer = new SigningKey(createRandom32ByteHexString());
 
     commitment = {
       hashToSign: () => HashZero,

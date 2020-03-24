@@ -7,7 +7,7 @@ import {
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
-import { hexlify, randomBytes, HDNode } from "ethers/utils";
+import { HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
 import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src";
@@ -20,6 +20,7 @@ import { Store } from "../../src/store";
 import { getRandomExtendedPubKeys } from "../machine/integration/random-signing-keys";
 
 import { createAppInstanceProposalForTest } from "./utils";
+import { createRandom32ByteHexString } from "../machine/mocks";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
@@ -68,7 +69,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     const mockedStore = mock(Store);
 
-    const appInstanceId = hexlify(randomBytes(32));
+    const appInstanceId = createRandom32ByteHexString();
     const appInstanceProposal = createAppInstanceProposalForTest(appInstanceId);
 
     when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
@@ -89,7 +90,7 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedStore = mock(Store);
     const store = instance(mockedStore);
 
-    const appInstanceId = hexlify(randomBytes(32));
+    const appInstanceId = createRandom32ByteHexString();
     const multisigAddress = Wallet.createRandom().address;
     const extendedKeys = getRandomExtendedPubKeys(2);
     const participants = xkeysToSortedKthAddresses(extendedKeys, 0);
