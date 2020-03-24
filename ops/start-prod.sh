@@ -95,14 +95,11 @@ else registry="${registry%/}/"
 fi
 
 if [[ "$INDRA_MODE" == *"staging" ]]
-# then version="`git rev-parse HEAD | head -c 8`"
-then version="latest"
+then version="`git rev-parse HEAD | head -c 8`"
 elif [[ "$INDRA_MODE" == *"release" ]]
 then version="`cat $dir/../package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
-echo "VERSIONNNNNNN"
-echo $version
 
 database_image="$registry${project}_database:$version"
 ethprovider_image="$registry${project}_ethprovider:$version"
@@ -200,6 +197,7 @@ services:
       EMAIL: $INDRA_EMAIL
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
       MESSAGING_URL: http://nats:$nats_ws_port
+      NODE_URL: http://node:$node_port
       MODE: prod
     logging:
       driver: "json-file"

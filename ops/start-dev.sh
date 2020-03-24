@@ -106,6 +106,7 @@ else
       DOMAINNAME: localhost
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
       MESSAGING_URL: http://nats:$nats_ws_port
+      NODE_URL: http://node:$node_port
       MODE: $proxy_mode
       UI_URL: $proxy_ui_url
     networks:

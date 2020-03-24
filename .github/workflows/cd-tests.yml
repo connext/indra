@@ -82,6 +82,8 @@ jobs:
     - run: make pull-commit
     - run: make start-test-staging
     - run: sleep 15 && make dls
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v2
     - run: TEST_MODE=staging make test-integration
     - name: Print node logs
       if: failure()

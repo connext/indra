@@ -22,12 +22,14 @@ export const replaceUrlPort = (url: string, port: number, delimiter: string = ":
 };
 
 export const formatMessagingUrl = (nodeUrl: string) => {
-  // for backwards-compatiblity
-  let url = nodeUrl.replace("/messaging", "");
+  // nats://daicard.io/api/messaging
+  // nats://nats:4222
   // replace url protocol
-  url = replaceUrlProtocol(url, isNode() ? "nats" : "wss");
-  // replace url port
-  url = replaceUrlPort(url, 4222);
+  let url = replaceUrlProtocol(nodeUrl, isNode() ? "nats" : "wss");
+  if (isNode()) {
+    return url.split("/api")[0] + ":4222";
+  }
+  url = `${url}/messaging`;
   return url;
 };
 

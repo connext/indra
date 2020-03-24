@@ -45,7 +45,7 @@ exec docker run \
   $watchOptions \
   --env="INDRA_CLIENT_LOG_LEVEL=0" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
-  --env="INDRA_NODE_URL=$NODE_URL" \
+  --env="INDRA_NODE_URL=https://172.17.0.1/api" \
   --env="INDRA_NATS_URL=$NATS_URL" \
   --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
   --env="NODE_ENV=production" \
