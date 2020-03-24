@@ -5,10 +5,11 @@ import {
   COMMITMENT_KEY,
 } from "../helpers";
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
-import localStorage from "localStorage";
 
+// @ts-ignore
+const getLocalStorage = () => global.localStorage || require("localStorage");
 export class WrappedLocalStorage implements WrappedStorage {
-  private localStorage: Storage = localStorage;
+  private localStorage: Storage = getLocalStorage();
 
   constructor(
     private readonly prefix: string = DEFAULT_STORE_PREFIX,
