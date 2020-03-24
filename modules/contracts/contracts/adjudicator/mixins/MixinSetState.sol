@@ -27,7 +27,6 @@ contract MixinSetState is LibStateChannelApp, LibDispute, MChallengeRegistryCore
         public
     {
         bytes32 identityHash = appIdentityToHash(appIdentity);
-
         AppChallenge storage challenge = appChallenges[identityHash];
 
         if (challenge.status == ChallengeStatus.NO_CHALLENGE) {
@@ -50,7 +49,7 @@ contract MixinSetState is LibStateChannelApp, LibDispute, MChallengeRegistryCore
 
         require(
             req.versionNumber > challenge.versionNumber,
-            "Tried to call setState with an outdated versionNumber version"
+            "setState was called with outdated state"
         );
 
         challenge.status = ChallengeStatus.IN_DISPUTE;

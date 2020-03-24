@@ -13,11 +13,11 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibDispute, LibAppCaller
     using SafeMath for uint256;
 
     /// @notice Create a challenge regarding the latest signed state and immediately after,
-    /// performs a unilateral action to update it.
+    /// performs a unilateral action to update it. The latest signed state must have timeout 0.
     /// @param appIdentity An AppIdentity pointing to the app having its challenge progressed
     /// @param req A struct with the signed state update in it
     /// @param action A struct with the signed action being taken
-    /// @dev Note this function is only callable when the state channel is not in challenge
+    /// @dev Note this function is only callable when the challenge is still disputable.
     function setStateWithAction(
         AppIdentity memory appIdentity,
         SignedAppChallengeUpdateWithAppState memory req,
@@ -25,21 +25,25 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibDispute, LibAppCaller
     )
         public
     {
-        /*  TODO
-
         bytes32 identityHash = appIdentityToHash(appIdentity);
-
         AppChallenge storage challenge = appChallenges[identityHash];
 
+        if (challenge.status == ChallengeStatus.NO_CHALLENGE) {
+            appTimeouts[identityHash] = appIdentity.defaultTimeout;
+        }
+
         require(
-            correctKeysSignedAppChallengeUpdate(identityHash, appIdentity.participants, req),
-            "Call to setStateWithAction included incorrectly signed state update"
+            isDisputable(challenge),
+            "setStateWithAction was called on an app that cannot be disputed anymore"
         );
 
         require(
-            challenge.status == ChallengeStatus.NO_CHALLENGE ||
-            (challenge.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && challenge.finalizesAt >= block.number),
-            "setStateWithAction was called on an app that has already been finalized"
+            correctKeysSignedAppChallengeUpdate(
+                identityHash,
+                appIdentity.participants,
+                req
+            ),
+            "Call to setStateWithAction included incorrectly signed state update"
         );
 
         require(
@@ -48,21 +52,28 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibDispute, LibAppCaller
         );
 
         require(
+            req.timeout == 0,
+            "setStateWithAction was called with a state with non-zero timeout"
+        );
+
+        require(
             correctKeySignedTheAction(
-                appIdentity.appDefinition,
-                appIdentity.participants,
-                req,
+                appIdentity,
+                req.appState,
+                appStateToHash(req.appState),
+                req.versionNumber,
                 action
             ),
             "setStateWithAction called with action signed by incorrect turn taker"
         );
 
-        bytes memory newState = LibAppCaller.applyAction(
+        bytes memory newState = applyAction(
             appIdentity.appDefinition,
             req.appState,
             action.encodedAction
         );
 
+        /*
         uint256 finalizesAt = block.number.add(req.timeout);
 
         challenge.finalizesAt = finalizesAt;
@@ -70,7 +81,6 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibDispute, LibAppCaller
         challenge.appStateHash = keccak256(newState);
         challenge.versionNumber = req.versionNumber;
         challenge.latestSubmitter = msg.sender;
-
         */
     }
 
@@ -85,35 +95,42 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibDispute, LibAppCaller
     {
         bytes32 digest = computeAppChallengeHash(
             identityHash,
-            keccak256(req.appState),
+            appStateToHash(req.appState),
             req.versionNumber,
             req.timeout
         );
-        return verifySignatures(req.signatures, digest, participants);
+        return verifySignatures(
+            req.signatures,
+            digest,
+            participants
+        );
     }
 
     function correctKeySignedTheAction(
-        address appDefinition,
-        address[] memory participants,
-        SignedAppChallengeUpdateWithAppState memory req,
+        AppIdentity memory appIdentity,
+        bytes memory appState,
+        bytes32 appStateHash,
+        uint256 versionNumber,
         SignedAction memory action
     )
         private
         view
         returns (bool)
     {
-        address turnTaker = LibAppCaller.getTurnTaker(
-            appDefinition,
-            participants,
-            req.appState
+        address turnTaker = getTurnTaker(
+            appIdentity.appDefinition,
+            appIdentity.participants,
+            appState
         );
 
-        address signer = computeActionHash(
+        bytes32 actionHash = computeActionHash(
             turnTaker,
-            keccak256(req.appState),
+            appStateHash,
             action.encodedAction,
-            req.versionNumber
-        ).recover(action.signature);
+            versionNumber
+        );
+
+        address signer = actionHash.recover(action.signature);
 
         return turnTaker == signer;
     }

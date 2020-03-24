@@ -23,7 +23,6 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, LibAppCaller
         public
     {
         bytes32 identityHash = appIdentityToHash(appIdentity);
-
         AppChallenge storage challenge = appChallenges[identityHash];
 
         require(
@@ -31,16 +30,19 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, LibAppCaller
             "respondToChallenge called on app not in a progressable state"
         );
 
+        bytes32 appStateHash = appStateToHash(appState);
+
         require(
-            appStateToHash(appState) == challenge.appStateHash,
+            appStateHash == challenge.appStateHash,
             "Tried to progress a challenge with non-agreed upon app"
         );
 
         require(
             correctKeySignedTheAction(
                 appIdentity,
-                challenge,
                 appState,
+                appStateHash,
+                challenge.versionNumber,
                 action
             ),
             "respondToChallenge called with action signed by incorrect turn taker"
@@ -62,8 +64,9 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, LibAppCaller
 
     function correctKeySignedTheAction(
         AppIdentity memory appIdentity,
-        AppChallenge memory challenge,
         bytes memory appState,
+        bytes32 appStateHash,
+        uint256 versionNumber,
         SignedAction memory action
     )
         private
@@ -78,9 +81,9 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, LibAppCaller
 
         bytes32 actionHash = computeActionHash(
             turnTaker,
-            challenge.appStateHash,
+            appStateHash,
             action.encodedAction,
-            challenge.versionNumber
+            versionNumber
         );
 
         address signer = actionHash.recover(action.signature);
