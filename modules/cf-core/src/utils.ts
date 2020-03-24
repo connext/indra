@@ -10,6 +10,7 @@ import {
   keccak256,
   recoverAddress,
   solidityKeccak256,
+  arrayify,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -51,18 +52,19 @@ export const deBigNumberifyJson = (json: object) =>
     val && BigNumber.isBigNumber(val) ? val.toHexString() : val,
   );
 
-/**
- * Sorts signatures in ascending order of signer address
- *
- * @param signatures An array of ethereum signatures
- */
+export async function recoverAddressWithEthers(digest: string, sig: string) {
+  return recoverAddress(arrayify(digest), sig);
+}
+
 export async function sortSignaturesBySignerAddress(
   digest: string,
   signatures: string[],
 ): Promise<string[]> {
   return (
     await Promise.all(
-      signatures.slice().map(async sig => ({ sig, addr: await recoverAddress(digest, sig) })),
+      signatures
+        .slice()
+        .map(async sig => ({ sig, addr: await recoverAddressWithEthers(digest, sig) })),
     )
   )
     .sort((A, B) => {

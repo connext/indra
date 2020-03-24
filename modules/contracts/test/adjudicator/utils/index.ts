@@ -8,6 +8,7 @@ import {
   keccak256,
   recoverAddress,
   solidityPack,
+  arrayify,
 } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
@@ -64,18 +65,19 @@ export class AppIdentityTestClass {
   ) {}
 }
 
-/**
- * Sorts signatures in ascending order of signer address
- *
- * @param signatures An array of ethereum signatures
- */
+export async function recoverAddressWithEthers(digest: string, sig: string) {
+  return recoverAddress(arrayify(digest), sig);
+}
+
 export async function sortSignaturesBySignerAddress(
   digest: string,
   signatures: string[],
 ): Promise<string[]> {
   return (
     await Promise.all(
-      signatures.slice().map(async sig => ({ sig, addr: await recoverAddress(digest, sig) })),
+      signatures
+        .slice()
+        .map(async sig => ({ sig, addr: await recoverAddressWithEthers(digest, sig) })),
     )
   )
     .sort((A, B) => {

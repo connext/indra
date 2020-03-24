@@ -8,8 +8,12 @@ import {
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 import { convertWithrawAppState } from "./convert";
-import { BigNumber, recoverAddress } from "ethers/utils";
+import { BigNumber, recoverAddress, arrayify } from "ethers/utils";
 import { HashZero, Zero } from "ethers/constants";
+
+export async function recoverAddressWithEthers(digest: string, sig: string) {
+  return recoverAddress(arrayify(digest), sig);
+}
 
 export const validateWithdrawApp = async (
   params: CFCoreTypes.ProposeInstallParams,
@@ -67,7 +71,7 @@ export const validateWithdrawApp = async (
     );
   }
 
-  let recovered = await recoverAddress(initialState.data, initialState.signatures[0]);
+  let recovered = await recoverAddressWithEthers(initialState.data, initialState.signatures[0]);
 
   if (recovered != initialState.signers[0]) {
     throw new Error(
