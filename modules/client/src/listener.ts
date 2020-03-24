@@ -134,8 +134,8 @@ export class ConnextListener extends ConnextEventEmitter {
       });
       if (registryAppInfo.name === WithdrawAppName) {
         const params = {
-          amount: state.transfers[0][1],
-          recipient: state.transfers[0][0],
+          amount: state.transfers[0].amount,
+          recipient: state.transfers[0].to,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         };
         await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);

@@ -23,7 +23,7 @@ describe("ChannelProvider", () => {
   let tokenAddress: string;
 
   beforeEach(async () => {
-    client = await createClient();
+    client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodePublicIdentifier = client.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
@@ -59,7 +59,7 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // TRANSFER FLOW
     const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
-    const clientB = await createClient();
+    const clientB = await createClient({ id: "B" });
     await clientB.requestCollateral(tokenAddress);
 
     const transferFinished = Promise.all([
