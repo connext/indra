@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { WithdrawApp } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -99,7 +99,7 @@ export class WithdrawService {
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = await signDigest(privateKey, hash);
+    const counterpartySignatureOnWithdrawCommitment = await signChannelMessage(privateKey, hash);
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -230,7 +230,7 @@ export class WithdrawService {
     const privateKey = this.configService.getEthWallet().privateKey;
     const hash = commitment.hashToSign();
 
-    const withdrawerSignatureOnCommitment = await signDigest(privateKey, hash);
+    const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, hash);
 
     const transfers: CoinTransfer[] = [
       { amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress },

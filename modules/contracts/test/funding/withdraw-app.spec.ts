@@ -1,6 +1,6 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import {
   WithdrawAppState,
@@ -74,7 +74,7 @@ describe("WithdrawApp", async () => {
           to: counterpartyWallet.address,
         },
       ],
-      signatures: [await signDigest(withdrawerSigningKey.privateKey, data), HashZero],
+      signatures: [await signChannelMessage(withdrawerSigningKey.privateKey, data), HashZero],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
       data,
       finalized: false,
@@ -83,7 +83,7 @@ describe("WithdrawApp", async () => {
 
   const createAction = async (): Promise<WithdrawAppAction> => {
     return {
-      signature: await signDigest(counterpartySigningKey.privateKey, data),
+      signature: await signChannelMessage(counterpartySigningKey.privateKey, data),
     };
   };
 

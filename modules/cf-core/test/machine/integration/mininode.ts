@@ -1,7 +1,7 @@
 import { NetworkContext, nullLogger, PersistAppType, AppInstanceProposal } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { HDNode } from "ethers/utils/hdnode";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../../src/types";
 import { Opcode, ProtocolRunner } from "../../../src/machine";
@@ -23,7 +23,7 @@ const makeSigner = (hdNode: HDNode) => {
     const privateKey = hdNode.derivePath(`${keyIndex}`).privateKey;
     const hash = commitment.hashToSign();
 
-    return await signDigest(privateKey, hash);
+    return await signChannelMessage(privateKey, hash);
   };
 };
 

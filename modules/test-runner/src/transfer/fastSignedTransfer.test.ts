@@ -10,7 +10,7 @@ import {
   delay,
   ResolveConditionResponse,
 } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { bigNumberify, BigNumber, solidityKeccak256 } from "ethers/utils";
 import { Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
@@ -74,7 +74,7 @@ describe.skip("Fast Signed Transfer", () => {
     const data = createRandom32ByteHexString();
 
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signDigest(signerWallet.privateKey, digest);
+    const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
     let resolveCondition: ResolveConditionResponse;
     await new Promise(async resolve => {
@@ -131,7 +131,7 @@ describe.skip("Fast Signed Transfer", () => {
       const data = createRandom32ByteHexString();
 
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = await signDigest(signerWallet.privateKey, digest);
+      const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
       const res = await clientB.resolveCondition({
         conditionType: FAST_SIGNED_TRANSFER,

@@ -47,7 +47,7 @@ export class WithdrawalController extends AbstractController {
 
     const withdrawCommitment = await this.createWithdrawCommitment(params);
     const hash = withdrawCommitment.hashToSign();
-    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
+    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
       hash,
     );
 
@@ -81,7 +81,7 @@ export class WithdrawalController extends AbstractController {
     const hash = generatedCommitment.hashToSign();
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
       hash,
     );
     await this.connext.takeAction(appInstance.identityHash, {
