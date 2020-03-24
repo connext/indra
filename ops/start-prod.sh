@@ -104,7 +104,7 @@ fi
 database_image="$registry${project}_database:$version"
 ethprovider_image="$registry${project}_ethprovider:$version"
 logdna_image="logdna/logspout:v1.2.0"
-nats_image="provide/nats-server:latest"
+nats_image="provide/nats-server:indra"
 node_image="$registry${project}_node:$version"
 proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
