@@ -73,8 +73,9 @@ export class LinkedTransferService {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
-    const amount = toBN(senderApp.latestState.amount);
-    const { assetId, linkedHash } = senderApp.latestState;
+    const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
+    const amount = toBN(latestState.amount);
+    const { assetId, linkedHash } = latestState;
     const amountBN = bigNumberify(amount);
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
