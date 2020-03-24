@@ -104,8 +104,8 @@ fi
 echo "VERSIONNNNNNN"
 echo $version
 
-ethprovider_image="$registry${project}_ethprovider:$version"
 database_image="$registry${project}_database:$version"
+ethprovider_image="$registry${project}_ethprovider:$version"
 logdna_image="logdna/logspout:v1.2.0"
 nats_image="provide/nats-server:latest"
 node_image="$registry${project}_node:$version"
@@ -113,6 +113,7 @@ proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
 
 pull_if_unavailable "$database_image"
+pull_if_unavailable "$ethprovider_image"
 pull_if_unavailable "$logdna_image"
 pull_if_unavailable "$nats_image"
 pull_if_unavailable "$node_image"
@@ -173,7 +174,8 @@ nats_jwt_signer_pubkey='-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOC
 
 echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
 
-mkdir -p ops/database/snapshots /tmp/$project
+mkdir -p `pwd`/ops/database/snapshots
+mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
