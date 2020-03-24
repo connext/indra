@@ -25,7 +25,15 @@ export const formatMessagingUrl = (nodeUrl: string) => {
   // nats://daicard.io/api/messaging
   // nats://nats:4222
   // replace url protocol
-  let url = replaceUrlProtocol(nodeUrl, isNode() ? "nats" : "wss");
+  let url = replaceUrlProtocol(
+    nodeUrl,
+    isNode()
+      ? "nats"
+      : nodeUrl
+          .split("://")
+          .shift()
+          .replace(/^http/, "ws"),
+  );
   if (isNode()) {
     return url.split("/api")[0] + ":4222";
   }
