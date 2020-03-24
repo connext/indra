@@ -1,4 +1,4 @@
-import { bigNumberifyJson, deBigNumberifyJson, stringify } from "@connext/types";
+import { bigNumberifyJson, deBigNumberifyJson, isBN, stringify } from "@connext/types";
 import { Contract } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
@@ -182,7 +182,6 @@ export class AppInstance {
   }
 
   @Memoize()
-  // todo(xuanji): we should print better error messages here
   public get encodedLatestState() {
     return defaultAbiCoder.encode([this.appInterface.stateEncoding], [this.latestState]);
   }
@@ -267,8 +266,6 @@ export class AppInstance {
     action: SolidityValueType,
     provider: JsonRpcProvider,
   ): Promise<SolidityValueType> {
-    const ret: SolidityValueType = {};
-
     const computedNextState = this.decodeAppState(
       await this.toEthersContract(provider).functions.applyAction(
         this.encodedLatestState,
@@ -276,13 +273,34 @@ export class AppInstance {
       ),
     );
 
-    // ethers returns an array of [ <each value by idx>, <each value by key> ]
-    // so we need to clean this response before returning
-    for (const key in this.state) {
-      ret[key] = computedNextState[key];
-    }
+    // ethers returns an array of [ <each value by index>, <each value by key> ]
+    // so we need to recursively clean this response before returning
+    const keyify = (templateObj: object, dataObj: object, key?: string): object => {
+      let template = key ? templateObj[key] : templateObj;
+      let data = key ? dataObj[key] : dataObj;
+      let output;
+      if (isBN(template) || typeof data !== "object") {
+        // console.log(`Done, returning simple data: ${data}`);
+        output = data;
+      } else if (typeof template === "object" && typeof template.length === "number") {
+        output = [];
+        for (const index in template) {
+          // console.log(`Applying keyifiy for array index ${index}`);
+          output.push(keyify(template, data, index));
+        }
+      } else if (typeof template === "object" && typeof template.length !== "number") {
+        output = {};
+        for (const subkey in template) {
+          // console.log(`Applying keyifiy for object key ${subkey}`);
+          output[subkey] = keyify(template, data, subkey);
+        }
+      } else {
+        throw new Error(`Couldn't keyify, unrecogized key/value: ${key}/${data}`);
+      }
+      return output;
+    };
 
-    return ret;
+    return bigNumberifyJson(keyify(this.state, computedNextState));
   }
 
   public encodeAction(action: SolidityValueType) {
