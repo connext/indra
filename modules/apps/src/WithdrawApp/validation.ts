@@ -5,7 +5,7 @@ import {
   bigNumberifyObj,
   WithdrawAppState,
 } from "@connext/types";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 import { unidirectionalCoinTransferValidation } from "../shared";
 import { convertWithrawAppState } from "./convert";
 import { BigNumber } from "ethers/utils";
@@ -67,7 +67,7 @@ export const validateWithdrawApp = async (
     );
   }
 
-  let recovered = await recoverAddress(initialState.data, initialState.signatures[0]);
+  let recovered = await verifyChannelMessage(initialState.data, initialState.signatures[0]);
 
   if (recovered != initialState.signers[0]) {
     throw new Error(

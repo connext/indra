@@ -1,6 +1,6 @@
 import { HashZero } from "ethers/constants";
 import { SigningKey } from "ethers/utils";
-import { signChannelMessage, recoverAddress } from "@connext/crypto";
+import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../../../src/types";
 import { assertIsValidSignature } from "../../../../src/protocol/utils/signature-validator";
@@ -43,7 +43,7 @@ describe("Signature Validator Helper", () => {
     const rightEncoding = commitment.encode();
     const wrongEncoding = HashZero.replace("00", "11"); // 0x11000...
     const signature = await signChannelMessage(signer.privateKey, wrongEncoding);
-    const wrongSigner = await recoverAddress(rightEncoding, signature);
+    const wrongSigner = await verifyChannelMessage(rightEncoding, signature);
     await expect(assertIsValidSignature(signer.address, commitment, signature)).rejects.toThrow(
       `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for encoded commitment ${rightEncoding}.`,
     );

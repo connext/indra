@@ -1,5 +1,5 @@
 import { getAddress } from "ethers/utils";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 
 import { EthereumCommitment } from "../../types";
 
@@ -18,8 +18,8 @@ export async function assertIsValidSignature(
 
   const commitmentEncoded = commitment.encode();
 
-  // recoverAddress: 83 ms, encode: 7 ms
-  const signer = await recoverAddress(commitmentEncoded, signature);
+  // verifyChannelMessage: 83 ms, encode: 7 ms
+  const signer = await verifyChannelMessage(commitmentEncoded, signature);
 
   if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
