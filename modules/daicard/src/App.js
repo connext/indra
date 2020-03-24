@@ -52,9 +52,7 @@ import {
 const urls = {
   ethProviderUrl:
     process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
-  nodeUrl:
-    process.env.REACT_APP_NODE_URL_OVERRIDE ||
-    `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin}/api`,
   legacyUrl: chainId =>
     chainId.toString() === "1"
       ? "https://hub.connext.network/api/hub"
