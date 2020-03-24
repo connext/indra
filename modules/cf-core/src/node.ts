@@ -179,9 +179,9 @@ export class Node {
       const keyIndex = overrideKeyIndex || 0;
 
       const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
-      const hash = commitment.hashToSign();
+      const commitmentEncoded = commitment.encode();
 
-      return await signChannelMessage(privateKey, hash);
+      return await signChannelMessage(privateKey, commitmentEncoded);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {

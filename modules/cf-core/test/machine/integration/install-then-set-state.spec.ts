@@ -153,11 +153,11 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         identityAppInstance.timeout,
       );
 
-      const setStateCommitmentHash = setStateCommitment.hashToSign();
+      const setStateCommitmentEncoded = setStateCommitment.encode();
 
       setStateCommitment.signatures = [
-        await signChannelMessage(uniqueAppSigningKeys[0].privateKey, setStateCommitmentHash),
-        await signChannelMessage(uniqueAppSigningKeys[1].privateKey, setStateCommitmentHash),
+        await signChannelMessage(uniqueAppSigningKeys[0].privateKey, setStateCommitmentEncoded),
+        await signChannelMessage(uniqueAppSigningKeys[1].privateKey, setStateCommitmentEncoded),
       ];
 
       await wallet.sendTransaction({
@@ -172,7 +172,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         stateChannel.freeBalance.versionNumber,
         stateChannel.freeBalance.timeout,
       );
-      const setStateCommitmentForFreeBalanceHash = setStateCommitmentForFreeBalance.hashToSign();
+      const setStateCommitmentForFreeBalanceHash = setStateCommitmentForFreeBalance.encode();
       setStateCommitmentForFreeBalance.signatures = [
         await signChannelMessage(
           multisigOwnerKeys[0].privateKey,
@@ -215,7 +215,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
           [identityAppInstance.multiAssetMultiPartyCoinTransferInterpreterParams!],
         ),
       );
-      const conditionalTransactionHash = conditionalTransaction.hashToSign();
+      const conditionalTransactionHash = conditionalTransaction.encode();
       conditionalTransaction.signatures = [
         await signChannelMessage(multisigOwnerKeys[0].privateKey, conditionalTransactionHash),
         await signChannelMessage(multisigOwnerKeys[1].privateKey, conditionalTransactionHash),
@@ -260,11 +260,11 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       freeBalanceConditionalTransaction.signatures = [
         await signChannelMessage(
           multisigOwnerKeys[0].privateKey,
-          freeBalanceConditionalTransaction.hashToSign(),
+          freeBalanceConditionalTransaction.encode(),
         ),
         await signChannelMessage(
           multisigOwnerKeys[1].privateKey,
-          freeBalanceConditionalTransaction.hashToSign(),
+          freeBalanceConditionalTransaction.encode(),
         ),
       ];
 

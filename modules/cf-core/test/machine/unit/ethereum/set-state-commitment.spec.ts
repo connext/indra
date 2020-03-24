@@ -37,10 +37,10 @@ describe("Set State Commitment", () => {
       appInstance.versionNumber,
       appInstance.timeout,
     );
-    const commitmentHash = commitment.hashToSign();
+    const commitmentEncoded = commitment.encode();
     commitment.signatures = [
-      await signChannelMessage(hdNodes[0].privateKey, commitmentHash),
-      await signChannelMessage(hdNodes[1].privateKey, commitmentHash),
+      await signChannelMessage(hdNodes[0].privateKey, commitmentEncoded),
+      await signChannelMessage(hdNodes[1].privateKey, commitmentEncoded),
     ];
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
@@ -87,7 +87,7 @@ describe("Set State Commitment", () => {
   });
 
   it("should produce the correct hash to sign", () => {
-    const hashToSign = commitment.hashToSign();
+    const commitmentEncoded = commitment.encode();
 
     // Based on MChallengeRegistryCore::computeStateHash
     // TODO: Probably should be able to compute this from some helper
@@ -105,6 +105,6 @@ describe("Set State Commitment", () => {
       ),
     );
 
-    expect(hashToSign).toBe(expectedHashToSign);
+    expect(commitmentEncoded).toBe(expectedHashToSign);
   });
 });

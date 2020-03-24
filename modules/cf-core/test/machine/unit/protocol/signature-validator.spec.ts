@@ -15,10 +15,10 @@ describe("Signature Validator Helper", () => {
     signer = new SigningKey(createRandom32ByteHexString());
 
     commitment = {
-      hashToSign: () => HashZero,
+      encode: () => HashZero,
     } as EthereumCommitment;
-    const commitmentHash = commitment.hashToSign();
-    signature = await signChannelMessage(signer.privateKey, commitmentHash);
+    const commitmentEncoded = commitment.encode();
+    signature = await signChannelMessage(signer.privateKey, commitmentEncoded);
   });
 
   it("validates signatures correctly", async () => {
@@ -40,12 +40,12 @@ describe("Signature Validator Helper", () => {
   });
 
   it("throws if the signature is wrong", async () => {
-    const rightHash = commitment.hashToSign();
-    const wrongHash = HashZero.replace("00", "11"); // 0x11000...
-    const signature = await signChannelMessage(signer.privateKey, wrongHash);
-    const wrongSigner = await recoverAddress(rightHash, signature);
+    const rightEncoding = commitment.encode();
+    const wrongEncoding = HashZero.replace("00", "11"); // 0x11000...
+    const signature = await signChannelMessage(signer.privateKey, wrongEncoding);
+    const wrongSigner = await recoverAddress(rightEncoding, signature);
     await expect(assertIsValidSignature(signer.address, commitment, signature)).rejects.toThrow(
-      `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}.`,
+      `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for encoded commitment ${rightEncoding}.`,
     );
   });
 });

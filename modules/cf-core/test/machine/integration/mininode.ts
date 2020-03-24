@@ -21,9 +21,9 @@ const makeSigner = (hdNode: HDNode) => {
     const keyIndex = overrideKeyIndex || 0;
 
     const privateKey = hdNode.derivePath(`${keyIndex}`).privateKey;
-    const hash = commitment.hashToSign();
+    const commitmentEncoded = commitment.encode();
 
-    return await signChannelMessage(privateKey, hash);
+    return await signChannelMessage(privateKey, commitmentEncoded);
   };
 };
 

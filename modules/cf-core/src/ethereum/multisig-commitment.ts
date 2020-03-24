@@ -30,8 +30,8 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   public async getSignedTransaction(): Promise<CFCoreTypes.MinimalTransaction> {
     await this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
-    const hash = this.hashToSign();
-    const signaturesList = await sortSignaturesBySignerAddress(hash, this.signatures);
+    const commitmentEncoded = this.encode();
+    const signaturesList = await sortSignaturesBySignerAddress(commitmentEncoded, this.signatures);
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,
@@ -50,10 +50,6 @@ export abstract class MultisigCommitment implements EthereumCommitment {
       ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
       ["0x19", this.multisigOwners, to, value, data, operation],
     );
-  }
-
-  public hashToSign(): string {
-    return keccak256(this.encode());
   }
 
   private assertSignatures() {

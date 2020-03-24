@@ -98,8 +98,8 @@ export class WithdrawService {
     const privateKey = this.configService.getEthWallet().privateKey;
 
     // Sign commitment
-    const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = await signChannelMessage(privateKey, hash);
+    const genereatedCommitmentEncoded = generatedCommitment.encode();
+    const counterpartySignatureOnWithdrawCommitment = await signChannelMessage(privateKey, genereatedCommitmentEncoded);
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -228,9 +228,9 @@ export class WithdrawService {
     );
 
     const privateKey = this.configService.getEthWallet().privateKey;
-    const hash = commitment.hashToSign();
+    const commitmentEncoded = commitment.encode();
 
-    const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, hash);
+    const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, commitmentEncoded);
 
     const transfers: CoinTransfer[] = [
       { amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress },

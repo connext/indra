@@ -90,10 +90,10 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         freeBalance.versionNumber,
         freeBalance.timeout,
       );
-      const setStateCommitmentHash = setStateCommitment.hashToSign();
+      const setStateCommitmentEncoded = setStateCommitment.encode();
       setStateCommitment.signatures = [
-        await signChannelMessage(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
-        await signChannelMessage(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
+        await signChannelMessage(multisigOwnerKeys[0].privateKey, setStateCommitmentEncoded),
+        await signChannelMessage(multisigOwnerKeys[1].privateKey, setStateCommitmentEncoded),
       ];
 
       const setStateTx = await setStateCommitment.getSignedTransaction();
@@ -115,11 +115,11 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         stateChannel.multisigOwners,
         stateChannel.freeBalance.identity,
       );
-      const setupCommitmentHash = setupCommitment.hashToSign();
+      const setupCommitmentEncoded = setupCommitment.encode();
 
       setupCommitment.signatures = [
-        await signChannelMessage(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
-        await signChannelMessage(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
+        await signChannelMessage(multisigOwnerKeys[0].privateKey, setupCommitmentEncoded),
+        await signChannelMessage(multisigOwnerKeys[1].privateKey, setupCommitmentEncoded),
       ];
 
       const setupTx = await setupCommitment.getSignedTransaction();

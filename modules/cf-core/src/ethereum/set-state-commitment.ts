@@ -51,10 +51,6 @@ export class SetStateCommitment implements EthereumCommitment {
     );
   }
 
-  public hashToSign(): string {
-    return keccak256(this.encode());
-  }
-
   public async getSignedTransaction(): Promise<CFCoreTypes.MinimalTransaction> {
     await this.assertSignatures();
     return {
@@ -93,12 +89,12 @@ export class SetStateCommitment implements EthereumCommitment {
 
   private async getSignedStateHashUpdate(): Promise<SignedStateHashUpdate> {
     await this.assertSignatures();
-    const hash = this.hashToSign();
+    const commitmentEncoded = this.encode();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.timeout,
-      signatures: await sortSignaturesBySignerAddress(hash, this.signatures),
+      signatures: await sortSignaturesBySignerAddress(commitmentEncoded, this.signatures),
     };
   }
 

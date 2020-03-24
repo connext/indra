@@ -65,7 +65,6 @@ export interface DeployedContractNetworksFileEntry {
 export interface EthereumCommitment {
   signatures: string[];
   encode(): string;
-  hashToSign(): string;
   getSignedTransaction(): Promise<ProtocolTypes.MinimalTransaction>;
 }
 

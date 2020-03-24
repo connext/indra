@@ -16,14 +16,14 @@ export async function assertIsValidSignature(
     throw new Error("assertIsValidSignature received an undefined signature");
   }
 
-  const hash = commitment.hashToSign();
+  const commitmentEncoded = commitment.encode();
 
-  // recoverAddress: 83 ms, hashToSign: 7 ms
-  const signer = await recoverAddress(hash, signature);
+  // recoverAddress: 83 ms, encode: 7 ms
+  const signer = await recoverAddress(commitmentEncoded, signature);
 
   if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
-      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${hash}.`,
+      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for encoded commitment ${commitmentEncoded}.`,
     );
   }
 }

@@ -50,7 +50,7 @@ describe("WithdrawApp", async () => {
   let counterpartyWallet = Wallet.createRandom();
 
   const amount = new BigNumber(10000);
-  const data = mkHash("0xa"); // TODO: test this with real withdrawal commitment hash?
+  const data = mkHash("0xa"); // TODO: test this with real withdrawal encoded commitment?
   const withdrawerSigningKey = new SigningKey(withdrawerWallet.privateKey);
   const counterpartySigningKey = new SigningKey(counterpartyWallet.privateKey);
 
