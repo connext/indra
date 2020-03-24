@@ -28,7 +28,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   }
 
   public async getSignedTransaction(): Promise<CFCoreTypes.MinimalTransaction> {
-    this.assertSignatures();
+    await this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
     const hash = this.hashToSign();
     const signaturesList = await sortSignaturesBySignerAddress(hash, this.signatures);
