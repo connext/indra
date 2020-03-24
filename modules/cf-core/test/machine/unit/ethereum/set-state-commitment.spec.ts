@@ -86,25 +86,23 @@ describe("Set State Commitment", () => {
     });
   });
 
-  it("should produce the correct hash to sign", () => {
+  it("should produce the correct encoded commitment", () => {
     const commitmentEncoded = commitment.encode();
 
     // Based on MChallengeRegistryCore::computeStateHash
     // TODO: Probably should be able to compute this from some helper
     //       function ... maybe an ChallengeRegistry class or something
-    const expectedHashToSign = keccak256(
-      solidityPack(
-        ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-        [
-          "0x19",
-          appIdentityToHash(appInstance.identity),
-          appInstance.versionNumber,
-          appInstance.timeout,
-          appInstance.hashOfLatestState,
-        ],
-      ),
+    const expectedCommitmentEncoded = solidityPack(
+      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
+      [
+        "0x19",
+        appIdentityToHash(appInstance.identity),
+        appInstance.versionNumber,
+        appInstance.timeout,
+        appInstance.hashOfLatestState,
+      ],
     );
 
-    expect(commitmentEncoded).toBe(expectedHashToSign);
+    expect(commitmentEncoded).toBe(expectedCommitmentEncoded);
   });
 });
