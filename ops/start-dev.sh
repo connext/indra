@@ -247,7 +247,7 @@ services:
       - database_dev:/var/lib/postgresql/data
 
   nats:
-    command: -V
+    command: -D -V
     image: $nats_image
     environment:
       JWT_SIGNER_PUBLIC_KEY: $nats_jwt_signer_pubkey
