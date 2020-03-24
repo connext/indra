@@ -40,13 +40,24 @@ export type ResolveHashLockTransferResponse<T = string> = {
 };
 export type ResolveHashLockTransferResponseBigNumber = ResolveHashLockTransferResponse<BigNumber>;
 
+// statuses
+export const enum HashLockTransferStatus {
+  PENDING = "PENDING",
+  REDEEMED = "REDEEMED",
+  FAILED = "FAILED",
+  UNLOCKED = "UNLOCKED",
+  EXPIRED = "EXPRED",
+}
+
 // Getter
 export type GetHashLockTransferResponse =
   | {
-      sender: string;
+      senderPublicIdentifier: string;
+      receiverPublicIdentifier?: string;
       assetId: string;
       amount: string;
       lockHash: string;
+      status: HashLockTransferStatus;
       meta?: any;
     }
   | undefined;

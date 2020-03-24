@@ -6,6 +6,7 @@ import {
   HashLockTransferAppState,
   HashLockTransferAppStateBigNumber,
   HashLockTransferApp,
+  HashLockTransferStatus,
   ResolveHashLockTransferResponseBigNumber,
 } from "@connext/types";
 import { convertHashLockTransferAppState } from "@connext/apps";
@@ -19,6 +20,44 @@ import { LoggerService } from "../logger/logger.service";
 import { xkeyKthAddress } from "../util";
 import { TIMEOUT_BUFFER } from "../constants";
 import { ConfigService } from "../config/config.service";
+import { AppType, AppInstance } from "../appInstance/appInstance.entity";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { bigNumberify } from "ethers/utils";
+
+const appStatusesToHashLockTransferStatus = (
+  currentBlockNumber: number,
+  senderApp: AppInstance,
+  receiverApp?: AppInstance,
+): HashLockTransferStatus | undefined => {
+  if (!senderApp) {
+    return undefined;
+  }
+  const { timelock: senderTimelock } = senderApp.latestState as HashLockTransferAppState;
+  const isSenderExpired = bigNumberify(senderTimelock).lt(currentBlockNumber);
+  const isReceiverExpired =
+    receiverApp &&
+    bigNumberify((receiverApp.latestState as HashLockTransferAppState).timelock).lt(
+      currentBlockNumber,
+    );
+  // pending iff no receiver app + not expired
+  if (!receiverApp) {
+    return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
+  } else if (senderApp.type === AppType.UNINSTALLED) {
+    // iff sender uninstalled, payment is unlocked
+    return HashLockTransferStatus.UNLOCKED;
+  } else if (receiverApp.type === AppType.UNINSTALLED) {
+    // otherwise check for reclaim
+    return HashLockTransferStatus.REDEEMED;
+  } else if (senderApp.type === AppType.REJECTED || receiverApp.type === AppType.REJECTED) {
+    return HashLockTransferStatus.FAILED;
+  } else if (isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
+    // iff there is a receiver app, check for expiry
+    // do this last bc could be retrieving historically
+    return HashLockTransferStatus.EXPIRED;
+  } else {
+    throw new Error(`Cound not determine hash lock trasnfer status`);
+  }
+};
 
 @Injectable()
 export class HashLockTransferService {
@@ -28,8 +67,9 @@ export class HashLockTransferService {
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
-    this.log.setContext("LinkedTransferService");
+    this.log.setContext("HashLockTransferService");
   }
 
   async resolveHashLockTransfer(
@@ -44,6 +84,7 @@ export class HashLockTransferService {
     if (!senderApp) {
       throw new Error(`No sender app installed for lockHash: ${lockHash}`);
     }
+    this.log.warn(`***** senderApp: ${JSON.stringify(senderApp, null, 2)}`);
 
     const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
       senderApp.multisigAddress,
@@ -58,6 +99,7 @@ export class HashLockTransferService {
 
     // sender amount
     const amount = appState.coinTransfers[0].amount;
+    this.log.warn(`***** amount: ${amount.toString()}`);
     const timelock = appState.timelock.sub(TIMEOUT_BUFFER);
     if (timelock.lte(Zero)) {
       throw new Error(
@@ -158,9 +200,32 @@ export class HashLockTransferService {
     return {
       appId: receiverAppInstallRes.appInstanceId,
       sender: senderChannel.userPublicIdentifier,
-      meta: {},
+      meta: senderApp["meta"] || {},
       amount,
       assetId,
     };
+  }
+
+  async findSenderAndReceiverAppsWithStatus(
+    lockHash: string,
+  ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
+    // TODO: can we make single query work?
+    const [
+      senderApp,
+      receiverApp,
+    ] = await this.appInstanceRepository.findHashLockTransferAppsByLockHash(lockHash);
+    // const senderApp = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndSender(
+    //   lockHash,
+    //   this.cfCoreService.cfCore.freeBalanceAddress,
+    // );
+    // const lockHash = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndRecipient(
+    //   lockHash,
+    //   this.cfCoreService.cfCore.freeBalanceAddress,
+    // );
+    // get status
+    const block = await this.configService.getEthProvider().getBlockNumber();
+    const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
+    this.log.warn(`***** got status: ${status}`);
+    return { senderApp, receiverApp, status };
   }
 }

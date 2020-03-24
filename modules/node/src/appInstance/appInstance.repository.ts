@@ -4,6 +4,7 @@ import {
   OutcomeType,
   SimpleLinkedTransferApp,
   convertCoinTransfers,
+  HashLockTransferApp,
 } from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
 
@@ -393,7 +394,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     return res;
   }
 
-  // TODO: FIGURE OUT HOW TO MAKE THESE QUERIES WORK
   async findLinkedTransferAppByPaymentIdAndSender(
     paymentId: string,
     senderFreeBalanceAddress: string,
@@ -525,5 +525,144 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .printSql()
       .getMany();
     return res;
+  }
+
+  /////////////////////////////////////////////
+  ///////// HASHLOCK QUERIES
+  findHashLockTransferAppsByLockHash(lockHash: string): Promise<AppInstance[]> {
+    return this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: HashLockTransferApp })
+      .andWhere(`app_instance."latestState"::JSONB @> '{ "lockHash": "${lockHash}" }'`)
+      .getMany();
+  }
+
+  findRedeemedHashLockTransferAppByLockHashFromNode(
+    lockHash: string,
+    nodeFreeBalanceAddress: string,
+  ): Promise<AppInstance> {
+    return (
+      this.createQueryBuilder("app_instance")
+        .leftJoinAndSelect(
+          AppRegistry,
+          "app_registry",
+          "app_registry.appDefinitionAddress = app_instance.appDefinition",
+        )
+        .leftJoinAndSelect("app_instance.channel", "channel")
+        .where("app_registry.name = :name", { name: HashLockTransferApp })
+        // if uninstalled, redeemed
+        .andWhere("app_instance.type = :type", { type: AppType.UNINSTALLED })
+        .andWhere(`app_instance."latestState"::JSONB @> '{ "lockHash": "${lockHash}" }'`)
+        // node is sender
+        .andWhere(
+          `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+        )
+        .getOne()
+    );
+  }
+
+  findHashLockTransferAppsByLockHashAndRecipient(
+    lockHash: string,
+    recipient: string,
+  ): Promise<AppInstance | undefined> {
+    return (
+      this.createQueryBuilder("app_instance")
+        .leftJoinAndSelect(
+          AppRegistry,
+          "app_registry",
+          "app_registry.appDefinitionAddress = app_instance.appDefinition",
+        )
+        .leftJoinAndSelect("app_instance.channel", "channel")
+        .where("app_registry.name = :name", { name: HashLockTransferApp })
+        // meta for transfer recipient
+        .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipient}"}'`)
+        .andWhere(`app_instance."latestState"::JSONB @> '{"lockHash": "${lockHash}"}'`)
+        .getOne()
+    );
+  }
+
+  findHashLockTransferAppsByLockHashAndSender(
+    lockHash: string,
+    sender: string,
+  ): Promise<AppInstance | undefined> {
+    return this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: HashLockTransferApp })
+      .andWhere(`app_instance."latestState"::JSONB @> '{ "lockHash": "${lockHash}" }'`)
+      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${sender}"'`)
+      .getOne();
+  }
+
+  findActiveHashLockTransferAppsToRecipient(
+    recipient: string,
+    nodeFreeBalanceAddress: string,
+    currentBlock: number,
+  ): Promise<AppInstance[]> {
+    return (
+      this.createQueryBuilder("app_instance")
+        .leftJoinAndSelect(
+          AppRegistry,
+          "app_registry",
+          "app_registry.appDefinitionAddress = app_instance.appDefinition",
+        )
+        .leftJoinAndSelect("app_instance.channel", "channel")
+        .where("app_registry.name = :name", { name: HashLockTransferApp })
+        .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
+        // node is receiver of transfer
+        .andWhere(
+          `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+        )
+        // meta for transfer recipient
+        .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipient}"}'`)
+        // preimage can be HashZero or empty, if its HashZero, then the
+        // node should takeAction + uninstall. if its not HashZero, then
+        // the node should just uninstall. If the node has completed the
+        // transfer, then the type would be AppType.UNINSTALLED
+        .andWhere(`app_instance."latestState"::JSONB @> '{"lockHash": "${HashZero}"}'`)
+        // and timeout hasnt passed
+        .andWhere(`app_instance."latestState"->>"timeout"::NUMERIC > ${currentBlock}`)
+        .getMany()
+    );
+  }
+
+  findActiveHashLockTransferAppsFromSenderToNode(
+    sender: string, // free balance addr
+    nodeFreeBalanceAddress: string,
+    currentBlock: number,
+  ): Promise<AppInstance[]> {
+    return (
+      this.createQueryBuilder("app_instance")
+        .leftJoinAndSelect(
+          AppRegistry,
+          "app_registry",
+          "app_registry.appDefinitionAddress = app_instance.appDefinition",
+        )
+        .leftJoinAndSelect("app_instance.channel", "channel")
+        .where("app_registry.name = :name", { name: HashLockTransferApp })
+        .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
+        // sender is sender of transfer
+        .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${sender}"'`)
+        // node is receiver of transfer
+        .andWhere(
+          `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+        )
+        // and timeout hasnt passed
+        .andWhere(`app_instance."latestState"->>"timeout"::NUMERIC > ${currentBlock}`)
+        // preimage can be HashZero or empty, if its HashZero, then the
+        // node should takeAction + uninstall. if its not HashZero, then
+        // the node should just uninstall. If the node has completed the
+        // transfer, then the type would be AppType.UNINSTALLED
+        .getMany()
+    );
   }
 }

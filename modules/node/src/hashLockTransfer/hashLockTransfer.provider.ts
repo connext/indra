@@ -4,6 +4,7 @@ import {
   ResolveHashLockTransferResponse,
   HashLockTransferAppStateBigNumber,
   GetHashLockTransferResponse,
+  HashLockTransferAppState,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -23,8 +24,6 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     log: LoggerService,
     messaging: MessagingService,
     private readonly hashLockTransferService: HashLockTransferService,
-    private readonly cfCoreService: CFCoreService,
-    private readonly channelRepository: ChannelRepository,
   ) {
     super(log, messaging);
     log.setContext("LinkedTransferMessaging");
@@ -34,7 +33,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     { lockHash }: { lockHash: string },
   ): Promise<ResolveHashLockTransferResponse> {
-    this.log.debug(`Got resolve link request with lockHash: ${lockHash}`);
+    this.log.error(`Got resolve link request with lockHash: ${lockHash}`);
     if (!lockHash) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(lockHash)}`);
     }
@@ -45,25 +44,43 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     };
   }
 
-  async getHashLockTransfer(
+  async getHashLockTransferByLockHash(
     pubId: string,
-    { lockHash }: { lockHash: string },
+    data: { lockHash: string },
   ): Promise<GetHashLockTransferResponse> {
-    // TODO: there shouldn't really ever be more than one, we should probably enforce this
-    const [senderApp] = await this.cfCoreService.getHashLockTransferAppsByLockHash(lockHash);
-    const appState = convertHashLockTransferAppState(
+    const { lockHash } = data;
+    if (!lockHash) {
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
+    }
+    this.log.info(`Got fetch hashlock request for: ${lockHash}`);
+
+    // determine status
+    // node receives transfer in sender app
+    const {
+      senderApp,
+      status,
+      receiverApp,
+    } = await this.hashLockTransferService.findSenderAndReceiverAppsWithStatus(lockHash);
+    if (!senderApp) {
+      return undefined;
+    }
+
+    const latestState: HashLockTransferAppStateBigNumber = convertHashLockTransferAppState(
       "bignumber",
-      senderApp.latestState as HashLockTransferAppStateBigNumber,
+      senderApp.latestState as HashLockTransferAppState,
     );
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(
-      senderApp.multisigAddress,
-    );
+    const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
+    const amount = latestState.coinTransfers[0].amount.isZero()
+      ? latestState.coinTransfers[1].amount
+      : latestState.coinTransfers[0].amount;
     return {
-      amount: appState.coinTransfers[0].amount.toString(),
-      assetId: senderApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-      lockHash,
-      sender: channel.userPublicIdentifier,
-      meta: {}, // TODO
+      receiverPublicIdentifier: receiverApp ? receiverApp.channel.userPublicIdentifier : undefined,
+      senderPublicIdentifier: senderApp.channel.userPublicIdentifier,
+      assetId: senderApp.initiatorDepositTokenAddress,
+      amount: amount.toString(),
+      lockHash: latestState.lockHash,
+      status: status,
+      meta,
     };
   }
 
@@ -75,7 +92,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
 
     await super.connectRequestReponse(
       "*.transfer.get-hashlock",
-      this.authService.parseXpub(this.getHashLockTransfer.bind(this)),
+      this.authService.parseXpub(this.getHashLockTransferByLockHash.bind(this)),
     );
   }
 }
@@ -95,16 +112,12 @@ export const hashLockTransferProviderFactory: FactoryProvider<Promise<void>> = {
     logging: LoggerService,
     messaging: MessagingService,
     hashLockTransferService: HashLockTransferService,
-    cfCoreService: CFCoreService,
-    channelRepository: ChannelRepository,
   ): Promise<void> => {
     const transfer = new HashLockTransferMessaging(
       authService,
       logging,
       messaging,
       hashLockTransferService,
-      cfCoreService,
-      channelRepository,
     );
     await transfer.setupSubscriptions();
   },

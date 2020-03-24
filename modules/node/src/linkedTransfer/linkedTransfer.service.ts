@@ -8,7 +8,6 @@ import {
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferApp,
   LinkedTransferStatus,
-  SimpleLinkedTransferAppAction,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
