@@ -4,7 +4,7 @@
 domain="${DOMAINNAME:-localhost}"
 email="${EMAIL:-noreply@gmail.com}"
 eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
-messaging_url="${MESSAGING_URL:-http://relay:4223}"
+messaging_url="${MESSAGING_URL:-http://nats:4221}"
 mode="${MODE:-dev}"
 ui_url="${UI_URL:-$messaging_url}"
 

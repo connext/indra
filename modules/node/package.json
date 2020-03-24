@@ -43,6 +43,7 @@
     "redlock": "4.1.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.4",
+    "ts-natsutil": "1.0.4",
     "typeorm": "0.2.24"
   },
   "devDependencies": {

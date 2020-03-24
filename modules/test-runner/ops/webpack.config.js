@@ -3,7 +3,7 @@ const nodeExternals = require('webpack-node-externals');
 const webpack = require('webpack');
 
 const mode = process.env.MODE === "release" ? "release" : "staging";
-const whitelist = mode === "release" ? "" : [/@connext\/.*/, /@provide\/.*/, "ts-natsutil"];
+const whitelist = mode === "release" ? "" : [/@connext\/.*/];
 
 console.log(`Building ${mode}-mode bundle`);
 
