@@ -15,7 +15,7 @@ solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' 
 backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1-2).0
 
 # Pool of images to pull cached layers from during docker build steps
-cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_prox,$(project)_builder"; else echo ""; fi)
+cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_builder"; else echo ""; fi)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
