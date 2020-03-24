@@ -2,10 +2,12 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
+import "../libs/LibAppCaller.sol";
+import "../libs/LibDispute.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MChallengeRegistryCore is LibStateChannelApp {
+contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller, LibDispute {
 
     using SafeMath for uint256;
 
@@ -124,6 +126,58 @@ contract MChallengeRegistryCore is LibStateChannelApp {
               appChallenge.status == LibStateChannelApp.ChallengeStatus.EXPLICITLY_FINALIZED
           )
         );
+    }
+
+    function correctKeysSignedAppChallengeUpdate(
+        bytes32 identityHash,
+        address[] memory participants,
+        SignedAppChallengeUpdate memory req
+    )
+        internal
+        pure
+        returns (bool)
+    {
+        bytes32 digest = computeAppChallengeHash(
+            identityHash,
+            req.appStateHash,
+            req.versionNumber,
+            req.timeout
+        );
+
+        return verifySignatures(
+            req.signatures,
+            digest,
+            participants
+        );
+    }
+
+    function correctKeySignedTheAction(
+        AppIdentity memory appIdentity,
+        bytes memory appState,
+        bytes32 appStateHash,
+        uint256 versionNumber,
+        SignedAction memory action
+    )
+        internal
+        view
+        returns (bool)
+    {
+        address turnTaker = getTurnTaker(
+            appIdentity.appDefinition,
+            appIdentity.participants,
+            appState
+        );
+
+        bytes32 actionHash = computeActionHash(
+            turnTaker,
+            appStateHash,
+            action.encodedAction,
+            versionNumber
+        );
+
+        address signer = actionHash.recover(action.signature);
+
+        return turnTaker == signer;
     }
 
 }

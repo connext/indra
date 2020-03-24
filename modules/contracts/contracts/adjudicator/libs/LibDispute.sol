@@ -14,17 +14,10 @@ contract LibDispute {
         bytes[] signatures;
     }
 
-    // Abi-encoded state with version number and timeout, signed by all parties
-    struct SignedAppChallengeUpdateWithAppState {
-        bytes appState;
-        uint256 versionNumber;
-        uint256 timeout;
-        bytes[] signatures;
-    }
-
     // Abi-encoded action, with a signature of the turn-taker
     struct SignedAction {
         bytes encodedAction;
         bytes signature;
     }
+
 }

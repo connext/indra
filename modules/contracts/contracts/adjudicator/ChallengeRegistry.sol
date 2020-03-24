@@ -14,9 +14,9 @@ import "./mixins/MixinRespondToChallenge.sol";
 contract ChallengeRegistry is
   MixinChallengeRegistryCore,
   MixinSetState,
+  MixinRespondToChallenge,
   MixinSetStateWithAction,
   MixinCancelChallenge,
-  MixinRespondToChallenge,
   MixinSetOutcome {
     // solium-disable-next-line no-empty-blocks
     constructor () public {}
