@@ -227,9 +227,9 @@ class App extends React.Component {
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
-        store = new ConnextStore(StoreTypes.LOCALSTORAGE, { backupService });
+        store = new ConnextStore(StoreTypes.LocalStorage, { backupService });
       } else {
-        store = new ConnextStore(StoreTypes.LOCALSTORAGE);
+        store = new ConnextStore(StoreTypes.LocalStorage);
       }
 
       // If store has double prefixes, flush and restore

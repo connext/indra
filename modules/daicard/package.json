@@ -13,6 +13,7 @@
     "format": "prettier --write \"src/**/*.js\""
   },
   "dependencies": {
+    "@babel/runtime": "7.9.2",
     "@connext/client": "6.0.0-alpha.0",
     "@connext/store": "6.0.0-alpha.0",
     "@connext/types": "6.0.0-alpha.0",
@@ -21,6 +22,7 @@
     "@walletconnect/browser": "1.0.0-beta.47",
     "@walletconnect/channel-provider": "1.0.0-beta.72",
     "@xstate/react": "0.8.1",
+    "babel-preset-react-app": "9.1.1",
     "browserslist": "4.9.1",
     "classnames": "2.2.6",
     "connext": "4.2.5",
