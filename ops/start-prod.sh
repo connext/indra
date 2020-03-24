@@ -234,6 +234,7 @@ services:
       INDRA_PORT: $node_port
       INDRA_REDIS_URL: $redis_url
       NODE_ENV: production
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
     logging:
       driver: "json-file"
       options:
@@ -266,6 +267,7 @@ services:
     command: -V
     environment:
       JWT_SIGNER_PUBLIC_KEY: "$nats_jwt_signer_pubkey"
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
     logging:
       driver: "json-file"
       options:
