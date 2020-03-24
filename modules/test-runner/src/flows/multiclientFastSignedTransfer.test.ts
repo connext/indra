@@ -7,7 +7,7 @@ import {
   ResolveFastSignedTransferParameters,
 } from "@connext/types";
 import { signChannelMessage } from "@connext/crypto";
-import { bigNumberify, solidityKeccak256, SigningKey } from "ethers/utils";
+import { bigNumberify, solidityKeccak256, SigningKey, solidityPack } from "ethers/utils";
 import { before, after } from "mocha";
 import { Client } from "ts-nats";
 
@@ -143,8 +143,8 @@ describe("Full Flow: Multi-client transfer", () => {
             indexerTransfers = indexerBTransfers;
           }
           const data = createRandom32ByteHexString();
-          const digest = solidityKeccak256(["bytes32", "bytes32"], [data, eventData.paymentId]);
-          const signature = await signChannelMessage(withdrawerSigningKey!.privateKey, digest);
+          const encoded = solidityPack(["bytes32", "bytes32"], [data, eventData.paymentId]);
+          const signature = await signChannelMessage(withdrawerSigningKey!.privateKey, encoded);
 
           await indexer!.resolveCondition({
             conditionType: "FAST_SIGNED_TRANSFER",

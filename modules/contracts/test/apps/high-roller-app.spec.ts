@@ -4,7 +4,7 @@ import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { HashZero } from "ethers/constants";
-import { defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { defaultAbiCoder, solidityPack } from "ethers/utils";
 
 import HighRollerApp from "../../build/HighRollerApp.json";
 
@@ -12,10 +12,10 @@ chai.use(waffle.solidity);
 
 const { expect } = chai;
 
-/// Returns the commit hash that can be used to commit to chosenNumber
+/// Returns the encoded commit that can be used to commit to chosenNumber
 /// using appSalt
-function computeCommitHash(appSalt: string, chosenNumber: number) {
-  return solidityKeccak256(["bytes32", "uint256"], [appSalt, chosenNumber]);
+function computeCommitEncoded(appSalt: string, chosenNumber: number) {
+  return solidityPack(["bytes32", "uint256"], [appSalt, chosenNumber]);
 }
 
 enum HighRollerStage {
@@ -114,7 +114,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 1;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const action: HighRollerAction = {
         actionType: HighRollerActionType.COMMIT_TO_HASH,
@@ -135,7 +135,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 1;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_COMMITTED_TO_HASH,
@@ -166,7 +166,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 1;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_COMMITTED_TO_HASH,
@@ -193,7 +193,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 1;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P2_COMMITTED_TO_NUM,
@@ -225,7 +225,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 0;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P2_COMMITTED_TO_NUM,
@@ -254,7 +254,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 1;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_REVEALED_NUM,
@@ -278,7 +278,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 75;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_REVEALED_NUM,
@@ -297,7 +297,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 3;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_REVEALED_NUM,
@@ -316,7 +316,7 @@ describe("HighRollerApp", () => {
 
       const playerFirstNumber = 3;
 
-      const hash = computeCommitHash(numberSalt, playerFirstNumber);
+      const hash = computeCommitEncoded(numberSalt, playerFirstNumber);
 
       const preState: HighRollerAppState = {
         stage: HighRollerStage.P1_TRIED_TO_SUBMIT_ZERO,

@@ -12,7 +12,7 @@ import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
 import {
   AppIdentityTestClass,
-  computeAppChallengeHash,
+  computeAppChallengeEncoded,
   expect,
   sortSignaturesBySignerAddress,
 } from "./utils";
@@ -87,7 +87,7 @@ describe("ChallengeRegistry Challenge", () => {
 
     setState = async (versionNumber: number, appState?: string) => {
       const stateHash = keccak256(appState || HashZero);
-      const digest = computeAppChallengeHash(
+      const data = computeAppChallengeEncoded(
         appInstance.identityHash,
         stateHash,
         versionNumber,
@@ -97,9 +97,9 @@ describe("ChallengeRegistry Challenge", () => {
         versionNumber,
         appStateHash: stateHash,
         timeout: ONCHAIN_CHALLENGE_TIMEOUT,
-        signatures: await sortSignaturesBySignerAddress(digest, [
-          await signChannelMessage(ALICE.privateKey, digest),
-          await signChannelMessage(BOB.privateKey, digest),
+        signatures: await sortSignaturesBySignerAddress(data, [
+          await signChannelMessage(ALICE.privateKey, data),
+          await signChannelMessage(BOB.privateKey, data),
         ]),
       });
     };

@@ -6,32 +6,28 @@ import { BigNumber, BigNumberish, defaultAbiCoder, keccak256, solidityPack } fro
 
 export const expect = chai.use(solidity).expect;
 
-// TS version of MChallengeRegistryCore::computeAppChallengeHash
-export const computeAppChallengeHash = (
+// TS version of MChallengeRegistryCore::computeAppChallengeEncoded
+export const computeAppChallengeEncoded = (
   id: string,
   appStateHash: string,
   versionNumber: BigNumberish,
   timeout: number,
 ) =>
-  keccak256(
-    solidityPack(
-      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-      ["0x19", id, versionNumber, timeout, appStateHash],
-    ),
+  solidityPack(
+    ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
+    ["0x19", id, versionNumber, timeout, appStateHash],
   );
 
-// TS version of MChallengeRegistryCore::computeActionHash
-export const computeActionHash = (
+// TS version of MChallengeRegistryCore::computeActionEncoded
+export const computeActionEncoded = (
   turnTaker: string,
   previousState: string,
   action: string,
   versionNumber: number,
 ) =>
-  keccak256(
-    solidityPack(
-      ["bytes1", "address", "bytes", "bytes", "uint256"],
-      ["0x19", turnTaker, previousState, action, versionNumber],
-    ),
+  solidityPack(
+    ["bytes1", "address", "bytes", "bytes", "uint256"],
+    ["0x19", turnTaker, previousState, action, versionNumber],
   );
 
 export class AppIdentityTestClass {

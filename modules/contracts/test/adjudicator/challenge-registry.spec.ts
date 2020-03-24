@@ -9,7 +9,7 @@ import { BigNumberish, keccak256 } from "ethers/utils";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 import {
   AppIdentityTestClass,
-  computeAppChallengeHash,
+  computeAppChallengeEncoded,
   expect,
   sortSignaturesBySignerAddress,
 } from "./utils";
@@ -82,7 +82,7 @@ describe("ChallengeRegistry", () => {
       await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
 
     cancelChallenge = async () => {
-      const digest = computeAppChallengeHash(
+      const data = computeAppChallengeEncoded(
         appIdentityTestObject.identityHash,
         await latestAppStateHash(),
         await latestVersionNumber(),
@@ -91,9 +91,9 @@ describe("ChallengeRegistry", () => {
 
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
-        await sortSignaturesBySignerAddress(digest, [
-          await signChannelMessage(ALICE.privateKey, digest),
-          await signChannelMessage(BOB.privateKey, digest),
+        await sortSignaturesBySignerAddress(data, [
+          await signChannelMessage(ALICE.privateKey, data),
+          await signChannelMessage(BOB.privateKey, data),
         ]),
       );
     };
@@ -104,7 +104,7 @@ describe("ChallengeRegistry", () => {
       timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
     ) => {
       const stateHash = keccak256(appState);
-      const digest = computeAppChallengeHash(
+      const data = computeAppChallengeEncoded(
         appIdentityTestObject.identityHash,
         stateHash,
         versionNumber,
@@ -114,9 +114,9 @@ describe("ChallengeRegistry", () => {
         timeout,
         versionNumber,
         appStateHash: stateHash,
-        signatures: await sortSignaturesBySignerAddress(digest, [
-          await signChannelMessage(ALICE.privateKey, digest),
-          await signChannelMessage(BOB.privateKey, digest),
+        signatures: await sortSignaturesBySignerAddress(data, [
+          await signChannelMessage(ALICE.privateKey, data),
+          await signChannelMessage(BOB.privateKey, data),
         ]),
       });
     };
