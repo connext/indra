@@ -56,7 +56,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public async getSignedTransaction(): Promise<CFCoreTypes.MinimalTransaction> {
-    this.assertSignatures();
+    await this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,
       value: 0,
@@ -92,7 +92,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   private async getSignedStateHashUpdate(): Promise<SignedStateHashUpdate> {
-    this.assertSignatures();
+    await this.assertSignatures();
     const hash = this.hashToSign();
     return {
       appStateHash: this.appStateHash,
