@@ -415,7 +415,13 @@ export class StateChannel {
     const participants = this.getSigningKeysFor(appInstance.appSeqNo);
 
     if (!participants.every((v, idx) => v === appInstance.participants[idx])) {
-      throw Error("AppInstance passed to installApp has incorrect participants");
+      throw Error(
+        `AppInstance passed to installApp has incorrect participants. Got ${
+          JSON.stringify(appInstance.participants)
+        } but expected ${
+          JSON.stringify(participants)
+        }`,
+      );
     }
 
     /// Add modified FB and new AppInstance to appInstances

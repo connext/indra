@@ -19,6 +19,7 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "../types";
 import { appIdentityToHash } from "../utils";
+import { sortAddresses } from "../xkeys";
 
 /**
  * Representation of an AppInstance.
@@ -62,7 +63,9 @@ export class AppInstance {
       MultiAssetMultiPartyCoinTransferInterpreterParams,
     private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
       SingleAssetTwoPartyCoinTransferInterpreterParams,
-  ) {}
+  ) {
+    this.participants = sortAddresses(this.participants);
+  }
 
   get twoPartyOutcomeInterpreterParams() {
     if (this.outcomeType !== OutcomeType.TWO_PARTY_FIXED_OUTCOME) {
@@ -279,7 +282,7 @@ export class AppInstance {
       let template = key ? templateObj[key] : templateObj;
       let data = key ? dataObj[key] : dataObj;
       let output;
-      if (isBN(template) || typeof data !== "object") {
+      if (isBN(template) || typeof template !== "object") {
         // console.log(`Done, returning simple data: ${data}`);
         output = data;
       } else if (typeof template === "object" && typeof template.length === "number") {
