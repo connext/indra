@@ -5,11 +5,6 @@ import { BigNumber } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
 
-/**
- * Sorts signatures in ascending order of signer address
- *
- * @param signatures An array of ethereum signatures
- */
 export async function sortSignaturesBySignerAddress(
   digest: string,
   signatures: string[],
