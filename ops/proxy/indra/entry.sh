@@ -31,9 +31,6 @@ done
 
 echo "waiting for ${messaging_url#*://}..."
 bash wait_for.sh -t 60 ${messaging_url#*://} 2> /dev/null
-while ! curl -s $messaging_url > /dev/null
-do sleep 2
-done
 
 if [[ "$mode" == "dev" ]]
 then
