@@ -1,4 +1,4 @@
-import { getAddress } from "ethers/utils";
+import { getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { isEthAddress } from "./validate";
 
@@ -22,3 +22,15 @@ export const safeJsonParse = (value: any): any => {
     return value;
   }
 };
+
+export function createRandomBytesHexString(length: number) {
+  return hexlify(randomBytes(length));
+}
+
+export function createRandomAddress() {
+  return createRandomBytesHexString(20);
+}
+
+export function createRandom32ByteHexString() {
+  return createRandomBytesHexString(32);
+}
