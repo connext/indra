@@ -264,7 +264,7 @@ services:
 
   nats:
     image: $nats_image
-    command: -V
+    command: -D -V -wstls
     environment:
       JWT_SIGNER_PUBLIC_KEY: "$nats_jwt_signer_pubkey"
       NODE_TLS_REJECT_UNAUTHORIZED: 0
