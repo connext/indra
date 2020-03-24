@@ -1,5 +1,6 @@
 import { MessagingService } from "@connext/messaging";
 import {
+  bigNumberifyJson,
   delay,
   GetHashLockTransferResponse,
   GetPendingAsyncTransfersResponse,
@@ -304,6 +305,6 @@ export class NodeApiClient implements INodeApiClient {
       start,
       `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
     );
-    return (!response || isEmptyObj) ? undefined : response;
+    return (!response || isEmptyObj) ? undefined : bigNumberifyJson(response);
   }
 }

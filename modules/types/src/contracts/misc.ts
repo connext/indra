@@ -4,7 +4,7 @@ import { Address, JsonRpcProvider } from "../basic";
 import { enumify } from "../utils";
 
 export const tidy = (str: string): string =>
-  `${str.replace(/\\n/, "").replace(/ +/, " ")}`;
+  `${str.replace(/\n/g, "").replace(/ +/g, " ")}`;
 
 ////////////////////////////////////////
 // Generic contract ops & network config
