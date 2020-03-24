@@ -1,7 +1,7 @@
 pragma solidity 0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "../../shared/libs/LibChannelSigning.sol";
 
 
 /// @title LibStateChannelApp
@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 /// @notice Contains the structures and enums needed for the ChallengeRegistry
 contract LibStateChannelApp {
 
-    using ECDSA for bytes32;
 
     // The status of a challenge in the ChallengeRegistry
     enum ChallengeStatus {
@@ -58,7 +57,7 @@ contract LibStateChannelApp {
         address lastSigner = address(0);
         for (uint256 i = 0; i < signers.length; i++) {
             require(
-                signers[i] == txHash.recover(signatures[i]),
+                signers[i] == verifyChannelMessage(txhash, signatures[i]),
                 "Invalid signature"
             );
             require(signers[i] > lastSigner, "Signers not in alphanumeric order");

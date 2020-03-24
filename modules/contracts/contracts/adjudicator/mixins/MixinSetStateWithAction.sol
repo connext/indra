@@ -117,12 +117,15 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
             req.appState
         );
 
-        address signer = computeActionHash(
-            turnTaker,
-            keccak256(req.appState),
-            action.encodedAction,
-            req.versionNumber
-        ).recover(action.signature);
+        address signer = verifyChannelMessage(
+            encodedAction(
+                turnTaker,
+                keccak256(req.appState),
+                action.encodedAction,
+                req.versionNumber
+            ),
+            action.signature
+        );
 
         return turnTaker == signer;
     }

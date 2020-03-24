@@ -72,8 +72,7 @@ contract MChallengeRegistryCore {
         returns (bytes32)
     {
         return keccak256(
-            abi.encodePacked(
-                byte(0x19),
+            encodeAction(
                 turnTaker,
                 previousState,
                 action,
@@ -82,4 +81,22 @@ contract MChallengeRegistryCore {
         );
     }
 
+    function encodeAction(
+        address turnTaker,
+        bytes32 previousState,
+        bytes memory action,
+        uint256 versionNumber
+    )
+        internal
+        pure
+        returns(bytes32)
+    {
+        return abi.encodePacked(
+            byte(0x19),
+            turnTaker,
+            previousState,
+            action,
+            versionNumber
+        );
+    }
 }

@@ -2,9 +2,10 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
+import "../../shared/libs/LibChannelSigning.sol";
+
 
 /// @title Fast Signed Transfer App
 /// @notice This contract allows the user to send transfers
@@ -15,7 +16,6 @@ import "../funding/libs/LibOutcome.sol";
 contract FastSignedTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
-    using ECDSA for bytes32;
 
     enum ActionType {
         CREATE,
@@ -147,11 +147,11 @@ contract FastSignedTransferApp is CounterfactualApp {
     {
         require(state.turnNum % 2 == 1, "Only receivers can unlock transfers.");
 
-        // TODO any possibility of collision?
-        bytes32 rawHash = keccak256(abi.encodePacked(action.data, action.paymentId));
+        bytes32 encodedAction = abi.encodePacked(action.data, action.paymentId)
+
         // TODO: this has to be done so we can associate the paymentId off-chain
         require(action.paymentId == state.paymentId, "PaymentId must match created ID");
-        require(state.signer == rawHash.recover(action.signature), "Incorrect signer recovered from signature");
+        require(state.signer == verifyChannelMessage(encodedAction, action.signer), "Incorrect signer recovered from signature");
 
         // Add receiver balances to coinTransfer
         state.coinTransfers[1].amount = state.coinTransfers[1].amount.add(state.amount);
