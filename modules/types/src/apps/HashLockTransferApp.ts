@@ -43,10 +43,9 @@ export type ResolveHashLockTransferResponseBigNumber = ResolveHashLockTransferRe
 // statuses
 export const enum HashLockTransferStatus {
   PENDING = "PENDING",
-  REDEEMED = "REDEEMED",
+  EXPIRED = "EXPIRED",
+  COMPLETED = "COMPLETED",
   FAILED = "FAILED",
-  UNLOCKED = "UNLOCKED",
-  EXPIRED = "EXPRED",
 }
 
 // Getter
