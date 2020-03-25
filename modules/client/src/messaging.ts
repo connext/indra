@@ -46,8 +46,8 @@ export const getBearerToken = async (
   xpub: string,
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<string> => {
-  const nonceRepsonse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${xpub}`);
-  const nonce = nonceRepsonse.data;
+  const nonceResponse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${xpub}`);
+  const nonce = nonceResponse.data;
   const sig = await getSignature(nonce);
   const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth`, {
     sig,
