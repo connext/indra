@@ -27,16 +27,14 @@ fi
 # (bc GitHub Actions strips newlines from secrets)
 
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
-  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | \
-  sed /-----BEGIN RSA PRIVATE KEY-----/-----BEGIN RSA PRIVATE KEY-----\n/ \
-  sed /-----END RSA PRIVATE KEY-----/\n-----END RSA PRIVATE KEY-----/ \
-`
+  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY |\
+  sed 's/-----BEGIN RSA PRIVATE KEY-----/-----BEGIN RSA PRIVATE KEY-----\n/' |\
+  sed 's/-----END RSA PRIVATE KEY-----/\n-----END RSA PRIVATE KEY-----/'`
 
 INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
   echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | \
-  sed /-----BEGIN PUBLIC KEY-----/-----BEGIN PUBLIC KEY-----\n/ \
-  sed /-----END PUBLIC KEY-----/\n-----END PUBLIC KEY-----/ \
-`
+  sed 's/-----BEGIN PUBLIC KEY-----/-----BEGIN PUBLIC KEY-----\n/' | \
+  sed 's/-----END PUBLIC KEY-----/\n-----END PUBLIC KEY-----/'`
 
 ####################
 # Internal Config
