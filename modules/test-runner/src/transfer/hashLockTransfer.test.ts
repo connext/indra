@@ -174,7 +174,7 @@ describe("HashLock Transfers", () => {
   it("gets a completed hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = hexlify(randomBytes(32));
+    const preImage = createRandom32ByteHexString();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
