@@ -1,4 +1,6 @@
 import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { sortSignaturesBySignerAddress } from "@connext/types";
+import { recoverAddress } from "@connext/crypto";
 
 import { ChallengeRegistry } from "../contracts";
 import {
@@ -8,7 +10,6 @@ import {
   SignedStateHashUpdate,
   SetStateCommitmentJSON,
 } from "../types";
-import { sortSignaturesBySignerAddress } from "../utils";
 
 import { appIdentityToHash } from "./utils";
 
@@ -98,7 +99,7 @@ export class SetStateCommitment implements EthereumCommitment {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.timeout,
-      signatures: await sortSignaturesBySignerAddress(hash, this.signatures),
+      signatures: await sortSignaturesBySignerAddress(hash, this.signatures, recoverAddress),
     };
   }
 

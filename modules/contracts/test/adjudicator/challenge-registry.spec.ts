@@ -1,19 +1,18 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { signDigest } from "@connext/crypto";
+import {
+  sortSignaturesBySignerAddress,
+  createRandom32ByteHexString,
+  createRandomAddress,
+} from "@connext/types";
+import { signDigest, recoverAddress } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
 import { BigNumberish, keccak256 } from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
-import {
-  AppIdentityTestClass,
-  computeAppChallengeHash,
-  expect,
-  sortSignaturesBySignerAddress,
-} from "./utils";
-import { createRandom32ByteHexString, createRandomAddress } from "../funding/utils";
+import { AppIdentityTestClass, computeAppChallengeHash, expect } from "./utils";
 
 type Challenge = {
   status: 0 | 1 | 2;
@@ -91,10 +90,11 @@ describe("ChallengeRegistry", () => {
 
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
-        await sortSignaturesBySignerAddress(digest, [
-          await signDigest(ALICE.privateKey, digest),
-          await signDigest(BOB.privateKey, digest),
-        ]),
+        await sortSignaturesBySignerAddress(
+          digest,
+          [await signDigest(ALICE.privateKey, digest), await signDigest(BOB.privateKey, digest)],
+          recoverAddress,
+        ),
       );
     };
 

@@ -46,15 +46,15 @@ export const validateWithdrawApp = async (
     throw new Error(`Cannot install a withdraw app with a finalized state. State: ${initialState}`);
   }
 
-  if (initialState.signatures[1] != HashZero) {
+  if (initialState.signatures[1] !== HashZero) {
     throw new Error(
       `Cannot install a withdraw app with a populated signatures[1] field. Signatures[1]: ${initialState.signatures[1]}`,
     );
   }
 
   if (
-    initialState.signers[0] != initiatorFreeBalanceAddress ||
-    initialState.signers[1] != responderFreeBalanceAddress
+    initialState.signers[0] !== initiatorFreeBalanceAddress ||
+    initialState.signers[1] !== responderFreeBalanceAddress
   ) {
     throw new Error(
       `Cannot install a withdraw app if signers[] do not match multisig participant addresses. Signers[]: ${initialState.signers}`,
@@ -69,7 +69,7 @@ export const validateWithdrawApp = async (
 
   let recovered = await recoverAddress(initialState.data, initialState.signatures[0]);
 
-  if (recovered != initialState.signers[0]) {
+  if (recovered !== initialState.signers[0]) {
     throw new Error(
       `Cannot install withdraw app - incorrect signer recovered from initiator sig on data. 
          Recovered: ${recovered}, Expected: ${initialState.signers[0]}`,

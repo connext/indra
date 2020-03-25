@@ -3,17 +3,15 @@ import {
   maxBN,
   RebalanceProfileBigNumber,
   stringify,
-  GetConfigResponse,
   CoinBalanceRefundApp,
   StateChannelJSON,
 } from "@connext/types";
-import { Injectable, HttpService, Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify} from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -21,9 +19,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { MessagingClientProviderId } from "../constants";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { xkeyKthAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
@@ -50,25 +46,13 @@ export class ChannelService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelRepository: ChannelRepository,
     private readonly configService: ConfigService,
-    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly withdrawService: WithdrawService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ChannelService");
-  }
-
-  async getConfig(): Promise<GetConfigResponse> {
-    return {
-      contractAddresses: await this.configService.getContractAddresses(),
-      ethNetwork: await this.configService.getEthNetwork(),
-      messaging: this.configService.getMessagingConfig(),
-      nodePublicIdentifier: this.cfCoreService.cfCore.publicIdentifier,
-      supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
-    };
   }
 
   /**
@@ -302,9 +286,6 @@ export class ChannelService {
       assetId,
     );
     if (nodeFreeBalance.gte(lowerBoundCollateral)) {
-      this.log.info(
-        `User with multisig ${channel.multisigAddress} already has sufficient collateral, ignoring request for more.`,
-      );
       this.log.debug(
         `User ${channel.userPublicIdentifier} already has collateral of ${nodeFreeBalance} for asset ${assetId}`,
       );
@@ -312,10 +293,7 @@ export class ChannelService {
     }
 
     const amountDeposit = collateralNeeded.sub(nodeFreeBalance);
-    this.log.info(
-      `User with multisig ${channel.multisigAddress} needs more collateral, preparing to deposit.`,
-    );
-    this.log.debug(
+    this.log.warn(
       `Collateralizing ${channel.userPublicIdentifier} with ${amountDeposit}, token: ${assetId}`,
     );
 

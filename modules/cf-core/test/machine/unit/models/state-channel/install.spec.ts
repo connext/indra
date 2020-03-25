@@ -1,5 +1,6 @@
 import { WeiPerEther, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
+import { createRandomAddress } from "@connext/types";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../../src/constants";
 import { xkeyKthAddress } from "../../../../../src/machine";
@@ -7,7 +8,7 @@ import { AppInstance, StateChannel } from "../../../../../src/models";
 import { FreeBalanceClass } from "../../../../../src/models/free-balance";
 import { createAppInstanceForTest } from "../../../../unit/utils";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
-import { generateRandomNetworkContext, createRandomAddress } from "../../../mocks";
+import { generateRandomNetworkContext } from "../../../mocks";
 
 describe("StateChannel::uninstallApp", () => {
   const networkContext = generateRandomNetworkContext();

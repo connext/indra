@@ -1,10 +1,10 @@
 import { HashZero } from "ethers/constants";
 import { SigningKey } from "ethers/utils";
 import { signDigest, recoverAddress } from "@connext/crypto";
+import { createRandom32ByteHexString } from "@connext/types";
 
 import { EthereumCommitment } from "../../../../src/types";
 import { assertIsValidSignature } from "../../../../src/protocol/utils/signature-validator";
-import { createRandom32ByteHexString } from "../../mocks";
 
 describe("Signature Validator Helper", () => {
   let signer: SigningKey;

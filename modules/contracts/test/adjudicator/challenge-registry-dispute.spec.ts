@@ -1,7 +1,7 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { SolidityValueType } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { SolidityValueType, sortSignaturesBySignerAddress } from "@connext/types";
+import { signDigest, recoverAddress } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -10,12 +10,7 @@ import { bigNumberify, defaultAbiCoder, keccak256 } from "ethers/utils";
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
-import {
-  AppIdentityTestClass,
-  computeAppChallengeHash,
-  expect,
-  sortSignaturesBySignerAddress,
-} from "./utils";
+import { AppIdentityTestClass, computeAppChallengeHash, expect } from "./utils";
 
 enum ActionType {
   SUBMIT_COUNTER_INCREMENT,
@@ -97,10 +92,11 @@ describe("ChallengeRegistry Challenge", () => {
         versionNumber,
         appStateHash: stateHash,
         timeout: ONCHAIN_CHALLENGE_TIMEOUT,
-        signatures: await sortSignaturesBySignerAddress(digest, [
-          await signDigest(ALICE.privateKey, digest),
-          await signDigest(BOB.privateKey, digest),
-        ]),
+        signatures: await sortSignaturesBySignerAddress(
+          digest,
+          [await signDigest(ALICE.privateKey, digest), await signDigest(BOB.privateKey, digest)],
+          recoverAddress,
+        ),
       });
     };
 

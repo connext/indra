@@ -9,13 +9,14 @@ import {
   FastSignedTransferResponse,
   delay,
   ResolveConditionResponse,
+  createRandom32ByteHexString,
 } from "@connext/types";
 import { signDigest } from "@connext/crypto";
 import { bigNumberify, BigNumber, solidityKeccak256 } from "ethers/utils";
 import { Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 
-import { createClient, fundChannel, expect, createRandom32ByteHexString } from "../util";
+import { createClient, fundChannel, expect } from "../util";
 import { xkeyKthAddress } from "@connext/cf-core";
 
 describe.skip("Fast Signed Transfer", () => {

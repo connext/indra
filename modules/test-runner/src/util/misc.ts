@@ -1,7 +1,3 @@
-import { expect } from ".";
-import { TestMessagingService } from "./messaging";
-import { hexlify, randomBytes } from "ethers/utils";
-
 export const delay = async (ms: number) =>
   new Promise((res: Function): number => setTimeout(res, ms));
 
@@ -31,15 +27,3 @@ export const combineObjects = (overrides: any, defaults: any): any => {
   });
   return ret;
 };
-
-export function createRandomBytesHexString(length: number) {
-  return hexlify(randomBytes(length));
-}
-
-export function createRandomAddress() {
-  return createRandomBytesHexString(20);
-}
-
-export function createRandom32ByteHexString() {
-  return createRandomBytesHexString(32);
-}

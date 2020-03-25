@@ -22,6 +22,7 @@ import {
   SetStateCommitmentJSON,
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
+  createRandomBytesHexString,
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
@@ -29,7 +30,6 @@ import uuid from "uuid";
 
 import { expect } from "../";
 import { One } from "ethers/constants";
-import { createRandomBytesHexString } from "../misc";
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 

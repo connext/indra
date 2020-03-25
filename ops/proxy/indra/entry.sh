@@ -4,11 +4,12 @@
 domain="${DOMAINNAME:-localhost}"
 email="${EMAIL:-noreply@gmail.com}"
 eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
-messaging_url="${MESSAGING_URL:-http://relay:4223}"
+messaging_url="${MESSAGING_URL:-http://nats:4221}"
+node_url="${NODE_URL:-http://node:8080}"
 mode="${MODE:-dev}"
 ui_url="${UI_URL:-$messaging_url}"
 
-echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url ui=$ui_url mode=$mode"
+echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url ui=$ui_url mode=$mode node_url=$node_url"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -31,7 +32,10 @@ done
 
 echo "waiting for ${messaging_url#*://}..."
 bash wait_for.sh -t 60 ${messaging_url#*://} 2> /dev/null
-while ! curl -s $messaging_url > /dev/null
+
+echo "waiting for ${node_url#*://}..."
+bash wait_for.sh -t 60 ${node_url#*://} 2> /dev/null
+while ! curl -s $node_url > /dev/null
 do sleep 2
 done
 
@@ -79,6 +83,7 @@ sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
 sed -i 's|$UI_URL|'"$ui_url"'|' /etc/nginx/nginx.conf
 sed -i 's|$ETH_RPC_URL|'"$eth_rpc_url"'|' /etc/nginx/nginx.conf
 sed -i 's|$MESSAGING_URL|'"$messaging_url"'|' /etc/nginx/nginx.conf
+sed -i 's|$NODE_URL|'"$node_url"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {

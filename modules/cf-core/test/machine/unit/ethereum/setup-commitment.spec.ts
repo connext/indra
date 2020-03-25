@@ -1,11 +1,12 @@
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
+import { createRandomAddress } from "@connext/types";
 
 import { appIdentityToHash, SetupCommitment } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
 import { StateChannel } from "../../../../src/models";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
-import { generateRandomNetworkContext, createRandomAddress } from "../../mocks";
+import { generateRandomNetworkContext } from "../../mocks";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according

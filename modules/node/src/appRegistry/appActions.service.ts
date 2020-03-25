@@ -5,6 +5,7 @@ import {
   AppAction,
   convertHashLockTransferAppState,
   convertFastSignedTransferAppState,
+  convertLinkedTransferAppState,
 } from "@connext/apps";
 import {
   FastSignedTransferApp,
@@ -20,18 +21,17 @@ import {
   FastSignedTransferAppActionBigNumber,
   WithdrawAppState,
   WithdrawAppAction,
+  SimpleLinkedTransferAppAction,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { soliditySha256 } from "ethers/utils";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { ChannelRepository } from "../channel/channel.repository";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LoggerService } from "../logger/logger.service";
-import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Injectable()
 export class AppActionsService {
@@ -40,8 +40,7 @@ export class AppActionsService {
     private readonly withdrawService: WithdrawService,
     private readonly cfCoreService: CFCoreService,
     private readonly withdrawRepository: WithdrawRepository,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
-    private readonly channelRepository: ChannelRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
@@ -67,6 +66,7 @@ export class AppActionsService {
         await this.handleSimpleLinkedTransferAppAction(
           appInstanceId,
           newState as SimpleLinkedTransferAppState,
+          action as SimpleLinkedTransferAppAction,
           from,
         );
         break;
@@ -142,38 +142,22 @@ export class AppActionsService {
   private async handleSimpleLinkedTransferAppAction(
     appInstanceId: string,
     newState: SimpleLinkedTransferAppState,
+    action: SimpleLinkedTransferAppAction,
     from: string,
   ): Promise<void> {
-    let transfer = await this.linkedTransferRepository.findByPaymentIdOrThrow(newState.paymentId);
-    if (appInstanceId !== transfer.receiverAppInstanceId) {
-      this.log.debug(
-        `Not updating transfer preImage or marking as redeemed for sender update state events`,
-      );
-      return;
-    }
-    // update transfer
-    transfer.preImage = newState.preImage;
-
-    if (
-      transfer.status === LinkedTransferStatus.RECLAIMED ||
-      transfer.status === LinkedTransferStatus.REDEEMED
-    ) {
-      this.log.warn(
-        `Got update state event for a receiver's transfer app (transfer.id: ${transfer.id}) with unexpected status: ${transfer.status}`,
-      );
-      return;
-    }
-
-    // transfers are set to `PENDING` when created. They are set to
-    // `FAILED` when the receiver rejects an install event. If a transfer
-    // makes it to the `UPDATE_STATE_EVENT` portion, it means the transfer
-    // was successfully installed. There is no reason to not redeem it in
-    // that case.
-    transfer = await this.linkedTransferRepository.markAsRedeemed(
-      transfer,
-      await this.channelRepository.findByUserPublicIdentifierOrThrow(from),
+    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+      (newState as SimpleLinkedTransferAppState).paymentId,
+      this.cfCoreService.cfCore.freeBalanceAddress,
     );
-    this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+
+    // take action and uninstall
+    this.log.log(`Unlocking transfer ${senderApp.identityHash}`);
+    await this.cfCoreService.takeAction(senderApp.identityHash, {
+      preImage: action.preImage,
+    } as SimpleLinkedTransferAppAction);
+
+    await this.cfCoreService.uninstallApp(senderApp.identityHash);
+    this.log.log(`Unlocked transfer ${senderApp.identityHash}`);
   }
 
   private async handleWithdrawAppAction(

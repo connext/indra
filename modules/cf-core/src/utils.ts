@@ -1,5 +1,4 @@
 import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
-import { recoverAddress } from "@connext/crypto";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { Provider } from "ethers/providers";
@@ -50,21 +49,6 @@ export const deBigNumberifyJson = (json: object) =>
   JSON.parse(JSON.stringify(json), (key, val) =>
     val && BigNumber.isBigNumber(val) ? val.toHexString() : val,
   );
-
-export async function sortSignaturesBySignerAddress(
-  digest: string,
-  signatures: string[],
-): Promise<string[]> {
-  return (
-    await Promise.all(
-      signatures.slice().map(async sig => ({ sig, addr: await recoverAddress(digest, sig) })),
-    )
-  )
-    .sort((A, B) => {
-      return new BigNumber(A.addr).lt(B.addr) ? -1 : 1;
-    })
-    .map(x => x.sig);
-}
 
 export function prettyPrintObject(object: any) {
   return JSON.stringify(object, null, JSON_STRINGIFY_SPACE);

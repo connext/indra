@@ -90,3 +90,7 @@ export const FastSignedTransferAppActionEncoding = `
     uint256 actionType
   )
 `;
+
+export type CreatedFastSignedTransferMeta = {
+  signer: string;
+};

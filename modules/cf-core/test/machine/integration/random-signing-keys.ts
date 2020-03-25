@@ -1,8 +1,8 @@
 import { HDNode, SigningKey } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
+import { createRandom32ByteHexString } from "@connext/types";
 
 import { computeRandomExtendedPrvKey } from "../../../src/machine/xkeys";
-import { createRandom32ByteHexString } from "../mocks";
 
 export function getSortedRandomSigningKeys(length: number) {
   return Array(length)

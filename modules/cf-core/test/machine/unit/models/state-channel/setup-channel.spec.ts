@@ -1,10 +1,11 @@
 import { Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
+import { createRandomAddress } from "@connext/types";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../../src/constants";
 import { AppInstance, StateChannel } from "../../../../../src/models";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
-import { generateRandomNetworkContext, createRandomAddress } from "../../../mocks";
+import { generateRandomNetworkContext } from "../../../mocks";
 import { AppInstanceProposal } from "@connext/types";
 
 describe("StateChannel::setupChannel", () => {

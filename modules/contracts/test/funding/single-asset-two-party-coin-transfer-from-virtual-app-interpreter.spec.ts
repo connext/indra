@@ -6,8 +6,9 @@ import DolphinCoin from "../../build/DolphinCoin.json";
 import SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter from "../../build/SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter.json";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
+import { createRandomAddress } from "@connext/types";
 
-import { expect, createRandomAddress } from "./utils/index";
+import { expect } from "./utils/index";
 
 type CoinTransfer = {
   to: string;

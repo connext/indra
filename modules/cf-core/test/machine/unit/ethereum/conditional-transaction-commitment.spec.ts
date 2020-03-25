@@ -1,5 +1,6 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { signDigest } from "@connext/crypto";
+import { createRandomAddress, createRandom32ByteHexString } from "@connext/types";
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
@@ -11,11 +12,7 @@ import { FreeBalanceClass } from "../../../../src/models/free-balance";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { getRandomExtendedPubKey, getRandomHDNodes } from "../../integration/random-signing-keys";
-import {
-  generateRandomNetworkContext,
-  createRandomAddress,
-  createRandom32ByteHexString,
-} from "../../mocks";
+import { generateRandomNetworkContext } from "../../mocks";
 import { Store } from "../../../../src/store";
 
 describe("ConditionalTransactionCommitment", () => {

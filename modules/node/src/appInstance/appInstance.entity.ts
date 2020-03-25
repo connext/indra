@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from "typeorm";
 import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
 import { OutcomeType, SolidityValueType } from "@connext/types";
 
@@ -98,6 +105,9 @@ export class AppInstance {
   @IsEthAddress()
   nodeParticipantAddress?: string;
 
+  @Column("json", { nullable: true })
+  meta?: object;
+
   // Interpreter-related Fields
   @Column("json", { nullable: true })
   outcomeInterpreterParameters?: any;
@@ -107,4 +117,10 @@ export class AppInstance {
     (channel: Channel) => channel.appInstances,
   )
   channel!: Channel;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

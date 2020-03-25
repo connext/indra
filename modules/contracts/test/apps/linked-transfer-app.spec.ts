@@ -1,5 +1,5 @@
 /* global before */
-import { Address, SolidityValueType } from "@connext/types";
+import { Address, SolidityValueType, createRandom32ByteHexString } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
@@ -7,7 +7,6 @@ import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
 import UnidirectionalLinkedTransferApp from "../../build/UnidirectionalLinkedTransferApp.json";
-import { createRandom32ByteHexString } from "../funding/utils";
 
 chai.use(waffle.solidity);
 

@@ -178,7 +178,7 @@ describe("Swap offline", () => {
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
     await (providedClient.messaging as TestMessagingService)!.subscribe(
-      `indra.node.${providedClient.nodePublicIdentifier}.install.*`,
+      `${providedClient.nodePublicIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
       async () => {
         // we know client has swap app installed,
         // so delete store here

@@ -35,7 +35,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
   ///////////////////////////////////
   // SIGNING METHODS
   signMessage(message: string): Promise<string>;
-  signDigest(message: any): Promise<string>;
+  signDigest(message: string): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS
@@ -46,7 +46,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
 export const chan_config = "chan_config";
 export const chan_signMessage = "chan_signMessage";
-export const chan_signDigest = "chan_signDigest";
+export const chan_signDigest = "chan_signDige";
 export const chan_restoreState = "chan_restoreState";
 export const chan_setUserWithdrawal = "chan_setUserWithdrawal";
 export const chan_getUserWithdrawal = "chan_getUserWithdrawal";

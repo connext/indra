@@ -3,6 +3,7 @@ import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
   nullLogger,
+  createRandom32ByteHexString,
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -20,7 +21,6 @@ import { Store } from "../../src/store";
 import { getRandomExtendedPubKeys } from "../machine/integration/random-signing-keys";
 
 import { createAppInstanceProposalForTest } from "./utils";
-import { createRandom32ByteHexString } from "../machine/mocks";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({

@@ -1,5 +1,6 @@
 import {
   chan_config,
+  chan_signMessage,
   chan_signDigest,
   chan_restoreState,
   chan_getUserWithdrawal,
@@ -11,7 +12,6 @@ import {
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
-  chan_signMessage,
   StateChannelJSON,
   WithdrawalMonitorObject,
 } from "@connext/types";
@@ -60,11 +60,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
         break;
-      case chan_signDigest:
-        result = await this.signDigest(params.message);
-        break;
       case chan_signMessage:
         result = await this.signMessage(params.message);
+        break;
+      case chan_signDigest:
+        result = await this.signDigest(params.message);
         break;
       case chan_config:
         result = this.config;
@@ -132,14 +132,14 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
-
-  public signMessage = async (message: string): Promise<string> => {
+  public signMessage(message: string): Promise<string> {
     return this._send(chan_signMessage, { message });
-  };
+  }
 
   public signDigest = async (message: string): Promise<string> => {
     return this._send(chan_signDigest, { message });
   };
+
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 
