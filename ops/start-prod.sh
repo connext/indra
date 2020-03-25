@@ -23,6 +23,21 @@ if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -f .env ]]
 then source .env
 fi
 
+# Make sure keys have proper newlines inserted
+# (bc GitHub Actions strips newlines from secrets)
+
+INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
+  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | \
+  sed /-----BEGIN RSA PRIVATE KEY-----/-----BEGIN RSA PRIVATE KEY-----\n/ \
+  sed /-----END RSA PRIVATE KEY-----/\n-----END RSA PRIVATE KEY-----/ \
+`
+
+INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
+  echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | \
+  sed /-----BEGIN PUBLIC KEY-----/-----BEGIN PUBLIC KEY-----\n/ \
+  sed /-----END PUBLIC KEY-----/\n-----END PUBLIC KEY-----/ \
+`
+
 ####################
 # Internal Config
 
