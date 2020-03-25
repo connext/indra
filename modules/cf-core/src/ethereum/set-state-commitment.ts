@@ -1,4 +1,5 @@
 import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { sortSignaturesBySignerAddress } from "@connext/types";
 
 import { ChallengeRegistry } from "../contracts";
 import {
@@ -8,7 +9,6 @@ import {
   SignedStateHashUpdate,
   SetStateCommitmentJSON,
 } from "../types";
-import { sortSignaturesBySignerAddress } from "../utils";
 
 import { appIdentityToHash } from "./utils";
 

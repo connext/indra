@@ -1,9 +1,9 @@
-import { StateChannelJSON } from "@connext/types";
+import { StateChannelJSON, createRandomAddress } from "@connext/types";
 import { getAddress } from "ethers/utils";
 
 import { StateChannel } from "../../../../../src/models";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
-import { generateRandomNetworkContext, createRandomAddress } from "../../../mocks";
+import { generateRandomNetworkContext } from "../../../mocks";
 import { bigNumberifyJson } from "../../../../../src";
 
 describe("StateChannel", () => {

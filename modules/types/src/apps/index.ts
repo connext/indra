@@ -1,13 +1,9 @@
 import {
   ResolveLinkedTransferResponse,
   LinkedTransferParameters,
-  LinkedTransferToRecipientParameters,
   LinkedTransferResponse,
-  LinkedTransferToRecipientResponse,
   ResolveLinkedTransferParameters,
-  ResolveLinkedTransferToRecipientParameters,
   LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
 } from "./SimpleLinkedTransferApp";
 import {
   FastSignedTransferParameters,
@@ -32,19 +28,16 @@ export * from "./WithdrawApp";
 
 export type ConditionalTransferParameters =
   | LinkedTransferParameters
-  | LinkedTransferToRecipientParameters
   | FastSignedTransferParameters
   | HashLockTransferParameters;
 
 export type ConditionalTransferResponse =
   | LinkedTransferResponse
-  | LinkedTransferToRecipientResponse
   | FastSignedTransferResponse
   | HashLockTransferResponse;
 
 export type ResolveConditionParameters =
   | ResolveLinkedTransferParameters
-  | ResolveLinkedTransferToRecipientParameters
   | ResolveFastSignedTransferParameters
   | ResolveHashLockTransferParameters;
 export type ResolveConditionResponse =
@@ -54,6 +47,5 @@ export type ResolveConditionResponse =
 
 export type ConditionalTransferTypes =
   | typeof LINKED_TRANSFER
-  | typeof LINKED_TRANSFER_TO_RECIPIENT
   | typeof FAST_SIGNED_TRANSFER
   | typeof HASHLOCK_TRANSFER;

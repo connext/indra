@@ -4,10 +4,16 @@ import {
   HashLockTransferParameters,
   ResolveHashLockTransferParameters,
   GetHashLockTransferResponse,
+  HashLockTransferStatus,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+  HASHLOCK_TRANSFER,
+  createRandom32ByteHexString,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
+import { providers } from "ethers";
 
 import {
   AssetOptions,
@@ -17,9 +23,7 @@ import {
   fundChannel,
   TOKEN_AMOUNT,
   env,
-  createRandom32ByteHexString,
 } from "../util";
-import { providers } from "ethers";
 
 describe("HashLock Transfers", () => {
   let clientA: IConnextClient;
@@ -61,7 +65,7 @@ describe("HashLock Transfers", () => {
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
-      conditionType: "HASHLOCK_TRANSFER",
+      conditionType: HASHLOCK_TRANSFER,
       lockHash,
       timelock,
       assetId: transfer.assetId,
@@ -86,7 +90,7 @@ describe("HashLock Transfers", () => {
         res();
       });
       await clientB.resolveCondition({
-        conditionType: "HASHLOCK_TRANSFER",
+        conditionType: HASHLOCK_TRANSFER,
         preImage,
       } as ResolveHashLockTransferParameters);
       const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
@@ -105,7 +109,7 @@ describe("HashLock Transfers", () => {
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
-      conditionType: "HASHLOCK_TRANSFER",
+      conditionType: HASHLOCK_TRANSFER,
       lockHash,
       timelock,
       assetId: transfer.assetId,
@@ -130,7 +134,7 @@ describe("HashLock Transfers", () => {
         res();
       });
       await clientB.resolveCondition({
-        conditionType: "HASHLOCK_TRANSFER",
+        conditionType: HASHLOCK_TRANSFER,
         preImage,
       } as ResolveHashLockTransferParameters);
       const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
@@ -140,7 +144,8 @@ describe("HashLock Transfers", () => {
     });
   });
 
-  it("gets a hashlock transfer by lock hash", async () => {
+  // TODO: fix race condition here
+  it.skip("gets a hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = createRandom32ByteHexString();
@@ -149,20 +154,31 @@ describe("HashLock Transfers", () => {
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
-      conditionType: "HASHLOCK_TRANSFER",
+      conditionType: HASHLOCK_TRANSFER,
       lockHash,
       timelock,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
 
+    // wait for transfer to be picked up by receiver
+    await new Promise(async (resolve, reject) => {
+      clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, resolve);
+      clientB.once(RECEIVE_TRANSFER_FAILED_EVENT, reject);
+      await clientB.resolveCondition({
+        conditionType: HASHLOCK_TRANSFER,
+        preImage,
+      });
+    });
     const retrievedTransfer = await clientB.getHashLockTransfer(lockHash);
     expect(retrievedTransfer).to.deep.equal({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       lockHash,
-      sender: clientA.publicIdentifier,
-      meta: {},
+      senderPublicIdentifier: clientA.publicIdentifier,
+      receiverPublicIdentifier: clientB.publicIdentifier,
+      status: HashLockTransferStatus.REDEEMED,
+      meta: { foo: "bar" },
     } as GetHashLockTransferResponse);
   });
 
@@ -175,7 +191,7 @@ describe("HashLock Transfers", () => {
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
-      conditionType: "HASHLOCK_TRANSFER",
+      conditionType: HASHLOCK_TRANSFER,
       lockHash,
       timelock,
       assetId: transfer.assetId,
@@ -185,7 +201,7 @@ describe("HashLock Transfers", () => {
     const badPreImage = createRandom32ByteHexString();
     await expect(
       clientB.resolveCondition({
-        conditionType: "HASHLOCK_TRANSFER",
+        conditionType: HASHLOCK_TRANSFER,
         preImage: badPreImage,
       } as ResolveHashLockTransferParameters),
     ).to.eventually.be.rejectedWith(/No sender app installed for lockHash/);
@@ -200,7 +216,7 @@ describe("HashLock Transfers", () => {
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
-      conditionType: "HASHLOCK_TRANSFER",
+      conditionType: HASHLOCK_TRANSFER,
       lockHash,
       timelock: timelock.toString(),
       assetId: transfer.assetId,
@@ -208,7 +224,7 @@ describe("HashLock Transfers", () => {
     } as HashLockTransferParameters);
     await expect(
       clientB.resolveCondition({
-        conditionType: "HASHLOCK_TRANSFER",
+        conditionType: HASHLOCK_TRANSFER,
         preImage,
       } as ResolveHashLockTransferParameters),
     ).to.be.rejectedWith(/Cannot resolve hash lock transfer with expired timelock/);

@@ -1,9 +1,8 @@
-import { OutcomeType } from "@connext/types";
+import { OutcomeType, createRandomAddress } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
 import { AppInstance } from "../../../../../src/models";
-import { createRandomAddress } from "../../../mocks";
 
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {

@@ -1,7 +1,7 @@
-import { IConnextClient, LINKED_TRANSFER, LINKED_TRANSFER_TO_RECIPIENT } from "@connext/types";
+import { IConnextClient, LINKED_TRANSFER, createRandom32ByteHexString } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
-import { expect, createRandom32ByteHexString } from "../util";
+import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
 
 describe("Get Linked Transfer", () => {
@@ -52,7 +52,7 @@ describe("Get Linked Transfer", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+      conditionType: LINKED_TRANSFER,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,
@@ -77,7 +77,7 @@ describe("Get Linked Transfer", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+      conditionType: LINKED_TRANSFER,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,

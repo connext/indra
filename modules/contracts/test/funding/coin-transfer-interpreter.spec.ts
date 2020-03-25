@@ -6,8 +6,9 @@ import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { createRandomAddress } from "@connext/types";
 
-import { expect, createRandomAddress } from "./utils/index";
+import { expect } from "./utils/index";
 
 type CoinTransfer = {
   to: string;

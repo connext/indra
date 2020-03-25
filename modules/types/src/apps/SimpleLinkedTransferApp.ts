@@ -2,8 +2,63 @@ import { CoinTransfer } from "../";
 import { BigNumber } from "ethers/utils";
 import { singleAssetTwoPartyCoinTransferEncoding } from "../contracts";
 
+// App Registry Name
 export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
 
+// Transfer Condition Name
+export const LINKED_TRANSFER = "LINKED_TRANSFER";
+
+// Client Controller Params
+export type LinkedTransferParameters<T = string> = {
+  conditionType: typeof LINKED_TRANSFER;
+  amount: T;
+  assetId?: string;
+  paymentId: string;
+  preImage: string;
+  recipient?: string;
+  meta?: any;
+};
+export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
+
+// Client Controller Response
+export type LinkedTransferResponse = {
+  appId: string;
+  paymentId: string;
+  preImage: string;
+};
+
+// Client Resolve Params
+export type ResolveLinkedTransferParameters = {
+  conditionType: typeof LINKED_TRANSFER;
+  paymentId: string;
+  preImage: string;
+};
+
+// Client Resolve Response
+export type ResolveLinkedTransferResponse<T = string> = {
+  appId: string;
+  sender: string;
+  paymentId: string;
+  amount: T;
+  assetId: string;
+  meta?: object;
+};
+export type ResolveLinkedTransferResponseBigNumber = ResolveLinkedTransferResponse<BigNumber>;
+
+// ABI Encodings
+export const SimpleLinkedTransferAppStateEncoding = `
+  tuple(
+    ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
+    bytes32 linkedHash,
+    uint256 amount,
+    address assetId,
+    bytes32 paymentId,
+    bytes32 preImage
+  )
+`;
+export const SimpleLinkedTransferAppActionEncoding = `tuple(bytes32 preImage)`;
+
+// ABI Encoding TS Types
 export type SimpleLinkedTransferAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[];
   linkedHash: string;
@@ -16,80 +71,3 @@ export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState
 export type SimpleLinkedTransferAppAction = {
   preImage: string;
 };
-
-////// Transfer types
-export const LINKED_TRANSFER = "LINKED_TRANSFER";
-export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
-
-// linked transfer types
-export type LinkedTransferParameters<T = string> = {
-  conditionType: typeof LINKED_TRANSFER;
-  amount: T;
-  assetId?: string;
-  paymentId: string;
-  preImage: string;
-  meta?: object;
-};
-export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
-
-export type LinkedTransferResponse = {
-  paymentId: string;
-  preImage: string;
-  meta?: object;
-};
-
-export type LinkedTransferToRecipientParameters<T = string> = Omit<
-  LinkedTransferParameters<T>,
-  "conditionType"
-> & {
-  conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
-  recipient: string;
-};
-export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
-  BigNumber
->;
-export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
-  recipient: string;
-};
-
-export type ResolveLinkedTransferParameters<T = string> = Omit<
-  LinkedTransferParameters<T>,
-  "amount" | "assetId" | "meta"
->;
-export type ResolveLinkedTransferParametersBigNumber = ResolveLinkedTransferParameters<BigNumber>;
-
-export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
-  ResolveLinkedTransferParameters<T>,
-  "recipient" | "conditionType"
-> & {
-  amount: T;
-  assetId: string;
-  conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
-};
-
-export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
-  BigNumber
->;
-
-export type ResolveLinkedTransferResponse<T = string> = {
-  appId: string;
-  sender: string;
-  paymentId: string;
-  amount: T;
-  assetId: string;
-  meta?: object;
-};
-export type ResolveLinkedTransferResponseBigNumber = ResolveLinkedTransferResponse<BigNumber>;
-
-export const SimpleLinkedTransferAppStateEncoding = `
-  tuple(
-    ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-    bytes32 linkedHash,
-    uint256 amount,
-    address assetId,
-    bytes32 paymentId,
-    bytes32 preImage
-  )
-`;
-
-export const SimpleLinkedTransferAppActionEncoding = `tuple(bytes32 preImage)`;

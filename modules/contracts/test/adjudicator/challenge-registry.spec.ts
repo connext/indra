@@ -1,5 +1,10 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
+import {
+  sortSignaturesBySignerAddress,
+  createRandom32ByteHexString,
+  createRandomAddress,
+} from "@connext/types";
 import { signDigest } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
@@ -7,13 +12,7 @@ import { HashZero } from "ethers/constants";
 import { BigNumberish, keccak256 } from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
-import {
-  AppIdentityTestClass,
-  computeAppChallengeHash,
-  expect,
-  sortSignaturesBySignerAddress,
-} from "./utils";
-import { createRandom32ByteHexString, createRandomAddress } from "../funding/utils";
+import { AppIdentityTestClass, computeAppChallengeHash, expect } from "./utils";
 
 type Challenge = {
   status: 0 | 1 | 2;

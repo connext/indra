@@ -1,6 +1,11 @@
 /* global before after */
 import { utils } from "@connext/client";
-import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, CF_PATH } from "@connext/types";
+import {
+  IConnextClient,
+  CF_PATH,
+  LINKED_TRANSFER,
+  createRandom32ByteHexString,
+} from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode } from "ethers/utils";
@@ -21,9 +26,8 @@ import {
   requestCollateral,
   withdrawFromChannel,
   ZERO_ZERO_ONE_ETH,
-  createRandom32ByteHexString,
 } from "../util";
-import { connectNats, closeNats } from "../util/nats";
+import { getNatsClient } from "../util/nats";
 import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
@@ -35,7 +39,7 @@ describe("Async Transfers", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -47,10 +51,6 @@ describe("Async Transfers", () => {
   afterEach(async () => {
     await clientA.messaging.disconnect();
     await clientB.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it("happy case: client A transfers eth to client B through node", async () => {
@@ -239,7 +239,7 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+        conditionType: LINKED_TRANSFER,
         paymentId,
         preImage: createRandom32ByteHexString(),
         recipient: clientB.publicIdentifier,
@@ -255,7 +255,7 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+        conditionType: LINKED_TRANSFER,
         paymentId: createRandom32ByteHexString(),
         preImage,
         recipient: clientB.publicIdentifier,

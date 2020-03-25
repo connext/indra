@@ -15,7 +15,7 @@ solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' 
 backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1-2).0
 
 # Pool of images to pull cached layers from during docker build steps
-cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_builder"; else echo ""; fi)
+cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_builder"; else echo ""; fi)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -60,9 +60,9 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database node client indra-proxy test-runner-js ws-tcp-relay
-staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging ws-tcp-relay
-release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release ws-tcp-relay
+dev: database node client indra-proxy test-runner-js
+staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging
+release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release
 
 start: start-daicard
 
@@ -82,7 +82,7 @@ start-test-staging:
 start-test-release:
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-release bash ops/start-prod.sh
 
-start-prod: prod
+start-prod:
 	bash ops/start-prod.sh
 
 stop:
@@ -123,12 +123,10 @@ clean: stop
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
 	bash ops/db.sh 'truncate table channel cascade;'
-	bash ops/db.sh 'truncate table channel_payment_profiles_payment_profile cascade;'
-	bash ops/db.sh 'truncate table linked_transfer cascade;'
+	bash ops/db.sh 'truncate table channel_rebalance_profiles_rebalance_profile cascade;'
 	bash ops/db.sh 'truncate table node_records cascade;'
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
-	bash ops/db.sh 'truncate table payment_profile cascade;'
-	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
+	bash ops/db.sh 'truncate table rebalance_profile cascade;'
 	touch modules/node/src/main.ts
 
 reset: stop
@@ -257,12 +255,12 @@ node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
+indra-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra/dev.dockerfile $(cache_from) --tag $(project)_proxy .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
+indra-proxy-prod: daicard-prod dashboard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -285,12 +283,6 @@ test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops 
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-ws-tcp-relay: ops/ws-tcp-relay.dockerfile
-	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay .
-	docker tag $(project)_relay $(project)_relay:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################

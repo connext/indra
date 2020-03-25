@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { RpcException } from "@nestjs/microservices";
 
 import { LoggerService } from "../logger/logger.service";
@@ -9,10 +9,7 @@ export interface IMessagingProvider {
 }
 
 export abstract class AbstractMessagingProvider implements IMessagingProvider {
-  constructor(
-    public readonly log: LoggerService,
-    protected readonly messaging: IMessagingService,
-  ) {
+  constructor(public readonly log: LoggerService, protected readonly messaging: MessagingService) {
     this.log.setContext("MessagingInterface");
   }
 
@@ -36,10 +33,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
       if (msg.reply) {
         try {
           const start = Date.now();
-          const subject = msg.subject
-            .split(".")
-            .slice(0, 2)
-            .join(".");
+          const subject = msg.subject;
           const response = await processor(msg.subject, msg.data);
           const diff = Date.now() - start;
           if (diff >= 10 && diff < 100) {

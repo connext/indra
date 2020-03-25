@@ -1,11 +1,15 @@
-import { AppABIEncodings, OutcomeType, SolidityValueType } from "@connext/types";
+import {
+  AppABIEncodings,
+  OutcomeType,
+  SolidityValueType,
+  createRandomAddress,
+} from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { computeRandomExtendedPrvKey } from "../../src/machine/xkeys";
 import { AppInstance, AppInstanceProposal, StateChannel } from "../../src/models";
-import { createRandomAddress } from "../machine/mocks";
 
 export function createAppInstanceProposalForTest(appInstanceId: string): AppInstanceProposal {
   return {
@@ -53,6 +57,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
       amount: Zero,
       tokenAddress: AddressZero,
     },
+    /* meta */ undefined,
     /* multiAssetMultiPartyCoinTransferInterpreterParams */ undefined,
     /* singleAssetTwoPartyCoinTransferInterpreterParams */ undefined,
   );

@@ -8,9 +8,7 @@ import {
   getAddress,
   Interface,
   keccak256,
-  recoverAddress,
   solidityKeccak256,
-  arrayify,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -51,27 +49,6 @@ export const deBigNumberifyJson = (json: object) =>
   JSON.parse(JSON.stringify(json), (key, val) =>
     val && BigNumber.isBigNumber(val) ? val.toHexString() : val,
   );
-
-export async function recoverAddressWithEthers(digest: string, sig: string) {
-  return recoverAddress(arrayify(digest), sig);
-}
-
-export async function sortSignaturesBySignerAddress(
-  digest: string,
-  signatures: string[],
-): Promise<string[]> {
-  return (
-    await Promise.all(
-      signatures
-        .slice()
-        .map(async sig => ({ sig, addr: await recoverAddressWithEthers(digest, sig) })),
-    )
-  )
-    .sort((A, B) => {
-      return new BigNumber(A.addr).lt(B.addr) ? -1 : 1;
-    })
-    .map(x => x.sig);
-}
 
 export function prettyPrintObject(object: any) {
   return JSON.stringify(object, null, JSON_STRINGIFY_SPACE);

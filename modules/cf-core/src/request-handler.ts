@@ -118,7 +118,7 @@ export class RequestHandler {
           )}`,
         );
       } else {
-        throw new Error(`Recent ${event} which has no event handler`);
+        throw new Error(`Recent ${event} event which has no event handler`);
       }
     }
 

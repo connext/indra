@@ -1,4 +1,4 @@
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, recoverAddressWithEthers, signDigestWithEthers } from "@connext/types";
 import {
   decryptWithPrivateKey,
   encryptWithPublicKey,
@@ -15,15 +15,6 @@ import {
 } from "../src";
 import * as EthCrypto from "eth-crypto";
 import * as ethers from "ethers";
-
-async function recoverAddressWithEthers(digest: string, sig: string) {
-  return ethers.utils.recoverAddress(ethers.utils.arrayify(digest), sig);
-}
-
-async function signDigestWithEthers(privateKey: string, digest: string) {
-  const signingKey = new ethers.utils.SigningKey(privateKey);
-  return ethers.utils.joinSignature(signingKey.signDigest(ethers.utils.arrayify(digest)));
-}
 
 const prvKey = ethers.Wallet.createRandom().privateKey;
 const pubKey = removeHexPrefix(ethers.utils.computePublicKey(prvKey));

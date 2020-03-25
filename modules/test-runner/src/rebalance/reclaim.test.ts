@@ -1,19 +1,13 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, stringify, UPDATE_STATE_EVENT } from "@connext/types";
+import { IConnextClient, UPDATE_STATE_EVENT, createRandom32ByteHexString } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
-import { bigNumberify, defaultAbiCoder } from "ethers/utils";
-import { before, describe, after } from "mocha";
+import { bigNumberify } from "ethers/utils";
+import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
-import {
-  createClient,
-  fundChannel,
-  asyncTransferAsset,
-  expect,
-  createRandom32ByteHexString,
-} from "../util";
+import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
-import { connectNats, closeNats } from "../util/nats";
+import { getNatsClient } from "../util/nats";
 
 describe("Reclaim", () => {
   let clientA: IConnextClient;
@@ -23,7 +17,7 @@ describe("Reclaim", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -36,10 +30,6 @@ describe("Reclaim", () => {
   afterEach(async () => {
     await clientA.messaging.disconnect();
     await clientB.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it("happy case: node should reclaim ETH with async transfer", async () => {

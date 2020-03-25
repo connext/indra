@@ -5,35 +5,54 @@ import {
   MessagingConfig,
   nullLogger,
 } from "@connext/types";
-import * as nats from "ts-nats";
+import * as natsutil from "ts-natsutil";
 
-export class NatsMessagingService implements IMessagingService {
-  private connection: nats.Client | undefined;
+export class MessagingService implements IMessagingService {
+  private service: natsutil.INatsService | undefined;
   private log: ILoggerService;
-  private subscriptions: { [key: string]: nats.Subscription } = {};
+  private bearerToken: string | null;
 
   constructor(
     private readonly config: MessagingConfig,
     private readonly messagingServiceKey: string,
+    private readonly getBearerToken: () => Promise<string>,
   ) {
     this.log = config.logger || nullLogger;
     this.log.debug(`Created NatsMessagingService with config: ${JSON.stringify(config, null, 2)}`);
+    this.bearerToken = null;
   }
 
   async connect(): Promise<void> {
     const messagingUrl = this.config.messagingUrl;
-    this.connection = await nats.connect({
-      ...this.config,
-      ...this.config.options,
-      servers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl,
-      payload: nats.Payload.JSON,
-    } as nats.NatsConnectionOptions);
+    if (!this.bearerToken) {
+      this.bearerToken = await this.getBearerToken();
+    }
+    const service = natsutil.natsServiceFactory({
+      bearerToken: this.bearerToken,
+      natsServers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl, // FIXME-- rename to servers instead of natsServers
+    });
+
+    const natsConnection = await service.connect();
+    this.service = service;
     this.log.debug(`Connected!`);
+    const self = this;
+    if (typeof natsConnection.addEventListener === "function") {
+      natsConnection.addEventListener("close", async () => {
+        this.bearerToken = null;
+        await self.connect();
+      });
+    } else {
+      natsConnection.on("close", async () => {
+        this.bearerToken = null;
+        await self.connect();
+      });
+    }
   }
 
   async disconnect(): Promise<void> {
-    this.assertConnected();
-    this.connection!.close();
+    if (this.service?.isConnected()) {
+      this.service!.disconnect();
+    }
   }
 
   ////////////////////////////////////////
@@ -43,40 +62,33 @@ export class NatsMessagingService implements IMessagingService {
     subject: string,
     callback: (msg: CFCoreTypes.NodeMessage) => void,
   ): Promise<void> {
-    this.assertConnected();
-    this.subscriptions[subject] = await this.connection!.subscribe(
-      this.prependKey(`${subject}.>`),
-      (err: any, msg: any): void => {
-        if (err || !msg || !msg.data) {
-          this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
-        } else {
-          const data = typeof msg.data === `string` ? JSON.parse(msg).data : msg.data;
-          this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-          callback(data as CFCoreTypes.NodeMessage);
-        }
-      },
-    );
+    await this.service!.subscribe(this.prependKey(`${subject}.>`), (msg: any, err?: any): void => {
+      if (err || !msg || !msg.data) {
+        this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
+      } else {
+        const data = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
+        this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
+        callback(data as CFCoreTypes.NodeMessage);
+      }
+    });
   }
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
-    this.assertConnected();
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
-    this.connection!.publish(this.prependKey(`${to}.${msg.from}`), msg);
+    this.service!.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
 
   ////////////////////////////////////////
   // More generic methods
 
   async publish(subject: string, data: any): Promise<void> {
-    this.assertConnected();
     this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
-    this.connection!.publish(subject, data);
+    this.service!.publish(subject, JSON.stringify(data));
   }
 
-  async request(subject: string, timeout: number, data: object = {}): Promise<nats.Msg | void> {
-    this.assertConnected();
+  async request(subject: string, timeout: number, data: object = {}): Promise<any> {
     this.log.debug(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
-    const response = await this.connection!.request(subject, timeout, data);
+    const response = await this.service!.request(subject, timeout, JSON.stringify(data));
     this.log.debug(`Request for ${subject} returned: ${JSON.stringify(response)}`);
     return response;
   }
@@ -85,37 +97,28 @@ export class NatsMessagingService implements IMessagingService {
     subject: string,
     callback: (msg: CFCoreTypes.NodeMessage) => void,
   ): Promise<void> {
-    this.assertConnected();
-    this.subscriptions[subject] = await this.connection!.subscribe(
-      subject,
-      (err: any, msg: any): void => {
-        if (err || !msg || !msg.data) {
-          this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
-        } else {
-          const data = typeof msg === `string` ? JSON.parse(msg) : msg;
-          this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
-          callback(data as CFCoreTypes.NodeMessage);
-        }
-      },
-    );
-  }
-
-  async unsubscribe(subject: string): Promise<void> {
-    this.assertConnected();
-    const unsubscribeFrom = this.getSubjectsToUnsubscribeFrom(subject);
-    unsubscribeFrom.forEach(sub => {
-      if (this.subscriptions[sub]) {
-        this.subscriptions[sub].unsubscribe();
-        this.log.debug(`Unsubscribed from ${sub}`);
+    await this.service!.subscribe(subject, (msg: any, err?: any): void => {
+      if (err || !msg || !msg.data) {
+        this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
       } else {
-        this.log.warn(`Not subscribed to ${sub}, doing nothing`);
+        const parsedMsg = typeof msg === `string` ? JSON.parse(msg) : msg;
+        const parsedData = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
+        parsedMsg.data = parsedData;
+        this.log.debug(`Subscription for ${subject}: ${JSON.stringify(parsedMsg)}`);
+        callback(parsedMsg as CFCoreTypes.NodeMessage);
       }
     });
   }
 
+  async unsubscribe(subject: string): Promise<void> {
+    const unsubscribeFrom = this.getSubjectsToUnsubscribeFrom(subject);
+    unsubscribeFrom.forEach(sub => {
+      this.service!.unsubscribe(sub);
+    });
+  }
+
   async flush(): Promise<void> {
-    this.assertConnected();
-    await this.connection!.flush();
+    await this.service!.flush();
   }
 
   ////////////////////////////////////////
@@ -125,18 +128,9 @@ export class NatsMessagingService implements IMessagingService {
     return `${this.messagingServiceKey}.${subject}`;
   }
 
-  private assertConnected(): void {
-    if (!this.connection) {
-      throw new Error(`No connection exists, NatsMessagingService is uninitialized.`);
-    }
-    if (!this.connection.isClosed) {
-      throw new Error(`Connection is closed, try reconnecting.`);
-    }
-  }
-
   private getSubjectsToUnsubscribeFrom(subject: string): string[] {
     // must account for wildcards
-    const subscribedTo = Object.keys(this.subscriptions);
+    const subscribedTo = this.service!.getSubscribedSubjects();
     const unsubscribeFrom: string[] = [];
 
     // get all the substrings to match in the existing subscriptions

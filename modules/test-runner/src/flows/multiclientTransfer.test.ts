@@ -4,13 +4,20 @@ import {
   RECEIVE_TRANSFER_FAILED_EVENT,
 } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
+import { before } from "mocha";
+import { Client } from "ts-nats";
 
-import { expect, createClient, fundChannel } from "../util";
+import { expect, createClient, fundChannel, getNatsClient } from "../util";
 
 describe("Full Flow: Multi-client transfer", () => {
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
+  let nats: Client;
+
+  before(async () => {
+    nats = getNatsClient();
+  });
 
   beforeEach(async () => {
     gateway = await createClient();
