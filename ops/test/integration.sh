@@ -31,6 +31,7 @@ else
     --env="INDRA_NODE_URL=$NODE_URL" \
     --env="INDRA_NATS_URL=$NATS_URL" \
     --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
+    --env="NODE_TLS_REJECT_UNAUTHORIZED=0" \
     --env="NODE_ENV=development" \
     $interactive \
     --name="$name" \
