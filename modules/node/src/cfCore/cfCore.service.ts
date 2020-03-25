@@ -478,44 +478,6 @@ export class CFCoreService {
   }
 
   // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
-  async getHashLockTransferAppsByLockHash(lockHash: string): Promise<AppInstanceJson[]> {
-    const channels = await this.channelRepository.findAll();
-    const apps: AppInstanceJson[] = [];
-    for (const channel of channels) {
-      const installed = await this.getAppInstancesByAppName(
-        channel.multisigAddress,
-        HashLockTransferApp,
-      );
-      // found hashlocked transfer app
-      for (const app of installed) {
-        const appState = convertHashLockTransferAppState(
-          "bignumber",
-          app.latestState as HashLockTransferAppStateBigNumber,
-        );
-        if (appState.lockHash === lockHash) {
-          // TODO: FIX THIS IN CF CORE
-          apps.push({ ...app, multisigAddress: channel.multisigAddress });
-        }
-      }
-    }
-    return apps;
-  }
-
-  async getHashLockTransferAppsForReceiverByLockHash(
-    lockHash: string,
-  ): Promise<AppInstanceJson | undefined> {
-    const apps = await this.getHashLockTransferAppsByLockHash(lockHash);
-    return apps.find(app => {
-      const appState = convertHashLockTransferAppState(
-        "bignumber",
-        app.latestState as HashLockTransferAppStateBigNumber,
-      );
-      // sender is node
-      return appState.coinTransfers[0].to === this.cfCore.freeBalanceAddress;
-    });
-  }
-
-  // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
   async getFastSignedTransferAppsByPaymentId(paymentId: string): Promise<AppInstanceJson[]> {
     const channels = await this.channelRepository.findAll();
     const apps: AppInstanceJson[] = [];
