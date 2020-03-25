@@ -34,7 +34,7 @@ for var in $(compgen -e); do
   if [[ "$var" == *"|"* || "${!var}" == *"|"* ]]
   then echo "Warning, env var $var contains a | character, skipping" && continue
   fi
-  echo "subbing env var: ${var}"
+  echo "subbing env var: ${var}=${!var}"
   subbed_cmd="`echo "$subbed_cmd" | sed 's|$'"$var"'|'"${!var}"'|g'`"
 done
 IFS=$oldIFS
