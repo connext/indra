@@ -27,6 +27,13 @@ export type LinkedTransferResponse = {
   preImage: string;
 };
 
+// transfer status for client/node
+export const enum LinkedTransferStatus {
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+}
+
 // Client Resolve Params
 export type ResolveLinkedTransferParameters = {
   conditionType: typeof LINKED_TRANSFER;
