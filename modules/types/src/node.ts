@@ -13,6 +13,7 @@ import {
   GetHashLockTransferResponse,
   ResolveSignedTransferResponse,
   GetSignedTransferResponse,
+  LinkedTransferStatus,
 } from "./apps";
 
 ////////////////////////////////////
@@ -73,13 +74,6 @@ export type CreateChannelResponse = {
 
 // TODO: why was this changed?
 export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
-
-export const enum LinkedTransferStatus {
-  PENDING = "PENDING",
-  REDEEMED = "REDEEMED",
-  FAILED = "FAILED",
-  UNLOCKED = "UNLOCKED",
-}
 
 export type FetchedLinkedTransfer<T = any> = {
   paymentId: string;

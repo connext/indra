@@ -1,5 +1,5 @@
 import {
-  chan_sign,
+  chan_signMessage,
   chan_signDigest,
   chan_getUserWithdrawal,
   chan_setUserWithdrawal,
@@ -83,7 +83,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-      case chan_sign:
+      case chan_signMessage:
         result = await this.signMessage(params.message);
         break;
       case chan_signDigest:

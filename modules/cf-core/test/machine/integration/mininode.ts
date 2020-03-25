@@ -1,6 +1,5 @@
 import { NetworkContext, nullLogger, PersistAppType, AppInstanceProposal } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { SigningKey } from "ethers/utils";
 import { HDNode } from "ethers/utils/hdnode";
 
 import { EthereumCommitment } from "../../../src/types";
@@ -9,6 +8,7 @@ import { StateChannel, AppInstance } from "../../../src/models";
 import { Store } from "../../../src/store";
 
 import { getRandomHDNodes } from "./random-signing-keys";
+import { signDigestWithEthers } from "../../../src/utils";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
 const makeSigner = (hdNode: HDNode) => {
@@ -20,9 +20,10 @@ const makeSigner = (hdNode: HDNode) => {
     const [commitment, overrideKeyIndex] = args;
     const keyIndex = overrideKeyIndex || 0;
 
-    const signingKey = new SigningKey(hdNode.derivePath(`${keyIndex}`).privateKey);
+    const privateKey = hdNode.derivePath(`${keyIndex}`).privateKey;
+    const hash = commitment.hashToSign();
 
-    return signingKey.signDigest(commitment.hashToSign());
+    return signDigestWithEthers(privateKey, hash);
   };
 };
 

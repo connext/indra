@@ -7,6 +7,7 @@ import {
   solidityKeccak256,
   joinSignature,
   SigningKey,
+  arrayify,
 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 import { RINKEBY_NETWORK, MAINNET_NETWORK } from "./constants";
@@ -132,6 +133,6 @@ export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
 }
 
 export const signDigestWithEthers = (privateKey: string, digest: string) => {
-  const key = new SigningKey(privateKey);
-  return joinSignature(key.signDigest(digest));
+  const signingKey = new SigningKey(privateKey);
+  return joinSignature(signingKey.signDigest(arrayify(digest)));
 };

@@ -10,7 +10,7 @@ import { SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
 import { xkeysToSortedKthSigningKeys } from "../../../src/machine";
 import { StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
-import { getCreate2MultisigAddress } from "../../../src/utils";
+import { getCreate2MultisigAddress, signDigestWithEthers } from "../../../src/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
@@ -89,9 +89,10 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         freeBalance.versionNumber,
         freeBalance.timeout,
       );
+      const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [
-        multisigOwnerKeys[0].signDigest(setStateCommitment.hashToSign()),
-        multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign()),
+        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
       ];
 
       const setStateTx = setStateCommitment.getSignedTransaction();
@@ -113,10 +114,11 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         stateChannel.multisigOwners,
         stateChannel.freeBalance.identity,
       );
+      const setupCommitmentHash = setupCommitment.hashToSign();
 
       setupCommitment.signatures = [
-        multisigOwnerKeys[0].signDigest(setupCommitment.hashToSign()),
-        multisigOwnerKeys[1].signDigest(setupCommitment.hashToSign()),
+        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
+        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
       ];
 
       const setupTx = setupCommitment.getSignedTransaction();

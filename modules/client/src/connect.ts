@@ -38,7 +38,6 @@ import {
   IConnextClient,
   INodeApiClient,
 } from "./types";
-import { SigningKey, joinSignature } from "ethers/utils";
 
 export const connect = async (
   clientOptions: string | ClientOptions,

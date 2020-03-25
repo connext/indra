@@ -1,6 +1,6 @@
 import {
   chan_config,
-  chan_sign,
+  chan_signMessage,
   chan_signDigest,
   chan_restoreState,
   chan_getUserWithdrawal,
@@ -60,7 +60,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
         break;
-      case chan_sign:
+      case chan_signMessage:
         result = await this.signMessage(params.message);
         break;
       case chan_signDigest:
@@ -133,7 +133,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
   public signMessage(message: string): Promise<string> {
-    return this._send(chan_sign, { message });
+    return this._send(chan_signMessage, { message });
   }
 
   public signDigest = async (message: string): Promise<string> => {

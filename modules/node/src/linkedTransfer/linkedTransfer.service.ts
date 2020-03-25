@@ -29,19 +29,27 @@ const appStatusesToLinkedTransferStatus = (
 ): LinkedTransferStatus | undefined => {
   if (!senderAppType) {
     return undefined;
-  } else if (senderAppType === AppType.UNINSTALLED) {
-    // if sender app is uninstalled, transfer has been unlocked by node
-    return LinkedTransferStatus.UNLOCKED;
-  } else if (!receiverAppType) {
-    return LinkedTransferStatus.PENDING;
-  } else if (receiverAppType === AppType.UNINSTALLED) {
-    // if receiver app is uninstalled, sender may have been offline when receiver redeemed
-    return LinkedTransferStatus.REDEEMED;
-  } else if (senderAppType === AppType.REJECTED || receiverAppType === AppType.REJECTED) {
-    return LinkedTransferStatus.FAILED;
-  } else {
-    throw new Error(`Unable to determine status`);
   }
+
+  if (!receiverAppType) {
+    return LinkedTransferStatus.PENDING;
+  }
+
+  if (senderAppType === AppType.UNINSTALLED || receiverAppType === AppType.UNINSTALLED) {
+    return LinkedTransferStatus.COMPLETED;
+  }
+
+  if (senderAppType === AppType.REJECTED || receiverAppType === AppType.REJECTED) {
+    return LinkedTransferStatus.FAILED;
+  }
+
+  if (senderAppType === AppType.INSTANCE && receiverAppType === AppType.INSTANCE) {
+    return LinkedTransferStatus.PENDING;
+  }
+
+  throw new Error(
+    `Unable to determine linked transfer status from senderAppType (${senderAppType}) and receiverAppType (${receiverAppType})`,
+  );
 };
 
 @Injectable()
