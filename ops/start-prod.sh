@@ -7,6 +7,7 @@ docker swarm init 2> /dev/null || true
 ####################
 # External Env Vars
 
+INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-}"
 INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
 INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
@@ -14,7 +15,13 @@ INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl cer
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-release}" # One of: release, staging, test-staging, or test-release
-INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
+INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-}" # pass this in through CI
+INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-}" # pass this in through CI
+
+# load dev-mode hardcoded jwt keys if nothing provided by env vars
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -f .env ]]
+then source .env
+fi
 
 ####################
 # Internal Config
@@ -25,9 +32,8 @@ registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"
 
 ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
-nats_port="4222"
 node_port="8080"
-number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="6" # NOTE: Gotta update this manually when adding/removing services :(
 
 ####################
 # Helper Functions
@@ -80,6 +86,11 @@ pg_password_file="/run/secrets/$db_secret"
 pg_port="5432"
 pg_user="$project"
 
+# nats bearer auth settings
+nats_port="4222"
+nats_ws_port="4221"
+
+# redis settings
 redis_url="redis://redis:6379"
 
 ########################################
@@ -97,22 +108,21 @@ then version="`cat $dir/../package.json | grep '"version":' | head -n 1 | cut -d
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
 
-ethprovider_image="$registry${project}_ethprovider:$version"
 database_image="$registry${project}_database:$version"
+ethprovider_image="$registry${project}_ethprovider:$version"
 logdna_image="logdna/logspout:v1.2.0"
-nats_image="nats:2.0.0-linux"
+nats_image="provide/nats-server:indra"
 node_image="$registry${project}_node:$version"
 proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
-relay_image="$registry${project}_relay:$version"
 
 pull_if_unavailable "$database_image"
+pull_if_unavailable "$ethprovider_image"
 pull_if_unavailable "$logdna_image"
 pull_if_unavailable "$nats_image"
 pull_if_unavailable "$node_image"
 pull_if_unavailable "$proxy_image"
 pull_if_unavailable "$redis_image"
-pull_if_unavailable "$relay_image"
 
 ########################################
 ## Ethereum Config
@@ -165,7 +175,8 @@ allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x000000000000000000000000
 
 echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
 
-mkdir -p ops/database/snapshots /tmp/$project
+mkdir -p `pwd`/ops/database/snapshots
+mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -189,7 +200,8 @@ services:
       DOMAINNAME: $INDRA_DOMAINNAME
       EMAIL: $INDRA_EMAIL
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      MESSAGING_URL: http://relay:4223
+      MESSAGING_URL: http://nats:4221
+      NODE_URL: http://node:8080
       MODE: prod
     logging:
       driver: "json-file"
@@ -213,7 +225,10 @@ services:
       INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
       INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID: abc123
+      INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY
+      INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY
       INDRA_NATS_SERVERS: nats://nats:$nats_port
+      INDRA_NATS_WS_ENDPOINT: wss://nats:$nats_ws_port
       INDRA_NATS_TOKEN: abc123
       INDRA_PG_DATABASE: $pg_db
       INDRA_PG_HOST: $pg_host
@@ -252,20 +267,17 @@ services:
 
   nats:
     image: $nats_image
-    command: -V
+    command: -D -V
+    environment:
+      JWT_SIGNER_PUBLIC_KEY: "$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY"
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
     ports:
-      - "4222:4222"
-
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    ports:
-      - "4223:4223"
+      - "$nats_port:$nats_port"
+      - "$nats_ws_port:$nats_ws_port"
 
   redis:
     image: $redis_image

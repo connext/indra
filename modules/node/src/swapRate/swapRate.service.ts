@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { AllowedSwap, PriceOracleType, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
@@ -17,7 +17,7 @@ export class SwapRateService implements OnModuleInit {
   constructor(
     private readonly config: ConfigService,
     private readonly log: LoggerService,
-    @Inject(MessagingProviderId) private readonly messaging: IMessagingService,
+    @Inject(MessagingProviderId) private readonly messaging: MessagingService,
   ) {
     this.log.setContext("SwapRateService");
   }

@@ -18,7 +18,7 @@
     "@connext/cf-core": "6.0.0-alpha.1",
     "@connext/contracts": "1.0.5",
     "@connext/types": "6.0.0-alpha.1",
-    "ethers": "4.0.45",
+    "ethers": "4.0.46",
     "rollup": "1.31.1",
     "@rollup/plugin-json": "4.0.2",
     "rollup-plugin-typescript2": "0.26.0",

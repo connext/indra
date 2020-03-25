@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
@@ -13,27 +13,27 @@ class LockMessaging extends AbstractMessagingProvider {
     private readonly authService: AuthService,
     private readonly lockService: LockService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
   ) {
     super(log, messaging);
   }
 
-  async acquireLock(multisig: string, data: { lockTTL: number }): Promise<string> {
-    return await this.lockService.acquireLock(multisig, data.lockTTL);
+  async acquireLock(lockName: string, data: { lockTTL: number }): Promise<string> {
+    return await this.lockService.acquireLock(lockName, data.lockTTL);
   }
 
-  async releaseLock(multisig: string, data: { lockValue: string }): Promise<void> {
-    return await this.lockService.releaseLock(multisig, data.lockValue);
+  async releaseLock(lockName: string, data: { lockValue: string }): Promise<void> {
+    return await this.lockService.releaseLock(lockName, data.lockValue);
   }
 
   async setupSubscriptions(): Promise<void> {
     super.connectRequestReponse(
-      "lock.acquire.>",
-      this.authService.useUnverifiedHexString(this.acquireLock.bind(this)),
+      "*.lock.acquire.>",
+      this.authService.parseLock(this.acquireLock.bind(this)),
     );
     super.connectRequestReponse(
-      "lock.release.>",
-      this.authService.useUnverifiedHexString(this.releaseLock.bind(this)),
+      "*.lock.release.>",
+      this.authService.parseLock(this.releaseLock.bind(this)),
     );
   }
 }
@@ -45,7 +45,7 @@ export const lockProviderFactory: FactoryProvider<Promise<void>> = {
     authService: AuthService,
     lockService: LockService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
   ): Promise<void> => {
     const lock = new LockMessaging(authService, lockService, log, messaging);
     await lock.setupSubscriptions();

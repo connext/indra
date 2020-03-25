@@ -249,7 +249,7 @@ export class WithdrawService {
 
     // propose install + wait for client confirmation
     const { appInstanceId } = await this.cfCoreService.proposeAndWaitForInstallApp(
-      channel.userPublicIdentifier,
+      channel,
       initialState,
       amount,
       assetId,

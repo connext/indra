@@ -5,7 +5,6 @@ import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { AnonymizedOnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { AnonymizedTransferRepository } from "../anonymizedTransfer/anonymizedTransfer.repository";
 
 import { CollateralService } from "./collateral.service";
 import { CollateralController } from "./collateral.controller";
@@ -17,10 +16,7 @@ import { CollateralController } from "./collateral.controller";
     ConfigModule,
     CFCoreModule,
     LoggerModule,
-    TypeOrmModule.forFeature([
-      AnonymizedOnchainTransactionRepository,
-      AnonymizedTransferRepository,
-    ]),
+    TypeOrmModule.forFeature([AnonymizedOnchainTransactionRepository]),
   ],
   providers: [CollateralService],
 })

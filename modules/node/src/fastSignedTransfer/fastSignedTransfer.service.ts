@@ -4,52 +4,30 @@ import {
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
-  AppInstanceJson,
   FastSignedTransferAppStateBigNumber,
   FastSignedTransferAppActionBigNumber,
   FastSignedTransferActionType,
   ResolveFastSignedTransferResponse,
   FastSignedTransferApp,
 } from "@connext/types";
-import { Injectable, Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
 import { BigNumber, hexZeroPad } from "ethers/utils";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
-import { ConfigService } from "../config/config.service";
-import { MessagingClientProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
 import { convertFastSignedTransferAppState } from "@connext/apps";
-
-const findInstalledFastSignedAppWithSpace = (
-  apps: AppInstanceJson[],
-  recipientFreeBalanceAddress: string,
-  fastSignedTransferAppDefAddress: string,
-): AppInstanceJson | undefined => {
-  return apps.find(app => {
-    const latestState = app.latestState as FastSignedTransferAppStateBigNumber;
-    return (
-      app.appInterface.addr === fastSignedTransferAppDefAddress && // interface matches
-      latestState.coinTransfers[1][0] === recipientFreeBalanceAddress // recipient matches
-    );
-  });
-};
 
 @Injectable()
 export class FastSignedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly configService: ConfigService,
     private readonly log: LoggerService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("FastSignedTransferService");
   }
@@ -230,7 +208,7 @@ export class FastSignedTransferService {
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      channel.userPublicIdentifier,
+      channel,
       initialState,
       depositAmount,
       assetId,

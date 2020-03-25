@@ -22,7 +22,7 @@
   "dependencies": {
     "@connext/contracts": "1.0.5",
     "@connext/types": "6.0.0-alpha.1",
-    "ethers": "4.0.45",
+    "ethers": "4.0.46",
     "@openzeppelin/contracts": "2.5.0",
     "eventemitter3": "4.0.0",
     "memoizee": "0.4.14",

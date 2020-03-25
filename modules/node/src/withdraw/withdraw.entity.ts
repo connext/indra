@@ -60,15 +60,10 @@ export class Withdraw {
   @Column("text")
   finalized!: boolean;
 
-  @ManyToOne(
-    (type: any) => Channel,
-  )
+  @ManyToOne((type: any) => Channel)
   channel!: Channel;
 
-  @OneToOne(
-    (type: any) => OnchainTransaction,
-    { nullable: true }
-  )
+  @OneToOne((type: any) => OnchainTransaction, { nullable: true })
   @JoinColumn()
   onchainTransaction!: OnchainTransaction;
 }

@@ -2,9 +2,10 @@ import EventEmitter from "eventemitter3";
 import { CFCoreTypes } from "./cfCore";
 import {
   LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
   FAST_SIGNED_TRANSFER,
   ConditionalTransferTypes,
+  CreatedLinkedTransferMeta,
+  CreatedFastSignedTransferMeta,
 } from "./apps";
 
 // protocol specific events
@@ -55,14 +56,6 @@ export const ConnextEvents = {
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
 
-export type CreatedLinkedTransferMeta = {};
-export type CreatedLinkedTransferToRecipientMeta = {
-  encryptedPreImage: string;
-};
-export type CreatedFastSignedTransferMeta = {
-  signer: string;
-};
-
 export type ReceiveTransferFinishedEventData<
   T extends ConditionalTransferTypes | undefined = undefined
 > = {
@@ -85,8 +78,6 @@ export type CreateTransferEventData<T extends ConditionalTransferTypes | undefin
   type: T;
   transferMeta: T extends typeof LINKED_TRANSFER
     ? CreatedLinkedTransferMeta
-    : T extends typeof LINKED_TRANSFER_TO_RECIPIENT
-    ? CreatedLinkedTransferToRecipientMeta
     : T extends typeof FAST_SIGNED_TRANSFER
     ? CreatedFastSignedTransferMeta
     : undefined;

@@ -15,35 +15,29 @@ import {
   joinSignature,
   SigningKey,
 } from "ethers/utils";
-import { before, after } from "mocha";
+import { before } from "mocha";
 import { Client } from "ts-nats";
 
-import { env, expect, Logger, createClient, fundChannel, connectNats, closeNats } from "../util";
+import { createClient, fundChannel, getNatsClient } from "../util";
 import { Wallet } from "ethers";
-import { One, AddressZero } from "ethers/constants";
-import { clientA } from "../benchmarking/flamegraphPrep";
+import { AddressZero } from "ethers/constants";
 
 describe("Full Flow: Multi-client transfer", () => {
-  let log = new Logger("MultiClientTransfer", env.logLevel);
   let gateway: IConnextClient;
   let indexerA: IConnextClient;
   let indexerB: IConnextClient;
-  let clientD: IConnextClient;
-  let tokenAddress: string;
   let nats: Client;
   let signerWalletA: Wallet;
   let signerWalletB: Wallet;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
     gateway = await createClient();
     indexerA = await createClient();
     indexerB = await createClient();
-
-    tokenAddress = gateway.config.contractAddresses.Token;
 
     signerWalletA = Wallet.createRandom();
     signerWalletB = Wallet.createRandom();
@@ -53,10 +47,6 @@ describe("Full Flow: Multi-client transfer", () => {
     await gateway.messaging.disconnect();
     await indexerA.messaging.disconnect();
     await indexerB.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it.skip("Clients fast signed transfer assets between themselves", async function() {

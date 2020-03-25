@@ -54,6 +54,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
       amount: Zero,
       tokenAddress: AddressZero,
     },
+    /* meta */ undefined,
     /* multiAssetMultiPartyCoinTransferInterpreterParams */ undefined,
     /* singleAssetTwoPartyCoinTransferInterpreterParams */ undefined,
   );

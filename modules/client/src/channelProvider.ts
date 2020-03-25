@@ -1,8 +1,8 @@
 import {
-  chan_nodeAuth,
+  chan_sign,
+  chan_signDigest,
   chan_getUserWithdrawal,
   chan_setUserWithdrawal,
-  chan_signWithdrawCommitment,
   chan_setStateChannel,
   chan_restoreState,
   IChannelProvider,
@@ -12,10 +12,8 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signMessage } from "@connext/crypto";
-import { Wallet } from "ethers";
 
-import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
+import { CFCore, deBigNumberifyJson, xpubToAddress, signDigestWithEthers } from "./lib";
 import {
   CFChannelProviderOptions,
   CFCoreTypes,
@@ -23,7 +21,7 @@ import {
   IRpcConnection,
   JsonRpcRequest,
 } from "./types";
-import { SigningKey, joinSignature } from "ethers/utils";
+import { signChannelMessage } from "@connext/crypto";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -38,7 +36,7 @@ export const createCFChannelProvider = async ({
   logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
-    messaging as any,
+    messaging,
     store,
     networkContext,
     nodeConfig,
@@ -66,12 +64,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public store: IClientStore;
 
   // TODO: replace this when signing keys are added!
-  public wallet: Wallet;
+  public authKey: string;
 
-  constructor(cfCore: CFCore, store: IClientStore, authKey: any) {
+  constructor(cfCore: CFCore, store: IClientStore, authKey: string) {
     super();
     this.cfCore = cfCore;
-    this.wallet = authKey ? new Wallet(authKey) : null;
+    this.authKey = authKey;
     this.store = store;
   }
 
@@ -85,11 +83,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-      case chan_signWithdrawCommitment:
-        result = await this.signWithdrawCommitment(params.message);
+      case chan_sign:
+        result = await this.signMessage(params.message);
         break;
-      case chan_nodeAuth:
-        result = await this.walletSign(params.message);
+      case chan_signDigest:
+        result = await this.signDigest(params.message);
         break;
       case chan_restoreState:
         result = await this.restoreState();
@@ -130,14 +128,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
-  private walletSign = async (message: string): Promise<string> => {
-    const { chainId } = await this.wallet.provider.getNetwork();
-    return signMessage(this.wallet.privateKey, message, chainId);
+  private signMessage = async (message: string): Promise<string> => {
+    return signChannelMessage(this.authKey, message);
   };
 
-  private signWithdrawCommitment = async (message: string): Promise<string> => {
-    const key = new SigningKey(this.wallet.privateKey);
-    return joinSignature(key.signDigest(message));
+  private signDigest = async (message: string): Promise<string> => {
+    return signDigestWithEthers(this.authKey, message);
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {

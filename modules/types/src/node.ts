@@ -57,7 +57,7 @@ export type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
   nodePublicIdentifier: string;
-  messaging: MessagingConfig;
+  messagingUrl: string[];
   supportedTokenAddresses: string[];
 };
 
@@ -72,44 +72,37 @@ export type CreateChannelResponse = {
 // TODO: why was this changed?
 export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
 
-////////////////////////////////////
-///////// NODE API CLIENT
-
-export interface PendingAsyncTransfer {
-  assetId: string;
-  amount: string;
-  encryptedPreImage: string;
-  linkedHash: string;
-  paymentId: string;
-}
-
-export interface PendingFastSignedTransfer {
-  assetId: string;
-  amount: string;
-  paymentId: string;
-  signer: string;
-}
-
-enum LinkedTransferStatus {
+export const enum LinkedTransferStatus {
   PENDING = "PENDING",
   REDEEMED = "REDEEMED",
   FAILED = "FAILED",
-  RECLAIMED = "RECLAIMED",
+  UNLOCKED = "UNLOCKED",
 }
 
-export interface FetchedLinkedTransfer {
+export type FetchedLinkedTransfer<T = any> = {
   paymentId: string;
   createdAt: Date;
   amount: string;
   assetId: string;
   senderPublicIdentifier: string;
-  receiverPublicIdentifier: string;
-  type: string;
+  receiverPublicIdentifier?: string;
   status: LinkedTransferStatus;
-  meta: any;
+  meta: T;
+  encryptedPreImage?: string;
+};
+export type GetLinkedTransferResponse<T = any> = FetchedLinkedTransfer<T>;
+export type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
+
+////////////////////////////////////
+///////// NODE API CLIENT
+
+export interface VerifyNonceDtoType {
+  sig: string;
+  userPublicIdentifier: string;
 }
 
 export interface NodeInitializationParameters {
+  nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
   userPublicIdentifier?: string;
@@ -138,23 +131,18 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
-  getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
+  getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse>;
   getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
+  fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
-  subscribeToSwapRates(from: string, to: string, callback: any): void;
-  unsubscribeFromSwapRates(from: string, to: string): void;
+  subscribeToSwapRates(from: string, to: string, callback: any): Promise<void>;
+  unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
   // TODO: fix types
   verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
-  setRecipientAndEncryptedPreImageForLinkedTransfer(
-    recipient: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }>;
 }
