@@ -127,14 +127,14 @@ export async function makeDeposit(
       };
       if (e.toString().includes(`reject`) || e.toString().includes(`denied`)) {
         outgoing.emit(DEPOSIT_FAILED_EVENT, failMsg);
-        throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
+        throw new Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
         outgoing.emit(DEPOSIT_FAILED_EVENT, failMsg);
-        throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
+        throw new Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
     }
   }

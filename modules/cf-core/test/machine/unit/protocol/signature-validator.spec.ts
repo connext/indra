@@ -1,6 +1,7 @@
 import { HashZero } from "ethers/constants";
-import { hexlify, randomBytes, recoverAddress, SigningKey } from "ethers/utils";
+import { SigningKey } from "ethers/utils";
 import { signDigest } from "@connext/crypto";
+import { recoverAddressWithEthers, createRandom32ByteHexString } from "@connext/types";
 
 import { EthereumCommitment } from "../../../../src/types";
 import { assertIsValidSignature } from "../../../../src/protocol/utils/signature-validator";
@@ -11,7 +12,7 @@ describe("Signature Validator Helper", () => {
   let commitment: EthereumCommitment;
 
   beforeEach(async () => {
-    signer = new SigningKey(hexlify(randomBytes(32)));
+    signer = new SigningKey(createRandom32ByteHexString());
 
     commitment = {
       hashToSign: () => HashZero,
@@ -20,18 +21,20 @@ describe("Signature Validator Helper", () => {
     signature = await signDigest(signer.privateKey, commitmentHash);
   });
 
-  it("validates signatures correctly", () => {
-    expect(() => assertIsValidSignature(signer.address, commitment, signature)).not.toThrow();
+  it("validates signatures correctly", async () => {
+    await expect(assertIsValidSignature(signer.address, commitment, signature)).resolves.toBe(
+      undefined,
+    );
   });
 
-  it("throws if signature is undefined", () => {
-    expect(() => assertIsValidSignature(signer.address, commitment, undefined)).toThrow(
+  it("throws if signature is undefined", async () => {
+    await expect(assertIsValidSignature(signer.address, commitment, undefined)).rejects.toThrow(
       "assertIsValidSignature received an undefined signature",
     );
   });
 
-  it("throws if commitment is undefined", () => {
-    expect(() => assertIsValidSignature(signer.address, undefined, signature)).toThrow(
+  it("throws if commitment is undefined", async () => {
+    await expect(assertIsValidSignature(signer.address, undefined, signature)).rejects.toThrow(
       "assertIsValidSignature received an undefined commitment",
     );
   });
@@ -40,9 +43,9 @@ describe("Signature Validator Helper", () => {
     const rightHash = commitment.hashToSign();
     const wrongHash = HashZero.replace("00", "11"); // 0x11000...
     const signature = await signDigest(signer.privateKey, wrongHash);
-    const wrongSigner = recoverAddress(rightHash, signature);
-    expect(() => assertIsValidSignature(signer.address, commitment, signature)).toThrow(
-      `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}`,
+    const wrongSigner = await recoverAddressWithEthers(rightHash, signature);
+    await expect(assertIsValidSignature(signer.address, commitment, signature)).rejects.toThrow(
+      `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}.`,
     );
   });
 });

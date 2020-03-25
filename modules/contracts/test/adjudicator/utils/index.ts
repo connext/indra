@@ -1,14 +1,7 @@
 import { AppIdentity } from "@connext/types";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
-import {
-  BigNumber,
-  BigNumberish,
-  defaultAbiCoder,
-  keccak256,
-  recoverAddress,
-  solidityPack,
-} from "ethers/utils";
+import { BigNumberish, defaultAbiCoder, keccak256, solidityPack } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
 
@@ -62,19 +55,4 @@ export class AppIdentityTestClass {
     readonly defaultTimeout: number,
     readonly channelNonce: number,
   ) {}
-}
-
-/**
- * Sorts signatures in ascending order of signer address
- *
- * @param signatures An array of etherium signatures
- */
-export function sortSignaturesBySignerAddress(digest: string, signatures: string[]): string[] {
-  const ret = signatures.slice();
-  ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, sigA);
-    const addrB = recoverAddress(digest, sigB);
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-  });
-  return ret;
 }

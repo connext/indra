@@ -1,6 +1,6 @@
-import { AppABIEncodings } from "@connext/types";
+import { AppABIEncodings, createRandom32ByteHexString } from "@connext/types";
 import { Zero } from "ethers/constants";
-import { bigNumberify, BigNumberish, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { bigNumberify, BigNumberish, solidityKeccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 
@@ -33,8 +33,8 @@ export function validAction(
   return {
     assetId,
     amount: bigNumberify(amount),
-    paymentId: hexlify(randomBytes(32)),
-    preImage: hexlify(randomBytes(32)),
+    paymentId: createRandom32ByteHexString(),
+    preImage: createRandom32ByteHexString(),
   };
 }
 

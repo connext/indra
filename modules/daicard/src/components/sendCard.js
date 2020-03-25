@@ -14,7 +14,6 @@ import {
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { useMachine } from "@xstate/react";
 import { Zero } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
@@ -23,6 +22,7 @@ import { sendMachine } from "../state";
 
 import { Copyable } from "./copyable";
 import { useXpub, XpubInput } from "./input";
+import { createRandom32ByteHexString } from "@connext/client/dist/lib";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
@@ -107,8 +107,8 @@ export const SendCard = style(
             assetId: token.address,
             amount: amount.value.wad.toString(),
             conditionType: "LINKED_TRANSFER",
-            paymentId: hexlify(randomBytes(32)),
-            preImage: hexlify(randomBytes(32)),
+            paymentId: createRandom32ByteHexString(),
+            preImage: createRandom32ByteHexString(),
             recipient: recipient.value,
             meta: { source: "daicard" },
           });
@@ -140,8 +140,8 @@ export const SendCard = style(
           assetId: token.address,
           amount: amount.value.wad.toString(),
           conditionType: "LINKED_TRANSFER",
-          paymentId: hexlify(randomBytes(32)),
-          preImage: hexlify(randomBytes(32)),
+          paymentId: createRandom32ByteHexString(),
+          preImage: createRandom32ByteHexString(),
           meta: { source: "daicard" },
         });
         console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);

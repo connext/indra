@@ -266,7 +266,7 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case WithdrawApp: {
-          validateWithdrawApp(params, from, this.connext.publicIdentifier);
+          await validateWithdrawApp(params, from, this.connext.publicIdentifier);
           break;
         }
         case FastSignedTransferApp: {

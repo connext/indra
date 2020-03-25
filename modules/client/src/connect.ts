@@ -24,7 +24,6 @@ import {
   logTime,
   stringify,
   isWalletProvided,
-  signDigestWithEthers,
 } from "./lib";
 import { NodeApiClient } from "./node";
 import {
@@ -38,6 +37,7 @@ import {
   IConnextClient,
   INodeApiClient,
 } from "./types";
+import { signDigest } from "@connext/crypto";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -130,7 +130,7 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const sig = signDigestWithEthers(await keyGen("0"), message);
+      const sig = signDigest(await keyGen("0"), message);
       return sig;
     };
 

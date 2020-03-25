@@ -1,9 +1,14 @@
 /* global before after */
 import { utils } from "@connext/client";
-import { IConnextClient, CF_PATH, LINKED_TRANSFER } from "@connext/types";
+import {
+  IConnextClient,
+  CF_PATH,
+  LINKED_TRANSFER,
+  createRandom32ByteHexString,
+} from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { HDNode, hexlify, randomBytes } from "ethers/utils";
+import { HDNode } from "ethers/utils";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
 
 import {
@@ -236,7 +241,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         conditionType: LINKED_TRANSFER,
         paymentId,
-        preImage: hexlify(randomBytes(32)),
+        preImage: createRandom32ByteHexString(),
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
@@ -251,7 +256,7 @@ describe("Async Transfers", () => {
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: LINKED_TRANSFER,
-        paymentId: hexlify(randomBytes(32)),
+        paymentId: createRandom32ByteHexString(),
         preImage,
         recipient: clientB.publicIdentifier,
       }),

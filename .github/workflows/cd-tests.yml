@@ -65,6 +65,19 @@ jobs:
     - run: make contracts
     - run: make test-contracts
 
+  test-crypto:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make crypto
+    - run: make test-crypto
+
   test-node:
     runs-on: ubuntu-latest
     steps:

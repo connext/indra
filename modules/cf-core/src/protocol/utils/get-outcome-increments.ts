@@ -65,7 +65,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
       );
     }
     default: {
-      throw Error(
+      throw new Error(
         `computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType: ${outcomeType}`,
       );
     }
@@ -115,7 +115,7 @@ async function handleRefundAppOutcomeSpecialCase(
     mutableOutcome = await appInstance.computeOutcomeWithCurrentState(provider);
   }
 
-  throw Error("When attempting to check for a deposit, did not find any non-zero deposits.");
+  throw new Error("When attempting to check for a deposit, did not find any non-zero deposits.");
 }
 
 function handleTwoPartyFixedOutcome(

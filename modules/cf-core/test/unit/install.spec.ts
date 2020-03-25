@@ -3,11 +3,12 @@ import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
   nullLogger,
+  createRandom32ByteHexString,
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
-import { hexlify, randomBytes, HDNode } from "ethers/utils";
+import { HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
 import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../src";
@@ -68,7 +69,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     const mockedStore = mock(Store);
 
-    const appInstanceId = hexlify(randomBytes(32));
+    const appInstanceId = createRandom32ByteHexString();
     const appInstanceProposal = createAppInstanceProposalForTest(appInstanceId);
 
     when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
@@ -89,7 +90,7 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedStore = mock(Store);
     const store = instance(mockedStore);
 
-    const appInstanceId = hexlify(randomBytes(32));
+    const appInstanceId = createRandom32ByteHexString();
     const multisigAddress = Wallet.createRandom().address;
     const extendedKeys = getRandomExtendedPubKeys(2);
     const participants = xkeysToSortedKthAddresses(extendedKeys, 0);

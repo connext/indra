@@ -96,7 +96,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
       ];
 
-      const setStateTx = setStateCommitment.getSignedTransaction();
+      const setStateTx = await setStateCommitment.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...setStateTx,
@@ -122,7 +122,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         await signDigest(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
       ];
 
-      const setupTx = setupCommitment.getSignedTransaction();
+      const setupTx = await setupCommitment.getSignedTransaction();
 
       await wallet.sendTransaction({ to: proxy, value: WeiPerEther.mul(2) });
 

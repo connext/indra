@@ -1,18 +1,18 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
+import {
+  sortSignaturesBySignerAddress,
+  createRandom32ByteHexString,
+  createRandomAddress,
+} from "@connext/types";
 import { signDigest } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { BigNumberish, hexlify, keccak256, randomBytes } from "ethers/utils";
+import { BigNumberish, keccak256 } from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
-import {
-  AppIdentityTestClass,
-  computeAppChallengeHash,
-  expect,
-  sortSignaturesBySignerAddress,
-} from "./utils";
+import { AppIdentityTestClass, computeAppChallengeHash, expect } from "./utils";
 
 type Challenge = {
   status: 0 | 1 | 2;
@@ -64,7 +64,7 @@ describe("ChallengeRegistry", () => {
   beforeEach(async () => {
     const appIdentityTestObject = new AppIdentityTestClass(
       [ALICE.address, BOB.address],
-      hexlify(randomBytes(20)),
+      createRandomAddress(),
       10,
       globalChannelNonce,
     );
@@ -90,7 +90,7 @@ describe("ChallengeRegistry", () => {
 
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
-        sortSignaturesBySignerAddress(digest, [
+        await sortSignaturesBySignerAddress(digest, [
           await signDigest(ALICE.privateKey, digest),
           await signDigest(BOB.privateKey, digest),
         ]),
@@ -113,7 +113,7 @@ describe("ChallengeRegistry", () => {
         timeout,
         versionNumber,
         appStateHash: stateHash,
-        signatures: sortSignaturesBySignerAddress(digest, [
+        signatures: await sortSignaturesBySignerAddress(digest, [
           await signDigest(ALICE.privateKey, digest),
           await signDigest(BOB.privateKey, digest),
         ]),
@@ -195,7 +195,7 @@ describe("ChallengeRegistry", () => {
 
   it("is possible to call setState to put state on-chain", async () => {
     // Tell the ChallengeRegistry to start timer
-    const state = hexlify(randomBytes(32));
+    const state = createRandom32ByteHexString();
 
     await setStateWithSignatures(1, state);
 

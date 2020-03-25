@@ -50,7 +50,7 @@ export class Store {
     const stateChannelJson = await this.storeService.getStateChannel(multisigAddress);
 
     if (!stateChannelJson) {
-      throw Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
 
     return StateChannel.fromJson(stateChannelJson);
@@ -78,7 +78,7 @@ export class Store {
     const stateChannelJson = await this.storeService.getStateChannelByOwners(owners.sort());
 
     if (!stateChannelJson) {
-      throw Error(NO_STATE_CHANNEL_FOR_OWNERS(owners.toString()));
+      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS(owners.toString()));
     }
 
     const channel = StateChannel.fromJson(stateChannelJson);
@@ -92,7 +92,7 @@ export class Store {
     const stateChannelJson = await this.storeService.getStateChannelByAppInstanceId(appInstanceId);
 
     if (!stateChannelJson) {
-      throw Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
     }
 
     const channel = StateChannel.fromJson(stateChannelJson);

@@ -33,6 +33,13 @@ export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
     : input;
 }
 
+export function getLowerCaseAddress(publicKey: Buffer | string): string {
+  const buf = bufferify(publicKey);
+  const hex = addHexPrefix(bufferToHex(buf).slice(2));
+  const hash = keccak256(hexToBuffer(hex));
+  return addHexPrefix(bufferToHex(hash).substring(24));
+}
+
 export function toChecksumAddress(address: string): string {
   address = removeHexPrefix(address);
   const hash = bufferToHex(keccak256(utf8ToBuffer(address)));
@@ -47,11 +54,8 @@ export function toChecksumAddress(address: string): string {
   return addHexPrefix(checksum);
 }
 
-export function getEthereumAddress(publicKey: Buffer | string): string {
-  const buf = bufferify(publicKey);
-  const hex = addHexPrefix(bufferToHex(buf).slice(2));
-  const hash = keccak256(hexToBuffer(hex));
-  const address = addHexPrefix(bufferToHex(hash).substring(24));
+export function getChecksumAddress(publicKey: Buffer | string): string {
+  const address = getLowerCaseAddress(publicKey);
   return toChecksumAddress(address);
 }
 
@@ -81,7 +85,8 @@ export async function signDigest(
   privateKey: Buffer | string,
   digest: Buffer | string,
 ): Promise<string> {
-  return bufferToHex(await sign(bufferify(privateKey), bufferify(digest), true), true);
+  const signature = await sign(bufferify(privateKey), bufferify(digest), true);
+  return bufferToHex(signature, true);
 }
 
 export async function signMessage(
@@ -111,14 +116,16 @@ export async function recoverPublicKey(
   digest: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return bufferToHex(await recover(bufferify(digest), bufferify(sig)), true);
+  const publicKey = await recover(bufferify(digest), bufferify(sig));
+  return bufferToHex(publicKey, true);
 }
 
 export async function recoverAddress(
   digest: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return getEthereumAddress(await recoverPublicKey(digest, sig));
+  const publicKey = await recoverPublicKey(digest, sig);
+  return getChecksumAddress(publicKey);
 }
 
 export async function verifyMessage(
