@@ -8,6 +8,7 @@ import {
   CreateTransferEventData,
   FastSignedTransferApp,
   HashLockTransferApp,
+  SimpleSignedTransferApp,
 } from "@connext/types";
 import {
   commonAppProposalValidation,
@@ -16,6 +17,7 @@ import {
   validateWithdrawApp,
   validateFastSignedTransferApp,
   validateHashLockTransferApp,
+  validateSignedTransferApp,
 } from "@connext/apps";
 
 import { ConnextClient } from "./connext";
@@ -276,6 +278,10 @@ export class ConnextListener extends ConnextEventEmitter {
         case HashLockTransferApp: {
           const blockNumber = await this.connext.ethProvider.getBlockNumber();
           validateHashLockTransferApp(params, blockNumber, from, this.connext.publicIdentifier);
+          break;
+        }
+        case SimpleSignedTransferApp: {
+          validateSignedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
         default: {
