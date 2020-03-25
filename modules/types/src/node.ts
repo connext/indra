@@ -1,16 +1,18 @@
 import { AppRegistry } from "./app";
-import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
+import { BigNumber, Network, Transaction } from "./basic";
 import { NetworkContext } from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
 import { ILoggerService } from "./logger";
-import { IMessagingService, MessagingConfig } from "./messaging";
+import { IMessagingService } from "./messaging";
 import { ProtocolTypes } from "./protocol";
 import {
   ResolveLinkedTransferResponse,
   ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
   GetHashLockTransferResponse,
+  ResolveSignedTransferResponse,
+  GetSignedTransferResponse,
 } from "./apps";
 
 ////////////////////////////////////
@@ -136,9 +138,11 @@ export interface INodeApiClient {
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
+  fetchSignedTransfer(paymentId: string): Promise<GetSignedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
+  resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<void>;

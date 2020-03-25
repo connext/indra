@@ -56,6 +56,18 @@ export const ConnextEvents = {
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
 
+export type ReceiveTransferStartedEventData<
+  T extends ConditionalTransferTypes | undefined = undefined
+> = {
+  amount: string;
+  assetId: string;
+  paymentId: string;
+  sender: string;
+  recipient?: string;
+  meta: any;
+  type: T;
+};
+
 export type ReceiveTransferFinishedEventData<
   T extends ConditionalTransferTypes | undefined = undefined
 > = {
