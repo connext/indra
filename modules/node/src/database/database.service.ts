@@ -14,9 +14,6 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import { AppInstance } from "../appInstance/appInstance.entity";
-import { Transfer } from "../transfer/transfer.entity";
-import { AnonymizedTransfer } from "../anonymizedTransfer/anonymizedTransfer.entity";
-import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { Withdraw } from "../withdraw/withdraw.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
@@ -40,6 +37,8 @@ import { typeormSync1584364675207 } from "../../migrations/1584364675207-typeorm
 import { typeormSync21584369931723 } from "../../migrations/1584369931723-typeorm-sync-2";
 import { initWithdrawApp1584466373728 } from "../../migrations/1584466373728-init-withdraw-app";
 import { cfCoreStoreUpdate1584633495374 } from "../../migrations/1584633495374-cf-core-store-update";
+import { createdUpdated1584722683650 } from "../../migrations/1584722683650-created-updated";
+import { meta1584732939683 } from "../../migrations/1584732939683-meta";
 
 export const entities = [
   AppInstance,
@@ -47,11 +46,8 @@ export const entities = [
   Channel,
   CFCoreRecord,
   RebalanceProfile,
-  LinkedTransfer,
   OnchainTransaction,
-  Transfer,
   AnonymizedOnchainTransaction,
-  AnonymizedTransfer,
   ConditionalTransactionCommitment,
   SetStateCommitment,
   SetupCommitment,
@@ -78,6 +74,8 @@ export const migrations = [
   typeormSync21584369931723,
   initWithdrawApp1584466373728,
   cfCoreStoreUpdate1584633495374,
+  createdUpdated1584722683650,
+  meta1584732939683,
 ];
 
 @Injectable()

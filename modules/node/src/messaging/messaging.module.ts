@@ -2,12 +2,13 @@ import { Module } from "@nestjs/common";
 
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
+import { AuthModule } from "../auth/auth.module";
 
-import { messagingClientFactory, messagingProviderFactory } from "./messaging.provider";
+import { messagingProviderFactory } from "./messaging.provider";
 
 @Module({
-  exports: [messagingClientFactory, messagingProviderFactory],
-  imports: [ConfigModule, LoggerModule],
-  providers: [messagingClientFactory, messagingProviderFactory],
+  exports: [messagingProviderFactory],
+  imports: [ConfigModule, LoggerModule, AuthModule],
+  providers: [messagingProviderFactory],
 })
 export class MessagingModule {}

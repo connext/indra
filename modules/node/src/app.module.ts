@@ -22,7 +22,7 @@ import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.modu
 
 @Module({
   controllers: [CFCoreController],
-  exports: [ConfigModule, LoggerModule],
+  exports: [ConfigModule, LoggerModule, AuthModule],
   imports: [
     AdminModule,
     AppRegistryModule,

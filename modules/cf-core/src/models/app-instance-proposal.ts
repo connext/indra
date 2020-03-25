@@ -14,4 +14,5 @@ export interface AppInstanceProposal {
   proposedByIdentifier: string;
   proposedToIdentifier: string;
   outcomeType: OutcomeType;
+  meta?: object;
 }

@@ -1,11 +1,7 @@
-import {
-  convertLinkedTransferToRecipientParameters,
-  convertLinkedTransferParameters,
-} from "@connext/apps";
+import { convertLinkedTransferParameters } from "@connext/apps";
 import {
   SimpleLinkedTransferApp,
   LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
   SimpleLinkedTransferAppStateBigNumber,
   CreateTransferEventData,
   CREATE_TRANSFER,
@@ -15,13 +11,7 @@ import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { createLinkedHash, stringify, xpubToAddress } from "../lib";
-import {
-  CFCoreTypes,
-  LinkedTransferParameters,
-  LinkedTransferResponse,
-  LinkedTransferToRecipientParameters,
-  LinkedTransferToRecipientResponse,
-} from "../types";
+import { CFCoreTypes, LinkedTransferParameters, LinkedTransferResponse } from "../types";
 import {
   invalid32ByteHexString,
   invalidAddress,
@@ -34,73 +24,18 @@ import {
 import { AbstractController } from "./AbstractController";
 
 export class LinkedTransferController extends AbstractController {
-  public linkedTransferToRecipient = async (
-    params: LinkedTransferToRecipientParameters,
-  ): Promise<LinkedTransferToRecipientResponse> => {
-    params.meta = params.meta && typeof params.meta === "object" ? params.meta : {};
+  public linkedTransfer = async (
+    params: LinkedTransferParameters,
+  ): Promise<LinkedTransferResponse> => {
+    // convert params + validate
     const {
       amount,
       assetId,
       paymentId,
       preImage,
-      recipient,
       meta,
-    } = convertLinkedTransferToRecipientParameters(`bignumber`, params);
-
-    validate(invalidXpub(recipient));
-
-    // set recipient and encrypted pre-image on linked transfer
-    // TODO: use app path instead?
-    const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
-    const encryptedPreImage = await encryptWithPublicKey(
-      recipientPublicKey.replace(/^0x/, ``),
-      preImage,
-    );
-
-    // add encrypted preImage to meta so node can store it in the DB
-    params.meta["encryptedPreImage"] = encryptedPreImage;
-    params.meta["recipient"] = recipient;
-
-    // wait for linked transfer (2562 ms)
-    const ret = await this.linkedTransfer({
-      ...params,
-      conditionType: LINKED_TRANSFER,
-    });
-
-    const eventData = {
-      type: LINKED_TRANSFER_TO_RECIPIENT,
-      amount: amount.toString(),
-      assetId,
-      paymentId,
-      sender: this.connext.publicIdentifier,
       recipient,
-      meta,
-      transferMeta: {
-        encryptedPreImage,
-      },
-    } as CreateTransferEventData<typeof LINKED_TRANSFER_TO_RECIPIENT>;
-    // publish encrypted secret for receiver
-    await this.connext.messaging.publish(
-      `transfer.send-async.${recipient}`,
-      stringify({ ...eventData, encryptedPreImage }),
-    );
-
-    this.connext.emit(CREATE_TRANSFER, eventData);
-
-    // need to flush here so that the client can exit knowing that messages are in the NATS server
-    await this.connext.messaging.flush();
-
-    return { ...ret, recipient };
-  };
-
-  public linkedTransfer = async (
-    params: LinkedTransferParameters,
-  ): Promise<LinkedTransferResponse> => {
-    // convert params + validate
-    const { amount, assetId, paymentId, preImage, meta } = convertLinkedTransferParameters(
-      `bignumber`,
-      params,
-    );
+    } = convertLinkedTransferParameters(`bignumber`, params);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -111,6 +46,21 @@ export class LinkedTransferController extends AbstractController {
       invalid32ByteHexString(paymentId),
       invalid32ByteHexString(preImage),
     );
+
+    const submittedMeta = { ...(meta || {}) };
+    if (recipient) {
+      validate(invalidXpub(recipient));
+      // set recipient and encrypted pre-image on linked transfer
+      const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
+      const encryptedPreImage = await encryptWithPublicKey(
+        recipientPublicKey.replace(/^0x/, ``),
+        preImage,
+      );
+
+      // add encrypted preImage to meta so node can store it in the DB
+      submittedMeta["encryptedPreImage"] = encryptedPreImage;
+      submittedMeta["recipient"] = recipient;
+    }
 
     // install the transfer application
     const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
@@ -148,7 +98,7 @@ export class LinkedTransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      meta,
+      meta: submittedMeta,
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
@@ -167,14 +117,24 @@ export class LinkedTransferController extends AbstractController {
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,
-      meta,
+      recipient,
+      meta, // TODO: include encrypted preimage / recipient?
       transferMeta: {},
-    } as CreateTransferEventData<typeof LINKED_TRANSFER>;
-    this.connext.emit(CREATE_TRANSFER, eventData);
+    } as CreateTransferEventData<"LINKED_TRANSFER">;
 
-    return {
-      paymentId,
-      preImage,
-    };
+    if (recipient) {
+      eventData.transferMeta.encryptedPreImage = submittedMeta.encryptedPreImage;
+
+      // publish encrypted secret for receiver
+      await this.connext.messaging.publish(
+        `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.transfer.linked.to.${recipient}`,
+        stringify(eventData),
+      );
+
+      // need to flush here so that the client can exit knowing that messages are in the NATS server
+      await this.connext.messaging.flush();
+    }
+    this.connext.emit(CREATE_TRANSFER, eventData);
+    return { appId, paymentId, preImage };
   };
 }

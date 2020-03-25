@@ -17,11 +17,32 @@ INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 INDRA_UI="${INDRA_UI:-daicard}"
 log_level="${LOG_LEVEL:-3}"
 
+INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-}" # pass this in through CI
+INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-}" # pass this in through CI
+
+# load dev-mode hardcoded jwt keys if nothing provided by env vars
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -f .env ]]
+then echo "WARNING: Using hardcoded insecure dev-mode jwt keys" && source .env
+fi
+
+# Make sure keys have proper newlines inserted
+# (bc GitHub Actions strips newlines from secrets)
+INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
+  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
+  sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
+  sed 's/-----END RSA PRIVATE KEY-----/\\\n-----END RSA PRIVATE KEY-----\\\n/'`
+INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
+  echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | tr -d '\n\r' |\
+  sed 's/-----BEGIN PUBLIC KEY-----/\\\n-----BEGIN PUBLIC KEY-----\\\n/' | \
+  sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
+
 ####################
 # Internal Config
 # config & hard-coded stuff you might want to change
 
 number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
+
+log_level=3
 nats_port=4222
 node_port=8080
 dash_port=9999
@@ -43,7 +64,7 @@ else
 fi
 
 token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
-allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
+allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"UNISWAP"}]'
 
 if [[ -z "$chainId" ]]
 then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
@@ -61,17 +82,19 @@ pg_host="database"
 pg_port="5432"
 pg_user="$project"
 
+nats_port="4222"
+nats_ws_port="4221"
+
 # docker images
 builder_image="${project}_builder"
 ui_image="$builder_image"
 database_image="postgres:9-alpine"
 ethprovider_image="$builder_image"
-nats_image="nats:2.0.0-linux"
+nats_image="provide/nats-server:indra"
 node_image="$builder_image"
 proxy_image="${project}_proxy"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
-relay_image="${project}_relay"
 
 ####################
 # Deploy according to above configuration
@@ -90,43 +113,36 @@ else
     echo "INDRA_UI: Expected headless, dashboard, or daicard"
     exit 1
   fi
-  number_of_services=$(( $number_of_services + 3 ))
+  number_of_services=$(( $number_of_services + 2 ))
   proxy_mode="dev"
   proxy_ui_url="http://ui:3000"
   ui_services="
   proxy:
-    image: $proxy_image
+    image: '$proxy_image'
     environment:
-      DOMAINNAME: localhost
-      ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      MESSAGING_URL: http://relay:4223
-      MODE: $proxy_mode
-      UI_URL: $proxy_ui_url
+      DOMAINNAME: 'localhost'
+      ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
+      MESSAGING_URL: 'http://nats:4221'
+      NODE_URL: 'http://node:8080'
+      MODE: '$proxy_mode'
+      UI_URL: '$proxy_ui_url'
     networks:
-      - $project
+      - '$project'
     ports:
-      - "$ui_port:80"
+      - '$ui_port:80'
     volumes:
-      - certs:/etc/letsencrypt
-
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    networks:
-      - $project
-    ports:
-      - "4223:4223"
+      - 'certs:/etc/letsencrypt'
 
   ui:
-    image: $ui_image
-    entrypoint: npm start
+    image: '$ui_image'
+    entrypoint: 'npm start'
     environment:
-      NODE_ENV: development
+      NODE_ENV: 'development'
     networks:
-      - $project
+      - '$project'
     volumes:
-      - `pwd`:/root
-    working_dir: $ui_working_dir
+      - '`pwd`:/root'
+    working_dir: '$ui_working_dir'
   "
 fi
 
@@ -183,85 +199,89 @@ services:
   $ui_services
 
   node:
-    image: $node_image
-    entrypoint: bash modules/node/ops/entry.sh
+    image: '$node_image'
+    entrypoint: 'bash modules/node/ops/entry.sh'
     environment:
-      INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
+      INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
-      INDRA_ETH_MNEMONIC: $eth_mnemonic
-      INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      INDRA_LOG_LEVEL: $log_level
+      INDRA_ETH_MNEMONIC: '$eth_mnemonic'
+      INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
+      INDRA_LOG_LEVEL: '$log_level'
       INDRA_NATS_CLUSTER_ID:
-      INDRA_NATS_SERVERS: nats://nats:$nats_port
-      INDRA_NATS_TOKEN:
-      INDRA_PG_DATABASE: $pg_db
-      INDRA_PG_HOST: $pg_host
-      INDRA_PG_PASSWORD_FILE: $pg_password_file
-      INDRA_PG_PORT: $pg_port
-      INDRA_PG_USERNAME: $pg_user
-      INDRA_PORT: $node_port
-      INDRA_REDIS_URL: $redis_url
-      NODE_ENV: development
+      INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
+      INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
+      INDRA_NATS_SERVERS: 'nats://nats:$nats_port'
+      INDRA_NATS_WS_ENDPOINT: 'wss://nats:$nats_ws_port'
+      INDRA_PG_DATABASE: '$pg_db'
+      INDRA_PG_HOST: '$pg_host'
+      INDRA_PG_PASSWORD_FILE: '$pg_password_file'
+      INDRA_PG_PORT: '$pg_port'
+      INDRA_PG_USERNAME: '$pg_user'
+      INDRA_PORT: '$node_port'
+      INDRA_REDIS_URL: '$redis_url'
+      NODE_ENV: 'development'
     networks:
-      - $project
+      - '$project'
     ports:
-      - "$node_port:$node_port"
+      - '$node_port:$node_port'
     secrets:
-      - ${project}_database_dev
+      - '${project}_database_dev'
     volumes:
-      - `pwd`:/root
+      - '`pwd`:/root'
 
   ethprovider:
-    image: $ethprovider_image
+    image: '$ethprovider_image'
     entrypoint: bash modules/contracts/ops/entry.sh
-    command: "start"
+    command: 'start'
     environment:
-      ETH_MNEMONIC: $eth_mnemonic
+      ETH_MNEMONIC: '$eth_mnemonic'
     networks:
-      - $project
+      - '$project'
     ports:
-      - "8545:8545"
+      - '8545:8545'
     volumes:
-      - `pwd`:/root
-      - chain_dev:/data
+      - '`pwd`:/root'
+      - 'chain_dev:/data'
 
   database:
-    image: $database_image
+    image: '$database_image'
     deploy:
-      mode: global
+      mode: 'global'
     environment:
-      POSTGRES_DB: $project
-      POSTGRES_PASSWORD_FILE: $pg_password_file
-      POSTGRES_USER: $project
+      POSTGRES_DB: '$project'
+      POSTGRES_PASSWORD_FILE: '$pg_password_file'
+      POSTGRES_USER: '$project'
     networks:
-      - $project
+      - '$project'
     ports:
-      - "$pg_port:$pg_port"
+      - '$pg_port:$pg_port'
     secrets:
-      - ${project}_database_dev
+      - '${project}_database_dev'
     volumes:
-      - database_dev:/var/lib/postgresql/data
+      - 'database_dev:/var/lib/postgresql/data'
 
   nats:
-    command: -V
-    image: $nats_image
+    command: -D -V
+    image: '$nats_image'
+    environment:
+      JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
     networks:
-      - $project
+      - '$project'
     ports:
-      - "$nats_port:$nats_port"
+      - '$nats_port:$nats_port'
+      - '$nats_ws_port:$nats_ws_port'
 
   redis:
-    image: $redis_image
+    image: '$redis_image'
     networks:
-      - $project
+      - '$project'
     ports:
-      - "6379:6379"
+      - '6379:6379'
 
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
-rm -rf /tmp/$project
 
 echo -n "Waiting for the $project stack to wake up."
 while [[ "`docker container ls | grep $project | wc -l | tr -d ' '`" != "$number_of_services" ]]

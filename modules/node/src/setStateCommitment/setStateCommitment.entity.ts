@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
 import { AppIdentity } from "@connext/types";
 import { IsKeccak256Hash, IsEthAddress } from "../util";
 import { Signature } from "ethers/utils";
@@ -32,4 +32,10 @@ export class SetStateCommitment {
   @OneToOne((type: any) => AppInstance)
   @JoinColumn()
   app!: AppInstance;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

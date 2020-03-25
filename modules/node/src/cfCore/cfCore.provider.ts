@@ -1,7 +1,6 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, ConnextNodeStorePrefix } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
+import { CF_PATH, ConnextNodeStorePrefix, IMessagingService } from "@connext/types";
 import { Provider } from "@nestjs/common";
-import { FactoryProvider } from "@nestjs/common/interfaces";
 import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { ConfigService } from "../config/config.service";
@@ -19,11 +18,11 @@ export const cfCoreProviderFactory: Provider = {
     config: ConfigService,
     lockService: LockService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     store: CFCoreStore,
   ): Promise<CFCore> => {
     const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
-    const publicExtendedKey = hdNode.neuter().extendedKey;
+    const publicExtendedKey = config.getPublicIdentifier();
     const provider = config.getEthProvider();
     log.setContext("CFCoreProvider");
     log.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
@@ -31,7 +30,7 @@ export const cfCoreProviderFactory: Provider = {
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
     const cfCore = await CFCore.create(
-      messaging as any, // TODO: FIX
+      messaging as IMessagingService, // TODO: FIX
       store,
       await config.getContractAddresses(),
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
@@ -52,17 +51,5 @@ export const cfCoreProviderFactory: Provider = {
     );
     log.info("CFCore created");
     return cfCore;
-  },
-};
-
-// TODO: bypass factory
-export const messagingProviderFactory: FactoryProvider<Promise<IMessagingService>> = {
-  inject: [ConfigService],
-  provide: MessagingProviderId,
-  useFactory: async (config: ConfigService): Promise<IMessagingService> => {
-    const messagingFactory = new MessagingServiceFactory(config.getMessagingConfig());
-    const messagingService = messagingFactory.createService("messaging");
-    await messagingService.connect();
-    return messagingService;
   },
 };
