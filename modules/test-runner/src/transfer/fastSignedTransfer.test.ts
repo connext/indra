@@ -79,7 +79,6 @@ describe.skip("Fast Signed Transfer", () => {
     expect(transferAppState.turnNum).to.eq(One);
 
     const data = hexlify(randomBytes(32));
-
     const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
     const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
