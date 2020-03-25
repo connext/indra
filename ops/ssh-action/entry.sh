@@ -26,14 +26,15 @@ echo $KEY_FOOTER >> $KEY_FILE
 chmod 400 $KEY_FILE
 
 # Manually substitute env var values into CMD
+# derived from https://stackoverflow.com/a/39529897
 subbed_cmd=$CMD
-for var in `env`;
+while IFS= read -r -d '' var
 do
   if [[ "$var" == *"|"* ]]
   then echo "Warning, env var ${var%=*} contains a | character, skipping" && continue
   fi
-  subbed_cmd="`echo $subbed_cmd | sed 's|$'"${var%=*}"'|'"${var#*=}"'|g'`"
-done
+  subbed_cmd="`echo "$subbed_cmd" | sed 's|$'"${var%=*}"'|'"${var#*=}"'|g'`"
+done < <(env -0)
 
 echo "Loaded ssh key with fingerprint:"
 ssh-keygen -lf $KEY_FILE
