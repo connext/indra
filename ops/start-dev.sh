@@ -21,7 +21,7 @@ log_level="${LOG_LEVEL:-3}"
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-number_of_services=4 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
 
 log_level=3
 nats_port=4222
@@ -97,7 +97,7 @@ else
     echo "INDRA_UI: Expected headless, dashboard, or daicard"
     exit 1
   fi
-  number_of_services=$(( $number_of_services + 3 ))
+  number_of_services=$(( $number_of_services + 2 ))
   proxy_mode="dev"
   proxy_ui_url="http://ui:3000"
   ui_services="
