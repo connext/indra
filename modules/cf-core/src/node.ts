@@ -28,7 +28,7 @@ import {
   NodeMessageWrappedProtocolMessage,
   ProtocolMessage,
 } from "./types";
-import { timeout } from "./utils";
+import { timeout, signDigestWithEthers } from "./utils";
 import { Store } from "./store";
 import {
   ConditionalTransactionCommitment,
@@ -177,9 +177,10 @@ export class Node {
       const [commitment, overrideKeyIndex] = args;
       const keyIndex = overrideKeyIndex || 0;
 
-      const signingKey = new SigningKey(await this.privateKeyGetter.getPrivateKey(keyIndex));
+      const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
+      const hash = commitment.hashToSign();
 
-      return signingKey.signDigest(commitment.hashToSign());
+      return signDigestWithEthers(privateKey, hash);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {
