@@ -31,9 +31,10 @@ subbed_cmd=$CMD
 oldIFS=$IFS
 unset IFS
 for var in $(compgen -e); do
-  if [[ "${!var}" == *"|"* ]]
-  then echo "Warning, env var ${var%=*} contains a | character, skipping" && continue
+  if [[ "$var" == *"|"* || "${!var}" == *"|"* ]]
+  then echo "Warning, env var $var contains a | character, skipping" && continue
   fi
+  echo "subbing env var: ${var}"
   subbed_cmd="`echo "$subbed_cmd" | sed 's|$'"$var"'|'"${!var}"'|g'`"
 done
 IFS=$oldIFS
