@@ -144,8 +144,7 @@ describe("HashLock Transfers", () => {
     });
   });
 
-  // TODO: fix race condition here
-  it.skip("gets a hashlock transfer by lock hash", async () => {
+  it("gets a pending hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = createRandom32ByteHexString();
@@ -160,6 +159,35 @@ describe("HashLock Transfers", () => {
       assetId: transfer.assetId,
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
+
+    const retrievedTransfer = await clientB.getHashLockTransfer(lockHash);
+    expect(retrievedTransfer).to.deep.equal({
+      amount: transfer.amount.toString(),
+      assetId: transfer.assetId,
+      lockHash,
+      senderPublicIdentifier: clientA.publicIdentifier,
+      status: HashLockTransferStatus.PENDING,
+      meta: { foo: "bar" },
+    } as GetHashLockTransferResponse);
+  });
+
+  it("gets a completed hashlock transfer by lock hash", async () => {
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const preImage = hexlify(randomBytes(32));
+    const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+
+    const lockHash = soliditySha256(["bytes32"], [preImage]);
+    await clientA.conditionalTransfer({
+      amount: transfer.amount.toString(),
+      conditionType: HASHLOCK_TRANSFER,
+      lockHash,
+      timelock,
+      assetId: transfer.assetId,
+      meta: { foo: "bar" },
+    } as HashLockTransferParameters);
+    // disconnect so that it cant be unlocked
+    await clientA.messaging.disconnect();
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
@@ -177,7 +205,7 @@ describe("HashLock Transfers", () => {
       lockHash,
       senderPublicIdentifier: clientA.publicIdentifier,
       receiverPublicIdentifier: clientB.publicIdentifier,
-      status: HashLockTransferStatus.REDEEMED,
+      status: HashLockTransferStatus.COMPLETED,
       meta: { foo: "bar" },
     } as GetHashLockTransferResponse);
   });
