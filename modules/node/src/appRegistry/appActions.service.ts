@@ -225,7 +225,6 @@ export class AppActionsService {
     } as HashLockTransferAppAction);
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
-    console.log(`UNINSTALLED SENDER APP AT ${Date.now()}`);
     this.log.info(`Unlocked transfer ${senderApp.identityHash}`);
   }
 }
