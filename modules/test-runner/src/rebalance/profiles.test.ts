@@ -1,8 +1,8 @@
 import { IConnextClient, RebalanceProfile } from "@connext/types";
-import { before, after } from "mocha";
+import { before } from "mocha";
 
 import { createClient, expect } from "../util";
-import { connectNats, closeNats } from "../util/nats";
+import { getNatsClient } from "../util/nats";
 import { Client } from "ts-nats";
 import { AddressZero } from "ethers/constants";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
@@ -12,7 +12,7 @@ describe("Reclaim", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -21,10 +21,6 @@ describe("Reclaim", () => {
 
   afterEach(async () => {
     await client.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it("throws error if collateral targets are higher than reclaim", async () => {

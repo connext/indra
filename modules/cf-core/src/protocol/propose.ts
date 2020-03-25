@@ -14,7 +14,6 @@ import {
 import { logTime } from "../utils";
 
 import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../methods";
 
 const protocol = Protocol.Propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
@@ -43,6 +42,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
+      meta,
     } = params as ProposeInstallProtocolParams;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
@@ -70,6 +70,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       responderDepositTokenAddress:
         responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      meta,
     };
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
@@ -163,6 +164,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType,
+      meta,
     } = params as ProposeInstallProtocolParams;
 
     const {
@@ -189,6 +191,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDeposit: initiatorDeposit.toHexString(),
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
+      meta,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
       initiatorDepositTokenAddress:
         responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,

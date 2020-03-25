@@ -1,8 +1,8 @@
 import {
   chan_signMessage,
+  chan_signDigest,
   chan_getUserWithdrawal,
   chan_setUserWithdrawal,
-  chan_signDigest,
   chan_setStateChannel,
   chan_restoreState,
   IChannelProvider,
@@ -12,7 +12,6 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signChannelMessage } from "@connext/crypto";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress, signDigestWithEthers } from "./lib";
 import {
@@ -22,6 +21,7 @@ import {
   IRpcConnection,
   JsonRpcRequest,
 } from "./types";
+import { signChannelMessage } from "@connext/crypto";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -36,7 +36,7 @@ export const createCFChannelProvider = async ({
   logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
-    messaging as any,
+    messaging,
     store,
     networkContext,
     nodeConfig,
@@ -83,11 +83,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-      case chan_signDigest:
-        result = await this.signDigest(params.message);
-        break;
       case chan_signMessage:
         result = await this.signMessage(params.message);
+        break;
+      case chan_signDigest:
+        result = await this.signDigest(params.message);
         break;
       case chan_restoreState:
         result = await this.restoreState();

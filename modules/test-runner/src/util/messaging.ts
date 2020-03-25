@@ -1,9 +1,20 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ConnextEventEmitter, CFCoreTypes, MessagingConfig } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
+import {
+  ConnextEventEmitter,
+  CFCoreTypes,
+  MessagingConfig,
+  IMessagingService,
+  VerifyNonceDtoType,
+  CF_PATH,
+} from "@connext/types";
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import { Logger } from "./logger";
+
+import axios, { AxiosResponse } from "axios";
+import { SigningKey, joinSignature } from "ethers/utils";
 
 const log = new Logger("Messaging", env.logLevel);
 
@@ -19,12 +30,13 @@ type DetailedMessageCounter = MessageCounter & {
 };
 
 export type TestMessagingConfig = {
+  nodeUrl: string;
   messagingConfig: MessagingConfig;
   protocolDefaults: {
     [protocol: string]: DetailedMessageCounter;
   };
   count: DetailedMessageCounter;
-  forbiddenSubjects: string[];
+  mnemonic: string;
 };
 
 export const RECEIVED = "RECEIVED";
@@ -91,10 +103,12 @@ const zeroCounter = (): MessageCounter => {
   return { sent: 0, received: 0 };
 };
 
-const defaultOpts = (): TestMessagingConfig => {
+const defaultOpts = (): Omit<TestMessagingConfig, "mnemonic"> => {
   return {
+    nodeUrl: env.nodeUrl,
     messagingConfig: {
-      messagingUrl: env.nodeUrl,
+      // TODO:
+      messagingUrl: "nats://172.17.0.1:4222",
     },
     protocolDefaults: {
       install: defaultCount(),
@@ -108,41 +122,64 @@ const defaultOpts = (): TestMessagingConfig => {
       withdraw: defaultCount(),
     },
     count: defaultCount(),
-    forbiddenSubjects: [],
   };
 };
 
 export class TestMessagingService extends ConnextEventEmitter implements IMessagingService {
-  private connection: IMessagingService;
+  private connection: MessagingService;
   private protocolDefaults: {
     [protocol: string]: DetailedMessageCounter;
   };
-  public options: TestMessagingConfig;
   private countInternal: DetailedMessageCounter;
-  private forbiddenSubjects: string[];
+  public options: TestMessagingConfig;
 
-  constructor(opts: Partial<TestMessagingConfig> = {}) {
+  constructor(opts: Partial<TestMessagingConfig> & { mnemonic: string }) {
     super();
     const defaults = defaultOpts();
     // create options
     this.options = {
+      nodeUrl: opts.nodeUrl || defaults.nodeUrl,
       messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
       count: combineObjects(opts.count, defaults.count),
       protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
-      forbiddenSubjects: opts.forbiddenSubjects || defaults.forbiddenSubjects,
+      mnemonic: opts.mnemonic!,
+    };
+
+    const hdNode = fromMnemonic(this.options.mnemonic).derivePath(CF_PATH);
+    const getSignature = async (message: string) => {
+      const signingKey = new SigningKey(hdNode.derivePath("0").privateKey);
+      const sig = joinSignature(signingKey.signDigest(message));
+      return sig;
+    };
+    const xpub = hdNode.neuter().extendedKey;
+
+    const getBearerToken = async (
+      xpub: string,
+      getSignature: (nonce: string) => Promise<string>,
+    ): Promise<string> => {
+      try {
+        const nonce = await axios.get(`${this.options.nodeUrl}/auth/${xpub}`);
+        const sig = await getSignature(nonce.data);
+        const bearerToken: AxiosResponse<string> = await axios.post(
+          `${this.options.nodeUrl}/auth`,
+          {
+            sig,
+            userPublicIdentifier: xpub,
+          } as VerifyNonceDtoType,
+        );
+        return bearerToken.data;
+      } catch (e) {
+        return e;
+      }
     };
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
-    this.connection = new MessagingServiceFactory({
-      messagingUrl: this.options.messagingConfig.messagingUrl,
-      options: {
-        maxPingOut: 1_000_000_000,
-        pingInterval: 120_000_000,
-      },
-    }).createService("messaging");
+    const key = `INDRA.4447`;
+    this.connection = new MessagingService(this.options.messagingConfig, key, () =>
+      getBearerToken(xpub, getSignature),
+    );
     this.protocolDefaults = this.options.protocolDefaults;
     this.countInternal = this.options.count;
-    this.forbiddenSubjects = this.options.forbiddenSubjects;
   }
 
   ////////////////////////////////////////
@@ -197,8 +234,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // return connection callback
     return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
       this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
-      // make sure that client is allowed to send message
-      this.subjectForbidden(subject, "receive");
       // wait out delay
       await this.awaitDelay();
       if (
@@ -244,15 +279,13 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     this.emit(SEND, { subject: to, data: msg } as MessagingEventData);
-    // make sure that client is allowed to send message
-    this.subjectForbidden(to, "send");
-
     // wait out delay
     await this.awaitDelay(true);
     if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
       log.warn(
-        `Reached ceiling (${this.count.ceiling!
-          .sent!}), refusing to send any more messages. Sent ${this.count.sent} messages`,
+        `Reached ceiling (${this.count.ceiling!.sent!}), refusing to send any more messages. Sent ${
+          this.count.sent
+        } messages`,
       );
       return;
     }
@@ -318,7 +351,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   async publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
-    this.subjectForbidden(subject, "publish");
     this.emit(PUBLISH, { data, subject } as MessagingEventData);
     return await this.connection.publish(subject, data);
   }
@@ -334,8 +366,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // make sure that client is allowed to send message
 
     this.emit(REQUEST, { data, subject } as MessagingEventData);
-    this.subjectForbidden(subject, "request");
-    return await this.connection.request(subject, timeout, data, callback);
+    return await this.connection.request(subject, timeout, data);
   }
 
   async subscribe(
@@ -351,25 +382,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   ////////////////////////////////////////
   // Private methods
-  private subjectForbidden(to: string, operation?: string): boolean {
-    let hasSubject = false;
-    this.forbiddenSubjects.forEach(subject => {
-      if (hasSubject) {
-        return;
-      }
-      // this.forbiddenSubjects may include prefixes, ie it could be
-      // `transfer.recipient` when the subject the client uses in `node.ts`
-      // is `transfer.recipient.${client.publicIdentifier}`
-      hasSubject = to.includes(subject);
-    });
-    if (hasSubject) {
-      const msg = `Subject is forbidden, refusing to ${operation || "send"} data to subject: ${to}`;
-      this.emit(SUBJECT_FORBIDDEN, { subject: to } as MessagingEventData);
-      throw new Error(msg);
-    }
-    return hasSubject;
-  }
-
   private getProtocol(msg: any): string | undefined {
     if (!msg.data) {
       // no .data field found, cannot find protocol of msg

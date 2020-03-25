@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@connext/types": "6.0.0-alpha.1",
-    "ethers": "4.0.45",
+    "ethers": "4.0.46",
     "@openzeppelin/contracts": "2.5.0",
     "ganache-cli": "6.9.1",
     "solc": "0.5.11"
@@ -44,7 +44,7 @@
     "@types/node": "13.7.1",
     "@types/sinon-chai": "3.2.3",
     "chai": "4.2.0",
-    "ethereum-waffle": "2.3.2",
+    "ethereum-waffle": "2.4.0",
     "ethlint": "1.2.5",
     "event-target-shim": "5.0.1",
     "mocha": "7.0.1",
