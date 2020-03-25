@@ -10,7 +10,7 @@ import { ConfigService } from "../config/config.service";
 import { isXpub } from "../util";
 import { MessagingAuthProviderId } from "../constants";
 
-const nonceLen = 16;
+const nonceLen = 32;
 const nonceTTL = 24 * 60 * 60 * 1000; // 1 day
 
 export function getAuthAddressFromXpub(xpub: string): string {
