@@ -10,9 +10,10 @@ import {
   ConnextEventEmitter,
   StateChannelJSON,
   WithdrawalMonitorObject,
+  signDigestWithEthers,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signChannelMessage, signDigestWithEthers } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
