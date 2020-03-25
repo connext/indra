@@ -6,6 +6,7 @@ import {
   IConnextClient,
   ResolveHashLockTransferParameters,
   GetHashLockTransferResponse,
+  HashLockTransferStatus,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
@@ -157,13 +158,24 @@ describe("HashLock Transfers", () => {
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
 
+    // wait for transfer to be picked up by receiver
+    await new Promise(async (resolve, reject) => {
+      clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, resolve);
+      clientB.once(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, reject);
+      await clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        preImage,
+      });
+    });
     const retrievedTransfer = await clientB.getHashLockTransfer(lockHash);
     expect(retrievedTransfer).to.deep.equal({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       lockHash,
-      sender: clientA.publicIdentifier,
-      meta: {},
+      senderPublicIdentifier: clientA.publicIdentifier,
+      receiverPublicIdentifier: clientB.publicIdentifier,
+      status: HashLockTransferStatus.REDEEMED,
+      meta: { foo: "bar" },
     } as GetHashLockTransferResponse);
   });
 

@@ -1,5 +1,7 @@
 import { BigNumber, BigNumberish } from "ethers/utils";
 
+import { enumify } from "../../utils";
+
 import { CoinTransfer } from "../funding";
 import {
   singleAssetTwoPartyCoinTransferEncoding,
@@ -40,6 +42,17 @@ export const HashLockTransferAppActionEncoding = `tuple(bytes32 preImage)`;
 ////////////////////////////////////////
 // Off-chain app types
 
+// statuses
+export const HashLockTransferStatus = enumify({
+  PENDING: "PENDING",
+  REDEEMED: "REDEEMED",
+  FAILED: "FAILED",
+  UNLOCKED: "UNLOCKED",
+  EXPIRED: "EXPRED",
+});
+export type HashLockTransferStatus =
+  (typeof HashLockTransferStatus)[keyof typeof HashLockTransferStatus];
+
 // Client Controller Params
 export type HashLockTransferParameters = {
   conditionType: typeof HashLockTransfer;
@@ -73,10 +86,12 @@ export type ResolveHashLockTransferResponse = {
 // Getter
 export type GetHashLockTransferResponse =
   | {
-      sender: string;
+      senderPublicIdentifier: string;
+      receiverPublicIdentifier?: string;
       assetId: string;
       amount: string;
       lockHash: string;
+      status: HashLockTransferStatus;
       meta?: any;
     }
   | undefined;
