@@ -26,28 +26,24 @@ import { bigNumberify } from "ethers/utils";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
-  senderApp: AppInstance,
-  receiverApp?: AppInstance,
+  senderApp: AppInstance<HashLockTransferAppStateBigNumber>,
+  receiverApp?: AppInstance<HashLockTransferAppStateBigNumber>,
 ): HashLockTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
   }
-  const { timelock: senderTimelock } = senderApp.latestState as HashLockTransferAppState;
+  const { timelock: senderTimelock } = senderApp.latestState;
   const isSenderExpired = bigNumberify(senderTimelock).lt(currentBlockNumber);
-  const isReceiverExpired =
-    receiverApp &&
-    bigNumberify((receiverApp.latestState as HashLockTransferAppState).timelock).lt(
-      currentBlockNumber,
-    );
+  const isReceiverExpired = receiverApp?.latestState.timelock.lt(currentBlockNumber);
   // pending iff no receiver app + not expired
   if (!receiverApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
-  } else if (senderApp.type === AppType.UNINSTALLED) {
+  } else if (
+    senderApp.latestState.preImage !== HashZero ||
+    receiverApp.latestState.preImage !== HashZero
+  ) {
     // iff sender uninstalled, payment is unlocked
-    return HashLockTransferStatus.UNLOCKED;
-  } else if (receiverApp.type === AppType.UNINSTALLED) {
-    // otherwise check for reclaim
-    return HashLockTransferStatus.REDEEMED;
+    return HashLockTransferStatus.COMPLETED;
   } else if (senderApp.type === AppType.REJECTED || receiverApp.type === AppType.REJECTED) {
     return HashLockTransferStatus.FAILED;
   } else if (isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
@@ -55,8 +51,22 @@ const appStatusesToHashLockTransferStatus = (
     // do this last bc could be retrieving historically
     return HashLockTransferStatus.EXPIRED;
   } else {
-    throw new Error(`Cound not determine hash lock trasnfer status`);
+    throw new Error(`Cound not determine hash lock transfer status`);
   }
+};
+
+export const normalizeHashLockTransferAppState = (
+  app: AppInstance,
+): AppInstance<HashLockTransferAppStateBigNumber> | undefined => {
+  return (
+    app && {
+      ...app,
+      latestState: convertHashLockTransferAppState(
+        "bignumber",
+        app.latestState as HashLockTransferAppState,
+      ),
+    }
+  );
 };
 
 @Injectable()
@@ -80,14 +90,15 @@ export class HashLockTransferService {
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
     // TODO: could there be more than 1? how to handle that case?
-    const [senderApp] = await this.cfCoreService.getHashLockTransferAppsByLockHash(lockHash);
+    const [senderApp] = await this.appInstanceRepository.findHashLockTransferAppsByLockHash(
+      lockHash,
+    );
     if (!senderApp) {
       throw new Error(`No sender app installed for lockHash: ${lockHash}`);
     }
-    this.log.warn(`***** senderApp: ${JSON.stringify(senderApp, null, 2)}`);
 
     const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
-      senderApp.multisigAddress,
+      senderApp.channel.multisigAddress,
     );
 
     const appState = convertHashLockTransferAppState(
@@ -95,11 +106,10 @@ export class HashLockTransferService {
       senderApp.latestState as HashLockTransferAppState,
     );
 
-    const assetId = senderApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
+    const assetId = senderApp.outcomeInterpreterParameters.tokenAddress;
 
     // sender amount
     const amount = appState.coinTransfers[0].amount;
-    this.log.warn(`***** amount: ${amount.toString()}`);
     const timelock = appState.timelock.sub(TIMEOUT_BUFFER);
     if (timelock.lte(Zero)) {
       throw new Error(
@@ -128,23 +138,20 @@ export class HashLockTransferService {
         this.cfCoreService.cfCore.on(
           DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
-            if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
-              // do not reject promise here, since theres a chance the event is
-              // emitted for another user depositing into their channel
-              this.log.debug(
-                `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
-              );
+            if (
+              msg.from === this.cfCoreService.cfCore.publicIdentifier &&
+              msg.data.multisigAddress === channel.multisigAddress
+            ) {
+              resolve();
               return;
             }
-            if (msg.data.multisigAddress !== channel.multisigAddress) {
-              // do not reject promise here, since theres a chance the event is
-              // emitted for node collateralizing another users' channel
-              this.log.debug(
-                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
-              );
-              return;
-            }
-            resolve();
+            // do not reject promise here, since theres a chance the event is
+            // emitted for another user depositing into their channel
+            this.log.debug(
+              `Deposit event did not match desired: ${
+                this.cfCoreService.cfCore.publicIdentifier
+              }, ${channel.multisigAddress}: ${JSON.stringify(msg)} `,
+            );
           },
         );
         this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
@@ -209,23 +216,32 @@ export class HashLockTransferService {
   async findSenderAndReceiverAppsWithStatus(
     lockHash: string,
   ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
-    // TODO: can we make single query work?
-    const [
-      senderApp,
-      receiverApp,
-    ] = await this.appInstanceRepository.findHashLockTransferAppsByLockHash(lockHash);
-    // const senderApp = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndSender(
-    //   lockHash,
-    //   this.cfCoreService.cfCore.freeBalanceAddress,
-    // );
-    // const lockHash = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndRecipient(
-    //   lockHash,
-    //   this.cfCoreService.cfCore.freeBalanceAddress,
-    // );
-    // get status
+    // node receives from sender
+    const senderApp = await this.findSenderAppByLockHash(lockHash);
+    console.log("***** senderApp: ", senderApp);
+    // node is sender
+    const receiverApp = await this.findReceiverAppByLockHash(lockHash);
+    console.log("***** receiverApp: ", receiverApp);
     const block = await this.configService.getEthProvider().getBlockNumber();
     const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
-    this.log.warn(`***** got status: ${status}`);
     return { senderApp, receiverApp, status };
+  }
+
+  async findSenderAppByLockHash(lockHash: string): Promise<AppInstance> {
+    // node receives from sender
+    const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndReceiver(
+      lockHash,
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    return normalizeHashLockTransferAppState(app);
+  }
+
+  async findReceiverAppByLockHash(lockHash: string): Promise<AppInstance> {
+    // node sends to receiver
+    const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndSender(
+      lockHash,
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    return normalizeHashLockTransferAppState(app);
   }
 }
