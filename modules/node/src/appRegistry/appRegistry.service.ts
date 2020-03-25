@@ -6,6 +6,7 @@ import {
   validateFastSignedTransferApp,
   validateWithdrawApp,
   validateHashLockTransferApp,
+  validateSignedTransferApp,
 } from "@connext/apps";
 import {
   CoinBalanceRefundApp,
@@ -16,6 +17,7 @@ import {
   AppInstanceJson,
   WithdrawAppStateBigNumber,
   HashLockTransferApp,
+  SimpleSignedTransferApp,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -27,7 +29,6 @@ import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
@@ -163,6 +164,14 @@ export class AppRegistryService implements OnModuleInit {
         validateHashLockTransferApp(
           proposeInstallParams,
           blockNumber,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        break;
+      }
+      case SimpleSignedTransferApp: {
+        validateSignedTransferApp(
+          proposeInstallParams,
           from,
           this.cfCoreService.cfCore.publicIdentifier,
         );
