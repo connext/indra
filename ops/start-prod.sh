@@ -25,16 +25,14 @@ fi
 
 # Make sure keys have proper newlines inserted
 # (bc GitHub Actions strips newlines from secrets)
-
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
-  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY |\
-  sed 's/-----BEGIN RSA PRIVATE KEY-----/-----BEGIN RSA PRIVATE KEY-----\n/' |\
-  sed 's/-----END RSA PRIVATE KEY-----/\n-----END RSA PRIVATE KEY-----/'`
-
+  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
+  sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
+  sed 's/-----END RSA PRIVATE KEY-----/\\\n-----END RSA PRIVATE KEY-----\\\n/'`
 INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
-  echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | \
-  sed 's/-----BEGIN PUBLIC KEY-----/-----BEGIN PUBLIC KEY-----\n/' | \
-  sed 's/-----END PUBLIC KEY-----/\n-----END PUBLIC KEY-----/'`
+  echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | tr -d '\n\r' |\
+  sed 's/-----BEGIN PUBLIC KEY-----/\\\n-----BEGIN PUBLIC KEY-----\\\n/' | \
+  sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
 
 ####################
 # Internal Config
@@ -181,7 +179,7 @@ then
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
 fi
 
-allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
+allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"UNISWAP"}]'
 
 ########################################
 ## Deploy according to configuration
