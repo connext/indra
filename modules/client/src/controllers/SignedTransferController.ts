@@ -10,7 +10,6 @@ import {
 } from "@connext/types";
 import { Zero } from "ethers/constants";
 
-import { xpubToAddress } from "../lib";
 import { CFCoreTypes } from "../types";
 
 import { AbstractController } from "./AbstractController";
@@ -29,11 +28,11 @@ export class SignedTransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: xpubToAddress(this.connext.publicIdentifier),
+          to: this.connext.freeBalanceAddress,
         },
         {
           amount: Zero,
-          to: xpubToAddress(this.connext.nodePublicIdentifier),
+          to: this.connext.nodeFreeBalanceAddress,
         },
       ],
       paymentId,
