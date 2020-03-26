@@ -6,7 +6,7 @@ import "./MixinSetState.sol";
 import "./MixinProgressState.sol";
 
 
-contract MixinSetStateWithAction is LibDispute, MixinSetState, MixinProgressState {
+contract MixinSetAndProgressState is LibDispute, MixinSetState, MixinProgressState {
 
     /// @notice Create a challenge regarding the latest signed state and immediately after,
     /// performs a unilateral action to update it. The latest signed state must have timeout 0.
@@ -14,7 +14,7 @@ contract MixinSetStateWithAction is LibDispute, MixinSetState, MixinProgressStat
     /// @param req A struct with the signed state update in it
     /// @param action A struct with the signed action being taken
     /// @dev Note this function is only callable when the challenge is still disputable.
-    function setStateWithAction(
+    function setAndProgressState(
         AppIdentity memory appIdentity,
         SignedAppChallengeUpdate memory req,
         bytes memory appState,
