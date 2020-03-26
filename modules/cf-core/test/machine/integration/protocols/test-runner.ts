@@ -1,7 +1,7 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { OutcomeType } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
-import { One, Two, Zero } from "ethers/constants";
+import { One, Two, Zero, HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
@@ -123,7 +123,7 @@ export class TestRunner {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
       const sc = await mininode.store.getStateChannel(this.multisigAB)!;
       const updatedBalance = sc.addActiveAppAndIncrementFreeBalance(
-        "test",  
+        HashZero,  
       {
         [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
           [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
@@ -141,7 +141,7 @@ export class TestRunner {
     for (const mininode of [this.mininodeB, this.mininodeC]) {
       const sc = await mininode.store.getStateChannel(this.multisigBC)!;
       const updatedSc = sc.addActiveAppAndIncrementFreeBalance(
-        "test",
+        HashZero,
       {
         [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,

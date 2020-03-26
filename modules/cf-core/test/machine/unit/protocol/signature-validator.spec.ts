@@ -1,5 +1,5 @@
 import { HashZero } from "ethers/constants";
-import { SigningKey } from "ethers/utils";
+import { SigningKey, hashMessage } from "ethers/utils";
 import { signDigest } from "@connext/crypto";
 import { recoverAddressWithEthers, createRandom32ByteHexString } from "@connext/types";
 
@@ -16,9 +16,9 @@ describe("Signature Validator Helper", () => {
     signer = new SigningKey(createRandom32ByteHexString());
 
     commitment = {
-      hashToSign: () => HashZero,
+      hashToSign: () => hashMessage("test"),
     } as EthereumCommitment;
-    const commitmentHash = commitment.hashToSign();
+    commitmentHash = commitment.hashToSign();
     signature = await signDigest(signer.privateKey, commitmentHash);
   });
 
