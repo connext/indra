@@ -1,5 +1,4 @@
 import {
-  getType,
   NumericTypeName,
   NumericTypes,
   convertAmountField,
