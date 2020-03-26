@@ -242,14 +242,16 @@ export class ConnextListener extends ConnextEventEmitter {
     appInstanceId: string,
     from: string,
   ): Promise<void> => {
+    // get supported apps
+    const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
+      return app.appDefinitionAddress === params.appDefinition;
+    });
+    if (!registryAppInfo) {
+      throw new Error(`Could not find registry info for app ${params.appDefinition}`);
+    }
+    // validate or reject app
     try {
       // check based on supported applications
-      const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
-        return app.appDefinitionAddress === params.appDefinition;
-      });
-      if (!registryAppInfo) {
-        throw new Error(`Could not find registry info for app ${params.appDefinition}`);
-      }
       commonAppProposalValidation(
         params,
         // types weirdness
@@ -268,7 +270,7 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case WithdrawApp: {
-          validateWithdrawApp(params, from, this.connext.publicIdentifier);
+          await validateWithdrawApp(params, from, this.connext.publicIdentifier);
           break;
         }
         case FastSignedTransferApp: {
@@ -290,18 +292,21 @@ export class ConnextListener extends ConnextEventEmitter {
           );
         }
       }
+      // NOTE: by trying to install here, if the installation fails,
+      // the proposal is automatically removed from the store
       await this.connext.installApp(appInstanceId);
-      await this.runPostInstallTasks(appInstanceId, registryAppInfo);
-      const appInstance = this.connext.getAppInstanceDetails(appInstanceId);
-      await this.connext.messaging.publish(
-        `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`,
-        stringify(appInstance),
-      );
     } catch (e) {
       this.log.error(`Caught error: ${e.toString()}`);
       await this.connext.rejectInstallApp(appInstanceId);
       throw e;
     }
+    // install and run post-install tasks
+    await this.runPostInstallTasks(appInstanceId, registryAppInfo);
+    const appInstance = this.connext.getAppInstanceDetails(appInstanceId);
+    await this.connext.messaging.publish(
+      `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`,
+      stringify(appInstance),
+    );
   };
 
   private runPostInstallTasks = async (

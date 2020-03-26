@@ -1,4 +1,5 @@
 import { CFCoreTypes } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import {
   bigNumberify,
   Interface,
@@ -12,7 +13,6 @@ import { ChallengeRegistry } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { generateRandomNetworkContext } from "../../mocks";
 import { getRandomHDNodes } from "../../integration/random-signing-keys";
-import { signDigestWithEthers } from "../../../../src/utils";
 
 /**
  * This test suite decodes a constructed SetState Commitment transaction object
@@ -29,7 +29,7 @@ describe("Set State Commitment", () => {
 
   const hdNodes = getRandomHDNodes(2);
 
-  beforeAll(() => {
+  beforeAll(async () => {
     commitment = new SetStateCommitment(
       networkContext.ChallengeRegistry,
       appInstance.identity,
@@ -39,13 +39,13 @@ describe("Set State Commitment", () => {
     );
     const commitmentHash = commitment.hashToSign();
     commitment.signatures = [
-      signDigestWithEthers(hdNodes[0].privateKey, commitmentHash),
-      signDigestWithEthers(hdNodes[1].privateKey, commitmentHash),
+      await signDigest(hdNodes[0].privateKey, commitmentHash),
+      await signDigest(hdNodes[1].privateKey, commitmentHash),
     ];
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
     //       directly to the app registry?
-    tx = commitment.getSignedTransaction();
+    tx = await commitment.getSignedTransaction();
   });
 
   it("should be to ChallengeRegistry", () => {

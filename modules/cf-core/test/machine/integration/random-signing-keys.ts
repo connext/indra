@@ -1,12 +1,13 @@
-import { HDNode, hexlify, randomBytes, SigningKey } from "ethers/utils";
+import { HDNode, SigningKey } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
+import { createRandom32ByteHexString } from "@connext/types";
 
 import { computeRandomExtendedPrvKey } from "../../../src/machine/xkeys";
 
 export function getSortedRandomSigningKeys(length: number) {
   return Array(length)
     .fill(0)
-    .map(_ => new SigningKey(hexlify(randomBytes(32))))
+    .map(_ => new SigningKey(createRandom32ByteHexString()))
     .sort((a, b) => (parseInt(a.address, 16) < parseInt(b.address, 16) ? -1 : 1));
 }
 

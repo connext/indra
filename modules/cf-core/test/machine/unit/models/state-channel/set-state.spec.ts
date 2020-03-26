@@ -1,5 +1,6 @@
 import { AddressZero, Zero } from "ethers/constants";
-import { getAddress, hexlify, randomBytes } from "ethers/utils";
+import { getAddress } from "ethers/utils";
+import { createRandomAddress } from "@connext/types";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../../src/constants";
 import { xkeyKthAddress } from "../../../../../src/machine";
@@ -21,7 +22,7 @@ describe("StateChannel::setState", () => {
   let testApp: AppInstance;
 
   beforeAll(() => {
-    const multisigAddress = getAddress(hexlify(randomBytes(20)));
+    const multisigAddress = getAddress(createRandomAddress());
     const xpubs = getRandomExtendedPubKeys(2);
 
     sc1 = StateChannel.setupChannel(

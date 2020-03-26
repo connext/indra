@@ -52,6 +52,7 @@ describe("Full Flow: Multi-client transfer", () => {
       gateway.on(
         "RECEIVE_TRANSFER_FINISHED_EVENT",
         async (data: ReceiveTransferFinishedEventData) => {
+          gatewayTransfers.received += 1;
           const freeBalance = await gateway.getFreeBalance();
           if (freeBalance[gateway.freeBalanceAddress].isZero()) {
             res();
@@ -60,7 +61,6 @@ describe("Full Flow: Multi-client transfer", () => {
             // sufficient time has elapsed, resolve
             res();
           }
-          gatewayTransfers.received += 1;
           await gateway.transfer({
             amount: data.amount,
             recipient: data.sender,
