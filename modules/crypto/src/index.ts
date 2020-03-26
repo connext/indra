@@ -1,4 +1,4 @@
-import { EthSignature, signDigestWithEthers } from "@connext/types";
+import { EthSignature } from "@connext/types";
 import {
   sign,
   encrypt,
