@@ -1,12 +1,12 @@
 import {
-    NumericTypes,
-    convertAmountField,
-    NumericTypeName,
-    WithdrawAppState,
-    WithdrawParameters,
-    makeChecksumOrEthAddress,
-    convertCoinTransfersToObjIfNeeded
-  } from "@connext/types";
+  NumericTypes,
+  convertAmountField,
+  NumericTypeName,
+  WithdrawAppState,
+  WithdrawParameters,
+  makeChecksumOrEthAddress,
+  convertCoinTransfersToObjIfNeeded,
+} from "@connext/types";
 
 export function convertWithrawAppState<To extends NumericTypeName>(
   to: To,
@@ -15,10 +15,7 @@ export function convertWithrawAppState<To extends NumericTypeName>(
   obj.transfers = convertCoinTransfersToObjIfNeeded(obj.transfers);
   return {
     ...obj,
-    transfers: [
-      convertAmountField(to, obj.transfers[0]),
-      convertAmountField(to, obj.transfers[1]),
-    ],
+    transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
   };
 }
 
@@ -29,7 +26,7 @@ export function convertWithdrawParameters<To extends NumericTypeName>(
   const asset: any = {
     ...obj,
     assetId: makeChecksumOrEthAddress(obj.assetId),
-    recipient: makeChecksumOrEthAddress(obj.recipient)
+    recipient: makeChecksumOrEthAddress(obj.recipient),
   };
   return convertAmountField(to, asset);
 }

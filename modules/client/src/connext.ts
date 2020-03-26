@@ -24,12 +24,13 @@ import {
   GetHashLockTransferResponse,
   LinkedTransferResponse,
   GetLinkedTransferResponse,
+  createRandom32ByteHexString,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -360,7 +361,7 @@ export class ConnextClient implements IConnextClient {
    */
   public transfer = async (params: TransferParameters): Promise<LinkedTransferResponse> => {
     if (!params.paymentId) {
-      params.paymentId = hexlify(randomBytes(32));
+      params.paymentId = createRandom32ByteHexString();
     }
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
@@ -368,7 +369,7 @@ export class ConnextClient implements IConnextClient {
       conditionType: LINKED_TRANSFER,
       meta: params.meta,
       paymentId: params.paymentId,
-      preImage: hexlify(randomBytes(32)),
+      preImage: createRandom32ByteHexString(),
       recipient: params.recipient,
     }) as Promise<LinkedTransferResponse>;
   };
@@ -441,11 +442,11 @@ export class ConnextClient implements IConnextClient {
   > => {
     const value = await this.channelProvider.send(chan_getUserWithdrawal, {});
 
-    if (!value || value === "undefined") {
+    if (!value || typeof value === "undefined") {
       return undefined;
     }
 
-    const noRetry = value.retry === undefined || value.retry === null;
+    const noRetry = typeof value.retry === "undefined" || value.retry === null;
     if (!value.tx || noRetry) {
       const msg = `Can not find tx or retry in store under key ${withdrawalKey(
         this.publicIdentifier,

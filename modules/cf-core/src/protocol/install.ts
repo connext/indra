@@ -119,7 +119,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // free balance addr signs conditional transactions
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       responderFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
@@ -148,7 +148,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // always use free balance key to sign free balance update
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       responderFreeBalanceAddress,
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
@@ -259,7 +259,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // multisig owner always signs conditional tx
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       initiatorFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
@@ -310,7 +310,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // always use freeBalanceAddress to sign updates
     substart = Date.now();
-    assertIsValidSignature(
+    await assertIsValidSignature(
       initiatorFreeBalanceAddress,
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
@@ -478,7 +478,7 @@ function computeInterpreterParameters(
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
-        throw Error(
+        throw new Error(
           TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
             initiatorDepositTokenAddress,
             responderDepositTokenAddress,
@@ -513,7 +513,7 @@ function computeInterpreterParameters(
 
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
-        throw Error(
+        throw new Error(
           TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
             initiatorDepositTokenAddress,
             responderDepositTokenAddress,
@@ -532,7 +532,7 @@ function computeInterpreterParameters(
     }
 
     default: {
-      throw Error("The outcome type in this application logic contract is not supported yet.");
+      throw new Error("The outcome type in this application logic contract is not supported yet.");
     }
   }
 }
@@ -578,7 +578,7 @@ function getInterpreterAddressFromOutcomeType(
       return networkContext.TwoPartyFixedOutcomeInterpreter;
     }
     default: {
-      throw Error("The outcome type in this application logic contract is not supported yet.");
+      throw new Error("The outcome type in this application logic contract is not supported yet.");
     }
   }
 }

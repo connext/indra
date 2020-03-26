@@ -9,14 +9,15 @@ import {
   FastSignedTransferResponse,
   delay,
   ResolveConditionResponse,
+  createRandom32ByteHexString,
 } from "@connext/types";
-import { hexlify, randomBytes, bigNumberify, BigNumber, solidityKeccak256 } from "ethers/utils";
+import { signDigest } from "@connext/crypto";
+import { bigNumberify, BigNumber, solidityKeccak256 } from "ethers/utils";
 import { Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 
 import { createClient, fundChannel, expect } from "../util";
 import { xkeyKthAddress } from "@connext/cf-core";
-import { signDigestWithEthers } from "@connext/cf-core/dist/src/utils";
 
 describe.skip("Fast Signed Transfer", () => {
   let clientA: IConnextClient;
@@ -33,7 +34,7 @@ describe.skip("Fast Signed Transfer", () => {
   });
 
   it("Should send a fast signed transfer", async () => {
-    const paymentId = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
     const signerWallet = Wallet.createRandom();
     const signerAddress = await signerWallet.getAddress();
 
@@ -71,10 +72,10 @@ describe.skip("Fast Signed Transfer", () => {
     expect(transferAppState.signer).to.eq(signerAddress);
     expect(transferAppState.turnNum).to.eq(One);
 
-    const data = hexlify(randomBytes(32));
+    const data = createRandom32ByteHexString();
 
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = signDigestWithEthers(signerWallet.privateKey, digest);
+    const signature = await signDigest(signerWallet.privateKey, digest);
 
     let resolveCondition: ResolveConditionResponse;
     await new Promise(async resolve => {
@@ -113,7 +114,7 @@ describe.skip("Fast Signed Transfer", () => {
     let initialReceiverAppInstanceId: string = "";
     const n = 5;
     for (let i = 0; i < n; i++) {
-      const paymentId = hexlify(randomBytes(32));
+      const paymentId = createRandom32ByteHexString();
       const { transferAppInstanceId } = (await clientA.conditionalTransfer({
         amount: transferAmount.toString(),
         conditionType: FAST_SIGNED_TRANSFER,
@@ -128,10 +129,10 @@ describe.skip("Fast Signed Transfer", () => {
       }
       expect(transferAppInstanceId).to.eq(initialSenderAppInstanceId);
 
-      const data = hexlify(randomBytes(32));
+      const data = createRandom32ByteHexString();
 
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = signDigestWithEthers(signerWallet.privateKey, digest);
+      const signature = await signDigest(signerWallet.privateKey, digest);
 
       const res = await clientB.resolveCondition({
         conditionType: FAST_SIGNED_TRANSFER,

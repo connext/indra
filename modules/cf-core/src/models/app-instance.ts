@@ -63,7 +63,7 @@ export class AppInstance {
 
   get twoPartyOutcomeInterpreterParams() {
     if (this.outcomeType !== OutcomeType.TWO_PARTY_FIXED_OUTCOME) {
-      throw Error(
+      throw new Error(
         `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not TWO_PARTY_FIXED_OUTCOME`,
       );
     }
@@ -73,7 +73,7 @@ export class AppInstance {
 
   get multiAssetMultiPartyCoinTransferInterpreterParams() {
     if (this.outcomeType !== OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER) {
-      throw Error(
+      throw new Error(
         `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER`,
       );
     }
@@ -83,7 +83,7 @@ export class AppInstance {
 
   get singleAssetTwoPartyCoinTransferInterpreterParams() {
     if (this.outcomeType !== OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER) {
-      throw Error(
+      throw new Error(
         `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER `,
       );
     }
@@ -200,7 +200,9 @@ export class AppInstance {
       }
 
       default: {
-        throw Error("The outcome type in this application logic contract is not supported yet.");
+        throw new Error(
+          "The outcome type in this application logic contract is not supported yet.",
+        );
       }
     }
   }
@@ -223,7 +225,7 @@ export class AppInstance {
     } catch (e) {
       // TODO: Catch ethers.errors.INVALID_ARGUMENT specifically in catch {}
 
-      throw Error(
+      throw new Error(
         `Attempted to setState on an app with an invalid state object.
           - appInstanceIdentityHash = ${this.identityHash}
           - newState = ${prettyPrintObject(newState)}

@@ -1,6 +1,5 @@
-import { IConnextClient, LINKED_TRANSFER } from "@connext/types";
+import { IConnextClient, LINKED_TRANSFER, createRandom32ByteHexString } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
 
 import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
@@ -17,8 +16,8 @@ describe("Get Linked Transfer", () => {
   });
 
   it.skip("happy case: get linked transfer by payment id", async () => {
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -45,8 +44,8 @@ describe("Get Linked Transfer", () => {
 
   it("happy case: get linked transfer to recipient by payment id", async () => {
     const clientB = await createClient();
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -70,8 +69,8 @@ describe("Get Linked Transfer", () => {
 
   it("cannot get linked transfer for invalid payment id", async () => {
     const clientB = await createClient();
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
@@ -83,7 +82,7 @@ describe("Get Linked Transfer", () => {
       preImage,
       recipient: clientB.publicIdentifier,
     });
-    const linkedTransfer = await clientA.getLinkedTransfer(hexlify(randomBytes(32)));
+    const linkedTransfer = await clientA.getLinkedTransfer(createRandom32ByteHexString());
     expect(linkedTransfer).to.not.be.ok;
   });
 });

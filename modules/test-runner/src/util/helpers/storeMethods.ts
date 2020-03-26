@@ -22,8 +22,9 @@ import {
   SetStateCommitmentJSON,
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
+  createRandomBytesHexString,
 } from "@connext/types";
-import { BigNumber, hexlify, randomBytes } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import uuid from "uuid";
 
@@ -97,7 +98,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
 export const TEST_STORE_MINIMAL_TX: ProtocolTypes.MinimalTransaction = {
   to: TEST_STORE_ETH_ADDRESS,
   value: One,
-  data: hexlify(randomBytes(64)),
+  data: createRandomBytesHexString(64),
 };
 
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {

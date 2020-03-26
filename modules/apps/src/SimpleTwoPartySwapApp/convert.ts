@@ -5,7 +5,7 @@ import {
   SimpleSwapAppState,
   SwapParameters,
   makeChecksumOrEthAddress,
-  convertCoinTransfersToObjIfNeeded
+  convertCoinTransfersToObjIfNeeded,
 } from "@connext/types";
 
 export function convertSimpleSwapAppState<To extends NumericTypeName>(

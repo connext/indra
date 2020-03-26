@@ -1,7 +1,7 @@
 import { MessagingAuthService } from "@connext/messaging";
 import { Injectable, Inject } from "@nestjs/common";
-import { hexlify, randomBytes, recoverAddress } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
+import { createRandomBytesHexString, recoverAddressWithEthers } from "@connext/types";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
@@ -30,7 +30,7 @@ export class AuthService {
   }
 
   async getNonce(userPublicIdentifier: string): Promise<string> {
-    const nonce = hexlify(randomBytes(nonceLen));
+    const nonce = createRandomBytesHexString(nonceLen);
     const expiry = Date.now() + nonceTTL;
     // FIXME-- store nonce in redis instead of here...
     this.nonces[userPublicIdentifier] = { expiry, nonce };
@@ -55,7 +55,7 @@ export class AuthService {
     this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
-    const addr = recoverAddress(nonce, signedNonce);
+    const addr = await recoverAddressWithEthers(nonce, signedNonce);
     if (addr !== xpubAddress) {
       throw new Error(`verification failed`);
     }

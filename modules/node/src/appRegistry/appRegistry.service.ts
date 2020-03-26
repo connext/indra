@@ -155,7 +155,11 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case WithdrawApp: {
-        validateWithdrawApp(proposeInstallParams, from, this.cfCoreService.cfCore.publicIdentifier);
+        await validateWithdrawApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
         break;
       }
       case HashLockTransferApp: {
