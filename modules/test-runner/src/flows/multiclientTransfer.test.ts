@@ -33,7 +33,7 @@ describe("Full Flow: Multi-client transfer", () => {
 
   it("Clients transfer assets between themselves", async function() {
     // how long the ping-pong transfers should last in s
-    const DURATION = 30_000;
+    const DURATION = 15_000;
     let gatewayTransfers = {
       sent: 0,
       received: 0,
