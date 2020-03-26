@@ -483,7 +483,7 @@ class App extends React.Component {
         ]);
         const depositParams = {
           amount: amount.toString(),
-          assetId: token.address.toLowerCase(),
+          assetId: token.address,
         };
         console.log(
           `Depositing ${depositParams.amount} tokens into channel: ${channel.multisigAddress}`,

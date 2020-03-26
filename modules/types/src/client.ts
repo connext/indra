@@ -50,7 +50,7 @@ export type AssetAmount = {
 
 export type DepositParameters = {
   amount: BigNumberish;
-  assetId: Address;
+  assetId: Address; // TODO: Ensure that this value is case insensitive
 };
 
 export type RequestDepositRightsParameters = {
