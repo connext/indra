@@ -14,6 +14,7 @@ import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransf
 import { MessagingModule } from "../messaging/messaging.module";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
+import { SignedTransferModule } from "../signedTransfer/signedTransfer.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -30,17 +31,18 @@ import { AppActionsService } from "./appActions.service";
     FastSignedTransferModule,
     LinkedTransferModule,
     LoggerModule,
-    SwapRateModule,
     LinkedTransferModule,
-    TransferModule,
+    SignedTransferModule,
+    SwapRateModule,
     MessagingModule,
-    WithdrawModule,
+    TransferModule,
     TypeOrmModule.forFeature([
       AppInstanceRepository,
       AppRegistryRepository,
       ChannelRepository,
       WithdrawRepository,
     ]),
+    WithdrawModule,
   ],
   providers: [AppRegistryService, AppActionsService],
 })

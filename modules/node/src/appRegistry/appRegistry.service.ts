@@ -6,6 +6,7 @@ import {
   validateFastSignedTransferApp,
   validateWithdrawApp,
   validateHashLockTransferApp,
+  validateSignedTransferApp,
 } from "@connext/apps";
 import {
   AppInstanceJson,
@@ -14,6 +15,7 @@ import {
   HashLockTransferAppName,
   MethodParams,
   SimpleLinkedTransferAppName,
+  SimpleSignedTransferAppName,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
@@ -166,6 +168,14 @@ export class AppRegistryService implements OnModuleInit {
         validateHashLockTransferApp(
           proposeInstallParams,
           blockNumber,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        break;
+      }
+      case SimpleSignedTransferAppName: {
+        validateSignedTransferApp(
+          proposeInstallParams,
           from,
           this.cfCoreService.cfCore.publicIdentifier,
         );

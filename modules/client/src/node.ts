@@ -7,6 +7,7 @@ import {
   ILoggerService,
   ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
+  ResolveSignedTransferResponse,
   stringify,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
@@ -168,6 +169,12 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
+  public async fetchSignedTransfer(paymentId: string): Promise<any> {
+    return this.send(`${this.userPublicIdentifier}.transfer.fetch-signed`, {
+      paymentId,
+    });
+  }
+
   public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
     return this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
       paymentId,
@@ -185,6 +192,12 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse> {
     return this.send(`${this.userPublicIdentifier}.transfer.resolve-hashlock`, {
       lockHash,
+    });
+  }
+
+  public async resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse> {
+    return this.send(`${this.userPublicIdentifier}.transfer.resolve-signed`, {
+      paymentId,
     });
   }
 

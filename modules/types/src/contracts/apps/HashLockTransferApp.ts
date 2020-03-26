@@ -1,12 +1,11 @@
 import { BigNumber, BigNumberish } from "ethers/utils";
 
-import { enumify } from "../../utils";
-
 import { CoinTransfer } from "../funding";
 import {
   singleAssetTwoPartyCoinTransferEncoding,
   tidy,
 } from "../misc";
+import { enumify } from "../../utils";
 
 import { HashLockTransfer } from "./common";
 

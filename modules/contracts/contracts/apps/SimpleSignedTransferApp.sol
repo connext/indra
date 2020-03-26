@@ -1,30 +1,30 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
 
-/// @title Lightning HTLC Transfer App
+/// @title Simple Signed Transfer App
 /// @notice This contract allows users to claim a payment locked in
-///         the application if they provide a preImage and timelock
-///         that corresponds to a lightning htlc
-contract HashLockTransferApp is CounterfactualApp {
+///         the application if the specified signed submits the correct
+///         signature for the provided data
+contract SimpleSignedTransferApp is CounterfactualApp {
+    using ECDSA for bytes32;
+    using SafeMath for uint256;
 
-    /**
-    * This app can also not be used to send _multiple_ hashlocked payments,
-    * only one can be redeemed with the preImage.
-    */
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
-        bytes32 lockHash;
-        bytes32 preImage;
-        uint256 timelock;
+        address signer;
+        bytes32 paymentId;
         bool finalized;
     }
 
     struct Action {
-        bytes32 preImage;
+        bytes32 data;
+        bytes signature;
     }
 
     function applyAction(
@@ -37,15 +37,13 @@ contract HashLockTransferApp is CounterfactualApp {
     {
         AppState memory state = abi.decode(encodedState, (AppState));
         Action memory action = abi.decode(encodedAction, (Action));
-        bytes32 generatedHash = sha256(abi.encode(action.preImage));
 
         require(!state.finalized, "Cannot take action on finalized state");
-        require(block.number < state.timelock, "Cannot take action if timelock is expired");
-        require(state.lockHash == generatedHash, "Hash generated from preimage does not match hash in state");
+        bytes32 rawHash = keccak256(abi.encodePacked(action.data, state.paymentId));
+        require(state.signer == rawHash.recover(action.signature), "Incorrect signer recovered from signature");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;
-        state.preImage = action.preImage;
         state.finalized = true;
 
         return abi.encode(state);
@@ -57,11 +55,6 @@ contract HashLockTransferApp is CounterfactualApp {
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
-
-        // If payment hasn't been unlocked, require that the timelock is expired
-        if (!state.finalized) {
-            require(block.number >= state.timelock, "Cannot revert payment if timelock is unexpired");
-        }
 
         return abi.encode(state.coinTransfers);
     }

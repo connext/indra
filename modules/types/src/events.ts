@@ -4,6 +4,7 @@ import {
   ConditionalTransferTypes,
   CreatedLinkedTransferMeta,
   CreatedFastSignedTransferMeta,
+  CreatedSignedTransferMeta,
 } from "./contracts";
 
 import { AppInstanceProposal } from "./app";
@@ -12,6 +13,7 @@ import { ChannelMethods } from "./channelProvider";
 import { enumify } from "./utils";
 
 type FastSignedTransfer = typeof ConditionalTransferTypes.FastSignedTransfer;
+type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
 type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
 
@@ -26,10 +28,20 @@ type CreateMultisigEventData = {
 ////////////////////////////////////////
 const CREATE_TRANSFER = "CREATE_TRANSFER";
 
+export type ReceiveTransferStartedEventData = {
+  amount: string;
+  assetId: string;
+  paymentId: string;
+  sender: string;
+  recipient?: string;
+  meta: any;
+  type: ConditionalTransferTypes;
+};
+
 type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = undefined> = {
   amount: HexObject;
   assetId: string;
-  paymentId: string;
+  paymentId?: string;
   sender: string;
   recipient?: string;
   meta: any;
@@ -40,6 +52,8 @@ type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = un
     ? CreatedLinkedTransferMeta
     : T extends FastSignedTransfer
     ? CreatedFastSignedTransferMeta
+    : T extends SignedTransfer
+    ? CreatedSignedTransferMeta
     : undefined;
 };
 
@@ -148,6 +162,7 @@ export namespace EventPayloads {
   export type CreateMultisig = CreateMultisigEventData;
   export type CreateLinkedTransfer = CreateTransferEventData<LinkedTransfer>;
   export type CreateFastTransfer = CreateTransferEventData<FastSignedTransfer>;
+  export type CreateSignedTransfer = CreateTransferEventData<SignedTransfer>;
   export type CreateHashLockTransfer = CreateTransferEventData<HashLockTransfer>;
   export type CreateTransfer = CreateTransferEventData<undefined>;
   export type Install = InstallEventData

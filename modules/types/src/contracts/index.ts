@@ -6,6 +6,8 @@ import {
   HashLockTransferAppState,
   SimpleLinkedTransferAppAction,
   SimpleLinkedTransferAppState,
+  SimpleSignedTransferAppAction,
+  SimpleSignedTransferAppState,
   SimpleSwapAppState,
   WithdrawAppState,
   WithdrawAppAction,
@@ -20,6 +22,7 @@ export type AppAction =
   | FastSignedTransferAppAction
   | HashLockTransferAppAction
   | SimpleLinkedTransferAppAction
+  | SimpleSignedTransferAppAction
   | WithdrawAppAction;
 
 export type AppState = 
@@ -27,5 +30,6 @@ export type AppState =
   | FastSignedTransferAppState
   | HashLockTransferAppState
   | SimpleLinkedTransferAppState
+  | SimpleSignedTransferAppState
   | SimpleSwapAppState
   | WithdrawAppState;

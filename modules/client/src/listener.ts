@@ -2,15 +2,16 @@ import {
   bigNumberifyJson,
   CoinBalanceRefundAppName,
   EventNames,
+  EventPayloads,
   FastSignedTransferAppName,
   HashLockTransferAppName,
   ILoggerService,
   MethodNames,
   MethodParams,
   SimpleLinkedTransferAppName,
+  SimpleSignedTransferAppName,
   WithdrawAppName,
   WithdrawAppState,
-  EventPayloads,
 } from "@connext/types";
 import {
   commonAppProposalValidation,
@@ -19,6 +20,7 @@ import {
   validateWithdrawApp,
   validateFastSignedTransferApp,
   validateHashLockTransferApp,
+  validateSignedTransferApp,
 } from "@connext/apps";
 
 import { ConnextClient } from "./connext";
@@ -308,6 +310,10 @@ export class ConnextListener extends ConnextEventEmitter {
         case HashLockTransferAppName: {
           const blockNumber = await this.connext.ethProvider.getBlockNumber();
           validateHashLockTransferApp(params, blockNumber, from, this.connext.publicIdentifier);
+          break;
+        }
+        case SimpleSignedTransferAppName: {
+          validateSignedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
         default: {

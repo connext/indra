@@ -3,6 +3,8 @@ import { Address, BigNumber, Network, Transaction, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import {
   GetHashLockTransferResponse,
+  ResolveSignedTransferResponse,
+  GetSignedTransferResponse,
   LinkedTransferStatus,
   NetworkContext,
   ResolveFastSignedTransferResponse,
@@ -168,9 +170,11 @@ export interface INodeApiClient {
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
+  fetchSignedTransfer(paymentId: string): Promise<GetSignedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
+  resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<void>;
