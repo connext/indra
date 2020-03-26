@@ -19,6 +19,7 @@ import { CollateralModule } from "./collateral/collateral.module";
 import { LinkedTransferModule } from "./linkedTransfer/linkedTransfer.module";
 import { FastSignedTransferModule } from "./fastSignedTransfer/fastSignedTransfer.module";
 import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.module";
+import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
 
 @Module({
   controllers: [CFCoreController],
@@ -40,6 +41,7 @@ import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.modu
     LoggerModule,
     MessagingModule,
     RedisModule,
+    SignedTransferModule,
     SwapRateModule,
     TransferModule,
   ],
