@@ -1,4 +1,5 @@
-import { delay, EthereumCommitment, recoverAddressWithEthers } from "@connext/types";
+import { delay, EthereumCommitment } from "@connext/types";
+import { recoverAddress } from "@connext/crypto";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 
@@ -31,7 +32,7 @@ export async function assertIsValidSignature(
   }
   const hash = commitment.hashToSign();
   // recoverAddress: 83 ms, hashToSign: 7 ms
-  const signer = await recoverAddressWithEthers(hash, signature);
+  const signer = await recoverAddress(hash, signature);
   if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${hash}.`,
