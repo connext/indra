@@ -21,6 +21,9 @@ import {
   WithdrawAppState,
   WithdrawAppAction,
   SimpleLinkedTransferAppAction,
+  SignedTransferAppAction,
+  SignedTransferAppState,
+  SimpleSignedTransferApp,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { soliditySha256 } from "ethers/utils";
@@ -31,6 +34,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
 
 @Injectable()
 export class AppActionsService {
@@ -38,6 +42,7 @@ export class AppActionsService {
     private readonly log: LoggerService,
     private readonly withdrawService: WithdrawService,
     private readonly cfCoreService: CFCoreService,
+    private readonly signedTransferService: SignedTransferService,
     private readonly withdrawRepository: WithdrawRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
@@ -85,6 +90,16 @@ export class AppActionsService {
           action as HashLockTransferAppAction,
           from,
         );
+        break;
+      }
+      case SimpleSignedTransferApp: {
+        await this.handleSignedTransferAppAction(
+          appInstanceId,
+          newState as SignedTransferAppState,
+          action as SignedTransferAppAction,
+          from,
+        );
+        break;
       }
     }
   }
@@ -222,6 +237,30 @@ export class AppActionsService {
     await this.cfCoreService.takeAction(senderApp.identityHash, {
       preImage: action.preImage,
     } as HashLockTransferAppAction);
+
+    await this.cfCoreService.uninstallApp(senderApp.identityHash);
+    this.log.info(`Unlocked transfer ${senderApp.identityHash}`);
+  }
+
+  private async handleSignedTransferAppAction(
+    appInstanceId: string,
+    newState: SignedTransferAppState,
+    action: SignedTransferAppAction,
+    from: string,
+  ): Promise<void> {
+    const senderApp = await this.signedTransferService.findSenderAppByPaymentId(newState.paymentId);
+
+    if (!senderApp) {
+      throw new Error(
+        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstanceId}`,
+      );
+    }
+
+    // take action and uninstall
+    await this.cfCoreService.takeAction(senderApp.identityHash, {
+      data: action.data,
+      signature: action.signature,
+    } as SignedTransferAppAction);
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
     this.log.info(`Unlocked transfer ${senderApp.identityHash}`);

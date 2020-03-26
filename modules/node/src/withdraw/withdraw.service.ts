@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { WithdrawApp } from "@connext/types";
 import { signDigest } from "@connext/crypto";
+import { WithdrawApp } from "@connext/types";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";

@@ -22,7 +22,7 @@ import { sendMachine } from "../state";
 
 import { Copyable } from "./copyable";
 import { useXpub, XpubInput } from "./input";
-import { createRandom32ByteHexString } from "@connext/client/dist/lib";
+import { createRandom32ByteHexString } from "@connext/types";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 

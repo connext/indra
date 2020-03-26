@@ -26,7 +26,7 @@ describe("Get App Registry", () => {
     client = await createClient();
     expect(client.multisigAddress).to.exist;
     const appRegistry = await client.getAppRegistry();
-    expect(appRegistry.length).to.equal(6);
+    expect(appRegistry.length).to.equal(7);
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });
 

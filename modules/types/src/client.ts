@@ -8,6 +8,7 @@ import {
   ConditionalTransferResponse,
   WithdrawResponse,
   GetHashLockTransferResponse,
+  GetSignedTransferResponse,
 } from "./apps";
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { BigNumber } from "./basic";
@@ -113,6 +114,7 @@ export interface IConnextClient {
   getChannel(): Promise<GetChannelResponse>;
   getLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
+  getSignedTransfer(lockHash: string): Promise<GetSignedTransferResponse>;
   getAppRegistry(
     appDetails?:
       | {

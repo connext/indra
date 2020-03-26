@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "6.0.0-alpha.1",
+  "version": "6.0.0-alpha.2",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "@connext/contracts": "1.0.5",
-    "@connext/crypto": "6.0.0-alpha.1",
-    "@connext/types": "6.0.0-alpha.1",
+    "@connext/crypto": "6.0.0-alpha.2",
+    "@connext/types": "6.0.0-alpha.2",
     "ethers": "4.0.46",
     "@openzeppelin/contracts": "2.5.0",
     "eventemitter3": "4.0.0",
@@ -35,7 +35,7 @@
   "devDependencies": {
     "@babel/core": "7.8.4",
     "@babel/plugin-proposal-object-rest-spread": "7.8.3",
-    "@connext/store": "6.0.0-alpha.1",
+    "@connext/store": "6.0.0-alpha.2",
     "@types/chai": "4.2.9",
     "@types/dotenv-safe": "8.1.0",
     "@types/jest": "25.1.2",

@@ -9,6 +9,7 @@ import {
   CoinBalanceRefundAppState,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import { Contract, providers } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
@@ -37,7 +38,6 @@ import {
   IConnextClient,
   INodeApiClient,
 } from "./types";
-import { signDigest } from "@connext/crypto";
 
 export const connect = async (
   clientOptions: string | ClientOptions,

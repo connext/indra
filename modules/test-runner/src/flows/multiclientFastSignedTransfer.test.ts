@@ -1,3 +1,4 @@
+import { signDigest } from "@connext/crypto";
 import {
   IConnextClient,
   ReceiveTransferFinishedEventData,
@@ -7,7 +8,6 @@ import {
   ResolveFastSignedTransferParameters,
   createRandom32ByteHexString,
 } from "@connext/types";
-import { signDigest } from "@connext/crypto";
 import { bigNumberify, solidityKeccak256, SigningKey } from "ethers/utils";
 import { before } from "mocha";
 import { Client } from "ts-nats";
