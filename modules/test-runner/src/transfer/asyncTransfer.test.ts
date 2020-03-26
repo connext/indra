@@ -156,7 +156,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`invalid BigNumber value`);
+    ).to.be.rejectedWith(`invalid number value`);
   });
 
   it("Bot A tries to transfer with an invalid token address", async () => {
