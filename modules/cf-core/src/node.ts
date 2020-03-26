@@ -20,7 +20,6 @@ import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import {
-  ConditionalTransactionCommitment,
   MultisigCommitment,
   SetStateCommitment,
 } from "./ethereum";
@@ -30,7 +29,6 @@ import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./priv
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { Store } from "./store";
 import {
   ILockService,
   IMessagingService,
@@ -71,7 +69,6 @@ export class Node {
   private signer!: SigningKey;
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
-  private store!: Store;
 
   static async create(
     messagingService: IMessagingService,
@@ -123,7 +120,6 @@ export class Node {
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
-    this.store = new Store(this.storeService);
     this.protocolRunner = this.buildProtocolRunner();
   }
 
@@ -135,7 +131,7 @@ export class Node {
       this.publicIdentifier,
       this.incoming,
       this.outgoing,
-      this.store,
+      this.storeService,
       this.messagingService,
       this.protocolRunner,
       this.networkContext,
@@ -179,7 +175,7 @@ export class Node {
     const protocolRunner = new ProtocolRunner(
       this.networkContext,
       this.provider,
-      this.store,
+      this.storeService,
       this.log.newContext("CF-ProtocolRunner"),
     );
 
@@ -244,11 +240,13 @@ export class Node {
     });
 
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
-      const { store } = this.requestHandler;
       const [stateChannels] = args;
 
       for (const stateChannel of stateChannels) {
-        await store.saveStateChannel(stateChannel);
+        // TODO: remove or move to protocol level check
+        // make sure state channel does not already exist
+        await this.storeService.createStateChannel(stateChannel.toJson());
+        await this.storeService.createFreeBalance(stateChannel.multisigAddress, stateChannel.freeBalance.toJson());
       }
     });
 
@@ -261,41 +259,59 @@ export class Node {
           string,
         ],
       ) => {
-        const { store } = this.requestHandler;
+        const [commitmentType, commitment, key] = args;
+        // key is either the multisig address or the appIdHash
+        // depending on what is being saved;
 
-        const [commitmentType, commitment, ...res] = args;
+        // will create a commitment if it does not exist, or update an
+        // existing commitment
+        const createOrUpdate = async (key: string, value: any, getter: (k: string) => Promise<any | undefined>, creator: (k: string, v: any) => Promise<void>, setter: (k: string, v: any) => Promise<void>) => {
+          const existing = await getter(key);
+          if (existing) {
+            return await setter(key, value);
+          }
+          return await creator(key, value);
+        };
 
         switch (commitmentType) {
 
           case CommitmentTypes.Conditional:
-            const [appId] = res;
-            await store.saveConditionalTransactionCommitment(
-              appId,
-              commitment as ConditionalTransactionCommitment,
+            await createOrUpdate(
+              key,
+              commitment,
+              this.storeService.getConditionalTransactionCommitment,
+              this.storeService.createConditionalTransactionCommitment,
+              this.storeService.updateConditionalTransactionCommitment,
             );
             break;
 
           case CommitmentTypes.SetState:
-            const [appIdentityHash] = res;
-            await store.saveLatestSetStateCommitment(
-              appIdentityHash,
-              commitment as SetStateCommitment,
+            await createOrUpdate(
+              key,
+              commitment,
+              this.storeService.getSetStateCommitment,
+              this.storeService.createSetStateCommitment,
+              this.storeService.updateSetStateCommitment,
             );
             break;
 
           case CommitmentTypes.Setup:
-            const [multisigAddress] = res;
-            await store.saveSetupCommitment(
-              multisigAddress,
-              commitment as MinimalTransaction,
+            await createOrUpdate(
+              key,
+              commitment,
+              this.storeService.getSetupCommitment,
+              this.storeService.createSetupCommitment,
+              (k: string, v: any) => Promise.resolve(),
             );
             break;
 
           case CommitmentTypes.Withdraw:
-            const [multisig] = res;
-            await store.saveWithdrawalCommitment(
-              multisig,
-              commitment as MinimalTransaction,
+            await createOrUpdate(
+              key,
+              commitment,
+              this.storeService.getWithdrawalCommitment,
+              this.storeService.createWithdrawalCommitment,
+              this.storeService.updateWithdrawalCommitment,
             );
             break;
 
@@ -309,30 +325,43 @@ export class Node {
     protocolRunner.register(
       Opcode.PERSIST_APP_INSTANCE,
       async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
-        const { store } = this.requestHandler;
         const [type, postProtocolChannel, app] = args;
 
-        // always persist the free balance
-        // this will error if channel does not exist
-        await store.saveFreeBalance(postProtocolChannel);
+        const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
 
         switch (type) {
+
           case PersistAppType.Proposal:
-            await store.saveAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            await this.storeService.createAppProposal(multisigAddress, app as AppInstanceProposal, numProposedApps);
             break;
+
           case PersistAppType.Reject:
-            await store.removeAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            await this.storeService.removeAppProposal(multisigAddress, (app as AppInstanceProposal).identityHash);
             break;
 
           case PersistAppType.Instance:
-            if (app.identityHash === postProtocolChannel.freeBalance.identityHash) {
+            // handle free balance case
+            if (app.identityHash === freeBalance.identityHash) {
+              await this.storeService.updateFreeBalance(multisigAddress, freeBalance.toJson());
               break;
             }
-            await store.saveAppInstance(postProtocolChannel, app as AppInstance);
+            // check if app instance needs to be created, or if it
+            // is being updated
+            const existing = await this.storeService.getAppInstance(app.identityHash);
+            if (existing) {
+              // update app and continue, no need to touch free balance
+              await this.storeService.updateAppInstance(multisigAddress, (app as AppInstance).toJson());
+              break;
+            }
+            // create app instance and update the free balance
+            await this.storeService.createAppInstance(multisigAddress, (app as AppInstance).toJson());
+            await this.storeService.updateFreeBalance(multisigAddress, freeBalance.toJson());
             break;
 
           case PersistAppType.Uninstall:
-            await store.removeAppInstance(postProtocolChannel, app as AppInstance);
+            await this.storeService.removeAppInstance(multisigAddress, app.identityHash);
+            // update free balance
+            await this.storeService.updateFreeBalance(multisigAddress, freeBalance.toJson());
             break;
 
           default:

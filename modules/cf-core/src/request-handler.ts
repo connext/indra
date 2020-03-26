@@ -4,6 +4,7 @@ import {
   ILoggerService,
   IMessagingService,
   MethodName,
+  IStoreService,
 } from "@connext/types";
 import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -13,7 +14,6 @@ import { eventNameToImplementation, methodNameToImplementation } from "./methods
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
-import { Store } from "./store";
 import {
   MethodRequest,
   MethodResponse,
@@ -37,7 +37,7 @@ export class RequestHandler {
     readonly publicIdentifier: string,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
-    readonly store: Store,
+    readonly store: IStoreService,
     readonly messagingService: IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,

@@ -1,15 +1,15 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
-import { NO_APP_INSTANCE_ID_TO_INSTALL } from "../../errors";
+import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID, NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import { Store } from "../../store";
 import {
   AppInstanceProposal,
 } from "../../types";
 import { NodeController } from "../controller";
+import { StateChannel } from "../../models";
 
 /**
  * This converts a proposed app instance to an installed app instance while
@@ -27,7 +27,10 @@ export class InstallAppInstanceController extends NodeController {
     const { store } = requestHandler;
     const { appInstanceId } = params;
 
-    const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
+    const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
+    if (!sc) {
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+    }
 
     return [sc.multisigAddress];
   }
@@ -40,14 +43,19 @@ export class InstallAppInstanceController extends NodeController {
 
     const appInstanceProposal = await install(store, protocolRunner, params, publicIdentifier);
 
+    const appInstance = await store.getAppInstance(appInstanceProposal.identityHash);
+    if (!appInstance) {
+      throw new Error(`Cannot find app instance after install protocol run for hash ${appInstanceProposal.identityHash}`);
+    }
+
     return {
-      appInstance: (await store.getAppInstance(appInstanceProposal.identityHash)).toJson(),
+      appInstance,
     };
   }
 }
 
 export async function install(
-  store: Store,
+  store: IStoreService,
   protocolRunner: ProtocolRunner,
   params: MethodParams.Install,
   initiatorXpub: string,
@@ -58,9 +66,16 @@ export async function install(
     throw new Error(NO_APP_INSTANCE_ID_TO_INSTALL);
   }
 
-  const proposal = await store.getAppInstanceProposal(appInstanceId);
+  const proposal = await store.getAppProposal(appInstanceId);
+  if (!proposal) {
+    throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId));
+  }
 
-  const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
+  const json = await store.getStateChannelByAppInstanceId(appInstanceId);
+  if (!json) {
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+  }
+  const stateChannel = StateChannel.fromJson(json);
 
   await protocolRunner.initiateProtocol(ProtocolNames.install, {
     initiatorXpub,
@@ -84,8 +99,8 @@ export async function install(
     responderDepositTokenAddress: proposal.responderDepositTokenAddress,
     disableLimit: false,
   });
-
-  await store.removeAppProposal(stateChannel.removeProposal(appInstanceId), proposal);
+  stateChannel.removeProposal(appInstanceId);
+  await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);
 
   return proposal;
 }

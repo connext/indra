@@ -1,10 +1,8 @@
-import { CommitmentTypes, PersistAppType, ProtocolNames, ProtocolParams } from "@connext/types";
+import { CommitmentTypes, PersistAppType, ProtocolNames, ProtocolParams, IStoreService } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { StateChannel } from "../models";
-import { Store } from "../store";
 import {
   Context,
   Opcode,
@@ -14,7 +12,9 @@ import {
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
+import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements, stateChannelClassFromStoreByMultisig } from "./utils";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
+import { StateChannel } from "../models";
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
@@ -36,7 +36,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
     const { responderXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
-    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const postProtocolStateChannel = await computeStateTransition(
@@ -98,7 +98,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
     const { initiatorXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
-    const preProtocolStateChannel = (await store.getStateChannel(multisigAddress)) as StateChannel;
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const postProtocolStateChannel = await computeStateTransition(
@@ -151,11 +151,11 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
 async function computeStateTransition(
   params: ProtocolParams.Uninstall,
-  store: Store,
+  store: IStoreService,
   provider: JsonRpcProvider,
 ) {
   const { appIdentityHash, multisigAddress, blockNumberToUseIfNecessary } = params;
-  const stateChannel = await store.getStateChannel(multisigAddress);
+  const stateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
   return stateChannel.uninstallApp(
     appIdentityHash,
     await computeTokenIndexedFreeBalanceIncrements(

@@ -3,6 +3,8 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
+import { StateChannel } from "../../models";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 
 export class GetTokenIndexedFreeBalancesController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_getTokenIndexedFreeBalanceStates)
@@ -21,7 +23,11 @@ export class GetTokenIndexedFreeBalancesController extends NodeController {
       );
     }
 
-    const stateChannel = await store.getStateChannel(multisigAddress);
+    const json = await store.getStateChannel(multisigAddress);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+    const stateChannel = StateChannel.fromJson(json);
 
     return stateChannel.getFreeBalanceClass().toTokenIndexedCoinTransferMap();
   }

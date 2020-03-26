@@ -5,11 +5,12 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import {
-  NULL_INITIAL_STATE_FOR_PROPOSAL,
+  NULL_INITIAL_STATE_FOR_PROPOSAL, NO_STATE_CHANNEL_FOR_OWNERS,
 } from "../../errors";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
+import { StateChannel } from "../../models";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -25,17 +26,15 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<string[]> {
-    const { networkContext, publicIdentifier, store } = requestHandler;
+    const { publicIdentifier, store } = requestHandler;
     const { proposedToIdentifier } = params;
 
-    const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      [publicIdentifier, proposedToIdentifier],
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
-      networkContext.provider,
-    );
+    const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, proposedToIdentifier].toString()));
+    }
 
-    return [multisigAddress];
+    return [json.multisigAddress];
   }
 
   protected async beforeExecution(
@@ -67,29 +66,26 @@ export class ProposeInstallAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> {
-    const { networkContext, protocolRunner, publicIdentifier, store } = requestHandler;
+    const { protocolRunner, publicIdentifier, store } = requestHandler;
 
     const { proposedToIdentifier } = params;
 
-    // see comment in `getRequiredLockNames`
-    const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      [publicIdentifier, proposedToIdentifier],
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
-      networkContext.provider,
-    );
+    const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, proposedToIdentifier].toString()));
+    }
 
     await protocolRunner.initiateProtocol(ProtocolNames.propose, {
       ...params,
-      multisigAddress,
+      multisigAddress: json.multisigAddress,
       initiatorXpub: publicIdentifier,
       responderXpub: proposedToIdentifier,
     });
 
+    const updated = await store.getStateChannel(json.multisigAddress);
+
     return {
-      appInstanceId: (
-        await store.getStateChannel(multisigAddress)
-      ).mostRecentlyProposedAppInstance().identityHash,
+      appInstanceId: StateChannel.fromJson(updated!).mostRecentlyProposedAppInstance().identityHash,
     };
   }
 }

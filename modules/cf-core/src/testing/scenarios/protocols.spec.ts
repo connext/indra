@@ -8,6 +8,7 @@ import { xkeyKthAddress } from "../../xkeys";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { AppWithAction } from "../contracts";
 import { TestRunner } from "../test-runner";
+import { StateChannel } from "../../models";
 
 let wallet: Wallet;
 let appWithAction: Contract;
@@ -65,7 +66,7 @@ describe("Three mininodes", () => {
     const postInstallChannel = await tr.mininodeA.store.getStateChannel(tr.multisigAB);
     expect(postInstallChannel).toBeDefined;
 
-    const [appInstance] = [...postInstallChannel.appInstances.values()];
+    const [appInstance] = [...StateChannel.fromJson(postInstallChannel!).appInstances.values()];
 
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.update, {
       initiatorXpub: tr.mininodeA.xpub,

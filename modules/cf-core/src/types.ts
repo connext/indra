@@ -1,10 +1,9 @@
 import {
   ILoggerService,
+  IStoreService,
   NetworkContext,
   ProtocolMessage,
 } from "@connext/types";
-
-import { Store } from "./store";
 
 export enum Opcode {
   // Middleware hook to send a ProtocolMessage to a peer.
@@ -37,7 +36,7 @@ export type Instruction = Function | Opcode;
 
 // Arguments passed to a protocol execulion flow
 export interface Context {
-  store: Store;
+  store: IStoreService;
   log: ILoggerService;
   message: ProtocolMessage;
   network: NetworkContext;

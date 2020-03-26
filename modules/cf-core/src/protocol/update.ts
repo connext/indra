@@ -13,7 +13,7 @@ import {
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.update;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
@@ -42,7 +42,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       newState,
     } = params as ProtocolParams.Update;
 
-    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
@@ -107,7 +107,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       newState,
     } = params as ProtocolParams.Update;
 
-    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 

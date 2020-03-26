@@ -3,7 +3,7 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { AppInstance, AppInstanceProposal } from "../models";
+import { AppInstance, AppInstanceProposal, StateChannel } from "../models";
 import {
   Context,
   Opcode,
@@ -13,7 +13,8 @@ import {
 import { appIdentityToHash, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
@@ -45,7 +46,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       meta,
     } = params as ProtocolParams.Propose;
 
-    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -177,7 +178,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,

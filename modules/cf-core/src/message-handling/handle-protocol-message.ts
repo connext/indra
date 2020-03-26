@@ -5,10 +5,11 @@ import {
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
+  IStoreService,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../errors";
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID, NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
@@ -18,7 +19,7 @@ import {
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
 } from "../types";
-import { Store } from "../store";
+import { StateChannel, AppInstance } from "../models";
 
 /**
  * Forwards all received NodeMessages that are for the machine's internal
@@ -47,31 +48,35 @@ export async function handleReceivedProtocolMessage(
     publicIdentifier,
   );
 
-  if (outgoingEventData && protocol === ProtocolNames.install) {
-    const appInstanceId =
-      outgoingEventData!.data["appInstanceId"] ||
-      (outgoingEventData!.data as any).params["appInstanceId"];
-    if (appInstanceId) {
-      let proposal;
-      try {
-        proposal = await store.getAppInstanceProposal(appInstanceId);
-      } catch (e) {
-        if (!e.toString().includes(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId))) {
-          throw e;
-        }
-      }
-      if (proposal) {
-        const channel = (
-          await store.getStateChannelFromAppInstanceID(appInstanceId)
-        ).removeProposal(proposal.identityHash);
-        await store.removeAppProposal(channel, proposal);
-      }
-    }
+  if (!outgoingEventData) {
+    return;
   }
 
-  if (outgoingEventData) {
+  const appInstanceId =
+      outgoingEventData!.data["appInstanceId"] ||
+      (outgoingEventData!.data as any).params["appInstanceId"];
+
+  if (protocol !== ProtocolNames.install || !appInstanceId) {
     await emitOutgoingNodeMessage(router, outgoingEventData);
+    return;
   }
+
+  const proposal = await store.getAppProposal(appInstanceId);
+  if (!proposal) {
+    await emitOutgoingNodeMessage(router, outgoingEventData);
+    return;
+  }
+
+  // remove proposal from channel and store
+  const json = await store.getStateChannelByAppInstanceId(appInstanceId);
+  if (!json) {
+    throw new Error(`Could not find channel for app instance ${appInstanceId} when processing install protocol message`);
+  }
+  const channel = StateChannel.fromJson(json).removeProposal(proposal.identityHash);
+  await store.removeAppProposal(channel.multisigAddress, proposal.identityHash);
+
+  // finally, emit message
+  await emitOutgoingNodeMessage(router, outgoingEventData);
 }
 
 function emitOutgoingNodeMessage(router: RpcRouter, msg: EventEmittedMessage) {
@@ -82,7 +87,7 @@ async function getOutgoingEventDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
   networkContext: NetworkContext,
-  store: Store,
+  store: IStoreService,
   publicIdentifier: string,
 ): Promise<EventEmittedMessage | undefined> {
   // default to the pubId that initiated the protocol
@@ -96,6 +101,11 @@ async function getOutgoingEventDataFromProtocol(
         responderXpub,
         ...emittedParams
       } = params as ProtocolParams.Propose;
+      const json = await store.getStateChannel(multisigAddress);
+      if (!json) {
+        throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+      }
+      const app = StateChannel.fromJson(json).mostRecentlyProposedAppInstance();
       return {
         ...baseEvent,
         type: EventNames.PROPOSE_INSTALL_EVENT,
@@ -104,12 +114,15 @@ async function getOutgoingEventDataFromProtocol(
             ...emittedParams,
             proposedToIdentifier: responderXpub,
           },
-          appInstanceId: (
-            await store.getStateChannel(multisigAddress)
-          ).mostRecentlyProposedAppInstance().identityHash,
+          appInstanceId: app.identityHash,
         },
       };
     case ProtocolNames.install:
+      const multisig = (params as ProtocolParams.Install).multisigAddress;
+      const retrieved = await store.getStateChannel(multisig);
+      if (!retrieved) {
+        throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisig));
+      }
       return {
         ...baseEvent,
         type: EventNames.INSTALL_EVENT,
@@ -117,9 +130,7 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appInstanceId: (
-              await store.getStateChannel((params as ProtocolParams.Install).multisigAddress)
-            ).mostRecentlyInstalledAppInstance().identityHash,
+            appInstanceId: StateChannel.fromJson(retrieved).mostRecentlyInstalledAppInstance().identityHash,
           },
         },
       };
@@ -135,8 +146,9 @@ async function getOutgoingEventDataFromProtocol(
         type: EventNames.CREATE_CHANNEL_EVENT,
         data: getSetupEventData(
           params as ProtocolParams.Setup,
-          (await store.getStateChannel((params as ProtocolParams.Setup).multisigAddress))!
-            .multisigOwners,
+          StateChannel.fromJson(
+            (await store.getStateChannel((params as ProtocolParams.Setup).multisigAddress))!,
+          ).multisigOwners,
         ),
       };
     case ProtocolNames.takeAction:
@@ -146,10 +158,10 @@ async function getOutgoingEventDataFromProtocol(
         type: EventNames.UPDATE_STATE_EVENT,
         data: getStateUpdateEventData(
           params as ProtocolParams.Update,
-          (
-            await store.getAppInstance(
+          AppInstance.fromJson(
+            (await store.getAppInstance(
               (params as ProtocolParams.TakeAction | ProtocolParams.Update).appIdentityHash,
-            )
+            ))!,
           ).state,
         ),
       };
