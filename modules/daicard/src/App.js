@@ -514,7 +514,7 @@ class App extends React.Component {
 
       const amount = minBN([balance.onChain.ether.wad.sub(minDeposit.wad), nowMaxDeposit]);
       console.log(`Depositing ${amount} wei into channel: ${channel.multisigAddress}`);
-      const result = await channel.deposit({ amount: amount.toString() });
+      const result = await channel.deposit({ amount: amount.toString(), assetId: AddressZero });
       await this.refreshBalances();
       console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
 

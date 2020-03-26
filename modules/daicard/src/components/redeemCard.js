@@ -1,3 +1,4 @@
+import { ConditionalTransferTypes } from "@connext/types";
 import {
   Button,
   CircularProgress,
@@ -141,7 +142,7 @@ export const RedeemCard = style(({ channel, classes, history, location, token })
       takeAction(`REDEEM`);
       setMessage(`This should take just a few seconds`);
       const result = await channel.resolveCondition({
-        conditionType: "LINKED_TRANSFER",
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
         preImage: secret,
       });
