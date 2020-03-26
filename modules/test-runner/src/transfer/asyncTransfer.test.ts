@@ -32,7 +32,7 @@ import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
 
-describe.only("Async Transfers", () => {
+describe("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -263,7 +263,7 @@ describe.only("Async Transfers", () => {
     ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
   });
 
-  it.only("Experimental: Average latency of 10 async transfers with Eth", async () => {
+  it("Experimental: Average latency of 10 async transfers with Eth", async () => {
     let runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;
