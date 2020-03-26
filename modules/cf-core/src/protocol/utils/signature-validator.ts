@@ -1,7 +1,6 @@
 import { getAddress } from "ethers/utils";
 import { recoverAddress } from "@connext/crypto";
-
-import { EthereumCommitment } from "../../types";
+import { EthereumCommitment } from "@connext/types";
 
 export async function assertIsValidSignature(
   expectedSigner: string,
