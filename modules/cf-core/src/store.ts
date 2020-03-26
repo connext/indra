@@ -50,18 +50,17 @@ export class Store {
    * @param multisigAddress
    */
   public async getStateChannel(multisigAddress: string): Promise<StateChannel> {
-    let log
-    if(this.log) {
-      log = this.log
-    }
-    log.warn(`Called getStateChannel`)
     let start = Date.now();
+    
     const stateChannelJson = await this.storeService.getStateChannel(multisigAddress);
 
     if (!stateChannelJson) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
     }
-    logTime(log, start, `GotStateChannel JSON`)
+
+    if(this.log) {
+      logTime(this.log, start, `GotStateChannel JSON`)
+    }
 
     return StateChannel.fromJson(stateChannelJson);
   }
