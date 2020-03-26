@@ -186,6 +186,7 @@ export class TestRunner {
       ],
     }[outcomeType];
 
+    // TODO: fix sortAddresses sometimes not sorting correctly
     const participants = sortAddresses([
       xkeyKthAddress(this.mininodeA.xpub, 1),
       xkeyKthAddress(this.mininodeB.xpub, 1),
@@ -250,6 +251,7 @@ export class TestRunner {
       ],
     }[outcomeType];
 
+    // TODO: fix sortAddresses sometimes not sorting correctly
     const participants = sortAddresses([
       xkeyKthAddress(this.mininodeA.xpub, 1),
       xkeyKthAddress(this.mininodeB.xpub, 1),
