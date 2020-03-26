@@ -287,7 +287,7 @@ describe("HashLock Transfers", () => {
 
       await clientA.conditionalTransfer({
         amount: transfer.amount.toString(),
-        conditionType: HASHLOCK_TRANSFER,
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
         lockHash,
         timelock,
         assetId: transfer.assetId,
@@ -299,7 +299,7 @@ describe("HashLock Transfers", () => {
           res();
         });
         await clientB.resolveCondition({
-          conditionType: HASHLOCK_TRANSFER,
+          conditionType: ConditionalTransferTypes.HashLockTransfer,
           preImage,
         } as ResolveHashLockTransferParameters);
       });

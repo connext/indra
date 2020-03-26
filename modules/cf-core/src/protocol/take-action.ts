@@ -13,6 +13,7 @@ import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
+import { StateChannel } from "../models/state-channel";
 
 const protocol = ProtocolNames.takeAction;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;

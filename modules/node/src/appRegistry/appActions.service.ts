@@ -29,6 +29,7 @@ import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
+import { SupportedApplications } from "@connext/apps";
 
 @Injectable()
 export class AppActionsService {
@@ -44,7 +45,7 @@ export class AppActionsService {
   }
 
   async handleAppAction(
-    appName: SupportedApplication,
+    appName: SupportedApplications,
     app: AppInstanceJson,
     newState: AppState,
     action: AppAction,

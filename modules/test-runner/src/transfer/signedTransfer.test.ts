@@ -7,6 +7,7 @@ import {
   ResolveSignedTransferParameters,
   SignedTransferParameters,
   SignedTransferStatus,
+  SignedTransfer,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
@@ -287,8 +288,8 @@ describe("Signed Transfers", () => {
       const start = Date.now();
 
       await clientA.conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: SIGNED_TRANSFER,
+        amount: transfer.amount,
+        conditionType: ConditionalTransferTypes[SignedTransfer],
         paymentId,
         signer: signerAddress,
         assetId: transfer.assetId,
@@ -305,7 +306,7 @@ describe("Signed Transfers", () => {
           res();
         });
         await clientB.resolveCondition({
-          conditionType: SIGNED_TRANSFER,
+          conditionType: ConditionalTransferTypes[SignedTransfer],
           paymentId,
           data,
           signature,

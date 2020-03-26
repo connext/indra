@@ -17,6 +17,7 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
+import { logTime } from "../utils";
 
 export async function assertIsValidSignature(
   expectedSigner: string,
