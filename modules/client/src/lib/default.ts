@@ -3,7 +3,7 @@ import { StoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
 
 import { ClientOptions } from "../types";
-import { isMainnet, isRinkeby, isWalletProvided } from "./utils";
+import { isMainnet, isRinkeby, isWalletProvided, isLocalhost } from "./utils";
 
 export function shouldGenerateMnemonic(network: string, opts?: Partial<ClientOptions>): boolean {
   return !isMainnet(network) && !isWalletProvided(opts);
@@ -19,24 +19,38 @@ export function getDefaultStore(opts?: Partial<ClientOptions>): ConnextStore {
   return new ConnextStore(storeType || StoreTypes.LocalStorage, { backupService });
 }
 
+export function getDefaultUrlOptions(network: string) {
+  let urlOptions = {};
+  if (isLocalhost(network)) {
+    urlOptions = {
+      ethProviderUrl: `http://localhost:8545`,
+      nodeUrl: `http://localhost:8080`,
+    };
+  } else {
+    const baseUrl = isMainnet(network)
+      ? "indra.connext.network/api"
+      : isRinkeby(network)
+      ? "rinkeby.indra.connext.network/api"
+      : null;
+
+    if (!baseUrl) {
+      throw new Error(`Provided network (${network.toLowerCase()}) is not supported`);
+    }
+
+    urlOptions = {
+      ethProviderUrl: `https://${baseUrl}/ethprovider`,
+      nodeUrl: `https://${baseUrl}`,
+    };
+  }
+
+  return urlOptions;
+}
+
 export async function getDefaultOptions(
   network: string,
   overrideOptions?: Partial<ClientOptions>,
 ): Promise<ClientOptions> {
-  const baseUrl = isMainnet(network)
-    ? "indra.connext.network/api"
-    : isRinkeby(network)
-    ? "rinkeby.indra.connext.network/api"
-    : null;
-
-  if (!baseUrl) {
-    throw new Error(`Provided network (${network.toLowerCase()}) is not supported`);
-  }
-
-  const urlOptions = {
-    ethProviderUrl: `https://${baseUrl}/ethprovider`,
-    nodeUrl: `https://${baseUrl}`,
-  };
+  const urlOptions = getDefaultUrlOptions(network);
 
   const store = getOptionIfAvailable("store", overrideOptions) || getDefaultStore(overrideOptions);
 
