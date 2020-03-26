@@ -2,23 +2,19 @@ import {
   CriticalStateChannelAddresses,
   StateChannelJSON,
   StateSchemaVersion,
+  stringify,
+  deBigNumberifyJson,
 } from "@connext/types";
 
-import { flipTokenIndexedBalances } from "../ethereum";
-import { xkeyKthAddress } from "../machine/xkeys";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";
-import { prettyPrintObject, deBigNumberifyJson } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { AppInstanceProposal } from ".";
+import { AppInstanceProposal } from "./app-instance-proposal";
 import { AppInstance } from "./app-instance";
 import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-
-// TODO: Hmmm this code should probably be somewhere else?
-export const HARD_CODED_ASSUMPTIONS = {
-  freeBalanceDefaultTimeout: 172800,
-};
+import { flipTokenIndexedBalances, sortAddresses } from "./utils";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,
@@ -29,10 +25,6 @@ const ERRORS = {
   INSUFFICIENT_FUNDS: "Attempted to install an appInstance without sufficient funds",
   MULTISIG_OWNERS_NOT_SORTED: "multisigOwners parameter of StateChannel must be sorted",
 };
-
-function sortAddresses(addrs: string[]) {
-  return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-}
 
 export class StateChannel {
   constructor(
@@ -51,7 +43,7 @@ export class StateChannel {
     userNeuteredExtendedKeys.forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
         throw new Error(
-          `StateChannel constructor given invalid extended keys: ${prettyPrintObject(
+          `StateChannel constructor given invalid extended keys: ${stringify(
             userNeuteredExtendedKeys,
           )}`,
         );
@@ -427,7 +419,13 @@ export class StateChannel {
     const participants = this.getSigningKeysFor(appInstance.appSeqNo);
 
     if (!participants.every((v, idx) => v === appInstance.participants[idx])) {
-      throw new Error("AppInstance passed to installApp has incorrect participants");
+      throw new Error(
+        `AppInstance passed to installApp has incorrect participants. Got ${
+          JSON.stringify(appInstance.participants)
+        } but expected ${
+          JSON.stringify(participants)
+        }`,
+      );
     }
 
     /// Add modified FB and new AppInstance to appInstances
@@ -543,7 +541,7 @@ export class StateChannel {
       );
     } catch (e) {
       throw new Error(
-        `could not create state channel from json: ${prettyPrintObject(json)}. Error: ${e}`,
+        `could not create state channel from json: ${stringify(json)}. Error: ${e}`,
       );
     }
   }

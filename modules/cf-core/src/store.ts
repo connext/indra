@@ -1,17 +1,18 @@
-import { AppInstanceJson } from "@connext/types";
-import { BaseProvider } from "ethers/providers";
+import { AppInstanceJson, MinimalTransaction, stringify } from "@connext/types";
+import { JsonRpcProvider } from "ethers/providers";
 
 import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
-  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
-  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
   NO_MULTISIG_FOR_COUNTERPARTIES,
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
   NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
   NO_STATE_CHANNEL_FOR_OWNERS,
-} from "./methods";
+} from "./errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
-import { CFCoreTypes } from "./types";
-import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
+import { IStoreService } from "./types";
+import { getCreate2MultisigAddress } from "./utils";
+
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
 /**
@@ -19,13 +20,13 @@ import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum
  * StoreService.
  */
 export class Store {
-  constructor(private readonly storeService: CFCoreTypes.IStoreService) {}
+  constructor(private readonly storeService: IStoreService) {}
 
   public async getMultisigAddressWithCounterparty(
     owners: string[],
     proxyFactory: string,
     multisigMastercopy: string,
-    provider?: BaseProvider,
+    provider?: JsonRpcProvider,
   ): Promise<string> {
     try {
       const stateChannel = await this.getStateChannelByOwners(owners);
@@ -132,7 +133,7 @@ export class Store {
     const existing = await this.getStateChannelIfExists(stateChannel.multisigAddress);
     if (existing) {
       throw new Error(
-        `Should only call 'saveStateChannel' during setup protocol, found state channel: ${prettyPrintObject(
+        `Should only call 'saveStateChannel' during setup protocol, found state channel: ${stringify(
           existing,
         )}`,
       );
@@ -255,7 +256,7 @@ export class Store {
 
   public async getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<CFCoreTypes.MinimalTransaction> {
+  ): Promise<MinimalTransaction> {
     const withdrawalCommitment = await this.storeService.getWithdrawalCommitment(multisigAddress);
     if (!withdrawalCommitment) {
       throw new Error("Could not find withdrawal commitment");
@@ -265,14 +266,14 @@ export class Store {
 
   public async saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: CFCoreTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ) {
     return this.storeService.saveWithdrawalCommitment(multisigAddress, commitment);
   }
 
   public async getSetupCommitment(
     multisigAddress: string,
-  ): Promise<CFCoreTypes.MinimalTransaction> {
+  ): Promise<MinimalTransaction> {
     const withdrawalCommitment = await this.storeService.getSetupCommitment(multisigAddress);
     if (!withdrawalCommitment) {
       throw new Error("Could not find setup commitment");
@@ -282,8 +283,16 @@ export class Store {
 
   public async saveSetupCommitment(
     multisigAddress: string,
-    commitment: CFCoreTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ) {
+    if (
+      typeof commitment === "undefined" ||
+      typeof commitment.to === "undefined" ||
+      typeof commitment.value === "undefined" ||
+      typeof commitment.data === "undefined"
+    ) {
+      throw new Error(`Attempted to save invalid setup commitment: ${JSON.stringify(commitment, null, 2)}`);
+    }
     return this.storeService.saveSetupCommitment(multisigAddress, commitment);
   }
 

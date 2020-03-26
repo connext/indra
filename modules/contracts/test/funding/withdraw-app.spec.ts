@@ -1,14 +1,13 @@
-/* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import { signDigest } from "@connext/crypto";
 
 import {
-  WithdrawAppState,
-  WithdrawAppAction,
   CoinTransfer,
   singleAssetTwoPartyCoinTransferEncoding,
-  WithdrawAppStateEncoding,
+  WithdrawAppAction,
   WithdrawAppActionEncoding,
+  WithdrawAppState,
+  WithdrawAppStateEncoding,
 } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -24,14 +23,14 @@ function mkHash(prefix: string = "0xa"): string {
   return prefix.padEnd(66, "0");
 }
 
-const decodeTransfers = (encodedTransfers: string): CoinTransfer<string>[] =>
+const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
 
-const decodeAppState = (encodedAppState: string): WithdrawAppState<string> =>
+const decodeAppState = (encodedAppState: string): WithdrawAppState =>
   defaultAbiCoder.decode([WithdrawAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (
-  state: WithdrawAppState<string>,
+  state: WithdrawAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
   if (!onlyCoinTransfers) return defaultAbiCoder.encode([WithdrawAppStateEncoding], [state]);
@@ -54,23 +53,26 @@ describe("WithdrawApp", async () => {
   const withdrawerSigningKey = new SigningKey(withdrawerWallet.privateKey);
   const counterpartySigningKey = new SigningKey(counterpartyWallet.privateKey);
 
-  const computeOutcome = async (state: WithdrawAppState<string>): Promise<string> => {
+  const computeOutcome = async (state: WithdrawAppState): Promise<string> => {
     return await withdrawApp.functions.computeOutcome(encodeAppState(state));
   };
 
   const applyAction = async (state: any, action: WithdrawAppAction): Promise<string> => {
-    return await withdrawApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    return await withdrawApp.functions.applyAction(
+      encodeAppState(state),
+      encodeAppAction(action),
+    );
   };
 
-  const createInitialState = async (): Promise<WithdrawAppState<string>> => {
+  const createInitialState = async (): Promise<WithdrawAppState> => {
     return {
       transfers: [
         {
-          amount: amount.toString(),
+          amount,
           to: withdrawerWallet.address,
         },
         {
-          amount: Zero.toString(),
+          amount: Zero,
           to: counterpartyWallet.address,
         },
       ],
@@ -89,7 +91,7 @@ describe("WithdrawApp", async () => {
 
   beforeEach(async () => {});
 
-  describe("It zeroes withdrawer balance if state is finalized (w/ valid signatures)", async () => {
+  it("It zeroes withdrawer balance if state is finalized (w/ valid signatures)", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 
@@ -102,12 +104,12 @@ describe("WithdrawApp", async () => {
     const decoded = decodeTransfers(ret);
 
     expect(decoded[0].to).eq(initialState.transfers[0].to);
-    expect(decoded[0].amount).eq(Zero.toString());
+    expect(decoded[0].amount).eq(Zero);
     expect(decoded[1].to).eq(initialState.transfers[1].to);
     expect(decoded[1].amount).eq(Zero);
   });
 
-  describe("It cancels the withdrawal if state is not finalized", async () => {
+  it("It cancels the withdrawal if state is not finalized", async () => {
     let initialState = await createInitialState();
 
     // Compute outcome without taking action
@@ -117,10 +119,10 @@ describe("WithdrawApp", async () => {
     expect(decoded[0].to).eq(initialState.transfers[0].to);
     expect(decoded[0].amount).eq(initialState.transfers[0].amount);
     expect(decoded[1].to).eq(initialState.transfers[1].to);
-    expect(decoded[1].amount).eq(Zero.toString());
+    expect(decoded[1].amount).eq(Zero);
   });
 
-  describe("It reverts the action if state is finalized", async () => {
+  it("It reverts the action if state is finalized", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 
@@ -134,7 +136,7 @@ describe("WithdrawApp", async () => {
     );
   });
 
-  describe("It reverts the action if withdrawer signature is invalid", async () => {
+  it("It reverts the action if withdrawer signature is invalid", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 
@@ -142,7 +144,7 @@ describe("WithdrawApp", async () => {
     await expect(applyAction(initialState, action)).revertedWith("invalid withdrawer signature");
   });
 
-  describe("It reverts the action if counterparty signature is invalid", async () => {
+  it("It reverts the action if counterparty signature is invalid", async () => {
     let initialState = await createInitialState();
     let action = await createAction();
 

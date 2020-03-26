@@ -1,19 +1,21 @@
+import { stringify } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { getFreeBalanceAppInterface, merge } from "../ethereum";
-import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../machine/xkeys";
-import { OutcomeType } from "../types";
-import { prettyPrintObject } from "../utils";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
+import { AppInterface, OutcomeType } from "../types";
+import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
 
 import { AppInstance } from "./app-instance";
+import { merge } from "./utils";
 
-const HARD_CODED_ASSUMPTIONS = {
-  freeBalanceInitialStateTimeout: 172800,
-  // We assume the Free Balance is the first app ever installed
-  appSequenceNumberForFreeBalance: 0,
-};
+export function getFreeBalanceAppInterface(addr: string): AppInterface {
+  return {
+    actionEncoding: undefined, // because no actions exist for FreeBalanceApp
+    addr,
+    stateEncoding: `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`,
+  };
+}
 
 /*
 Keep in sync with the solidity struct LibOutcome::CoinTransfer
@@ -167,7 +169,6 @@ export class FreeBalanceClass {
       }
       ret[tokenAddress] = ret2;
     }
-    console.table(ret);
   }
 
   public increment(increments: TokenIndexedCoinTransferMap) {
@@ -179,7 +180,7 @@ export class FreeBalanceClass {
         if (val.lt(Zero)) {
           throw new Error(
             `FreeBalanceClass::increment ended up with a negative balance when
-            merging ${prettyPrintObject(t1)} and ${prettyPrintObject(increments[tokenAddress])}`,
+            merging ${stringify(t1)} and ${stringify(increments[tokenAddress])}`,
           );
         }
       }

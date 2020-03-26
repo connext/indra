@@ -1,12 +1,11 @@
 import {
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
-  ReceiveTransferFinishedEventData,
+  ConditionalTransferTypes,
+  deBigNumberifyJson,
+  EventNames,
+  EventPayloads,
   ResolveSignedTransferParameters,
-  SIGNED_TRANSFER,
   ResolveSignedTransferResponse,
-  SignedTransferAppAction,
+  SimpleSignedTransferAppAction,
 } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
@@ -19,7 +18,7 @@ export class ResolveSignedTransferController extends AbstractController {
 
     this.log.info(`Resolving signed lock transfer with paymentId ${paymentId}`);
 
-    this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, {
       paymentId,
       publicIdentifier: this.connext.publicIdentifier,
     });
@@ -31,25 +30,25 @@ export class ResolveSignedTransferController extends AbstractController {
       await this.connext.takeAction(resolveRes.appId, {
         data,
         signature,
-      } as SignedTransferAppAction);
+      } as SimpleSignedTransferAppAction);
       await this.connext.uninstallApp(resolveRes.appId);
     } catch (e) {
-      this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
+      this.connext.emit(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,
         paymentId,
       });
       throw e;
     }
 
-    this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
-      type: SIGNED_TRANSFER,
+    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, deBigNumberifyJson({
+      type: ConditionalTransferTypes.SignedTransfer,
       amount: resolveRes.amount,
       assetId: resolveRes.assetId,
       paymentId,
       sender: resolveRes.sender,
       recipient: this.connext.publicIdentifier,
       meta: resolveRes.meta,
-    } as ReceiveTransferFinishedEventData<typeof SIGNED_TRANSFER>);
+    }) as EventPayloads.ReceiveTransferFinished);
 
     return resolveRes;
   };

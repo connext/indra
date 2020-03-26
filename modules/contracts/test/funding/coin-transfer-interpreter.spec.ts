@@ -43,10 +43,12 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     state: CoinTransfer[][],
     params: { limit: BigNumber[]; tokenAddresses: string[] },
   ) {
-    return await multiAssetMultiPartyCoinTransferInterpreter.functions.interpretOutcomeAndExecuteEffect(
-      encodeOutcome(state),
-      encodeParams(params),
-    );
+    return await multiAssetMultiPartyCoinTransferInterpreter
+      .functions
+      .interpretOutcomeAndExecuteEffect(
+        encodeOutcome(state),
+        encodeParams(params),
+      );
   }
 
   before(async () => {

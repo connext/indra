@@ -1,15 +1,15 @@
+import { MethodName, MethodParam, MethodResult } from "@connext/types";
 import { Controller } from "rpc-server";
 
 import { RequestHandler } from "../request-handler";
-import { CFCoreTypes } from "../types";
 
 export abstract class NodeController extends Controller {
-  public static readonly methodName: CFCoreTypes.MethodName;
+  public static readonly methodName: MethodName;
 
   public async executeMethod(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams,
-  ): Promise<CFCoreTypes.MethodResult> {
+    params: MethodParam,
+  ): Promise<MethodResult> {
     await this.beforeExecution(requestHandler, params);
 
     const lockNames = await this.getRequiredLockNames(requestHandler, params);
@@ -25,22 +25,22 @@ export abstract class NodeController extends Controller {
 
   protected abstract executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams,
-  ): Promise<CFCoreTypes.MethodResult>;
+    params: MethodParam,
+  ): Promise<MethodResult>;
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams,
+    params: MethodParam,
   ): Promise<void> {}
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams,
+    params: MethodParam,
   ): Promise<void> {}
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams,
+    params: MethodParam,
   ): Promise<string[]> {
     return [];
   }

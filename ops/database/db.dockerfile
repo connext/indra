@@ -1,8 +1,6 @@
-FROM postgres:9-alpine
+FROM postgres:9.6.17-alpine
 WORKDIR /root
 RUN chown -R postgres:postgres /root
-# need node for db-migrate & aws-cli for sending backups to s3
-RUN apk add --update --no-cache coreutils groff less mailcap nodejs py-pip && \
-    pip install --upgrade awscli
+RUN apk add --update --no-cache coreutils groff less mailcap py-pip && pip install --upgrade awscli
 COPY . .
 ENTRYPOINT ["bash", "entry.sh"]

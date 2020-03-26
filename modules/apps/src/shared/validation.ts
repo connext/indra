@@ -1,17 +1,16 @@
 import {
-  CFCoreTypes,
+  CoinBalanceRefundAppName,
+  CoinTransfer,
+  MethodParams,
   stringify,
-  bigNumberifyObj,
-  CoinTransferBigNumber,
-  CoinBalanceRefundApp,
 } from "@connext/types";
+import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 
 import { AppRegistryInfo } from "./registry";
-import { BigNumber } from "ethers/utils";
-import { Zero } from "ethers/constants";
 
 const appProposalMatchesRegistry = (
-  proposal: CFCoreTypes.ProposeInstallParams,
+  proposal: MethodParams.ProposeInstall,
   appRegistryInfo: AppRegistryInfo,
 ): void => {
   if (
@@ -43,8 +42,8 @@ const appProposalMatchesRegistry = (
 export const baseCoinTransferValidation = (
   initiatorDeposit: BigNumber,
   responderDeposit: BigNumber,
-  initiatorTransfer: CoinTransferBigNumber,
-  responderTransfer: CoinTransferBigNumber,
+  initiatorTransfer: CoinTransfer,
+  responderTransfer: CoinTransfer,
 ) => {
   if (!initiatorTransfer || !responderTransfer) {
     throw new Error(
@@ -73,8 +72,8 @@ export const baseCoinTransferValidation = (
 export const unidirectionalCoinTransferValidation = (
   initiatorDeposit: BigNumber,
   responderDeposit: BigNumber,
-  initiatorTransfer: CoinTransferBigNumber,
-  responderTransfer: CoinTransferBigNumber,
+  initiatorTransfer: CoinTransfer,
+  responderTransfer: CoinTransfer,
 ) => {
   baseCoinTransferValidation(
     initiatorDeposit,
@@ -108,7 +107,7 @@ export const unidirectionalCoinTransferValidation = (
 };
 
 export const commonAppProposalValidation = (
-  params: CFCoreTypes.ProposeInstallParams,
+  params: MethodParams.ProposeInstall,
   appRegistryInfo: AppRegistryInfo,
   supportedTokenAddresses: string[],
 ): void => {
@@ -117,7 +116,7 @@ export const commonAppProposalValidation = (
     initiatorDepositTokenAddress,
     responderDeposit,
     responderDepositTokenAddress,
-  } = bigNumberifyObj(params);
+  } = params;
 
   appProposalMatchesRegistry(params, appRegistryInfo);
 
@@ -134,7 +133,7 @@ export const commonAppProposalValidation = (
   if (
     responderDeposit.isZero() &&
     initiatorDeposit.isZero() &&
-    appRegistryInfo.name !== CoinBalanceRefundApp
+    appRegistryInfo.name !== CoinBalanceRefundAppName
   ) {
     throw new Error(
       `Cannot install an app with zero valued deposits for both initiator and responder.`,

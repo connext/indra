@@ -109,14 +109,14 @@ export class AuthService {
 
   parseLock(callback: any): any {
     return async (subject: string, data: any): Promise<string> => {
-      const xpub = subject.split(".")[0]; // first item of subscription is xpub
       const lockName = subject.split(".").pop(); // last item of subject is lockName
-      const channel = await this.channelRepo.findByUserPublicIdentifier(xpub);
 
       // TODO need to validate that lockName is EITHER multisig OR [multisig, appInstanceId]
       //      holding off on this right now because it will be *much* easier to iterate through
       //      all appInstanceIds after our store refactor.
 
+      // const xpub = subject.split(".")[0]; // first item of subscription is xpub
+      // const channel = await this.channelRepo.findByUserPublicIdentifier(xpub);
       // if (lockName !== channel.multisigAddress || lockName !== ) {
       //   return this.badSubject(`Subject's last item isn't a valid lockName: ${subject}`);
       // }

@@ -1,23 +1,39 @@
 import { AppRegistry } from "./app";
-import { BigNumber, Network, Transaction } from "./basic";
-import { NetworkContext } from "./contracts";
-import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
+import { Address, BigNumber, Network, Transaction, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
-import { ILoggerService } from "./logger";
-import { IMessagingService } from "./messaging";
-import { ProtocolTypes } from "./protocol";
 import {
-  ResolveLinkedTransferResponse,
-  ResolveFastSignedTransferResponse,
-  ResolveHashLockTransferResponse,
   GetHashLockTransferResponse,
   ResolveSignedTransferResponse,
   GetSignedTransferResponse,
   LinkedTransferStatus,
-} from "./apps";
+  NetworkContext,
+  ResolveFastSignedTransferResponse,
+  ResolveHashLockTransferResponse,
+  ResolveLinkedTransferResponse,
+} from "./contracts";
+import { ILoggerService } from "./logger";
+import { IMessagingService } from "./messaging";
+import { MethodResults } from "./methods";
 
 ////////////////////////////////////
-///////// NODE RESPONSE TYPES
+// Misc
+
+export type RebalanceProfile = {
+  assetId: Address;
+  upperBoundCollateralize: BigNumber;
+  lowerBoundCollateralize: BigNumber;
+  upperBoundReclaim: BigNumber;
+  lowerBoundReclaim: BigNumber;
+};
+
+// used to verify channel is in sequence
+export type ChannelAppSequences = {
+  userSequenceNumber: number;
+  nodeSequenceNumber: number;
+};
+
+////////////////////////////////////
+// NODE RESPONSE TYPES
 
 export type ContractAddresses = NetworkContext & {
   Token: string;
@@ -30,17 +46,14 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
-// TODO: is this the type that is actually returned?
-// i think you get status, etc.
-export type Transfer<T = string> = {
+export type TransferInfo = {
   paymentId: string;
-  amount: T;
+  amount: BigNumber;
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier: string;
   meta: any;
 };
-export type TransferBigNumber = Transfer<BigNumber>;
 
 // nats stuff
 type successResponse = {
@@ -64,7 +77,14 @@ export type GetConfigResponse = {
   supportedTokenAddresses: string[];
 };
 
-export type GetChannelResponse = CFCoreChannel;
+export type GetChannelResponse = {
+  id: number;
+  nodePublicIdentifier: Xpub;
+  userPublicIdentifier: Xpub;
+  multisigAddress: Address;
+  available: boolean;
+  collateralizationInFlight: boolean;
+};
 
 // returns the transaction hash of the multisig deployment
 // TODO: this will likely change
@@ -73,12 +93,30 @@ export type CreateChannelResponse = {
 };
 
 // TODO: why was this changed?
-export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
+export type RequestCollateralResponse = MethodResults.Deposit | undefined;
+
+////////////////////////////////////
+// NODE API CLIENT
+
+export interface PendingAsyncTransfer {
+  assetId: string;
+  amount: BigNumber;
+  encryptedPreImage: string;
+  linkedHash: string;
+  paymentId: string;
+}
+
+export interface PendingFastSignedTransfer {
+  assetId: string;
+  amount: BigNumber;
+  paymentId: string;
+  signer: string;
+}
 
 export type FetchedLinkedTransfer<T = any> = {
   paymentId: string;
   createdAt: Date;
-  amount: string;
+  amount: BigNumber;
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier?: string;
@@ -128,7 +166,7 @@ export interface INodeApiClient {
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
   getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse>;
-  getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
+  getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;

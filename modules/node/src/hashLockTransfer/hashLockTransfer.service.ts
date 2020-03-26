@@ -1,15 +1,13 @@
 import {
+  bigNumberifyJson,
   DepositConfirmationMessage,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
+  EventNames,
+  HashLockTransferAppName,
   HashLockTransferAppState,
-  HashLockTransferAppStateBigNumber,
-  HashLockTransferApp,
   HashLockTransferStatus,
-  ResolveHashLockTransferResponseBigNumber,
+  ResolveHashLockTransferResponse,
 } from "@connext/types";
-import { convertHashLockTransferAppState } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 
@@ -22,19 +20,19 @@ import { TIMEOUT_BUFFER } from "../constants";
 import { ConfigService } from "../config/config.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { bigNumberify } from "ethers/utils";
 
 const appStatusesToHashLockTransferStatus = (
   currentBlockNumber: number,
-  senderApp: AppInstance<HashLockTransferAppStateBigNumber>,
-  receiverApp?: AppInstance<HashLockTransferAppStateBigNumber>,
+  senderApp: AppInstance<HashLockTransferAppState>,
+  receiverApp?: AppInstance<HashLockTransferAppState>,
 ): HashLockTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
   }
-  const { timelock: senderTimelock } = senderApp.latestState;
-  const isSenderExpired = bigNumberify(senderTimelock).lt(currentBlockNumber);
-  const isReceiverExpired = receiverApp?.latestState.timelock.lt(currentBlockNumber);
+  const latestState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
+  const { timelock: senderTimelock } = latestState;
+  const isSenderExpired = senderTimelock.lt(currentBlockNumber);
+  const isReceiverExpired = !receiverApp ? false : latestState.timelock.lt(currentBlockNumber);
   // pending iff no receiver app + not expired
   if (!receiverApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
@@ -57,14 +55,11 @@ const appStatusesToHashLockTransferStatus = (
 
 export const normalizeHashLockTransferAppState = (
   app: AppInstance,
-): AppInstance<HashLockTransferAppStateBigNumber> | undefined => {
+): AppInstance<HashLockTransferAppState> | undefined => {
   return (
     app && {
       ...app,
-      latestState: convertHashLockTransferAppState(
-        "bignumber",
-        app.latestState as HashLockTransferAppState,
-      ),
+      latestState: app.latestState as HashLockTransferAppState,
     }
   );
 };
@@ -85,7 +80,7 @@ export class HashLockTransferService {
   async resolveHashLockTransfer(
     userPubId: string,
     lockHash: string,
-  ): Promise<ResolveHashLockTransferResponseBigNumber> {
+  ): Promise<ResolveHashLockTransferResponse> {
     this.log.debug(`resolveLinkedTransfer(${userPubId}, ${lockHash})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
@@ -101,10 +96,7 @@ export class HashLockTransferService {
       senderApp.channel.multisigAddress,
     );
 
-    const appState = convertHashLockTransferAppState(
-      "bignumber",
-      senderApp.latestState as HashLockTransferAppState,
-    );
+    const appState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
 
     const assetId = senderApp.outcomeInterpreterParameters.tokenAddress;
 
@@ -136,7 +128,7 @@ export class HashLockTransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          DEPOSIT_CONFIRMED_EVENT,
+          EventNames.DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (
               msg.from === this.cfCoreService.cfCore.publicIdentifier &&
@@ -154,9 +146,12 @@ export class HashLockTransferService {
             );
           },
         );
-        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
-          return reject(JSON.stringify(msg, null, 2));
-        });
+        this.cfCoreService.cfCore.on(
+          EventNames.DEPOSIT_FAILED_EVENT,
+          (msg: DepositFailedMessage) => {
+            return reject(JSON.stringify(msg, null, 2));
+          },
+        );
         try {
           await this.channelService.rebalance(
             userPubId,
@@ -173,7 +168,7 @@ export class HashLockTransferService {
       this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amount);
     }
 
-    const initialState: HashLockTransferAppStateBigNumber = {
+    const initialState: HashLockTransferAppState = {
       coinTransfers: [
         {
           amount,
@@ -197,7 +192,7 @@ export class HashLockTransferService {
       assetId,
       Zero,
       assetId,
-      HashLockTransferApp,
+      HashLockTransferAppName,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {

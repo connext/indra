@@ -4,6 +4,7 @@ export {
   CoinTransfer,
   CoinTransferMap,
   convertCoinTransfersToCoinTransfersMap,
+  FreeBalanceClass,
   getFreeBalanceAddress,
   TokenIndexedCoinTransferMap,
 } from "./free-balance";

@@ -1,5 +1,4 @@
-import { utils } from "@connext/client";
-import { IConnextClient, UPDATE_STATE_EVENT } from "@connext/types";
+import { delay, EventNames, IConnextClient } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
@@ -7,7 +6,6 @@ import {
   ClientTestMessagingInputOpts,
   createClient,
   createClientWithMessagingLimits,
-  delay,
   ETH_AMOUNT_SM,
   ethProvider,
   expect,
@@ -94,7 +92,7 @@ describe("Withdraw offline tests", () => {
     await createAndFundChannel();
 
     await new Promise(resolve => {
-      client.once(UPDATE_STATE_EVENT, async () => {
+      client.once(EventNames.UPDATE_STATE_EVENT, async () => {
         // wait for the value to actually be written to the store,
         // takes longer than the `disconnect` call
         await delay(500);

@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import {
-  ConditionalTransactionCommitmentJSON,
-  IStoreService,
-  SetStateCommitmentJSON,
-  StateChannelJSON,
   AppInstanceJson,
   AppInstanceProposal,
-  ProtocolTypes,
+  ConditionalTransactionCommitmentJSON,
+  IStoreService,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
 
@@ -29,7 +29,8 @@ export class CFCoreStore implements IStoreService {
   constructor(
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
-    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository:
+      ConditionalTransactionCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
     private readonly configService: ConfigService,
@@ -152,9 +153,10 @@ export class CFCoreStore implements IStoreService {
   async getConditionalTransactionCommitment(
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    const commitment = await this.conditionalTransactionCommitmentRepository.getConditionalTransactionCommitment(
-      appIdentityHash,
-    );
+    const commitment =
+      await this.conditionalTransactionCommitmentRepository.getConditionalTransactionCommitment(
+        appIdentityHash,
+      );
     if (!commitment) {
       return undefined;
     }
@@ -180,13 +182,13 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  getWithdrawalCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
+  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.withdrawCommitmentRepository.getWithdrawalCommitmentTx(multisigAddress);
   }
 
   async saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
@@ -195,13 +197,13 @@ export class CFCoreStore implements IStoreService {
     return this.withdrawCommitmentRepository.saveWithdrawalCommitment(channel, commitment);
   }
 
-  getSetupCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
+  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.setupCommitmentRepository.getCommitment(multisigAddress);
   }
 
   async saveSetupCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     // there may not be a channel at the time the setup commitment is
     // created, so add the multisig address

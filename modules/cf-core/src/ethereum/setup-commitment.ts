@@ -1,12 +1,22 @@
+import { MultisigOperation, MultisigTransaction } from "@connext/types";
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { AppIdentity, MultisigOperation, MultisigTransaction, NetworkContext } from "../types";
+import { StateChannel } from "../models";
+import { AppIdentity, Context, NetworkContext } from "../types";
+import { appIdentityToHash } from "../utils";
 
 import { MultisigCommitment } from "./multisig-commitment";
-import { appIdentityToHash } from "./utils";
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
+
+export const getSetupCommitment = (context: Context, stateChannel: StateChannel): SetupCommitment =>
+  new SetupCommitment(
+    context.network,
+    stateChannel.multisigAddress,
+    stateChannel.multisigOwners,
+    stateChannel.freeBalance.identity,
+  );
 
 export class SetupCommitment extends MultisigCommitment {
   public constructor(

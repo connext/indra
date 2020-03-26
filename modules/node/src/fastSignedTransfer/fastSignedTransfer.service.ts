@@ -1,14 +1,13 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
   DepositConfirmationMessage,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
-  FastSignedTransferAppStateBigNumber,
-  FastSignedTransferAppActionBigNumber,
+  EventNames,
   FastSignedTransferActionType,
+  FastSignedTransferAppAction,
+  FastSignedTransferAppName,
+  FastSignedTransferAppState,
   ResolveFastSignedTransferResponse,
-  FastSignedTransferApp,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
@@ -19,7 +18,6 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
-import { convertFastSignedTransferAppState } from "@connext/apps";
 
 @Injectable()
 export class FastSignedTransferService {
@@ -35,7 +33,7 @@ export class FastSignedTransferService {
   async resolveFastSignedTransfer(
     userPublicIdentifier: string,
     paymentId: string,
-  ): Promise<ResolveFastSignedTransferResponse<BigNumber>> {
+  ): Promise<ResolveFastSignedTransferResponse> {
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
     );
@@ -51,16 +49,13 @@ export class FastSignedTransferService {
     if (!installedSenderApp) {
       throw new Error(`Sender app not installed for paymentId ${paymentId}`);
     }
-    const latestSenderState = convertFastSignedTransferAppState(
-      "bignumber",
-      installedSenderApp.latestState as FastSignedTransferAppStateBigNumber,
-    );
+    const latestSenderState = installedSenderApp.latestState as FastSignedTransferAppState;
     const transferAmount = latestSenderState.amount;
     const transferSigner = latestSenderState.signer;
 
     const [installedReceiverApp] = await this.cfCoreService.getAppInstancesByAppName(
       receiverChannel.multisigAddress,
-      "FastSignedTransferApp",
+      FastSignedTransferAppName,
     );
 
     let installedAppInstanceId: string;
@@ -68,10 +63,7 @@ export class FastSignedTransferService {
     let needsInstall: boolean = true;
     // install if needed
     if (installedReceiverApp) {
-      const latestReceiverState = convertFastSignedTransferAppState(
-        "bignumber",
-        installedReceiverApp.latestState as FastSignedTransferAppStateBigNumber,
-      );
+      const latestReceiverState = installedReceiverApp.latestState as FastSignedTransferAppState;
       const availableTransferBalance = latestReceiverState.coinTransfers[0].amount;
       if (availableTransferBalance.gte(transferAmount)) {
         needsInstall = false;
@@ -101,7 +93,7 @@ export class FastSignedTransferService {
       signer: transferSigner,
       signature: hexZeroPad(HashZero, 65),
       data: HashZero,
-    } as FastSignedTransferAppActionBigNumber;
+    } as FastSignedTransferAppAction;
 
     await this.cfCoreService.takeAction(installedAppInstanceId, appAction);
 
@@ -136,7 +128,7 @@ export class FastSignedTransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          DEPOSIT_CONFIRMED_EVENT,
+          EventNames.DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
@@ -165,9 +157,12 @@ export class FastSignedTransferService {
             resolve();
           },
         );
-        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
-          return reject(JSON.stringify(msg, null, 2));
-        });
+        this.cfCoreService.cfCore.on(
+          EventNames.DEPOSIT_FAILED_EVENT,
+          (msg: DepositFailedMessage) => {
+            return reject(JSON.stringify(msg, null, 2));
+          },
+        );
         try {
           await this.channelService.rebalance(
             channel.userPublicIdentifier,
@@ -188,7 +183,7 @@ export class FastSignedTransferService {
       );
     }
 
-    const initialState: FastSignedTransferAppStateBigNumber = {
+    const initialState: FastSignedTransferAppState = {
       coinTransfers: [
         {
           // install full free balance into app, this will be optimized by rebalancing service
@@ -211,10 +206,10 @@ export class FastSignedTransferService {
       channel,
       initialState,
       depositAmount,
-      assetId,
+      AddressZero,
       Zero,
-      assetId,
-      FastSignedTransferApp,
+      AddressZero,
+      FastSignedTransferAppName,
     );
 
     return receiverAppInstallRes.appInstanceId;

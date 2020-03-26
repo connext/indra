@@ -1,4 +1,7 @@
-import { replaceBN, ResolveFastSignedTransferResponse } from "@connext/types";
+import {
+  stringify,
+  ResolveFastSignedTransferResponse,
+} from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 import { MessagingService } from "@connext/messaging";
@@ -26,7 +29,7 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     { paymentId }: { paymentId: string },
   ): Promise<ResolveFastSignedTransferResponse> {
     this.log.debug(
-      `Got resolve fast signed request with data: ${JSON.stringify(paymentId, replaceBN, 2)}`,
+      `Got resolve fast signed request with data: ${stringify(paymentId)}`,
     );
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
@@ -37,7 +40,7 @@ export class FastSignedTransferMessaging extends AbstractMessagingProvider {
     );
     return {
       ...response,
-      amount: response.amount.toString(),
+      amount: response.amount,
     };
   }
 

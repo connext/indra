@@ -1,22 +1,24 @@
-import { PersistAppType } from "@connext/types";
-import { BaseProvider } from "ethers/providers";
+import { CommitmentTypes, PersistAppType, ProtocolNames, ProtocolParams } from "@connext/types";
+import { JsonRpcProvider } from "ethers/providers";
 
-import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress, Commitment } from "../machine";
+import { UNASSIGNED_SEQ_NO } from "../constants";
+import { getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
-import { Context, ProtocolExecutionFlow, ProtocolMessage, UninstallProtocolParams } from "../types";
-import { logTime } from "../utils";
-
 import { Store } from "../store";
 import {
-  assertIsValidSignature,
-  computeTokenIndexedFreeBalanceIncrements,
-  UNASSIGNED_SEQ_NO,
-} from "./utils";
+  Context,
+  Opcode,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+} from "../types";
+import { logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-const protocol = Protocol.Uninstall;
+import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
+
+const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = Commitment;
+const { SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -25,32 +27,29 @@ const { SetState } = Commitment;
  */
 export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, provider, store, network } = context;
+    const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart;
     log.debug(`Initiation started`);
 
     const { params, processID } = message;
-    const { responderXpub, appIdentityHash, multisigAddress } = params as UninstallProtocolParams;
+    const { responderXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const postProtocolStateChannel = await computeStateTransition(
-      params as UninstallProtocolParams,
+      params as ProtocolParams.Uninstall,
       store,
-      provider,
+      network.provider,
     );
 
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appToUninstall.appSeqNo);
 
-    const uninstallCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
-      postProtocolStateChannel.freeBalance.identity,
-      postProtocolStateChannel.freeBalance.hashOfLatestState,
-      postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout,
+    const uninstallCommitment = getSetStateCommitment(
+      context,
+      postProtocolStateChannel.freeBalance,
     );
 
     const signature = yield [OP_SIGN, uninstallCommitment, appToUninstall.appSeqNo];
@@ -90,32 +89,29 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, provider, store, network } = context;
+    const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
     let substart;
     log.debug(`Response started`);
 
     const { params, processID } = message;
-    const { initiatorXpub, appIdentityHash, multisigAddress } = params as UninstallProtocolParams;
+    const { initiatorXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
     const preProtocolStateChannel = (await store.getStateChannel(multisigAddress)) as StateChannel;
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const postProtocolStateChannel = await computeStateTransition(
-      params as UninstallProtocolParams,
+      params as ProtocolParams.Uninstall,
       store,
-      provider,
+      network.provider,
     );
 
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appToUninstall.appSeqNo);
 
-    const uninstallCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
-      postProtocolStateChannel.freeBalance.identity,
-      postProtocolStateChannel.freeBalance.hashOfLatestState,
-      postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout,
+    const uninstallCommitment = getSetStateCommitment(
+      context,
+      postProtocolStateChannel.freeBalance,
     );
 
     const initiatorSignature = context.message.customData.signature;
@@ -154,9 +150,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 };
 
 async function computeStateTransition(
-  params: UninstallProtocolParams,
+  params: ProtocolParams.Uninstall,
   store: Store,
-  provider: BaseProvider,
+  provider: JsonRpcProvider,
 ) {
   const { appIdentityHash, multisigAddress, blockNumberToUseIfNecessary } = params;
   const stateChannel = await store.getStateChannel(multisigAddress);

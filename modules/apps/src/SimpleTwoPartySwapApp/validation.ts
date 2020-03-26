@@ -1,17 +1,16 @@
 import {
-  CFCoreTypes,
-  bigNumberifyObj,
-  stringify,
-  SwapRate,
+  MethodParams,
   AllowedSwap,
   calculateExchange,
+  stringify,
+  SwapRate,
 } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
 const ALLOWED_DISCREPANCY_PCT = 5;
 
 export const validateSimpleSwapApp = (
-  params: CFCoreTypes.ProposeInstallParams,
+  params: MethodParams.ProposeInstall,
   allowedSwaps: SwapRate[],
   ourRate: string,
 ) => {
@@ -20,7 +19,7 @@ export const validateSimpleSwapApp = (
     initiatorDeposit,
     initiatorDepositTokenAddress,
     responderDepositTokenAddress,
-  } = bigNumberifyObj(params);
+  } = params;
 
   if (
     !allowedSwaps.find(

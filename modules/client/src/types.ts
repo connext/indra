@@ -4,11 +4,12 @@ import {
   Contract,
   GetConfigResponse,
   IChannelProvider,
+  IClientStore,
   ILoggerService,
   INodeApiClient,
   KeyGen,
   Network,
-  IClientStore,
+  Xpub,
 } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 
@@ -26,7 +27,7 @@ export type InternalClientOptions = {
   node: INodeApiClient;
   store: IClientStore;
   token: Contract;
-  xpub: string;
+  xpub: Xpub;
 };
 
 export {
@@ -34,28 +35,16 @@ export {
   AppInstanceInfo,
   AppInstanceJson,
   AppRegistry,
-  BigNumber,
-  chan_signDigest,
   calculateExchange,
   CFChannelProviderOptions,
-  CFCoreChannel,
-  CFCoreTypes,
-  chan_setUserWithdrawal,
   ChannelAppSequences,
   ChannelProviderConfig,
-  ChannelProviderRpcMethod,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
   ClientOptions,
-  CoinTransferBigNumber,
   ConnextClientStorePrefix,
-  ConnextEvent,
   ConnextEventEmitter,
-  ConnextEvents,
-  ConnextRpcMethod,
-  ConnextRpcMethods,
-  convert,
   CreateChannelMessage,
   CreateChannelResponse,
   DefaultApp,
@@ -63,7 +52,7 @@ export {
   DepositFailedMessage,
   DepositParameters,
   DepositStartedMessage,
-  fromWei,
+  fromWad,
   GetChannelResponse,
   GetConfigResponse,
   IChannelProvider,
@@ -78,15 +67,12 @@ export {
   KeyGen,
   LinkedTransferParameters,
   LinkedTransferResponse,
-  makeChecksum,
-  makeChecksumOrEthAddress,
   maxBN,
   minBN,
   NodeInitializationParameters,
   NodeMessageWrappedProtocolMessage,
   RebalanceProfile,
   ProposeMessage,
-  ProtocolTypes,
   RejectProposalMessage,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
@@ -103,8 +89,8 @@ export {
   SwapParameters,
   toBN,
   tokenToWei,
-  toWei,
-  Transfer,
+  toWad,
+  TransferInfo,
   TransferParameters,
   UninstallMessage,
   UpdateStateMessage,

@@ -1,10 +1,58 @@
-import { BigNumber } from "./basic";
-import { EventName } from "./events";
+import { EventNames, EventPayloads } from "./events";
+import { DecString } from "./basic";
 import { ILoggerService } from "./logger";
-import { ProtocolMessage, ProtocolTypes } from "./protocol";
+import {
+  MethodName,
+  MethodResult,
+  MethodResults,
+  MethodParam,
+  MethodParams,
+} from "./methods";
+import { ProtocolName, ProtocolParam } from "./protocol";
+
+export type MethodMessage = {
+  type: MethodName;
+  requestId: string;
+};
+
+export type MethodRequest = MethodMessage & {
+  params: MethodParam;
+};
+
+export type MethodResponse = MethodMessage & {
+  result: MethodResult;
+};
 
 ////////////////////////////////////////
 // Message Metadata & Wrappers
+
+export type ProtocolMessage = {
+  processID: string;
+  protocol: ProtocolName;
+  params?: ProtocolParam;
+  toXpub: string;
+  seq: number;
+  // customData: Additional data which depends on the protocol (or even the specific message
+  // number in a protocol) lives here. Includes signatures
+  customData: { [key: string]: any };
+};
+
+export enum ErrorType {
+  ERROR = "error",
+}
+
+export type Error = {
+  type: ErrorType;
+  requestId?: string;
+  data: {
+    errorName: string;
+    message?: string;
+    appInstanceId?: string;
+    extra?: { [k: string]: string | number | boolean | object };
+  };
+};
+
+export type Message = MethodRequest | MethodResponse | Event | Error;
 
 // The message type for Nodes to communicate with each other.
 
@@ -14,7 +62,7 @@ export const getMessagingPrefix = (chainId: number) => `${CF_CORE_MESSAGING_PREF
 
 export type NodeMessage = {
   from: string;
-  type: EventName;
+  type: EventNames;
 };
 
 type JsonRpcProtocolV2 = {
@@ -86,35 +134,36 @@ export interface NodeMessageWrappedProtocolMessage extends NodeMessage {
 }
 
 export interface CreateChannelMessage extends NodeMessage {
-  data: ProtocolTypes.CreateChannelResult;
+  data: MethodResults.CreateChannel;
 }
 
 export interface DepositConfirmationMessage extends NodeMessage {
-  data: ProtocolTypes.DepositParams;
+  data: MethodParams.Deposit;
 }
 
 export interface DepositFailedMessage extends NodeMessage {
   data: {
-    params: ProtocolTypes.DepositParams;
+    params: MethodParams.Deposit;
     errors: string[];
   };
 }
 
 export interface DepositStartedMessage extends NodeMessage {
   data: {
-    value: BigNumber;
+    value: DecString;
     txHash: string;
   };
 }
 
 export interface InstallMessage extends NodeMessage {
   data: {
-    params: ProtocolTypes.InstallParams;
+    params: MethodParams.Install;
   };
 }
+
 export interface ProposeMessage extends NodeMessage {
   data: {
-    params: ProtocolTypes.ProposeInstallParams;
+    params: MethodParams.ProposeInstall;
     appInstanceId: string;
   };
 }
@@ -126,11 +175,11 @@ export interface RejectProposalMessage extends NodeMessage {
 }
 
 export interface UninstallMessage extends NodeMessage {
-  data: ProtocolTypes.UninstallEventData;
+  data: EventPayloads.Uninstall;
 }
 
 export interface UpdateStateMessage extends NodeMessage {
-  data: ProtocolTypes.UpdateStateEventData;
+  data: EventPayloads.UpdateState;
 }
 
 export type EventEmittedMessage =

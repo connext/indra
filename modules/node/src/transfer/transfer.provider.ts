@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { Transfer } from "@connext/types";
+import { TransferInfo } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
@@ -19,7 +19,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     this.log.setContext("TransferMessaging");
   }
 
-  async getTransferHistory(pubId: string): Promise<Transfer[]> {
+  async getTransferHistory(pubId: string): Promise<TransferInfo[]> {
     throw new Error("Unimplemented");
   }
 

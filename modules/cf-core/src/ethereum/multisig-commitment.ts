@@ -1,10 +1,10 @@
+import { EthereumCommitment, MinimalTransaction, MultisigTransaction  } from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
 import { sortSignaturesBySignerAddress } from "@connext/types";
 
 import { MinimumViableMultisig } from "../contracts";
-import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
 
-/// A commitment to make MinimumViableMultisig perform a message call
+// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment implements EthereumCommitment {
   constructor(
     readonly multisigAddress: string,
@@ -27,7 +27,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     this.participantSignatures = sigs;
   }
 
-  public async getSignedTransaction(): Promise<CFCoreTypes.MinimalTransaction> {
+  public async getSignedTransaction(): Promise<MinimalTransaction> {
     this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
     const hash = this.hashToSign();

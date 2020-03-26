@@ -77,6 +77,7 @@ docker run \
   --entrypoint="bash" \
   --env="ETHPROVIDER_URL=$ethprovider_url" \
   --env="SUGAR_DADDY=$eth_mnemonic" \
+  --env="LOG_LEVEL=$LOG_LEVEL" \
   $interactive \
   --name="${project}_test_cf_core" \
   --network="$network" \

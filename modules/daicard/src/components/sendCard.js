@@ -1,3 +1,4 @@
+import { ConditionalTransferTypes } from "@connext/types";
 import {
   Button,
   CircularProgress,
@@ -106,7 +107,7 @@ export const SendCard = style(
           transferRes = await channel.conditionalTransfer({
             assetId: token.address,
             amount: amount.value.wad.toString(),
-            conditionType: "LINKED_TRANSFER",
+            conditionType: ConditionalTransferTypes.LinkedTransfer,
             paymentId: createRandom32ByteHexString(),
             preImage: createRandom32ByteHexString(),
             recipient: recipient.value,
@@ -139,7 +140,7 @@ export const SendCard = style(
         const link = await channel.conditionalTransfer({
           assetId: token.address,
           amount: amount.value.wad.toString(),
-          conditionType: "LINKED_TRANSFER",
+          conditionType: ConditionalTransferTypes.LinkedTransfer,
           paymentId: createRandom32ByteHexString(),
           preImage: createRandom32ByteHexString(),
           meta: { source: "daicard" },

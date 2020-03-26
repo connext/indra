@@ -1,8 +1,8 @@
 import {
   OutcomeType,
-  SimpleLinkedTransferAppStateEncoding,
+  SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppActionEncoding,
-  SimpleLinkedTransferApp,
+  SimpleLinkedTransferAppStateEncoding,
 } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
@@ -10,7 +10,8 @@ import { AppRegistryInfo } from "../shared";
 export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
   actionEncoding: SimpleLinkedTransferAppActionEncoding,
   allowNodeInstall: true,
-  name: SimpleLinkedTransferApp,
+  name: SimpleLinkedTransferAppName,
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
   stateEncoding: SimpleLinkedTransferAppStateEncoding,
 };
+
