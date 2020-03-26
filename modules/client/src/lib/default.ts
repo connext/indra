@@ -20,13 +20,11 @@ export function getDefaultStore(opts?: Partial<ClientOptions>): ConnextStore {
 }
 
 export function getDefaultUrlOptions(network: string) {
-  let urlOptions = {};
-  if (isLocalhost(network)) {
-    urlOptions = {
-      ethProviderUrl: `http://localhost:8545`,
-      nodeUrl: `http://localhost:8080`,
-    };
-  } else {
+  let urlOptions = {
+    ethProviderUrl: `http://localhost:8545`,
+    nodeUrl: `http://localhost:8080`,
+  };
+  if (!isLocalhost(network)) {
     const baseUrl = isMainnet(network)
       ? "indra.connext.network/api"
       : isRinkeby(network)
