@@ -87,14 +87,15 @@ export const STORE_SCHEMA_VERSION = 1;
 export interface IStoreService {
   ///// Schema version
   getSchemaVersion(): Promise<number>;
-  setSchemaVersion(version?: number): Promise<void>;
+  updateSchemaVersion(version?: number): Promise<void>;
 
   ///// State channels
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined>;
-  saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+  createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+  // no update bc only ever called during `setup`
 
   ///// App instances
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
@@ -105,8 +106,8 @@ export interface IStoreService {
   ///// App proposals
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined>;
   createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal, numProposedApps: number): Promise<void>;
-  updateAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void>;
   removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void>;
+  // proposals dont need to be updated
 
   ///// Free balance
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
@@ -124,12 +125,12 @@ export interface IStoreService {
   // no update, only ever created once
 
   ///// SetState commitment
-  getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
-  createLatestSetStateCommitment(
+  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
+  createSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
-  updateLatestSetStateCommitment(
+  updateSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
