@@ -1,14 +1,13 @@
 import {
+  bigNumberifyJson,
   DepositConfirmationMessage,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
-  SignedTransferAppStateBigNumber,
-  SimpleSignedTransferApp,
+  EventNames,
+  ResolveSignedTransferResponse,
   SignedTransferStatus,
-  ResolveSignedTransferResponseBigNumber,
+  SimpleSignedTransferAppName,
+  SimpleSignedTransferAppState,
 } from "@connext/types";
-import { convertSignedTransferAppState } from "@connext/apps";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 
@@ -24,8 +23,8 @@ import { SignedTransferRepository } from "./signedTransfer.repository";
 
 const appStatusesToSignedTransferStatus = (
   currentBlockNumber: number,
-  senderApp: AppInstance<SignedTransferAppStateBigNumber>,
-  receiverApp?: AppInstance<SignedTransferAppStateBigNumber>,
+  senderApp: AppInstance<SimpleSignedTransferAppState>,
+  receiverApp?: AppInstance<SimpleSignedTransferAppState>,
 ): SignedTransferStatus | undefined => {
   if (!senderApp) {
     return undefined;
@@ -45,14 +44,11 @@ const appStatusesToSignedTransferStatus = (
 
 export const normalizeSignedTransferAppState = (
   app: AppInstance,
-): AppInstance<SignedTransferAppStateBigNumber> | undefined => {
+): AppInstance<SimpleSignedTransferAppState> | undefined => {
   return (
     app && {
       ...app,
-      latestState: convertSignedTransferAppState(
-        "bignumber",
-        app.latestState as SignedTransferAppStateBigNumber,
-      ),
+      latestState: bigNumberifyJson(app.latestState) as SimpleSignedTransferAppState,
     }
   );
 };
@@ -74,7 +70,7 @@ export class SignedTransferService {
   async resolveSignedTransfer(
     userPublicIdentifier: string,
     paymentId: string,
-  ): Promise<ResolveSignedTransferResponseBigNumber> {
+  ): Promise<ResolveSignedTransferResponse> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
@@ -84,7 +80,6 @@ export class SignedTransferService {
     let [senderAppBadType] = await this.signedTransferRepository.findSignedTransferAppsByPaymentId(
       paymentId,
     );
-    console.log('senderAppBadType: ', senderAppBadType);
     if (!senderAppBadType) {
       throw new Error(`No sender app installed for paymentId: ${paymentId}`);
     }
@@ -97,7 +92,6 @@ export class SignedTransferService {
     const assetId = senderApp.outcomeInterpreterParameters.tokenAddress;
 
     // sender amount
-    console.log('senderApp.latestState.coinTransfers: ', senderApp.latestState.coinTransfers);
     const amount = senderApp.latestState.coinTransfers[0].amount;
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
@@ -112,7 +106,7 @@ export class SignedTransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          DEPOSIT_CONFIRMED_EVENT,
+          EventNames.DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (
               msg.from === this.cfCoreService.cfCore.publicIdentifier &&
@@ -130,9 +124,12 @@ export class SignedTransferService {
             );
           },
         );
-        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
-          return reject(JSON.stringify(msg, null, 2));
-        });
+        this.cfCoreService.cfCore.on(
+          EventNames.DEPOSIT_FAILED_EVENT,
+          (msg: DepositFailedMessage) => {
+            return reject(JSON.stringify(msg, null, 2));
+          },
+        );
         try {
           await this.channelService.rebalance(
             userPublicIdentifier,
@@ -154,7 +151,7 @@ export class SignedTransferService {
       );
     }
 
-    const initialState: SignedTransferAppStateBigNumber = {
+    const initialState: SimpleSignedTransferAppState = {
       coinTransfers: [
         {
           amount,
@@ -177,7 +174,7 @@ export class SignedTransferService {
       assetId,
       Zero,
       assetId,
-      SimpleSignedTransferApp,
+      SimpleSignedTransferAppName,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {

@@ -1,15 +1,16 @@
 import { MessagingService } from "@connext/messaging";
 import {
-  ConnextEventEmitter,
-  CFCoreTypes,
-  MessagingConfig,
-  IMessagingService,
-  VerifyNonceDtoType,
   CF_PATH,
+  ConnextEventEmitter,
+  delay,
+  IMessagingService,
+  MessagingConfig,
+  NodeMessage,
+  VerifyNonceDtoType,
 } from "@connext/types";
 
 import { env } from "./env";
-import { combineObjects, delay } from "./misc";
+import { combineObjects } from "./misc";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import { Logger } from "./logger";
 
@@ -226,13 +227,13 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   }
 
   ////////////////////////////////////////
-  // CFCoreTypes.IMessagingService Methods
+  // IMessagingService Methods
   async onReceive(
     subject: string,
-    callback: (msg: CFCoreTypes.NodeMessage) => void,
+    callback: (msg: NodeMessage) => void,
   ): Promise<void> {
     // return connection callback
-    return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
+    return await this.connection.onReceive(subject, async (msg: NodeMessage) => {
       this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
       // wait out delay
       await this.awaitDelay();
@@ -277,7 +278,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     });
   }
 
-  async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
+  async send(to: string, msg: NodeMessage): Promise<void> {
     this.emit(SEND, { subject: to, data: msg } as MessagingEventData);
     // wait out delay
     await this.awaitDelay(true);
@@ -371,7 +372,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   async subscribe(
     subject: string,
-    callback: (msg: CFCoreTypes.NodeMessage) => void,
+    callback: (msg: NodeMessage) => void,
   ): Promise<void> {
     return await this.connection.subscribe(subject, callback);
   }

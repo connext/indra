@@ -1,15 +1,16 @@
-/* global before after */
 import { utils } from "@connext/client";
 import {
-  IConnextClient,
   CF_PATH,
-  LINKED_TRANSFER,
+  ConditionalTransferTypes, 
   createRandom32ByteHexString,
+  IConnextClient,
 } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode } from "ethers/utils";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
+import { before } from "mocha";
+import { Client } from "ts-nats";
 
 import {
   AssetOptions,
@@ -28,7 +29,6 @@ import {
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { getNatsClient } from "../util/nats";
-import { Client } from "ts-nats";
 
 const { xpubToAddress } = utils;
 
@@ -170,9 +170,7 @@ describe("Async Transfers", () => {
         assetId,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(
-      `Value "${assetId}" is not a valid eth address, Value (${amount}) is not less than or equal to 0`,
-    );
+    ).to.be.rejectedWith(`invalid address`);
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
   });
@@ -239,7 +237,7 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        conditionType: LINKED_TRANSFER,
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
         preImage: createRandom32ByteHexString(),
         recipient: clientB.publicIdentifier,
@@ -255,7 +253,7 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        conditionType: LINKED_TRANSFER,
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId: createRandom32ByteHexString(),
         preImage,
         recipient: clientB.publicIdentifier,

@@ -1,4 +1,4 @@
-import { CFCoreTypes } from "@connext/types";
+import { MinimalTransaction } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { TransactionResponse } from "ethers/providers";
 
@@ -16,7 +16,7 @@ export class OnchainTransactionService {
 
   async sendWithdrawalCommitment(
     channel: Channel,
-    transaction: CFCoreTypes.MinimalTransaction,
+    transaction: MinimalTransaction,
   ): Promise<TransactionResponse> {
     const tx = await this.configService.getEthWallet().sendTransaction(transaction);
     await this.onchainTransactionRepository.addReclaim(tx, channel);
@@ -25,7 +25,7 @@ export class OnchainTransactionService {
 
   async sendWithdrawal(
     channel: Channel,
-    transaction: CFCoreTypes.MinimalTransaction,
+    transaction: MinimalTransaction,
   ): Promise<TransactionResponse> {
     const tx = await this.configService.getEthWallet().sendTransaction(transaction);
     await this.onchainTransactionRepository.addWithdrawal(tx, channel);

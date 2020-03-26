@@ -182,6 +182,7 @@ export class ChannelRepository extends Repository<Channel> {
     collateralizationInFlight: boolean,
   ): Promise<Channel> {
     channel.collateralizationInFlight = collateralizationInFlight;
-    return await this.save(channel);
+    await this.save(channel);
+    return channel;
   }
 }

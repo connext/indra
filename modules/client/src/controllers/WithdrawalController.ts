@@ -1,49 +1,53 @@
+import { WithdrawERC20Commitment, WithdrawETHCommitment } from "@connext/apps";
 import {
-  convertWithdrawParameters,
-  WithdrawERC20Commitment,
-  WithdrawETHCommitment,
-} from "@connext/apps";
-import {
-  EventNames,
-  WITHDRAWAL_STARTED_EVENT,
-  WITHDRAWAL_CONFIRMED_EVENT,
   AppInstanceJson,
-  WithdrawResponse,
-  WithdrawParameters,
-  WithdrawAppState,
+  ChannelMethods,
+  EventNames,
+  MethodParams,
+  MinimalTransaction,
+  toBN,
+  WithdrawAppName,
   WithdrawAppAction,
-  WithdrawApp,
+  WithdrawAppState,
+  WithdrawParameters,
+  WithdrawResponse,
 } from "@connext/types";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { formatEther } from "ethers/utils";
 
 import { stringify, xpubToAddress } from "../lib";
-import { BigNumber, CFCoreTypes, chan_setUserWithdrawal } from "../types";
+import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
-  public async withdraw(paramsRaw: WithdrawParameters): Promise<WithdrawResponse> {
+  public async withdraw(params: WithdrawParameters): Promise<WithdrawResponse> {
     //Set defaults
-    if (!paramsRaw.assetId) {
-      paramsRaw.assetId = AddressZero;
-    }
-    if (!paramsRaw.recipient) {
-      paramsRaw.recipient = this.connext.freeBalanceAddress;
+    if (!params.assetId) {
+      params.assetId = AddressZero;
     }
 
-    const params = convertWithdrawParameters(`bignumber`, paramsRaw);
+    if (!params.recipient) {
+      params.recipient = this.connext.freeBalanceAddress;
+    }
+
+    const amount = toBN(params.amount);
+    const { assetId, recipient } = params;
     let transaction: TransactionResponse | undefined;
 
+    if (recipient) {
+      validate(invalidAddress(recipient));
+    }
+
     this.log.info(
-      `Withdrawing ${formatEther(params.amount)} ${
-        params.assetId === AddressZero ? "ETH" : "Tokens"
-      } from multisig to ${params.recipient}`,
+      `Withdrawing ${formatEther(amount)} ${
+        assetId === AddressZero ? "ETH" : "Tokens"
+      } from multisig to ${recipient}`,
     );
 
     // TODO: try to remove this with deposit redesign
-    await this.cleanupPendingDeposit(params.assetId);
+    await this.cleanupPendingDeposit(assetId);
 
     const withdrawCommitment = await this.createWithdrawCommitment(params);
     const hash = withdrawCommitment.hashToSign();
@@ -53,7 +57,7 @@ export class WithdrawalController extends AbstractController {
 
     await this.proposeWithdrawApp(params, hash, withdrawerSignatureOnWithdrawCommitment);
 
-    this.connext.listener.emit(EventNames[WITHDRAWAL_STARTED_EVENT], {
+    this.connext.listener.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
       params,
       withdrawCommitment,
       withdrawerSignatureOnWithdrawCommitment,
@@ -63,7 +67,7 @@ export class WithdrawalController extends AbstractController {
     this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
     this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
-    this.connext.listener.emit(EventNames[WITHDRAWAL_CONFIRMED_EVENT], { transaction });
+    this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
 
     // Note that we listen for the signed commitment and save it to store only in listener.ts
 
@@ -71,13 +75,13 @@ export class WithdrawalController extends AbstractController {
   }
 
   public async respondToNodeWithdraw(appInstance: AppInstanceJson) {
-    const state = appInstance.latestState as WithdrawAppState<BigNumber>;
+    const state = appInstance.latestState as WithdrawAppState;
 
     const generatedCommitment = await this.createWithdrawCommitment({
       amount: state.transfers[0].amount,
       assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
       recipient: state.transfers[0].to,
-    } as WithdrawParameters<BigNumber>);
+    } as WithdrawParameters);
     const hash = generatedCommitment.hashToSign();
 
     // Dont need to validate anything because we already did it during the propose flow
@@ -102,7 +106,7 @@ export class WithdrawalController extends AbstractController {
   }
 
   private async createWithdrawCommitment(
-    params: WithdrawParameters<BigNumber>,
+    params: WithdrawParameters,
   ): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
     const { assetId, amount, recipient } = params;
     const channel = await this.connext.getStateChannel();
@@ -124,19 +128,20 @@ export class WithdrawalController extends AbstractController {
   }
 
   private async proposeWithdrawApp(
-    params: WithdrawParameters<BigNumber>,
+    params: WithdrawParameters,
     withdrawCommitmentHash: string,
     withdrawerSignatureOnWithdrawCommitment: string,
   ): Promise<string> {
-    const { amount, recipient, assetId } = params;
-    const appInfo = this.connext.getRegisteredAppDetails(WithdrawApp);
+    const amount = toBN(params.amount);
+    const { recipient, assetId } = params;
+    const appInfo = this.connext.getRegisteredAppDetails(WithdrawAppName);
     const {
       appDefinitionAddress: appDefinition,
       outcomeType,
       stateEncoding,
       actionEncoding,
     } = appInfo;
-    const initialState: WithdrawAppState<BigNumber> = {
+    const initialState: WithdrawAppState = {
       transfers: [
         { amount: amount, to: recipient },
         { amount: Zero, to: xpubToAddress(this.connext.nodePublicIdentifier) },
@@ -149,7 +154,7 @@ export class WithdrawalController extends AbstractController {
       data: withdrawCommitmentHash,
       finalized: false,
     };
-    const installParams: CFCoreTypes.ProposeInstallParams = {
+    const installParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -170,16 +175,18 @@ export class WithdrawalController extends AbstractController {
   }
 
   public async saveWithdrawCommitmentToStore(
-    params: WithdrawParameters<BigNumber>,
+    params: WithdrawParameters,
     signatures: string[],
   ): Promise<void> {
     // set the withdrawal tx in the store
     const commitment = (await this.createWithdrawCommitment(params)) as any;
     commitment.signatures = signatures;
-    const minTx: CFCoreTypes.MinimalTransaction = await commitment.getSignedTransaction();
+    const minTx: MinimalTransaction = await commitment.getSignedTransaction();
     const value = { tx: minTx, retry: 0 };
-    await this.connext.channelProvider.send(chan_setUserWithdrawal, { ...value });
-    await this.connext.channelProvider.send(chan_setUserWithdrawal, { withdrawalObject: value });
+    await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, { ...value });
+    await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
+      withdrawalObject: value,
+    });
     return;
   }
 }

@@ -1,53 +1,27 @@
-import { ILoggerService } from "@connext/types";
-import { BaseProvider } from "ethers/providers";
-import uuid from "uuid";
+import {
+  ILoggerService,
+  ProtocolName,
+  ProtocolNames,
+  ProtocolParam,
+  ProtocolParams,
+} from "@connext/types";
+import { JsonRpcProvider } from "ethers/providers";
+import { v4 as uuid } from "uuid";
 
 import { getProtocolFromName } from "../protocol";
 import {
   Context,
-  InstallProtocolParams,
   Middleware,
   NetworkContext,
-  ProposeInstallProtocolParams,
+  Opcode,
   ProtocolMessage,
-  SetupProtocolParams,
-  TakeActionProtocolParams,
-  UninstallProtocolParams,
-  UpdateProtocolParams,
 } from "../types";
 
-import { Opcode, Protocol } from "./enums";
 import { MiddlewareContainer } from "./middleware";
 import { Store } from "../store";
 
-/**
-Type-level mapping from Protocol to Protocol Param
-For e.g., ParamTypeOf<Protocol.Install> = InstallProtocolParams
-This syntax is preferred according to:
-https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types
-**/
-type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
-  ? InstallProtocolParams
-  : T extends Protocol.Update
-  ? UpdateProtocolParams
-  : T extends Protocol.Uninstall
-  ? UninstallProtocolParams
-  : T extends Protocol.TakeAction
-  ? TakeActionProtocolParams
-  : T extends Protocol.Propose
-  ? ProposeInstallProtocolParams
-  : never;
-
-function firstRecipientFromProtocolName(protocolName: Protocol) {
-  if (
-    [
-      Protocol.Update,
-      Protocol.Uninstall,
-      Protocol.TakeAction,
-      Protocol.Install,
-      Protocol.Propose,
-    ].indexOf(protocolName) !== -1
-  ) {
+function firstRecipientFromProtocolName(protocolName: ProtocolName) {
+  if (Object.values(ProtocolNames).includes(protocolName)) {
     return "responderXpub";
   }
   throw new Error(`Unknown protocolName ${protocolName} passed to firstRecipientFromProtocolName`);
@@ -58,7 +32,7 @@ export class ProtocolRunner {
 
   constructor(
     public readonly network: NetworkContext,
-    public readonly provider: BaseProvider,
+    public readonly provider: JsonRpcProvider,
     public readonly store: Store,
     public readonly log: ILoggerService,
   ) {
@@ -82,23 +56,23 @@ export class ProtocolRunner {
     return this.runProtocol(step, msg);
   }
 
-  public async initiateProtocol<T extends Protocol>(protocolName: T, params: ParamTypeOf<T>) {
+  public async initiateProtocol(protocolName: ProtocolName, params: ProtocolParam) {
     return this.runProtocol(getProtocolFromName(protocolName)[0], {
       params,
       protocol: protocolName,
-      processID: uuid.v1(),
+      processID: uuid(),
       seq: 0,
       toXpub: params[firstRecipientFromProtocolName(protocolName)],
       customData: {},
     });
   }
 
-  public async runSetupProtocol(params: SetupProtocolParams) {
-    const protocol = Protocol.Setup;
+  public async runSetupProtocol(params: ProtocolParams.Setup) {
+    const protocol = ProtocolNames.setup;
     return this.runProtocol(getProtocolFromName(protocol)[0], {
       protocol,
       params,
-      processID: uuid.v1(),
+      processID: uuid(),
       seq: 0,
       toXpub: params.responderXpub,
       customData: {},
@@ -114,7 +88,6 @@ export class ProtocolRunner {
       message,
       store: this.store,
       network: this.network,
-      provider: this.provider,
     };
 
     let lastMiddlewareRet: any = undefined;

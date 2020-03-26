@@ -10,7 +10,6 @@ export {
 export {
   AppInstanceJson,
   AppInstanceProposal,
-  CFCoreTypes,
   CreateChannelMessage,
   DepositConfirmationMessage,
   DepositFailedMessage,

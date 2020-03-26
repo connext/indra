@@ -1,10 +1,12 @@
+import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
+import localStorage from "localStorage";
+
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
   CHANNEL_KEY,
   COMMITMENT_KEY,
 } from "../helpers";
-import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
 
 // @ts-ignore
 const getLocalStorage = () => global.localStorage || require("localStorage");

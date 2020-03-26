@@ -5,7 +5,6 @@ import { getAddress } from "ethers/utils";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, SwapRateProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
-import { AuthService } from "../auth/auth.service";
 
 import { SwapRateService } from "./swapRate.service";
 

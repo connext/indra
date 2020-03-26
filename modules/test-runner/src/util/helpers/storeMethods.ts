@@ -8,17 +8,13 @@ import {
 import {
   StoreFactoryOptions,
   StorePair,
-  StoreType,
   StoreTypes,
-  ASYNCSTORAGE,
   WrappedStorage,
-  LOCALSTORAGE,
-  FILESTORAGE,
   AppInstanceProposal,
   StateChannelJSON,
   AppInstanceJson,
   OutcomeType,
-  ProtocolTypes,
+  MinimalTransaction,
   SetStateCommitmentJSON,
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
@@ -26,7 +22,7 @@ import {
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
-import uuid from "uuid";
+import { v4 as uuid } from "uuid";
 
 import { expect } from "../";
 import { One } from "ethers/constants";
@@ -95,7 +91,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
   monotonicNumProposedApps: 2,
 };
 
-export const TEST_STORE_MINIMAL_TX: ProtocolTypes.MinimalTransaction = {
+export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
   to: TEST_STORE_ETH_ADDRESS,
   value: One,
   data: createRandomBytesHexString(64),
@@ -127,9 +123,9 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 
-export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions = {}) {
+export function createKeyValueStore(type: StoreTypes, opts: StoreFactoryOptions = {}) {
   switch (type) {
-    case ASYNCSTORAGE:
+    case StoreTypes.AsyncStorage:
       return new KeyValueStorage(
         new WrappedAsyncStorage(
           new MockAsyncStorage(),
@@ -138,9 +134,9 @@ export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions =
           opts.asyncStorageKey,
         ),
       );
-    case LOCALSTORAGE:
+    case StoreTypes.LocalStorage:
       return new KeyValueStorage(new WrappedLocalStorage(opts.prefix, opts.separator));
-    case FILESTORAGE:
+    case StoreTypes.File:
       return new KeyValueStorage(
         new FileStorage(opts.prefix, opts.separator, opts.fileExt, opts.fileDir),
       );
@@ -149,12 +145,12 @@ export function createKeyValueStore(type: StoreType, opts: StoreFactoryOptions =
   }
 }
 
-export function createConnextStore(type: StoreType, opts: StoreFactoryOptions = {}): ConnextStore {
+export function createConnextStore(type: StoreTypes, opts: StoreFactoryOptions = {}): ConnextStore {
   if (!Object.values(StoreTypes).includes(type)) {
     throw new Error(`Unrecognized type: ${type}`);
   }
 
-  if (type === ASYNCSTORAGE) {
+  if (type === StoreTypes.AsyncStorage) {
     opts.storage = new MockAsyncStorage();
   }
 
@@ -170,7 +166,7 @@ export function createArray(length: number = 10): string[] {
 
 export function generateStorePairs(length: number = 10): StorePair[] {
   return createArray(length).map(() => {
-    const id = uuid.v1();
+    const id = uuid();
     return { path: `path-${id}`, value: `value-${id}` };
   });
 }

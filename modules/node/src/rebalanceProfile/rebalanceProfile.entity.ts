@@ -1,4 +1,3 @@
-import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 

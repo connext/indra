@@ -2,7 +2,7 @@ import { EntityRepository, Repository } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
-import { SimpleSignedTransferApp } from "@connext/types";
+import { SimpleSignedTransferAppName } from "@connext/types";
 
 @EntityRepository(AppInstance)
 export class SignedTransferRepository extends Repository<AppInstance> {
@@ -14,7 +14,7 @@ export class SignedTransferRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleSignedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .getMany();
   }
@@ -30,7 +30,7 @@ export class SignedTransferRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleSignedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${sender}"'`)
       .getOne();
@@ -47,7 +47,7 @@ export class SignedTransferRepository extends Repository<AppInstance> {
         "app_registry.appDefinitionAddress = app_instance.appDefinition",
       )
       .leftJoinAndSelect("app_instance.channel", "channel")
-      .where("app_registry.name = :name", { name: SimpleSignedTransferApp })
+      .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiver}"'`)
       .getOne();

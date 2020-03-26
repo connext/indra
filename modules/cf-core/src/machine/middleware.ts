@@ -1,14 +1,13 @@
-import { Opcode } from "./enums";
-import { Middleware } from "../types";
+import { Middleware, Opcode } from "../types";
 
 export class MiddlewareContainer {
   public readonly middlewares: { [I in Opcode]: Middleware[] } = {
     [Opcode.IO_SEND]: [],
     [Opcode.IO_SEND_AND_WAIT]: [],
     [Opcode.OP_SIGN]: [],
+    [Opcode.PERSIST_APP_INSTANCE]: [],
     [Opcode.PERSIST_COMMITMENT]: [],
     [Opcode.PERSIST_STATE_CHANNEL]: [],
-    [Opcode.PERSIST_APP_INSTANCE]: [],
   };
 
   public add(scope: Opcode, method: Middleware) {

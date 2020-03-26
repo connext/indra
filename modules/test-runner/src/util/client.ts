@@ -4,8 +4,7 @@ import {
   ClientOptions,
   IChannelProvider,
   IConnextClient,
-  MEMORYSTORAGE,
-  LOCALSTORAGE,
+  StoreTypes,
 } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
@@ -26,7 +25,7 @@ export const createClient = async (
   opts: Partial<ClientOptions | any> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const store = opts.store || new ConnextStore(MEMORYSTORAGE);
+  const store = opts.store || new ConnextStore(StoreTypes.Memory);
   const mnemonic = opts.mnemonic || Wallet.createRandom().mnemonic;
   const log = new Logger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
@@ -83,7 +82,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     ...opts,
     ...urlOptions,
     loggerService: new Logger("TestRunner", env.logLevel, true),
-    store: new ConnextStore(LOCALSTORAGE), // TODO: replace with polyfilled window.localStorage
+    store: new ConnextStore(StoreTypes.LocalStorage), // TODO: replace with polyfilled window.localStorage
   };
   if (network === "mainnet" || network === "rinkeby") {
     clientOpts = {

@@ -1,11 +1,11 @@
-import { CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp } from "@connext/types";
+import { MethodParams, CoinBalanceRefundAppState, CoinBalanceRefundAppName, toBN } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
+import { BigNumber, formatEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { stringify } from "../lib";
-import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
+import { ChannelState, DepositParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -14,8 +14,9 @@ import { AbstractController } from "./AbstractController";
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
+    const assetId = params.assetId;
+    const amount = toBN(params.amount);
 
-    const { assetId, amount } = convert.Deposit(`bignumber`, params);
     validate(invalidAddress(assetId), notPositive(amount));
 
     // check asset balance of address
@@ -81,7 +82,7 @@ export class DepositController extends AbstractController {
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
         : await token.functions.balanceOf(this.connext.multisigAddress);
 
-    const initialState: CoinBalanceRefundAppStateBigNumber = {
+    const initialState: CoinBalanceRefundAppState = {
       multisig: this.connext.multisigAddress,
       recipient: this.connext.freeBalanceAddress,
       threshold,
@@ -93,9 +94,9 @@ export class DepositController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
+    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundAppName);
 
-    const params: CFCoreTypes.ProposeInstallParams = {
+    const params: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,

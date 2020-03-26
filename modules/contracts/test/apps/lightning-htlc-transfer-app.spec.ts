@@ -1,19 +1,17 @@
-/* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import {
-  SolidityValueType,
   CoinTransfer,
-  singleAssetTwoPartyCoinTransferEncoding,
+  HashLockTransferAppAction,
+  HashLockTransferAppActionEncoding,
   HashLockTransferAppState,
   HashLockTransferAppStateEncoding,
-  HashLockTransferAppActionEncoding,
-  HashLockTransferAppStateBigNumber,
-  HashLockTransferAppAction,
+  singleAssetTwoPartyCoinTransferEncoding,
+  SolidityValueType,
 } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
-import { Zero, One } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
 
 import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
@@ -33,11 +31,11 @@ function mkHash(prefix: string = "0xa"): string {
 const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedAppState)[0];
 
-const decodeAppState = (encodedAppState: string): HashLockTransferAppStateBigNumber =>
+const decodeAppState = (encodedAppState: string): HashLockTransferAppState =>
   defaultAbiCoder.decode([HashLockTransferAppStateEncoding], encodedAppState)[0];
 
 const encodeAppState = (
-  state: HashLockTransferAppStateBigNumber,
+  state: HashLockTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
   if (!onlyCoinTransfers)
@@ -62,9 +60,9 @@ describe("LightningHTLCTransferApp", () => {
   let preImage: string;
   let lockHash: string;
   let timelock: BigNumber;
-  let preState: HashLockTransferAppStateBigNumber;
+  let preState: HashLockTransferAppState;
 
-  async function computeOutcome(state: HashLockTransferAppStateBigNumber): Promise<string> {
+  async function computeOutcome(state: HashLockTransferAppState): Promise<string> {
     return await lightningHTLCTransferApp.functions.computeOutcome(encodeAppState(state));
   }
 
@@ -77,7 +75,7 @@ describe("LightningHTLCTransferApp", () => {
 
   async function validateOutcome(
     encodedTransfers: string,
-    postState: HashLockTransferAppStateBigNumber,
+    postState: HashLockTransferAppState,
   ) {
     const decoded = decodeTransfers(encodedTransfers);
     expect(encodedTransfers).to.eq(encodeAppState(postState, true));
@@ -124,7 +122,7 @@ describe("LightningHTLCTransferApp", () => {
       let ret = await applyAction(preState, action);
       const afterActionState = decodeAppState(ret);
 
-      const expectedPostState: HashLockTransferAppStateBigNumber = {
+      const expectedPostState: HashLockTransferAppState = {
         coinTransfers: [
           {
             amount: Zero,

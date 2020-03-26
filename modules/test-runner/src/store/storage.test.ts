@@ -1,5 +1,6 @@
 import { getDirectoryFiles, isDirectorySync } from "@connext/store";
-import uuid from "uuid";
+import { StoreTypes } from "@connext/types";
+import { v4 as uuid } from "uuid";
 
 import {
   env,
@@ -11,14 +12,6 @@ import {
   TEST_STORE_PAIR,
   createArray,
 } from "../util";
-import {
-  LOCALSTORAGE,
-  ASYNCSTORAGE,
-  FILESTORAGE,
-  StoreTypes,
-  StoreType,
-  MEMORYSTORAGE,
-} from "@connext/types";
 
 describe("KeyValueStorage", () => {
   const length = 10;
@@ -28,11 +21,11 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: instantiate", () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === MEMORYSTORAGE) {
+      if (type === StoreTypes.Memory) {
         continue;
       }
       it(`should work for ${type}`, async () => {
-        const store = createKeyValueStore(type as StoreType, { fileDir });
+        const store = createKeyValueStore(type as StoreTypes, { fileDir });
         await setAndGet(store);
 
         // test + validate entries
@@ -50,11 +43,11 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: should be able to remove an item", async () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === MEMORYSTORAGE) {
+      if (type === StoreTypes.Memory) {
         continue;
       }
       it(`should work for ${type}`, async () => {
-        const store = createKeyValueStore(type as StoreType, { fileDir });
+        const store = createKeyValueStore(type as StoreTypes, { fileDir });
         await setAndGet(store, TEST_STORE_PAIR);
         await store.removeItem(TEST_STORE_PAIR.path);
         const val = await store.getItem(TEST_STORE_PAIR.path);
@@ -64,7 +57,7 @@ describe("KeyValueStorage", () => {
   });
 
   it("happy case: localStorage should include multiple keys", async () => {
-    const store = createKeyValueStore(LOCALSTORAGE);
+    const store = createKeyValueStore(StoreTypes.LocalStorage);
     const preInsert = await store.getEntries();
 
     await setAndGetMultiple(store, length);
@@ -75,7 +68,7 @@ describe("KeyValueStorage", () => {
 
   // TODO: fix test
   it.skip("happy case: AsyncStorage should include a single key matching asyncStorageKey", async () => {
-    const store = createKeyValueStore(ASYNCSTORAGE, { asyncStorageKey });
+    const store = createKeyValueStore(StoreTypes.AsyncStorage, { asyncStorageKey });
 
     await setAndGetMultiple(store, length);
 
@@ -86,16 +79,16 @@ describe("KeyValueStorage", () => {
   // TODO: ask pedro about the spirit of this test, and if it still needs to
   // be included/if its still relevant
   it.skip("happy case: FileStorage should include a single key matching asyncStorageKey", async () => {
-    const store = createKeyValueStore(FILESTORAGE, { asyncStorageKey, fileDir });
+    const store = createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
     await setAndGetMultiple(store, length);
     await testAsyncStorageKey(store, asyncStorageKey);
     await store.clear();
   });
 
   it("happy case: FileStorage should create a store directory", async () => {
-    const id = uuid.v4();
+    const id = uuid();
     expect(isDirectorySync(`${fileDir}/${id}`)).to.be.false;
-    const store = createKeyValueStore(FILESTORAGE, {
+    const store = createKeyValueStore(StoreTypes.File, {
       asyncStorageKey,
       fileDir: `${fileDir}/${id}`,
     });
@@ -105,10 +98,10 @@ describe("KeyValueStorage", () => {
   });
 
   it("happy case: FileStorage should create a file per key inside directory", async () => {
-    const store = createKeyValueStore(FILESTORAGE, { asyncStorageKey, fileDir });
+    const store = createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
 
-    const key1 = uuid.v4();
-    const key2 = uuid.v4();
+    const key1 = uuid();
+    const key2 = uuid();
     expect(key1).to.not.equal(key2);
     await Promise.all([store.setItem(key2, testValue), store.setItem(key1, testValue)]);
 
@@ -136,14 +129,14 @@ describe("KeyValueStorage", () => {
    * Adding a unique prefix to each store fixed the test
    */
   it("happy case: FileStorage should create a files with unique name", async () => {
-    const storeA = createKeyValueStore(FILESTORAGE, {
+    const storeA = createKeyValueStore(StoreTypes.File, {
       asyncStorageKey,
       fileDir,
       prefix: "somethingDifferent",
     });
-    const storeB = createKeyValueStore(FILESTORAGE, { asyncStorageKey, fileDir });
+    const storeB = createKeyValueStore(StoreTypes.File, { asyncStorageKey, fileDir });
 
-    const key = uuid.v4();
+    const key = uuid();
     await Promise.all([storeA.setItem(key, testValue), storeB.setItem(key, testValue)]);
 
     const files = await getDirectoryFiles(fileDir);
@@ -159,11 +152,11 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: set & get the same path consecutively", async () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === MEMORYSTORAGE) {
+      if (type === StoreTypes.Memory) {
         continue;
       }
       it(`${type} should work`, async () => {
-        const store = createKeyValueStore(type as StoreType, { fileDir });
+        const store = createKeyValueStore(type as StoreTypes, { fileDir });
         await Promise.all(createArray(5).map(() => setAndGet(store)));
       });
     }
@@ -171,12 +164,12 @@ describe("KeyValueStorage", () => {
 
   describe("happy case: should join strings correctly", () => {
     for (const type of Object.keys(StoreTypes)) {
-      if (type === MEMORYSTORAGE) {
+      if (type === StoreTypes.Memory) {
         continue;
       }
       it(`${type} should work`, async () => {
-        const store = createKeyValueStore(type as StoreType, { fileDir });
-        const expected = `expected${type === FILESTORAGE ? "-" : "/"}string`;
+        const store = createKeyValueStore(type as StoreTypes, { fileDir });
+        const expected = `expected${type === StoreTypes.File ? "-" : "/"}string`;
         expect(store.getKey("expected", "string")).to.be.equal(expected);
       });
     }

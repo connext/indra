@@ -1,16 +1,19 @@
 import { MessagingService } from "@connext/messaging";
 import {
+  bigNumberifyJson,
+  delay,
+  GetHashLockTransferResponse,
+  GetPendingAsyncTransfersResponse,
   ILoggerService,
   ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
-  GetHashLockTransferResponse,
-  GetPendingAsyncTransfersResponse,
   ResolveSignedTransferResponse,
+  stringify,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
-import { Transaction } from "ethers/utils";
-import uuid from "uuid";
-import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify, delay } from "./lib";
+import { getAddress, Transaction } from "ethers/utils";
+import { v4 as uuid } from "uuid";
+import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
 import {
   AppRegistry,
   ChannelAppSequences,
@@ -19,12 +22,11 @@ import {
   GetConfigResponse,
   IChannelProvider,
   INodeApiClient,
-  makeChecksumOrEthAddress,
   NodeInitializationParameters,
   RebalanceProfile,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
-  Transfer,
+  TransferInfo,
 } from "./types";
 import { invalidXpub } from "./validation";
 
@@ -134,7 +136,7 @@ export class NodeApiClient implements INodeApiClient {
     return this.send(`${this.userPublicIdentifier}.swap-rate.${from}.${to}`);
   }
 
-  public async getTransferHistory(): Promise<Transfer[]> {
+  public async getTransferHistory(): Promise<TransferInfo[]> {
     return (await this.send(`${this.userPublicIdentifier}.transfer.get-history`)) || [];
   }
 
@@ -201,7 +203,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
     return this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
-      assetId: makeChecksumOrEthAddress(assetId),
+      assetId: getAddress(assetId),
     });
   }
 
@@ -292,7 +294,7 @@ export class NodeApiClient implements INodeApiClient {
     const start = Date.now();
     const payload = {
       ...data,
-      id: uuid.v4(),
+      id: uuid(),
     };
     let msg: any;
     try {
@@ -316,6 +318,6 @@ export class NodeApiClient implements INodeApiClient {
       start,
       `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
     );
-    return !response || isEmptyObj ? undefined : response;
+    return (!response || isEmptyObj) ? undefined : bigNumberifyJson(response);
   }
 }

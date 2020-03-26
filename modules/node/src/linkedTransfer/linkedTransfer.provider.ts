@@ -1,13 +1,12 @@
-import { convertLinkedTransferAppState } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import {
-  ResolveLinkedTransferResponse,
+  bigNumberifyJson,
   GetLinkedTransferResponse,
-  replaceBN,
-  SimpleLinkedTransferAppState,
   GetPendingAsyncTransfersResponse,
   LinkedTransferStatus,
-  // TransferType,
+  ResolveLinkedTransferResponse,
+  SimpleLinkedTransferAppState,
+  stringify,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -35,7 +34,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     data: { paymentId: string },
   ): Promise<GetLinkedTransferResponse | undefined> {
     const { paymentId } = data;
-    if (!data.paymentId) {
+    if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     this.log.info(`Got fetch link request for: ${paymentId}`);
@@ -50,13 +49,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    const latestState = convertLinkedTransferAppState(
-      "bignumber",
-      senderApp.latestState as SimpleLinkedTransferAppState,
-    );
+    const latestState = bigNumberifyJson(senderApp.latestState) as SimpleLinkedTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     return {
-      amount: latestState.amount.toString(),
+      amount: latestState.amount,
       meta: meta || {},
       assetId: latestState.assetId,
       createdAt: senderApp.createdAt,
@@ -73,7 +69,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     { paymentId }: { paymentId: string },
   ): Promise<ResolveLinkedTransferResponse> {
     this.log.debug(
-      `Got resolve link request with data: ${JSON.stringify(paymentId, replaceBN, 2)}`,
+      `Got resolve link request with data: ${stringify(paymentId)}`,
     );
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
@@ -81,7 +77,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const response = await this.linkedTransferService.resolveLinkedTransfer(pubId, paymentId);
     return {
       ...response,
-      amount: response.amount.toString(),
+      amount: response.amount,
     };
   }
 
@@ -92,14 +88,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       userPublicIdentifier,
     );
     return transfers.map(transfer => {
-      const state = convertLinkedTransferAppState(
-        "bignumber",
-        transfer.latestState as SimpleLinkedTransferAppState,
-      );
+      const state = bigNumberifyJson(transfer.latestState) as SimpleLinkedTransferAppState;
       return {
         paymentId: state.paymentId,
         createdAt: transfer.createdAt,
-        amount: state.amount.toString(),
+        amount: state.amount,
         assetId: state.assetId,
         senderPublicIdentifier: transfer.channel.userPublicIdentifier,
         receiverPublicIdentifier: transfer.meta["recipient"],

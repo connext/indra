@@ -47,6 +47,7 @@ then
     --delay 1 \
     --exitcrash \
     --ignore *.test.ts \
+    --ignore *.swp \
     --legacy-watch \
     --polling-interval 1000 \
     --watch src \

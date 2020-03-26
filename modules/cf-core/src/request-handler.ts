@@ -1,6 +1,12 @@
-import { DEPOSIT_CONFIRMED_EVENT, PROTOCOL_MESSAGE_EVENT, ILoggerService } from "@connext/types";
+import {
+  bigNumberifyJson,
+  EventNames,
+  ILoggerService,
+  IMessagingService,
+  MethodName,
+} from "@connext/types";
 import { Signer } from "ethers";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
 import { eventNameToImplementation, methodNameToImplementation } from "./methods";
@@ -9,13 +15,13 @@ import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
 import {
-  CFCoreTypes,
+  MethodRequest,
+  MethodResponse,
   NetworkContext,
-  NODE_EVENTS,
-  NodeEvent,
+  NodeMessage,
   NodeMessageWrappedProtocolMessage,
 } from "./types";
-import { bigNumberifyJson, logTime } from "./utils";
+import { logTime } from "./utils";
 
 /**
  * This class registers handlers for requests to get or set some information
@@ -32,10 +38,10 @@ export class RequestHandler {
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
     readonly store: Store,
-    readonly messagingService: CFCoreTypes.IMessagingService,
+    readonly messagingService: IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
-    readonly provider: BaseProvider,
+    readonly provider: JsonRpcProvider,
     readonly wallet: Signer,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
@@ -57,11 +63,11 @@ export class RequestHandler {
    * @param req
    */
   public async callMethod(
-    method: CFCoreTypes.MethodName,
-    req: CFCoreTypes.MethodRequest,
-  ): Promise<CFCoreTypes.MethodResponse> {
+    method: MethodName,
+    req: MethodRequest,
+  ): Promise<MethodResponse> {
     const start = Date.now();
-    const result: CFCoreTypes.MethodResponse = {
+    const result: MethodResponse = {
       type: req.type,
       requestId: req.requestId,
       result: await this.methods.get(method)(this, req.params),
@@ -76,8 +82,8 @@ export class RequestHandler {
   private mapPublicApiMethods() {
     for (const methodName in methodNameToImplementation) {
       this.methods.set(methodName, methodNameToImplementation[methodName]);
-      this.incoming.on(methodName, async (req: CFCoreTypes.MethodRequest) => {
-        const res: CFCoreTypes.MethodResponse = {
+      this.incoming.on(methodName, async (req: MethodRequest) => {
+        const res: MethodResponse = {
           type: req.type,
           requestId: req.requestId,
           result: await this.methods.get(methodName)(this, bigNumberifyJson(req.params)),
@@ -92,7 +98,7 @@ export class RequestHandler {
    * These are the events being listened on to detect requests from peer Nodes.
    */
   private mapEventHandlers() {
-    for (const eventName of Object.values(NODE_EVENTS)) {
+    for (const eventName of Object.values(EventNames)) {
       this.events.set(eventName, eventNameToImplementation[eventName]);
     }
   }
@@ -103,13 +109,13 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: NodeEvent, msg: CFCoreTypes.NodeMessage) {
+  public async callEvent(event: EventNames, msg: NodeMessage) {
     const start = Date.now();
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
-      if (event === DEPOSIT_CONFIRMED_EVENT) {
+      if (event === EventNames.DEPOSIT_CONFIRMED_EVENT) {
         this.log.info(
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,
@@ -130,7 +136,7 @@ export class RequestHandler {
       this.log,
       start,
       `Event ${
-        event !== PROTOCOL_MESSAGE_EVENT
+        event !== EventNames.PROTOCOL_MESSAGE_EVENT
           ? event
           : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
       } was processed`,
@@ -138,7 +144,7 @@ export class RequestHandler {
     this.router.emit(event, msg);
   }
 
-  public async isLegacyEvent(event: NodeEvent) {
+  public async isLegacyEvent(event: EventNames) {
     return this.events.has(event);
   }
 

@@ -1,27 +1,27 @@
-import { PersistAppType } from "@connext/types";
+import { CommitmentTypes, ProtocolParams, ProtocolNames, PersistAppType } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { xkeyKthAddress, Commitment, Opcode, Protocol, appIdentityToHash } from "../machine";
-import { SetStateCommitment } from "../ethereum";
-import { AppInstanceProposal } from "../models";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
+import { getSetStateCommitment } from "../ethereum";
+import { AppInstance, AppInstanceProposal } from "../models";
 import {
   Context,
-  ProposeInstallProtocolParams,
+  Opcode,
   ProtocolExecutionFlow,
   ProtocolMessage,
 } from "../types";
-import { logTime } from "../utils";
+import { appIdentityToHash, logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
-const protocol = Protocol.Propose;
+const protocol = ProtocolNames.propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
-const { SetState } = Commitment;
+const { SetState } = CommitmentTypes;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, network, store } = context;
+    const { message, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart;
@@ -43,7 +43,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initialState,
       outcomeType,
       meta,
-    } = params as ProposeInstallProtocolParams;
+    } = params as ProtocolParams.Propose;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
@@ -75,9 +75,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
-    const setStateCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
-      {
+    const proposedAppInstance = {
+      identity: {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
         participants: preProtocolStateChannel.getSigningKeysFor(
@@ -85,9 +84,16 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         ),
         defaultTimeout: timeout.toNumber(),
       },
-      keccak256(defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])),
-      0,
-      timeout.toNumber(),
+      hashOfLatestState: keccak256(
+        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
+      ),
+      versionNumber: 0,
+      timeout: timeout.toNumber(),
+    };
+
+    const setStateCommitment = getSetStateCommitment(
+      context,
+      proposedAppInstance as AppInstance,
     );
 
     const initiatorSignatureOnInitialState = yield [
@@ -143,7 +149,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, network, store } = context;
+    const { message, store } = context;
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart;
@@ -165,7 +171,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initialState,
       outcomeType,
       meta,
-    } = params as ProposeInstallProtocolParams;
+    } = params as ProtocolParams.Propose;
 
     const {
       customData: { signature: initiatorSignatureOnInitialState },
@@ -199,9 +205,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     };
 
-    const setStateCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
-      {
+    const proposedAppInstance = {
+      identity: {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
         participants: preProtocolStateChannel.getSigningKeysFor(
@@ -209,9 +214,16 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         ),
         defaultTimeout: timeout.toNumber(),
       },
-      keccak256(defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])),
-      0,
-      timeout.toNumber(),
+      hashOfLatestState: keccak256(
+        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
+      ),
+      versionNumber: 0,
+      timeout: timeout.toNumber(),
+    };
+
+    const setStateCommitment = getSetStateCommitment(
+      context,
+      proposedAppInstance as AppInstance,
     );
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);

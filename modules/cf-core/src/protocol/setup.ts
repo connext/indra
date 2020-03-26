@@ -1,14 +1,24 @@
-import { SetupCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress, Commitment } from "../machine";
+import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
+
+import { UNASSIGNED_SEQ_NO } from "../constants";
+import { getSetupCommitment } from "../ethereum";
+
 import { StateChannel } from "../models";
-import { Context, ProtocolMessage, ProtocolExecutionFlow, SetupProtocolParams } from "../types";
+import {
+  Context,
+  Opcode,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+} from "../types";
+
 import { logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
-const protocol = Protocol.Setup;
+const protocol = ProtocolNames.setup;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
-const { Setup } = Commitment;
+const { Setup } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -25,7 +35,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { processID, params } = message;
 
-    const { multisigAddress, responderXpub, initiatorXpub } = params as SetupProtocolParams;
+    const { multisigAddress, responderXpub, initiatorXpub } = params as ProtocolParams.Setup;
 
     // 56 ms
     const stateChannel = StateChannel.setupChannel(
@@ -35,12 +45,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       [initiatorXpub, responderXpub],
     );
 
-    const setupCommitment = new SetupCommitment(
-      network,
-      stateChannel.multisigAddress,
-      stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity,
-    );
+    const setupCommitment = getSetupCommitment(context, stateChannel);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -103,7 +108,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignature },
     } = message;
 
-    const { multisigAddress, initiatorXpub, responderXpub } = params as SetupProtocolParams;
+    const { multisigAddress, initiatorXpub, responderXpub } = params as ProtocolParams.Setup;
 
     // 73 ms
     const stateChannel = StateChannel.setupChannel(
@@ -113,12 +118,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       [initiatorXpub, responderXpub],
     );
 
-    const setupCommitment = new SetupCommitment(
-      network,
-      stateChannel.multisigAddress,
-      stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity,
-    );
+    const setupCommitment = getSetupCommitment(context, stateChannel);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key

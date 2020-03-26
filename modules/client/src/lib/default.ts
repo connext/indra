@@ -1,5 +1,5 @@
 import { ConnextStore } from "@connext/store";
-import { LOCALSTORAGE } from "@connext/types";
+import { StoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
 
 import { ClientOptions } from "../types";
@@ -16,7 +16,7 @@ export function getOptionIfAvailable(option: string, opts?: Partial<ClientOption
 export function getDefaultStore(opts?: Partial<ClientOptions>): ConnextStore {
   const storeType = getOptionIfAvailable("storeType", opts);
   const backupService = getOptionIfAvailable("backupService", opts);
-  return new ConnextStore(storeType || LOCALSTORAGE, { backupService });
+  return new ConnextStore(storeType || StoreTypes.LocalStorage, { backupService });
 }
 
 export async function getDefaultOptions(

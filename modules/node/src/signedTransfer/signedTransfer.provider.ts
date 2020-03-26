@@ -1,10 +1,9 @@
-import { convertSignedTransferAppState } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import {
-  ResolveSignedTransferResponse,
-  SignedTransferAppStateBigNumber,
+  bigNumberifyJson,
   GetSignedTransferResponse,
-  SignedTransferAppState,
+  ResolveSignedTransferResponse,
+  SimpleSignedTransferAppState,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -40,7 +39,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     const response = await this.signedTransferService.resolveSignedTransfer(pubId, data.paymentId);
     return {
       ...response,
-      amount: response.amount.toString(),
+      amount: response.amount,
     };
   }
 
@@ -65,10 +64,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    const latestState: SignedTransferAppStateBigNumber = convertSignedTransferAppState(
-      "bignumber",
-      senderApp.latestState as SignedTransferAppState,
-    );
+    const latestState = bigNumberifyJson(senderApp.latestState) as SimpleSignedTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     const amount = latestState.coinTransfers[0].amount.isZero()
       ? latestState.coinTransfers[1].amount

@@ -10,10 +10,7 @@
   ],
   "scripts": {
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
-    "rebuild": "npm run clean && npm run build",
-    "clean": "rm -rf ./dist",
-    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
-    "test": "./node_modules/.bin/jest"
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
     "@connext/types": "6.0.0-alpha.2",
@@ -23,11 +20,8 @@
     "uuid": "3.4.0"
   },
   "devDependencies": {
-    "@babel/polyfill": "7.8.3",
-    "@types/jest": "25.1.2",
-    "@types/node": "13.7.1",
-    "jest": "25.1.0",
-    "ts-jest": "25.2.0",
+    "@babel/polyfill": "7.8.7",
+    "@types/node": "13.9.1",
     "typescript": "3.7.5"
   }
 }

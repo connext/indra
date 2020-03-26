@@ -214,6 +214,7 @@ export class AdminService implements OnApplicationBootstrap {
         proxyFactory: criticalAddresses.proxyFactory,
         multisigMastercopy: criticalAddresses.multisigAddress,
       } as CriticalStateChannelAddresses;
+      // @ts-ignore TS2589: Type instantiation is excessively deep and possibly infinite.
       await this.channelRepository.save(channel);
       // Move this channel from broken to fixed
       output.fixed.push(brokenMultisig);

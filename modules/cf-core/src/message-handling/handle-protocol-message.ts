@@ -1,30 +1,23 @@
 import {
-  PROPOSE_INSTALL_EVENT,
-  INSTALL_EVENT,
-  UNINSTALL_EVENT,
-  CREATE_CHANNEL_EVENT,
-  UPDATE_STATE_EVENT,
+  bigNumberifyJson,
+  EventNames,
+  ProtocolName,
+  ProtocolNames,
+  ProtocolParam,
+  ProtocolParams,
 } from "@connext/types";
-import { Protocol } from "../machine";
-import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
-import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
+
+import { UNASSIGNED_SEQ_NO } from "../constants";
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../errors";
 
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import {
   EventEmittedMessage,
-  InstallProtocolParams,
   NetworkContext,
   NodeMessageWrappedProtocolMessage,
-  ProposeInstallProtocolParams,
-  ProtocolParameters,
-  SetupProtocolParams,
   SolidityValueType,
-  TakeActionProtocolParams,
-  UninstallProtocolParams,
-  UpdateProtocolParams,
 } from "../types";
-import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
 
 /**
@@ -54,7 +47,7 @@ export async function handleReceivedProtocolMessage(
     publicIdentifier,
   );
 
-  if (outgoingEventData && protocol === Protocol.Install) {
+  if (outgoingEventData && protocol === ProtocolNames.install) {
     const appInstanceId =
       outgoingEventData!.data["appInstanceId"] ||
       (outgoingEventData!.data as any).params["appInstanceId"];
@@ -86,8 +79,8 @@ function emitOutgoingNodeMessage(router: RpcRouter, msg: EventEmittedMessage) {
 }
 
 async function getOutgoingEventDataFromProtocol(
-  protocol: Protocol,
-  params: ProtocolParameters,
+  protocol: ProtocolName,
+  params: ProtocolParam,
   networkContext: NetworkContext,
   store: Store,
   publicIdentifier: string,
@@ -96,16 +89,16 @@ async function getOutgoingEventDataFromProtocol(
   const baseEvent = { from: params.initiatorXpub };
 
   switch (protocol) {
-    case Protocol.Propose:
+    case ProtocolNames.propose:
       const {
         multisigAddress,
         initiatorXpub,
         responderXpub,
         ...emittedParams
-      } = params as ProposeInstallProtocolParams;
+      } = params as ProtocolParams.Propose;
       return {
         ...baseEvent,
-        type: PROPOSE_INSTALL_EVENT,
+        type: EventNames.PROPOSE_INSTALL_EVENT,
         data: {
           params: {
             ...emittedParams,
@@ -116,46 +109,46 @@ async function getOutgoingEventDataFromProtocol(
           ).mostRecentlyProposedAppInstance().identityHash,
         },
       };
-    case Protocol.Install:
+    case ProtocolNames.install:
       return {
         ...baseEvent,
-        type: INSTALL_EVENT,
+        type: EventNames.INSTALL_EVENT,
         data: {
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
             appInstanceId: (
-              await store.getStateChannel((params as InstallProtocolParams).multisigAddress)
+              await store.getStateChannel((params as ProtocolParams.Install).multisigAddress)
             ).mostRecentlyInstalledAppInstance().identityHash,
           },
         },
       };
-    case Protocol.Uninstall:
+    case ProtocolNames.uninstall:
       return {
         ...baseEvent,
-        type: UNINSTALL_EVENT,
-        data: getUninstallEventData(params as UninstallProtocolParams),
+        type: EventNames.UNINSTALL_EVENT,
+        data: getUninstallEventData(params as ProtocolParams.Uninstall),
       };
-    case Protocol.Setup:
+    case ProtocolNames.setup:
       return {
         ...baseEvent,
-        type: CREATE_CHANNEL_EVENT,
+        type: EventNames.CREATE_CHANNEL_EVENT,
         data: getSetupEventData(
-          params as SetupProtocolParams,
-          (await store.getStateChannel((params as SetupProtocolParams).multisigAddress))!
+          params as ProtocolParams.Setup,
+          (await store.getStateChannel((params as ProtocolParams.Setup).multisigAddress))!
             .multisigOwners,
         ),
       };
-    case Protocol.TakeAction:
-    case Protocol.Update:
+    case ProtocolNames.takeAction:
+    case ProtocolNames.update:
       return {
         ...baseEvent,
-        type: UPDATE_STATE_EVENT,
+        type: EventNames.UPDATE_STATE_EVENT,
         data: getStateUpdateEventData(
-          params as UpdateProtocolParams,
+          params as ProtocolParams.Update,
           (
             await store.getAppInstance(
-              (params as TakeActionProtocolParams | UpdateProtocolParams).appIdentityHash,
+              (params as ProtocolParams.TakeAction | ProtocolParams.Update).appIdentityHash,
             )
           ).state,
         ),
@@ -168,21 +161,21 @@ async function getOutgoingEventDataFromProtocol(
 }
 
 function getStateUpdateEventData(
-  params: TakeActionProtocolParams | UpdateProtocolParams,
+  params: ProtocolParams.TakeAction | ProtocolParams.Update,
   newState: SolidityValueType,
 ) {
-  // note: action does not exist on type `UpdateProtocolParams`
+  // note: action does not exist on type `ProtocolParams.Update`
   // so use any cast
   const { appIdentityHash: appInstanceId, action } = params as any;
   return { newState, appInstanceId, action };
 }
 
-function getUninstallEventData({ appIdentityHash: appInstanceId }: UninstallProtocolParams) {
+function getUninstallEventData({ appIdentityHash: appInstanceId }: ProtocolParams.Uninstall) {
   return { appInstanceId };
 }
 
 function getSetupEventData(
-  { initiatorXpub: counterpartyXpub, multisigAddress }: SetupProtocolParams,
+  { initiatorXpub: counterpartyXpub, multisigAddress }: ProtocolParams.Setup,
   owners: string[],
 ) {
   return { multisigAddress, owners, counterpartyXpub };

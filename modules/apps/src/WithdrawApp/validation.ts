@@ -1,36 +1,20 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import {
-  CFCoreTypes,
-  CoinTransferBigNumber,
-  bigNumberifyObj,
-  WithdrawAppState,
-} from "@connext/types";
 import { recoverAddress } from "@connext/crypto";
-import { unidirectionalCoinTransferValidation } from "../shared";
-import { convertWithrawAppState } from "./convert";
-import { BigNumber } from "ethers/utils";
+import { bigNumberifyJson, MethodParams, WithdrawAppState } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 
+import { unidirectionalCoinTransferValidation } from "../shared";
+
 export const validateWithdrawApp = async (
-  params: CFCoreTypes.ProposeInstallParams,
+  params: MethodParams.ProposeInstall,
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
 ) => {
-  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
-    params,
-  );
+  const { responderDeposit, initiatorDeposit } = params;
+  const initialState = bigNumberifyJson(params.initialState) as WithdrawAppState;
 
   const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
   const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
-
-  const initialState: WithdrawAppState<BigNumber> = convertWithrawAppState(
-    "bignumber",
-    initialStateBadType,
-  );
-
-  initialState.transfers = initialState.transfers.map((transfer: CoinTransferBigNumber) =>
-    bigNumberifyObj(transfer),
-  ) as any;
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];

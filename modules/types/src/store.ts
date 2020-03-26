@@ -1,11 +1,22 @@
 import { StateChannelJSON } from "./state";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
-import { CFCoreTypes } from "./cfCore";
-import { SetStateCommitmentJSON, ConditionalTransactionCommitmentJSON } from "./challenge";
-import { ProtocolTypes } from "./protocol";
+import {
+  ConditionalTransactionCommitmentJSON,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+} from "./commitments";
+import { enumify } from "./utils";
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
+
+export const StoreTypes = enumify({
+  AsyncStorage: "AsyncStorage",
+  File: "File",
+  LocalStorage: "LocalStorage",
+  Memory: "Memory",
+});
+export type StoreTypes = (typeof StoreTypes)[keyof typeof StoreTypes];
 
 export type StorePair = {
   path: string;
@@ -35,20 +46,6 @@ export interface WrappedStorage {
   // generates a key for related subject strings
   getKey(...args: string[]): string;
 }
-
-// storage types
-export const ASYNCSTORAGE = "ASYNCSTORAGE";
-export const FILESTORAGE = "FILESTORAGE";
-export const LOCALSTORAGE = "LOCALSTORAGE";
-export const MEMORYSTORAGE = "MEMORYSTORAGE";
-
-export const StoreTypes = {
-  [ASYNCSTORAGE]: ASYNCSTORAGE,
-  [FILESTORAGE]: FILESTORAGE,
-  [LOCALSTORAGE]: LOCALSTORAGE,
-  [MEMORYSTORAGE]: MEMORYSTORAGE,
-};
-export type StoreType = keyof typeof StoreTypes;
 
 export interface FileStorageOptions {
   fileExt?: string;
@@ -105,10 +102,10 @@ export interface IStoreService {
   saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
   getSetupCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined>;
+  ): Promise<MinimalTransaction | undefined>;
   saveSetupCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void>;
   getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
   saveLatestSetStateCommitment(
@@ -124,10 +121,10 @@ export interface IStoreService {
   ): Promise<void>;
   getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<CFCoreTypes.MinimalTransaction | undefined>;
+  ): Promise<MinimalTransaction | undefined>;
   saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: CFCoreTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void>;
   clear(): Promise<void>;
   restore(): Promise<void>;
@@ -141,7 +138,7 @@ export interface IClientStore extends IStoreService {
 // Used to monitor node submitted withdrawals on behalf of user
 export type WithdrawalMonitorObject = {
   retry: number;
-  tx: CFCoreTypes.MinimalTransaction;
+  tx: MinimalTransaction;
 };
 
 export interface Store extends IStoreServiceOld {

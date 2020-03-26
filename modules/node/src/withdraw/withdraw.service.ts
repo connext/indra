@@ -1,29 +1,31 @@
-import { Injectable } from "@nestjs/common";
 import { signDigest } from "@connext/crypto";
-import { WithdrawApp } from "@connext/types";
-
-import { CFCoreService } from "../cfCore/cfCore.service";
-import { ConfigService } from "../config/config.service";
-import { LoggerService } from "../logger/logger.service";
-import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { CFCoreTypes, xkeyKthAddress } from "../util";
 import {
-  TransactionResponse,
   AppInstanceJson,
   BigNumber,
-  stringify,
   CoinTransfer,
+  MinimalTransaction,
+  stringify,
+  TransactionResponse,
+  WithdrawAppAction,
+  WithdrawAppName,
   WithdrawAppState,
   WithdrawParameters,
-  WithdrawAppAction,
 } from "@connext/types";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
+
+import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
-import { WithdrawRepository } from "../withdraw/withdraw.repository";
+import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
+import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
+import { xkeyKthAddress } from "../util";
+
+import { WithdrawRepository } from "./withdraw.repository";
 import { Withdraw } from "./withdraw.entity";
 
 @Injectable()
@@ -82,7 +84,7 @@ export class WithdrawService {
         Primary response method to user withdrawal. Called from appRegistry service.
       */
   async handleUserWithdraw(appInstance: AppInstanceJson): Promise<void> {
-    let state = appInstance.latestState as WithdrawAppState<BigNumber>;
+    let state = appInstance.latestState as WithdrawAppState;
 
     // Create the same commitment from scratch
     const generatedCommitment = (await this.cfCoreService.createWithdrawCommitment(
@@ -90,7 +92,7 @@ export class WithdrawService {
         amount: state.transfers[0].amount,
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: state.transfers[0].to,
-      } as WithdrawParameters<BigNumber>,
+      } as WithdrawParameters,
       appInstance.multisigAddress,
     )) as any;
 
@@ -105,7 +107,7 @@ export class WithdrawService {
       signature: counterpartySignatureOnWithdrawCommitment,
     } as WithdrawAppAction);
     state = (await this.cfCoreService.getAppState(appInstance.identityHash))
-      .state as WithdrawAppState<BigNumber>;
+      .state as WithdrawAppState;
 
     // Update the db entity with signature
     let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
@@ -152,7 +154,7 @@ export class WithdrawService {
 
   async submitWithdrawToChain(
     multisigAddress: string,
-    tx: CFCoreTypes.MinimalTransaction,
+    tx: MinimalTransaction,
   ): Promise<TransactionResponse> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
@@ -223,7 +225,7 @@ export class WithdrawService {
         amount,
         assetId,
         recipient: this.cfCoreService.cfCore.freeBalanceAddress,
-      } as WithdrawParameters<BigNumber>,
+      } as WithdrawParameters,
       channel.multisigAddress,
     );
 
@@ -233,8 +235,8 @@ export class WithdrawService {
     const withdrawerSignatureOnCommitment = await signDigest(privateKey, hash);
 
     const transfers: CoinTransfer[] = [
-      { amount: amount.toString(), to: this.cfCoreService.cfCore.freeBalanceAddress },
-      { amount: Zero.toString(), to: xkeyKthAddress(channel.userPublicIdentifier) },
+      { amount, to: this.cfCoreService.cfCore.freeBalanceAddress },
+      { amount: Zero, to: xkeyKthAddress(channel.userPublicIdentifier) },
     ];
 
     const initialState: WithdrawAppState = {
@@ -256,7 +258,7 @@ export class WithdrawService {
       assetId,
       Zero,
       assetId,
-      WithdrawApp,
+      WithdrawAppName,
     );
 
     await this.saveWithdrawal(

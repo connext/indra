@@ -1,13 +1,12 @@
 /* global before */
 import {
-  IConnextClient,
-  SignedTransferParameters,
-  ResolveSignedTransferParameters,
+  ConditionalTransferTypes,
+  EventNames,
   GetSignedTransferResponse,
+  IConnextClient,
+  ResolveSignedTransferParameters,
+  SignedTransferParameters,
   SignedTransferStatus,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  SIGNED_TRANSFER,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
@@ -63,8 +62,8 @@ describe("Signed Transfers", () => {
     const signerAddress = await signerWallet.getAddress();
 
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: SIGNED_TRANSFER,
+      amount: transfer.amount,
+      conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
       assetId: transfer.assetId,
@@ -94,7 +93,7 @@ describe("Signed Transfers", () => {
         res();
       });
       await clientB.resolveCondition({
-        conditionType: SIGNED_TRANSFER,
+        conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         data,
         signature,
@@ -114,8 +113,8 @@ describe("Signed Transfers", () => {
     const signerAddress = await signerWallet.getAddress();
 
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: SIGNED_TRANSFER,
+      amount: transfer.amount,
+      conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
       assetId: transfer.assetId,
@@ -145,7 +144,7 @@ describe("Signed Transfers", () => {
         res();
       });
       await clientB.resolveCondition({
-        conditionType: SIGNED_TRANSFER,
+        conditionType: ConditionalTransferTypes.SignedTransfer,
         paymentId,
         data,
         signature,
@@ -165,8 +164,8 @@ describe("Signed Transfers", () => {
     const signerAddress = await signerWallet.getAddress();
 
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: SIGNED_TRANSFER,
+      amount: transfer.amount,
+      conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
       assetId: transfer.assetId,
@@ -192,8 +191,8 @@ describe("Signed Transfers", () => {
     const signerAddress = await signerWallet.getAddress();
 
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: SIGNED_TRANSFER,
+      amount: transfer.amount,
+      conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
       assetId: transfer.assetId,
@@ -209,10 +208,10 @@ describe("Signed Transfers", () => {
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
-      clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, resolve);
-      clientB.once(RECEIVE_TRANSFER_FAILED_EVENT, reject);
+      clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, resolve);
+      clientB.once(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, reject);
       await clientB.resolveCondition({
-        conditionType: SIGNED_TRANSFER,
+        conditionType: ConditionalTransferTypes.SignedTransfer,
         data,
         paymentId,
         signature,
@@ -238,8 +237,8 @@ describe("Signed Transfers", () => {
     const signerAddress = await signerWallet.getAddress();
 
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: SIGNED_TRANSFER,
+      amount: transfer.amount,
+      conditionType: ConditionalTransferTypes.SignedTransfer,
       paymentId,
       signer: signerAddress,
       assetId: transfer.assetId,
@@ -250,7 +249,7 @@ describe("Signed Transfers", () => {
     const data = hexlify(randomBytes(32));
     await expect(
       clientB.resolveCondition({
-        conditionType: SIGNED_TRANSFER,
+        conditionType: ConditionalTransferTypes.SignedTransfer,
         data,
         paymentId,
         signature: badSig,
