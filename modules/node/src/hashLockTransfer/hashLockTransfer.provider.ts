@@ -1,5 +1,6 @@
 import { MessagingService } from "@connext/messaging";
 import {
+  bigNumberifyJson,
   GetHashLockTransferResponse,
   HashLockTransferAppState,
   ResolveHashLockTransferResponse,
@@ -63,7 +64,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    const latestState = senderApp.latestState as HashLockTransferAppState;
+    const latestState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     const amount = latestState.coinTransfers[0].amount.isZero()
       ? latestState.coinTransfers[1].amount

@@ -1,4 +1,5 @@
 import {
+  bigNumberifyJson,
   DepositConfirmationMessage,
   DepositFailedMessage,
   EventNames,
@@ -9,7 +10,6 @@ import {
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -29,9 +29,10 @@ const appStatusesToHashLockTransferStatus = (
   if (!senderApp) {
     return undefined;
   }
-  const { timelock: senderTimelock } = senderApp.latestState;
-  const isSenderExpired = bigNumberify(senderTimelock).lt(currentBlockNumber);
-  const isReceiverExpired = receiverApp.latestState.timelock.lt(currentBlockNumber);
+  const latestState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
+  const { timelock: senderTimelock } = latestState;
+  const isSenderExpired = senderTimelock.lt(currentBlockNumber);
+  const isReceiverExpired = !receiverApp ? false : latestState.timelock.lt(currentBlockNumber);
   // pending iff no receiver app + not expired
   if (!receiverApp) {
     return isSenderExpired ? HashLockTransferStatus.EXPIRED : HashLockTransferStatus.PENDING;
@@ -95,7 +96,7 @@ export class HashLockTransferService {
       senderApp.channel.multisigAddress,
     );
 
-    const appState = senderApp.latestState as HashLockTransferAppState;
+    const appState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
 
     const assetId = senderApp.outcomeInterpreterParameters.tokenAddress;
 
