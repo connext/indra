@@ -1,4 +1,4 @@
-import { AppInstanceJson, MinimalTransaction, stringify } from "@connext/types";
+import { AppInstanceJson, MinimalTransaction, stringify, ILoggerService } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import {
@@ -11,7 +11,7 @@ import {
 } from "./errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { IStoreService } from "./types";
-import { getCreate2MultisigAddress } from "./utils";
+import { getCreate2MultisigAddress, logTime } from "./utils";
 
 import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
@@ -20,7 +20,10 @@ import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum
  * StoreService.
  */
 export class Store {
-  constructor(private readonly storeService: IStoreService) {}
+  constructor(
+    private readonly storeService: IStoreService,
+    readonly log?: ILoggerService
+  ) {}
 
   public async getMultisigAddressWithCounterparty(
     owners: string[],
@@ -48,10 +51,16 @@ export class Store {
    * @param multisigAddress
    */
   public async getStateChannel(multisigAddress: string): Promise<StateChannel> {
+    let start = Date.now();
+    
     const stateChannelJson = await this.storeService.getStateChannel(multisigAddress);
 
     if (!stateChannelJson) {
       throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+
+    if(this.log) {
+      logTime(this.log, start, `GotStateChannel JSON`)
     }
 
     return StateChannel.fromJson(stateChannelJson);
@@ -148,14 +157,6 @@ export class Store {
     );
   }
 
-  private async assertChannelExists(multisigAddress: string) {
-    // make sure state channel does not already exist
-    const existing = await this.getStateChannelIfExists(multisigAddress);
-    if (!existing) {
-      throw new Error(`Setup protocol has not been run`);
-    }
-  }
-
   /**
    * This persists the state of the free balance
    * @param appInstance
@@ -180,7 +181,7 @@ export class Store {
    * This persists the state of an app proposal
    */
   public async saveAppProposal(channel: StateChannel, proposal: AppInstanceProposal) {
-    await this.assertChannelExists(channel.multisigAddress);
+    // 0ms
     if (proposal.identityHash === channel.freeBalance.identityHash) {
       throw new Error(`Free balance does not go through proposal flow`);
     }
@@ -189,7 +190,9 @@ export class Store {
     }
     // the nonce will be updated on proposal, so make sure to save the
     // state channel here as well
+    // 36ms
     await this.storeService.saveStateChannel(channel.toJson());
+    // 18ms
     await this.storeService.saveAppProposal(channel.multisigAddress, proposal);
   }
 
@@ -197,7 +200,6 @@ export class Store {
    * This persists the state of an app instance
    */
   public async removeAppProposal(channel: StateChannel, app: AppInstanceProposal) {
-    await this.assertChannelExists(channel.multisigAddress);
     if (channel.hasAppProposal(app.identityHash)) {
       throw new Error(`Post protocol channel still has proposal, did protocol fail?`);
     }
@@ -208,7 +210,6 @@ export class Store {
    * This persists the state of an app instance
    */
   public async saveAppInstance(channel: StateChannel, app: AppInstance) {
-    await this.assertChannelExists(channel.multisigAddress);
     if (channel.hasAppProposal(app.identityHash)) {
       throw new Error(`Post protocol channel still has proposal, did 'install' protocol fail?`);
     }

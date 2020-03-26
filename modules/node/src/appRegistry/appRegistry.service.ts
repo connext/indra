@@ -90,9 +90,10 @@ export class AppRegistryService implements OnModuleInit {
         installerChannel.multisigAddress,
         proposeInstallParams.responderDepositTokenAddress,
       );
+      const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
       if (
         preInstallFreeBalance[this.cfCoreService.cfCore.freeBalanceAddress].lt(
-          bigNumberify(proposeInstallParams.responderDeposit),
+          responderDepositBigNumber,
         )
       ) {
         this.log.info(`Collateralizing channel before rebalancing...`);
@@ -101,7 +102,7 @@ export class AppRegistryService implements OnModuleInit {
           from,
           proposeInstallParams.responderDepositTokenAddress,
           RebalanceType.COLLATERALIZE,
-          bigNumberify(proposeInstallParams.responderDeposit),
+          responderDepositBigNumber,
         );
         if (tx) {
           await tx.wait();

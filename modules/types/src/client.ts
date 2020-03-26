@@ -108,11 +108,12 @@ export interface IConnextClient {
   config: GetConfigResponse;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
-  freeBalanceAddress: Address;
-  multisigAddress: Address;
-  nodePublicIdentifier: Xpub;
-  publicIdentifier: Xpub;
-  signerAddress: Address;
+  freeBalanceAddress: string;
+  multisigAddress: string;
+  nodePublicIdentifier: string;
+  nodeFreeBalanceAddress: string;
+  publicIdentifier: string;
+  signerAddress: string;
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
