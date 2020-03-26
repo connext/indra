@@ -85,54 +85,93 @@ export interface IStoreServiceOld {
 export const STORE_SCHEMA_VERSION = 1;
 
 export interface IStoreService {
+  ///// Schema version
   getSchemaVersion(): Promise<number>;
   setSchemaVersion(version?: number): Promise<void>;
+
+  ///// State channels
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined>;
   saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+
+  ///// App instances
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
-  saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
+  createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
+  updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
   removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void>;
+
+  ///// App proposals
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined>;
-  saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void>;
+  createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal, numProposedApps: number): Promise<void>;
+  updateAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void>;
   removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void>;
+
+  ///// Free balance
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
-  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
+  createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
+  updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
+
+  ///// Setup commitment
   getSetupCommitment(
     multisigAddress: string,
   ): Promise<MinimalTransaction | undefined>;
-  saveSetupCommitment(
+  createSetupCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void>;
+  // no update, only ever created once
+
+  ///// SetState commitment
   getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
-  saveLatestSetStateCommitment(
+  createLatestSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
+  updateLatestSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void>;
+  // no removal for disputes, only 1 per app thats
+  // always updated when app is updated
+
+  ///// Conditional tx commitment
   getConditionalTransactionCommitment(
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
-  saveConditionalTransactionCommitment(
+  createConditionalTransactionCommitment(
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
+  updateConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void>;
+  // no removal for disputes
+
+  ///// Withdrawal commitment
   getWithdrawalCommitment(
     multisigAddress: string,
   ): Promise<MinimalTransaction | undefined>;
-  saveWithdrawalCommitment(
+  createWithdrawalCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void>;
+  updateWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void>;
+
+  ///// Resetting methods
   clear(): Promise<void>;
   restore(): Promise<void>;
 }
 
 export interface IClientStore extends IStoreService {
-  setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
+  createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
 }
 
 // Used to monitor node submitted withdrawals on behalf of user
