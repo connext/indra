@@ -8,8 +8,8 @@ import {
   StateSchemaVersion,
   CoinBalanceRefundAppState,
   STORE_SCHEMA_VERSION,
-  signDigestWithEthers,
 } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import { Contract, providers } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
@@ -130,7 +130,7 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const sig = signDigestWithEthers(await keyGen("0"), message);
+      const sig = signDigest(await keyGen("0"), message);
       return sig;
     };
 
