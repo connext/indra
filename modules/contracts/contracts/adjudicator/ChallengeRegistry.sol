@@ -2,11 +2,11 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "./mixins/MixinChallengeRegistryCore.sol";
+import "./mixins/MixinSetState.sol";
+import "./mixins/MixinProgressState.sol";
+import "./mixins/MixinSetAndProgressState.sol";
 import "./mixins/MixinCancelChallenge.sol";
 import "./mixins/MixinSetOutcome.sol";
-import "./mixins/MixinSetState.sol";
-import "./mixins/MixinSetAndProgressState.sol";
-import "./mixins/MixinProgressState.sol";
 
 
 /// @dev Base contract implementing all logic needed for full-featured App registry
