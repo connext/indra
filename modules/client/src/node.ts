@@ -93,14 +93,14 @@ export class NodeApiClient implements INodeApiClient {
     lockName: string,
     timeout?: number,
   ): Promise<string> {
-    return this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
+    return this.send(`${this.userPublicIdentifier}.lock.acquire.${lockName}`, { lockTTL: timeout });
   }
 
   async releaseLock(
     lockName: string,
     lockValue: string,
   ): Promise<void> {
-    return this.send(`lock.release.${lockName}`, { lockValue });
+    return this.send(`${this.userPublicIdentifier}.lock.release.${lockName}`, { lockValue });
   }
 
   public async appRegistry(): Promise<AppRegistry> {
