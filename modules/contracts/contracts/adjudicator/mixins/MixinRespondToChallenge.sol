@@ -64,4 +64,33 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, MChallengeRe
         challenge.finalizesAt = block.number.add(appIdentity.defaultTimeout);
     }
 
+    function correctKeySignedTheAction(
+        AppIdentity memory appIdentity,
+        bytes memory appState,
+        bytes32 appStateHash,
+        uint256 versionNumber,
+        SignedAction memory action
+    )
+        private
+        view
+        returns (bool)
+    {
+        address turnTaker = getTurnTaker(
+            appIdentity.appDefinition,
+            appIdentity.participants,
+            appState
+        );
+
+        bytes32 actionHash = computeActionHash(
+            turnTaker,
+            appStateHash,
+            action.encodedAction,
+            versionNumber
+        );
+
+        address signer = actionHash.recover(action.signature);
+
+        return turnTaker == signer;
+    }
+
 }
