@@ -156,7 +156,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value ${amount} is negative`);
+    ).to.be.rejectedWith(`invalid BigNumber value`);
   });
 
   it("Bot A tries to transfer with an invalid token address", async () => {
@@ -171,7 +171,7 @@ describe("Async Transfers", () => {
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(
-      `Value "${assetId}" is not a valid eth address, Value (${amount}) is not less than or equal to 0`,
+      `invalid address`,
     );
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
@@ -228,7 +228,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value (${amount}) is not less than or equal to 0`);
+    ).to.be.rejectedWith(`Install failed.`);
   });
 
   it("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {
@@ -244,7 +244,7 @@ describe("Async Transfers", () => {
         preImage: createRandom32ByteHexString(),
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
+    ).to.be.rejectedWith(`invalid hexidecimal string`);
   });
 
   it("Bot A tries to transfer with a preImage that is not 32 bytes", async () => {
@@ -260,7 +260,7 @@ describe("Async Transfers", () => {
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
+    ).to.be.rejectedWith(`invalid hexidecimal string`);
   });
 
   it("Experimental: Average latency of 10 async transfers with Eth", async () => {
