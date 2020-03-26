@@ -17,7 +17,6 @@ import ProxyFactory from "@connext/contracts/build/ProxyFactory.json";
 import SingleAssetTwoPartyCoinTransferInterpreter from "@connext/contracts/build/SingleAssetTwoPartyCoinTransferInterpreter.json";
 import TimeLockedPassThrough from "@connext/contracts/build/TimeLockedPassThrough.json";
 import TwoPartyFixedOutcomeApp from "@connext/contracts/build/TwoPartyFixedOutcomeApp.json";
-import TwoPartyFixedOutcomeFromVirtualAppInterpreter from "@connext/contracts/build/TwoPartyFixedOutcomeFromVirtualAppInterpreter.json";
 import TwoPartyFixedOutcomeInterpreter from "@connext/contracts/build/TwoPartyFixedOutcomeInterpreter.json";
 import { NetworkContext } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
@@ -87,12 +86,6 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
     wallet,
   ).deploy();
 
-  const twoPartyFixedOutcomeFromVirtualAppETHInterpreter = await new ContractFactory(
-    TwoPartyFixedOutcomeFromVirtualAppInterpreter.abi,
-    TwoPartyFixedOutcomeFromVirtualAppInterpreter.bytecode,
-    wallet,
-  ).deploy();
-
   const tttContract = await new ContractFactory(
     TicTacToeApp.abi,
     TicTacToeApp.bytecode,
@@ -143,8 +136,6 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
     SingleAssetTwoPartyCoinTransferInterpreter: singleAssetTwoPartyCoinTransferInterpreter.address,
     TicTacToeApp: tttContract.address,
     TimeLockedPassThrough: timeLockedPassThrough.address,
-    TwoPartyFixedOutcomeFromVirtualAppInterpreter:
-      twoPartyFixedOutcomeFromVirtualAppETHInterpreter.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
     UnidirectionalLinkedTransferApp: linkContract.address,
     UnidirectionalTransferApp: transferContract.address,

@@ -18,7 +18,6 @@ import * as SimpleTransferApp from "./build/SimpleTransferApp.json";
 import * as SimpleTwoPartySwapApp from "./build/SimpleTwoPartySwapApp.json";
 import * as SingleAssetTwoPartyCoinTransferInterpreter from "./build/SingleAssetTwoPartyCoinTransferInterpreter.json";
 import * as TimeLockedPassThrough from "./build/TimeLockedPassThrough.json";
-import * as TwoPartyFixedOutcomeFromVirtualAppInterpreter from "./build/TwoPartyFixedOutcomeFromVirtualAppInterpreter.json";
 import * as TwoPartyFixedOutcomeInterpreter from "./build/TwoPartyFixedOutcomeInterpreter.json";
 
 export {
@@ -39,6 +38,5 @@ export {
   SimpleTwoPartySwapApp,
   SingleAssetTwoPartyCoinTransferInterpreter,
   TimeLockedPassThrough,
-  TwoPartyFixedOutcomeFromVirtualAppInterpreter,
   TwoPartyFixedOutcomeInterpreter,
 };
