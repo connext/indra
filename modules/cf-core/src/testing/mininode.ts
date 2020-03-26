@@ -6,13 +6,13 @@ import {
   PersistAppType,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { SigningKey } from "ethers/utils";
 import { HDNode } from "ethers/utils/hdnode";
 
 import { Opcode } from "../types";
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { Store } from "../store";
+import { signDigestWithEthers } from "../utils";
 
 import { getRandomHDNodes } from "./random-signing-keys";
 
@@ -26,9 +26,10 @@ const makeSigner = (hdNode: HDNode) => {
     const [commitment, overrideKeyIndex] = args;
     const keyIndex = overrideKeyIndex || 0;
 
-    const signingKey = new SigningKey(hdNode.derivePath(`${keyIndex}`).privateKey);
+    const privateKey = hdNode.derivePath(`${keyIndex}`).privateKey;
+    const hash = commitment.hashToSign();
 
-    return signingKey.signDigest(commitment.hashToSign());
+    return signDigestWithEthers(privateKey, hash);
   };
 };
 

@@ -8,7 +8,7 @@ import {
 
 import { AppInstanceProposal } from "./app";
 import { BigNumber, HexObject, SolidityValueType } from "./basic";
-import { ChannelMethod } from "./channelProvider";
+import { ChannelMethods } from "./channelProvider";
 import { enumify } from "./utils";
 
 type FastSignedTransfer = typeof ConditionalTransferTypes.FastSignedTransfer;
@@ -170,5 +170,5 @@ export type Event = {
 };
 
 export class ConnextEventEmitter extends EventEmitter<
-  string | EventNames | ChannelMethod
+  string | EventNames | ChannelMethods
 > {}

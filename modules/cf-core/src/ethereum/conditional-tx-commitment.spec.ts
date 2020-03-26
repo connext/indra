@@ -6,7 +6,6 @@ import {
   hexlify,
   Interface,
   randomBytes,
-  SigningKey,
   TransactionDescription,
 } from "ethers/utils";
 
@@ -22,7 +21,7 @@ import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { FreeBalanceClass, StateChannel } from "../models";
 import { Store } from "../store";
 import { Context } from "../types";
-import { appIdentityToHash } from "../utils";
+import { appIdentityToHash, signDigestWithEthers } from "../utils";
 
 import {
   getConditionalTransactionCommitment,
@@ -90,9 +89,10 @@ describe("ConditionalTransactionCommitment", () => {
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
+      const hash = "0x" + Buffer.from(randomBytes(20)).toString("hex");
       commitment.signatures = [
-        new SigningKey(hdNodes[0]).signDigest(randomBytes(20)),
-        new SigningKey(hdNodes[1]).signDigest(randomBytes(20)),
+        signDigestWithEthers(hdNodes[0].privateKey, hash),
+        signDigestWithEthers(hdNodes[1].privateKey, hash),
       ];
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);

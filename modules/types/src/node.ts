@@ -2,11 +2,12 @@ import { AppRegistry } from "./app";
 import { Address, BigNumber, Network, Transaction, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import {
+  GetHashLockTransferResponse,
+  LinkedTransferStatus,
   NetworkContext,
   ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
   ResolveLinkedTransferResponse,
-  GetHashLockTransferResponse,
 } from "./contracts";
 import { ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
@@ -108,13 +109,6 @@ export interface PendingFastSignedTransfer {
   amount: BigNumber;
   paymentId: string;
   signer: string;
-}
-
-export const enum LinkedTransferStatus {
-  PENDING = "PENDING",
-  REDEEMED = "REDEEMED",
-  FAILED = "FAILED",
-  UNLOCKED = "UNLOCKED",
 }
 
 export type FetchedLinkedTransfer<T = any> = {

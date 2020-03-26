@@ -15,6 +15,7 @@ import {
 } from "../../ethereum";
 import { AppInstance, FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
+import { signDigestWithEthers } from "../../utils";
 import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
 import {
@@ -143,9 +144,11 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         identityAppInstance,
       );
 
+      const setStateCommitmentHash = setStateCommitment.hashToSign();
+
       setStateCommitment.signatures = [
-        uniqueAppSigningKeys[0].signDigest(setStateCommitment.hashToSign()),
-        uniqueAppSigningKeys[1].signDigest(setStateCommitment.hashToSign()),
+        signDigestWithEthers(uniqueAppSigningKeys[0].privateKey, setStateCommitmentHash),
+        signDigestWithEthers(uniqueAppSigningKeys[1].privateKey, setStateCommitmentHash),
       ];
 
       await wallet.sendTransaction({
@@ -157,9 +160,10 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         context,
         stateChannel.freeBalance,
       );
+      const setStateCommitmentForFreeBalanceHash = setStateCommitmentForFreeBalance.hashToSign();
       setStateCommitmentForFreeBalance.signatures = [
-        multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
-        multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
+        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentForFreeBalanceHash),
+        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentForFreeBalanceHash),
       ];
 
       await wallet.sendTransaction({
@@ -187,10 +191,10 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         stateChannel,
         identityAppInstance,
       );
-
+      const conditionalTransactionHash = conditionalTransaction.hashToSign();
       conditionalTransaction.signatures = [
-        multisigOwnerKeys[0].signDigest(conditionalTransaction.hashToSign()),
-        multisigOwnerKeys[1].signDigest(conditionalTransaction.hashToSign()),
+        signDigestWithEthers(multisigOwnerKeys[0].privateKey, conditionalTransactionHash),
+        signDigestWithEthers(multisigOwnerKeys[1].privateKey, conditionalTransactionHash),
       ];
       const multisigDelegateCallTx = conditionalTransaction.getSignedTransaction();
 
@@ -225,8 +229,14 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
 
       freeBalanceConditionalTransaction.signatures = [
-        multisigOwnerKeys[0].signDigest(freeBalanceConditionalTransaction.hashToSign()),
-        multisigOwnerKeys[1].signDigest(freeBalanceConditionalTransaction.hashToSign()),
+        signDigestWithEthers(
+          multisigOwnerKeys[0].privateKey,
+          freeBalanceConditionalTransaction.hashToSign(),
+        ),
+        signDigestWithEthers(
+          multisigOwnerKeys[1].privateKey,
+          freeBalanceConditionalTransaction.hashToSign(),
+        ),
       ];
 
       const multisigDelegateCallTx2 = freeBalanceConditionalTransaction.getSignedTransaction();

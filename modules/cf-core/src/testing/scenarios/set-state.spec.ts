@@ -5,6 +5,7 @@ import { AddressZero, WeiPerEther } from "ethers/constants";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
+import { signDigestWithEthers } from "../../utils";
 import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
 import { ChallengeRegistry } from "../contracts";
@@ -58,9 +59,11 @@ describe("set state on free balance", () => {
       freeBalanceETH.versionNumber,
       freeBalanceETH.timeout,
     );
+    const setStateCommitmentHash = setStateCommitment.hashToSign();
+
     setStateCommitment.signatures = [
-      multisigOwnerKeys[0].signDigest(setStateCommitment.hashToSign()),
-      multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign()),
+      signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+      signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
     ];
 
     const setStateTx = setStateCommitment.getSignedTransaction();

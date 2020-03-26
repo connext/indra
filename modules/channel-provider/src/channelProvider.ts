@@ -53,7 +53,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_getUserWithdrawal:
         result = await this.getUserWithdrawal();
         break;
-      case ChannelMethods.chan_sign:
+      case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
       case ChannelMethods.chan_signDigest:
@@ -126,7 +126,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
   public signMessage(message: string): Promise<string> {
-    return this._send(ChannelMethods.chan_sign, { message });
+    return this._send(ChannelMethods.chan_signMessage, { message });
   }
 
   public signDigest = async (message: string): Promise<string> => {

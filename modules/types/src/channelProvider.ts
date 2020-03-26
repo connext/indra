@@ -7,18 +7,10 @@ import { StateChannelJSON } from "./state";
 import { ILockService } from "./lock";
 import { enumify } from "./utils";
 
-export const chan_config = "chan_config";
-export const chan_sign = "chan_sign";
-export const chan_signDigest = "chan_signDigest";
-export const chan_restoreState = "chan_restoreState";
-export const chan_setUserWithdrawal = "chan_setUserWithdrawal";
-export const chan_getUserWithdrawal = "chan_getUserWithdrawal";
-export const chan_setStateChannel = "chan_setStateChannel";
-
 export const ChannelMethods = enumify({
   ...MethodNames,
   chan_config: "chan_config",
-  chan_sign: "chan_sign",
+  chan_signMessage: "chan_signMessage",
   chan_signDigest: "chan_signDigest",
   chan_restoreState: "chan_restoreState",
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
@@ -26,7 +18,6 @@ export const ChannelMethods = enumify({
   chan_setStateChannel: "chan_setStateChannel",
 });
 export type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
-export type ChannelMethod = keyof typeof ChannelMethods;
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -39,7 +30,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // Methods
 
   enable(): Promise<ChannelProviderConfig>;
-  send(method: ChannelMethod, params: any): Promise<any>;
+  send(method: ChannelMethods, params: any): Promise<any>;
   close(): Promise<void>;
 
   ///////////////////////////////////

@@ -80,7 +80,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_getUserWithdrawal:
         result = await this.storeGetUserWithdrawal();
         break;
-      case ChannelMethods.chan_sign:
+      case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
       case ChannelMethods.chan_signDigest:

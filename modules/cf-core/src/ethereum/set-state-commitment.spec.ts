@@ -5,7 +5,6 @@ import {
   keccak256,
   solidityPack,
   TransactionDescription,
-  SigningKey,
 } from "ethers/utils";
 
 import { createAppInstanceForTest } from "../testing/utils";
@@ -14,7 +13,7 @@ import { generateRandomNetworkContext } from "../testing/mocks";
 
 import { ChallengeRegistry } from "../contracts";
 import { Context } from "../types";
-import { appIdentityToHash } from "../utils";
+import { appIdentityToHash, signDigestWithEthers } from "../utils";
 
 import { getSetStateCommitment, SetStateCommitment } from "./set-state-commitment";
 
@@ -38,9 +37,10 @@ describe("Set State Commitment", () => {
       context,
       appInstance,
     );
+    const commitmentHash = commitment.hashToSign();
     commitment.signatures = [
-      new SigningKey(hdNodes[0].privateKey).signDigest(commitment.hashToSign()),
-      new SigningKey(hdNodes[1].privateKey).signDigest(commitment.hashToSign()),
+      signDigestWithEthers(hdNodes[0].privateKey, commitmentHash),
+      signDigestWithEthers(hdNodes[1].privateKey, commitmentHash),
     ];
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent

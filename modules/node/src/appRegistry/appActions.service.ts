@@ -189,7 +189,7 @@ export class AppActionsService {
     from: string,
   ): Promise<void> {
     const lockHash = soliditySha256(["bytes32"], [action.preImage]);
-    const apps = await this.cfCoreService.getHashLockTransferAppsByLockHash(lockHash);
+    const apps = await this.appInstanceRepository.findHashLockTransferAppsByLockHash(lockHash);
 
     // find hashlock transfer app where node is receiver
     // TODO: move to new store
@@ -209,6 +209,6 @@ export class AppActionsService {
     } as HashLockTransferAppAction);
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
-    this.log.info(`Reclaimed collateral from ${senderApp.identityHash}`);
+    this.log.info(`Unlocked transfer ${senderApp.identityHash}`);
   }
 }

@@ -1,6 +1,6 @@
 import { MultisigOperation } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { Interface, Signature } from "ethers/utils";
+import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { AppInstance, StateChannel } from "../models";
@@ -48,7 +48,7 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
     public readonly interpreterParams: string,
-    participantSignatures: Signature[] = [],
+    participantSignatures: string[] = [],
   ) {
     super(multisig, multisigOwners, participantSignatures);
     if (interpreterAddr === AddressZero) {

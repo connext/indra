@@ -1,12 +1,5 @@
 import { EthereumCommitment, MinimalTransaction, MultisigTransaction  } from "@connext/types";
-import {
-  Interface,
-  joinSignature,
-  keccak256,
-  Signature,
-  solidityPack,
-  splitSignature,
-} from "ethers/utils";
+import { Interface, keccak256, solidityPack } from "ethers/utils";
 
 import { MinimumViableMultisig } from "../contracts";
 import { sortSignaturesBySignerAddress } from "../utils";
@@ -16,36 +9,29 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   constructor(
     readonly multisigAddress: string,
     readonly multisigOwners: string[],
-    private participantSignatures: Signature[] = [],
+    private participantSignatures: string[] = [],
   ) {}
 
   abstract getTransactionDetails(): MultisigTransaction;
 
-  // @ts-ignore -- will complain about the string conversion
-  get signatures(): Signature[] {
+  get signatures(): string[] {
     return this.participantSignatures;
   }
 
-  // @ts-ignore -- will complain about the string issue
-  set signatures(sigs: Signature[] | string[]) {
+  set signatures(sigs: string[]) {
     if (sigs.length < 2) {
       throw new Error(
         `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
       );
     }
-    if (typeof sigs[0] === "string") {
-      this.participantSignatures = (sigs as string[]).map(splitSignature);
-      return;
-    }
-    this.participantSignatures = sigs as Signature[];
+    this.participantSignatures = sigs;
   }
 
   public getSignedTransaction(): MinimalTransaction {
     this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
-    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), this.signatures).map(
-      joinSignature,
-    );
+    const hash = this.hashToSign();
+    const signaturesList = sortSignaturesBySignerAddress(hash, this.signatures);
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,
@@ -58,23 +44,21 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return { to: this.multisigAddress, value: 0, data: txData };
   }
 
-  public hashToSign(): string {
+  public encode(): string {
     const { to, value, data, operation } = this.getTransactionDetails();
-    return keccak256(
-      solidityPack(
-        ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
-        ["0x19", this.multisigOwners, to, value, data, operation],
-      ),
+    return solidityPack(
+      ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
+      ["0x19", this.multisigOwners, to, value, data, operation],
     );
+  }
+
+  public hashToSign(): string {
+    return keccak256(this.encode());
   }
 
   private assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
-    }
-
-    if (typeof this.signatures[0] === "string") {
-      throw new Error(`Expected Signature type, not string`);
     }
   }
 }

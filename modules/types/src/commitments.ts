@@ -1,5 +1,3 @@
-import { Signature } from "ethers/utils";
-
 import { Address, BigNumberish, HexString } from "./basic";
 import { AppIdentity, MultisigOperation, NetworkContext } from "./contracts";
 import { enumify } from "./utils";
@@ -7,7 +5,7 @@ import { enumify } from "./utils";
 // Multisig
 export interface EthereumCommitment {
   hashToSign(): string;
-  getSignedTransaction(signatures: Signature[]): MinimalTransaction;
+  getSignedTransaction(signatures: string[]): MinimalTransaction;
 }
 
 export const CommitmentTypes = enumify({
@@ -36,7 +34,7 @@ export type SetStateCommitmentJSON = {
   readonly appIdentityHash: HexString;
   readonly appStateHash: HexString;
   readonly challengeRegistryAddress: Address;
-  readonly signatures: Signature[];
+  readonly signatures: string[];
   readonly timeout: number;
   readonly versionNumber: number;
 };
@@ -49,5 +47,5 @@ export type ConditionalTransactionCommitmentJSON = {
   readonly multisigAddress: Address;
   readonly multisigOwners: Address[];
   readonly networkContext: NetworkContext;
-  readonly signatures: Signature[];
+  readonly signatures: string[];
 };

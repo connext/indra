@@ -10,13 +10,9 @@ import {
   EventNames,
   FastSignedTransferAppName,
   FastSignedTransferAppState,
-  HashLockTransferAppName,
-  HashLockTransferAppState,
   MethodNames,
   MethodParams,
   MethodResults,
-  bigNumberifyJson,
-  SolidityValueType,
   StateChannelJSON,
   stringify,
   toBN,
@@ -476,42 +472,6 @@ export class CFCoreService {
     this.log.info(`Got state for app ${appInstanceId}`);
     this.log.debug(`getAppState result: ${stringify(stateResponse)}`);
     return stateResponse.result.result as MethodResults.GetState;
-  }
-
-  // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
-  async getHashLockTransferAppsByLockHash(lockHash: string): Promise<AppInstanceJson[]> {
-    const channels = await this.channelRepository.findAll();
-    const apps: AppInstanceJson[] = [];
-    for (const channel of channels) {
-      const installed = await this.getAppInstancesByAppName(
-        channel.multisigAddress,
-        HashLockTransferAppName,
-      );
-      // found hashlocked transfer app
-      for (const app of installed) {
-        const appState = app.latestState as HashLockTransferAppState;
-        if (appState.lockHash === lockHash) {
-          // TODO: FIX THIS IN CF CORE
-          apps.push({
-            ...app,
-            multisigAddress: channel.multisigAddress,
-            latestState: bigNumberifyJson(app.latestState) as SolidityValueType,
-          });
-        }
-      }
-    }
-    return apps;
-  }
-
-  async getHashLockTransferAppsForReceiverByLockHash(
-    lockHash: string,
-  ): Promise<AppInstanceJson | undefined> {
-    const apps = await this.getHashLockTransferAppsByLockHash(lockHash);
-    return apps.find(app => {
-      const appState = app.latestState as HashLockTransferAppState;
-      // sender is node
-      return appState.coinTransfers[0].to === this.cfCore.freeBalanceAddress;
-    });
   }
 
   // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY

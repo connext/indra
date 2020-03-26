@@ -7,7 +7,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { SetStateCommitment, getSetupCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
-import { getCreate2MultisigAddress } from "../../utils";
+import { getCreate2MultisigAddress, signDigestWithEthers } from "../../utils";
 import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
 import { toBeEq } from "../bignumber-jest-matcher";
@@ -94,9 +94,10 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         freeBalance.versionNumber,
         freeBalance.timeout,
       );
+      const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [
-        multisigOwnerKeys[0].signDigest(setStateCommitment.hashToSign()),
-        multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign()),
+        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
       ];
 
       const setStateTx = setStateCommitment.getSignedTransaction();
@@ -114,10 +115,11 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       await appRegistry.functions.setOutcome(freeBalance.identity, freeBalance.encodedLatestState);
 
       const setupCommitment = getSetupCommitment(context, stateChannel);
+      const setupCommitmentHash = setupCommitment.hashToSign();
 
       setupCommitment.signatures = [
-        multisigOwnerKeys[0].signDigest(setupCommitment.hashToSign()),
-        multisigOwnerKeys[1].signDigest(setupCommitment.hashToSign()),
+        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
+        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
       ];
 
       const setupTx = setupCommitment.getSignedTransaction();

@@ -1,3 +1,4 @@
+import { signDigestWithEthers } from "@connext/cf-core";
 import {
   ConditionalTransferTypes,
   EventNames,
@@ -8,19 +9,18 @@ import {
   toBN,
 } from "@connext/types";
 import { Wallet } from "ethers";
+import { AddressZero } from "ethers/constants";
 import {
   bigNumberify,
   hexlify,
   randomBytes,
   solidityKeccak256,
-  joinSignature,
   SigningKey,
 } from "ethers/utils";
 import { before } from "mocha";
 import { Client } from "ts-nats";
 
 import { createClient, fundChannel, getNatsClient } from "../util";
-import { AddressZero } from "ethers/constants";
 
 describe("Full Flow: Multi-client transfer", () => {
   let gateway: IConnextClient;
@@ -133,7 +133,7 @@ describe("Full Flow: Multi-client transfer", () => {
           }
           const data = hexlify(randomBytes(32));
           const digest = solidityKeccak256(["bytes32", "bytes32"], [data, eventData.paymentId]);
-          const signature = joinSignature(withdrawerSigningKey!.signDigest(digest));
+          const signature = signDigestWithEthers(withdrawerSigningKey!.privateKey, digest);
 
           await indexer!.resolveCondition({
             conditionType: ConditionalTransferTypes.FastSignedTransfer,

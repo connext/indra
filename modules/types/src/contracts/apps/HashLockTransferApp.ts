@@ -37,7 +37,9 @@ export type HashLockTransferAppAction = {
   preImage: string;
 };
 
-export const HashLockTransferAppActionEncoding = `tuple(bytes32 preImage)`;
+export const HashLockTransferAppActionEncoding = tidy(`tuple(
+  bytes32 preImage
+)`);
 
 ////////////////////////////////////////
 // Off-chain app types
@@ -45,10 +47,9 @@ export const HashLockTransferAppActionEncoding = `tuple(bytes32 preImage)`;
 // statuses
 export const HashLockTransferStatus = enumify({
   PENDING: "PENDING",
-  REDEEMED: "REDEEMED",
+  EXPIRED: "EXPIRED",
+  COMPLETED: "COMPLETED",
   FAILED: "FAILED",
-  UNLOCKED: "UNLOCKED",
-  EXPIRED: "EXPRED",
 });
 export type HashLockTransferStatus =
   (typeof HashLockTransferStatus)[keyof typeof HashLockTransferStatus];

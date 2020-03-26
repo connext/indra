@@ -1,4 +1,5 @@
 import { Address, BigNumber, BigNumberish, HexString } from "../../basic";
+import { enumify } from "../../utils";
 
 import { CoinTransfer } from "../funding";
 import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
@@ -38,6 +39,15 @@ export const SimpleLinkedTransferAppActionEncoding = tidy(`tuple(
 
 ////////////////////////////////////////
 // Off-chain app types
+
+// transfer status for client/node
+export const LinkedTransferStatus = enumify({
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+});
+export type LinkedTransferStatus =
+  (typeof LinkedTransferStatus)[keyof typeof LinkedTransferStatus];
 
 // linked transfer types
 export type LinkedTransferParameters = {

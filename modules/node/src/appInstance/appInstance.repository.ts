@@ -600,6 +600,23 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .getOne();
   }
 
+  findHashLockTransferAppsByLockHashAndReceiver(
+    lockHash: string,
+    receiver: string,
+  ): Promise<AppInstance | undefined> {
+    return this.createQueryBuilder("app_instance")
+      .leftJoinAndSelect(
+        AppRegistry,
+        "app_registry",
+        "app_registry.appDefinitionAddress = app_instance.appDefinition",
+      )
+      .leftJoinAndSelect("app_instance.channel", "channel")
+      .where("app_registry.name = :name", { name: HashLockTransferAppName })
+      .andWhere(`app_instance."latestState"::JSONB @> '{ "lockHash": "${lockHash}" }'`)
+      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiver}"'`)
+      .getOne();
+  }
+
   findActiveHashLockTransferAppsToRecipient(
     recipient: string,
     nodeFreeBalanceAddress: string,

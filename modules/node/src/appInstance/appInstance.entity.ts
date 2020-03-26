@@ -1,3 +1,5 @@
+import { AppState, OutcomeType } from "@connext/types";
+import { BigNumber } from "ethers/utils";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,11 +8,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
-import { OutcomeType, SolidityValueType } from "@connext/types";
 
 import { Channel } from "../channel/channel.entity";
-import { BigNumber } from "ethers/utils";
+import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
@@ -21,7 +21,7 @@ export enum AppType {
 }
 
 @Entity()
-export class AppInstance {
+export class AppInstance<T extends AppState = any> {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -46,10 +46,10 @@ export class AppInstance {
   identityHash!: string;
 
   @Column("json")
-  initialState!: SolidityValueType;
+  initialState!: T;
 
   @Column("json")
-  latestState!: SolidityValueType;
+  latestState!: T;
 
   @Column("integer")
   latestTimeout!: number;

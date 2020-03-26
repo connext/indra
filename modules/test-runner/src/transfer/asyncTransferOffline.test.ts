@@ -157,19 +157,18 @@ describe("Async transfer offline tests", () => {
       assetId: tokenAddress,
       recipient: receiverClient.publicIdentifier,
     });
+    const senderApps = await senderClient.getAppInstances();
     // immediately take sender offline
     await (senderClient.messaging as TestMessagingService).disconnect();
     // wait for transfer to finish
     await received;
-    // // fast forward 3 min, so any protocols are expired for the client
-    // clock.tick(60_000 * 3);
     // verify transfer
     const expected = {
       amount: TOKEN_AMOUNT_SM,
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderPublicIdentifier: senderClient.publicIdentifier,
-      status: LinkedTransferStatus.REDEEMED,
+      status: LinkedTransferStatus.COMPLETED,
       assetId: tokenAddress,
     };
     await verifyTransfer(receiverClient, expected);
@@ -187,7 +186,10 @@ describe("Async transfer offline tests", () => {
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
     expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
     // make sure the transfer is properly reclaimed
-    await verifyTransfer(reconnected, { ...expected, status: LinkedTransferStatus.UNLOCKED });
+    const reconnectedApps = await senderClient.getAppInstances();
+    expect(reconnectedApps.length).to.be.equal(senderApps.length - 1);
+    // make sure the transfer is properly returned
+    await verifyTransfer(reconnected, expected);
   });
 
   /**
@@ -227,6 +229,7 @@ describe("Async transfer offline tests", () => {
       assetId: tokenAddress,
       recipient: receiverClient.publicIdentifier,
     });
+    const senderApps = await senderClient.getAppInstances();
     // wait for transfer to finish + messaging to be disconnected
     await actionTaken;
     // verify transfer
@@ -236,7 +239,7 @@ describe("Async transfer offline tests", () => {
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderPublicIdentifier: senderClient.publicIdentifier,
-      status: LinkedTransferStatus.REDEEMED,
+      status: LinkedTransferStatus.COMPLETED,
     };
     await verifyTransfer(receiverClient, expected);
     // fast forward 3 min so protocols are stale on client
@@ -250,6 +253,9 @@ describe("Async transfer offline tests", () => {
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
     expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
     // make sure the transfer is properly reclaimed
-    await verifyTransfer(reconnected, { ...expected, status: LinkedTransferStatus.UNLOCKED });
+    const reconnectedApps = await senderClient.getAppInstances();
+    expect(reconnectedApps.length).to.be.equal(senderApps.length - 1);
+    // make sure the transfer is properly returned
+    await verifyTransfer(reconnected, expected);
   });
 });

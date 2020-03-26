@@ -18,12 +18,18 @@ import { createRpcRouter } from "./methods";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
+import {
+  ConditionalTransactionCommitment,
+  MultisigCommitment,
+  SetStateCommitment,
+} from "./ethereum";
 import { ProtocolRunner } from "./machine";
 import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
+import { Store } from "./store";
 import {
   ILockService,
   IMessagingService,
@@ -37,12 +43,7 @@ import {
   Opcode,
   ProtocolMessage,
 } from "./types";
-import { Store } from "./store";
-import {
-  ConditionalTransactionCommitment,
-  MultisigCommitment,
-  SetStateCommitment,
-} from "./ethereum";
+import { signDigestWithEthers } from "./utils";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -190,9 +191,10 @@ export class Node {
       const [commitment, overrideKeyIndex] = args;
       const keyIndex = overrideKeyIndex || 0;
 
-      const signingKey = new SigningKey(await this.privateKeyGetter.getPrivateKey(keyIndex));
+      const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
+      const hash = commitment.hashToSign();
 
-      return signingKey.signDigest(commitment.hashToSign());
+      return signDigestWithEthers(privateKey, hash);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {
