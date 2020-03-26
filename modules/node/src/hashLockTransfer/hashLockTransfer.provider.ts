@@ -1,10 +1,9 @@
-import { convertHashLockTransferAppState } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import {
-  ResolveHashLockTransferResponse,
-  HashLockTransferAppStateBigNumber,
+  bigNumberifyJson,
   GetHashLockTransferResponse,
   HashLockTransferAppState,
+  ResolveHashLockTransferResponse,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
@@ -40,7 +39,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     const response = await this.hashLockTransferService.resolveHashLockTransfer(pubId, lockHash);
     return {
       ...response,
-      amount: response.amount.toString(),
+      amount: response.amount,
     };
   }
 
@@ -65,10 +64,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       return undefined;
     }
 
-    const latestState: HashLockTransferAppStateBigNumber = convertHashLockTransferAppState(
-      "bignumber",
-      senderApp.latestState as HashLockTransferAppState,
-    );
+    const latestState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     const amount = latestState.coinTransfers[0].amount.isZero()
       ? latestState.coinTransfers[1].amount

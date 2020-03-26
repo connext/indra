@@ -1,3 +1,5 @@
+import { IAsyncStorage, IBackupServiceAPI, WrappedStorage } from "@connext/types";
+
 import {
   AsyncStorageData,
   DEFAULT_ASYNC_STORAGE_KEY,
@@ -9,7 +11,6 @@ import {
   CHANNEL_KEY,
   COMMITMENT_KEY,
 } from "../helpers";
-import { IAsyncStorage, IBackupServiceAPI, WrappedStorage } from "@connext/types";
 
 export class WrappedAsyncStorage implements WrappedStorage {
   private data: AsyncStorageData = {};

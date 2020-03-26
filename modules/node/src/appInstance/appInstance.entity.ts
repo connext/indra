@@ -1,3 +1,5 @@
+import { AppState, OutcomeType } from "@connext/types";
+import { BigNumber } from "ethers/utils";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,12 +8,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
-import { OutcomeType } from "@connext/types";
-import { AppStateBigNumber } from "@connext/apps";
-import { BigNumber } from "ethers/utils";
 
 import { Channel } from "../channel/channel.entity";
+import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
@@ -22,7 +21,7 @@ export enum AppType {
 }
 
 @Entity()
-export class AppInstance<T extends AppStateBigNumber = any> {
+export class AppInstance<T extends AppState = any> {
   @PrimaryGeneratedColumn()
   id!: number;
 

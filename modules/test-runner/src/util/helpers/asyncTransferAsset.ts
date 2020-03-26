@@ -1,11 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import {
-  IConnextClient,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  UNINSTALL_EVENT,
-  LinkedTransferStatus,
-} from "@connext/types";
+import { delay, EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
@@ -42,22 +36,22 @@ export async function asyncTransferAsset(
     Promise.all([
       Promise.race([
         new Promise((resolve: Function): void => {
-          clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+          clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, data => {
             expect(data).to.deep.include({
-              amount: transferAmount.toString(),
+              amount: { _hex: transferAmount.toHexString() },
               sender: clientA.publicIdentifier,
             });
             resolve();
           });
         }),
         new Promise((resolve: Function, reject: Function): void => {
-          clientB.once(RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
+          clientB.once(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
             reject(msg.error);
           });
         }),
       ]),
       new Promise((resolve: Function): void => {
-        clientA.once(UNINSTALL_EVENT, data => {
+        clientA.once(EventNames.UNINSTALL_EVENT, data => {
           if (data.appInstanceId === senderAppId) {
             resolve();
           }
@@ -104,7 +98,7 @@ export async function asyncTransferAsset(
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);
   expect(paymentA).to.deep.include({
-    amount: transferAmount.toString(),
+    amount: transferAmount,
     assetId,
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,

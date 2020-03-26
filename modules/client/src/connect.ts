@@ -3,8 +3,10 @@ import "regenerator-runtime/runtime";
 
 import { MessagingService } from "@connext/messaging";
 import {
+  ChannelMethods,
+  MethodResults,
   CF_PATH,
-  CREATE_CHANNEL_EVENT,
+  EventNames,
   StateSchemaVersion,
   CoinBalanceRefundAppState,
   STORE_SCHEMA_VERSION,
@@ -28,8 +30,6 @@ import {
 } from "./lib";
 import { NodeApiClient } from "./node";
 import {
-  chan_signDigest,
-  CFCoreTypes,
   ClientOptions,
   ConnextClientStorePrefix,
   CreateChannelMessage,
@@ -83,7 +83,7 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      const sig = await channelProvider.send(chan_signDigest, { message });
+      const sig = await channelProvider.send(ChannelMethods.chan_signDigest, { message });
       return sig;
     };
 
@@ -184,10 +184,13 @@ export const connect = async (
       delayAndThrow(30_000, "Create channel event not fired within 30s"),
       new Promise(
         async (res: any): Promise<any> => {
-          channelProvider.once(CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
-            log.debug(`Received CREATE_CHANNEL_EVENT`);
-            res(data.data);
-          });
+          channelProvider.once(
+            EventNames.CREATE_CHANNEL_EVENT,
+            (data: CreateChannelMessage): void => {
+              log.debug(`Received CREATE_CHANNEL_EVENT`);
+              res(data.data);
+            },
+          );
 
           // FYI This continues async in the background after CREATE_CHANNEL_EVENT is recieved
           const creationData = await node.createChannel();
@@ -195,7 +198,7 @@ export const connect = async (
         },
       ),
     ]);
-    multisigAddress = (creationEventData as CFCoreTypes.CreateChannelResult).multisigAddress;
+    multisigAddress = (creationEventData as MethodResults.CreateChannel).multisigAddress;
   } else {
     multisigAddress = myChannel.multisigAddress;
   }

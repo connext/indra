@@ -1,17 +1,4 @@
-import { AppAction } from "@connext/apps";
-import {
-  CREATE_CHANNEL_EVENT,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
-  DEPOSIT_STARTED_EVENT,
-  INSTALL_EVENT,
-  PROPOSE_INSTALL_EVENT,
-  PROTOCOL_MESSAGE_EVENT,
-  REJECT_INSTALL_EVENT,
-  UNINSTALL_EVENT,
-  UPDATE_STATE_EVENT,
-  ProtocolTypes,
-} from "@connext/types";
+import { AppAction, EventNames, MethodNames, NodeMessage } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
 import { AddressZero } from "ethers/constants";
@@ -23,7 +10,6 @@ import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import {
-  CFCoreTypes,
   CreateChannelMessage,
   DepositConfirmationMessage,
   DepositFailedMessage,
@@ -40,8 +26,28 @@ import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
+const {
+  CREATE_CHANNEL_EVENT,
+  CREATE_TRANSFER,
+  DEPOSIT_CONFIRMED_EVENT,
+  DEPOSIT_FAILED_EVENT,
+  DEPOSIT_STARTED_EVENT,
+  INSTALL_EVENT,
+  PROPOSE_INSTALL_EVENT,
+  PROTOCOL_MESSAGE_EVENT,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_STARTED_EVENT,
+  REJECT_INSTALL_EVENT,
+  UNINSTALL_EVENT,
+  UPDATE_STATE_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
+  WITHDRAWAL_STARTED_EVENT,
+} = EventNames;
+
 type CallbackStruct = {
-  [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
+  [index in EventNames]: (data: any) => Promise<any> | void;
 };
 
 @Injectable()
@@ -60,7 +66,7 @@ export default class ListenerService implements OnModuleInit {
     this.log.setContext("ListenerService");
   }
 
-  logEvent(event: CFCoreTypes.EventName, res: CFCoreTypes.NodeMessage & { data: any }): void {
+  logEvent(event: EventNames, res: NodeMessage & { data: any }): void {
     this.log.debug(
       `${event} event fired from ${res && res.from ? res.from : null}, data: ${
         res ? JSON.stringify(res.data) : `event did not have a result`
@@ -73,6 +79,9 @@ export default class ListenerService implements OnModuleInit {
       CREATE_CHANNEL_EVENT: async (data: CreateChannelMessage): Promise<void> => {
         this.logEvent(CREATE_CHANNEL_EVENT, data);
         this.channelService.makeAvailable(data);
+      },
+      CREATE_TRANSFER: (data: DepositFailedMessage): void => {
+        this.logEvent(CREATE_TRANSFER, data);
       },
       DEPOSIT_CONFIRMED_EVENT: (data: DepositConfirmationMessage): void => {
         this.logEvent(DEPOSIT_CONFIRMED_EVENT, data);
@@ -105,6 +114,15 @@ export default class ListenerService implements OnModuleInit {
       },
       PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
         this.logEvent(PROTOCOL_MESSAGE_EVENT, data);
+      },
+      RECEIVE_TRANSFER_FAILED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(RECEIVE_TRANSFER_FAILED_EVENT, data);
+      },
+      RECEIVE_TRANSFER_FINISHED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(RECEIVE_TRANSFER_FINISHED_EVENT, data);
+      },
+      RECEIVE_TRANSFER_STARTED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(RECEIVE_TRANSFER_STARTED_EVENT, data);
       },
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         this.logEvent(REJECT_INSTALL_EVENT, data);
@@ -144,22 +162,31 @@ export default class ListenerService implements OnModuleInit {
           appRegistryInfo.name,
           app,
           newState as any, // AppState (excluding simple swap app)
-          action as AppAction<any>,
+          action as AppAction,
           data.from,
         );
+      },
+      WITHDRAWAL_FAILED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(WITHDRAWAL_FAILED_EVENT, data);
+      },
+      WITHDRAWAL_CONFIRMED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(WITHDRAWAL_CONFIRMED_EVENT, data);
+      },
+      WITHDRAWAL_STARTED_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(WITHDRAWAL_STARTED_EVENT, data);
       },
     };
   }
 
   onModuleInit(): void {
     Object.entries(this.getEventListeners()).forEach(
-      ([event, callback]: [CFCoreTypes.EventName, () => any]): void => {
+      ([event, callback]: [EventNames, () => any]): void => {
         this.cfCoreService.registerCfCoreListener(event, callback);
       },
     );
 
     this.cfCoreService.registerCfCoreListener(
-      ProtocolTypes.chan_uninstall as any,
+      MethodNames.chan_uninstall as any,
       async (data: any) => {
         // TODO: GET CHANNEL MULTISIG
         const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${AddressZero}.app-instance.${data.result.result.appInstanceId}.uninstall`;

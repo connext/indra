@@ -1,4 +1,4 @@
-import { arrayify, isHexString } from "ethers/utils";
+import { arrayify, getAddress, isHexString } from "ethers/utils";
 
 export const isValidAddress = (address: any): boolean =>
   typeof address === "string" && isHexString(address) && arrayify(address).length === 20;
@@ -11,8 +11,10 @@ export const invalidXpub = (value: string): string | undefined => {
 };
 
 export const invalidAddress = (value: string): string | undefined => {
-  if (!value || !isValidAddress(value)) {
-    return `Value "${value}" is not a valid eth address`;
+  try {
+    getAddress(value);
+    return undefined;
+  } catch (e) {
+    return e.message;
   }
-  return undefined;
 };

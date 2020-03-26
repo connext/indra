@@ -1,18 +1,29 @@
+import { MinimalTransaction, EthereumCommitment } from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
 import { sortSignaturesBySignerAddress } from "@connext/types";
 
 import { ChallengeRegistry } from "../contracts";
+import { AppInstance } from "../models";
 import {
   AppIdentity,
-  CFCoreTypes,
-  EthereumCommitment,
+  Context,
   SignedStateHashUpdate,
   SetStateCommitmentJSON,
 } from "../types";
-
-import { appIdentityToHash } from "./utils";
+import { appIdentityToHash } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
+
+export const getSetStateCommitment = (
+  context: Context,
+  appInstance: AppInstance,
+) => new SetStateCommitment(
+  context.network.ChallengeRegistry,
+  appInstance.identity,
+  appInstance.hashOfLatestState,
+  appInstance.versionNumber,
+  appInstance.timeout,
+);
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
@@ -55,7 +66,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
-  public async getSignedTransaction(): Promise<CFCoreTypes.MinimalTransaction> {
+  public async getSignedTransaction(): Promise<MinimalTransaction> {
     this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,

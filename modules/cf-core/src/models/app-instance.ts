@@ -1,10 +1,10 @@
+import { bigNumberifyJson, deBigNumberifyJson, isBN, stringify } from "@connext/types";
 import { Contract } from "ethers";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
-import { appIdentityToHash } from "../ethereum";
 import {
   AppIdentity,
   AppInstanceJson,
@@ -18,7 +18,8 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "../types";
-import { bigNumberifyJson, prettyPrintObject, deBigNumberifyJson } from "../utils";
+import { appIdentityToHash } from "../utils";
+import { sortAddresses } from "../xkeys";
 
 /**
  * Representation of an AppInstance.
@@ -56,10 +57,15 @@ export class AppInstance {
     public readonly outcomeType: OutcomeType,
     public readonly multisigAddress: string,
     public readonly meta?: object,
-    private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
-    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
-    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
-  ) {}
+    private readonly twoPartyOutcomeInterpreterParamsInternal?:
+      TwoPartyFixedOutcomeInterpreterParams,
+    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
+      MultiAssetMultiPartyCoinTransferInterpreterParams,
+    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
+      SingleAssetTwoPartyCoinTransferInterpreterParams,
+  ) {
+    this.participants = sortAddresses(this.participants);
+  }
 
   get twoPartyOutcomeInterpreterParams() {
     if (this.outcomeType !== OutcomeType.TWO_PARTY_FIXED_OUTCOME) {
@@ -91,18 +97,27 @@ export class AppInstance {
     return this.singleAssetTwoPartyCoinTransferInterpreterParamsInternal!;
   }
   public static fromJson(json: AppInstanceJson) {
-    const deserialized: AppInstanceJson = bigNumberifyJson(json);
+    const deserialized = bigNumberifyJson(json) as AppInstanceJson;
 
     const interpreterParams = {
-      twoPartyOutcomeInterpreterParams: deserialized.twoPartyOutcomeInterpreterParams
-        ? bigNumberifyJson(deserialized.twoPartyOutcomeInterpreterParams)
-        : undefined,
-      singleAssetTwoPartyCoinTransferInterpreterParams: deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
-        ? bigNumberifyJson(deserialized.singleAssetTwoPartyCoinTransferInterpreterParams)
-        : undefined,
-      multiAssetMultiPartyCoinTransferInterpreterParams: deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
-        ? bigNumberifyJson(deserialized.multiAssetMultiPartyCoinTransferInterpreterParams)
-        : undefined,
+      twoPartyOutcomeInterpreterParams:
+        deserialized.twoPartyOutcomeInterpreterParams
+          ? bigNumberifyJson(
+              deserialized.twoPartyOutcomeInterpreterParams,
+            ) as TwoPartyFixedOutcomeInterpreterParams
+          : undefined,
+      singleAssetTwoPartyCoinTransferInterpreterParams:
+        deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
+          ? bigNumberifyJson(
+              deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+            ) as SingleAssetTwoPartyCoinTransferInterpreterParams
+          : undefined,
+      multiAssetMultiPartyCoinTransferInterpreterParams:
+        deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
+          ? bigNumberifyJson(
+              deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
+            ) as MultiAssetMultiPartyCoinTransferInterpreterParams
+          : undefined,
     };
 
     return new AppInstance(
@@ -170,7 +185,6 @@ export class AppInstance {
   }
 
   @Memoize()
-  // todo(xuanji): we should print better error messages here
   public get encodedLatestState() {
     return defaultAbiCoder.encode([this.appInterface.stateEncoding], [this.latestState]);
   }
@@ -228,7 +242,7 @@ export class AppInstance {
       throw new Error(
         `Attempted to setState on an app with an invalid state object.
           - appInstanceIdentityHash = ${this.identityHash}
-          - newState = ${prettyPrintObject(newState)}
+          - newState = ${stringify(newState)}
           - encodingExpected = ${this.appInterface.stateEncoding}
           Error: ${e.message}`,
       );
@@ -242,20 +256,21 @@ export class AppInstance {
     });
   }
 
-  public async computeOutcome(state: SolidityValueType, provider: BaseProvider): Promise<string> {
+  public async computeOutcome(
+    state: SolidityValueType,
+    provider: JsonRpcProvider,
+  ): Promise<string> {
     return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
   }
 
-  public async computeOutcomeWithCurrentState(provider: BaseProvider): Promise<string> {
+  public async computeOutcomeWithCurrentState(provider: JsonRpcProvider): Promise<string> {
     return this.computeOutcome(this.state, provider);
   }
 
   public async computeStateTransition(
     action: SolidityValueType,
-    provider: BaseProvider,
+    provider: JsonRpcProvider,
   ): Promise<SolidityValueType> {
-    const ret: SolidityValueType = {};
-
     const computedNextState = this.decodeAppState(
       await this.toEthersContract(provider).functions.applyAction(
         this.encodedLatestState,
@@ -263,13 +278,34 @@ export class AppInstance {
       ),
     );
 
-    // ethers returns an array of [ <each value by idx>, <each value by key> ]
-    // so we need to clean this response before returning
-    for (const key in this.state) {
-      ret[key] = computedNextState[key];
-    }
+    // ethers returns an array of [ <each value by index>, <each value by key> ]
+    // so we need to recursively clean this response before returning
+    const keyify = (templateObj: object, dataObj: object, key?: string): object => {
+      let template = key ? templateObj[key] : templateObj;
+      let data = key ? dataObj[key] : dataObj;
+      let output;
+      if (isBN(template) || typeof template !== "object") {
+        // console.log(`Done, returning simple data: ${data}`);
+        output = data;
+      } else if (typeof template === "object" && typeof template.length === "number") {
+        output = [];
+        for (const index in template) {
+          // console.log(`Applying keyifiy for array index ${index}`);
+          output.push(keyify(template, data, index));
+        }
+      } else if (typeof template === "object" && typeof template.length !== "number") {
+        output = {};
+        for (const subkey in template) {
+          // console.log(`Applying keyifiy for object key ${subkey}`);
+          output[subkey] = keyify(template, data, subkey);
+        }
+      } else {
+        throw new Error(`Couldn't keyify, unrecogized key/value: ${key}/${data}`);
+      }
+      return output;
+    };
 
-    return ret;
+    return bigNumberifyJson(keyify(this.state, computedNextState));
   }
 
   public encodeAction(action: SolidityValueType) {
@@ -284,7 +320,7 @@ export class AppInstance {
     return defaultAbiCoder.decode([this.appInterface.stateEncoding], encodedSolidityValueType)[0];
   }
 
-  public toEthersContract(provider: BaseProvider) {
+  public toEthersContract(provider: JsonRpcProvider) {
     return new Contract(this.appInterface.addr, CounterfactualApp.abi, provider);
   }
 }

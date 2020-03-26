@@ -1,29 +1,36 @@
-import { PersistAppType } from "@connext/types";
+import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { SetStateCommitment, ConditionalTransactionCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress, Commitment } from "../machine";
+import { UNASSIGNED_SEQ_NO } from "../constants";
+import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
+import { getConditionalTransactionCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
-  InstallProtocolParams,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
-  NetworkContext,
+  Opcode,
   OutcomeType,
+  PersistAppType,
   ProtocolExecutionFlow,
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
-import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods";
+import { assertIsValidSignature } from "./utils";
 
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { Install } = Protocol;
-const { Conditional, SetState } = Commitment;
+const protocol = ProtocolNames.install;
+const {
+  OP_SIGN,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_APP_INSTANCE,
+  PERSIST_COMMITMENT,
+} = Opcode;
+const { Conditional, SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -46,7 +53,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const {
       store,
       message: { params, processID },
-      network,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -60,14 +66,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorBalanceDecrement,
       responderBalanceDecrement,
       initiatorXpub,
-    } = params as InstallProtocolParams;
+    } = params as ProtocolParams.Install;
 
-    // 10ms
-    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const stateChannelBefore = await store.getStateChannel(multisigAddress);
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
-      preProtocolStateChannel,
+      stateChannelBefore,
       initiatorXpub,
       initiatorDepositTokenAddress,
       initiatorBalanceDecrement,
@@ -75,34 +80,32 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
-      preProtocolStateChannel,
+      stateChannelBefore,
       responderXpub,
       responderDepositTokenAddress,
       responderBalanceDecrement,
     );
 
-    // 7ms
-    const postProtocolStateChannel = computeStateChannelTransition(
-      preProtocolStateChannel,
-      params as InstallProtocolParams,
+    const stateChannelAfter = computeStateChannelTransition(
+      stateChannelBefore,
+      params as ProtocolParams.Install,
     );
 
-    // 0ms
-    const newAppInstance = postProtocolStateChannel.mostRecentlyInstalledAppInstance();
+    const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
 
-    // 2ms
-    const conditionalTransactionData = constructConditionalTransactionData(
-      network,
-      postProtocolStateChannel,
+    const conditionalTxCommitment = getConditionalTransactionCommitment(
+      context,
+      stateChannelAfter,
+      newAppInstance,
     );
-    const conditionalTransactionDataHash = conditionalTransactionData.hashToSign();
+    const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
 
     // 0ms
     const responderFreeBalanceAddress = xkeyKthAddress(responderXpub, 0);
 
     // 6ms
     // free balance addr signs conditional transactions
-    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionDataHash];
+    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
     // 124ms
     const {
@@ -115,7 +118,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       {
         processID,
         params,
-        protocol: Install,
+        protocol,
         toXpub: responderXpub,
         customData: {
           signature: mySignatureOnConditionalTransaction,
@@ -128,11 +131,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // free balance addr signs conditional transactions
     await assertIsValidSignature(
       responderFreeBalanceAddress,
-      conditionalTransactionDataHash,
+      conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
     );
 
-    conditionalTransactionData.signatures = [
+    conditionalTxCommitment.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
     ];
@@ -141,17 +144,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     yield [
       PERSIST_COMMITMENT,
       Conditional,
-      conditionalTransactionData,
+      conditionalTxCommitment,
       newAppInstance.identityHash,
     ];
 
-    const freeBalanceUpdateData = new SetStateCommitment(
-      network.ChallengeRegistry,
-      postProtocolStateChannel.freeBalance.identity,
-      postProtocolStateChannel.freeBalance.hashOfLatestState,
-      postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout,
-    );
+    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
 
     // 7ms
@@ -177,18 +174,17 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_COMMITMENT,
       SetState,
       freeBalanceUpdateData,
-      postProtocolStateChannel.freeBalance.identityHash,
+      stateChannelAfter.freeBalance.identityHash,
     ];
 
-    // 91ms (!)
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
 
     // 51ms
     yield [
       IO_SEND_AND_WAIT,
       {
         processID,
-        protocol: Install,
+        protocol,
         toXpub: responderXpub,
         customData: {
           signature: mySignatureOnFreeBalanceStateUpdate,
@@ -218,7 +214,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         customData: { signature },
       },
-      network,
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
@@ -235,14 +230,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderDepositTokenAddress,
       initiatorBalanceDecrement,
       initiatorDepositTokenAddress,
-    } = params as InstallProtocolParams;
+    } = params as ProtocolParams.Install;
 
-    // 8ms
-    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
+    const stateChannelBefore = await store.getStateChannel(multisigAddress);
 
     // 1ms
     assertSufficientFundsWithinFreeBalance(
-      preProtocolStateChannel,
+      stateChannelBefore,
       initiatorXpub,
       initiatorDepositTokenAddress,
       initiatorBalanceDecrement,
@@ -250,43 +244,40 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
-      preProtocolStateChannel,
+      stateChannelBefore,
       responderXpub,
       responderDepositTokenAddress,
       responderBalanceDecrement,
     );
 
-    // 5ms
-    const postProtocolStateChannel = computeStateChannelTransition(
-      preProtocolStateChannel,
-      params as InstallProtocolParams,
+    const stateChannelAfter = computeStateChannelTransition(
+      stateChannelBefore,
+      params as ProtocolParams.Install,
     );
 
     // 0ms
     const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorXpub, 0);
 
-    // 0ms
-    const newAppInstance = postProtocolStateChannel.mostRecentlyInstalledAppInstance();
+    const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
 
-    // 1ms
-    const conditionalTransactionData = constructConditionalTransactionData(
-      network,
-      postProtocolStateChannel,
+    const conditionalTxCommitment = getConditionalTransactionCommitment(
+      context,
+      stateChannelAfter,
+      newAppInstance,
     );
-    const conditionalTransactionDataHash = conditionalTransactionData.hashToSign();
+    const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
 
     // 7ms
     // multisig owner always signs conditional tx
     await assertIsValidSignature(
       initiatorFreeBalanceAddress,
-      conditionalTransactionDataHash,
+      conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
     );
 
-    // 5ms
-    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionDataHash];
+    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
-    conditionalTransactionData.signatures = [
+    conditionalTxCommitment.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
     ];
@@ -295,17 +286,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     yield [
       PERSIST_COMMITMENT,
       Conditional,
-      conditionalTransactionData,
+      conditionalTxCommitment,
       newAppInstance.identityHash,
     ];
 
-    const freeBalanceUpdateData = new SetStateCommitment(
-      network.ChallengeRegistry,
-      postProtocolStateChannel.freeBalance.identity,
-      postProtocolStateChannel.freeBalance.hashOfLatestState,
-      postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout,
-    );
+    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
     const freeBalanceUpdateDataHash = freeBalanceUpdateData.hashToSign();
 
     // 8ms
@@ -318,7 +303,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       IO_SEND_AND_WAIT,
       {
         processID,
-        protocol: Install,
+        protocol,
         toXpub: initiatorXpub,
         customData: {
           signature: mySignatureOnConditionalTransaction,
@@ -347,15 +332,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_COMMITMENT,
       SetState,
       freeBalanceUpdateData,
-      postProtocolStateChannel.freeBalance.identityHash,
+      stateChannelAfter.freeBalance.identityHash,
     ];
 
-    // 50ms
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, newAppInstance];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
 
     const m4 = {
       processID,
-      protocol: Install,
+      protocol,
       toXpub: initiatorXpub,
       customData: {
         dataPersisted: true,
@@ -376,13 +360,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  * StateChannel after the protocol would be executed with correct signatures.
  *
  * @param {StateChannel} stateChannel - The pre-protocol state of the channel
- * @param {InstallProtocolParams} params - Parameters about the new AppInstance
+ * @param {ProtocolParams.Install} params - Parameters about the new AppInstance
  *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
 function computeStateChannelTransition(
   stateChannel: StateChannel,
-  params: InstallProtocolParams,
+  params: ProtocolParams.Install,
 ): StateChannel {
   const {
     initiatorBalanceDecrement,
@@ -465,7 +449,7 @@ function computeStateChannelTransition(
  *
  * Note that this is _not_ a built-in part of the protocol. Here we are _restricting_
  * all newly installed AppInstances to be either of type COIN_TRANSFER or
- * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the InstallProtocolParams
+ * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the ProtocolParams.Install
  * to indidicate the interpreterAddress and interpreterParams so the developers
  * installing apps have more control, however for now we are putting this logic
  * inside of the client (the Node) by adding an "outcomeType" variable which
@@ -494,10 +478,10 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  // eslint-disable-next-line max-len
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  // eslint-disable-next-line max-len
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
@@ -555,52 +539,6 @@ function computeInterpreterParameters(
       };
     }
 
-    default: {
-      throw new Error("The outcome type in this application logic contract is not supported yet.");
-    }
-  }
-}
-
-/**
- * Computes the ConditionalTransactionCommitment unsigned transaction from the multisignature
- * wallet that is required to be signed by all parties involved in the protocol.
- *
- * @param {NetworkContext} network - Metadata on the current blockchain
- * @param {OutcomeType} outcomeType - The outcome type of the AppInstance
- * @param {StateChannel} stateChannel - The post-protocol StateChannel
- *
- * @returns {ConditionalTransactionCommitment} A ConditionalTransactionCommitment object, ready to sign.
- */
-function constructConditionalTransactionData(
-  networkContext: NetworkContext,
-  stateChannel: StateChannel,
-): ConditionalTransactionCommitment {
-  const appInstance = stateChannel.mostRecentlyInstalledAppInstance();
-  return new ConditionalTransactionCommitment(
-    networkContext,
-    stateChannel.multisigAddress,
-    stateChannel.multisigOwners,
-    appInstance.identityHash,
-    stateChannel.freeBalance.identityHash,
-    getInterpreterAddressFromOutcomeType(appInstance.outcomeType, networkContext),
-    appInstance.encodedInterpreterParams,
-  );
-}
-
-function getInterpreterAddressFromOutcomeType(
-  outcomeType: OutcomeType,
-  networkContext: NetworkContext,
-) {
-  switch (outcomeType) {
-    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-      return networkContext.MultiAssetMultiPartyCoinTransferInterpreter;
-    }
-    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-      return networkContext.SingleAssetTwoPartyCoinTransferInterpreter;
-    }
-    case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-      return networkContext.TwoPartyFixedOutcomeInterpreter;
-    }
     default: {
       throw new Error("The outcome type in this application logic contract is not supported yet.");
     }

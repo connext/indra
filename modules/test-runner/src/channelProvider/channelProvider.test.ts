@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, RECEIVE_TRANSFER_FINISHED_EVENT } from "@connext/types";
+import { IConnextClient, EventNames } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
 import {
@@ -23,7 +23,7 @@ describe("ChannelProvider", () => {
   let tokenAddress: string;
 
   beforeEach(async () => {
-    client = await createClient();
+    client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodePublicIdentifier = client.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
@@ -59,7 +59,7 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // TRANSFER FLOW
     const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
-    const clientB = await createClient();
+    const clientB = await createClient({ id: "B" });
     await clientB.requestCollateral(tokenAddress);
 
     const transferFinished = Promise.all([
@@ -70,7 +70,7 @@ describe("ChannelProvider", () => {
         );
       }),
       new Promise(async resolve => {
-        clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, async () => {
+        clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, async () => {
           resolve();
         });
       }),

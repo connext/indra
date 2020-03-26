@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { StateChannelJSON, stringify, RebalanceProfile, convert } from "@connext/types";
+import { bigNumberifyJson, StateChannelJSON, stringify, RebalanceProfile } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -91,8 +91,8 @@ class AdminMessaging extends AbstractMessagingProvider {
   }
 
   async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
-    const [, xpub, ...rest] = subject.split(".");
-    const profile = convert.RebalanceProfile("bignumber", data.profile);
+    const xpub = subject.split(".")[1];
+    const profile = bigNumberifyJson(data.profile) as RebalanceProfile;
     await this.channelService.addRebalanceProfileToChannel(xpub, profile);
   }
 

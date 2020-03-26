@@ -1,29 +1,30 @@
-import { CFCoreTypes, bigNumberifyObj, CoinTransferBigNumber } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
+import {
+  MethodParams,
+  CoinTransfer,
+  SimpleSignedTransferAppState,
+} from "@connext/types";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
-import { convertSignedTransferAppState } from "./convert";
 
 export const validateSignedTransferApp = (
-  params: CFCoreTypes.ProposeInstallParams,
+  params: MethodParams.ProposeInstall,
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
 ) => {
-  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
-    params,
-  );
-  const initialState = convertSignedTransferAppState("bignumber", initialStateBadType);
+  const { responderDeposit, initiatorDeposit } = params;
+  const initialState = params.initialState as SimpleSignedTransferAppState;
 
   const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
   const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
 
   // initiator is sender
-  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === initiatorFreeBalanceAddress;
   })[0];
 
   // responder is receiver
-  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === responderFreeBalanceAddress;
   })[0];
 

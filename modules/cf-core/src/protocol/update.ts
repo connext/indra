@@ -1,14 +1,23 @@
-import { PersistAppType } from "@connext/types";
-import { SetStateCommitment } from "../ethereum";
-import { Context, ProtocolMessage, ProtocolExecutionFlow, UpdateProtocolParams } from "../types";
-import { Opcode, Protocol, xkeyKthAddress, Commitment } from "../machine";
+import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
+
+import { UNASSIGNED_SEQ_NO } from "../constants";
+import { getSetStateCommitment } from "../ethereum";
+import {
+  Context,
+  Opcode,
+  PersistAppType,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+} from "../types";
+
 import { logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
-const protocol = Protocol.Update;
+const protocol = ProtocolNames.update;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = Commitment;
+const { SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -18,7 +27,7 @@ const { SetState } = Commitment;
  */
 export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Intiating */: async function*(context: Context) {
-    const { store, message, network } = context;
+    const { store, message } = context;
     const log = context.log.newContext("CF-UpdateProtocol");
     const start = Date.now();
     let substart;
@@ -31,7 +40,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderXpub,
       newState,
-    } = params as UpdateProtocolParams;
+    } = params as ProtocolParams.Update;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
     const preAppIstance = preProtocolStateChannel.getAppInstance(appIdentityHash)
@@ -43,12 +52,9 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
+    const setStateCommitment = getSetStateCommitment(
+      context,
+      appInstance,
     );
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
@@ -85,7 +91,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { store, message, network } = context;
+    const { store, message } = context;
     const log = context.log.newContext("CF-UpdateProtocol");
     const start = Date.now();
     let substart;
@@ -102,7 +108,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       initiatorXpub,
       newState,
-    } = params as UpdateProtocolParams;
+    } = params as ProtocolParams.Update;
 
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
     const preAppIstance = preProtocolStateChannel.getAppInstance(appIdentityHash)
@@ -114,12 +120,9 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
+    const setStateCommitment = getSetStateCommitment(
+      context,
+      appInstance,
     );
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 

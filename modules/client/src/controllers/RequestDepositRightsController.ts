@@ -1,4 +1,10 @@
-import { CoinBalanceRefundAppStateBigNumber, CoinBalanceRefundApp } from "@connext/types";
+import {
+  BigNumber,
+  CoinBalanceRefundAppName,
+  CoinBalanceRefundAppState,
+  MethodNames,
+  MethodParams,
+} from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -6,9 +12,6 @@ import tokenAbi from "human-standard-token-abi";
 
 import { stringify } from "../lib";
 import {
-  BigNumber,
-  CFCoreTypes,
-  ProtocolTypes,
   RequestDepositRightsParameters,
   RequestDepositRightsResponse,
 } from "../types";
@@ -58,11 +61,11 @@ export class RequestDepositRightsController extends AbstractController {
     this.log.info(`Installing balance refund app for ${assetId}`);
     await this.proposeDepositInstall(assetId);
     const requestDepositRightsResponse = await this.channelProvider.send(
-      ProtocolTypes.chan_requestDepositRights,
+      MethodNames.chan_requestDepositRights,
       {
         multisigAddress: this.channelProvider.multisigAddress,
         tokenAddress: assetId,
-      } as CFCoreTypes.RequestDepositRightsParams,
+      } as MethodParams.RequestDepositRights,
     );
     this.log.info(`Deposit rights gained for ${assetId}`);
     this.log.debug(
@@ -89,7 +92,7 @@ export class RequestDepositRightsController extends AbstractController {
             this.connext.multisigAddress,
           );
 
-    const initialState: CoinBalanceRefundAppStateBigNumber = {
+    const initialState: CoinBalanceRefundAppState = {
       multisig: this.connext.multisigAddress,
       recipient: this.connext.freeBalanceAddress,
       threshold,
@@ -101,9 +104,9 @@ export class RequestDepositRightsController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
+    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundAppName);
 
-    const params: CFCoreTypes.ProposeInstallParams = {
+    const params: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,

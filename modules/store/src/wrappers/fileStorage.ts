@@ -1,3 +1,4 @@
+import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
 import path from "path";
 
 import {
@@ -14,7 +15,6 @@ import {
   CHANNEL_KEY,
   COMMITMENT_KEY,
 } from "../helpers";
-import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
 
 export class FileStorage implements WrappedStorage {
   constructor(

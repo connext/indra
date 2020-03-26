@@ -1,23 +1,22 @@
-import {
-  IConnextClient,
-  FastSignedTransferParameters,
-  FAST_SIGNED_TRANSFER,
-  FastSignedTransferAppStateBigNumber,
-  bigNumberifyObj,
-  CoinTransfer,
-  ResolveFastSignedTransferParameters,
-  FastSignedTransferResponse,
-  delay,
-  ResolveConditionResponse,
-  createRandom32ByteHexString,
-} from "@connext/types";
+import { xkeyKthAddress } from "@connext/cf-core";
 import { signDigest } from "@connext/crypto";
-import { bigNumberify, BigNumber, solidityKeccak256 } from "ethers/utils";
+import {
+  CoinTransfer,
+  ConditionalTransferTypes,
+  createRandom32ByteHexString,
+  delay,
+  FastSignedTransferAppState,
+  FastSignedTransferParameters,
+  FastSignedTransferResponse,
+  IConnextClient,
+  ResolveConditionResponse,
+  ResolveFastSignedTransferParameters,
+} from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
+import { bigNumberify, solidityKeccak256 } from "ethers/utils";
 
 import { createClient, fundChannel, expect } from "../util";
-import { xkeyKthAddress } from "@connext/cf-core";
 
 describe.skip("Fast Signed Transfer", () => {
   let clientA: IConnextClient;
@@ -44,7 +43,7 @@ describe.skip("Fast Signed Transfer", () => {
     await fundChannel(clientA, initialChannelBalance);
     const { transferAppInstanceId } = (await clientA.conditionalTransfer({
       amount: transferAmount.toString(),
-      conditionType: FAST_SIGNED_TRANSFER,
+      conditionType: ConditionalTransferTypes.FastSignedTransfer,
       paymentId,
       recipient: clientB.publicIdentifier,
       signer: signerAddress,
@@ -55,11 +54,9 @@ describe.skip("Fast Signed Transfer", () => {
     let transferApp = await clientA.getAppInstanceDetails(transferAppInstanceId);
     expect(transferApp).to.be.ok;
     let transferAppState = transferApp.appInstance
-      .latestState as FastSignedTransferAppStateBigNumber;
+      .latestState as FastSignedTransferAppState;
 
-    let coinTransfers: CoinTransfer<BigNumber>[] = transferAppState.coinTransfers.map(
-      bigNumberifyObj,
-    );
+    let coinTransfers: CoinTransfer[] = transferAppState.coinTransfers;
     expect(coinTransfers[0][0]).eq(clientA.freeBalanceAddress);
     expect(coinTransfers[0][1]).eq(initialChannelBalance.sub(transferAmount));
     expect(coinTransfers[1][0]).eq(xkeyKthAddress(clientA.nodePublicIdentifier));
@@ -85,7 +82,7 @@ describe.skip("Fast Signed Transfer", () => {
         resolve();
       });
       resolveCondition = await clientB.resolveCondition({
-        conditionType: FAST_SIGNED_TRANSFER,
+        conditionType: ConditionalTransferTypes.FastSignedTransfer,
         paymentId,
         signature,
         data,
@@ -94,8 +91,8 @@ describe.skip("Fast Signed Transfer", () => {
 
     // locked payment resolved
     transferApp = await clientB.getAppInstanceDetails(resolveCondition!.appId);
-    transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppStateBigNumber;
-    coinTransfers = transferAppState.coinTransfers.map(bigNumberifyObj);
+    transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppState;
+    coinTransfers = transferAppState.coinTransfers;
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
     expect(coinTransfers[1][0]).eq(clientB.freeBalanceAddress);
     expect(coinTransfers[1][1]).eq(Zero.add(transferAmount));
@@ -117,7 +114,7 @@ describe.skip("Fast Signed Transfer", () => {
       const paymentId = createRandom32ByteHexString();
       const { transferAppInstanceId } = (await clientA.conditionalTransfer({
         amount: transferAmount.toString(),
-        conditionType: FAST_SIGNED_TRANSFER,
+        conditionType: ConditionalTransferTypes.FastSignedTransfer,
         paymentId,
         recipient: clientB.publicIdentifier,
         signer: signerAddress,
@@ -135,7 +132,7 @@ describe.skip("Fast Signed Transfer", () => {
       const signature = await signDigest(signerWallet.privateKey, digest);
 
       const res = await clientB.resolveCondition({
-        conditionType: FAST_SIGNED_TRANSFER,
+        conditionType: ConditionalTransferTypes.FastSignedTransfer,
         paymentId,
         signature,
         data,
@@ -151,8 +148,8 @@ describe.skip("Fast Signed Transfer", () => {
     // locked payment can resolve
     const transferApp = await clientB.getAppInstanceDetails(initialReceiverAppInstanceId);
     const transferAppState = transferApp.appInstance
-      .latestState as FastSignedTransferAppStateBigNumber;
-    const coinTransfers = transferAppState.coinTransfers.map(bigNumberifyObj);
+      .latestState as FastSignedTransferAppState;
+    const coinTransfers = transferAppState.coinTransfers;
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
     expect(coinTransfers[1][0]).eq(clientB.freeBalanceAddress);
     expect(coinTransfers[1][1]).eq(n);

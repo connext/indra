@@ -1,29 +1,29 @@
 import {
-  SetStateCommitmentJSON,
-  ConditionalTransactionCommitmentJSON,
-  ProtocolTypes,
   AppInstanceJson,
   AppInstanceProposal,
-  StateChannelJSON,
-  IClientStore,
-  STORE_SCHEMA_VERSION,
+  ConditionalTransactionCommitmentJSON,
   IBackupServiceAPI,
+  IClientStore,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
 } from "@connext/types";
 
 export class MemoryStorage implements IClientStore {
   channels: Map<string, StateChannelJSON> = new Map();
   private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
-  private conditionalTransactionCommitment: Map<
+  private conditionalTxCommitment: Map<
     string,
     ConditionalTransactionCommitmentJSON
   > = new Map();
-  private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
+  private withdrawals: Map<string, MinimalTransaction> = new Map();
   private proposedApps: Map<string, AppInstanceProposal> = new Map();
   private appInstances: Map<string, AppInstanceJson> = new Map();
   private userWithdrawals: WithdrawalMonitorObject | undefined = undefined;
   private freeBalances: Map<string, AppInstanceJson> = new Map();
-  private setupCommitments: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
+  private setupCommitments: Map<string, MinimalTransaction> = new Map();
 
   private schemaVersion: number = 0;
 
@@ -109,13 +109,13 @@ export class MemoryStorage implements IClientStore {
 
   async getSetupCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     return this.setupCommitments.get(multisigAddress);
   }
 
   async saveSetupCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     this.setupCommitments.set(multisigAddress, commitment);
     return;
@@ -137,25 +137,25 @@ export class MemoryStorage implements IClientStore {
   async getConditionalTransactionCommitment(
     appInstanceId: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    return this.conditionalTransactionCommitment.get(appInstanceId);
+    return this.conditionalTxCommitment.get(appInstanceId);
   }
 
   async saveConditionalTransactionCommitment(
     appInstanceId: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
-    this.conditionalTransactionCommitment.set(appInstanceId, commitment);
+    this.conditionalTxCommitment.set(appInstanceId, commitment);
   }
 
   async getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     return this.withdrawals.get(multisigAddress);
   }
 
   async saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     this.withdrawals.set(multisigAddress, commitment);
   }

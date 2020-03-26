@@ -1,7 +1,7 @@
 import {
+  delay,
+  EventNames,
   IConnextClient,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  UPDATE_STATE_EVENT,
   LinkedTransferStatus,
 } from "@connext/types";
 import * as lolex from "lolex";
@@ -11,7 +11,6 @@ import {
   asyncTransferAsset,
   createClient,
   createClientWithMessagingLimits,
-  delay,
   expect,
   fundChannel,
   getMnemonic,
@@ -151,10 +150,10 @@ describe("Async transfer offline tests", () => {
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise(resolve =>
-      receiverClient.once(RECEIVE_TRANSFER_FINISHED_EVENT, resolve),
+      receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, resolve),
     );
     const { paymentId } = await senderClient.transfer({
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
       recipient: receiverClient.publicIdentifier,
     });
@@ -165,7 +164,7 @@ describe("Async transfer offline tests", () => {
     await received;
     // verify transfer
     const expected = {
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderPublicIdentifier: senderClient.publicIdentifier,
@@ -212,21 +211,21 @@ describe("Async transfer offline tests", () => {
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise((resolve: Function) =>
-      receiverClient.once(RECEIVE_TRANSFER_FINISHED_EVENT, () => {
+      receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, () => {
         resolve();
       }),
     );
 
     // disconnect messaging on take action event
     const actionTaken = new Promise((resolve: Function) => {
-      senderClient.once(UPDATE_STATE_EVENT, async () => {
+      senderClient.once(EventNames.UPDATE_STATE_EVENT, async () => {
         await received;
         await (senderClient.messaging as TestMessagingService).disconnect();
         resolve();
       });
     });
     const { paymentId } = await senderClient.transfer({
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
       recipient: receiverClient.publicIdentifier,
     });
@@ -235,7 +234,7 @@ describe("Async transfer offline tests", () => {
     await actionTaken;
     // verify transfer
     const expected = {
-      amount: TOKEN_AMOUNT_SM.toString(),
+      amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,

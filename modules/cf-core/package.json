@@ -1,9 +1,9 @@
 {
   "name": "@connext/cf-core",
   "version": "6.0.0-alpha.2",
-  "main": "dist/src/index.js",
-  "iife": "dist/src/index.iife.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "iife": "dist/index.iife.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "files": [
     "dist",
@@ -13,9 +13,7 @@
   "scripts": {
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -b .",
     "build:ts": "node_modules/.bin/tsc -b .",
-    "build:rollup": "rollup -c",
-    "build:watch": "node_modules/.bin/tsc -b . && rollup -c -w",
-    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*' 'test/**/*'",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "test": "jest --setupFiles dotenv-extended/config --runInBand --bail --forceExit",
     "test:coverage": "jest --runInBand --detectOpenHandles --bail --coverage"
   },
@@ -33,14 +31,14 @@
     "uuid": "3.4.0"
   },
   "devDependencies": {
-    "@babel/core": "7.8.4",
-    "@babel/plugin-proposal-object-rest-spread": "7.8.3",
+    "@babel/core": "7.9.0",
+    "@babel/plugin-proposal-object-rest-spread": "7.9.0",
     "@connext/store": "6.0.0-alpha.2",
     "@types/chai": "4.2.9",
     "@types/dotenv-safe": "8.1.0",
-    "@types/jest": "25.1.2",
+    "@types/jest": "25.1.4",
     "@types/loglevel": "1.6.3",
-    "@types/node": "13.7.1",
+    "@types/node": "13.9.1",
     "chai": "4.2.0",
     "dotenv-extended": "2.7.1",
     "dotenv-safe": "8.2.0",
@@ -53,7 +51,7 @@
     "rollup-plugin-json": "4.0.0",
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-typescript2": "0.26.0",
-    "ts-jest": "25.2.0",
+    "ts-jest": "25.2.1",
     "ts-mockito": "2.5.0",
     "typescript": "3.5.3"
   }

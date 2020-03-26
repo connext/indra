@@ -60,7 +60,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database node client indra-proxy test-runner-js
+dev: client database indra-proxy node test-runner-js
 staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging
 release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release
 
@@ -274,13 +274,13 @@ test-runner: test-runner-staging
 
 test-runner-release: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -293,9 +293,14 @@ apps: node-modules crypto cf-core $(shell find $(apps)/src $(find_options))
 	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-cf-core: node-modules crypto contracts store $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
+cf-core: node-modules crypto contracts store $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 client: apps messaging channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
@@ -303,11 +308,6 @@ client: apps messaging channel-provider $(shell find $(client)/src $(client)/tsc
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/channel-provider && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-	
 crypto: node-modules types $(shell find $(crypto)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/crypto && npm run build"
@@ -340,7 +340,7 @@ store: node-modules types $(shell find $(store)/src $(find_options))
 
 test-runner-js: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
@@ -361,14 +361,11 @@ contract-artifacts: node-modules $(shell find $(contracts)/waffle.json $(contrac
 	$(docker_run) "cd modules/contracts && npm run compile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.native.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run compile-native"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
+	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
+	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 builder: ops/builder.dockerfile

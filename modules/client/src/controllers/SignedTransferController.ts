@@ -1,16 +1,16 @@
-import { convertSignedTransferParameters } from "@connext/apps";
 import {
-  CreateTransferEventData,
-  CREATE_TRANSFER,
-  SIGNED_TRANSFER,
-  SimpleSignedTransferApp,
+  ConditionalTransferTypes,
+  deBigNumberifyJson,
+  MethodParams,
+  EventNames,
+  EventPayloads,
   SignedTransferParameters,
   SignedTransferResponse,
-  SignedTransferAppStateBigNumber,
+  SimpleSignedTransferAppName,
+  SimpleSignedTransferAppState,
+  toBN,
 } from "@connext/types";
 import { Zero } from "ethers/constants";
-
-import { CFCoreTypes } from "../types";
 
 import { AbstractController } from "./AbstractController";
 
@@ -19,12 +19,10 @@ export class SignedTransferController extends AbstractController {
     params: SignedTransferParameters,
   ): Promise<SignedTransferResponse> => {
     // convert params + validate
-    const { amount, meta, paymentId, signer, assetId } = convertSignedTransferParameters(
-      `bignumber`,
-      params,
-    );
+    const amount = toBN(params.amount);
+    const { meta, paymentId, signer, assetId } = params;
 
-    const initialState: SignedTransferAppStateBigNumber = {
+    const initialState: SimpleSignedTransferAppState = {
       coinTransfers: [
         {
           amount,
@@ -45,8 +43,8 @@ export class SignedTransferController extends AbstractController {
       stateEncoding,
       appDefinitionAddress: appDefinition,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(SimpleSignedTransferApp);
-    const proposeInstallParams: CFCoreTypes.ProposeInstallParams = {
+    } = this.connext.getRegisteredAppDetails(SimpleSignedTransferAppName);
+    const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -68,17 +66,17 @@ export class SignedTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    const eventData = {
-      type: SIGNED_TRANSFER,
-      amount: amount.toString(),
+    const eventData = deBigNumberifyJson({
+      type: ConditionalTransferTypes.SignedTransfer,
+      amount,
       assetId,
       sender: this.connext.publicIdentifier,
       meta,
       transferMeta: {
         signer,
       },
-    } as CreateTransferEventData<typeof SIGNED_TRANSFER>;
-    this.connext.emit(CREATE_TRANSFER, eventData);
+    }) as EventPayloads.CreateSignedTransfer;
+    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     return {
       appId,

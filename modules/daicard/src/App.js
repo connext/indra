@@ -1,13 +1,6 @@
 import * as connext from "@connext/client";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
-import {
-  CF_PATH,
-  ConnextClientStorePrefix,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  StoreTypes,
-} from "@connext/types";
+import { CF_PATH, ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
@@ -234,9 +227,9 @@ class App extends React.Component {
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
-        store = new ConnextStore(StoreTypes.LOCALSTORAGE, { backupService });
+        store = new ConnextStore(StoreTypes.LocalStorage, { backupService });
       } else {
-        store = new ConnextStore(StoreTypes.LOCALSTORAGE);
+        store = new ConnextStore(StoreTypes.LocalStorage);
       }
 
       // If store has double prefixes, flush and restore
@@ -313,18 +306,18 @@ class App extends React.Component {
       this.setState({ swapRate: res.swapRate });
     });
 
-    channel.on(RECEIVE_TRANSFER_STARTED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_STARTED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_STARTED_EVENT} event: `, data);
       machine.send("START_RECEIVE");
     });
 
-    channel.on(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_FINISHED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_FINISHED_EVENT} event: `, data);
       machine.send("SUCCESS_RECEIVE");
     });
 
-    channel.on(RECEIVE_TRANSFER_FAILED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_FAILED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_FAILED_EVENT} event: `, data);
       machine.send("ERROR_RECEIVE");
     });
 
@@ -490,7 +483,7 @@ class App extends React.Component {
         ]);
         const depositParams = {
           amount: amount.toString(),
-          assetId: token.address.toLowerCase(),
+          assetId: token.address,
         };
         console.log(
           `Depositing ${depositParams.amount} tokens into channel: ${channel.multisigAddress}`,
@@ -521,7 +514,7 @@ class App extends React.Component {
 
       const amount = minBN([balance.onChain.ether.wad.sub(minDeposit.wad), nowMaxDeposit]);
       console.log(`Depositing ${amount} wei into channel: ${channel.multisigAddress}`);
-      const result = await channel.deposit({ amount: amount.toString() });
+      const result = await channel.deposit({ amount: amount.toString(), assetId: AddressZero });
       await this.refreshBalances();
       console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
 

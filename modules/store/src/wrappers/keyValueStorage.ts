@@ -1,23 +1,24 @@
 import {
-  AppInstanceProposal,
-  IClientStore,
-  WrappedStorage,
-  StateChannelJSON,
   AppInstanceJson,
-  SetStateCommitmentJSON,
-  ProtocolTypes,
+  AppInstanceProposal,
   ConditionalTransactionCommitmentJSON,
+  IClientStore,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
+  WrappedStorage,
 } from "@connext/types";
+
 import {
-  safeJsonParse,
   CHANNEL_KEY,
+  CONDITIONAL_COMMITMENT_KEY,
+  safeJsonParse,
   safeJsonStringify,
   SET_STATE_COMMITMENT_KEY,
-  WITHDRAWAL_COMMITMENT_KEY,
-  CONDITIONAL_COMMITMENT_KEY,
   SETUP_COMMITMENT_KEY,
+  WITHDRAWAL_COMMITMENT_KEY,
   STORE_SCHEMA_VERSION_KEY,
 } from "../helpers";
 
@@ -233,14 +234,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
     return safeJsonParse(await this.getItem(withdrawalKey));
   }
 
   async saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
     return this.setItem(withdrawalKey, safeJsonStringify(commitment));
@@ -263,14 +264,14 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getSetupCommitment(
     multisigAddress: string,
-  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+  ): Promise<MinimalTransaction | undefined> {
     const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
     return safeJsonParse(await this.getItem(setupCommitmentKey));
   }
 
   saveSetupCommitment(
     multisigAddress: string,
-    commitment: ProtocolTypes.MinimalTransaction,
+    commitment: MinimalTransaction,
   ): Promise<void> {
     const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
     return this.setItem(setupCommitmentKey, safeJsonStringify(commitment));

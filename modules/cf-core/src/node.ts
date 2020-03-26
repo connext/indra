@@ -1,14 +1,16 @@
+import { signDigest } from "@connext/crypto";
 import {
-  PROTOCOL_MESSAGE_EVENT,
-  NODE_EVENTS,
-  ILoggerService,
-  nullLogger,
-  ProtocolTypes,
   AppInstanceProposal,
+  CommitmentTypes,
+  delay,
+  EventNames,
+  ILoggerService,
+  MethodName,
+  MinimalTransaction,
+  nullLogger,
   PersistAppType,
 } from "@connext/types";
-import { signDigest } from "@connext/crypto";
-import { BaseProvider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
@@ -17,25 +19,31 @@ import { createRpcRouter } from "./methods";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
-import { Opcode, Commitment, ProtocolRunner } from "./machine";
-import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
-import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
-import ProcessQueue from "./process-queue";
-import { RequestHandler } from "./request-handler";
-import RpcRouter from "./rpc-router";
-import {
-  CFCoreTypes,
-  NetworkContext,
-  NodeMessageWrappedProtocolMessage,
-  ProtocolMessage,
-} from "./types";
-import { timeout } from "./utils";
-import { Store } from "./store";
 import {
   ConditionalTransactionCommitment,
   MultisigCommitment,
   SetStateCommitment,
 } from "./ethereum";
+import { ProtocolRunner } from "./machine";
+import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
+import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
+import ProcessQueue from "./process-queue";
+import { RequestHandler } from "./request-handler";
+import RpcRouter from "./rpc-router";
+import { Store } from "./store";
+import {
+  ILockService,
+  IMessagingService,
+  IPrivateKeyGenerator,
+  IStoreService,
+  MethodRequest,
+  MethodResponse,
+  NetworkContext,
+  NodeMessage,
+  NodeMessageWrappedProtocolMessage,
+  Opcode,
+  ProtocolMessage,
+} from "./types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -66,14 +74,14 @@ export class Node {
   private store!: Store;
 
   static async create(
-    messagingService: CFCoreTypes.IMessagingService,
-    storeService: CFCoreTypes.IStoreService,
+    messagingService: IMessagingService,
+    storeService: IStoreService,
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
-    provider: BaseProvider,
-    lockService?: CFCoreTypes.ILockService,
+    provider: JsonRpcProvider,
+    lockService?: ILockService,
     publicExtendedKey?: string,
-    privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
+    privateKeyGenerator?: IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
   ): Promise<Node> {
@@ -102,14 +110,14 @@ export class Node {
   private constructor(
     private readonly publicExtendedKey: string,
     private readonly privateKeyGetter: PrivateKeysGetter,
-    private readonly messagingService: CFCoreTypes.IMessagingService,
-    private readonly storeService: CFCoreTypes.IStoreService,
+    private readonly messagingService: IMessagingService,
+    private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
-    private readonly provider: BaseProvider,
+    private readonly provider: JsonRpcProvider,
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     public readonly log: ILoggerService = nullLogger,
-    private readonly lockService?: CFCoreTypes.ILockService,
+    private readonly lockService?: ILockService,
   ) {
     this.log = log.newContext("CF-Node");
     this.networkContext.provider = this.provider;
@@ -132,7 +140,12 @@ export class Node {
       this.protocolRunner,
       this.networkContext,
       this.provider,
-      new AutoNonceWallet(this.signer.privateKey, this.provider),
+      new AutoNonceWallet(
+        this.signer.privateKey,
+        // Creating copy of the provider fixes a mysterious big, details:
+        // https://github.com/ethers-io/ethers.js/issues/761
+        new JsonRpcProvider(this.provider.connection.url),
+      ),
       this.blocksNeededForConfirmation!,
       new ProcessQueue(this.lockService),
       this.log,
@@ -191,7 +204,7 @@ export class Node {
       await this.messagingService.send(to, {
         data,
         from: fromXpub,
-        type: PROTOCOL_MESSAGE_EVENT,
+        type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as NodeMessageWrappedProtocolMessage);
     });
 
@@ -208,11 +221,11 @@ export class Node {
       await this.messagingService.send(to, {
         data,
         from: this.publicIdentifier,
-        type: PROTOCOL_MESSAGE_EVENT,
+        type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as NodeMessageWrappedProtocolMessage);
 
       // 90 seconds is the default lock acquiring time time
-      const msg = await Promise.race([counterpartyResponse, timeout(IO_SEND_AND_WAIT_TIMEOUT)]);
+      const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
 
       if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
         throw new Error(
@@ -242,8 +255,8 @@ export class Node {
       Opcode.PERSIST_COMMITMENT,
       async (
         args: [
-          Commitment,
-          MultisigCommitment | SetStateCommitment | ProtocolTypes.MinimalTransaction,
+          CommitmentTypes,
+          MultisigCommitment | SetStateCommitment | MinimalTransaction,
           string,
         ],
       ) => {
@@ -252,23 +265,16 @@ export class Node {
         const [commitmentType, commitment, ...res] = args;
 
         switch (commitmentType) {
-          case Commitment.Setup:
-            const [multisigAddress] = res;
-            await store.saveSetupCommitment(
-              multisigAddress,
-              commitment as ProtocolTypes.MinimalTransaction,
+
+          case CommitmentTypes.Conditional:
+            const [appId] = res;
+            await store.saveConditionalTransactionCommitment(
+              appId,
+              commitment as ConditionalTransactionCommitment,
             );
             break;
 
-          case Commitment.Withdraw:
-            const [multisig] = res;
-            await store.saveWithdrawalCommitment(
-              multisig,
-              commitment as ProtocolTypes.MinimalTransaction,
-            );
-            break;
-
-          case Commitment.SetState:
+          case CommitmentTypes.SetState:
             const [appIdentityHash] = res;
             await store.saveLatestSetStateCommitment(
               appIdentityHash,
@@ -276,11 +282,19 @@ export class Node {
             );
             break;
 
-          case Commitment.Conditional:
-            const [appId] = res;
-            await store.saveConditionalTransactionCommitment(
-              appId,
-              commitment as ConditionalTransactionCommitment,
+          case CommitmentTypes.Setup:
+            const [multisigAddress] = res;
+            await store.saveSetupCommitment(
+              multisigAddress,
+              commitment as MinimalTransaction,
+            );
+            break;
+
+          case CommitmentTypes.Withdraw:
+            const [multisig] = res;
+            await store.saveWithdrawalCommitment(
+              multisig,
+              commitment as MinimalTransaction,
             );
             break;
 
@@ -344,7 +358,7 @@ export class Node {
    * @param event
    * @param callback
    */
-  on(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback: (res: any) => void) {
+  on(event: EventNames | MethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribe(event, async (res: any) => callback(res));
   }
 
@@ -355,7 +369,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  off(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback?: (res: any) => void) {
+  off(event: EventNames | MethodName, callback?: (res: any) => void) {
     this.rpcRouter.unsubscribe(event, callback ? async (res: any) => callback(res) : undefined);
   }
 
@@ -367,7 +381,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  once(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback: (res: any) => void) {
+  once(event: EventNames | MethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribeOnce(event, async (res: any) => callback(res));
   }
 
@@ -376,7 +390,7 @@ export class Node {
    * @param event
    * @param req
    */
-  emit(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, req: CFCoreTypes.MethodRequest) {
+  emit(event: EventNames | MethodName, req: MethodRequest) {
     this.rpcRouter.emit(event, req);
   }
 
@@ -386,9 +400,9 @@ export class Node {
    * @param req
    */
   async call(
-    method: CFCoreTypes.MethodName,
-    req: CFCoreTypes.MethodRequest,
-  ): Promise<CFCoreTypes.MethodResponse> {
+    method: MethodName,
+    req: MethodRequest,
+  ): Promise<MethodResponse> {
     return this.requestHandler.callMethod(method, req);
   }
 
@@ -399,7 +413,7 @@ export class Node {
    * subscribed (i.e. consumers of the Node).
    */
   private registerMessagingConnection() {
-    this.messagingService.onReceive(this.publicIdentifier, async (msg: CFCoreTypes.NodeMessage) => {
+    this.messagingService.onReceive(this.publicIdentifier, async (msg: NodeMessage) => {
       await this.handleReceivedMessage(msg);
       this.rpcRouter.emit(msg.type, msg, "outgoing");
     });
@@ -421,12 +435,12 @@ export class Node {
    *     _does have_ an _ioSendDeferral_, in which case the message is dispatched
    *     solely to the deffered promise's resolve callback.
    */
-  private async handleReceivedMessage(msg: CFCoreTypes.NodeMessage) {
-    if (!Object.values(NODE_EVENTS).includes(msg.type)) {
-      console.error(`Received message with unknown event type: ${msg.type}`);
+  private async handleReceivedMessage(msg: NodeMessage) {
+    if (!Object.values(EventNames).includes(msg.type)) {
+      this.log.error(`Received message with unknown event type: ${msg.type}`);
     }
 
-    const isProtocolMessage = (msg: CFCoreTypes.NodeMessage) => msg.type === PROTOCOL_MESSAGE_EVENT;
+    const isProtocolMessage = (msg: NodeMessage) => msg.type === EventNames.PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: NodeMessageWrappedProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);
@@ -451,9 +465,12 @@ export class Node {
     try {
       promise.resolve(msg);
     } catch (error) {
-      console.error(
-        "Error while executing callback registered by IO_SEND_AND_WAIT middleware hook",
-        { error, msg },
+      this.log.error(
+        `Error while executing callback registered by IO_SEND_AND_WAIT middleware hook error ${
+          JSON.stringify(error, null, 2)
+        } msg ${
+          JSON.stringify(msg, null, 2)
+        }`,
       );
     }
   }

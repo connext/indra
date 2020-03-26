@@ -1,4 +1,4 @@
-import { IConnextClient, LINKED_TRANSFER, createRandom32ByteHexString } from "@connext/types";
+import { IConnextClient, ConditionalTransferTypes, createRandom32ByteHexString } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
 import { expect } from "../util";
@@ -24,7 +24,7 @@ describe("Get Linked Transfer", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: LINKED_TRANSFER,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
     });
@@ -34,7 +34,7 @@ describe("Get Linked Transfer", () => {
     expect(linkedTransfer).to.be.ok;
 
     expect(linkedTransfer).to.deep.include({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
       receiverPublicIdentifier: null,
@@ -52,14 +52,14 @@ describe("Get Linked Transfer", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: LINKED_TRANSFER,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
     expect(linkedTransfer).to.deep.include({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
       receiverPublicIdentifier: clientB.publicIdentifier,
@@ -75,9 +75,9 @@ describe("Get Linked Transfer", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
-      conditionType: LINKED_TRANSFER,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,

@@ -1,5 +1,5 @@
 import { utils } from "@connext/client";
-import { IConnextClient, WITHDRAWAL_CONFIRMED_EVENT } from "@connext/types";
+import { IConnextClient, EventNames } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 
@@ -50,7 +50,7 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
-    ).to.be.rejectedWith(`invalid BigNumber value`);
+    ).to.be.rejectedWith(`invalid number value`);
   });
 
   it("client tries to withdraw to an invalid recipient address", async () => {
@@ -102,7 +102,7 @@ describe("Withdrawal", () => {
     });
 
     // no withdraw confirmed event thrown here...
-    client.once(WITHDRAWAL_CONFIRMED_EVENT, () => {
+    client.once(EventNames.WITHDRAWAL_CONFIRMED_EVENT, () => {
       eventsCaught += 1;
       if (eventsCaught === 2) {
         done();

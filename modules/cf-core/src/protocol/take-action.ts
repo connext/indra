@@ -1,15 +1,22 @@
-import { PersistAppType } from "@connext/types";
-import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress, Commitment, ProtocolExecutionFlow } from "../machine";
-import { Context, ProtocolMessage, TakeActionProtocolParams } from "../types";
+import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
+
+import { UNASSIGNED_SEQ_NO } from "../constants";
+import { getSetStateCommitment } from "../ethereum";
+import {
+  Context,
+  Opcode,
+  PersistAppType,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+} from "../types";
 import { logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
-import { StateChannel } from "../models";
+import { assertIsValidSignature } from "./utils";
 
-const protocol = Protocol.TakeAction;
+const protocol = ProtocolNames.takeAction;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = Commitment;
+const { SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -19,7 +26,7 @@ const { SetState } = Commitment;
  */
 export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { store, provider, message, network } = context;
+    const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     log.debug(`Initiation started for Take Action`);
@@ -31,7 +38,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderXpub,
       action,
-    } = params as TakeActionProtocolParams;
+    } = params as ProtocolParams.TakeAction;
 
     // 8ms
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress) as StateChannel;
@@ -41,7 +48,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     let substart = Date.now();
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
-      await preAppInstance.computeStateTransition(action, provider),
+      await preAppInstance.computeStateTransition(action, network.provider),
     );
     logTime(log, substart, `SetState called in takeAction initiating`)
 
@@ -51,13 +58,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
-    );
+    const setStateCommitment = getSetStateCommitment(context, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 6ms
@@ -97,7 +98,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { store, provider, message, network } = context;
+    const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
     let substart = start;
@@ -114,7 +115,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       initiatorXpub,
       action,
-    } = params as TakeActionProtocolParams;
+    } = params as ProtocolParams.TakeAction;
 
     // 9ms
     const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
@@ -122,7 +123,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 48ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
-      await preAppInstance.computeStateTransition(action, provider),
+      await preAppInstance.computeStateTransition(action, network.provider),
     );
 
     // 0ms
@@ -131,13 +132,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = new SetStateCommitment(
-      network.ChallengeRegistry,
-      appInstance.identity,
-      appInstance.hashOfLatestState,
-      appInstance.versionNumber,
-      appInstance.timeout,
-    );
+    const setStateCommitment = getSetStateCommitment(context, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 9ms

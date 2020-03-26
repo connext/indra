@@ -1,3 +1,4 @@
+import { StoreTypes, STORE_SCHEMA_VERSION } from "@connext/types";
 import {
   expect,
   MockBackupService,
@@ -10,7 +11,6 @@ import {
   TEST_STORE_SET_STATE_COMMITMENT,
   TEST_STORE_CONDITIONAL_COMMITMENT,
 } from "../util";
-import { StoreTypes, StoreType, MEMORYSTORAGE, STORE_SCHEMA_VERSION } from "@connext/types";
 
 describe("ConnextStore", () => {
   const fileDir = env.storeDir;
@@ -18,7 +18,7 @@ describe("ConnextStore", () => {
   describe("getSchemaVersion", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const schema = await store.getSchemaVersion();
         expect(schema).to.be.eq(0);
         await store.setSchemaVersion();
@@ -32,7 +32,7 @@ describe("ConnextStore", () => {
   describe("getStateChannel", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = TEST_STORE_CHANNEL;
         await store.saveStateChannel(channel);
         const retrieved = await store.getStateChannel(channel.multisigAddress);
@@ -45,7 +45,7 @@ describe("ConnextStore", () => {
   describe("saveStateChannel", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = TEST_STORE_CHANNEL;
         const nullValue = await store.getStateChannel(channel.multisigAddress);
         expect(nullValue).to.be.undefined;
@@ -64,7 +64,7 @@ describe("ConnextStore", () => {
   describe("getStateChannelByOwners", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = TEST_STORE_CHANNEL;
         const owners = channel.userNeuteredExtendedKeys;
         const nullValue = await store.getStateChannelByOwners(owners);
@@ -80,7 +80,7 @@ describe("ConnextStore", () => {
   describe("getStateChannelByAppInstanceId", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = TEST_STORE_CHANNEL;
         const appInstanceId = channel.appInstances[0][0];
         const nullValue = await store.getStateChannelByAppInstanceId(appInstanceId);
@@ -96,7 +96,7 @@ describe("ConnextStore", () => {
   describe("getAppInstance", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const multisigAddress = channel.multisigAddress;
@@ -116,7 +116,7 @@ describe("ConnextStore", () => {
   describe("saveAppInstance", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const multisigAddress = channel.multisigAddress;
@@ -138,7 +138,7 @@ describe("ConnextStore", () => {
   describe("removeAppInstance", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const multisigAddress = channel.multisigAddress;
@@ -157,7 +157,7 @@ describe("ConnextStore", () => {
   describe("getAppProposal", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
         const multisigAddress = channel.multisigAddress;
@@ -177,7 +177,7 @@ describe("ConnextStore", () => {
   describe("saveAppProposal", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
         const multisigAddress = channel.multisigAddress;
@@ -199,7 +199,7 @@ describe("ConnextStore", () => {
   describe("removeAppProposal", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
         const multisigAddress = channel.multisigAddress;
@@ -218,7 +218,7 @@ describe("ConnextStore", () => {
   describe("getFreeBalance", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const freeBalance = channel.freeBalanceAppInstance!;
         const multisigAddress = channel.multisigAddress;
@@ -238,7 +238,7 @@ describe("ConnextStore", () => {
   describe("saveFreeBalance", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
         const freeBalance = channel.freeBalanceAppInstance!;
         const multisigAddress = channel.multisigAddress;
@@ -260,7 +260,7 @@ describe("ConnextStore", () => {
   describe("getSetupCommitment", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const setup = TEST_STORE_MINIMAL_TX;
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         expect(await store.getSetupCommitment(multisigAddress)).to.be.undefined;
@@ -275,7 +275,7 @@ describe("ConnextStore", () => {
   describe("saveSetupCommitment", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const setup = TEST_STORE_MINIMAL_TX;
         const edited = { ...TEST_STORE_MINIMAL_TX, value: 5 };
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
@@ -293,7 +293,7 @@ describe("ConnextStore", () => {
   describe("getLatestSetStateCommitment", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const setState = TEST_STORE_SET_STATE_COMMITMENT;
         const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
         expect(await store.getLatestSetStateCommitment(appIdentityHash)).to.be.undefined;
@@ -308,7 +308,7 @@ describe("ConnextStore", () => {
   describe("saveLatestSetStateCommitment", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const setState = TEST_STORE_SET_STATE_COMMITMENT;
         const edited = { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: 9 };
         const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
@@ -326,7 +326,7 @@ describe("ConnextStore", () => {
   describe("getConditionalTransactionCommitment", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const setState = TEST_STORE_SET_STATE_COMMITMENT;
         const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
         expect(await store.getLatestSetStateCommitment(appIdentityHash)).to.be.undefined;
@@ -341,7 +341,7 @@ describe("ConnextStore", () => {
   describe("saveConditionalTransactionCommitment", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const conditional = TEST_STORE_CONDITIONAL_COMMITMENT;
         const edited = { ...conditional, freeBalanceAppIdentityHash: "0xtesting" };
         const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
@@ -359,7 +359,7 @@ describe("ConnextStore", () => {
   describe("getWithdrawalCommitment", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const withdraw = TEST_STORE_MINIMAL_TX;
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         expect(await store.getWithdrawalCommitment(multisigAddress)).to.be.undefined;
@@ -374,7 +374,7 @@ describe("ConnextStore", () => {
   describe("saveWithdrawalCommitment", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const withdraw = TEST_STORE_MINIMAL_TX;
         const edited = { ...TEST_STORE_MINIMAL_TX, value: 5 };
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
@@ -392,7 +392,7 @@ describe("ConnextStore", () => {
   describe("clear", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         await store.saveStateChannel(TEST_STORE_CHANNEL);
         const retrieved = await store.getStateChannel(multisigAddress);
@@ -406,7 +406,7 @@ describe("ConnextStore", () => {
   describe("restore", async () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should restore empty state when not provided with a backup service`, async () => {
-        const store = createConnextStore(type as StoreType, { fileDir });
+        const store = createConnextStore(type as StoreTypes, { fileDir });
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         await store.saveStateChannel(TEST_STORE_CHANNEL);
         const retrieved = await store.getStateChannel(multisigAddress);
@@ -416,12 +416,12 @@ describe("ConnextStore", () => {
         expect(await store.getStateChannel(multisigAddress)).to.containSubset(undefined);
       });
 
-      if (type === MEMORYSTORAGE) {
+      if (type === StoreTypes.Memory) {
         return;
       }
 
       it(`${type} - should backup state when provided with a backup service`, async () => {
-        const store = createConnextStore(type as StoreType, {
+        const store = createConnextStore(type as StoreTypes, {
           backupService: new MockBackupService(),
           fileDir,
         });

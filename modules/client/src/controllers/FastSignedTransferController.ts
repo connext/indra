@@ -1,26 +1,26 @@
-import { convertFastSignedTransferParameters } from "@connext/apps";
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
   AppInstanceJson,
-  ProtocolTypes,
-  FastSignedTransferAppState,
-  FastSignedTransferParameters,
+  ConditionalTransferTypes,
+  deBigNumberifyJson,
+  EventNames,
+  EventPayloads,
   FastSignedTransferActionType,
   FastSignedTransferAppAction,
+  FastSignedTransferAppName,
+  FastSignedTransferAppState,
+  FastSignedTransferParameters,
+  MethodParams,
   minBN,
-  FastSignedTransferAppStateBigNumber,
-  FAST_SIGNED_TRANSFER,
-  CreateTransferEventData,
-  CREATE_TRANSFER,
-  FastSignedTransferApp,
+  toBN,
 } from "@connext/types";
 import { Zero, MaxUint256, HashZero, AddressZero } from "ethers/constants";
+import { hexZeroPad, bigNumberify } from "ethers/utils";
 
 import { stringify, xpubToAddress } from "../lib";
 import { validate, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { BigNumber, hexZeroPad, bigNumberify } from "ethers/utils";
 
 const findInstalledFastSignedAppWithSpace = (
   apps: AppInstanceJson[],
@@ -28,7 +28,7 @@ const findInstalledFastSignedAppWithSpace = (
   fastSignedTransferAppDefAddress: string,
 ): AppInstanceJson | undefined => {
   return apps.find(app => {
-    const latestState = app.latestState as FastSignedTransferAppStateBigNumber;
+    const latestState = app.latestState as FastSignedTransferAppState;
     return (
       app.appInterface.addr === fastSignedTransferAppDefAddress && // interface matches
       latestState.coinTransfers[1][0] === recipientFreeBalanceAddress // recipient matches
@@ -41,15 +41,15 @@ export class FastSignedTransferController extends AbstractController {
     this.log.info(`fastSignedTransfer called with params ${stringify(params)}`);
     params.maxAllocation = params.maxAllocation || MaxUint256.toString();
 
+    const amount = toBN(params.amount);
+    const maxAllocation = toBN(params.maxAllocation);
     const {
-      amount,
       assetId,
       paymentId,
       recipient,
-      maxAllocation,
       meta,
       signer,
-    } = convertFastSignedTransferParameters(`bignumber`, params);
+    } = params;
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -76,7 +76,7 @@ export class FastSignedTransferController extends AbstractController {
     if (installedTransferApp) {
       if (
         bigNumberify(
-          (installedTransferApp.latestState as FastSignedTransferAppStateBigNumber)
+          (installedTransferApp.latestState as FastSignedTransferAppState)
             .coinTransfers[0][1],
         ).gte(amount)
       ) {
@@ -94,7 +94,7 @@ export class FastSignedTransferController extends AbstractController {
         stateEncoding,
         outcomeType,
         appDefinitionAddress,
-      } = this.connext.getRegisteredAppDetails(FastSignedTransferApp);
+      } = this.connext.getRegisteredAppDetails(FastSignedTransferAppName);
 
       // if max allocation not provided, use the full free balnce
       const initialDeposit = minBN([maxAllocation, preTransferBal]);
@@ -123,7 +123,7 @@ export class FastSignedTransferController extends AbstractController {
           paymentId: HashZero,
           recipientXpub: "",
           signer: AddressZero,
-        } as FastSignedTransferAppState<BigNumber>,
+        } as FastSignedTransferAppState,
         proposedToIdentifier: this.connext.nodePublicIdentifier,
         initiatorDeposit: initialDeposit,
         initiatorDepositTokenAddress: assetId,
@@ -132,7 +132,7 @@ export class FastSignedTransferController extends AbstractController {
         outcomeType,
         timeout: Zero, // TODO
         meta,
-      } as ProtocolTypes.ProposeInstallParams;
+      } as MethodParams.ProposeInstall;
 
       transferAppInstanceId = await this.proposeAndInstallLedgerApp(installParams);
     }
@@ -147,15 +147,15 @@ export class FastSignedTransferController extends AbstractController {
       recipientXpub: recipient,
       data: HashZero,
       signature: hexZeroPad(HashZero, 65),
-    } as FastSignedTransferAppAction<BigNumber>);
+    } as FastSignedTransferAppAction);
 
     if (needsUninstall) {
       await this.connext.uninstallApp(needsUninstall);
     }
 
-    const eventData = {
-      type: FAST_SIGNED_TRANSFER,
-      amount: amount.toString(),
+    const eventData = deBigNumberifyJson({
+      type: ConditionalTransferTypes.FastSignedTransfer,
+      amount,
       assetId,
       paymentId,
       sender: this.connext.publicIdentifier,
@@ -163,8 +163,8 @@ export class FastSignedTransferController extends AbstractController {
       transferMeta: {
         signer,
       },
-    } as CreateTransferEventData<typeof FAST_SIGNED_TRANSFER>;
-    this.connext.emit(CREATE_TRANSFER, eventData);
+    }) as EventPayloads.CreateFastTransfer;
+    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     return { transferAppInstanceId };
   };

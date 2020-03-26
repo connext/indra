@@ -1,5 +1,5 @@
 import {
-  AppRegistry as RegistryOfApps,
+  AppRegistry as RegistryOfApps, // TODO: fix collision
   commonAppProposalValidation,
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
@@ -9,15 +9,16 @@ import {
   validateSignedTransferApp,
 } from "@connext/apps";
 import {
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  SimpleTwoPartySwapApp,
-  FastSignedTransferApp,
-  WithdrawApp,
   AppInstanceJson,
-  WithdrawAppStateBigNumber,
-  HashLockTransferApp,
-  SimpleSignedTransferApp,
+  CoinBalanceRefundAppName,
+  FastSignedTransferAppName,
+  HashLockTransferAppName,
+  MethodParams,
+  SimpleLinkedTransferAppName,
+  SimpleSignedTransferAppName,
+  SimpleTwoPartySwapAppName,
+  WithdrawAppName,
+  WithdrawAppState,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -29,7 +30,6 @@ import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
 import { WithdrawService } from "../withdraw/withdraw.service";
@@ -55,7 +55,7 @@ export class AppRegistryService implements OnModuleInit {
 
   async validateAndInstallOrReject(
     appInstanceId: string,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     let registryAppInfo: AppRegistry;
@@ -75,7 +75,7 @@ export class AppRegistryService implements OnModuleInit {
 
       // dont install coin balance refund
       // TODO: need to validate this still
-      if (registryAppInfo.name === CoinBalanceRefundApp) {
+      if (registryAppInfo.name === CoinBalanceRefundAppName) {
         this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
         const proposalAcceptedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
         await this.messagingService.publish(proposalAcceptedSubject, proposeInstallParams);
@@ -125,13 +125,13 @@ export class AppRegistryService implements OnModuleInit {
 
   private async runPreInstallValidation(
     registryAppInfo: AppRegistry,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
     commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
     switch (registryAppInfo.name) {
-      case SimpleLinkedTransferApp: {
+      case SimpleLinkedTransferAppName: {
         validateSimpleLinkedTransferApp(
           proposeInstallParams,
           from,
@@ -139,7 +139,7 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-      case SimpleTwoPartySwapApp: {
+      case SimpleTwoPartySwapAppName: {
         const allowedSwaps = this.configService.getAllowedSwaps();
         const ourRate = await this.swapRateService.getOrFetchRate(
           proposeInstallParams.initiatorDepositTokenAddress,
@@ -148,7 +148,7 @@ export class AppRegistryService implements OnModuleInit {
         validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;
       }
-      case FastSignedTransferApp: {
+      case FastSignedTransferAppName: {
         validateFastSignedTransferApp(
           proposeInstallParams,
           from,
@@ -156,7 +156,7 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-      case WithdrawApp: {
+      case WithdrawAppName: {
         await validateWithdrawApp(
           proposeInstallParams,
           from,
@@ -164,7 +164,7 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-      case HashLockTransferApp: {
+      case HashLockTransferAppName: {
         const blockNumber = await this.configService.getEthProvider().getBlockNumber();
         validateHashLockTransferApp(
           proposeInstallParams,
@@ -174,7 +174,7 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-      case SimpleSignedTransferApp: {
+      case SimpleSignedTransferAppName: {
         validateSignedTransferApp(
           proposeInstallParams,
           from,
@@ -193,14 +193,14 @@ export class AppRegistryService implements OnModuleInit {
   private async runPostInstallTasks(
     registryAppInfo: AppRegistry,
     appInstanceId: string,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     switch (registryAppInfo.name) {
-      case WithdrawApp: {
+      case WithdrawAppName: {
         this.log.debug(`Doing withdrawal post-install tasks`);
         const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
-        const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
+        const initialState = proposeInstallParams.initialState as WithdrawAppState;
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
           appInstanceId,
