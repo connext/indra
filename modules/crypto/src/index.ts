@@ -85,13 +85,8 @@ export async function signDigest(
   privateKey: Buffer | string,
   digest: Buffer | string,
 ): Promise<string> {
-  // TODO: fix
-  // const signature = await sign(bufferify(privateKey), bufferify(digest), true);
-  // return bufferToHex(signature, true);
-  const isString = (val: any) => typeof val !== "string";
-  const strKey = (isString(privateKey) ? privateKey : bufferToHex(privateKey as Buffer)) as string;
-  const strDigest = (isString(digest) ? digest : bufferToHex(digest as Buffer)) as string;
-  return signDigestWithEthers(strKey, strDigest);
+  const signature = await sign(bufferify(privateKey), bufferify(digest), true);
+  return bufferToHex(signature, true);
 }
 
 export async function signMessage(
