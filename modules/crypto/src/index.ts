@@ -1,4 +1,4 @@
-import { EthSignature } from "@connext/types";
+import { EthSignature, signDigestWithEthers } from "@connext/types";
 import {
   sign,
   encrypt,
@@ -85,8 +85,13 @@ export async function signDigest(
   privateKey: Buffer | string,
   digest: Buffer | string,
 ): Promise<string> {
-  const signature = await sign(bufferify(privateKey), bufferify(digest), true);
-  return bufferToHex(signature, true);
+  // TODO: fix
+  // const signature = await sign(bufferify(privateKey), bufferify(digest), true);
+  // return bufferToHex(signature, true);
+  const isString = (val: any) => typeof val !== "string";
+  const strKey = (isString(privateKey) ? privateKey : bufferToHex(privateKey as Buffer)) as string;
+  const strDigest = (isString(digest) ? digest : bufferToHex(digest as Buffer)) as string;
+  return signDigestWithEthers(strKey, strDigest);
 }
 
 export async function signMessage(
