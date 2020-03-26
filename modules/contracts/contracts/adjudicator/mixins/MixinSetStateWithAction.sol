@@ -3,10 +3,10 @@ pragma experimental "ABIEncoderV2";
 
 import "../libs/LibDispute.sol";
 import "./MixinSetState.sol";
-import "./MixinRespondToChallenge.sol";
+import "./MixinProgressState.sol";
 
 
-contract MixinSetStateWithAction is LibDispute, MixinSetState, MixinRespondToChallenge {
+contract MixinSetStateWithAction is LibDispute, MixinSetState, MixinProgressState {
 
     /// @notice Create a challenge regarding the latest signed state and immediately after,
     /// performs a unilateral action to update it. The latest signed state must have timeout 0.
@@ -27,7 +27,7 @@ contract MixinSetStateWithAction is LibDispute, MixinSetState, MixinRespondToCha
             req
         );
 
-        respondToChallenge(
+        progressState(
             appIdentity,
             appState,
             action

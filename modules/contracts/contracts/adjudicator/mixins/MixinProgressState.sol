@@ -7,7 +7,7 @@ import "./MChallengeRegistryCore.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, MChallengeRegistryCore {
+contract MixinProgressState is LibStateChannelApp, LibDispute, MChallengeRegistryCore {
 
     using SafeMath for uint256;
 
@@ -17,7 +17,7 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, MChallengeRe
     /// @param action The ABI encoded action the submitter wishes to take and
     /// a single signature by the address of the participant for which it is their turn
     /// to take the submitted `action`
-    function respondToChallenge(
+    function progressState(
         AppIdentity memory appIdentity,
         bytes memory appState,
         SignedAction memory action
@@ -29,7 +29,7 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, MChallengeRe
 
         require(
             isProgressable(challenge, appIdentity.defaultTimeout),
-            "respondToChallenge called on app not in a progressable state"
+            "progressState called on app not in a progressable state"
         );
 
         bytes32 appStateHash = appStateToHash(appState);
@@ -47,7 +47,7 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibDispute, MChallengeRe
                 challenge.versionNumber,
                 action
             ),
-            "respondToChallenge called with action signed by incorrect turn taker"
+            "progressState called with action signed by incorrect turn taker"
         );
 
         // This should throw an error if reverts

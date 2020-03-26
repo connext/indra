@@ -68,7 +68,7 @@ describe("ChallengeRegistry Challenge", () => {
   let latestState: () => Promise<string>;
   let latestVersionNumber: () => Promise<number>;
   let setState: (versionNumber: number, appState?: string) => Promise<void>;
-  let respondToChallenge: (state: any, action: any, actionSig: any) => Promise<any>;
+  let progressState: (state: any, action: any, actionSig: any) => Promise<any>;
 
   const mineBlock = async () => await provider.send('evm_mine', []);
   const snapshot = async () => await provider.send('evm_snapshot', []);
@@ -139,9 +139,10 @@ describe("ChallengeRegistry Challenge", () => {
       });
     };
 
-    respondToChallenge = async (state: any, action: any, actionSig: any) => {
-      await appRegistry.functions.respondToChallenge(
+    progressState = async (state: any, action: any, actionSig: any) => {
+      await appRegistry.functions.progressState(
         appInstance.appIdentity,
+
         encodeState(state), {
           encodedAction: encodeAction(action),
           signature: actionSig,
@@ -155,7 +156,7 @@ describe("ChallengeRegistry Challenge", () => {
   })
 
   // WIP -- TODO: more comprehensive verification
-  it("Can call respondToChallenge", async () => {
+  it("Can call progressState", async () => {
     expect(await latestVersionNumber()).to.eq(0);
 
     await setState(1, encodeState(PRE_STATE));
@@ -176,12 +177,12 @@ describe("ChallengeRegistry Challenge", () => {
 
     await moveToBlock(33);
 
-    await respondToChallenge(PRE_STATE, ACTION, bytes);
+    await progressState(PRE_STATE, ACTION, bytes);
 
     expect(await latestState()).to.be.eql(keccak256(encodeState(POST_STATE)));
   });
 
-  it("Cannot call respondToChallenge with incorrect turn taker", async () => {
+  it("Cannot call progressState with incorrect turn taker", async () => {
     expect(await latestVersionNumber()).to.eq(0);
 
     await setState(1, encodeState(PRE_STATE));
@@ -200,8 +201,8 @@ describe("ChallengeRegistry Challenge", () => {
 
     await moveToBlock(33);
 
-    await expect(respondToChallenge(PRE_STATE, ACTION, bytes)).to.be.revertedWith(
-      "respondToChallenge called with action signed by incorrect turn taker",
+    await expect(progressState(PRE_STATE, ACTION, bytes)).to.be.revertedWith(
+      "progressState called with action signed by incorrect turn taker",
     );
   });
 });
