@@ -3,7 +3,9 @@ import {
   CoinBalanceRefundAppStateEncoding,
   EventNames,
   MethodNames,
+  MethodParam,
   MethodParams,
+  MethodResult,
   MethodResults,
   ProtocolNames,
   ProtocolParams,
@@ -11,7 +13,7 @@ import {
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -52,7 +54,10 @@ interface DepositContext {
 
 export class DepositController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_deposit)
-  public executeMethod = super.executeMethod;
+  public executeMethod: (
+    requestHandler: RequestHandler,
+    params: MethodParam,
+  ) => Promise<MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
@@ -73,11 +78,11 @@ export class DepositController extends NodeController {
     const channel = await store.getStateChannel(multisigAddress);
 
     if (!channel.addresses.proxyFactory) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
@@ -87,11 +92,11 @@ export class DepositController extends NodeController {
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
-      throw Error(INCORRECT_MULTISIG_ADDRESS);
+      throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
 
     if (channel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, tokenAddress)) {
-      throw Error(CANNOT_DEPOSIT);
+      throw new Error(CANNOT_DEPOSIT);
     }
 
     if (
@@ -100,7 +105,7 @@ export class DepositController extends NodeController {
         tokenAddress,
       )
     ) {
-      throw Error(COIN_BALANCE_NOT_PROPOSED);
+      throw new Error(COIN_BALANCE_NOT_PROPOSED);
     }
 
     const address = await requestHandler.getSignerAddress();
@@ -112,17 +117,19 @@ export class DepositController extends NodeController {
       try {
         balance = await contract.functions.balanceOf(address);
       } catch (e) {
-        throw Error(FAILED_TO_GET_ERC20_BALANCE(tokenAddress, address));
+        throw new Error(FAILED_TO_GET_ERC20_BALANCE(tokenAddress, address));
       }
 
       if (balance.lt(amount)) {
-        throw Error(INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT(address, tokenAddress, amount, balance));
+        throw new Error(
+          INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT(address, tokenAddress, amount, balance),
+        );
       }
     } else {
       const balanceOfSigner = await provider.getBalance(address);
 
       if (balanceOfSigner.lt(amount)) {
-        throw Error(`${INSUFFICIENT_FUNDS}: ${address}`);
+        throw new Error(`${INSUFFICIENT_FUNDS}: ${address}`);
       }
     }
   }
@@ -174,6 +181,83 @@ export class DepositController extends NodeController {
     };
   }
 }
+
+async function getDepositContext(
+  params: MethodParams.Deposit,
+  publicIdentifier: string,
+  provider: JsonRpcProvider,
+  networkContext: NetworkContext,
+  tokenAddress: string,
+): Promise<DepositContext> {
+  const { multisigAddress } = params;
+
+  const threshold =
+    tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
+      ? await provider.getBalance(multisigAddress)
+      : await new Contract(tokenAddress!, ERC20.abi, provider).functions.balanceOf(multisigAddress);
+
+  const initialState = {
+    threshold,
+    tokenAddress,
+    recipient: xkeyKthAddress(publicIdentifier, 0),
+    multisig: multisigAddress,
+  } as CoinBalanceRefundAppState;
+
+  return {
+    initialState,
+    appInterface: {
+      addr: networkContext.CoinBalanceRefundApp,
+      stateEncoding: CoinBalanceRefundAppStateEncoding,
+      actionEncoding: undefined,
+    },
+  };
+}
+
+export async function uninstallBalanceRefundApp(
+  requestHandler: RequestHandler,
+  params: MethodParams.Deposit,
+  blockNumberToUseIfNecessary?: number,
+) {
+  const { publicIdentifier, store, protocolRunner, networkContext } = requestHandler;
+
+  const { multisigAddress, tokenAddress } = params;
+
+  const { CoinBalanceRefundApp } = networkContext;
+
+  const [peerAddress] = await StateChannel.getPeersAddressFromChannel(
+    publicIdentifier,
+    store,
+    multisigAddress,
+  );
+
+  const stateChannel = await store.getStateChannel(params.multisigAddress);
+
+  let refundApp;
+  try {
+    refundApp = stateChannel.getBalanceRefundAppInstance(CoinBalanceRefundApp, tokenAddress);
+  } catch (e) {
+    if (e.message.includes(`No CoinBalanceRefund app instance`)) {
+      // no need to unintall, already uninstalled
+      return;
+    }
+    throw new Error(e.stack || e.message);
+  }
+
+  // make sure its your app
+  const { recipient } = refundApp.latestState;
+  if (recipient !== xkeyKthAddress(publicIdentifier)) {
+    throw new Error(NOT_YOUR_BALANCE_REFUND_APP);
+  }
+
+  await protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
+    initiatorXpub: publicIdentifier,
+    responderXpub: peerAddress,
+    multisigAddress: stateChannel.multisigAddress,
+    appIdentityHash: refundApp.identityHash,
+    blockNumberToUseIfNecessary,
+  });
+}
+
 
 export async function installBalanceRefundApp(
   requestHandler: RequestHandler,
@@ -237,6 +321,7 @@ export async function makeDeposit(
   const signerAddress = await signer.getAddress();
 
   let txResponse: TransactionResponse;
+
   let retryCount = DEPOSIT_RETRY_COUNT;
   const errors: string[] = [];
   while (retryCount > 0) {
@@ -244,16 +329,17 @@ export async function makeDeposit(
       if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
         const tx: TransactionRequest = {
           to: multisigAddress,
-          value: amount,
+          value: bigNumberify(amount),
           gasLimit: 30000,
           gasPrice: await provider.getGasPrice(),
-          nonce: await provider.getTransactionCount(signerAddress, `pending`),
+          nonce: provider.getTransactionCount(signerAddress, `pending`),
         };
+
         txResponse = await signer.sendTransaction(tx);
       } else {
         const erc20Contract = new Contract(tokenAddress!, ERC20.abi, signer);
-        txResponse = await erc20Contract.functions.transfer(multisigAddress, amount, {
-          nonce: await provider.getTransactionCount(signerAddress, `pending`),
+        txResponse = await erc20Contract.functions.transfer(multisigAddress, bigNumberify(amount), {
+          nonce: provider.getTransactionCount(signerAddress, `pending`),
         });
       }
       start = Date.now();
@@ -267,14 +353,14 @@ export async function makeDeposit(
       };
       if (e.toString().includes(`reject`) || e.toString().includes(`denied`)) {
         outgoing.emit(EventNames.DEPOSIT_FAILED_EVENT, failMsg);
-        throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
+        throw new Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
         outgoing.emit(EventNames.DEPOSIT_FAILED_EVENT, failMsg);
-        throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
+        throw new Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
     }
   }
@@ -291,80 +377,4 @@ export async function makeDeposit(
   await txResponse!.wait(blocksNeededForConfirmation);
   logTime(log, start, `Deposit tx ${txResponse!.hash} was confirmed`);
   return txResponse!.hash;
-}
-
-export async function uninstallBalanceRefundApp(
-  requestHandler: RequestHandler,
-  params: MethodParams.Deposit,
-  blockNumberToUseIfNecessary?: number,
-) {
-  const { publicIdentifier, store, protocolRunner, networkContext } = requestHandler;
-
-  const { multisigAddress, tokenAddress } = params;
-
-  const { CoinBalanceRefundApp } = networkContext;
-
-  const [peerAddress] = await StateChannel.getPeersAddressFromChannel(
-    publicIdentifier,
-    store,
-    multisigAddress,
-  );
-
-  const stateChannel = await store.getStateChannel(params.multisigAddress);
-
-  let refundApp;
-  try {
-    refundApp = stateChannel.getBalanceRefundAppInstance(CoinBalanceRefundApp, tokenAddress);
-  } catch (e) {
-    if (e.message.includes(`No CoinBalanceRefund app instance`)) {
-      // no need to unintall, already uninstalled
-      return;
-    }
-    throw new Error(e.stack || e.message);
-  }
-
-  // make sure its your app
-  const { recipient } = refundApp.latestState;
-  if (recipient !== xkeyKthAddress(publicIdentifier)) {
-    throw new Error(NOT_YOUR_BALANCE_REFUND_APP);
-  }
-
-  await protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
-    initiatorXpub: publicIdentifier,
-    responderXpub: peerAddress,
-    multisigAddress: stateChannel.multisigAddress,
-    appIdentityHash: refundApp.identityHash,
-    blockNumberToUseIfNecessary,
-  });
-}
-
-async function getDepositContext(
-  params: MethodParams.Deposit,
-  publicIdentifier: string,
-  provider: JsonRpcProvider,
-  networkContext: NetworkContext,
-  tokenAddress: string,
-): Promise<DepositContext> {
-  const { multisigAddress } = params;
-
-  const threshold =
-    tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
-      ? await provider.getBalance(multisigAddress)
-      : await new Contract(tokenAddress!, ERC20.abi, provider).functions.balanceOf(multisigAddress);
-
-  const initialState = {
-    threshold,
-    tokenAddress,
-    recipient: xkeyKthAddress(publicIdentifier, 0),
-    multisig: multisigAddress,
-  } as CoinBalanceRefundAppState;
-
-  return {
-    initialState,
-    appInterface: {
-      addr: networkContext.CoinBalanceRefundApp,
-      stateEncoding: CoinBalanceRefundAppStateEncoding,
-      actionEncoding: undefined,
-    },
-  };
 }

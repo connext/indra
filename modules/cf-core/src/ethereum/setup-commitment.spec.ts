@@ -1,5 +1,5 @@
-import { MultisigTransaction } from "@connext/types";
-import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
+import { createRandomAddress, MultisigTransaction } from "@connext/types";
+import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
 import { getRandomExtendedPubKey } from "../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../testing/mocks";
@@ -38,7 +38,7 @@ describe("SetupCommitment", () => {
       proxyFactory: context.network.ProxyFactory,
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
-    getAddress(hexlify(randomBytes(20))),
+    getAddress(createRandomAddress()),
     [interaction.sender, interaction.receiver],
   );
 

@@ -1,5 +1,6 @@
 import { MinimalTransaction, EthereumCommitment } from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { sortSignaturesBySignerAddress } from "@connext/types";
 
 import { ChallengeRegistry } from "../contracts";
 import { AppInstance } from "../models";
@@ -9,7 +10,7 @@ import {
   SignedStateHashUpdate,
   SetStateCommitmentJSON,
 } from "../types";
-import { appIdentityToHash, sortSignaturesBySignerAddress } from "../utils";
+import { appIdentityToHash } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 
@@ -65,12 +66,15 @@ export class SetStateCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
-  public getSignedTransaction(): MinimalTransaction {
+  public async getSignedTransaction(): Promise<MinimalTransaction> {
     this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,
       value: 0,
-      data: iface.functions.setState.encode([this.appIdentity, this.getSignedStateHashUpdate()]),
+      data: iface.functions.setState.encode([
+        this.appIdentity,
+        await this.getSignedStateHashUpdate(),
+      ]),
     };
   }
 
@@ -98,14 +102,14 @@ export class SetStateCommitment implements EthereumCommitment {
     );
   }
 
-  private getSignedStateHashUpdate(): SignedStateHashUpdate {
+  private async getSignedStateHashUpdate(): Promise<SignedStateHashUpdate> {
     this.assertSignatures();
     const hash = this.hashToSign();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(hash, this.signatures),
+      signatures: await sortSignaturesBySignerAddress(hash, this.signatures),
     };
   }
 

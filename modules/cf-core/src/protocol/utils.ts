@@ -1,6 +1,6 @@
-import { delay, EthereumCommitment } from "@connext/types";
+import { delay, EthereumCommitment, recoverAddressWithEthers } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, defaultAbiCoder, getAddress, recoverAddress } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 
 import {
   AppInstance,
@@ -18,22 +18,22 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
 
-export function assertIsValidSignature(
+export async function assertIsValidSignature(
   expectedSigner: string,
   commitment?: EthereumCommitment,
   signature?: string,
-) {
-  if (commitment === undefined) {
-    throw Error("assertIsValidSignature received an undefined commitment");
+): Promise<void> {
+  if (typeof commitment === "undefined") {
+    throw new Error("assertIsValidSignature received an undefined commitment");
   }
-  if (signature === undefined) {
-    throw Error("assertIsValidSignature received an undefined signature");
+  if (typeof signature === "undefined") {
+    throw new Error("assertIsValidSignature received an undefined signature");
   }
   const hash = commitment.hashToSign();
   // recoverAddress: 83 ms, hashToSign: 7 ms
-  const signer = recoverAddress(hash, signature);
-  if (getAddress(expectedSigner) !== signer) {
-    throw Error(
+  const signer = await recoverAddressWithEthers(hash, signature);
+  if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
+    throw new Error(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${hash}.`,
     );
   }
@@ -86,7 +86,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
       );
     }
     default: {
-      throw Error(
+      throw new Error(
         `computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType: ${outcomeType}`,
       );
     }
@@ -136,7 +136,7 @@ async function handleRefundAppOutcomeSpecialCase(
     mutableOutcome = await appInstance.computeOutcomeWithCurrentState(provider);
   }
 
-  throw Error("When attempting to check for a deposit, did not find any non-zero deposits.");
+  throw new Error("When attempting to check for a deposit, did not find any non-zero deposits.");
 }
 
 function handleTwoPartyFixedOutcome(

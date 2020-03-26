@@ -5,7 +5,8 @@ import MultiAssetMultiPartyCoinTransferInterpreter from "../../build/MultiAssetM
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
+import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { createRandomAddress } from "@connext/types";
 
 import { expect } from "./utils/index";
 
@@ -73,7 +74,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute ETH coins only correctly to one person", async () => {
-    const to = hexlify(randomBytes(20));
+    const to = createRandomAddress();
     const amount = One;
 
     await interpretOutcomeAndExecuteEffect([[{ to, amount }]], {
@@ -85,10 +86,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute ETH coins only correctly two people", async () => {
-    const to1 = hexlify(randomBytes(20));
+    const to1 = createRandomAddress();
     const amount1 = One;
 
-    const to2 = hexlify(randomBytes(20));
+    const to2 = createRandomAddress();
     const amount2 = One;
 
     await interpretOutcomeAndExecuteEffect(
@@ -109,7 +110,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute ERC20 coins correctly for one person", async () => {
-    const to = hexlify(randomBytes(20));
+    const to = createRandomAddress();
     const amount = One;
 
     await interpretOutcomeAndExecuteEffect([[{ to, amount }]], {
@@ -121,10 +122,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute ERC20 coins only correctly two people", async () => {
-    const to1 = hexlify(randomBytes(20));
+    const to1 = createRandomAddress();
     const amount1 = One;
 
-    const to2 = hexlify(randomBytes(20));
+    const to2 = createRandomAddress();
     const amount2 = One;
 
     await interpretOutcomeAndExecuteEffect(
@@ -145,7 +146,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute both ETH and ERC20 coins to one person", async () => {
-    const to = hexlify(randomBytes(20));
+    const to = createRandomAddress();
     const amount = One;
 
     await interpretOutcomeAndExecuteEffect([[{ to, amount }], [{ to, amount }]], {
@@ -158,10 +159,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute a split of ETH and ERC20 coins to two people", async () => {
-    const to1 = hexlify(randomBytes(20));
+    const to1 = createRandomAddress();
     const amount1 = One;
 
-    const to2 = hexlify(randomBytes(20));
+    const to2 = createRandomAddress();
     const amount2 = One;
 
     await interpretOutcomeAndExecuteEffect(
@@ -177,10 +178,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute a mix of ETH and ERC20 coins to two people", async () => {
-    const to1 = hexlify(randomBytes(20));
+    const to1 = createRandomAddress();
     const amount1 = One;
 
-    const to2 = hexlify(randomBytes(20));
+    const to2 = createRandomAddress();
     const amount2 = One;
 
     await interpretOutcomeAndExecuteEffect(
@@ -208,10 +209,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   });
 
   it("Can distribute a mix of ETH and ERC20 coins to an unorderded list of people", async () => {
-    const to1 = hexlify(randomBytes(20));
+    const to1 = createRandomAddress();
     const amount1 = One;
 
-    const to2 = hexlify(randomBytes(20));
+    const to2 = createRandomAddress();
     const amount2 = One;
 
     await interpretOutcomeAndExecuteEffect(

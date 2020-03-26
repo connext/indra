@@ -1,4 +1,5 @@
 import { One } from "ethers/constants";
+import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
 import { Node } from "../../node";
@@ -21,6 +22,7 @@ import {
   getInstalledAppInstances,
   makeInstallCall,
   makeProposeCall,
+  newWallet,
 } from "../utils";
 
 expect.extend({ toBeLt });
@@ -36,7 +38,8 @@ describe(`Uses a provided signing key generation function to sign channel state 
       `sends acks back to A, A installs it, both nodes have the same app instance`,
     () => {
       beforeEach(async () => {
-        const provider = global["wallet"].provider;
+        const wallet = newWallet(global["wallet"]);
+        const provider = wallet.provider as JsonRpcProvider;
         const messagingService = new MemoryMessagingService();
         const nodeConfig = { STORE_KEY_PREFIX: `test` };
 

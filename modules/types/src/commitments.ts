@@ -2,10 +2,21 @@ import { Address, BigNumberish, HexString } from "./basic";
 import { AppIdentity, MultisigOperation, NetworkContext } from "./contracts";
 import { enumify } from "./utils";
 
+// This is used instead of the ethers `Transaction` because that type
+// requires the nonce and chain ID to be specified, when sometimes those
+// arguments are not known at the time of creating a transaction.
+export type MinimalTransaction = {
+  to: string;
+  value: BigNumberish;
+  data: string;
+};
+
 // Multisig
 export interface EthereumCommitment {
+  signatures: string[];
+  encode(): string;
   hashToSign(): string;
-  getSignedTransaction(signatures: string[]): MinimalTransaction;
+  getSignedTransaction(): Promise<MinimalTransaction>;
 }
 
 export const CommitmentTypes = enumify({
@@ -15,15 +26,6 @@ export const CommitmentTypes = enumify({
   Withdraw: "withdraw",
 });
 export type CommitmentTypes = (typeof CommitmentTypes)[keyof typeof CommitmentTypes];
-
-// This is used instead of the ethers `Transaction` because that type
-// requires the nonce and chain ID to be specified, when sometimes those
-// arguments are not known at the time of creating a transaction.
-export type MinimalTransaction = {
-  to: string;
-  value: BigNumberish;
-  data: string;
-};
 
 export type MultisigTransaction = MinimalTransaction & {
   operation: MultisigOperation;

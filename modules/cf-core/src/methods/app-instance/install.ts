@@ -55,7 +55,7 @@ export async function install(
   const { appInstanceId } = params;
 
   if (!appInstanceId || !appInstanceId.trim()) {
-    throw Error(NO_APP_INSTANCE_ID_TO_INSTALL);
+    throw new Error(NO_APP_INSTANCE_ID_TO_INSTALL);
   }
 
   const proposal = await store.getAppInstanceProposal(appInstanceId);

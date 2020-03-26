@@ -7,12 +7,8 @@ import {
   defaultAbiCoder,
   getAddress,
   Interface,
-  joinSignature,
   keccak256,
-  recoverAddress,
   solidityKeccak256,
-  SigningKey,
-  arrayify,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -49,34 +45,6 @@ export const APP_IDENTITY = `tuple(address[] participants,address appDefinition,
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
   return list.filter(x => x !== test)[0];
-}
-
-/**
- * Sorts signatures in ascending order of signer address
- *
- * @param signatures An array of etherium signatures
- */
-export function sortSignaturesBySignerAddress(digest: string, signatures: string[]): string[] {
-  const ret = signatures.slice();
-  ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, sigA);
-    const addrB = recoverAddress(digest, sigB);
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-  });
-  return ret;
-}
-
-export function sortStringSignaturesBySignerAddress(
-  digest: string,
-  signatures: string[],
-): string[] {
-  const ret = signatures.slice();
-  ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, sigA);
-    const addrB = recoverAddress(digest, sigB);
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-  });
-  return ret;
 }
 
 /**
@@ -233,7 +201,7 @@ export function assertSufficientFundsWithinFreeBalance(
     Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
-    throw Error(
+    throw new Error(
       INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
         publicIdentifier,
         channel.multisigAddress,
@@ -244,8 +212,3 @@ export function assertSufficientFundsWithinFreeBalance(
     );
   }
 }
-
-export const signDigestWithEthers = (privateKey: string, digest: string) => {
-  const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(arrayify(digest)));
-};

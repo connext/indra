@@ -5,7 +5,7 @@ export default class AutoNonceWallet extends Wallet {
   private noncePromise;
   async sendTransaction(tx: TransactionRequest): Promise<TransactionResponse> {
     if (!tx.nonce) {
-      if (this.noncePromise === undefined) {
+      if (typeof this.noncePromise === "undefined") {
         this.noncePromise = this.provider.getTransactionCount(this.address);
       }
       const tmp = this.noncePromise;

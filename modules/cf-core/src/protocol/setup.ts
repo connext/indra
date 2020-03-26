@@ -75,7 +75,11 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 34 ms
     substart = Date.now();
-    assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
+    await assertIsValidSignature(
+      xkeyKthAddress(responderXpub, 0),
+      setupCommitment,
+      responderSignature,
+    );
     logTime(log, substart, `Verified responder's sig`);
 
     setupCommitment.signatures = [responderSignature, initiatorSignature];
@@ -84,7 +88,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     yield [
       PERSIST_COMMITMENT,
       Setup,
-      setupCommitment.getSignedTransaction(),
+      await setupCommitment.getSignedTransaction(),
       stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
@@ -120,7 +124,11 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
     substart = Date.now();
-    assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);
+    await assertIsValidSignature(
+      xkeyKthAddress(initiatorXpub, 0),
+      setupCommitment,
+      initiatorSignature,
+    );
     logTime(log, substart, `Verified initator's sig`);
 
     // 49 ms
@@ -131,7 +139,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     yield [
       PERSIST_COMMITMENT,
       Setup,
-      setupCommitment.getSignedTransaction(),
+      await setupCommitment.getSignedTransaction(),
       stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];

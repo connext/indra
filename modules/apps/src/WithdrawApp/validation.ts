@@ -1,11 +1,15 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { bigNumberifyJson, MethodParams, WithdrawAppState } from "@connext/types";
-
-import { unidirectionalCoinTransferValidation } from "../shared";
-import { recoverAddress } from "ethers/utils";
+import {
+  bigNumberifyJson,
+  MethodParams,
+  recoverAddressWithEthers,
+  WithdrawAppState,
+} from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 
-export const validateWithdrawApp = (
+import { unidirectionalCoinTransferValidation } from "../shared";
+
+export const validateWithdrawApp = async (
   params: MethodParams.ProposeInstall,
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
@@ -51,7 +55,7 @@ export const validateWithdrawApp = (
     );
   }
 
-  let recovered = recoverAddress(initialState.data, initialState.signatures[0]);
+  let recovered = await recoverAddressWithEthers(initialState.data, initialState.signatures[0]);
 
   if (recovered !== initialState.signers[0]) {
     throw new Error(

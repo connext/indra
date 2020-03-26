@@ -17,8 +17,8 @@ export class MiddlewareContainer {
   public async run(opCode: Opcode, args: any[]) {
     const middleware = this.middlewares[opCode][0];
 
-    if (middleware === undefined) {
-      throw Error(`Attempted to run middleware for opcode ${opCode} but none existed`);
+    if (typeof middleware === "undefined") {
+      throw new Error(`Attempted to run middleware for opcode ${opCode} but none existed`);
     }
 
     return middleware(args);

@@ -10,15 +10,15 @@ import {
   deBigNumberifyJson,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
+import { signChannelMessage, signDigest } from "@connext/crypto";
 
-import { CFCore, xpubToAddress, signDigestWithEthers } from "./lib";
+import { CFCore, xpubToAddress } from "./lib";
 import {
   CFChannelProviderOptions,
   ChannelProviderConfig,
   IRpcConnection,
   JsonRpcRequest,
 } from "./types";
-import { signChannelMessage } from "@connext/crypto";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -130,7 +130,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private signDigest = async (message: string): Promise<string> => {
-    return signDigestWithEthers(this.authKey, message);
+    return signDigest(this.authKey, message);
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {

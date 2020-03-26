@@ -1,3 +1,4 @@
+import { signDigest } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -7,7 +8,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { SetStateCommitment, getSetupCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
-import { getCreate2MultisigAddress, signDigestWithEthers } from "../../utils";
+import { getCreate2MultisigAddress } from "../../utils";
 import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
 import { toBeEq } from "../bignumber-jest-matcher";
@@ -96,11 +97,11 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       );
       const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [
-        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
-        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
+        await signDigest(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+        await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
       ];
 
-      const setStateTx = setStateCommitment.getSignedTransaction();
+      const setStateTx = await setStateCommitment.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...setStateTx,
@@ -118,11 +119,11 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       const setupCommitmentHash = setupCommitment.hashToSign();
 
       setupCommitment.signatures = [
-        signDigestWithEthers(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
-        signDigestWithEthers(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
+        await signDigest(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
+        await signDigest(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
       ];
 
-      const setupTx = setupCommitment.getSignedTransaction();
+      const setupTx = await setupCommitment.getSignedTransaction();
 
       await wallet.sendTransaction({ to: proxy, value: WeiPerEther.mul(2) });
 

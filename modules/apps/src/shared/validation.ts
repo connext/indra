@@ -1,4 +1,9 @@
-import { MethodParams, stringify, CoinTransfer, CoinBalanceRefundAppName } from "@connext/types";
+import {
+  CoinBalanceRefundAppName,
+  CoinTransfer,
+  MethodParams,
+  stringify,
+} from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 

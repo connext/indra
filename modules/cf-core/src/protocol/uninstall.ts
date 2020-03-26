@@ -71,7 +71,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Received responder's sig`);
 
     substart = Date.now();
-    assertIsValidSignature(responderEphemeralKey, uninstallCommitment, responderSignature);
+    await assertIsValidSignature(responderEphemeralKey, uninstallCommitment, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
     uninstallCommitment.signatures = [signature, responderSignature];
@@ -117,7 +117,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const initiatorSignature = context.message.customData.signature;
 
     substart = Date.now();
-    assertIsValidSignature(initiatorEphemeralKey, uninstallCommitment, initiatorSignature);
+    await assertIsValidSignature(initiatorEphemeralKey, uninstallCommitment, initiatorSignature);
     logTime(log, substart, `Verified initiator's sig`);
 
     const responderSignature = yield [OP_SIGN, uninstallCommitment, appToUninstall.appSeqNo];

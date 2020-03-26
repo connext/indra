@@ -1,14 +1,5 @@
-import { ILogger, ClientOptions } from "@connext/types";
-import {
-  BigNumber,
-  bigNumberify,
-  hexlify,
-  randomBytes,
-  solidityKeccak256,
-  joinSignature,
-  SigningKey,
-  arrayify,
-} from "ethers/utils";
+import { ILogger, ClientOptions, createRandom32ByteHexString } from "@connext/types";
+import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 import { RINKEBY_NETWORK, MAINNET_NETWORK } from "./constants";
 
@@ -105,10 +96,6 @@ export const withdrawalKey = (xpub: string): string => {
   return `${xpub}/latestNodeSubmittedWithdrawal`;
 };
 
-export const createRandom32ByteHexString = (): string => {
-  return hexlify(randomBytes(32));
-};
-
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
 
@@ -131,8 +118,3 @@ export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
   }
   return !!(opts.mnemonic || (opts.xpub && opts.keyGen));
 }
-
-export const signDigestWithEthers = (privateKey: string, digest: string) => {
-  const signingKey = new SigningKey(privateKey);
-  return joinSignature(signingKey.signDigest(arrayify(digest)));
-};

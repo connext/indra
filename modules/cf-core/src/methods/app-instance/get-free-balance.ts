@@ -20,7 +20,7 @@ export class GetFreeBalanceStateController extends NodeController {
     const tokenAddress = tokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     if (!multisigAddress) {
-      throw Error("getFreeBalanceState method was given undefined multisigAddress");
+      throw new Error("getFreeBalanceState method was given undefined multisigAddress");
     }
 
     const stateChannel = await store.getStateChannel(multisigAddress);

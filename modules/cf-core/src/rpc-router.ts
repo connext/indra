@@ -29,7 +29,7 @@ export default class RpcRouter extends Router {
     );
 
     if (!controller) {
-      throw Error(`Cannot execute ${rpc.methodName}: no controller`);
+      throw new Error(`Cannot execute ${rpc.methodName}: no controller`);
     }
 
     const result = jsonRpcSerializeAsResponse(

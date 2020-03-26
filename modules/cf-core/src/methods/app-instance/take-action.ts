@@ -38,7 +38,7 @@ export class TakeActionController extends NodeController {
     const { appInstanceId, action } = params;
 
     if (!appInstanceId) {
-      throw Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
+      throw new Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
     }
 
     const appInstance = await store.getAppInstance(appInstanceId);
@@ -47,9 +47,9 @@ export class TakeActionController extends NodeController {
       appInstance.encodeAction(action);
     } catch (e) {
       if (e.code === INVALID_ARGUMENT) {
-        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
+        throw new Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
-      throw Error(STATE_OBJECT_NOT_ENCODABLE);
+      throw new Error(STATE_OBJECT_NOT_ENCODABLE);
     }
   }
 
@@ -121,9 +121,9 @@ async function runTakeActionProtocol(
   } catch (e) {
     if (e.toString().indexOf(`VM Exception`) !== -1) {
       // TODO: Fetch the revert reason
-      throw Error(`${INVALID_ACTION}: ${e.message}`);
+      throw new Error(`${INVALID_ACTION}: ${e.message}`);
     }
-    throw Error(`Couldn't run TakeAction protocol: ${e.message}`);
+    throw new Error(`Couldn't run TakeAction protocol: ${e.message}`);
   }
 
   return {};

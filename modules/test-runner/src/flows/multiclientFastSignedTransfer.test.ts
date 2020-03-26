@@ -1,6 +1,7 @@
-import { signDigestWithEthers } from "@connext/cf-core";
+import { signDigest } from "@connext/crypto";
 import {
   ConditionalTransferTypes,
+  createRandom32ByteHexString,
   EventNames,
   EventPayloads,
   FastSignedTransferParameters,
@@ -12,8 +13,6 @@ import { Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import {
   bigNumberify,
-  hexlify,
-  randomBytes,
   solidityKeccak256,
   SigningKey,
 } from "ethers/utils";
@@ -78,7 +77,7 @@ describe("Full Flow: Multi-client transfer", () => {
             done();
           }
           await new Promise(async res => {
-            const newPaymentId = hexlify(randomBytes(32));
+            const newPaymentId = createRandom32ByteHexString();
             await nats.subscribe(`transfer.fast-signed.${newPaymentId}.reclaimed`, () => {
               console.log(`GATEWAY TRANSFER ${gatewayTransfers.sent} RECLAIMED`);
               res();
@@ -131,9 +130,9 @@ describe("Full Flow: Multi-client transfer", () => {
             indexer = indexerB;
             indexerTransfers = indexerBTransfers;
           }
-          const data = hexlify(randomBytes(32));
+          const data = createRandom32ByteHexString();
           const digest = solidityKeccak256(["bytes32", "bytes32"], [data, eventData.paymentId]);
-          const signature = signDigestWithEthers(withdrawerSigningKey!.privateKey, digest);
+          const signature = await signDigest(withdrawerSigningKey!.privateKey, digest);
 
           await indexer!.resolveCondition({
             conditionType: ConditionalTransferTypes.FastSignedTransfer,
@@ -161,14 +160,14 @@ describe("Full Flow: Multi-client transfer", () => {
       );
 
       await new Promise(async res => {
-        const newPaymentId = hexlify(randomBytes(32));
+        const newPaymentId = createRandom32ByteHexString();
         await nats.subscribe(`transfer.fast-signed.${newPaymentId}.reclaimed`, () => {
           res();
         });
         await gateway.conditionalTransfer({
           amount: "1",
           conditionType: ConditionalTransferTypes.FastSignedTransfer,
-          paymentId: hexlify(randomBytes(32)),
+          paymentId: createRandom32ByteHexString(),
           recipient: indexerA.publicIdentifier,
           signer: signerWalletA.address,
           assetId: AddressZero,
@@ -180,7 +179,7 @@ describe("Full Flow: Multi-client transfer", () => {
       await gateway.conditionalTransfer({
         amount: "1",
         conditionType: ConditionalTransferTypes.FastSignedTransfer,
-        paymentId: hexlify(randomBytes(32)),
+        paymentId: createRandom32ByteHexString(),
         recipient: indexerB.publicIdentifier,
         signer: signerWalletB.address,
         assetId: AddressZero,

@@ -1,7 +1,7 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { EventNames, IConnextClient, toBN } from "@connext/types";
+import { createRandom32ByteHexString, EventNames, IConnextClient, toBN } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
-import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
+import { bigNumberify } from "ethers/utils";
 import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
@@ -64,7 +64,7 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = hexlify(randomBytes(32));
+      const paymentId = createRandom32ByteHexString();
       clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
         if (data.newState.data) {
           res();
@@ -124,7 +124,7 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = hexlify(randomBytes(32));
+      const paymentId = createRandom32ByteHexString();
       clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
         if (data.newState.data) {
           res();

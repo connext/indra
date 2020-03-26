@@ -178,7 +178,7 @@ export class FreeBalanceClass {
 
       for (const val of Object.values(t2)) {
         if (val.lt(Zero)) {
-          throw Error(
+          throw new Error(
             `FreeBalanceClass::increment ended up with a negative balance when
             merging ${stringify(t1)} and ${stringify(increments[tokenAddress])}`,
           );

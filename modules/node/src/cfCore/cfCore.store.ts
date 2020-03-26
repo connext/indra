@@ -172,7 +172,7 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
     if (!app) {
-      throw Error(
+      throw new Error(
         `Could not find appid for conditional transaction commitment. AppId: ${appIdentityHash}`,
       );
     }

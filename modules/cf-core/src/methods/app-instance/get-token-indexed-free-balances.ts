@@ -16,7 +16,9 @@ export class GetTokenIndexedFreeBalancesController extends NodeController {
     const { multisigAddress } = params;
 
     if (!multisigAddress) {
-      throw Error(`getTokenIndexedFreeBalanceStates method was given undefined multisigAddress`);
+      throw new Error(
+        `getTokenIndexedFreeBalanceStates method was given undefined multisigAddress`,
+      );
     }
 
     const stateChannel = await store.getStateChannel(multisigAddress);

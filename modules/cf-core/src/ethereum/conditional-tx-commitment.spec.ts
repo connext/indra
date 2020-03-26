@@ -1,13 +1,8 @@
+import { signDigest } from "@connext/crypto";
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { MultisigTransaction } from "@connext/types";
+import { createRandomAddress, createRandom32ByteHexString, MultisigTransaction } from "@connext/types";
 import { WeiPerEther } from "ethers/constants";
-import {
-  getAddress,
-  hexlify,
-  Interface,
-  randomBytes,
-  TransactionDescription,
-} from "ethers/utils";
+import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
 import {
   getRandomExtendedPubKey,
@@ -21,7 +16,7 @@ import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { FreeBalanceClass, StateChannel } from "../models";
 import { Store } from "../store";
 import { Context } from "../types";
-import { appIdentityToHash, signDigestWithEthers } from "../utils";
+import { appIdentityToHash } from "../utils";
 
 import {
   getConditionalTransactionCommitment,
@@ -51,7 +46,7 @@ describe("ConditionalTransactionCommitment", () => {
       proxyFactory: context.network.ProxyFactory,
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
-    getAddress(hexlify(randomBytes(20))),
+    getAddress(createRandomAddress()),
     [interaction.sender, interaction.receiver],
   );
 
@@ -89,10 +84,10 @@ describe("ConditionalTransactionCommitment", () => {
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
-      const hash = "0x" + Buffer.from(randomBytes(20)).toString("hex");
+      const hash = createRandom32ByteHexString();
       commitment.signatures = [
-        signDigestWithEthers(hdNodes[0].privateKey, hash),
-        signDigestWithEthers(hdNodes[1].privateKey, hash),
+        await signDigest(hdNodes[0].privateKey, hash),
+        await signDigest(hdNodes[1].privateKey, hash),
       ];
       await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);

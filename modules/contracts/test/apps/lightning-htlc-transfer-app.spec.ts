@@ -140,11 +140,12 @@ describe("LightningHTLCTransferApp", () => {
       };
 
       expect(afterActionState.finalized).to.eq(expectedPostState.finalized);
-      expect(afterActionState.coinTransfers[0].amount)
-        .to.eq(expectedPostState.coinTransfers[0].amount);
-      expect(afterActionState.coinTransfers[1].amount)
-        .to.eq(expectedPostState.coinTransfers[1].amount);
-
+      expect(afterActionState.coinTransfers[0].amount).to.eq(
+        expectedPostState.coinTransfers[0].amount,
+      );
+      expect(afterActionState.coinTransfers[1].amount).to.eq(
+        expectedPostState.coinTransfers[1].amount,
+      );
 
       ret = await computeOutcome(afterActionState);
       validateOutcome(ret, expectedPostState);
@@ -155,7 +156,9 @@ describe("LightningHTLCTransferApp", () => {
         preImage: mkHash("0xc"), // incorrect hash
       };
 
-      await expect(applyAction(preState, action)).revertedWith("Hash generated from preimage does not match hash in state");
+      await expect(applyAction(preState, action)).revertedWith(
+        "Hash generated from preimage does not match hash in state",
+      );
     });
 
     it("will revert action if already finalized", async () => {
@@ -164,7 +167,9 @@ describe("LightningHTLCTransferApp", () => {
       };
       preState.finalized = true;
 
-      await expect(applyAction(preState, action)).revertedWith("Cannot take action on finalized state");
+      await expect(applyAction(preState, action)).revertedWith(
+        "Cannot take action on finalized state",
+      );
     });
 
     it("will revert action if timeout has expired", async () => {
@@ -173,11 +178,15 @@ describe("LightningHTLCTransferApp", () => {
       };
       preState.timelock = bigNumberify(await provider.getBlockNumber());
 
-      await expect(applyAction(preState, action)).revertedWith("Cannot take action if timelock is expired");
+      await expect(applyAction(preState, action)).revertedWith(
+        "Cannot take action if timelock is expired",
+      );
     });
 
     it("will revert outcome that is not finalized with unexpired timelock", async () => {
-      await expect(computeOutcome(preState)).revertedWith("Cannot revert payment if timelock is unexpired");
+      await expect(computeOutcome(preState)).revertedWith(
+        "Cannot revert payment if timelock is unexpired",
+      );
     });
 
     it("will refund payment that is not finalized with expired timelock", async () => {

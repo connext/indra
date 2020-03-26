@@ -154,7 +154,9 @@ async function getOutgoingEventDataFromProtocol(
         ),
       };
     default:
-      throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
+      throw new Error(
+        `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`,
+      );
   }
 }
 

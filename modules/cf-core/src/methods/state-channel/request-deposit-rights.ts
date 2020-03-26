@@ -41,11 +41,11 @@ export class RequestDepositRightsController extends NodeController {
     const channel = await store.getStateChannel(multisigAddress);
 
     if (!channel.addresses.proxyFactory) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
@@ -55,7 +55,7 @@ export class RequestDepositRightsController extends NodeController {
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
-      throw Error(INCORRECT_MULTISIG_ADDRESS);
+      throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
   }
 

@@ -1,16 +1,17 @@
 /* global before */
 import {
-  EventNames,
   ConditionalTransferTypes,
+  createRandom32ByteHexString,
+  EventNames,
+  GetHashLockTransferResponse,
   HashLockTransferParameters,
+  HashLockTransferStatus,
   IConnextClient,
   ResolveHashLockTransferParameters,
-  GetHashLockTransferResponse,
-  HashLockTransferStatus,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
-import { hexlify, randomBytes, soliditySha256 } from "ethers/utils";
+import { soliditySha256 } from "ethers/utils";
 import { providers } from "ethers";
 
 import {
@@ -57,7 +58,7 @@ describe("HashLock Transfers", () => {
   it("happy case: client A hashlock transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = hexlify(randomBytes(32));
+    const preImage = createRandom32ByteHexString();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -101,7 +102,7 @@ describe("HashLock Transfers", () => {
   it("happy case: client A hashlock transfers tokens to client B through node", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = hexlify(randomBytes(32));
+    const preImage = createRandom32ByteHexString();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -145,7 +146,7 @@ describe("HashLock Transfers", () => {
   it("gets a pending hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = hexlify(randomBytes(32));
+    const preImage = createRandom32ByteHexString();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -172,7 +173,7 @@ describe("HashLock Transfers", () => {
   it("gets a completed hashlock transfer by lock hash", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = hexlify(randomBytes(32));
+    const preImage = createRandom32ByteHexString();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -211,7 +212,7 @@ describe("HashLock Transfers", () => {
   it("cannot resolve a hashlock transfer if pre image is wrong", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = hexlify(randomBytes(32));
+    const preImage = createRandom32ByteHexString();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -224,7 +225,7 @@ describe("HashLock Transfers", () => {
       meta: { foo: "bar" },
     } as HashLockTransferParameters);
 
-    const badPreImage = hexlify(randomBytes(32));
+    const badPreImage = createRandom32ByteHexString();
     await expect(
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -236,7 +237,7 @@ describe("HashLock Transfers", () => {
   it("cannot resolve a hashlock if timelock is expired", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
-    const preImage = hexlify(randomBytes(32));
+    const preImage = createRandom32ByteHexString();
     const timelock = await provider.getBlockNumber();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);

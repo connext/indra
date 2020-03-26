@@ -188,8 +188,11 @@ test-cf: cf-core
 test-client: client
 	bash ops/test/client.sh
 
-test-contracts: contracts types
+test-contracts: contracts crypto
 	bash ops/test/contracts.sh
+
+test-crypto: crypto
+	bash ops/test/crypto.sh
 
 test-daicard:
 	bash ops/test/ui.sh daicard
@@ -285,12 +288,12 @@ test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops 
 ########################################
 # JS & bundles
 
-apps: node-modules cf-core types $(shell find $(apps)/src $(find_options))
+apps: node-modules crypto cf-core $(shell find $(apps)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-cf-core: node-modules types contracts crypto store $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
+cf-core: node-modules crypto contracts store $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -300,7 +303,7 @@ channel-provider: node-modules types $(shell find $(channel-provider)/src $(find
 	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-client: apps cf-core channel-provider crypto messaging store types $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+client: apps messaging channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -325,7 +328,7 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node: cf-core types contracts crypto apps messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node: apps messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -348,7 +351,7 @@ types: node-modules $(shell find $(types)/src $(find_options))
 ########################################
 # Common Prerequisites
 
-contracts: node-modules types contract-artifacts $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
+contracts: node-modules crypto contract-artifacts $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run transpile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@

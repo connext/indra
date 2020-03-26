@@ -1,8 +1,13 @@
 import { utils } from "@connext/client";
-import { ConditionalTransferTypes, CF_PATH, delay, IConnextClient } from "@connext/types";
+import {
+  CF_PATH,
+  ConditionalTransferTypes, 
+  createRandom32ByteHexString,
+  IConnextClient,
+} from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { HDNode, hexlify, randomBytes } from "ethers/utils";
+import { HDNode } from "ethers/utils";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
 import { before } from "mocha";
 import { Client } from "ts-nats";
@@ -234,7 +239,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
-        preImage: hexlify(randomBytes(32)),
+        preImage: createRandom32ByteHexString(),
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
@@ -249,7 +254,7 @@ describe("Async Transfers", () => {
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: ConditionalTransferTypes.LinkedTransfer,
-        paymentId: hexlify(randomBytes(32)),
+        paymentId: createRandom32ByteHexString(),
         preImage,
         recipient: clientB.publicIdentifier,
       }),

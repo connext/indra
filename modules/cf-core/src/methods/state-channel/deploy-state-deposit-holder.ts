@@ -40,11 +40,11 @@ export class DeployStateDepositController extends NodeController {
     const channel = await store.getStateChannel(multisigAddress);
 
     if (!channel.addresses.proxyFactory) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+      throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+      throw new Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
@@ -54,7 +54,7 @@ export class DeployStateDepositController extends NodeController {
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
-      throw Error(INCORRECT_MULTISIG_ADDRESS);
+      throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
   }
 
@@ -79,7 +79,7 @@ export class DeployStateDepositController extends NodeController {
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
-      throw Error(INCORRECT_MULTISIG_ADDRESS);
+      throw new Error(INCORRECT_MULTISIG_ADDRESS);
     }
 
     // Check if the contract has already been deployed on-chain
@@ -107,7 +107,7 @@ async function sendMultisigDeployTx(
   const provider = signer.provider as JsonRpcProvider;
 
   if (!provider) {
-    throw Error(`wallet must have a provider`);
+    throw new Error(`wallet must have a provider`);
   }
 
   const signerAddress = await signer.getAddress();
@@ -130,7 +130,7 @@ async function sendMultisigDeployTx(
       );
 
       if (!tx.hash) {
-        throw Error(`${NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT}: ${stringify(tx)}`);
+        throw new Error(`${NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT}: ${stringify(tx)}`);
       }
 
       const ownersAreCorrectlySet = await checkForCorrectOwners(
@@ -160,7 +160,7 @@ async function sendMultisigDeployTx(
     }
   }
 
-  throw Error(`${CHANNEL_CREATION_FAILED}: ${stringify(error)}`);
+  throw new Error(`${CHANNEL_CREATION_FAILED}: ${stringify(error)}`);
 }
 
 async function checkForCorrectOwners(
