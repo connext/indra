@@ -259,7 +259,7 @@ describe("Signed Transfers", () => {
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
 
-  it.only("Experimental: Average latency of 10 signed transfers with Eth", async () => {
+  it.only("Experimental: Average latency of 5 signed transfers with Eth", async () => {
     let runTime: number[] = [];
     let sum = 0;
     const numberOfRuns = 5;
@@ -269,12 +269,23 @@ describe("Signed Transfers", () => {
 
     await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
-    const data = hexlify(randomBytes(32));
 
     for (let i = 0; i < numberOfRuns; i++) {
-      const start = Date.now();
-
+      const {
+        [clientA.freeBalanceAddress]: clientAPreBal,
+        [clientA.nodeFreeBalanceAddress]: nodeAPreBal,
+      } = await clientA.getFreeBalance(transfer.assetId);
+      const { 
+        [clientB.freeBalanceAddress]: clientBPreBal,
+        [clientB.nodeFreeBalanceAddress]: nodeBPreBal, 
+      } = await clientB.getFreeBalance(
+        transfer.assetId,
+      );
+      const data = hexlify(randomBytes(32));
       const paymentId = hexlify(randomBytes(32));
+
+      // Start timer
+      const start = Date.now();
 
       await clientA.conditionalTransfer({
         amount: transfer.amount.toString(),
@@ -285,27 +296,13 @@ describe("Signed Transfers", () => {
         meta: { foo: "bar" },
       } as SignedTransferParameters);
   
-      const {
-        [clientA.freeBalanceAddress]: clientAPostTransferBal,
-        [clientA.nodeFreeBalanceAddress]: nodePostTransferBal,
-      } = await clientA.getFreeBalance(transfer.assetId);
-      const { [clientB.freeBalanceAddress]: clientBPreTransferBal } = await clientB.getFreeBalance(
-        transfer.assetId,
-      );
-  
+      // Including recipient signing in test to match real conditions
       const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
       const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
   
       await new Promise(async res => {
         clientA.once("UNINSTALL_EVENT", async data => {
-          console.log(`Creating listener for transfer: ${i}`)
-          const {
-            [clientA.freeBalanceAddress]: clientAPostReclaimBal,
-            [clientA.nodeFreeBalanceAddress]: nodePostReclaimBal,
-          } = await clientA.getFreeBalance(transfer.assetId);
-          expect(clientAPostReclaimBal).to.eq(clientAPostTransferBal);
-          expect(nodePostReclaimBal).to.eq(nodePostTransferBal.add(transfer.amount));
           res();
         });
         await clientB.resolveCondition({
@@ -314,15 +311,27 @@ describe("Signed Transfers", () => {
           data,
           signature,
         } as ResolveSignedTransferParameters);
-        const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
-          transfer.assetId,
-        );
-        expect(clientBPostTransferBal).to.eq(clientBPreTransferBal.add(transfer.amount));
       });
 
+      // Stop timer and add to sum
       runTime[i] = Date.now() - start;
       console.log(`Run: ${i}, Runtime: ${runTime[i]}`)
       sum = sum + runTime[i];
+
+      const {
+        [clientA.freeBalanceAddress]: clientAPostBal,
+        [clientA.nodeFreeBalanceAddress]: nodeAPostBal,
+      } = await clientA.getFreeBalance(transfer.assetId);
+      const { 
+        [clientB.freeBalanceAddress]: clientBPostBal,
+        [clientB.nodeFreeBalanceAddress]: nodeBPostBal, 
+      } = await clientB.getFreeBalance(
+        transfer.assetId,
+      );
+      expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
+      expect(nodeAPostBal).to.eq(nodeAPreBal.add(transfer.amount));
+      expect(nodeBPostBal).to.eq(nodeBPreBal.sub(transfer.amount));
+      expect(clientBPostBal).to.eq(clientBPreBal.add(transfer.amount));
     }
     console.log(`Average = ${sum/numberOfRuns} ms`)
   });
