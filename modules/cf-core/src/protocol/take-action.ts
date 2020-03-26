@@ -2,13 +2,7 @@ import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import {
-  Context,
-  Opcode,
-  PersistAppType,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-} from "../types";
+import { Context, Opcode, PersistAppType, ProtocolExecutionFlow, ProtocolMessage } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
@@ -61,7 +55,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
     const {
       customData: { signature: responderSignature },
-    } = yield [
+    }: any = yield [
       IO_SEND_AND_WAIT,
       {
         protocol,

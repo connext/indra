@@ -5,12 +5,7 @@ import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
 import { Store } from "../store";
-import {
-  Context,
-  Opcode,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-} from "../types";
+import { Context, Opcode, ProtocolExecutionFlow, ProtocolMessage } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
@@ -57,7 +52,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
     const {
       customData: { signature: responderSignature },
-    } = yield [
+    }: any = yield [
       IO_SEND_AND_WAIT,
       {
         protocol,

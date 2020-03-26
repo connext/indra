@@ -23,13 +23,7 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.install;
-const {
-  OP_SIGN,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  PERSIST_APP_INSTANCE,
-  PERSIST_COMMITMENT,
-} = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
 const { Conditional, SetState } = CommitmentTypes;
 
 /**
@@ -109,7 +103,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         signature: counterpartySignatureOnConditionalTransaction,
         signature2: counterpartySignatureOnFreeBalanceStateUpdate,
       },
-    } = yield [
+    }: any = yield [
       IO_SEND_AND_WAIT,
       {
         processID,
@@ -138,12 +132,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ];
 
-    yield [
-      PERSIST_COMMITMENT,
-      Conditional,
-      conditionalTxCommitment,
-      newAppInstance.identityHash,
-    ];
+    yield [PERSIST_COMMITMENT, Conditional, conditionalTxCommitment, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
 
@@ -274,12 +263,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ];
 
-    yield [
-      PERSIST_COMMITMENT,
-      Conditional,
-      conditionalTxCommitment,
-      newAppInstance.identityHash,
-    ];
+    yield [PERSIST_COMMITMENT, Conditional, conditionalTxCommitment, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannelAfter.freeBalance);
 
@@ -288,7 +272,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     substart = Date.now();
     const {
       customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
-    } = yield [
+    }: any = yield [
       IO_SEND_AND_WAIT,
       {
         processID,
@@ -465,10 +449,8 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {

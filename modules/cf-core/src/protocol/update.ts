@@ -2,13 +2,7 @@ import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import {
-  Context,
-  Opcode,
-  PersistAppType,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-} from "../types";
+import { Context, Opcode, PersistAppType, ProtocolExecutionFlow, ProtocolMessage } from "../types";
 
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -50,17 +44,14 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = getSetStateCommitment(
-      context,
-      appInstance,
-    );
+    const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     const initiatorSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
     substart = Date.now();
     const {
       customData: { signature: responderSignature },
-    } = yield [
+    }: any = yield [
       IO_SEND_AND_WAIT,
       {
         protocol,
@@ -115,10 +106,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = getSetStateCommitment(
-      context,
-      appInstance,
-    );
+    const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     substart = Date.now();
     await assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);
