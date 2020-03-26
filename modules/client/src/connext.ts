@@ -373,15 +373,12 @@ export class ConnextClient implements IConnextClient {
    * async payments are the default transfer.
    */
   public transfer = async (params: TransferParameters): Promise<LinkedTransferResponse> => {
-    if (!params.paymentId) {
-      params.paymentId = createRandom32ByteHexString();
-    }
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
-      assetId: params.assetId,
+      assetId: params.assetId || AddressZero,
       conditionType: LINKED_TRANSFER,
       meta: params.meta,
-      paymentId: params.paymentId,
+      paymentId: params.paymentId || createRandom32ByteHexString(),
       preImage: createRandom32ByteHexString(),
       recipient: params.recipient,
     }) as Promise<LinkedTransferResponse>;
