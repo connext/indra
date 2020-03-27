@@ -18,18 +18,17 @@ import { getRandomHDNodes } from "./random-signing-keys";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
 const makeSigner = (hdNode: HDNode) => {
-  return async (args: [EthereumCommitment] | [EthereumCommitment, number]) => {
+  return async (args: any[]) => {
     if (args.length !== 1 && args.length !== 2) {
       throw new Error("OP_SIGN middleware received wrong number of arguments.");
     }
 
-    const [commitment, overrideKeyIndex] = args;
+    const [commitmentHash, overrideKeyIndex] = args;
     const keyIndex = overrideKeyIndex || 0;
 
     const privateKey = hdNode.derivePath(`${keyIndex}`).privateKey;
-    const hash = commitment.hashToSign();
 
-    return await signDigest(privateKey, hash);
+    return await signDigest(privateKey, commitmentHash);
   };
 };
 

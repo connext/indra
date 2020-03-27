@@ -253,7 +253,9 @@ export class CFCoreService {
     let boundResolve: (reason?: any) => void;
 
     const network = await this.configService.getEthNetwork();
+
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(app, network.chainId);
+
     const {
       actionEncoding,
       appDefinitionAddress: appDefinition,

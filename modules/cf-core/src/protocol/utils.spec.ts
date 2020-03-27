@@ -1,7 +1,7 @@
 import { signDigest, recoverAddress } from "@connext/crypto";
 import { EthereumCommitment, createRandom32ByteHexString } from "@connext/types";
 import { HashZero } from "ethers/constants";
-import { SigningKey } from "ethers/utils";
+import { SigningKey, hashMessage } from "ethers/utils";
 
 import { assertIsValidSignature } from "./utils";
 
@@ -9,25 +9,26 @@ describe("Signature Validator Helper", () => {
   let signer: SigningKey;
   let signature: string;
   let commitment: EthereumCommitment;
+  let commitmentHash: string;
 
   beforeEach(async () => {
     signer = new SigningKey(createRandom32ByteHexString());
 
     commitment = {
-      hashToSign: () => HashZero,
+      hashToSign: () => hashMessage("test"),
     } as EthereumCommitment;
-    const commitmentHash = commitment.hashToSign();
+    commitmentHash = commitment.hashToSign();
     signature = await signDigest(signer.privateKey, commitmentHash);
   });
 
   it("validates signatures correctly", async () => {
-    await expect(assertIsValidSignature(signer.address, commitment, signature)).resolves.toBe(
+    await expect(assertIsValidSignature(signer.address, commitmentHash, signature)).resolves.toBe(
       undefined,
     );
   });
 
   it("throws if signature is undefined", async () => {
-    await expect(assertIsValidSignature(signer.address, commitment, undefined)).rejects.toThrow(
+    await expect(assertIsValidSignature(signer.address, commitmentHash, undefined)).rejects.toThrow(
       "assertIsValidSignature received an undefined signature",
     );
   });
@@ -43,7 +44,7 @@ describe("Signature Validator Helper", () => {
     const wrongHash = HashZero.replace("00", "11"); // 0x11000...
     const signature = await signDigest(signer.privateKey, wrongHash);
     const wrongSigner = await recoverAddress(rightHash, signature);
-    await expect(assertIsValidSignature(signer.address, commitment, signature)).rejects.toThrow(
+    await expect(assertIsValidSignature(signer.address, commitmentHash, signature)).rejects.toThrow(
       `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}.`,
     );
   });

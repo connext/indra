@@ -46,7 +46,7 @@ describe("StateChannel::setState", () => {
       },
     });
 
-    sc2 = sc1.setState(testApp.identityHash, APP_STATE);
+    sc2 = sc1.setState(testApp, APP_STATE);
   });
 
   it("should not alter any of the base properties", () => {
