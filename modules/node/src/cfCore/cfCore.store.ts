@@ -8,6 +8,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
+  OutcomeType,
 } from "@connext/types";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
@@ -22,6 +23,9 @@ import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
+import { xkeyKthAddress } from "src/util";
+import { AppInstance, AppType } from "src/appInstance/appInstance.entity";
+import { Zero, AddressZero } from "ethers/constants";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -29,8 +33,7 @@ export class CFCoreStore implements IStoreService {
   constructor(
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
-    private readonly conditionalTransactionCommitmentRepository:
-      ConditionalTransactionCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
     private readonly configService: ConfigService,
@@ -61,34 +64,127 @@ export class CFCoreStore implements IStoreService {
     return this.channelRepository.getStateChannelByAppInstanceId(appInstanceId);
   }
 
-  async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
-    let channel = await this.channelRepository.findByMultisigAddress(stateChannel.multisigAddress);
-    const setup = await this.setupCommitmentRepository.findByMultisigAddress(
+  async createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+    const setup = await this.setupCommitmentRepository.findByMultisigAddressOrThrow(
       stateChannel.multisigAddress,
     );
-    if (!channel) {
-      if (!setup) {
-        throw new Error(`No setup commitment found for multisig ${stateChannel.multisigAddress}`);
-      }
-      // update fields that should only be touched on creation
-      channel = new Channel();
-      channel.schemaVersion = this.schemaVersion;
-      channel.nodePublicIdentifier = this.configService.getPublicIdentifier();
-      channel.userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.filter(
-        xpub => xpub !== this.configService.getPublicIdentifier(),
-      )[0];
-      channel.multisigAddress = stateChannel.multisigAddress;
-      channel.addresses = stateChannel.addresses;
-    }
-    // update nonce
-    channel.monotonicNumProposedApps = stateChannel.monotonicNumProposedApps;
-    const chan = await this.channelRepository.save(channel);
-    // if there was a setup commitment without a channel, resave
-    if (setup.channel) {
-      return;
-    }
-    setup.channel = chan;
-    await this.setupCommitmentRepository.save(setup);
+
+    const nodePublicIdentifier = this.configService.getPublicIdentifier();
+    const userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.find(
+      xpub => xpub !== this.configService.getPublicIdentifier(),
+    );
+
+    const { multisigAddress, addresses, freeBalanceAppInstance } = stateChannel;
+    const channel = new Channel();
+    channel.schemaVersion = this.schemaVersion;
+    channel.userPublicIdentifier = userPublicIdentifier;
+    channel.nodePublicIdentifier = nodePublicIdentifier;
+    channel.multisigAddress = multisigAddress;
+    channel.addresses = addresses;
+    channel.monotonicNumProposedApps = 0;
+    channel.setupCommitment = setup;
+
+    const userFreeBalance = xkeyKthAddress(userPublicIdentifier);
+    const userParticipantAddress = freeBalanceAppInstance.participants.find(
+      p => p === userFreeBalance,
+    );
+    const nodeParticipantAddress = freeBalanceAppInstance.participants.find(
+      p => p !== userFreeBalance,
+    );
+    const {
+      identityHash,
+      appInterface: { stateEncoding, actionEncoding, addr },
+      outcomeType,
+      latestState,
+      latestTimeout,
+      latestVersionNumber,
+      appSeqNo,
+    } = freeBalanceAppInstance;
+
+    const freeBalanceApp = new AppInstance();
+    freeBalanceApp.identityHash = identityHash;
+    freeBalanceApp.stateEncoding = stateEncoding;
+    freeBalanceApp.actionEncoding = actionEncoding;
+    freeBalanceApp.appDefinition = addr;
+    freeBalanceApp.appSeqNo = appSeqNo;
+    freeBalanceApp.outcomeType = OutcomeType[outcomeType];
+    freeBalanceApp.initialState = latestState as any;
+    freeBalanceApp.initiatorDeposit = Zero;
+    freeBalanceApp.initiatorDepositTokenAddress = AddressZero;
+    freeBalanceApp.responderDeposit = Zero;
+    freeBalanceApp.responderDepositTokenAddress = AddressZero;
+    freeBalanceApp.timeout = latestTimeout;
+    freeBalanceApp.latestVersionNumber = latestVersionNumber;
+    freeBalanceApp.type = AppType.FREE_BALANCE;
+    freeBalanceApp.proposedToIdentifier = userPublicIdentifier;
+    freeBalanceApp.proposedByIdentifier = nodePublicIdentifier;
+    freeBalanceApp.userParticipantAddress = userParticipantAddress;
+    freeBalanceApp.nodeParticipantAddress = nodeParticipantAddress;
+
+    channel.appInstances = [freeBalanceApp];
+    await this.channelRepository.save(channel);
+  }
+  createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  createAppProposal(
+    multisigAddress: string,
+    appProposal: AppInstanceProposal,
+    numProposedApps: number,
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  createLatestSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  updateLatestSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  createConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  updateConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  createWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  updateWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+    
   }
 
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
@@ -153,10 +249,9 @@ export class CFCoreStore implements IStoreService {
   async getConditionalTransactionCommitment(
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    const commitment =
-      await this.conditionalTransactionCommitmentRepository.getConditionalTransactionCommitment(
-        appIdentityHash,
-      );
+    const commitment = await this.conditionalTransactionCommitmentRepository.getConditionalTransactionCommitment(
+      appIdentityHash,
+    );
     if (!commitment) {
       return undefined;
     }
