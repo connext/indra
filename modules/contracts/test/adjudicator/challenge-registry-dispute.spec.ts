@@ -133,11 +133,11 @@ describe("ChallengeRegistry Challenge", () => {
       });
     };
 
-    progressState = async (state: any, action: any, actionSig: any) => {
+    progressState = async (state: any, action: any, actionSig: string) => {
       await appRegistry.functions.progressState(
         appInstance.appIdentity,
-
-        encodeState(state), {
+        encodeState(state),
+        {
           encodedAction: encodeAction(action),
           signature: actionSig,
         },
@@ -157,7 +157,12 @@ describe("ChallengeRegistry Challenge", () => {
 
     expect(await latestVersionNumber()).to.eq(1);
 
-    const thingToSign = keccak256(encodeAction(ACTION));
+    const thingToSign = computeActionHash(
+      BOB.address,
+      keccak256(encodeState(PRE_STATE)),
+      encodeAction(ACTION),
+      1,
+    );
     const signature = await signDigest(BOB.privateKey, thingToSign);
 
     expect(await latestState()).to.be.eql(keccak256(encodeState(PRE_STATE)));
