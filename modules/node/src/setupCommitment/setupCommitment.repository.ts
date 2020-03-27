@@ -22,6 +22,14 @@ export class SetupCommitmentRepository extends Repository<SetupCommitment> {
     });
   }
 
+  async findByMultisigAddressOrThrow(multisigAddress: string): Promise<SetupCommitment> {
+    const setupCommitment = await this.findByMultisigAddress(multisigAddress);
+    if (!setupCommitment) {
+      throw new Error(`Could not find setup commitment for ${multisigAddress}`);
+    }
+    return setupCommitment;
+  }
+
   async getCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     const setup = await this.findByMultisigAddress(multisigAddress);
     if (!setup) {
