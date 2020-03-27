@@ -8,7 +8,6 @@ import {
   MethodName,
   MinimalTransaction,
   nullLogger,
-  PersistAppType,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
@@ -30,7 +29,6 @@ import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./priv
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { Store } from "./store";
 import {
   ILockService,
   IMessagingService,
@@ -43,6 +41,8 @@ import {
   NodeMessageWrappedProtocolMessage,
   Opcode,
   ProtocolMessage,
+  PersistAppType,
+  PersistCommitmentType,
 } from "./types";
 
 export interface NodeConfig {
@@ -71,7 +71,6 @@ export class Node {
   private signer!: SigningKey;
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
-  private store!: Store;
 
   static async create(
     messagingService: IMessagingService,
@@ -111,7 +110,7 @@ export class Node {
     private readonly publicExtendedKey: string,
     private readonly privateKeyGetter: PrivateKeysGetter,
     private readonly messagingService: IMessagingService,
-    private readonly storeService: IStoreService,
+    private readonly store: IStoreService,
     private readonly nodeConfig: NodeConfig,
     private readonly provider: JsonRpcProvider,
     public readonly networkContext: NetworkContext,
@@ -123,7 +122,6 @@ export class Node {
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
-    this.store = new Store(this.storeService);
     this.protocolRunner = this.buildProtocolRunner();
   }
 
@@ -248,7 +246,7 @@ export class Node {
       const [stateChannels] = args;
 
       for (const stateChannel of stateChannels) {
-        await store.saveStateChannel(stateChannel);
+        await store.createStateChannel(stateChannel.toJson());
       }
     });
 
@@ -256,53 +254,56 @@ export class Node {
       Opcode.PERSIST_COMMITMENT,
       async (
         args: [
-          CommitmentTypes,
+          PersistCommitmentType,
           MultisigCommitment | SetStateCommitment | MinimalTransaction,
           string,
         ],
       ) => {
         const { store } = this.requestHandler;
 
-        const [commitmentType, commitment, ...res] = args;
+        const [commitmentType, commitment, identifier] = args;
 
         switch (commitmentType) {
-
-          case CommitmentTypes.Conditional:
-            const [appId] = res;
-            await store.saveConditionalTransactionCommitment(
-              appId,
-              commitment as ConditionalTransactionCommitment,
+          case PersistCommitmentType.CreateConditional: {
+            store.createConditionalTransactionCommitment(
+              identifier,
+              (commitment as ConditionalTransactionCommitment).toJson(),
             );
             break;
-
-          case CommitmentTypes.SetState:
-            const [appIdentityHash] = res;
-            await store.saveLatestSetStateCommitment(
-              appIdentityHash,
-              commitment as SetStateCommitment,
+          }
+          case PersistCommitmentType.UpdateConditional: {
+            store.updateConditionalTransactionCommitment(
+              identifier,
+              (commitment as ConditionalTransactionCommitment).toJson(),
             );
             break;
-
-          case CommitmentTypes.Setup:
-            const [multisigAddress] = res;
-            await store.saveSetupCommitment(
-              multisigAddress,
-              commitment as MinimalTransaction,
+          }
+          case PersistCommitmentType.CreateSetState: {
+            store.createLatestSetStateCommitment(
+              identifier,
+              (commitment as SetStateCommitment).toJson(),
             );
             break;
-
-          case CommitmentTypes.Withdraw:
-            const [multisig] = res;
-            await store.saveWithdrawalCommitment(
-              multisig,
-              commitment as MinimalTransaction,
+          }
+          case PersistCommitmentType.UpdateSetState: {
+            store.updateLatestSetStateCommitment(
+              identifier,
+              (commitment as SetStateCommitment).toJson(),
             );
             break;
-
-          default:
+          }
+          case PersistCommitmentType.CreateWithdrawal: {
+            store.createWithdrawalCommitment(identifier, commitment as MinimalTransaction);
+            break;
+          }
+          case PersistCommitmentType.UpdateWithdrawal: {
+            store.updateWithdrawalCommitment(identifier, commitment as MinimalTransaction);
+            break;
+          }
+          default: {
             throw new Error(`Unrecognized commitment type: ${commitmentType}`);
+          }
         }
-        return;
       },
     );
 
@@ -312,31 +313,67 @@ export class Node {
         const { store } = this.requestHandler;
         const [type, postProtocolChannel, app] = args;
 
-        // always persist the free balance
-        // this will error if channel does not exist
-        await store.saveFreeBalance(postProtocolChannel);
-
         switch (type) {
-          case PersistAppType.Proposal:
-            await store.saveAppProposal(postProtocolChannel, app as AppInstanceProposal);
+          case PersistAppType.CreateProposal: {
+            await store.createAppProposal(
+              postProtocolChannel.multisigAddress,
+              app as AppInstanceProposal,
+              postProtocolChannel.numProposedApps,
+            );
             break;
-          case PersistAppType.Reject:
-            await store.removeAppProposal(postProtocolChannel, app as AppInstanceProposal);
-            break;
+          }
 
-          case PersistAppType.Instance:
-            if (app.identityHash === postProtocolChannel.freeBalance.identityHash) {
-              break;
-            }
-            await store.saveAppInstance(postProtocolChannel, app as AppInstance);
+          case PersistAppType.RemoveProposal: {
+            await store.removeAppProposal(
+              postProtocolChannel.multisigAddress,
+              (app as AppInstanceProposal).identityHash,
+            );
             break;
+          }
 
-          case PersistAppType.Uninstall:
-            await store.removeAppInstance(postProtocolChannel, app as AppInstance);
+          case PersistAppType.UpdateFreeBalance: {
+            await store.updateFreeBalance(
+              postProtocolChannel.multisigAddress,
+              (app as AppInstance).toJson(),
+            );
             break;
+          }
 
-          default:
+          case PersistAppType.CreateInstance: {
+            await store.createAppInstance(
+              postProtocolChannel.multisigAddress,
+              (app as AppInstance).toJson(),
+            );
+            break;
+          }
+
+          case PersistAppType.UpdateInstance: {
+            await store.updateAppInstance(
+              postProtocolChannel.multisigAddress,
+              (app as AppInstance).toJson(),
+            );
+            break;
+          }
+
+          case PersistAppType.RemoveInstance: {
+            await store.removeAppInstance(
+              postProtocolChannel.multisigAddress,
+              (app as AppInstance).identityHash,
+            );
+            break;
+          }
+
+          case PersistAppType.Reject: {
+            await store.removeAppProposal(
+              postProtocolChannel.multisigAddress,
+              (app as AppInstanceProposal).identityHash,
+            );
+            break;
+          }
+
+          default: {
             throw new Error(`Unrecognized app persistence call: ${type}`);
+          }
         }
       },
     );
@@ -391,10 +428,7 @@ export class Node {
    * @param method
    * @param req
    */
-  async call(
-    method: MethodName,
-    req: MethodRequest,
-  ): Promise<MethodResponse> {
+  async call(method: MethodName, req: MethodRequest): Promise<MethodResponse> {
     return this.requestHandler.callMethod(method, req);
   }
 
@@ -458,11 +492,11 @@ export class Node {
       promise.resolve(msg);
     } catch (error) {
       this.log.error(
-        `Error while executing callback registered by IO_SEND_AND_WAIT middleware hook error ${
-          JSON.stringify(error, null, 2)
-        } msg ${
-          JSON.stringify(msg, null, 2)
-        }`,
+        `Error while executing callback registered by IO_SEND_AND_WAIT middleware hook error ${JSON.stringify(
+          error,
+          null,
+          2,
+        )} msg ${JSON.stringify(msg, null, 2)}`,
       );
     }
   }
