@@ -87,6 +87,9 @@ export class MemoryStorage implements IClientStore {
   }
 
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
+    if (!this.appInstances.has(appInstanceId)) {
+      return Promise.resolve(undefined);
+    }
     return Promise.resolve(this.appInstances.get(appInstanceId));
   }
 
@@ -148,6 +151,9 @@ export class MemoryStorage implements IClientStore {
   getSetupCommitment(
     multisigAddress: string,
   ): Promise<MinimalTransaction | undefined> {
+    if (!this.setupCommitments.has(multisigAddress)) {
+      return Promise.resolve(undefined);
+    }
     return Promise.resolve(this.setupCommitments.get(multisigAddress));
   }
 
@@ -162,6 +168,9 @@ export class MemoryStorage implements IClientStore {
   getSetStateCommitment(
     appInstanceId: string,
   ): Promise<SetStateCommitmentJSON | undefined> {
+    if (!this.setStateCommitments.has(appInstanceId)) {
+      return Promise.resolve(undefined);
+    }
     return Promise.resolve(this.setStateCommitments.get(appInstanceId));
   }
 
@@ -186,6 +195,9 @@ export class MemoryStorage implements IClientStore {
   getConditionalTransactionCommitment(
     appInstanceId: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    if (!this.conditionalTxCommitment.has(appInstanceId)) {
+      return Promise.resolve(undefined);
+    }
     return Promise.resolve(this.conditionalTxCommitment.get(appInstanceId));
   }
 
@@ -210,6 +222,9 @@ export class MemoryStorage implements IClientStore {
   getWithdrawalCommitment(
     multisigAddress: string,
   ): Promise<MinimalTransaction | undefined> {
+    if (!this.withdrawals.has(multisigAddress)) {
+      return Promise.resolve(undefined);
+    }
     return Promise.resolve(this.withdrawals.get(multisigAddress));
   }
 

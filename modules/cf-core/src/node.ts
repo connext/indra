@@ -22,6 +22,7 @@ import { Deferred } from "./deferred";
 import {
   MultisigCommitment,
   SetStateCommitment,
+  ConditionalTransactionCommitment,
 } from "./ethereum";
 import { ProtocolRunner } from "./machine";
 import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
@@ -265,54 +266,42 @@ export class Node {
 
         // will create a commitment if it does not exist, or update an
         // existing commitment
-        const createOrUpdate = async (key: string, value: any, getter: (k: string) => Promise<any | undefined>, creator: (k: string, v: any) => Promise<void>, setter: (k: string, v: any) => Promise<void>) => {
-          const existing = await getter(key);
-          if (existing) {
-            return await setter(key, value);
-          }
-          return await creator(key, value);
-        };
-
         switch (commitmentType) {
 
           case CommitmentTypes.Conditional:
-            await createOrUpdate(
-              key,
-              commitment,
-              this.storeService.getConditionalTransactionCommitment,
-              this.storeService.createConditionalTransactionCommitment,
-              this.storeService.updateConditionalTransactionCommitment,
-            );
+            const conditionalExisting = await this.storeService.getConditionalTransactionCommitment(key);
+            if (conditionalExisting) {
+              await this.storeService.updateConditionalTransactionCommitment(key, (commitment as ConditionalTransactionCommitment).toJson());
+            } else {
+              await this.storeService.createConditionalTransactionCommitment(key, (commitment as ConditionalTransactionCommitment).toJson());
+            }
             break;
 
           case CommitmentTypes.SetState:
-            await createOrUpdate(
-              key,
-              commitment,
-              this.storeService.getSetStateCommitment,
-              this.storeService.createSetStateCommitment,
-              this.storeService.updateSetStateCommitment,
-            );
+            const setStateExisting = await this.storeService.getSetStateCommitment(key);
+            if (setStateExisting) {
+              await this.storeService.updateSetStateCommitment(key, (commitment as SetStateCommitment).toJson());
+            } else {
+              await this.storeService.createSetStateCommitment(key, (commitment as SetStateCommitment).toJson());
+            }
             break;
 
           case CommitmentTypes.Setup:
-            await createOrUpdate(
-              key,
-              commitment,
-              this.storeService.getSetupCommitment,
-              this.storeService.createSetupCommitment,
-              (k: string, v: any) => Promise.resolve(),
-            );
+            console.log(`#### trying to update the setup commitment`);
+            const setupExisting = await this.storeService.getSetupCommitment(key);
+            if (setupExisting) {
+              throw new Error(`Found pre-existing setup commitment for channel`);
+            }
+            await this.storeService.createSetupCommitment(key, commitment as any);
             break;
 
           case CommitmentTypes.Withdraw:
-            await createOrUpdate(
-              key,
-              commitment,
-              this.storeService.getWithdrawalCommitment,
-              this.storeService.createWithdrawalCommitment,
-              this.storeService.updateWithdrawalCommitment,
-            );
+            const withdrawalExisting = await this.storeService.getWithdrawalCommitment(key);
+            if (withdrawalExisting) {
+              await this.storeService.updateWithdrawalCommitment(key, commitment as MinimalTransaction);
+            } else {
+              await this.storeService.createWithdrawalCommitment(key, commitment as MinimalTransaction);
+            }
             break;
 
           default:

@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID, NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
@@ -49,6 +49,11 @@ export async function handleReceivedProtocolMessage(
   );
 
   if (!outgoingEventData) {
+    return;
+  }
+
+  if (protocol !== ProtocolNames.install) {
+    await emitOutgoingNodeMessage(router, outgoingEventData);
     return;
   }
 
