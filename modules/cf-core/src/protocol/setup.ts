@@ -1,13 +1,24 @@
-import { SetupCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress } from "../machine";
+import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
+
+import { UNASSIGNED_SEQ_NO } from "../constants";
+import { getSetupCommitment } from "../ethereum";
+
 import { StateChannel } from "../models";
-import { Context, ProtocolMessage, ProtocolExecutionFlow, SetupProtocolParams } from "../types";
+import {
+  Context,
+  Opcode,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+} from "../types";
+
 import { logTime } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, UNASSIGNED_SEQ_NO } from "./utils";
+import { assertIsValidSignature } from "./utils";
 
-const protocol = Protocol.Setup;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const protocol = ProtocolNames.setup;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
+const { Setup } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -24,7 +35,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { processID, params } = message;
 
-    const { multisigAddress, responderXpub, initiatorXpub } = params as SetupProtocolParams;
+    const { multisigAddress, responderXpub, initiatorXpub } = params as ProtocolParams.Setup;
 
     // 56 ms
     const stateChannel = StateChannel.setupChannel(
@@ -34,17 +45,13 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       [initiatorXpub, responderXpub],
     );
 
-    const setupCommitment = new SetupCommitment(
-      network,
-      stateChannel.multisigAddress,
-      stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity,
-    );
+    const setupCommitment = getSetupCommitment(context, stateChannel);
+    const setupCommitmentHash = setupCommitment.hashToSign();
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 32 ms
-    const initiatorSignature = yield [OP_SIGN, setupCommitment];
+    const initiatorSignature = yield [OP_SIGN, setupCommitmentHash];
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
@@ -69,13 +76,19 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 34 ms
     substart = Date.now();
-    assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
+    await assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitmentHash, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
-    // 33 ms
-    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
+    setupCommitment.signatures = [responderSignature, initiatorSignature];
 
-    context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
+    // 33 ms
+    yield [
+      PERSIST_COMMITMENT,
+      Setup,
+      await setupCommitment.getSignedTransaction(),
+      stateChannel.multisigAddress,
+    ];
+    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
     logTime(log, start, `Finished initiating`);
   },
 
@@ -92,7 +105,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignature },
     } = message;
 
-    const { multisigAddress, initiatorXpub, responderXpub } = params as SetupProtocolParams;
+    const { multisigAddress, initiatorXpub, responderXpub } = params as ProtocolParams.Setup;
 
     // 73 ms
     const stateChannel = StateChannel.setupChannel(
@@ -102,23 +115,27 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       [initiatorXpub, responderXpub],
     );
 
-    const setupCommitment = new SetupCommitment(
-      network,
-      stateChannel.multisigAddress,
-      stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity,
-    );
+    const setupCommitment = getSetupCommitment(context, stateChannel);
+    const setupCommitmentHash = setupCommitment.hashToSign();
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
     substart = Date.now();
-    assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);
+    await assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitmentHash, initiatorSignature);
     logTime(log, substart, `Verified initator's sig`);
 
     // 49 ms
-    const responderSignature = yield [OP_SIGN, setupCommitment];
+    const responderSignature = yield [OP_SIGN, setupCommitmentHash];
 
+    setupCommitment.signatures = [responderSignature, initiatorSignature];
+
+    yield [
+      PERSIST_COMMITMENT,
+      Setup,
+      await setupCommitment.getSignedTransaction(),
+      stateChannel.multisigAddress,
+    ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     yield [
@@ -133,8 +150,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
     logTime(log, start, `Finished responding`);
   },
 };

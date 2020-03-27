@@ -1,15 +1,16 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
+import {
+  sortSignaturesBySignerAddress,
+  createRandomAddress,
+} from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, HashZero } from "ethers/constants";
 import {
   BigNumberish,
-  hexlify,
-  joinSignature,
   keccak256,
-  randomBytes,
-  SigningKey,
 } from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
@@ -19,7 +20,6 @@ import {
   appStateToHash,
   computeAppChallengeHash,
   expect,
-  sortSignaturesBySignerAddress,
 } from "./utils";
 
 enum ChallengeStatus {
@@ -80,7 +80,7 @@ describe("ChallengeRegistry", () => {
   beforeEach(async () => {
     const appIdentityTestObject = new AppIdentityTestClass(
       [ALICE.address, BOB.address],
-      hexlify(randomBytes(20)),
+      createRandomAddress(),
       10,
       globalChannelNonce,
     );
@@ -118,14 +118,14 @@ describe("ChallengeRegistry", () => {
         latestSubmitter: AddressZero,
         appStateHash: HashZero,
         versionNumber: 0,
-        finalizesAt: 0
+        finalizesAt: 0,
       });
     };
 
     verifyVersionNumber = async (expectedVersionNumber: BigNumberish) => {
       const { versionNumber } = await getChallenge();
       expect(versionNumber).to.be.eq(expectedVersionNumber);
-    }
+    };
 
     cancelChallenge = async () => {
       const digest = computeAppChallengeHash(
@@ -137,10 +137,10 @@ describe("ChallengeRegistry", () => {
 
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
-        sortSignaturesBySignerAddress(digest, [
-          await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest),
-        ]).map(joinSignature),
+        await sortSignaturesBySignerAddress(digest, [
+          await signDigest(ALICE.privateKey, digest),
+          await signDigest(BOB.privateKey, digest),
+        ]),
       );
     };
 
@@ -160,10 +160,10 @@ describe("ChallengeRegistry", () => {
         timeout,
         versionNumber,
         appStateHash: stateHash,
-        signatures: sortSignaturesBySignerAddress(digest, [
-          await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest),
-        ]).map(joinSignature),
+        signatures: await sortSignaturesBySignerAddress(digest, [
+          await signDigest(ALICE.privateKey, digest),
+          await signDigest(BOB.privateKey, digest),
+        ]),
       });
     };
 

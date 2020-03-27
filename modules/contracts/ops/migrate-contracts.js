@@ -1,13 +1,9 @@
-const {
-  CF_PATH,
-  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts,
-} = require("@connext/types");
+const { CF_PATH } = require("@connext/types");
 const fs = require("fs");
 const eth = require("ethers");
 const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Mintable.json");
 
-/*
-const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
+const coreContracts = [
   "ChallengeRegistry",
   "CoinBalanceRefundApp",
   "ConditionalTransactionDelegateTarget",
@@ -17,29 +13,24 @@ const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ProxyFactory",
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
   "TwoPartyFixedOutcomeInterpreter",
 ];
-*/
 
 const appContracts = [
+  "FastSignedTransferApp",
+  "HashLockTransferApp",
   "SimpleLinkedTransferApp",
+  "SimpleSignedTransferApp",
   "SimpleTransferApp",
   "SimpleTwoPartySwapApp",
-  "FastSignedTransferApp",
   "WithdrawApp",
-  "HashLockTransferApp",
 ];
 
 const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
 
 const artifacts = {};
 for (const contract of coreContracts) {
-  try {
-    artifacts[contract] = require(`../build/${contract}.json`);
-  } catch (e) {
-    artifacts[contract] = require(`../build/${contract}.json`);
-  }
+  artifacts[contract] = require(`../build/${contract}.json`);
 }
 
 for (const contract of appContracts) {

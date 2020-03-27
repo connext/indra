@@ -15,7 +15,7 @@ solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' 
 backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1-2).0
 
 # Pool of images to pull cached layers from during docker build steps
-cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_builder"; else echo ""; fi)
+cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_builder"; else echo ""; fi)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -60,9 +60,9 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database node client indra-proxy test-runner-js ws-tcp-relay
-staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging ws-tcp-relay
-release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release ws-tcp-relay
+dev: client database indra-proxy node test-runner-js
+staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging
+release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release
 
 start: start-daicard
 
@@ -82,7 +82,7 @@ start-test-staging:
 start-test-release:
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-release bash ops/start-prod.sh
 
-start-prod: prod
+start-prod:
 	bash ops/start-prod.sh
 
 stop:
@@ -123,12 +123,10 @@ clean: stop
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
 	bash ops/db.sh 'truncate table channel cascade;'
-	bash ops/db.sh 'truncate table channel_payment_profiles_payment_profile cascade;'
-	bash ops/db.sh 'truncate table linked_transfer cascade;'
+	bash ops/db.sh 'truncate table channel_rebalance_profiles_rebalance_profile cascade;'
 	bash ops/db.sh 'truncate table node_records cascade;'
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
-	bash ops/db.sh 'truncate table payment_profile cascade;'
-	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
+	bash ops/db.sh 'truncate table rebalance_profile cascade;'
 	touch modules/node/src/main.ts
 
 reset: stop
@@ -190,8 +188,11 @@ test-cf: cf-core
 test-client: client
 	bash ops/test/client.sh
 
-test-contracts: contracts types
+test-contracts: contracts crypto
 	bash ops/test/contracts.sh
+
+test-crypto: crypto
+	bash ops/test/crypto.sh
 
 test-daicard:
 	bash ops/test/ui.sh daicard
@@ -254,12 +255,12 @@ node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
+indra-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra/dev.dockerfile $(cache_from) --tag $(project)_proxy .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
+indra-proxy-prod: daicard-prod dashboard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -273,32 +274,26 @@ test-runner: test-runner-staging
 
 test-runner-release: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-ws-tcp-relay: ops/ws-tcp-relay.dockerfile
-	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay .
-	docker tag $(project)_relay $(project)_relay:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################
 # JS & bundles
 
-client: cf-core contracts types apps crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+apps: node-modules crypto cf-core $(shell find $(apps)/src $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/client && npm run build"
+	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
+cf-core: node-modules crypto contracts store $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -307,7 +302,12 @@ channel-provider: node-modules types $(shell find $(channel-provider)/src $(find
 	$(log_start)
 	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-	
+
+client: apps messaging channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/client && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
 crypto: node-modules types $(shell find $(crypto)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/crypto && npm run build"
@@ -328,7 +328,7 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node: cf-core contracts types apps messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node: apps messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -340,7 +340,7 @@ store: node-modules types $(shell find $(store)/src $(find_options))
 
 test-runner-js: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/test-runner && npm run build-bundle"
+	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
@@ -348,15 +348,10 @@ types: node-modules $(shell find $(types)/src $(find_options))
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-apps: node-modules cf-core types $(shell find $(apps)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/apps && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 ########################################
 # Common Prerequisites
 
-contracts: node-modules contract-artifacts types $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
+contracts: node-modules crypto contract-artifacts $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run transpile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -366,14 +361,11 @@ contract-artifacts: node-modules $(shell find $(contracts)/waffle.json $(contrac
 	$(docker_run) "cd modules/contracts && npm run compile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.native.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run compile-native"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
+	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
+	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 builder: ops/builder.dockerfile

@@ -1,29 +1,24 @@
-import { Protocol } from "../machine";
-import { ProtocolExecutionFlow } from "../types";
+import { ProtocolName, ProtocolNames, ProtocolExecutionFlow } from "../types";
 
 import { INSTALL_PROTOCOL } from "./install";
-import { INSTALL_VIRTUAL_APP_PROTOCOL } from "./install-virtual-app";
 import { PROPOSE_PROTOCOL } from "./propose";
 import { SETUP_PROTOCOL } from "./setup";
 import { TAKE_ACTION_PROTOCOL } from "./take-action";
 import { UNINSTALL_PROTOCOL } from "./uninstall";
-import { UNINSTALL_VIRTUAL_APP_PROTOCOL } from "./uninstall-virtual-app";
 import { UPDATE_PROTOCOL } from "./update";
 
 const protocolsByName = {
-  [Protocol.Install]: INSTALL_PROTOCOL,
-  [Protocol.InstallVirtualApp]: INSTALL_VIRTUAL_APP_PROTOCOL,
-  [Protocol.Propose]: PROPOSE_PROTOCOL,
-  [Protocol.Setup]: SETUP_PROTOCOL,
-  [Protocol.TakeAction]: TAKE_ACTION_PROTOCOL,
-  [Protocol.Uninstall]: UNINSTALL_PROTOCOL,
-  [Protocol.UninstallVirtualApp]: UNINSTALL_VIRTUAL_APP_PROTOCOL,
-  [Protocol.Update]: UPDATE_PROTOCOL,
+  [ProtocolNames.install]: INSTALL_PROTOCOL,
+  [ProtocolNames.propose]: PROPOSE_PROTOCOL,
+  [ProtocolNames.setup]: SETUP_PROTOCOL,
+  [ProtocolNames.takeAction]: TAKE_ACTION_PROTOCOL,
+  [ProtocolNames.uninstall]: UNINSTALL_PROTOCOL,
+  [ProtocolNames.update]: UPDATE_PROTOCOL,
 };
 
-export function getProtocolFromName(protocolName: Protocol): ProtocolExecutionFlow {
+export function getProtocolFromName(protocolName: ProtocolName): ProtocolExecutionFlow {
   if (!(protocolName in protocolsByName)) {
-    throw Error(`Received invalid protocol type ${protocolName}`);
+    throw new Error(`Received invalid protocol type ${protocolName}`);
   }
   return protocolsByName[protocolName];
 }

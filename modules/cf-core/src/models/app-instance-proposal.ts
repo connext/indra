@@ -13,6 +13,6 @@ export interface AppInstanceProposal {
   appSeqNo: number;
   proposedByIdentifier: string;
   proposedToIdentifier: string;
-  intermediaryIdentifier?: string;
   outcomeType: OutcomeType;
+  meta?: object;
 }

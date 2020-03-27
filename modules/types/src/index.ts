@@ -1,20 +1,30 @@
 export * from "./app";
-export * from "./apps";
 export * from "./basic";
-export * from "./bn";
-export * from "./cfCore";
-export * from "./channel";
 export * from "./channelProvider";
 export * from "./client";
-export * from "./constants";
+export * from "./commitments";
+export { CF_PATH } from "./constants";
 export * from "./contracts";
-export * from "./convert";
 export * from "./events";
-export * from "./inputs";
+export * from "./lock";
 export * from "./logger";
+export * from "./math";
 export * from "./messaging";
+export {
+  MethodName,
+  MethodNames,
+  MethodParam,
+  MethodParams,
+  MethodResult,
+  MethodResults,
+} from "./methods";
 export * from "./node";
-export * from "./protocol";
+export {
+  ProtocolName,
+  ProtocolNames,
+  ProtocolParam,
+  ProtocolParams,
+} from "./protocol";
 export * from "./state";
 export * from "./store";
 export * from "./utils";

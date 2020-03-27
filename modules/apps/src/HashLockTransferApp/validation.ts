@@ -1,33 +1,31 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj } from "@connext/types";
+import { MethodParams, CoinTransfer, HashLockTransferAppState } from "@connext/types";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
-import { convertHashLockTransferAppState } from "./convert";
 
 export const validateHashLockTransferApp = (
-  params: CFCoreTypes.ProposeInstallParams,
+  params: MethodParams.ProposeInstall,
   blockNumber: number,
   initiatorPublicIdentifier: string,
   responderPublicIdentifier: string,
 ) => {
-  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
-    params,
-  );
+  const { responderDeposit, initiatorDeposit } = params;
+  const initialState = params.initialState as HashLockTransferAppState;
 
   const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
   const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
 
-  const initialState = convertHashLockTransferAppState("bignumber", initialStateBadType);
-
-  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === initiatorFreeBalanceAddress;
   })[0];
-  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === responderFreeBalanceAddress;
   })[0];
 
-  if(initialState.timelock.lt(blockNumber)) {
-    throw new Error(`Cannot install an app with an expired timelock. Timelock in state: ${initialState.timelock}. Current block: ${blockNumber}`);
+  if (initialState.timelock.lt(blockNumber)) {
+    throw new Error(
+      `Cannot install an app with an expired timelock. Timelock in state: ${initialState.timelock}. Current block: ${blockNumber}`,
+    );
   }
 
   unidirectionalCoinTransferValidation(

@@ -1,7 +1,7 @@
 import { MultisigTransaction, MultisigOperation } from "@connext/types";
-import { BigNumberish, bigNumberify, Interface } from "ethers/utils";
 import { MultisigCommitment } from "@connext/cf-core";
-import ERC20 from "@connext/contracts/build/ERC20.json";
+import { ERC20 } from "@connext/contracts";
+import { BigNumberish, bigNumberify, Interface } from "ethers/utils";
 
 export class WithdrawETHCommitment extends MultisigCommitment {
   public constructor(

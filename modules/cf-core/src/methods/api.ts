@@ -1,4 +1,4 @@
-import { PROTOCOL_MESSAGE_EVENT, REJECT_INSTALL_EVENT } from "@connext/types";
+import { EventNames } from "@connext/types";
 import { handleRejectProposalMessage, handleReceivedProtocolMessage } from "../message-handling";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
@@ -9,12 +9,10 @@ import {
   GetFreeBalanceStateController,
   GetAppInstanceStateController,
   GetTokenIndexedFreeBalancesController,
-  InstallVirtualAppInstanceController,
   InstallAppInstanceController,
   ProposeInstallAppInstanceController,
   RejectInstallController,
   TakeActionController,
-  UninstallVirtualController,
   UninstallController,
   UpdateStateController,
 } from "./app-instance";
@@ -39,14 +37,12 @@ const controllers = [
   CreateChannelController,
   DepositController,
   InstallAppInstanceController,
-  InstallVirtualAppInstanceController,
   ProposeInstallAppInstanceController,
   RejectInstallController,
   RescindDepositRightsController,
   RequestDepositRightsController,
   TakeActionController,
   UninstallController,
-  UninstallVirtualController,
   UpdateStateController,
 
   /**
@@ -66,7 +62,7 @@ const controllers = [
 
 /**
  * Converts the array of connected controllers into a map of
- * ProtocolTypes.MethodNames to the _executeMethod_ method of a controller.
+ * MethodNames to the _executeMethod_ method of a controller.
  *
  * Throws a runtime error when package is imported if multiple
  * controllers overlap (should be caught by compiler anyway).
@@ -77,7 +73,7 @@ export const methodNameToImplementation = controllers.reduce((acc, controller) =
   }
 
   if (acc[controller.methodName]) {
-    throw Error(`Fatal: Multiple controllers connected to ${controller.methodName}`);
+    throw new Error(`Fatal: Multiple controllers connected to ${controller.methodName}`);
   }
 
   const handler = new controller();
@@ -91,6 +87,6 @@ export const createRpcRouter = (requestHandler: RequestHandler) =>
   new RpcRouter({ controllers, requestHandler });
 
 export const eventNameToImplementation = {
-  [PROTOCOL_MESSAGE_EVENT]: handleReceivedProtocolMessage,
-  [REJECT_INSTALL_EVENT]: handleRejectProposalMessage,
+  [EventNames.PROTOCOL_MESSAGE_EVENT]: handleReceivedProtocolMessage,
+  [EventNames.REJECT_INSTALL_EVENT]: handleRejectProposalMessage,
 };

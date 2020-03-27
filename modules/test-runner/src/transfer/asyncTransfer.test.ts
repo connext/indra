@@ -1,10 +1,16 @@
-/* global before after */
 import { utils } from "@connext/client";
-import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, CF_PATH } from "@connext/types";
+import {
+  CF_PATH,
+  ConditionalTransferTypes, 
+  createRandom32ByteHexString,
+  IConnextClient,
+} from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { HDNode, hexlify, randomBytes } from "ethers/utils";
+import { HDNode } from "ethers/utils";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
+import { before } from "mocha";
+import { Client } from "ts-nats";
 
 import {
   AssetOptions,
@@ -22,8 +28,7 @@ import {
   withdrawFromChannel,
   ZERO_ZERO_ONE_ETH,
 } from "../util";
-import { connectNats, closeNats } from "../util/nats";
-import { Client } from "ts-nats";
+import { getNatsClient } from "../util/nats";
 
 const { xpubToAddress } = utils;
 
@@ -34,7 +39,7 @@ describe("Async Transfers", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -46,10 +51,6 @@ describe("Async Transfers", () => {
   afterEach(async () => {
     await clientA.messaging.disconnect();
     await clientB.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it("happy case: client A transfers eth to client B through node", async () => {
@@ -155,7 +156,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value ${amount} is negative`);
+    ).to.be.rejectedWith(`invalid number value`);
   });
 
   it("Bot A tries to transfer with an invalid token address", async () => {
@@ -170,7 +171,7 @@ describe("Async Transfers", () => {
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(
-      `Value "${assetId}" is not a valid eth address, Value (${amount}) is not less than or equal to 0`,
+      `invalid address`,
     );
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
@@ -227,7 +228,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value (${amount}) is not less than or equal to 0`);
+    ).to.be.rejectedWith(`Install failed.`);
   });
 
   it("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {
@@ -238,12 +239,12 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
-        preImage: hexlify(randomBytes(32)),
+        preImage: createRandom32ByteHexString(),
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
+    ).to.be.rejectedWith(`invalid hexidecimal string`);
   });
 
   it("Bot A tries to transfer with a preImage that is not 32 bytes", async () => {
@@ -254,11 +255,28 @@ describe("Async Transfers", () => {
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        conditionType: LINKED_TRANSFER_TO_RECIPIENT,
-        paymentId: hexlify(randomBytes(32)),
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
+        paymentId: createRandom32ByteHexString(),
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
+    ).to.be.rejectedWith(`invalid hexidecimal string`);
+  });
+
+  it("Experimental: Average latency of 10 async transfers with Eth", async () => {
+    let runTime: number[] = [];
+    let sum = 0;
+    const numberOfRuns = 5;
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
+    await requestCollateral(clientB, transfer.assetId);
+    for (let i = 0; i < numberOfRuns; i++) {
+      const start = Date.now();
+      await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+      runTime[i] = Date.now() - start;
+      console.log(`Run: ${i}, Runtime: ${runTime[i]}`)
+      sum = sum + runTime[i];
+    }
+    console.log(`Average = ${sum/numberOfRuns} ms`)
   });
 });

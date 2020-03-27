@@ -82,7 +82,7 @@ describe("Swaps", () => {
       swapRate,
       toAssetId: tokenAddress,
     };
-    await expect(client.swap(swapParams)).to.be.rejectedWith("is not a valid eth address");
+    await expect(client.swap(swapParams)).to.be.rejectedWith("invalid address");
   });
 
   it("client tries to swap with invalid to token address", async () => {
@@ -96,7 +96,7 @@ describe("Swaps", () => {
       swapRate,
       toAssetId: WRONG_ADDRESS,
     };
-    await expect(client.swap(swapParams)).to.be.rejectedWith("is not a valid eth address");
+    await expect(client.swap(swapParams)).to.be.rejectedWith("invalid address");
   });
 
   it("client tries to swap with insufficient free balance for the user", async () => {

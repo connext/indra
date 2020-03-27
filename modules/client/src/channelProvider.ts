@@ -1,27 +1,24 @@
 import {
-  chan_storeSet,
-  chan_storeGet,
-  chan_signWithdrawCommitment,
-  chan_nodeAuth,
-  chan_restoreState,
-  IChannelProvider,
+  ChannelMethods,
   ConnextEventEmitter,
+  EventNames,
+  IChannelProvider,
+  IClientStore,
+  MethodName,
+  StateChannelJSON,
+  WithdrawalMonitorObject,
+  deBigNumberifyJson,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signMessage } from "@connext/crypto";
-import { Wallet } from "ethers";
+import { signChannelMessage, signDigest } from "@connext/crypto";
 
-import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
+import { CFCore, xpubToAddress } from "./lib";
 import {
   CFChannelProviderOptions,
-  CFCoreTypes,
   ChannelProviderConfig,
   IRpcConnection,
   JsonRpcRequest,
-  Store,
-  StorePair,
 } from "./types";
-import { SigningKey, joinSignature } from "ethers/utils";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -36,7 +33,7 @@ export const createCFChannelProvider = async ({
   logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
-    messaging as any,
+    messaging,
     store,
     networkContext,
     nodeConfig,
@@ -61,15 +58,15 @@ export const createCFChannelProvider = async ({
 export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public cfCore: CFCore;
-  public store: Store;
+  public store: IClientStore;
 
   // TODO: replace this when signing keys are added!
-  public wallet: Wallet;
+  public authKey: string;
 
-  constructor(cfCore: CFCore, store: Store, authKey: any) {
+  constructor(cfCore: CFCore, store: IClientStore, authKey: string) {
     super();
     this.cfCore = cfCore;
-    this.wallet = authKey ? new Wallet(authKey) : null;
+    this.authKey = authKey;
     this.store = store;
   }
 
@@ -77,20 +74,23 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     const { method, params } = payload;
     let result;
     switch (method) {
-      case chan_storeSet:
-        result = await this.storeSet(params.pairs, params.allowDelete);
+      case ChannelMethods.chan_setUserWithdrawal:
+        result = await this.storeSetUserWithdrawal(params.withdrawalObject);
         break;
-      case chan_storeGet:
-        result = await this.storeGet(params.path);
+      case ChannelMethods.chan_getUserWithdrawal:
+        result = await this.storeGetUserWithdrawal();
         break;
-      case chan_signWithdrawCommitment:
-        result = await this.signWithdrawCommitment(params.message);
+      case ChannelMethods.chan_signMessage:
+        result = await this.signMessage(params.message);
         break;
-      case chan_nodeAuth:
-          result = await this.walletSign(params.message);
-          break;
-      case chan_restoreState:
-        result = await this.restoreState(params.path);
+      case ChannelMethods.chan_signDigest:
+        result = await this.signDigest(params.message);
+        break;
+      case ChannelMethods.chan_restoreState:
+        result = await this.restoreState();
+        break;
+      case ChannelMethods.chan_setStateChannel:
+        result = await this.setStateChannel(params.state);
         break;
       default:
         result = await this.routerDispatch(method, params);
@@ -100,7 +100,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   }
 
   public on = (
-    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    event: string | EventNames | MethodName,
     listener: (...args: any[]) => void,
   ): any => {
     this.cfCore.on(event as any, listener);
@@ -108,7 +108,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   public once = (
-    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    event: string | EventNames | MethodName,
     listener: (...args: any[]) => void,
   ): any => {
     this.cfCore.once(event as any, listener);
@@ -125,44 +125,30 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
-  private walletSign = async (message: string): Promise<string> => {
-    const { chainId } = await this.wallet.provider.getNetwork();
-    return signMessage(this.wallet.privateKey, message, chainId);
+  private signMessage = async (message: string): Promise<string> => {
+    return signChannelMessage(this.authKey, message);
   };
 
-  private signWithdrawCommitment = async (message: string): Promise<string> => {
-    const key = new SigningKey(this.wallet.privateKey);
-    return joinSignature(key.signDigest(message));
-  }
-
-  private storeGet = async (path: string): Promise<any> => {
-    return this.store.get(path);
+  private signDigest = async (message: string): Promise<string> => {
+    return signDigest(this.authKey, message);
   };
 
-  private storeSet = async (pairs: StorePair[], allowDelete?: Boolean): Promise<void> => {
-    return this.store.set(pairs, allowDelete);
+  private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
+    return this.store.getUserWithdrawal();
   };
 
-  private storeRestore = async (): Promise<StorePair[]> => {
-    return await this.store.restore();
+  private storeSetUserWithdrawal = async (
+    value: WithdrawalMonitorObject | undefined,
+  ): Promise<void> => {
+    return this.store.setUserWithdrawal(value);
   };
 
-  private storeReset = async (): Promise<void> => {
-    return await this.store.reset();
+  private setStateChannel = async (channel: StateChannelJSON): Promise<void> => {
+    return this.store.saveStateChannel(channel);
   };
 
-  // TODO: clean up types from restore, without the any typing things
-  // get messed up. will likely be a breaking change
-  private restoreState = async (path: string): Promise<void> => {
-    // TODO: remove when using only store package
-    this.storeReset();
-    let state;
-    state = await this.storeRestore();
-    if (!state || !state.path) {
-      throw new Error("No matching paths found in store backup's state");
-    }
-    state = state.path;
-    return state;
+  private restoreState = async (): Promise<void> => {
+    await this.store.restore();
   };
 
   private routerDispatch = async (method: string, params: any = {}) => {

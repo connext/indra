@@ -1,8 +1,8 @@
 export {
   isBN,
   toBN,
-  toWei,
-  fromWei,
+  toWad,
+  fromWad,
   weiToToken,
   tokenToWei,
   maxBN,

@@ -26,7 +26,7 @@ $ brew install postgresql
 
 - NATS
 ```bash
-$ docker pull nats:latest
+$ docker pull provide/nats-server:latest
 ```
 
 #### Set Up Local Config
@@ -43,7 +43,7 @@ $ brew services start postgresql
 
 - Run NATS server locally
 ```bash
-$ docker run -p 4222:4222 -ti nats:latest
+$ docker run -p 4222:4222 -ti provide/nats-server:latest
 ```
 
 - Run Nest app

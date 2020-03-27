@@ -1,39 +1,38 @@
 import {
-  AppRegistry as RegistryOfApps,
+  AppRegistry as RegistryOfApps, // TODO: fix collision
   commonAppProposalValidation,
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
   validateFastSignedTransferApp,
   validateWithdrawApp,
   validateHashLockTransferApp,
+  validateSignedTransferApp,
 } from "@connext/apps";
 import {
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  SimpleTwoPartySwapApp,
-  FastSignedTransferApp,
-  WithdrawApp,
   AppInstanceJson,
-  SimpleLinkedTransferAppStateBigNumber,
-  WithdrawAppStateBigNumber,
-  HashLockTransferApp,
+  CoinBalanceRefundAppName,
+  FastSignedTransferAppName,
+  HashLockTransferAppName,
+  MethodParams,
+  SimpleLinkedTransferAppName,
+  SimpleSignedTransferAppName,
+  SimpleTwoPartySwapAppName,
+  WithdrawAppName,
+  WithdrawAppState,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
-import { Zero } from "ethers/constants";
+import { MessagingService } from "@connext/messaging";
 import { bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { WithdrawService } from "../withdraw/withdraw.service";
-import { MessagingClientProviderId } from "../constants";
+import { MessagingProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
-import { CFCoreTypes } from "../util/cfCore";
 import { LoggerService } from "../logger/logger.service";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
+import { Channel } from "../channel/channel.entity";
+import { WithdrawService } from "../withdraw/withdraw.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -46,27 +45,26 @@ export class AppRegistryService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly swapRateService: SwapRateService,
-    private readonly linkedTransferService: LinkedTransferService,
+    @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("AppRegistryService");
   }
 
   async validateAndInstallOrReject(
     appInstanceId: string,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     let registryAppInfo: AppRegistry;
     let appInstance: AppInstanceJson;
 
     // if error, reject install
+    let installerChannel: Channel;
     try {
-      const installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
+      installerChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
       registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
         proposeInstallParams.appDefinition,
       );
@@ -77,14 +75,10 @@ export class AppRegistryService implements OnModuleInit {
 
       // dont install coin balance refund
       // TODO: need to validate this still
-      if (registryAppInfo.name === CoinBalanceRefundApp) {
+      if (registryAppInfo.name === CoinBalanceRefundAppName) {
         this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
-        await this.messagingClient
-          .emit(
-            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${installerChannel.multisigAddress}`,
-            proposeInstallParams,
-          )
-          .toPromise();
+        const proposalAcceptedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
+        await this.messagingService.publish(proposalAcceptedSubject, proposeInstallParams);
         return;
       }
 
@@ -96,9 +90,10 @@ export class AppRegistryService implements OnModuleInit {
         installerChannel.multisigAddress,
         proposeInstallParams.responderDepositTokenAddress,
       );
+      const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
       if (
         preInstallFreeBalance[this.cfCoreService.cfCore.freeBalanceAddress].lt(
-          bigNumberify(proposeInstallParams.responderDeposit),
+          responderDepositBigNumber,
         )
       ) {
         this.log.info(`Collateralizing channel before rebalancing...`);
@@ -107,7 +102,7 @@ export class AppRegistryService implements OnModuleInit {
           from,
           proposeInstallParams.responderDepositTokenAddress,
           RebalanceType.COLLATERALIZE,
-          bigNumberify(proposeInstallParams.responderDeposit),
+          responderDepositBigNumber,
         );
         if (tx) {
           await tx.wait();
@@ -124,23 +119,19 @@ export class AppRegistryService implements OnModuleInit {
     // any tasks that need to happen after install, i.e. DB writes
     await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
 
-    await this.messagingClient
-      .emit(
-        `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
-        appInstance,
-      )
-      .toPromise();
+    const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
+    await this.messagingService.publish(installSubject, appInstance);
   }
 
   private async runPreInstallValidation(
     registryAppInfo: AppRegistry,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
     commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
     switch (registryAppInfo.name) {
-      case SimpleLinkedTransferApp: {
+      case SimpleLinkedTransferAppName: {
         validateSimpleLinkedTransferApp(
           proposeInstallParams,
           from,
@@ -148,7 +139,7 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-      case SimpleTwoPartySwapApp: {
+      case SimpleTwoPartySwapAppName: {
         const allowedSwaps = this.configService.getAllowedSwaps();
         const ourRate = await this.swapRateService.getOrFetchRate(
           proposeInstallParams.initiatorDepositTokenAddress,
@@ -157,7 +148,7 @@ export class AppRegistryService implements OnModuleInit {
         validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;
       }
-      case FastSignedTransferApp: {
+      case FastSignedTransferAppName: {
         validateFastSignedTransferApp(
           proposeInstallParams,
           from,
@@ -165,15 +156,27 @@ export class AppRegistryService implements OnModuleInit {
         );
         break;
       }
-      case WithdrawApp: {
-        validateWithdrawApp(proposeInstallParams, from, this.cfCoreService.cfCore.publicIdentifier);
+      case WithdrawAppName: {
+        await validateWithdrawApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
         break;
       }
-      case HashLockTransferApp: {
-        const blockNumber = await (this.configService.getEthProvider()).getBlockNumber()
+      case HashLockTransferAppName: {
+        const blockNumber = await this.configService.getEthProvider().getBlockNumber();
         validateHashLockTransferApp(
           proposeInstallParams,
           blockNumber,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+        );
+        break;
+      }
+      case SimpleSignedTransferAppName: {
+        validateSignedTransferApp(
+          proposeInstallParams,
           from,
           this.cfCoreService.cfCore.publicIdentifier,
         );
@@ -190,45 +193,14 @@ export class AppRegistryService implements OnModuleInit {
   private async runPostInstallTasks(
     registryAppInfo: AppRegistry,
     appInstanceId: string,
-    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     switch (registryAppInfo.name) {
-      case SimpleLinkedTransferApp: {
-        this.log.debug(`Saving linked transfer`);
-        // eslint-disable-next-line max-len
-        const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppStateBigNumber;
-
-        const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
-        if (isResolving) {
-          const transfer = await this.linkedTransferRepository.findByPaymentId(
-            initialState.paymentId,
-          );
-          transfer.receiverAppInstanceId = appInstanceId;
-          await this.linkedTransferRepository.save(transfer);
-          this.log.debug(`Updated transfer with receiver appId!`);
-        } else {
-          await this.linkedTransferService.saveLinkedTransfer(
-            from,
-            proposeInstallParams.initiatorDepositTokenAddress,
-            bigNumberify(proposeInstallParams.initiatorDeposit),
-            appInstanceId,
-            initialState.linkedHash,
-            initialState.paymentId,
-            proposeInstallParams.meta["encryptedPreImage"],
-            proposeInstallParams.meta["recipient"],
-            proposeInstallParams.meta,
-          );
-          this.log.debug(`Linked transfer saved!`);
-        }
-        break;
-      }
-      case FastSignedTransferApp:
-        break;
-      case WithdrawApp: {
+      case WithdrawAppName: {
         this.log.debug(`Doing withdrawal post-install tasks`);
         const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
-        const initialState = proposeInstallParams.initialState as WithdrawAppStateBigNumber;
+        const initialState = proposeInstallParams.initialState as WithdrawAppState;
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
           appInstanceId,

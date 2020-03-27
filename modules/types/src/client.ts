@@ -1,58 +1,103 @@
 import { providers } from "ethers";
+import { TransactionResponse } from "ethers/providers";
 
+import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
+import { Address, BigNumber, BigNumberish, Xpub } from "./basic";
 import {
-  ResolveLinkedTransferResponse,
-  ResolveConditionResponse,
-  ResolveConditionParameters,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ResolveConditionParameters,
+  ResolveConditionResponse,
+  ResolveLinkedTransferResponse,
+  SwapParameters,
+  WithdrawParameters,
   WithdrawResponse,
   GetHashLockTransferResponse,
-} from "./apps";
-import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { BigNumber } from "./basic";
-import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
+  GetSignedTransferResponse,
+} from "./contracts";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
-import { ConnextEvent } from "./events";
-import {
-  CheckDepositRightsParameters,
-  CheckDepositRightsResponse,
-  DepositParameters,
-  RequestDepositRightsParameters,
-  RescindDepositRightsParameters,
-  RescindDepositRightsResponse,
-  TransferParameters,
-} from "./inputs";
+import { EventNames } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
-  CreateChannelResponse,
+  RebalanceProfile,
   GetChannelResponse,
+  CreateChannelResponse,
+  ChannelAppSequences,
   GetConfigResponse,
   RequestCollateralResponse,
-  Transfer,
+  TransferInfo,
+  GetLinkedTransferResponse,
 } from "./node";
-import { ProtocolTypes } from "./protocol";
-import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
-import { CFCoreTypes } from "./cfCore";
-import { SwapParameters, WithdrawParameters } from "./apps";
-import { TransactionResponse } from "ethers/providers";
+import {
+  MethodResults,
+  MethodParams,
+  MethodName,
+} from "./methods";
+import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
+
+export type ChannelState = {
+  apps: AppInstanceJson[]; // result of getApps()
+  freeBalance: MethodResults.GetFreeBalanceState;
+};
+
+/////////////////////////////////
+// Client input types
+
+export type AssetAmount = {
+  amount: BigNumber;
+  assetId: Address;
+};
+
+export type DepositParameters = {
+  amount: BigNumberish;
+  assetId: Address; // TODO: Ensure that this value is case insensitive
+};
+
+export type RequestDepositRightsParameters = {
+  assetId: Address;
+}
+
+export type RequestDepositRightsResponse = MethodResults.RequestDepositRights;
+
+export type CheckDepositRightsParameters = RequestDepositRightsParameters;
+
+export type CheckDepositRightsResponse = {
+  assetId: Address;
+  multisigBalance: BigNumber;
+  recipient: Address;
+  threshold: BigNumber;
+};
+
+export type RescindDepositRightsParameters = RequestDepositRightsParameters;
+export type RescindDepositRightsResponse = MethodResults.Deposit;
+
+// Generic transfer types
+export type TransferParameters = DepositParameters & {
+  recipient: Address;
+  meta?: object;
+  paymentId?: string;
+};
+
+export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };
+
+/////////////////////////////////
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
-  asyncStorage?: IAsyncStorage;
   backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
   keyGen?: KeyGen;
+  mnemonic?: string;
+  xpub?: string;
+  store?: IClientStore;
+  storeType?: StoreTypes;
   logger?: ILogger;
   loggerService?: ILoggerService;
   logLevel?: number;
   messaging?: IMessagingService;
-  mnemonic?: string;
-  nodeUrl?: string; // ws:// or nats:// urls are supported
-  store?: Store;
-  xpub?: string;
+  nodeUrl?: string; // node's HTTP endpoint
 }
 
 export interface IConnextClient {
@@ -66,12 +111,13 @@ export interface IConnextClient {
   freeBalanceAddress: string;
   multisigAddress: string;
   nodePublicIdentifier: string;
+  nodeFreeBalanceAddress: string;
   publicIdentifier: string;
   signerAddress: string;
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
-  store: Store;
+  store: IClientStore;
 
   ////////////////////////////////////////
   // Methods
@@ -80,18 +126,18 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
-  once(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
-  emit(event: ConnextEvent | CFCoreTypes.RpcMethodName, data: any): boolean;
+  on(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
+  once(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
+  emit(event: EventNames | MethodName, data: any): boolean;
   removeListener(
-    event: ConnextEvent | CFCoreTypes.RpcMethodName,
+    event: EventNames | MethodName,
     callback: (...args: any[]) => void,
   ): void;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
   deposit(params: DepositParameters): Promise<ChannelState>;
-  swap(params: SwapParameters): Promise<CFCoreChannel>;
+  swap(params: SwapParameters): Promise<GetChannelResponse>;
   transfer(params: TransferParameters): Promise<any>;
   withdraw(params: WithdrawParameters): Promise<WithdrawResponse>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
@@ -100,7 +146,7 @@ export interface IConnextClient {
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   requestDepositRights(
     params: RequestDepositRightsParameters,
-  ): Promise<ProtocolTypes.RequestDepositRightsResult>;
+  ): Promise<MethodResults.RequestDepositRights>;
   rescindDepositRights(
     params: RescindDepositRightsParameters,
   ): Promise<RescindDepositRightsResponse>;
@@ -111,8 +157,9 @@ export interface IConnextClient {
   // TODO: do we really need to expose all of these?
   isAvailable(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
-  getLinkedTransfer(paymentId: string): Promise<Transfer>;
+  getLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
+  getSignedTransfer(lockHash: string): Promise<GetSignedTransferResponse>;
   getAppRegistry(
     appDetails?:
       | {
@@ -128,7 +175,7 @@ export interface IConnextClient {
   unsubscribeToSwapRates(from: string, to: string): Promise<void>;
   requestCollateral(tokenAddress: string): Promise<RequestCollateralResponse | void>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile | undefined>;
-  getTransferHistory(): Promise<Transfer[]>;
+  getTransferHistory(): Promise<TransferInfo[]>;
   reclaimPendingAsyncTransfers(): Promise<void>;
   reclaimPendingAsyncTransfer(
     amount: string,
@@ -140,29 +187,29 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
-  deployMultisig(): Promise<ProtocolTypes.DeployStateDepositHolderResult>;
-  getStateChannel(): Promise<ProtocolTypes.GetStateChannelResult>;
+  deployMultisig(): Promise<MethodResults.DeployStateDepositHolder>;
+  getStateChannel(): Promise<MethodResults.GetStateChannel>;
   providerDeposit(
     amount: BigNumber,
     assetId: string,
     notifyCounterparty: boolean,
-  ): Promise<ProtocolTypes.DepositResult>;
-  getFreeBalance(assetId?: string): Promise<ProtocolTypes.GetFreeBalanceStateResult>;
+  ): Promise<MethodResults.Deposit>;
+  getFreeBalance(assetId?: string): Promise<MethodResults.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
-  getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
-  getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
-  getProposedAppInstances(): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;
+  getAppInstanceDetails(appInstanceId: string): Promise<MethodResults.GetAppInstanceDetails>;
+  getAppState(appInstanceId: string): Promise<MethodResults.GetState>;
+  getProposedAppInstances(
+    multisigAddress?: string,
+  ): Promise<MethodResults.GetProposedAppInstances | undefined>;
   getProposedAppInstance(
     appInstanceId: string,
-  ): Promise<ProtocolTypes.GetProposedAppInstanceResult | undefined>;
+  ): Promise<MethodResults.GetProposedAppInstance | undefined>;
   proposeInstallApp(
-    params: ProtocolTypes.ProposeInstallParams,
-  ): Promise<ProtocolTypes.ProposeInstallResult>;
-  installVirtualApp(appInstanceId: string): Promise<ProtocolTypes.InstallVirtualResult>;
-  installApp(appInstanceId: string): Promise<ProtocolTypes.InstallResult>;
-  rejectInstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
-  takeAction(appInstanceId: string, action: any): Promise<ProtocolTypes.TakeActionResult>;
-  updateState(appInstanceId: string, newState: any): Promise<ProtocolTypes.UpdateStateResult>;
-  uninstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
-  uninstallVirtualApp(appInstanceId: string): Promise<ProtocolTypes.UninstallVirtualResult>;
+    params: MethodParams.ProposeInstall,
+  ): Promise<MethodResults.ProposeInstall>;
+  installApp(appInstanceId: string): Promise<MethodResults.Install>;
+  rejectInstallApp(appInstanceId: string): Promise<MethodResults.Uninstall>;
+  takeAction(appInstanceId: string, action: any): Promise<MethodResults.TakeAction>;
+  updateState(appInstanceId: string, newState: any): Promise<MethodResults.UpdateState>;
+  uninstallApp(appInstanceId: string): Promise<MethodResults.Uninstall>;
 }

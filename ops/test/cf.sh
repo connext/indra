@@ -5,11 +5,11 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 test_command='
-  jest --setupFiles dotenv-extended/config --runInBand --forceExit '"'$@'"'
+  jest --setupFiles dotenv-extended/config --runInBand --forceExit --passWithNoTests '"'$@'"'
 '
 
 watch_command='
-  CI=true exec jest --color --setupFiles dotenv-extended/config --runInBand --watch '"$@"'
+  CI=true exec jest --color --setupFiles dotenv-extended/config --runInBand --passWithNoTests --watch '"$@"'
 '
 
 if [[ "$1" == "--watch" ]]
@@ -77,6 +77,7 @@ docker run \
   --entrypoint="bash" \
   --env="ETHPROVIDER_URL=$ethprovider_url" \
   --env="SUGAR_DADDY=$eth_mnemonic" \
+  --env="LOG_LEVEL=$LOG_LEVEL" \
   $interactive \
   --name="${project}_test_cf_core" \
   --network="$network" \

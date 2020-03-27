@@ -1,31 +1,20 @@
 import {
   CriticalStateChannelAddresses,
-  SingleAssetTwoPartyIntermediaryAgreement,
   StateChannelJSON,
   StateSchemaVersion,
+  stringify,
+  deBigNumberifyJson,
 } from "@connext/types";
-import { BigNumber } from "ethers/utils";
 
-import { flip, flipTokenIndexedBalances } from "../ethereum";
-import { xkeyKthAddress } from "../machine/xkeys";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";
-import { prettyPrintObject } from "../utils";
+import { xkeyKthAddress } from "../xkeys";
 
-import { AppInstanceProposal } from ".";
+import { AppInstanceProposal } from "./app-instance-proposal";
 import { AppInstance } from "./app-instance";
-import {
-  CoinTransferMap,
-  createFreeBalance,
-  FreeBalanceClass,
-  TokenIndexedCoinTransferMap,
-} from "./free-balance";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-
-// TODO: Hmmm this code should probably be somewhere else?
-export const HARD_CODED_ASSUMPTIONS = {
-  freeBalanceDefaultTimeout: 172800,
-};
+import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
+import { flipTokenIndexedBalances, sortAddresses } from "./utils";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,
@@ -37,10 +26,6 @@ const ERRORS = {
   MULTISIG_OWNERS_NOT_SORTED: "multisigOwners parameter of StateChannel must be sorted",
 };
 
-function sortAddresses(addrs: string[]) {
-  return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-}
-
 export class StateChannel {
   constructor(
     public readonly multisigAddress: string,
@@ -51,18 +36,14 @@ export class StateChannel {
       AppInstanceProposal
     >([]),
     readonly appInstances: ReadonlyMap<string, AppInstance> = new Map<string, AppInstance>([]),
-    readonly singleAssetTwoPartyIntermediaryAgreements: ReadonlyMap<
-      string,
-      SingleAssetTwoPartyIntermediaryAgreement
-    > = new Map<string, SingleAssetTwoPartyIntermediaryAgreement>([]),
     private readonly freeBalanceAppInstance?: AppInstance,
     private readonly monotonicNumProposedApps: number = 0,
     public readonly schemaVersion: number = StateSchemaVersion,
   ) {
     userNeuteredExtendedKeys.forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
-        throw Error(
-          `StateChannel constructor given invalid extended keys: ${prettyPrintObject(
+        throw new Error(
+          `StateChannel constructor given invalid extended keys: ${stringify(
             userNeuteredExtendedKeys,
           )}`,
         );
@@ -87,13 +68,17 @@ export class StateChannel {
       return this.freeBalance;
     }
     if (!this.appInstances.has(appInstanceIdentityHash)) {
-      throw Error(ERRORS.APP_DOES_NOT_EXIST(appInstanceIdentityHash));
+      throw new Error(ERRORS.APP_DOES_NOT_EXIST(appInstanceIdentityHash));
     }
     return this.appInstances.get(appInstanceIdentityHash)!;
   }
 
   public hasAppInstance(appInstanceId: string): boolean {
     return this.appInstances.has(appInstanceId);
+  }
+
+  public hasAppProposal(appInstanceId: string): boolean {
+    return this.proposedAppInstances.has(appInstanceId);
   }
 
   public hasAppInstanceOfKind(address: string): boolean {
@@ -106,7 +91,7 @@ export class StateChannel {
 
   public mostRecentlyInstalledAppInstance(): AppInstance {
     if (this.appInstances.size === 0) {
-      throw Error("There are no installed AppInstances in this StateChannel");
+      throw new Error("There are no installed AppInstances in this StateChannel");
     }
     return [...this.appInstances.values()].reduce((prev, current) =>
       current.appSeqNo > prev.appSeqNo ? current : prev,
@@ -115,7 +100,7 @@ export class StateChannel {
 
   public mostRecentlyProposedAppInstance(): AppInstanceProposal {
     if (this.proposedAppInstances.size === 0) {
-      throw Error("There are no proposed AppInstances in this StateChannel");
+      throw new Error("There are no proposed AppInstances in this StateChannel");
     }
     return [...this.proposedAppInstances.values()].reduce((prev, current) =>
       current.appSeqNo > prev.appSeqNo ? current : prev,
@@ -129,7 +114,7 @@ export class StateChannel {
       },
     );
     if (appInstances.length !== 1) {
-      throw Error(
+      throw new Error(
         `Either 0 or more than 1 AppInstance of addr ${address} exists on channel: ${this.multisigAddress}`,
       );
     }
@@ -143,7 +128,9 @@ export class StateChannel {
       },
     );
     if (appInstances.length === 0) {
-      throw Error(`No AppInstance of addr ${address} exists on channel: ${this.multisigAddress}`);
+      throw new Error(
+        `No AppInstance of addr ${address} exists on channel: ${this.multisigAddress}`,
+      );
     }
     return appInstances;
   }
@@ -178,17 +165,25 @@ export class StateChannel {
     balanceRefundAppDefinitionAddress: string,
     tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
   ) {
-    const appInstances = this.getAppInstancesOfKind(balanceRefundAppDefinitionAddress).filter(
+    const noAppsErr = `No CoinBalanceRefund app instance of tokenAddress ${tokenAddress} exists on channel: ${this.multisigAddress}`;
+    let refundApps;
+    try {
+      refundApps = this.getAppInstancesOfKind(balanceRefundAppDefinitionAddress);
+    } catch (e) {
+      if (e.message.includes(`No AppInstance of addr`)) {
+        throw new Error(noAppsErr);
+      }
+      throw new Error(e.stack || e.message);
+    }
+    const appInstances = refundApps.filter(
       (appInstance: AppInstance) => appInstance.latestState["tokenAddress"] === tokenAddress,
     );
     if (appInstances.length === 0) {
-      throw Error(
-        `No CoinBalanceRefund app instance of tokenAddress ${tokenAddress} exists on channel: ${this.multisigAddress}`,
-      );
+      throw new Error(noAppsErr);
     }
 
     if (appInstances.length > 1) {
-      throw Error(
+      throw new Error(
         `More than 1 CoinBalanceRefund app instance of tokenAddress ${tokenAddress} exists on channel: ${this.multisigAddress}`,
       );
     }
@@ -218,7 +213,7 @@ export class StateChannel {
       return this.freeBalanceAppInstance;
     }
 
-    throw Error("There is no free balance app instance installed in this state channel");
+    throw new Error("There is no free balance app instance installed in this state channel");
   }
 
   public getMultisigOwnerAddrOf(xpub: string): string {
@@ -227,7 +222,9 @@ export class StateChannel {
     const topLevelKey = xkeyKthAddress(xpub, 0);
 
     if (topLevelKey !== alice && topLevelKey !== bob) {
-      throw Error(`getMultisigOwnerAddrOf received invalid xpub not in multisigOwners: ${xpub}`);
+      throw new Error(
+        `getMultisigOwnerAddrOf received invalid xpub not in multisigOwners: ${xpub}`,
+      );
     }
 
     return topLevelKey;
@@ -239,7 +236,7 @@ export class StateChannel {
     const topLevelKey = xkeyKthAddress(xpub, 0);
 
     if (topLevelKey !== alice && topLevelKey !== bob) {
-      throw Error(
+      throw new Error(
         `getFreeBalanceAddrOf received invalid xpub without free balance account: ${xpub}`,
       );
     }
@@ -251,70 +248,50 @@ export class StateChannel {
     return FreeBalanceClass.fromAppInstance(this.freeBalance);
   }
 
-  private build(args: {
+  private build = (args: {
     multisigAddress?: string;
     addresses?: CriticalStateChannelAddresses;
     userNeuteredExtendedKeys?: string[];
     appInstances?: ReadonlyMap<string, AppInstance>;
     proposedAppInstances?: ReadonlyMap<string, AppInstanceProposal>;
-    singleAssetTwoPartyIntermediaryAgreements?: ReadonlyMap<
-      string,
-      SingleAssetTwoPartyIntermediaryAgreement
-    >;
     freeBalanceAppInstance?: AppInstance;
     monotonicNumProposedApps?: number;
     schemaVersion?: number;
-  }) {
+  }) => {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
       args.addresses || this.addresses,
       args.userNeuteredExtendedKeys || this.userNeuteredExtendedKeys,
       args.proposedAppInstances || this.proposedAppInstances,
       args.appInstances || this.appInstances,
-      args.singleAssetTwoPartyIntermediaryAgreements ||
-        this.singleAssetTwoPartyIntermediaryAgreements,
       args.freeBalanceAppInstance || this.freeBalanceAppInstance,
       args.monotonicNumProposedApps || this.monotonicNumProposedApps,
       args.schemaVersion || this.schemaVersion,
     );
-  }
-
-  public incrementFreeBalance(increments: TokenIndexedCoinTransferMap) {
-    return this.build({
-      freeBalanceAppInstance: this.getFreeBalanceClass()
-        .increment(increments)
-        .toAppInstance(this.freeBalance),
-    });
-  }
-
-  public addActiveApp(activeApp: string) {
-    return this.build({
-      freeBalanceAppInstance: this.getFreeBalanceClass()
-        .addActiveApp(activeApp)
-        .toAppInstance(this.freeBalance),
-    });
-  }
-
-  public removeActiveApp(activeApp: string) {
-    return this.build({
-      freeBalanceAppInstance: this.getFreeBalanceClass()
-        .removeActiveApp(activeApp)
-        .toAppInstance(this.freeBalance),
-    });
-  }
+  };
 
   public addActiveAppAndIncrementFreeBalance(
     activeApp: string,
     tokenIndexedIncrements: TokenIndexedCoinTransferMap,
   ) {
-    return this.incrementFreeBalance(tokenIndexedIncrements).addActiveApp(activeApp);
+    return this.build({
+      freeBalanceAppInstance: this.getFreeBalanceClass()
+        .increment(tokenIndexedIncrements)
+        .addActiveApp(activeApp)
+        .toAppInstance(this.freeBalance),
+    });
   }
 
   public removeActiveAppAndIncrementFreeBalance(
     activeApp: string,
     tokenIndexedIncrements: TokenIndexedCoinTransferMap,
   ) {
-    return this.removeActiveApp(activeApp).incrementFreeBalance(tokenIndexedIncrements);
+    return this.build({
+      freeBalanceAppInstance: this.getFreeBalanceClass()
+        .removeActiveApp(activeApp)
+        .increment(tokenIndexedIncrements)
+        .toAppInstance(this.freeBalance),
+    });
   }
 
   public setFreeBalance(newFreeBalanceClass: FreeBalanceClass) {
@@ -336,11 +313,11 @@ export class StateChannel {
       userNeuteredExtendedKeys,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>([]),
-      new Map<string, SingleAssetTwoPartyIntermediaryAgreement>(),
       createFreeBalance(
         userNeuteredExtendedKeys,
         freeBalanceAppAddress,
         freeBalanceTimeout || HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout,
+        multisigAddress,
       ),
       1,
     );
@@ -357,7 +334,6 @@ export class StateChannel {
       userNeuteredExtendedKeys,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>(),
-      new Map<string, SingleAssetTwoPartyIntermediaryAgreement>(),
       // Note that this FreeBalance is undefined because a channel technically
       // does not have a FreeBalance before the `setup` protocol gets run
       undefined,
@@ -378,7 +354,7 @@ export class StateChannel {
     });
   }
 
-  public removeProposal(appInstanceId: string) {
+  public removeProposal = (appInstanceId: string) => {
     const proposedAppInstances = new Map<string, AppInstanceProposal>(
       this.proposedAppInstances.entries(),
     );
@@ -388,7 +364,7 @@ export class StateChannel {
     return this.build({
       proposedAppInstances,
     });
-  }
+  };
 
   public addAppInstance(appInstance: AppInstance) {
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
@@ -411,57 +387,14 @@ export class StateChannel {
     });
   }
 
-  public setState(appInstanceIdentityHash: string, state: SolidityValueType) {
-    const appInstance = this.getAppInstance(appInstanceIdentityHash);
+  public setState(appInstance: AppInstance, state: SolidityValueType) {
 
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
-    appInstances.set(appInstanceIdentityHash, appInstance.setState(state));
+    appInstances.set(appInstance.identityHash, appInstance.setState(state));
 
     return this.build({
       appInstances,
-    });
-  }
-
-  public addSingleAssetTwoPartyIntermediaryAgreement(
-    targetIdentityHash: string,
-    agreement: SingleAssetTwoPartyIntermediaryAgreement,
-    decrements: CoinTransferMap,
-    tokenAddress: string,
-  ) {
-    // Add to singleAssetTwoPartyIntermediaryAgreements
-
-    const evaaInstances = new Map<string, SingleAssetTwoPartyIntermediaryAgreement>(
-      this.singleAssetTwoPartyIntermediaryAgreements.entries(),
-    );
-
-    evaaInstances.set(targetIdentityHash, agreement);
-
-    return this.build({
-      singleAssetTwoPartyIntermediaryAgreements: evaaInstances,
-    }).addActiveAppAndIncrementFreeBalance(targetIdentityHash, {
-      [tokenAddress]: flip(decrements),
-    });
-  }
-
-  public removeSingleAssetTwoPartyIntermediaryAgreement(
-    targetIdentityHash: string,
-    increments: { [addr: string]: BigNumber },
-    tokenAddress: string,
-  ) {
-    const singleAssetTwoPartyIntermediaryAgreements = new Map<
-      string,
-      SingleAssetTwoPartyIntermediaryAgreement
-    >(this.singleAssetTwoPartyIntermediaryAgreements.entries());
-
-    if (!singleAssetTwoPartyIntermediaryAgreements.delete(targetIdentityHash)) {
-      throw Error(`cannot find agreement with target hash ${targetIdentityHash}`);
-    }
-
-    return this.build({
-      singleAssetTwoPartyIntermediaryAgreements,
-    }).removeActiveAppAndIncrementFreeBalance(targetIdentityHash, {
-      [tokenAddress]: increments,
     });
   }
 
@@ -471,7 +404,13 @@ export class StateChannel {
     const participants = this.getSigningKeysFor(appInstance.appSeqNo);
 
     if (!participants.every((v, idx) => v === appInstance.participants[idx])) {
-      throw Error("AppInstance passed to installApp has incorrect participants");
+      throw new Error(
+        `AppInstance passed to installApp has incorrect participants. Got ${
+          JSON.stringify(appInstance.participants)
+        } but expected ${
+          JSON.stringify(participants)
+        }`,
+      );
     }
 
     /// Add modified FB and new AppInstance to appInstances
@@ -500,44 +439,24 @@ export class StateChannel {
   }
 
   public uninstallApp(
-    appInstanceIdentityHash: string,
+    appToBeUninstalled: AppInstance,
     tokenIndexedIncrements: TokenIndexedCoinTransferMap,
   ) {
-    const appToBeUninstalled = this.getAppInstance(appInstanceIdentityHash);
-
-    if (appToBeUninstalled.identityHash !== appInstanceIdentityHash) {
-      throw Error(
-        `Consistency error: app stored under key ${appInstanceIdentityHash} has identityHah ${appToBeUninstalled.identityHash}`,
-      );
-    }
-
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
     if (!appInstances.delete(appToBeUninstalled.identityHash)) {
       throw Error(
-        `Consistency error: managed to call get on ${appInstanceIdentityHash} but failed to call delete`,
+        `Consistency error: managed to call get on ${appToBeUninstalled.identityHash} but failed to call delete`,
       );
     }
 
     return this.build({
       appInstances,
-    }).removeActiveAppAndIncrementFreeBalance(appInstanceIdentityHash, tokenIndexedIncrements);
-  }
-
-  public getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-    key: string,
-  ): SingleAssetTwoPartyIntermediaryAgreement {
-    const ret = this.singleAssetTwoPartyIntermediaryAgreements.get(key);
-
-    if (!ret) {
-      throw Error(`Could not find any eth virtual app agreements with virtual app ${key}`);
-    }
-
-    return ret;
+    }).removeActiveAppAndIncrementFreeBalance(appToBeUninstalled.identityHash, tokenIndexedIncrements);
   }
 
   toJson(): StateChannelJSON {
-    return {
+    return deBigNumberifyJson({
       multisigAddress: this.multisigAddress,
       addresses: this.addresses,
       userNeuteredExtendedKeys: this.userNeuteredExtendedKeys,
@@ -553,13 +472,10 @@ export class StateChannel {
       // does not have a FreeBalance before the `setup` protocol gets run
       freeBalanceAppInstance: this.freeBalanceAppInstance
         ? this.freeBalanceAppInstance.toJson()
-        : undefined,
+        : null,
       monotonicNumProposedApps: this.monotonicNumProposedApps,
-      singleAssetTwoPartyIntermediaryAgreements: [
-        ...this.singleAssetTwoPartyIntermediaryAgreements.entries(),
-      ],
       schemaVersion: this.schemaVersion,
-    };
+    });
   }
 
   /**
@@ -596,14 +512,13 @@ export class StateChannel {
             return [appInstanceEntry[0], AppInstance.fromJson(appInstanceEntry[1])];
           }),
         ),
-        new Map(json.singleAssetTwoPartyIntermediaryAgreements || []),
         json.freeBalanceAppInstance ? AppInstance.fromJson(json.freeBalanceAppInstance) : undefined,
         json.monotonicNumProposedApps,
         json.schemaVersion,
       );
     } catch (e) {
       throw new Error(
-        `could not create state channel from json: ${prettyPrintObject(json)}. Error: ${e}`,
+        `could not create state channel from json: ${stringify(json)}. Error: ${e}`,
       );
     }
   }

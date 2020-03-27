@@ -1,13 +1,13 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient } from "@connext/types";
+import { createRandom32ByteHexString, EventNames, IConnextClient, toBN } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
-import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
-import { before, describe, after } from "mocha";
+import { bigNumberify } from "ethers/utils";
+import { before, describe } from "mocha";
 import { Client } from "ts-nats";
 
 import { createClient, fundChannel, asyncTransferAsset, expect } from "../util";
 import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
-import { connectNats, closeNats } from "../util/nats";
+import { getNatsClient } from "../util/nats";
 
 describe("Reclaim", () => {
   let clientA: IConnextClient;
@@ -17,7 +17,7 @@ describe("Reclaim", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
@@ -32,17 +32,13 @@ describe("Reclaim", () => {
     await clientB.messaging.disconnect();
   });
 
-  after(() => {
-    closeNats();
-  });
-
   it("happy case: node should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
-      lowerBoundCollateralize: "5",
-      upperBoundCollateralize: "10",
-      lowerBoundReclaim: "20",
-      upperBoundReclaim: "30",
+      lowerBoundCollateralize: toBN("5"),
+      upperBoundCollateralize: toBN("10"),
+      lowerBoundReclaim: toBN("20"),
+      upperBoundReclaim: toBN("30"),
     };
 
     // set rebalancing profile to reclaim collateral
@@ -68,16 +64,17 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = hexlify(randomBytes(32))
-      await nats.subscribe(
-        `transfer.${paymentId}.reclaimed`,
-        res,
-      );
-      clientA.transfer({
+      const paymentId = createRandom32ByteHexString();
+      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
+        if (data.newState.data) {
+          res();
+        }
+      });
+      await clientA.transfer({
         amount: One.toString(),
         assetId: AddressZero,
         recipient: clientB.publicIdentifier,
-        paymentId
+        paymentId,
       });
     });
 
@@ -86,20 +83,22 @@ describe("Reclaim", () => {
     expect(
       freeBalancePost[nodeFreeBalanceAddress].gte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ) &&
-        freeBalancePost[nodeFreeBalanceAddress].lte(
-          bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-        ),
-    ).to.be.ok;
+      ),
+    ).to.be.true;
+    expect(
+      freeBalancePost[nodeFreeBalanceAddress].lte(
+        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+      ),
+    ).to.be.true;
   });
 
   it("happy case: node should reclaim tokens after async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: tokenAddress,
-      lowerBoundCollateralize: "5",
-      upperBoundCollateralize: "10",
-      lowerBoundReclaim: "20",
-      upperBoundReclaim: "30",
+      lowerBoundCollateralize: toBN("5"),
+      upperBoundCollateralize: toBN("10"),
+      lowerBoundReclaim: toBN("20"),
+      upperBoundReclaim: toBN("30"),
     };
 
     // set rebalancing profile to reclaim collateral
@@ -125,16 +124,17 @@ describe("Reclaim", () => {
     // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
     await new Promise(async res => {
-      const paymentId = hexlify(randomBytes(32))
-      await nats.subscribe(
-        `transfer.${paymentId}.reclaimed`,
-        res,
-      );
-      clientA.transfer({
+      const paymentId = createRandom32ByteHexString();
+      clientA.on(EventNames.UPDATE_STATE_EVENT, async data => {
+        if (data.newState.data) {
+          res();
+        }
+      });
+      await clientA.transfer({
         amount: One.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
-        paymentId
+        paymentId,
       });
     });
 
@@ -143,14 +143,17 @@ describe("Reclaim", () => {
     expect(
       freeBalancePost[nodeFreeBalanceAddress].gte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
-      ) &&
-        freeBalancePost[nodeFreeBalanceAddress].lte(
-          bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
-        ),
-    ).to.be.ok;
+      ),
+    ).to.be.true;
+    expect(
+      freeBalancePost[nodeFreeBalanceAddress].lte(
+        bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
+      ),
+    ).to.be.true;
   });
 
   it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
 
   it.skip("happy case: node should reclaim tokens after linked transfer", async () => {});
+
 });

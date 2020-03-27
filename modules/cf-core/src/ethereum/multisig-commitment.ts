@@ -1,26 +1,37 @@
-import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
+import { EthereumCommitment, MinimalTransaction, MultisigTransaction  } from "@connext/types";
+import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { sortSignaturesBySignerAddress } from "@connext/types";
 
 import { MinimumViableMultisig } from "../contracts";
-import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
-import { sortSignaturesBySignerAddress, sortStringSignaturesBySignerAddress } from "../utils";
 
-/// A commitment to make MinimumViableMultisig perform a message call
+// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment implements EthereumCommitment {
-  constructor(readonly multisigAddress: string, readonly multisigOwners: string[]) {}
+  constructor(
+    readonly multisigAddress: string,
+    readonly multisigOwners: string[],
+    private participantSignatures: string[] = [],
+  ) {}
 
   abstract getTransactionDetails(): MultisigTransaction;
 
-  public getSignedTransaction(sigs: Signature[] | string[]): CFCoreTypes.MinimalTransaction {
-    const multisigInput = this.getTransactionDetails();
-    let signaturesList: string[];
+  get signatures(): string[] {
+    return this.participantSignatures;
+  }
 
-    if (typeof sigs[0] == "string") {
-      //@ts-ignore
-      signaturesList = sortStringSignaturesBySignerAddress(this.hashToSign(), sigs);
-    } else {
-      //@ts-ignore
-      signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(joinSignature);
+  set signatures(sigs: string[]) {
+    if (sigs.length < 2) {
+      throw new Error(
+        `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
+      );
     }
+    this.participantSignatures = sigs;
+  }
+
+  public async getSignedTransaction(): Promise<MinimalTransaction> {
+    this.assertSignatures();
+    const multisigInput = this.getTransactionDetails();
+    const hash = this.hashToSign();
+    const signaturesList = await sortSignaturesBySignerAddress(hash, this.signatures);
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,
@@ -30,17 +41,24 @@ export abstract class MultisigCommitment implements EthereumCommitment {
       signaturesList,
     ]);
 
-    // TODO: Deterministically compute `to` address
     return { to: this.multisigAddress, value: 0, data: txData };
   }
 
-  public hashToSign(): string {
+  public encode(): string {
     const { to, value, data, operation } = this.getTransactionDetails();
-    return keccak256(
-      solidityPack(
-        ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
-        ["0x19", this.multisigOwners, to, value, data, operation],
-      ),
+    return solidityPack(
+      ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
+      ["0x19", this.multisigOwners, to, value, data, operation],
     );
+  }
+
+  public hashToSign(): string {
+    return keccak256(this.encode());
+  }
+
+  private assertSignatures() {
+    if (!this.signatures || this.signatures.length === 0) {
+      throw new Error(`No signatures detected`);
+    }
   }
 }

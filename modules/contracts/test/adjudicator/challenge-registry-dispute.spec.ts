@@ -1,22 +1,16 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { SolidityValueType } from "@connext/types";
+import { SolidityValueType, sortSignaturesBySignerAddress } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { BigNumber, BigNumberish, bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
+import { BigNumber, BigNumberish, bigNumberify, defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
-import {
-  expect,
-  computeAppChallengeHash,
-  computeActionHash,
-  AppIdentityTestClass,
-  signaturesToBytes,
-  sortSignaturesBySignerAddress,
-} from "./utils";
+import { AppIdentityTestClass, computeAppChallengeHash, expect, computeActionHash } from "./utils";
 
 enum ActionType {
   SUBMIT_COUNTER_INCREMENT,
@@ -70,15 +64,15 @@ describe("ChallengeRegistry Challenge", () => {
   let setState: (versionNumber: number, appState?: string) => Promise<void>;
   let progressState: (state: any, action: any, actionSig: any) => Promise<any>;
 
-  const mineBlock = async () => await provider.send('evm_mine', []);
-  const snapshot = async () => await provider.send('evm_snapshot', []);
-  const restore = async (snapshotId: any) => await provider.send('evm_revert', [snapshotId]);
+  const mineBlock = async () => await provider.send("evm_mine", []);
+  const snapshot = async () => await provider.send("evm_snapshot", []);
+  const restore = async (snapshotId: any) => await provider.send("evm_revert", [snapshotId]);
 
   const mineBlocks = async (num: number) => {
     for (let i = 0; i < num; i++) {
       await mineBlock();
     }
-  }
+  };
 
   // TODO: Not sure this works correctly/reliably...
   const moveToBlock = async (blockNumber: BigNumberish) => {
@@ -90,7 +84,7 @@ describe("ChallengeRegistry Challenge", () => {
       currentBlockNumberBN = bigNumberify(await provider.getBlockNumber());
     }
     expect(currentBlockNumberBN).to.be.equal(blockNumberBN);
-  }
+  };
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
@@ -132,10 +126,10 @@ describe("ChallengeRegistry Challenge", () => {
         versionNumber,
         appStateHash: stateHash,
         timeout: ONCHAIN_CHALLENGE_TIMEOUT,
-        signatures: sortSignaturesBySignerAddress(digest, [
-          await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest),
-        ]).map(joinSignature),
+        signatures: await sortSignaturesBySignerAddress(digest, [
+          await signDigest(ALICE.privateKey, digest),
+          await signDigest(BOB.privateKey, digest),
+        ]),
       });
     };
 
@@ -146,14 +140,14 @@ describe("ChallengeRegistry Challenge", () => {
         encodeState(state), {
           encodedAction: encodeAction(action),
           signature: actionSig,
-        }
+        },
       );
     };
   });
 
   afterEach(async () => {
-    await restore(snapshotId)
-  })
+    await restore(snapshotId);
+  });
 
   // WIP -- TODO: more comprehensive verification
   it("Can call progressState", async () => {
@@ -163,21 +157,14 @@ describe("ChallengeRegistry Challenge", () => {
 
     expect(await latestVersionNumber()).to.eq(1);
 
-    const signer = new SigningKey(BOB.privateKey);
-    const thingToSign = computeActionHash(
-      BOB.address,
-      keccak256(encodeState(PRE_STATE)),
-      encodeAction(ACTION),
-      1
-    );
-    const signature = await signer.signDigest(thingToSign);
-    const bytes = signaturesToBytes(signature);
+    const thingToSign = keccak256(encodeAction(ACTION));
+    const signature = await signDigest(BOB.privateKey, thingToSign);
 
     expect(await latestState()).to.be.eql(keccak256(encodeState(PRE_STATE)));
 
     await moveToBlock(33);
 
-    await progressState(PRE_STATE, ACTION, bytes);
+    await progressState(PRE_STATE, ACTION, signature);
 
     expect(await latestState()).to.be.eql(keccak256(encodeState(POST_STATE)));
   });
@@ -189,19 +176,17 @@ describe("ChallengeRegistry Challenge", () => {
 
     expect(await latestVersionNumber()).to.eq(1);
 
-    const signer = new SigningKey(ALICE.privateKey);
     const thingToSign = computeActionHash(
       BOB.address,
       keccak256(encodeState(PRE_STATE)),
       encodeAction(ACTION),
-      1
+      1,
     );
-    const signature = await signer.signDigest(thingToSign);
-    const bytes = signaturesToBytes(signature);
+    const signature = await signDigest(ALICE.privateKey, thingToSign);
 
     await moveToBlock(33);
 
-    await expect(progressState(PRE_STATE, ACTION, bytes)).to.be.revertedWith(
+    await expect(progressState(PRE_STATE, ACTION, signature)).to.be.revertedWith(
       "progressState called with action signed by incorrect turn taker",
     );
   });

@@ -9,8 +9,8 @@ import FastSignedTransferApp from "../../build/FastSignedTransferApp.json";
 import { mkAddress, mkHash, mkXpub, mkSig } from "../utils";
 import { Zero, One, AddressZero, HashZero } from "ethers/constants";
 import {
-  FastSignedTransferAppActionBigNumber,
-  FastSignedTransferAppStateBigNumber,
+  FastSignedTransferAppAction,
+  FastSignedTransferAppState,
   FastSignedTransferAppStateEncoding,
   FastSignedTransferAppActionEncoding,
   FastSignedTransferActionType,
@@ -18,27 +18,23 @@ import {
 
 use(solidity);
 
-const decodeAppState = (encodedAppState: string): FastSignedTransferAppStateBigNumber[] =>
+const decodeAppState = (encodedAppState: string): FastSignedTransferAppState[] =>
   defaultAbiCoder.decode([FastSignedTransferAppStateEncoding], encodedAppState);
 
-const encodeAppState = (state: FastSignedTransferAppStateBigNumber): string => {
+const encodeAppState = (state: FastSignedTransferAppState): string => {
   return defaultAbiCoder.encode([FastSignedTransferAppStateEncoding], [state]);
 };
 
-const encodeAppAction = (action: FastSignedTransferAppActionBigNumber): string => {
+const encodeAppAction = (action: FastSignedTransferAppAction): string => {
   return defaultAbiCoder.encode([FastSignedTransferAppActionEncoding], [action]);
 };
 
 describe("FastGenericSignedTransferApp", () => {
   let transferApp: Contract;
 
-  async function computeOutcome(state: FastSignedTransferAppStateBigNumber): Promise<string> {
-    return await transferApp.functions.computeOutcome(encodeAppState(state));
-  }
-
   async function takeAction(
-    state: FastSignedTransferAppStateBigNumber,
-    action: FastSignedTransferAppActionBigNumber,
+    state: FastSignedTransferAppState,
+    action: FastSignedTransferAppAction,
   ): Promise<string> {
     return await transferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
   }
@@ -52,7 +48,7 @@ describe("FastGenericSignedTransferApp", () => {
   it("happy case: sender creates locked tranfers", async () => {
     const sender = mkAddress("0xa");
     const receiver = mkAddress("0xb");
-    const preState: FastSignedTransferAppStateBigNumber = {
+    const preState: FastSignedTransferAppState = {
       coinTransfers: [
         {
           amount: bigNumberify(10),
@@ -70,7 +66,7 @@ describe("FastGenericSignedTransferApp", () => {
       turnNum: Zero,
     };
 
-    const action: FastSignedTransferAppActionBigNumber = {
+    const action: FastSignedTransferAppAction = {
       actionType: FastSignedTransferActionType.CREATE,
       amount: One,
       recipientXpub: mkXpub("xpubB"),

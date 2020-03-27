@@ -1,19 +1,19 @@
 import {
   ChannelAppSequences,
+  CoinBalanceRefundAppName,
   maxBN,
-  RebalanceProfileBigNumber,
-  stringify,
-  GetConfigResponse,
-  CoinBalanceRefundApp,
+  MethodParams,
+  MethodResults,
+  RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
+  stringify,
 } from "@connext/types";
-import { Injectable, HttpService, Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify} from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -21,12 +21,10 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { MessagingClientProviderId } from "../constants";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { xpubToAddress } from "../util";
-import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
+import { xkeyKthAddress } from "../util";
+import { CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -50,25 +48,13 @@ export class ChannelService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelRepository: ChannelRepository,
     private readonly configService: ConfigService,
-    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly withdrawService: WithdrawService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {
     this.log.setContext("ChannelService");
-  }
-
-  async getConfig(): Promise<GetConfigResponse> {
-    return {
-      contractAddresses: await this.configService.getContractAddresses(),
-      ethNetwork: await this.configService.getEthNetwork(),
-      messaging: this.configService.getMessagingConfig(),
-      nodePublicIdentifier: this.cfCoreService.cfCore.publicIdentifier,
-      supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
-    };
   }
 
   /**
@@ -83,7 +69,7 @@ export class ChannelService {
    * Starts create channel process within CF core
    * @param counterpartyPublicIdentifier
    */
-  async create(counterpartyPublicIdentifier: string): Promise<CFCoreTypes.CreateChannelResult> {
+  async create(counterpartyPublicIdentifier: string): Promise<MethodResults.CreateChannel> {
     const existing = await this.channelRepository.findByUserPublicIdentifier(
       counterpartyPublicIdentifier,
     );
@@ -99,7 +85,7 @@ export class ChannelService {
     multisigAddress: string,
     amount: BigNumber,
     assetId: string = AddressZero,
-  ): Promise<CFCoreTypes.DepositResult> {
+  ): Promise<MethodResults.Deposit> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
       throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
@@ -112,7 +98,7 @@ export class ChannelService {
     );
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
+      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
     ) {
       throw new Error(
         `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
@@ -147,7 +133,7 @@ export class ChannelService {
     );
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
+      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
     ) {
       throw new Error(
         `Cannot withdraw, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
@@ -191,11 +177,11 @@ export class ChannelService {
       stateEncoding,
       outcomeType,
     } = await this.appRegistryRepository.findByNameAndNetwork(
-      CoinBalanceRefundApp,
+      CoinBalanceRefundAppName,
       ethNetwork.chainId,
     );
 
-    const params: CFCoreTypes.ProposeInstallParams = {
+    const params: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -302,9 +288,6 @@ export class ChannelService {
       assetId,
     );
     if (nodeFreeBalance.gte(lowerBoundCollateral)) {
-      this.log.info(
-        `User with multisig ${channel.multisigAddress} already has sufficient collateral, ignoring request for more.`,
-      );
       this.log.debug(
         `User ${channel.userPublicIdentifier} already has collateral of ${nodeFreeBalance} for asset ${assetId}`,
       );
@@ -312,17 +295,14 @@ export class ChannelService {
     }
 
     const amountDeposit = collateralNeeded.sub(nodeFreeBalance);
-    this.log.info(
-      `User with multisig ${channel.multisigAddress} needs more collateral, preparing to deposit.`,
-    );
-    this.log.debug(
+    this.log.warn(
       `Collateralizing ${channel.userPublicIdentifier} with ${amountDeposit}, token: ${assetId}`,
     );
 
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);
     const result = this.deposit(channel.multisigAddress, amountDeposit, assetId)
-      .then(async (res: CFCoreTypes.DepositResult) => {
+      .then(async (res: MethodResults.Deposit) => {
         this.log.info(`Channel ${channel.multisigAddress} successfully collateralized`);
         this.log.debug(`Collateralization result: ${stringify(res)}`);
         return res;
@@ -389,7 +369,7 @@ export class ChannelService {
 
   async addRebalanceProfileToChannel(
     userPubId: string,
-    profile: RebalanceProfileBigNumber,
+    profile: RebalanceProfileType,
   ): Promise<RebalanceProfile> {
     const {
       assetId,
@@ -440,33 +420,29 @@ export class ChannelService {
    * @param creationData event data
    */
   async makeAvailable(creationData: CreateChannelMessage): Promise<void> {
-    let existing = await this.channelRepository.findByMultisigAddress(
+    const existing = await this.channelRepository.findByMultisigAddress(
       creationData.data.multisigAddress,
     );
-    if (existing) {
-      if (
-        !creationData.data.owners.includes(xpubToAddress(existing.nodePublicIdentifier)) ||
-        !creationData.data.owners.includes(xpubToAddress(existing.userPublicIdentifier))
-      ) {
-        throw new Error(
-          `Channel has already been created with different owners! ${stringify(
-            existing,
-          )}. Event data: ${stringify(creationData)}`,
-        );
-      }
-      if (existing.available) {
-        this.log.debug(`Channel is already available, doing nothing`);
-        return;
-      }
-      this.log.debug(`Channel already exists in database, marking as available`);
-    } else {
-      this.log.info(`Creating new channel for multisig ${creationData.data.multisigAddress}`);
-      this.log.debug(`Creating channel from data ${stringify(creationData)}`);
-      existing = new Channel();
-      existing.userPublicIdentifier = creationData.data.counterpartyXpub;
-      existing.nodePublicIdentifier = this.cfCoreService.cfCore.publicIdentifier;
-      existing.multisigAddress = creationData.data.multisigAddress;
+    if (!existing) {
+      throw new Error(
+        `Did not find existing channel, meaning "PERSIST_STATE_CHANNEL" failed in setup protocol`,
+      );
     }
+    if (
+      !creationData.data.owners.includes(xkeyKthAddress(existing.nodePublicIdentifier)) ||
+      !creationData.data.owners.includes(xkeyKthAddress(existing.userPublicIdentifier))
+    ) {
+      throw new Error(
+        `Channel has already been created with different owners! ${stringify(
+          existing,
+        )}. Event data: ${stringify(creationData)}`,
+      );
+    }
+    if (existing.available) {
+      this.log.debug(`Channel is already available, doing nothing`);
+      return;
+    }
+    this.log.debug(`Channel already exists in database, marking as available`);
     existing.available = true;
     await this.channelRepository.save(existing);
   }

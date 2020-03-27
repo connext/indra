@@ -1,109 +1,98 @@
 import {
   DepositConfirmationMessage,
-  ResolveLinkedTransferResponseBigNumber,
-  DEPOSIT_CONFIRMED_EVENT,
-  DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
-  SimpleLinkedTransferAppStateBigNumber,
+  EventNames,
+  LinkedTransferStatus,
+  ResolveLinkedTransferResponse,
+  SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
-  SimpleLinkedTransferApp,
+  toBN,
 } from "@connext/types";
-import { Injectable, Inject } from "@nestjs/common";
-import { ClientProxy } from "@nestjs/microservices";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { bigNumberify } from "ethers/utils";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
-import { ConfigService } from "../config/config.service";
-import { MessagingClientProviderId } from "../constants";
 import { LoggerService } from "../logger/logger.service";
-import { xpubToAddress } from "../util";
-import { Channel } from "../channel/channel.entity";
+import { xkeyKthAddress } from "../util";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
-import { LinkedTransferRepository } from "./linkedTransfer.repository";
-import { LinkedTransfer, LinkedTransferStatus } from "./linkedTransfer.entity";
+import { AppType, AppInstance } from "../appInstance/appInstance.entity";
+
+const appStatusesToLinkedTransferStatus = (
+  senderAppType: AppType,
+  receiverAppType?: AppType,
+): LinkedTransferStatus | undefined => {
+  if (!senderAppType) {
+    return undefined;
+  }
+
+  if (!receiverAppType) {
+    return LinkedTransferStatus.PENDING;
+  }
+
+  if (senderAppType === AppType.UNINSTALLED || receiverAppType === AppType.UNINSTALLED) {
+    return LinkedTransferStatus.COMPLETED;
+  }
+
+  if (senderAppType === AppType.REJECTED || receiverAppType === AppType.REJECTED) {
+    return LinkedTransferStatus.FAILED;
+  }
+
+  if (senderAppType === AppType.INSTANCE && receiverAppType === AppType.INSTANCE) {
+    return LinkedTransferStatus.PENDING;
+  }
+
+  throw new Error(
+    `Unable to determine linked transfer status from senderAppType (${senderAppType}) and receiverAppType (${receiverAppType})`,
+  );
+};
 
 @Injectable()
 export class LinkedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly configService: ConfigService,
     private readonly log: LoggerService,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("LinkedTransferService");
   }
 
-  async saveLinkedTransfer(
-    senderPubId: string,
-    assetId: string,
-    amount: BigNumber,
-    appInstanceId: string,
-    linkedHash: string,
-    paymentId: string,
-    encryptedPreImage: string,
-    recipientPublicIdentifier?: string,
-    meta?: object,
-  ): Promise<LinkedTransfer> {
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      senderPubId,
-    );
-    let receiverChannel: Channel;
-    if (recipientPublicIdentifier) {
-      receiverChannel = await this.channelRepository.findByUserPublicIdentifier(
-        recipientPublicIdentifier,
-      );
-    }
-
-    const transfer = new LinkedTransfer();
-    transfer.senderAppInstanceId = appInstanceId;
-    transfer.amount = amount;
-    transfer.assetId = assetId;
-    transfer.linkedHash = linkedHash;
-    transfer.paymentId = paymentId;
-    transfer.senderChannel = senderChannel;
-    transfer.status = LinkedTransferStatus.PENDING;
-    transfer.encryptedPreImage = encryptedPreImage;
-    transfer.recipientPublicIdentifier = recipientPublicIdentifier;
-    transfer.meta = meta;
-    transfer.receiverChannel = receiverChannel;
-
-    return await this.linkedTransferRepository.save(transfer);
-  }
-
   async resolveLinkedTransfer(
-    userPubId: string,
+    userPublicIdentifier: string,
     paymentId: string,
-  ): Promise<ResolveLinkedTransferResponseBigNumber> {
-    this.log.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId})`);
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
+  ): Promise<ResolveLinkedTransferResponse> {
+    this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      userPublicIdentifier,
+    );
 
-    // check that we have recorded this transfer in our db
-    const transfer = await this.linkedTransferRepository.findByPaymentIdOrThrow(paymentId);
-
-    const { assetId, amount } = transfer;
-    const amountBN = bigNumberify(amount);
-
-    if (transfer.status !== LinkedTransferStatus.PENDING) {
-      throw new Error(
-        `Transfer with paymentId ${paymentId} cannot be redeemed with status: ${transfer.status}`,
-      );
+    // TODO: handle offline case
+    // node is receiver in sender app
+    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+      paymentId,
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    if (!senderApp) {
+      throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
+
+    const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
+    const amount = toBN(latestState.amount);
+    const { assetId, linkedHash } = latestState;
+    const amountBN = bigNumberify(amount);
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(
-      userPubId,
-      channel.multisigAddress,
+      userPublicIdentifier,
+      receiverChannel.multisigAddress,
       assetId,
     );
     if (freeBal[freeBalanceAddr].lt(amountBN)) {
@@ -111,7 +100,7 @@ export class LinkedTransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          DEPOSIT_CONFIRMED_EVENT,
+          EventNames.DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
@@ -121,18 +110,18 @@ export class LinkedTransferService {
               );
               return;
             }
-            if (msg.data.multisigAddress !== channel.multisigAddress) {
+            if (msg.data.multisigAddress !== receiverChannel.multisigAddress) {
               // do not reject promise here, since theres a chance the event is
               // emitted for node collateralizing another users' channel
               this.log.debug(
-                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
+                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${receiverChannel.multisigAddress}`,
               );
               return;
             }
             // make sure free balance is appropriate
             const fb = await this.cfCoreService.getFreeBalance(
-              userPubId,
-              channel.multisigAddress,
+              userPublicIdentifier,
+              receiverChannel.multisigAddress,
               assetId,
             );
             if (fb[freeBalanceAddr].lt(amountBN)) {
@@ -143,12 +132,15 @@ export class LinkedTransferService {
             resolve();
           },
         );
-        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
-          return reject(JSON.stringify(msg, null, 2));
-        });
+        this.cfCoreService.cfCore.on(
+          EventNames.DEPOSIT_FAILED_EVENT,
+          (msg: DepositFailedMessage) => {
+            return reject(JSON.stringify(msg, null, 2));
+          },
+        );
         try {
           await this.channelService.rebalance(
-            userPubId,
+            userPublicIdentifier,
             assetId,
             RebalanceType.COLLATERALIZE,
             amountBN,
@@ -159,10 +151,15 @@ export class LinkedTransferService {
       });
     } else {
       // request collateral normally without awaiting
-      this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
+      this.channelService.rebalance(
+        userPublicIdentifier,
+        assetId,
+        RebalanceType.COLLATERALIZE,
+        amountBN,
+      );
     }
 
-    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+    const initialState: SimpleLinkedTransferAppState = {
       amount: amountBN,
       assetId,
       coinTransfers: [
@@ -172,100 +169,140 @@ export class LinkedTransferService {
         },
         {
           amount: Zero,
-          to: xpubToAddress(userPubId),
+          to: xkeyKthAddress(userPublicIdentifier),
         },
       ],
-      linkedHash: transfer.linkedHash,
+      linkedHash,
       paymentId,
       preImage: HashZero,
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      userPubId,
+      receiverChannel,
       initialState,
-      transfer.amount,
-      transfer.assetId,
+      amount,
+      assetId,
       Zero,
-      transfer.assetId,
-      SimpleLinkedTransferApp,
+      assetId,
+      SimpleLinkedTransferAppName,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
-    transfer.paymentId = paymentId;
-    transfer.recipientPublicIdentifier = userPubId;
-    transfer.receiverChannel = channel;
-    await this.linkedTransferRepository.save(transfer);
-
-    return {
+    const returnRes: ResolveLinkedTransferResponse = {
       appId: receiverAppInstallRes.appInstanceId,
-      sender: transfer.senderChannel.userPublicIdentifier,
-      meta: transfer.meta,
+      sender: senderApp.channel.userPublicIdentifier,
+      meta: senderApp.meta,
       paymentId,
-      amount: transfer.amount,
-      assetId: transfer.assetId,
+      amount,
+      assetId,
     };
+    return returnRes;
   }
 
-  async reclaimLinkedTransferCollateralByAppInstanceIdIfExists(
-    appInstanceId: string,
-  ): Promise<void> {
-    const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(appInstanceId);
-    if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
-      throw new Error(
-        `Could not find transfer with REDEEMED status for receiver app id: ${appInstanceId}`,
-      );
-    }
-    this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
-    await this.reclaimLinkedTransferCollateral(transfer);
-  }
-
-  async reclaimLinkedTransferCollateralByPaymentId(paymentId: string): Promise<void> {
-    const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
-    if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
-      throw new Error(`Could not find transfer with REDEEMED status for paymentId: ${paymentId}`);
-    }
-    this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
-    await this.reclaimLinkedTransferCollateral(transfer);
-  }
-
-  private async reclaimLinkedTransferCollateral(transfer: LinkedTransfer): Promise<void> {
-    if (transfer.status !== LinkedTransferStatus.REDEEMED) {
-      throw new Error(
-        `Transfer with id ${transfer.paymentId} has not been redeemed, status: ${transfer.status}`,
-      );
-    }
-
-    const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
-    // if action has been taken on the app, then there will be a preImage
-    // in the latest state, and you just have to uninstall
-    if ((app.latestState as SimpleLinkedTransferAppState).preImage !== transfer.preImage) {
-      this.log.info(`Reclaiming linked transfer ${transfer.paymentId}`);
-      this.log.debug(
-        `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
-      );
-      await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
-        preImage: transfer.preImage,
-      });
-    }
-    this.log.debug(
-      `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
+  async findSenderAndReceiverAppsWithStatus(
+    paymentId: string,
+  ): Promise<
+    { senderApp: AppInstance; receiverApp: AppInstance; status: LinkedTransferStatus } | undefined
+  > {
+    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+      paymentId,
+      this.cfCoreService.cfCore.freeBalanceAddress,
     );
-    this.log.debug(`Action taken, uninstalling app. ${Date.now()}`);
+    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+      paymentId,
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    // if sender app is uninstalled, transfer has been unlocked by node
+    const status = appStatusesToLinkedTransferStatus(
+      senderApp ? senderApp.type : undefined,
+      receiverApp ? receiverApp.type : undefined,
+    );
 
-    // mark as reclaimed so the listener doesnt try to reclaim again
-    await this.linkedTransferRepository.markAsReclaimed(transfer);
-    await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-    await this.messagingClient.emit(`transfer.${transfer.paymentId}.reclaimed`, {}).toPromise();
+    return { senderApp, receiverApp, status };
   }
 
-  async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
+  // reclaimable transfer:
+  // sender app is installed with meta containing recipient information
+  // preImage is HashZero
+  // receiver app has never been installed
+  //
+  // eg:
+  // sender installs app, goes offline
+  // receiver redeems, app is installed and uninstalled
+  // if we don't check for uninstalled receiver app, receiver can keep redeeming
+  async getLinkedTransfersForRedeem(userPublicIdentifier: string): Promise<AppInstance[]> {
+    const transfersFromNodeToUser =
+      await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
+        userPublicIdentifier,
+        this.cfCoreService.cfCore.freeBalanceAddress,
+      );
+    const existingReceiverApps = (
+      await Promise.all(
+        transfersFromNodeToUser.map(
+          async transfer =>
+            await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
+              transfer.latestState["paymentId"],
+              this.cfCoreService.cfCore.freeBalanceAddress,
+            ),
+        ),
+      )
+    )
+      // remove nulls
+      .filter(transfer => !!transfer);
+    const alreadyRedeemedPaymentIds = existingReceiverApps.map(app => app.latestState["paymentId"]);
+    const redeemableTransfers = transfersFromNodeToUser.filter(
+      transfer => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
     );
-    return await this.linkedTransferRepository.findReclaimable(channel);
+    return redeemableTransfers;
+  }
+
+  // unlockable transfer:
+  // sender app is installed with node as recipient
+  // preImage is HashZero
+  // receiver app with same paymentId is uninstalled
+  // preImage on receiver app is used to unlock sender transfer
+  //
+  // eg:
+  // sender installs app, goes offline
+  // receiver redeems, app is installed and uninstalled
+  // sender comes back online, node can unlock transfer
+  async unlockLinkedTransfersFromUser(userPublicIdentifier: string): Promise<string[]> {
+    // eslint-disable-next-line max-len
+    const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
+      xkeyKthAddress(userPublicIdentifier),
+      this.cfCoreService.cfCore.freeBalanceAddress,
+    );
+    const receiverRedeemed = await Promise.all(
+      transfersFromUserToNode.map(async transfer =>
+        this.appInstanceRepository.findRedeemedLinkedTransferAppByPaymentIdFromNode(
+          transfer.latestState["paymentId"],
+          this.cfCoreService.cfCore.freeBalanceAddress,
+        ),
+      ),
+    );
+    const unlockedAppIds: string[] = [];
+    // map sender and receiver transfers
+    for (const { senderApp, receiverApp } of transfersFromUserToNode.map((senderApp, index) => {
+      return { senderApp, receiverApp: receiverRedeemed[index] };
+    })) {
+      // if receiverApp exists, sender can be unlocked
+      if (receiverApp) {
+        this.log.log(`Found transfer to unlock, paymentId ${senderApp.latestState["paymentId"]}`);
+        const preImage: string = senderApp.latestState["preImage"];
+        if (preImage === HashZero) {
+          // no action has been taken, but is not uninstalled
+          await this.cfCoreService.takeAction(senderApp.identityHash, {
+            preImage,
+          });
+        }
+        await this.cfCoreService.uninstallApp(senderApp.identityHash);
+        unlockedAppIds.push(senderApp.identityHash);
+        this.log.log(`Unlocked transfer from app ${senderApp.identityHash}`);
+      }
+    }
+    return unlockedAppIds;
   }
 }

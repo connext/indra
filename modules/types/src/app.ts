@@ -1,130 +1,128 @@
-import { Address, BigNumber, BigNumberish, SolidityValueType } from "./basic";
-import { CFCoreChannel } from "./channel";
+import {
+  ABIEncoding,
+  Address,
+  BigNumber,
+  DecString,
+  HexString,
+  SolidityValueType,
+  Xpub,
+} from "./basic";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
+  MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
+  SingleAssetTwoPartyCoinTransferInterpreterParamsJson,
   TwoPartyFixedOutcomeInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParamsJson,
 } from "./contracts";
-import { CFCoreTypes } from "./cfCore";
+import { enumify } from "./utils";
 
 ////////////////////////////////////
-////// App Instances
+// App Instances
 
-export type AppIdentity = {
-  channelNonce: BigNumberish;
-  participants: string[];
-  appDefinition: string;
-  defaultTimeout: number;
-};
+export const PersistAppType = enumify({
+  Proposal: "Proposal",
+  Instance: "Instance", // install / update
+  Reject: "Reject",
+  Uninstall: "Uninstall",
+});
+export type PersistAppType = (typeof PersistAppType)[keyof typeof PersistAppType];
 
 export type AppInterface = {
-  addr: string;
-  stateEncoding: string;
-  actionEncoding: string | undefined;
+  addr: Address;
+  stateEncoding: ABIEncoding;
+  actionEncoding: ABIEncoding | undefined;
 };
 
 export type SignedStateHashUpdate = {
-  appStateHash: string;
+  appStateHash: HexString;
   versionNumber: number;
   timeout: number;
   signatures: string[];
 };
 
 export type AppABIEncodings = {
-  stateEncoding: string;
-  actionEncoding: string | undefined;
+  stateEncoding: ABIEncoding;
+  actionEncoding: ABIEncoding | undefined;
 };
 
 export type AppInstanceInfo = {
-  identityHash: string;
-  appDefinition: string;
+  identityHash: HexString;
+  appDefinition: Address;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress: string;
+  initiatorDepositTokenAddress: Address;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress: string;
+  responderDepositTokenAddress: Address;
   timeout: BigNumber;
-  proposedByIdentifier: string; // xpub
-  proposedToIdentifier: string; // xpub
-  intermediaryIdentifier?: string;
-  // Interpreter-related Fields:
-  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+  proposedByIdentifier: Xpub;
+  proposedToIdentifier: Xpub;
+  // Interpreter Params
+  twoPartyOutcomeInterpreterParams?:
+    TwoPartyFixedOutcomeInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
 export type AppInstanceJson = {
-  identityHash: string;
-  multisigAddress: string;
-  participants: string[];
+  identityHash: HexString;
+  multisigAddress: Address;
+  participants: Xpub[];
   defaultTimeout: number;
   appInterface: AppInterface;
-  isVirtualApp: boolean;
   appSeqNo: number;
   latestState: SolidityValueType;
   latestVersionNumber: number;
   latestTimeout: number;
-  outcomeType: number;
-  // Derived from:
-  // contracts/funding/interpreters/TwoPartyFixedOutcomeInterpreter.sol#L10
-  twoPartyOutcomeInterpreterParams?: {
-    playerAddrs: [string, string];
-    amount: { _hex: string };
-    tokenAddress: string;
-  };
-  // Derived from:
-  // contracts/funding/interpreters/MultiAssetMultiPartyCoinTransferInterpreter.sol#L18
-  multiAssetMultiPartyCoinTransferInterpreterParams?: {
-    limit: { _hex: string }[];
-    tokenAddresses: string[];
-  };
-  singleAssetTwoPartyCoinTransferInterpreterParams?: {
-    limit: { _hex: string };
-    tokenAddress: string;
-  };
+  outcomeType: string;
+  meta?: object;
+  // Interpreter Params
+  twoPartyOutcomeInterpreterParams?:
+    TwoPartyFixedOutcomeInterpreterParamsJson
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParamsJson
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParamsJson
 };
 
 export type AppInstanceProposal = {
   abiEncodings: AppABIEncodings;
-  appDefinition: string;
+  appDefinition: Address;
   appSeqNo: number;
-  identityHash: string;
+  identityHash: HexString;
   initialState: SolidityValueType;
-  initiatorDeposit: string;
-  initiatorDepositTokenAddress: string;
-  intermediaryIdentifier?: string;
+  initiatorDeposit: DecString;
+  initiatorDepositTokenAddress: Address;
   outcomeType: OutcomeType;
-  proposedByIdentifier: string;
-  proposedToIdentifier: string;
-  responderDeposit: string;
-  responderDepositTokenAddress: string;
-  timeout: string;
-  // Interpreter-related Fields
-  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+  proposedByIdentifier: Xpub;
+  proposedToIdentifier: Xpub;
+  responderDeposit: DecString;
+  responderDepositTokenAddress: Address;
+  timeout: HexString;
+  meta?: object;
+  // Interpreter Params
+  twoPartyOutcomeInterpreterParams?:
+    TwoPartyFixedOutcomeInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
 ////////////////////////////////////
-////// App Registry
+// App Registry
+
 export type DefaultApp = {
-  actionEncoding?: string;
+  actionEncoding?: ABIEncoding;
   allowNodeInstall: boolean;
-  appDefinitionAddress: string;
+  appDefinitionAddress: Address;
   name: string;
   chainId: number;
   outcomeType: OutcomeType;
-  stateEncoding: string;
+  stateEncoding: ABIEncoding;
 };
 
 export type AppRegistry = DefaultApp[];
-
-////////////////////////////////////
-// Generic Apps
-
-export type CoinTransfer<T = string> = {
-  amount: T;
-  to: Address; // NOTE: must be the xpub!!!
-};
-export type CoinTransferBigNumber = CoinTransfer<BigNumber>;

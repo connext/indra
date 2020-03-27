@@ -1,17 +1,16 @@
-import { convertHashLockTransferParameters } from "@connext/apps";
 import {
-  CreateTransferEventData,
-  CREATE_TRANSFER,
+  ConditionalTransferTypes,
+  deBigNumberifyJson,
+  EventNames,
+  EventPayloads,
+  HashLockTransferAppName,
+  HashLockTransferAppState,
   HashLockTransferParameters,
   HashLockTransferResponse,
-  HashLockTransferAppStateBigNumber,
-  HashLockTransferApp,
-  HASHLOCK_TRANSFER,
+  MethodParams,
+  toBN,
 } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
-
-import { xpubToAddress } from "../lib";
-import { CFCoreTypes } from "../types";
 
 import { AbstractController } from "./AbstractController";
 
@@ -20,20 +19,19 @@ export class HashLockTransferController extends AbstractController {
     params: HashLockTransferParameters,
   ): Promise<HashLockTransferResponse> => {
     // convert params + validate
-    const { amount, assetId, lockHash, timelock, meta } = convertHashLockTransferParameters(
-      `bignumber`,
-      params,
-    );
+    const amount = toBN(params.amount);
+    const timelock = toBN(params.timelock);
+    const { assetId, lockHash, meta } = params;
 
-    const initialState: HashLockTransferAppStateBigNumber = {
+    const initialState: HashLockTransferAppState = {
       coinTransfers: [
         {
           amount,
-          to: xpubToAddress(this.connext.publicIdentifier),
+          to: this.connext.freeBalanceAddress,
         },
         {
           amount: Zero,
-          to: xpubToAddress(this.connext.nodePublicIdentifier),
+          to: this.connext.nodeFreeBalanceAddress,
         },
       ],
       timelock,
@@ -47,8 +45,8 @@ export class HashLockTransferController extends AbstractController {
       stateEncoding,
       appDefinitionAddress: appDefinition,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(HashLockTransferApp);
-    const proposeInstallParams: CFCoreTypes.ProposeInstallParams = {
+    } = this.connext.getRegisteredAppDetails(HashLockTransferAppName);
+    const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -70,17 +68,18 @@ export class HashLockTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    const eventData = {
-      type: HASHLOCK_TRANSFER,
-      amount: amount.toString(),
+    const eventData = deBigNumberifyJson({
+      type: ConditionalTransferTypes.HashLockTransfer,
+      amount,
       assetId,
       sender: this.connext.publicIdentifier,
       meta,
+      paymentId: HashZero,
       transferMeta: {
         lockHash,
       },
-    } as CreateTransferEventData<typeof HASHLOCK_TRANSFER>;
-    this.connext.emit(CREATE_TRANSFER, eventData);
+    }) as EventPayloads.CreateHashLockTransfer;
+    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
     return {
       appId,

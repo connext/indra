@@ -1,20 +1,39 @@
 import { AppRegistry } from "./app";
-import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
-import { NetworkContext } from "./contracts";
-import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
+import { Address, BigNumber, Network, Transaction, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
-import { ILoggerService } from "./logger";
-import { IMessagingService, MessagingConfig } from "./messaging";
-import { ProtocolTypes } from "./protocol";
 import {
-  ResolveLinkedTransferResponse,
+  GetHashLockTransferResponse,
+  ResolveSignedTransferResponse,
+  GetSignedTransferResponse,
+  LinkedTransferStatus,
+  NetworkContext,
   ResolveFastSignedTransferResponse,
   ResolveHashLockTransferResponse,
-  GetHashLockTransferResponse,
-} from "./apps";
+  ResolveLinkedTransferResponse,
+} from "./contracts";
+import { ILoggerService } from "./logger";
+import { IMessagingService } from "./messaging";
+import { MethodResults } from "./methods";
 
 ////////////////////////////////////
-///////// NODE RESPONSE TYPES
+// Misc
+
+export type RebalanceProfile = {
+  assetId: Address;
+  upperBoundCollateralize: BigNumber;
+  lowerBoundCollateralize: BigNumber;
+  upperBoundReclaim: BigNumber;
+  lowerBoundReclaim: BigNumber;
+};
+
+// used to verify channel is in sequence
+export type ChannelAppSequences = {
+  userSequenceNumber: number;
+  nodeSequenceNumber: number;
+};
+
+////////////////////////////////////
+// NODE RESPONSE TYPES
 
 export type ContractAddresses = NetworkContext & {
   Token: string;
@@ -27,17 +46,14 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
-// TODO: is this the type that is actually returned?
-// i think you get status, etc.
-export type Transfer<T = string> = {
+export type TransferInfo = {
   paymentId: string;
-  amount: T;
+  amount: BigNumber;
   assetId: string;
   senderPublicIdentifier: string;
   receiverPublicIdentifier: string;
   meta: any;
 };
-export type TransferBigNumber = Transfer<BigNumber>;
 
 // nats stuff
 type successResponse = {
@@ -57,11 +73,18 @@ export type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
   nodePublicIdentifier: string;
-  messaging: MessagingConfig;
+  messagingUrl: string[];
   supportedTokenAddresses: string[];
 };
 
-export type GetChannelResponse = CFCoreChannel;
+export type GetChannelResponse = {
+  id: number;
+  nodePublicIdentifier: Xpub;
+  userPublicIdentifier: Xpub;
+  multisigAddress: Address;
+  available: boolean;
+  collateralizationInFlight: boolean;
+};
 
 // returns the transaction hash of the multisig deployment
 // TODO: this will likely change
@@ -70,14 +93,14 @@ export type CreateChannelResponse = {
 };
 
 // TODO: why was this changed?
-export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
+export type RequestCollateralResponse = MethodResults.Deposit | undefined;
 
 ////////////////////////////////////
-///////// NODE API CLIENT
+// NODE API CLIENT
 
 export interface PendingAsyncTransfer {
   assetId: string;
-  amount: string;
+  amount: BigNumber;
   encryptedPreImage: string;
   linkedHash: string;
   paymentId: string;
@@ -85,31 +108,35 @@ export interface PendingAsyncTransfer {
 
 export interface PendingFastSignedTransfer {
   assetId: string;
-  amount: string;
+  amount: BigNumber;
   paymentId: string;
   signer: string;
 }
 
-enum LinkedTransferStatus {
-  PENDING = "PENDING",
-  REDEEMED = "REDEEMED",
-  FAILED = "FAILED",
-  RECLAIMED = "RECLAIMED",
-}
-
-export interface FetchedLinkedTransfer {
+export type FetchedLinkedTransfer<T = any> = {
   paymentId: string;
   createdAt: Date;
-  amount: string;
+  amount: BigNumber;
   assetId: string;
   senderPublicIdentifier: string;
-  receiverPublicIdentifier: string;
-  type: string;
+  receiverPublicIdentifier?: string;
   status: LinkedTransferStatus;
-  meta: any;
+  meta: T;
+  encryptedPreImage?: string;
+};
+export type GetLinkedTransferResponse<T = any> = FetchedLinkedTransfer<T>;
+export type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
+
+////////////////////////////////////
+///////// NODE API CLIENT
+
+export interface VerifyNonceDtoType {
+  sig: string;
+  userPublicIdentifier: string;
 }
 
 export interface NodeInitializationParameters {
+  nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
   userPublicIdentifier?: string;
@@ -138,23 +165,20 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
   getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
-  getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
-  getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
+  getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse>;
+  getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
+  fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
+  fetchSignedTransfer(paymentId: string): Promise<GetSignedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
+  resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
-  subscribeToSwapRates(from: string, to: string, callback: any): void;
-  unsubscribeFromSwapRates(from: string, to: string): void;
+  subscribeToSwapRates(from: string, to: string, callback: any): Promise<void>;
+  unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
   // TODO: fix types
   verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
-  setRecipientAndEncryptedPreImageForLinkedTransfer(
-    recipient: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }>;
 }

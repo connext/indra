@@ -1,26 +1,31 @@
 import {
+  bigNumberifyJson,
+  CoinBalanceRefundAppName,
+  EventNames,
+  EventPayloads,
+  FastSignedTransferAppName,
+  HashLockTransferAppName,
   ILoggerService,
+  MethodNames,
+  MethodParams,
+  SimpleLinkedTransferAppName,
+  SimpleSignedTransferAppName,
+  WithdrawAppName,
   WithdrawAppState,
-  BigNumber,
-  WithdrawApp,
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  FastSignedTransferApp,
-  HashLockTransferApp,
 } from "@connext/types";
 import {
   commonAppProposalValidation,
-  SupportedApplication,
+  SupportedApplications,
   validateSimpleLinkedTransferApp,
   validateWithdrawApp,
   validateFastSignedTransferApp,
   validateHashLockTransferApp,
+  validateSignedTransferApp,
 } from "@connext/apps";
 
 import { ConnextClient } from "./connext";
 import { stringify } from "./lib";
 import {
-  CFCoreTypes,
   CreateChannelMessage,
   ConnextEventEmitter,
   DefaultApp,
@@ -29,33 +34,33 @@ import {
   DepositStartedMessage,
   IChannelProvider,
   InstallMessage,
-  InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
   UninstallMessage,
-  UninstallVirtualMessage,
   UpdateStateMessage,
 } from "./types";
-import {
-  ProtocolTypes,
+
+const {
   CREATE_CHANNEL_EVENT,
+  CREATE_TRANSFER,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
-  INSTALL_VIRTUAL_EVENT,
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_STARTED_EVENT,
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
-  UNINSTALL_VIRTUAL_EVENT,
   UPDATE_STATE_EVENT,
-} from "@connext/types";
+} = EventNames;
 
 // TODO: index of connext events only?
 type CallbackStruct = {
-  [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
+  [index in EventNames]: (data: any) => Promise<any> | void;
 };
 
 export class ConnextListener extends ConnextEventEmitter {
@@ -69,6 +74,9 @@ export class ConnextListener extends ConnextEventEmitter {
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
       this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
     },
+    CREATE_TRANSFER: (): void => {
+      this.emitAndLog(CREATE_TRANSFER, {});
+    },
     DEPOSIT_CONFIRMED_EVENT: async (msg: DepositConfirmationMessage): Promise<void> => {
       this.emitAndLog(DEPOSIT_CONFIRMED_EVENT, msg.data);
     },
@@ -81,10 +89,6 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     INSTALL_EVENT: (msg: InstallMessage): void => {
       this.emitAndLog(INSTALL_EVENT, msg.data);
-    },
-    // TODO: make cf return app instance id and app def?
-    INSTALL_VIRTUAL_EVENT: (msg: InstallVirtualMessage): void => {
-      this.emitAndLog(INSTALL_VIRTUAL_EVENT, msg.data);
     },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
       const {
@@ -107,31 +111,46 @@ export class ConnextListener extends ConnextEventEmitter {
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
     },
+    RECEIVE_TRANSFER_FAILED_EVENT: (msg: CreateChannelMessage): void => {
+      this.emitAndLog(RECEIVE_TRANSFER_FAILED_EVENT, {});
+    },
+    RECEIVE_TRANSFER_FINISHED_EVENT: (msg: CreateChannelMessage): void => {
+      this.emitAndLog(RECEIVE_TRANSFER_FINISHED_EVENT, {});
+    },
+    RECEIVE_TRANSFER_STARTED_EVENT: (msg: CreateChannelMessage): void => {
+      this.emitAndLog(RECEIVE_TRANSFER_STARTED_EVENT, {});
+    },
     REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {
       this.emitAndLog(REJECT_INSTALL_EVENT, msg.data);
     },
     UNINSTALL_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
-    UNINSTALL_VIRTUAL_EVENT: (msg: UninstallVirtualMessage): void => {
-      this.emitAndLog(UNINSTALL_VIRTUAL_EVENT, msg.data);
-    },
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
       const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appInstanceId))
         .appInstance;
-      const state = msg.data.newState as WithdrawAppState<BigNumber>;
+      const state = msg.data.newState as WithdrawAppState;
       const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
         return app.appDefinitionAddress === appInstance.appInterface.addr;
       });
-      if (registryAppInfo.name === WithdrawApp) {
+      if (registryAppInfo.name === WithdrawAppName) {
         const params = {
-          amount: state.transfers[0][1],
-          recipient: state.transfers[0][0],
+          amount: state.transfers[0].amount,
+          recipient: state.transfers[0].to,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         };
         await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
       }
+    },
+    WITHDRAWAL_CONFIRMED_EVENT: (msg: UninstallMessage): void => {
+      this.emitAndLog(EventNames.WITHDRAWAL_CONFIRMED_EVENT, msg.data);
+    },
+    WITHDRAWAL_FAILED_EVENT: (msg: UninstallMessage): void => {
+      this.emitAndLog(EventNames.WITHDRAWAL_FAILED_EVENT, msg.data);
+    },
+    WITHDRAWAL_STARTED_EVENT: (msg: UninstallMessage): void => {
+      this.emitAndLog(EventNames.WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
 
@@ -149,7 +168,7 @@ export class ConnextListener extends ConnextEventEmitter {
     return;
   };
 
-  public registerCfListener = (event: CFCoreTypes.EventName, cb: Function): void => {
+  public registerCfListener = (event: EventNames, cb: Function): void => {
     // replace with new fn
     this.log.debug(`Registering listener for ${event}`);
     this.channelProvider.on(
@@ -161,7 +180,7 @@ export class ConnextListener extends ConnextEventEmitter {
     );
   };
 
-  public removeCfListener = (event: CFCoreTypes.EventName, cb: Function): boolean => {
+  public removeCfListener = (event: EventNames, cb: Function): boolean => {
     this.log.debug(`Removing listener for ${event}`);
     try {
       this.removeListener(event, cb as any);
@@ -180,27 +199,30 @@ export class ConnextListener extends ConnextEventEmitter {
     });
 
     this.channelProvider.on(
-      ProtocolTypes.chan_uninstall,
-      async (data: any): Promise<any> => {
-        const result = data.result.result;
-        this.log.debug(`Emitting ProtocolTypes.chan_uninstall event`);
+      MethodNames.chan_install,
+      async (msg: any): Promise<void> => {
+        const {
+          result: {
+            result: { appInstance },
+          },
+        } = msg;
         await this.connext.messaging.publish(
-          `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-          stringify(result),
+          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appInstanceId}.uninstall`,
+          appInstance,
         );
       },
     );
   };
 
-  private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
+  private emitAndLog = (event: EventNames, data: any): void => {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
-    this.emit(event, data);
+    this.emit(event, bigNumberifyJson(data));
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
-    const subject = `online.${this.connext.publicIdentifier}`;
+    const subject = `${this.connext.publicIdentifier}.online`;
     await this.connext.messaging.subscribe(
       subject,
       async (msg: any): Promise<any> => {
@@ -220,7 +242,7 @@ export class ConnextListener extends ConnextEventEmitter {
   };
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
-    const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
+    const subject = `*.channel.*.transfer.linked.to.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (msg: any) => {
       this.log.debug(`Received message for ${subject} subscription`);
       if (!msg.paymentId && !msg.data) {
@@ -230,8 +252,13 @@ export class ConnextListener extends ConnextEventEmitter {
       if (typeof data === `string`) {
         data = JSON.parse(data);
       }
-      this.log.debug(`Message data: ${stringify(data)}`);
-      const { paymentId, encryptedPreImage, amount, assetId } = data;
+      this.log.debug(`Message data: ${JSON.stringify(data, null, 2)}`);
+      const {
+        paymentId,
+        transferMeta: { encryptedPreImage },
+        amount,
+        assetId,
+      }: EventPayloads.CreateTransfer = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }
@@ -241,50 +268,52 @@ export class ConnextListener extends ConnextEventEmitter {
   };
 
   private handleAppProposal = async (
-    params: ProtocolTypes.ProposeInstallParams,
+    params: MethodParams.ProposeInstall,
     appInstanceId: string,
     from: string,
   ): Promise<void> => {
+    // get supported apps
+    const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
+      return app.appDefinitionAddress === params.appDefinition;
+    });
+    if (!registryAppInfo) {
+      throw new Error(`Could not find registry info for app ${params.appDefinition}`);
+    }
+    // validate or reject app
     try {
       // check based on supported applications
-      const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
-        return app.appDefinitionAddress === params.appDefinition;
-      });
-      if (!registryAppInfo) {
-        throw new Error(`Could not find registry info for app ${params.appDefinition}`);
-      }
       commonAppProposalValidation(
         params,
         // types weirdness
-        { ...registryAppInfo, name: registryAppInfo.name as SupportedApplication },
+        { ...registryAppInfo, name: registryAppInfo.name as SupportedApplications },
         this.connext.config.supportedTokenAddresses,
       );
       switch (registryAppInfo.name) {
-        case CoinBalanceRefundApp: {
-          this.log.debug(
-            `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-          );
-          await this.connext.messaging.publish(
-            `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-            stringify(params),
-          );
+        case CoinBalanceRefundAppName: {
+          const subject = `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
+          this.log.debug(`Sending acceptance message to: ${subject}`);
+          await this.connext.messaging.publish(subject, stringify(params));
           return;
         }
-        case SimpleLinkedTransferApp: {
+        case SimpleLinkedTransferAppName: {
           validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
-        case WithdrawApp: {
-          validateWithdrawApp(params, from, this.connext.publicIdentifier);
+        case WithdrawAppName: {
+          await validateWithdrawApp(params, from, this.connext.publicIdentifier);
           break;
         }
-        case FastSignedTransferApp: {
+        case FastSignedTransferAppName: {
           validateFastSignedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
-        case HashLockTransferApp: {
+        case HashLockTransferAppName: {
           const blockNumber = await this.connext.ethProvider.getBlockNumber();
           validateHashLockTransferApp(params, blockNumber, from, this.connext.publicIdentifier);
+          break;
+        }
+        case SimpleSignedTransferAppName: {
+          validateSignedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
         default: {
@@ -293,18 +322,21 @@ export class ConnextListener extends ConnextEventEmitter {
           );
         }
       }
+      // NOTE: by trying to install here, if the installation fails,
+      // the proposal is automatically removed from the store
       await this.connext.installApp(appInstanceId);
-      await this.runPostInstallTasks(appInstanceId, registryAppInfo);
-      const appInstance = this.connext.getAppInstanceDetails(appInstanceId);
-      await this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.install.${appInstanceId}`,
-        stringify(appInstance),
-      );
     } catch (e) {
-      console.log('e: ', e);
-      this.log.error(`Caught error: ${e.toString()}`);
+      this.log.error(`Caught error: ${e.message}`);
       await this.connext.rejectInstallApp(appInstanceId);
+      throw e;
     }
+    // install and run post-install tasks
+    await this.runPostInstallTasks(appInstanceId, registryAppInfo);
+    const appInstance = this.connext.getAppInstanceDetails(appInstanceId);
+    await this.connext.messaging.publish(
+      `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`,
+      stringify(appInstance),
+    );
   };
 
   private runPostInstallTasks = async (
@@ -312,7 +344,7 @@ export class ConnextListener extends ConnextEventEmitter {
     registryAppInfo: DefaultApp,
   ): Promise<void> => {
     switch (registryAppInfo.name) {
-      case WithdrawApp: {
+      case WithdrawAppName: {
         const appInstance = (await this.connext.getAppInstanceDetails(appInstanceId)).appInstance;
         this.connext.respondToNodeWithdraw(appInstance);
         break;

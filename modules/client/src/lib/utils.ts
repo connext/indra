@@ -1,18 +1,17 @@
-import { ILogger } from "@connext/types";
-import { BigNumber, bigNumberify, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { ILogger, ClientOptions, createRandom32ByteHexString } from "@connext/types";
+import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
+import { RINKEBY_NETWORK, MAINNET_NETWORK } from "./constants";
 
 export const logTime = (log: ILogger, start: number, msg: string) => {
   const diff = Date.now() - start;
   const message = `${msg} in ${diff} ms`;
   if (diff < 10) {
     log.debug(message);
-  } else if (diff < 100) {
+  } else if (diff < 250) {
     log.info(message);
-  } else if (diff < 1000) {
-    log.warn(message);
   } else {
-    log.error(message);
+    log.warn(message);
   }
 };
 
@@ -63,7 +62,7 @@ export const objMapPromise = async <T, F extends keyof T, R>(
 
 export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   const adjusted = {} as any;
-  keys.concat(Object.keys(obj)).map((k: any): any => {
+  keys.concat(Object.keys(obj)).forEach((k: any): any => {
     // check by index and undefined
     adjusted[k] = isNullOrUndefined(obj[k])
       ? val // not supplied set as default val
@@ -95,9 +94,25 @@ export const withdrawalKey = (xpub: string): string => {
   return `${xpub}/latestNodeSubmittedWithdrawal`;
 };
 
-export const createRandom32ByteHexString = (): string => {
-  return hexlify(randomBytes(32));
-};
-
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
+
+export const isNode = () =>
+  typeof process !== "undefined" &&
+  typeof process.versions !== "undefined" &&
+  typeof process.versions.node !== "undefined";
+
+export function isMainnet(network: string): boolean {
+  return network.toLowerCase() === MAINNET_NETWORK.toLowerCase();
+}
+
+export function isRinkeby(network: string): boolean {
+  return network.toLowerCase() === RINKEBY_NETWORK.toLowerCase();
+}
+
+export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
+  if (!opts) {
+    return false;
+  }
+  return !!(opts.mnemonic || (opts.xpub && opts.keyGen));
+}

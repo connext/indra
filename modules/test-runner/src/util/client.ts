@@ -1,10 +1,14 @@
 import { connect } from "@connext/client";
-import { ConnextStore, MemoryStorage } from "@connext/store";
-import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
+import { ConnextStore } from "@connext/store";
+import {
+  ClientOptions,
+  IChannelProvider,
+  IConnextClient,
+  StoreTypes,
+} from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
-import localStorage from "localStorage";
 
 import { ETH_AMOUNT_LG, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
@@ -21,7 +25,7 @@ export const createClient = async (
   opts: Partial<ClientOptions | any> = {},
   fund: boolean = true,
 ): Promise<IConnextClient> => {
-  const store = opts.store || new ConnextStore(new MemoryStorage());
+  const store = opts.store || new ConnextStore(StoreTypes.Memory);
   const mnemonic = opts.mnemonic || Wallet.createRandom().mnemonic;
   const log = new Logger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
@@ -78,9 +82,9 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     ...opts,
     ...urlOptions,
     loggerService: new Logger("TestRunner", env.logLevel, true),
-    store: new ConnextStore(localStorage), // TODO: replace with polyfilled window.localStorage
+    store: new ConnextStore(StoreTypes.LocalStorage), // TODO: replace with polyfilled window.localStorage
   };
-  if (network === "mainnet") {
+  if (network === "mainnet" || network === "rinkeby") {
     clientOpts = {
       mnemonic: Wallet.createRandom().mnemonic,
       ...clientOpts,
@@ -96,21 +100,21 @@ export type ClientTestMessagingInputOpts = {
   ceiling: Partial<MessageCounter>; // set ceiling of sent/received
   protocol: string; // use "any" to limit any messages by count
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
-  forbiddenSubjects: string[];
 };
 
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay, forbiddenSubjects } = opts;
-  const messageOptions: any = { forbiddenSubjects: forbiddenSubjects || [] };
+  const { protocol, ceiling, delay } = opts;
+  const messageOptions: any = {};
   // no defaults specified, exit early
+  const mnemonic = Wallet.createRandom().mnemonic;
   if (Object.keys(opts).length === 0) {
-    const messaging = new TestMessagingService();
+    const messaging = new TestMessagingService({ mnemonic });
     expect(messaging.install.ceiling).to.be.undefined;
     expect(messaging.count.received).to.be.equal(0);
     expect(messaging.count.sent).to.be.equal(0);
-    return await createClient({ messaging });
+    return await createClient({ messaging, mnemonic });
   }
   if (protocol === "any") {
     // assign the ceiling for the general message count
@@ -124,7 +128,7 @@ export const createClientWithMessagingLimits = async (
       },
     };
   }
-  const messaging = new TestMessagingService(messageOptions);
+  const messaging = new TestMessagingService({ ...messageOptions, mnemonic });
   // verification of messaging settings
   const expected = {
     sent: 0,
@@ -136,5 +140,5 @@ export const createClientWithMessagingLimits = async (
     ? expect(messaging.count).to.containSubset(expected)
     : expect(messaging[protocol]).to.containSubset(expected);
   expect(messaging.options).to.containSubset(messageOptions);
-  return await createClient({ messaging });
+  return await createClient({ messaging, mnemonic });
 };

@@ -14,3 +14,11 @@ export const normalizeEthAddresses = (obj: any): any => {
   });
   return res;
 };
+
+export const safeJsonParse = (value: any): any => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};

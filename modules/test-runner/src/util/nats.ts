@@ -1,11 +1,30 @@
+import { VerifyNonceDtoType } from "@connext/types";
 import { connect, Client } from "ts-nats";
-import { env } from "./env";
+import axios, { AxiosResponse } from "axios";
 
-export let natsClient: Client | undefined = undefined;
+import { env } from "./env";
+import { Wallet } from "ethers";
+import { HDNode } from "ethers/utils";
+
+let natsClient: Client | undefined = undefined;
+
+export const getNatsClient = (): Client => {
+  if (!natsClient || natsClient.isClosed()) {
+    throw new Error(`NATS is not connected, use connectNats first`);
+  }
+
+  return natsClient;
+};
 
 export const connectNats = async (): Promise<Client> => {
+  const hDNode = HDNode.fromMnemonic(Wallet.createRandom().mnemonic);
   if (!natsClient) {
-    natsClient = await connect({ servers: [env.nodeUrl] });
+    const adminJWT: AxiosResponse<string> = await axios.post(`${env.nodeUrl}/auth`, {
+      sig: "0xbeef",
+      userPublicIdentifier: hDNode.neuter().extendedKey,
+      adminToken: env.adminToken,
+    } as VerifyNonceDtoType);
+    natsClient = await connect({ servers: ["nats://172.17.0.1:4222"], userJWT: adminJWT.data });
   }
   return natsClient;
 };

@@ -11,7 +11,7 @@ export const addRebalanceProfile = async (
   assertProfile: boolean = true,
 ) => {
   const msg = await nats.request(
-    `channel.add-profile.${client.publicIdentifier}`,
+    `admin.${client.publicIdentifier}.channel.add-profile`,
     5000,
     JSON.stringify({
       id: Date.now(),
@@ -22,7 +22,7 @@ export const addRebalanceProfile = async (
 
   if (assertProfile) {
     const returnedProfile = await client.getRebalanceProfile(profile.assetId);
-    expect(returnedProfile).to.deep.eq(profile);
+    expect(returnedProfile).to.deep.include(profile);
   }
 
   return msg.data;

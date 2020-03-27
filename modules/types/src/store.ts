@@ -1,5 +1,22 @@
+import { StateChannelJSON } from "./state";
+import { AppInstanceJson, AppInstanceProposal } from "./app";
+import {
+  ConditionalTransactionCommitmentJSON,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+} from "./commitments";
+import { enumify } from "./utils";
+
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
+
+export const StoreTypes = enumify({
+  AsyncStorage: "AsyncStorage",
+  File: "File",
+  LocalStorage: "LocalStorage",
+  Memory: "Memory",
+});
+export type StoreTypes = (typeof StoreTypes)[keyof typeof StoreTypes];
 
 export type StorePair = {
   path: string;
@@ -12,40 +29,40 @@ export interface AsyncStorageData {
   [key: string]: any;
 }
 
-export interface StoreFactoryOptions {
+export interface IAsyncStorage {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+  removeItem(key: string): Promise<void>;
+}
+
+export interface WrappedStorage {
+  getItem(key: string): Promise<string | undefined>;
+  setItem(key: string, value: string): Promise<void>;
+  removeItem(key: string): Promise<void>;
+  getKeys(): Promise<string[]>;
+  getEntries(): Promise<[string, any][]>;
+  clear(): Promise<void>;
+  restore(): Promise<void>;
+  // generates a key for related subject strings
+  getKey(...args: string[]): string;
+}
+
+export interface FileStorageOptions {
+  fileExt?: string;
+  fileDir?: string;
+}
+
+export interface StoreFactoryOptions extends FileStorageOptions {
+  storage?: IAsyncStorage | WrappedStorage;
   prefix?: string;
   separator?: string;
   asyncStorageKey?: string;
   backupService?: IBackupServiceAPI;
 }
 
-export interface WrappedStorage {
-  getItem(key: string): Promise<string | null>;
-  setItem(key: string, value: string): Promise<void>;
-  removeItem(key: string): Promise<void>;
-  getKeys(): Promise<string[]>;
-  getEntries(): Promise<[string, any][]>;
-  clear(prefix: string): Promise<void>;
-  getChannels(): Promise<ChannelsMap>;
-}
-
-export interface IAsyncStorage {
-  getItem(key: string): Promise<string | null>;
-  setItem(key: string, value: string): Promise<void>;
-  removeItem(key: string): Promise<void>;
-  clear(): Promise<void>;
-  getAllKeys(): Promise<string[]>;
-  getChannels(): Promise<AsyncStorageData>;
-}
-
 export interface IBackupServiceAPI {
   restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
-}
-
-export interface FileStorageOptions {
-  fileExt?: string;
-  fileDir?: string;
 }
 
 /**
@@ -59,13 +76,72 @@ export interface FileStorageOptions {
  * have the same behaviour if the `allowDelete` flag is passed; otherwise, any null values or
  * subvalues throws an error.
  */
-export interface IStoreService {
+export interface IStoreServiceOld {
   get(path: string): Promise<any>;
   set(pairs: { path: string; value: any }[], allowDelete?: Boolean): Promise<void>;
   reset?(): Promise<void>;
 }
 
-export interface Store extends IStoreService {
+export const STORE_SCHEMA_VERSION = 1;
+
+export interface IStoreService {
+  getSchemaVersion(): Promise<number>;
+  setSchemaVersion(version?: number): Promise<void>;
+  getAllChannels(): Promise<StateChannelJSON[]>;
+  getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined>;
+  getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
+  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined>;
+  saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+  getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
+  saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
+  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void>;
+  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined>;
+  saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void>;
+  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void>;
+  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
+  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
+  getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<MinimalTransaction | undefined>;
+  saveSetupCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void>;
+  getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
+  saveLatestSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void>;
+  getConditionalTransactionCommitment(
+    appIdentityHash: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
+  saveConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void>;
+  getWithdrawalCommitment(
+    multisigAddress: string,
+  ): Promise<MinimalTransaction | undefined>;
+  saveWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void>;
+  clear(): Promise<void>;
+  restore(): Promise<void>;
+}
+
+export interface IClientStore extends IStoreService {
+  setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
+}
+
+// Used to monitor node submitted withdrawals on behalf of user
+export type WithdrawalMonitorObject = {
+  retry: number;
+  tx: MinimalTransaction;
+};
+
+export interface Store extends IStoreServiceOld {
   set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
   restore(): Promise<StorePair[]>;
 }

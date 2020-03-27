@@ -1,8 +1,8 @@
-import { ILoggerService } from "@connext/types";
+import { bigNumberifyJson, ILoggerService } from "@connext/types";
 import { Controller, JsonRpcResponse, jsonRpcSerializeAsResponse, Router, Rpc } from "rpc-server";
 
 import { RequestHandler } from "./request-handler";
-import { bigNumberifyJson, logTime } from "./utils";
+import { logTime } from "./utils";
 
 type AsyncCallback = (...args: any) => Promise<any>;
 
@@ -29,7 +29,7 @@ export default class RpcRouter extends Router {
     );
 
     if (!controller) {
-      throw Error(`Cannot execute ${rpc.methodName}: no controller`);
+      throw new Error(`Cannot execute ${rpc.methodName}: no controller`);
     }
 
     const result = jsonRpcSerializeAsResponse(

@@ -1,60 +1,127 @@
-import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
+import { MinimalTransaction, EthereumCommitment } from "@connext/types";
+import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { sortSignaturesBySignerAddress } from "@connext/types";
 
 import { ChallengeRegistry } from "../contracts";
+import { AppInstance } from "../models";
 import {
   AppIdentity,
-  CFCoreTypes,
-  EthereumCommitment,
-  NetworkContext,
+  Context,
   SignedStateHashUpdate,
+  SetStateCommitmentJSON,
 } from "../types";
-import { sortSignaturesBySignerAddress } from "../utils";
-
-import { appIdentityToHash } from "./utils";
+import { appIdentityToHash } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 
+export const getSetStateCommitment = (
+  context: Context,
+  appInstance: AppInstance,
+) => new SetStateCommitment(
+  context.network.ChallengeRegistry,
+  appInstance.identity,
+  appInstance.hashOfLatestState,
+  appInstance.versionNumber,
+  appInstance.timeout,
+);
+
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
-    public readonly networkContext: NetworkContext,
+    public readonly challengeRegistryAddress: string,
     public readonly appIdentity: AppIdentity,
-    public readonly hashedAppState: string,
-    public readonly appVersionNumber: number,
+    public readonly appStateHash: string,
+    public readonly versionNumber: number, // app nonce
     public readonly timeout: number,
+    public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
+    private participantSignatures: string[] = [],
   ) {}
 
-  public hashToSign(): string {
-    return keccak256(
-      solidityPack(
-        ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-        [
-          "0x19",
-          appIdentityToHash(this.appIdentity),
-          this.appVersionNumber,
-          this.timeout,
-          this.hashedAppState,
-        ],
-      ),
+  get signatures(): string[] {
+    return this.participantSignatures;
+  }
+
+  set signatures(sigs: string[]) {
+    if (sigs.length < 2) {
+      throw new Error(
+        `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
+      );
+    }
+    this.participantSignatures = sigs;
+  }
+
+  public encode(): string {
+    return solidityPack(
+      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
+      [
+        "0x19",
+        appIdentityToHash(this.appIdentity),
+        this.versionNumber,
+        this.timeout,
+        this.appStateHash,
+      ],
     );
   }
 
-  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
+  public hashToSign(): string {
+    return keccak256(this.encode());
+  }
+
+  public async getSignedTransaction(): Promise<MinimalTransaction> {
+    this.assertSignatures();
     return {
-      to: this.networkContext.ChallengeRegistry,
+      to: this.challengeRegistryAddress,
       value: 0,
       data: iface.functions.setState.encode([
         this.appIdentity,
-        this.getSignedStateHashUpdate(sigs),
+        await this.getSignedStateHashUpdate(),
       ]),
     };
   }
 
-  private getSignedStateHashUpdate(signatures: Signature[]): SignedStateHashUpdate {
+  public toJson(): SetStateCommitmentJSON {
     return {
-      appStateHash: this.hashedAppState,
-      versionNumber: this.appVersionNumber,
+      appIdentityHash: this.appIdentityHash,
+      appIdentity: this.appIdentity,
+      appStateHash: this.appStateHash,
+      challengeRegistryAddress: this.challengeRegistryAddress,
+      signatures: this.signatures,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(this.hashToSign(), signatures).map(joinSignature),
+      versionNumber: this.versionNumber,
     };
+  }
+
+  public static fromJson(json: SetStateCommitmentJSON) {
+    return new SetStateCommitment(
+      json.challengeRegistryAddress,
+      json.appIdentity,
+      json.appStateHash,
+      json.versionNumber,
+      json.timeout,
+      json.appIdentityHash,
+      json.signatures,
+    );
+  }
+
+  private async getSignedStateHashUpdate(): Promise<SignedStateHashUpdate> {
+    this.assertSignatures();
+    const hash = this.hashToSign();
+    return {
+      appStateHash: this.appStateHash,
+      versionNumber: this.versionNumber,
+      timeout: this.timeout,
+      signatures: await sortSignaturesBySignerAddress(hash, this.signatures),
+    };
+  }
+
+  private assertSignatures() {
+    if (!this.signatures || this.signatures.length === 0) {
+      throw new Error(`No signatures detected`);
+    }
+
+    if (this.signatures.length < 2) {
+      throw new Error(
+        `Incorrect number of signatures supplied. Expected at least 2, got ${this.signatures.length}`,
+      );
+    }
   }
 }

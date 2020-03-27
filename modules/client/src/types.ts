@@ -4,13 +4,14 @@ import {
   Contract,
   GetConfigResponse,
   IChannelProvider,
+  IClientStore,
   ILoggerService,
-  IMessagingService,
   INodeApiClient,
   KeyGen,
   Network,
-  Store,
+  Xpub,
 } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
 
 // This type is only ever used inside the client,
 // No need to keep it in the global types package.
@@ -21,12 +22,12 @@ export type InternalClientOptions = {
   ethProvider: JsonRpcProvider;
   keyGen: KeyGen;
   logger: ILoggerService;
-  messaging: IMessagingService;
+  messaging: MessagingService;
   network: Network;
   node: INodeApiClient;
-  store: Store;
+  store: IClientStore;
   token: Contract;
-  xpub: string;
+  xpub: Xpub;
 };
 
 export {
@@ -34,26 +35,16 @@ export {
   AppInstanceInfo,
   AppInstanceJson,
   AppRegistry,
-  BigNumber,
   calculateExchange,
   CFChannelProviderOptions,
-  CFCoreChannel,
-  CFCoreTypes,
   ChannelAppSequences,
   ChannelProviderConfig,
-  ChannelProviderRpcMethod,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
   ClientOptions,
-  CoinTransferBigNumber,
   ConnextClientStorePrefix,
-  ConnextEvent,
   ConnextEventEmitter,
-  ConnextEvents,
-  ConnextRpcMethod,
-  ConnextRpcMethods,
-  convert,
   CreateChannelMessage,
   CreateChannelResponse,
   DefaultApp,
@@ -61,36 +52,27 @@ export {
   DepositFailedMessage,
   DepositParameters,
   DepositStartedMessage,
-  fromWei,
+  fromWad,
   GetChannelResponse,
   GetConfigResponse,
   IChannelProvider,
   IConnextClient,
   INodeApiClient,
   InstallMessage,
-  InstallVirtualMessage,
   inverse,
   IRpcConnection,
   isBN,
   IStoreService,
   JsonRpcRequest,
   KeyGen,
-  LINKED_TRANSFER_TO_RECIPIENT,
   LinkedTransferParameters,
   LinkedTransferResponse,
-  LinkedTransferToRecipientParameters,
-  LinkedTransferToRecipientResponse,
-  makeChecksum,
-  makeChecksumOrEthAddress,
   maxBN,
   minBN,
   NodeInitializationParameters,
   NodeMessageWrappedProtocolMessage,
   RebalanceProfile,
-  PendingAsyncTransfer,
   ProposeMessage,
-  ProtocolTypes,
-  RejectInstallVirtualMessage,
   RejectProposalMessage,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
@@ -101,18 +83,16 @@ export {
   ResolveConditionResponse,
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
-  ResolveLinkedTransferToRecipientParameters,
   StateChannelJSON,
   Store,
   StorePair,
   SwapParameters,
   toBN,
   tokenToWei,
-  toWei,
-  Transfer,
+  toWad,
+  TransferInfo,
   TransferParameters,
   UninstallMessage,
-  UninstallVirtualMessage,
   UpdateStateMessage,
   weiToToken,
   WithdrawParameters,

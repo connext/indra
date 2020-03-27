@@ -34,10 +34,7 @@ export class LockService {
             // return
           } catch (e) {
             // TODO: check exception... if the lock failed
-            this.log.error(
-              `Failed to execute callback while lock is held: ${e.message}`,
-              e.stack,
-            );
+            this.log.error(`Failed to execute callback while lock is held: ${e.message}`, e.stack);
           } finally {
             // unlock
             this.log.debug(`Releasing lock for ${lock.resource} with secret ${lock.value}`);
@@ -80,7 +77,7 @@ export class LockService {
       this.redlockClient
         .lock(lockName, hardcodedTTL)
         .then((lock: Lock) => {
-          this.log.debug(`Acquired lock for ${lock.resource} with secret ${lock.value}`);
+          this.log.warn(`Acquired lock for ${lock.resource} with secret ${lock.value}`);
           resolve(lock.value);
         })
         .catch((e: any) => {
@@ -91,7 +88,7 @@ export class LockService {
   }
 
   async releaseLock(lockName: string, lockValue: string): Promise<void> {
-    this.log.debug(`Releasing lock for ${lockName} at ${Date.now()}`);
+    this.log.warn(`Releasing lock for ${lockName} at ${Date.now()} with secret ${lockValue}`);
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient
         // "trick" the library into unlocking by construciing an object that contains

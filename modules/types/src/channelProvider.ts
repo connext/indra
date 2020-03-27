@@ -1,9 +1,23 @@
-import { CFCoreTypes } from "./cfCore";
 import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
-import { ProtocolTypes } from "./protocol";
-import { Store, StorePair } from "./store";
+import { MethodNames } from "./methods";
+import { WithdrawalMonitorObject, IClientStore } from "./store";
+import { StateChannelJSON } from "./state";
+import { ILockService } from "./lock";
+import { enumify } from "./utils";
+
+export const ChannelMethods = enumify({
+  ...MethodNames,
+  chan_config: "chan_config",
+  chan_signMessage: "chan_signMessage",
+  chan_signDigest: "chan_signDigest",
+  chan_restoreState: "chan_restoreState",
+  chan_getUserWithdrawal: "chan_getUserWithdrawal",
+  chan_setUserWithdrawal: "chan_setUserWithdrawal",
+  chan_setStateChannel: "chan_setStateChannel",
+});
+export type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -16,7 +30,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // Methods
 
   enable(): Promise<ChannelProviderConfig>;
-  send(method: ChannelProviderRpcMethod, params: any): Promise<any>;
+  send(method: ChannelMethods, params: any): Promise<any>;
   close(): Promise<void>;
 
   ///////////////////////////////////
@@ -34,35 +48,14 @@ export interface IChannelProvider extends ConnextEventEmitter {
   ///////////////////////////////////
   // SIGNING METHODS
   signMessage(message: string): Promise<string>;
-  signWithdrawCommitment(message: any): Promise<string>;
+  signDigest(message: string): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS
-  get(path: string): Promise<any>;
-  set(pairs: StorePair[], allowDelete?: Boolean): Promise<void>;
-  restoreState(path: string): Promise<void>;
+  getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
+  setUserWithdrawal(withdrawal: WithdrawalMonitorObject): Promise<void>;
+  restoreState(state?: StateChannelJSON): Promise<void>;
 }
-
-export const chan_config = "chan_config";
-export const chan_nodeAuth = "chan_nodeAuth";
-export const chan_signWithdrawCommitment = "chan_signWithdrawCommitment";
-export const chan_restoreState = "chan_restoreState";
-export const chan_storeGet = "chan_storeGet";
-export const chan_storeSet = "chan_storeSet";
-
-// TODO: merge ConnextRpcMethods and RpcMethodNames???
-
-export const ConnextRpcMethods = {
-  [chan_config]: chan_config,
-  [chan_nodeAuth]: chan_nodeAuth,
-  [chan_signWithdrawCommitment]: chan_signWithdrawCommitment,
-  [chan_restoreState]: chan_restoreState,
-  [chan_storeGet]: chan_storeGet,
-  [chan_storeSet]: chan_storeSet,
-};
-export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
-
-export type ChannelProviderRpcMethod = ConnextRpcMethod | CFCoreTypes.RpcMethodName;
 
 export type ChannelProviderConfig = {
   freeBalanceAddress: string;
@@ -76,15 +69,15 @@ export type ChannelProviderConfig = {
 
 export interface CFChannelProviderOptions {
   ethProvider: any;
-  keyGen: ProtocolTypes.IPrivateKeyGenerator;
-  lockService?: ProtocolTypes.ILockService;
+  keyGen(s: string): Promise<string>;
+  lockService?: ILockService;
   logger?: ILoggerService;
   messaging: any;
   networkContext: NetworkContext;
   nodeConfig: any;
   nodeUrl: string;
   xpub: string;
-  store: Store;
+  store: IClientStore;
 }
 
 export type JsonRpcRequest = {

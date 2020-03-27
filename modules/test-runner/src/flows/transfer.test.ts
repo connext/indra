@@ -1,7 +1,11 @@
-/* global before */
-import { IConnextClient } from "@connext/types";
+import {
+  IConnextClient,
+  EventPayloads,
+  EventNames,
+} from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { Client } from "ts-nats";
+import { before } from "mocha";
 
 import {
   createClient,
@@ -9,10 +13,11 @@ import {
   fundChannel,
   requestCollateral,
   TOKEN_AMOUNT_SM,
+  expect,
 } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
-import { connectNats, closeNats } from "../util/nats";
-import { after } from "mocha";
+import { getNatsClient } from "../util/nats";
+import { bigNumberify } from "ethers/utils";
 
 describe("Full Flow: Transfer", () => {
   let clientA: IConnextClient;
@@ -23,14 +28,14 @@ describe("Full Flow: Transfer", () => {
   let nats: Client;
 
   before(async () => {
-    nats = await connectNats();
+    nats = getNatsClient();
   });
 
   beforeEach(async () => {
-    clientA = await createClient();
-    clientB = await createClient();
-    clientC = await createClient();
-    clientD = await createClient();
+    clientA = await createClient({ id: "A" });
+    clientB = await createClient({ id: "B" });
+    clientC = await createClient({ id: "C" });
+    clientD = await createClient({ id: "D" });
     tokenAddress = clientA.config.contractAddresses.Token;
   });
 
@@ -39,10 +44,6 @@ describe("Full Flow: Transfer", () => {
     await clientB.messaging.disconnect();
     await clientC.messaging.disconnect();
     await clientD.messaging.disconnect();
-  });
-
-  after(() => {
-    closeNats();
   });
 
   it("User transfers ETH to multiple clients", async () => {
@@ -83,5 +84,38 @@ describe("Full Flow: Transfer", () => {
     await asyncTransferAsset(clientB, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
     await asyncTransferAsset(clientC, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
     await asyncTransferAsset(clientD, clientA, TOKEN_AMOUNT_SM, tokenAddress, nats);
+  });
+
+  it("Client receives transfers concurrently", () => {
+    return new Promise(async (res, rej) => {
+      await fundChannel(clientA, bigNumberify(5));
+      await fundChannel(clientB, bigNumberify(5));
+      await fundChannel(clientC, bigNumberify(5));
+      let transferCount = 0;
+      clientA.on(
+        "RECEIVE_TRANSFER_FINISHED_EVENT",
+        async (data: EventPayloads.ReceiveTransferFinished) => {
+          transferCount += 1;
+          if (transferCount === 2) {
+            expect(transferCount).to.eq(2);
+            res();
+          }
+        },
+      );
+
+      clientA.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
+        rej(`Received transfer failed event on clientA`),
+      );
+      clientB.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
+        rej(`Received transfer failed event on clientA`),
+      );
+      clientC.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
+        rej(`Received transfer failed event on clientA`),
+      );
+      await Promise.all([
+        clientB.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
+        clientC.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
+      ]);
+    });
   });
 });
