@@ -264,42 +264,42 @@ export class Node {
         // existing commitment
         switch (commitmentType) {
           case PersistCommitmentType.CreateConditional: {
-            this.storeService.createConditionalTransactionCommitment(
+            await this.storeService.createConditionalTransactionCommitment(
               identifier,
               (commitment as ConditionalTransactionCommitment).toJson(),
             );
             break;
           }
           case PersistCommitmentType.UpdateConditional: {
-            this.storeService.updateConditionalTransactionCommitment(
+            await this.storeService.updateConditionalTransactionCommitment(
               identifier,
               (commitment as ConditionalTransactionCommitment).toJson(),
             );
             break;
           }
           case PersistCommitmentType.CreateSetState: {
-            this.storeService.createLatestSetStateCommitment(
+            await this.storeService.createSetStateCommitment(
               identifier,
               (commitment as SetStateCommitment).toJson(),
             );
             break;
           }
           case PersistCommitmentType.UpdateSetState: {
-            this.storeService.updateLatestSetStateCommitment(
+            await this.storeService.updateSetStateCommitment(
               identifier,
               (commitment as SetStateCommitment).toJson(),
             );
             break;
           }
           case PersistCommitmentType.CreateWithdrawal: {
-            this.storeService.createWithdrawalCommitment(
+            await this.storeService.createWithdrawalCommitment(
               identifier,
               commitment as MinimalTransaction,
             );
             break;
           }
           case PersistCommitmentType.UpdateWithdrawal: {
-            this.storeService.updateWithdrawalCommitment(
+            await this.storeService.updateWithdrawalCommitment(
               identifier,
               commitment as MinimalTransaction,
             );
@@ -316,28 +316,27 @@ export class Node {
       Opcode.PERSIST_APP_INSTANCE,
       async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
         const [type, postProtocolChannel, app] = args;
+        const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
+        const { identityHash } = app;
 
         switch (type) {
           case PersistAppType.CreateProposal: {
             await this.storeService.createAppProposal(
-              postProtocolChannel.multisigAddress,
+              multisigAddress,
               app as AppInstanceProposal,
-              postProtocolChannel.numProposedApps,
+              numProposedApps,
             );
             break;
           }
 
           case PersistAppType.RemoveProposal: {
-            await this.storeService.removeAppProposal(
-              postProtocolChannel.multisigAddress,
-              (app as AppInstanceProposal).identityHash,
-            );
+            await this.storeService.removeAppProposal(multisigAddress, identityHash);
             break;
           }
 
           case PersistAppType.UpdateFreeBalance: {
             await this.storeService.updateFreeBalance(
-              postProtocolChannel.multisigAddress,
+              multisigAddress,
               (app as AppInstance).toJson(),
             );
             break;
@@ -345,15 +344,16 @@ export class Node {
 
           case PersistAppType.CreateInstance: {
             await this.storeService.createAppInstance(
-              postProtocolChannel.multisigAddress,
+              multisigAddress,
               (app as AppInstance).toJson(),
+              freeBalance.toJson(),
             );
             break;
           }
 
           case PersistAppType.UpdateInstance: {
             await this.storeService.updateAppInstance(
-              postProtocolChannel.multisigAddress,
+              multisigAddress,
               (app as AppInstance).toJson(),
             );
             break;
@@ -361,17 +361,15 @@ export class Node {
 
           case PersistAppType.RemoveInstance: {
             await this.storeService.removeAppInstance(
-              postProtocolChannel.multisigAddress,
-              (app as AppInstance).identityHash,
+              multisigAddress,
+              identityHash,
+              freeBalance.toJson(),
             );
             break;
           }
 
           case PersistAppType.Reject: {
-            await this.storeService.removeAppProposal(
-              postProtocolChannel.multisigAddress,
-              (app as AppInstanceProposal).identityHash,
-            );
+            await this.storeService.removeAppProposal(multisigAddress, identityHash);
             break;
           }
 
