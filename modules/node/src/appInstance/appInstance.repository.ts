@@ -155,37 +155,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     return convertAppToProposedInstanceJSON(app);
   }
 
-  async saveAppProposal(channel: Channel, appProposal: AppInstanceProposal): Promise<void> {
-    let app = await this.findByIdentityHash(appProposal.identityHash);
-    if (!app) {
-      app = new AppInstance();
-    }
-    app.type = AppType.PROPOSAL;
-    app.identityHash = appProposal.identityHash;
-    app.actionEncoding = appProposal.abiEncodings.actionEncoding;
-    app.stateEncoding = appProposal.abiEncodings.stateEncoding;
-    app.appDefinition = appProposal.appDefinition;
-    app.appSeqNo = appProposal.appSeqNo;
-    app.initialState = appProposal.initialState;
-    app.initiatorDeposit = bigNumberify(appProposal.initiatorDeposit);
-    app.initiatorDepositTokenAddress = appProposal.initiatorDepositTokenAddress;
-    app.latestState = appProposal.initialState;
-    app.latestTimeout = bigNumberify(appProposal.timeout).toNumber();
-    app.latestVersionNumber = 0;
-    app.responderDeposit = bigNumberify(appProposal.responderDeposit);
-    app.responderDepositTokenAddress = appProposal.responderDepositTokenAddress;
-    app.timeout = bigNumberify(appProposal.timeout).toNumber();
-    app.proposedToIdentifier = appProposal.proposedToIdentifier;
-    app.proposedByIdentifier = appProposal.proposedByIdentifier;
-    app.outcomeType = appProposal.outcomeType;
-    app.meta = appProposal.meta;
-
-    app.channel = channel;
-
-    // @ts-ignore TS2589: Type instantiation is excessively deep and possibly infinite.
-    await this.save(app);
-  }
-
   async removeAppProposal(appInstanceId: string): Promise<AppInstance> {
     const app = await this.findByIdentityHash(appInstanceId);
     if (!app || app.type !== AppType.PROPOSAL) {
