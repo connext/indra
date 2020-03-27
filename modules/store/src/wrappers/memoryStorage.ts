@@ -246,6 +246,10 @@ export class MemoryStorage implements IClientStore {
     }
     return this.updateUserWithdrawal(withdrawalObject);
   }
+  removeUserWithdrawal(): Promise<void> {
+    this.userWithdrawals = undefined;
+    return Promise.resolve();
+  }
 
   clear(): Promise<void> {
     this.channels = new Map();

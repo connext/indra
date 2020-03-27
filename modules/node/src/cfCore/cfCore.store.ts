@@ -18,7 +18,6 @@ import {
   ConditionalTransactionCommitmentRepository,
   convertConditionalCommitmentToJson,
 } from "../conditionalCommitment/conditionalCommitment.repository";
-import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
@@ -121,7 +120,7 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.getAppProposal(appInstanceId);
   }
 
-  async createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
+  async createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal, numProposedApps: number): Promise<void> {
     throw new Error("Method not correctly implemented");
     // const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     // return this.appInstanceRepository.saveAppProposal(channel, appProposal);
@@ -181,7 +180,7 @@ export class CFCoreStore implements IStoreService {
   updateSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
-  ): Promise<SetStateCommitmentJSON | undefined> {
+  ): Promise<void> {
     throw new Error("Method not correctly implemented");
   }
 

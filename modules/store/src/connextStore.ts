@@ -240,6 +240,10 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.updateUserWithdrawal(withdrawalObject);
   }
 
+  removeUserWithdrawal(): Promise<void> {
+    return this.internalStore.removeUserWithdrawal();
+  }
+
   clear(): Promise<void> {
     return this.internalStore.clear();
   }

@@ -386,6 +386,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(withdrawalKey, safeJsonStringify(withdrawalObject));
   }
 
+  async removeUserWithdrawal(): Promise<void> {
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    return this.removeItem(withdrawalKey);
+  }
+
   ////// Helper methods
   private async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     const channelKey = this.getKey(CHANNEL_KEY, stateChannel.multisigAddress);

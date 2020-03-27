@@ -173,6 +173,7 @@ export interface IClientStore extends IStoreService {
   getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
   createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  removeUserWithdrawal(): Promise<void>;
 }
 
 // Used to monitor node submitted withdrawals on behalf of user
