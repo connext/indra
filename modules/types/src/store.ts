@@ -16,7 +16,7 @@ export const StoreTypes = enumify({
   LocalStorage: "LocalStorage",
   Memory: "Memory",
 });
-export type StoreTypes = (typeof StoreTypes)[keyof typeof StoreTypes];
+export type StoreTypes = typeof StoreTypes[keyof typeof StoreTypes];
 
 export type StorePair = {
   path: string;
@@ -65,23 +65,6 @@ export interface IBackupServiceAPI {
   backup(pair: StorePair): Promise<void>;
 }
 
-/**
- * An interface for a stateful storage service with an API very similar to Firebase's API.
- * Values are addressed by paths, which are separated by the forward slash separator `/`.
- * `get` must return values whose paths have prefixes that match the provided path,
- * keyed by the remaining path.
- * `set` allows multiple values and paths to be atomically set. In Firebase, passing `null`
- * as `value` deletes the entry at the given prefix, and passing objects with null subvalues
- * deletes entries at the path extended by the subvalue's path within the object. `set` must
- * have the same behaviour if the `allowDelete` flag is passed; otherwise, any null values or
- * subvalues throws an error.
- */
-export interface IStoreServiceOld {
-  get(path: string): Promise<any>;
-  set(pairs: { path: string; value: any }[], allowDelete?: Boolean): Promise<void>;
-  reset?(): Promise<void>;
-}
-
 export const STORE_SCHEMA_VERSION = 1;
 
 export interface IStoreService {
@@ -94,7 +77,7 @@ export interface IStoreService {
   getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined>;
-  saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+  createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
 
   ///// App instances
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
@@ -104,23 +87,22 @@ export interface IStoreService {
 
   ///// App proposals
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined>;
-  createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal, numProposedApps: number): Promise<void>;
-  updateAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void>;
+  createAppProposal(
+    multisigAddress: string,
+    appProposal: AppInstanceProposal,
+    numProposedApps: number,
+  ): Promise<void>;
   removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void>;
 
   ///// Free balance
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
+  // TODO: on chopping block
   createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
   updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
 
   ///// Setup commitment
-  getSetupCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined>;
-  createSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void>;
+  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined>;
+  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   // no update, only ever created once
 
   ///// SetState commitment
@@ -151,9 +133,7 @@ export interface IStoreService {
   // no removal for disputes
 
   ///// Withdrawal commitment
-  getWithdrawalCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined>;
+  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined>;
   createWithdrawalCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
@@ -179,11 +159,6 @@ export type WithdrawalMonitorObject = {
   retry: number;
   tx: MinimalTransaction;
 };
-
-export interface Store extends IStoreServiceOld {
-  set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
-  restore(): Promise<StorePair[]>;
-}
 
 export interface ChannelsMap {
   [multisigAddress: string]: any;
