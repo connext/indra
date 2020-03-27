@@ -15,7 +15,7 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreStore } from "./cfCore.store";
 import { AddressZero } from "ethers/constants";
 import { mkAddress } from "../test/utils";
-import { createStateChannelJSON, generateRandomXpub } from "../test/cfCore";
+import { createStateChannelJSON, generateRandomXpub, createAppInstanceProposal } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
 import { sortAddresses } from "../util";
 
@@ -67,7 +67,7 @@ describe("CFCoreStore", () => {
     configService = moduleRef.get<ConfigService>(ConfigService);
   });
 
-  it.only("should create a state channel", async () => {
+  it("should create a state channel", async () => {
     const { multisigAddress, channelJson } = await createTestChannel(
       cfCoreStore,
       configService.getPublicIdentifier(),
@@ -83,5 +83,18 @@ describe("CFCoreStore", () => {
         participants: sortAddresses(channelJson.freeBalanceAppInstance.participants),
       },
     });
+  });
+
+  it.only("should create an app proposal", async () => {
+    const { multisigAddress } = await createTestChannel(
+      cfCoreStore,
+      configService.getPublicIdentifier(),
+    );
+
+    const appProposal = createAppInstanceProposal();
+    await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
+
+    const received = await cfCoreStore.getAppProposal(appProposal.identityHash);
+    expect(received).toMatchObject(appProposal);
   });
 });

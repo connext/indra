@@ -184,9 +184,7 @@ export class CFCoreStore implements IStoreService {
     appProposal: AppInstanceProposal,
     numProposedApps: number,
   ): Promise<void> {
-    throw new Error("Method not correctly implemented");
-    // const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    // return this.appInstanceRepository.saveAppProposal(channel, appProposal);
+    return this.channelRepository.createAppProposal(multisigAddress, appProposal, numProposedApps);
   }
 
   async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
