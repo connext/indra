@@ -74,22 +74,28 @@ export class CFCoreStore implements IStoreService {
       xpub => xpub !== this.configService.getPublicIdentifier(),
     );
 
-    const { multisigAddress, addresses, freeBalanceAppInstance } = stateChannel;
+    const {
+      multisigAddress,
+      addresses,
+      freeBalanceAppInstance,
+      monotonicNumProposedApps,
+    } = stateChannel;
     const channel = new Channel();
     channel.schemaVersion = this.schemaVersion;
     channel.userPublicIdentifier = userPublicIdentifier;
     channel.nodePublicIdentifier = nodePublicIdentifier;
     channel.multisigAddress = multisigAddress;
     channel.addresses = addresses;
-    channel.monotonicNumProposedApps = 0;
+    channel.monotonicNumProposedApps = monotonicNumProposedApps;
     channel.setupCommitment = setup;
 
     const userFreeBalance = xkeyKthAddress(userPublicIdentifier);
+    const nodeFreeBalance = xkeyKthAddress(this.configService.getPublicIdentifier());
     const userParticipantAddress = freeBalanceAppInstance.participants.find(
       p => p === userFreeBalance,
     );
     const nodeParticipantAddress = freeBalanceAppInstance.participants.find(
-      p => p !== userFreeBalance,
+      p => p === nodeFreeBalance,
     );
     const {
       identityHash,
@@ -97,29 +103,32 @@ export class CFCoreStore implements IStoreService {
       outcomeType,
       latestState,
       latestTimeout,
+      defaultTimeout,
       latestVersionNumber,
       appSeqNo,
     } = freeBalanceAppInstance;
 
     const freeBalanceApp = new AppInstance();
     freeBalanceApp.identityHash = identityHash;
+    freeBalanceApp.appDefinition = addr;
     freeBalanceApp.stateEncoding = stateEncoding;
     freeBalanceApp.actionEncoding = actionEncoding;
-    freeBalanceApp.appDefinition = addr;
-    freeBalanceApp.appSeqNo = appSeqNo;
     freeBalanceApp.outcomeType = OutcomeType[outcomeType];
     freeBalanceApp.initialState = latestState as any;
+    freeBalanceApp.appSeqNo = appSeqNo;
+    freeBalanceApp.latestState = latestState as any;
+    freeBalanceApp.latestVersionNumber = latestVersionNumber;
+    freeBalanceApp.timeout = defaultTimeout;
+    freeBalanceApp.latestTimeout = latestTimeout;
     freeBalanceApp.initiatorDeposit = Zero;
     freeBalanceApp.initiatorDepositTokenAddress = AddressZero;
     freeBalanceApp.responderDeposit = Zero;
     freeBalanceApp.responderDepositTokenAddress = AddressZero;
-    freeBalanceApp.timeout = latestTimeout;
-    freeBalanceApp.latestVersionNumber = latestVersionNumber;
-    freeBalanceApp.type = AppType.FREE_BALANCE;
     freeBalanceApp.proposedToIdentifier = userPublicIdentifier;
     freeBalanceApp.proposedByIdentifier = nodePublicIdentifier;
     freeBalanceApp.userParticipantAddress = userParticipantAddress;
     freeBalanceApp.nodeParticipantAddress = nodeParticipantAddress;
+    freeBalanceApp.type = AppType.FREE_BALANCE;
 
     channel.appInstances = [freeBalanceApp];
     await this.channelRepository.save(channel);
@@ -210,8 +219,7 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     // there may not be a channel at the time the setup commitment is
     // created, so add the multisig address
-    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
-    await this.setupCommitmentRepository.saveCommitment(multisigAddress, commitment, channel);
+    await this.setupCommitmentRepository.createCommitment(multisigAddress, commitment);
   }
 
   getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {

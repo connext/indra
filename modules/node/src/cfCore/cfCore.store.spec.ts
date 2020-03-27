@@ -14,17 +14,18 @@ import { DatabaseModule } from "../database/database.module";
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreStore } from "./cfCore.store";
 import { AddressZero } from "ethers/constants";
-import { mkXpub, mkAddress } from "../test/utils";
-import { createStateChannelJSON } from "../test/cfCore";
+import { mkAddress } from "../test/utils";
+import { createStateChannelJSON, generateRandomXpub } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
+import { sortAddresses } from "../util";
 
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
   nodePublicIdentifier: string,
-  userPublicIdentifier: string = mkXpub("b"),
+  userPublicIdentifier: string = generateRandomXpub(),
   multisigAddress: string = mkAddress("0xa"),
 ) => {
-  await cfCoreStore.saveSetupCommitment(multisigAddress, {
+  await cfCoreStore.createSetupCommitment(multisigAddress, {
     data: "",
     to: AddressZero,
     value: 0,
@@ -74,13 +75,13 @@ describe("CFCoreStore", () => {
 
     let channel = await cfCoreStore.getStateChannel(multisigAddress);
 
-    // const appProposal = createAppInstanceProposal({ identityHash: mkHash("0xa") });
-    // await cfCoreStore.saveAppProposal(multisigAddress, appProposal, 1);
-    console.log('channel: ', channel);
-
     expect(channel).toMatchObject({
       ...channelJson,
       userNeuteredExtendedKeys: channelJson.userNeuteredExtendedKeys.sort(),
+      freeBalanceAppInstance: {
+        ...channelJson.freeBalanceAppInstance,
+        participants: sortAddresses(channelJson.freeBalanceAppInstance.participants),
+      },
     });
   });
 });

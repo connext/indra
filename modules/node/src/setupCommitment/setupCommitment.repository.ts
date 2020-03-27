@@ -38,17 +38,12 @@ export class SetupCommitmentRepository extends Repository<SetupCommitment> {
     return convertSetupEntityToMinimalTransaction(setup);
   }
 
-  async saveCommitment(
+  async createCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
-    channel?: Channel,
   ): Promise<SetupCommitment> {
-    let commitmentEnt = await this.findByMultisigAddress(multisigAddress);
-    if (!commitmentEnt) {
-      commitmentEnt = new SetupCommitment();
-      commitmentEnt.multisigAddress = multisigAddress;
-    }
-    commitmentEnt.channel = channel;
+    const commitmentEnt = new SetupCommitment();
+    commitmentEnt.multisigAddress = multisigAddress;
     commitmentEnt.to = commitment.to;
     commitmentEnt.value = bigNumberify(commitment.value);
     commitmentEnt.data = commitment.data;

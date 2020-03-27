@@ -31,7 +31,7 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
       .filter(app => app.type === AppType.PROPOSAL)
       .map(app => [app.identityHash, convertAppToProposedInstanceJSON(app)]),
     schemaVersion: channel.schemaVersion,
-    userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier],
+    userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier].sort(),
   };
   return json;
 };
@@ -40,10 +40,7 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
 export class ChannelRepository extends Repository<Channel> {
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channel = await this.findByMultisigAddress(multisigAddress);
-    if (!channel) {
-      return undefined;
-    }
-    return convertChannelToJSON(channel);
+    return channel && convertChannelToJSON(channel);
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {

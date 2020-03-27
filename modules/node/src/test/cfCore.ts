@@ -4,8 +4,14 @@ import {
   AppInstanceProposal,
   StateChannelJSON,
 } from "@connext/types";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import { mkXpub, mkHash } from "./utils";
+import { Wallet } from "ethers";
+import { HDNode } from "ethers/utils";
+import { xkeyKthAddress } from "@connext/cf-core";
+
+export const generateRandomXpub = () =>
+  HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
 
 export const createAppInstanceJson = (
   identityHash = HashZero,
@@ -13,22 +19,22 @@ export const createAppInstanceJson = (
 ): AppInstanceJson => {
   return {
     appInterface: {
-      actionEncoding: "",
+      actionEncoding: null,
       addr: AddressZero,
       stateEncoding: "",
     },
     appSeqNo: 0,
     defaultTimeout: 0,
-    identityHash: HashZero,
+    identityHash,
     latestState: {},
     latestTimeout: 1000,
     latestVersionNumber: 0,
     multisigAddress: AddressZero,
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     participants: [],
-    multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
-    singleAssetTwoPartyCoinTransferInterpreterParams: undefined,
-    twoPartyOutcomeInterpreterParams: undefined,
+    multiAssetMultiPartyCoinTransferInterpreterParams: null,
+    singleAssetTwoPartyCoinTransferInterpreterParams: null,
+    twoPartyOutcomeInterpreterParams: null,
     ...overrides,
   };
 };
@@ -53,9 +59,9 @@ export const createAppInstanceProposal = (
     responderDeposit: "0",
     responderDepositTokenAddress: AddressZero,
     timeout: "0",
-    multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
-    singleAssetTwoPartyCoinTransferInterpreterParams: undefined,
-    twoPartyOutcomeInterpreterParams: undefined,
+    multiAssetMultiPartyCoinTransferInterpreterParams: null,
+    singleAssetTwoPartyCoinTransferInterpreterParams: null,
+    twoPartyOutcomeInterpreterParams: null,
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     ...overrides,
   };
@@ -64,7 +70,8 @@ export const createAppInstanceProposal = (
 export const createStateChannelJSON = (
   overrides: Partial<StateChannelJSON> = {},
 ): StateChannelJSON => {
-  const defaultChannelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
+  const userNeuteredExtendedKeys = [generateRandomXpub(), generateRandomXpub()];
+  const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
       multisigMastercopy: "",
       proxyFactory: "",
@@ -74,13 +81,19 @@ export const createStateChannelJSON = (
     multisigAddress: AddressZero,
     proposedAppInstances: [],
     schemaVersion: 1,
-    userNeuteredExtendedKeys: [mkXpub(), mkXpub()],
-  };
-  return {
-    ...defaultChannelData,
-    freeBalanceAppInstance: createAppInstanceJson(mkHash("0xf"), {
-      multisigAddress: defaultChannelData.multisigAddress,
-    }),
+    userNeuteredExtendedKeys,
     ...overrides,
+  };
+
+  const freeBalanceParticipants = channelData.userNeuteredExtendedKeys.map(xpub =>
+    xkeyKthAddress(xpub),
+  );
+  return {
+    ...channelData,
+    freeBalanceAppInstance: createAppInstanceJson(mkHash("0xf"), {
+      multisigAddress: channelData.multisigAddress,
+      participants: freeBalanceParticipants,
+      ...overrides.freeBalanceAppInstance,
+    }),
   };
 };
