@@ -1,4 +1,4 @@
-import { CommitmentTypes, PersistAppType, ProtocolNames, ProtocolParams, IStoreService } from "@connext/types";
+import { CommitmentTypes, ProtocolNames, ProtocolParams, IStoreService } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -8,13 +8,12 @@ import {
   Opcode,
   ProtocolExecutionFlow,
   ProtocolMessage,
+  PersistAppType,
 } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements, stateChannelClassFromStoreByMultisig } from "./utils";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
-import { StateChannel } from "../models";
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
@@ -80,7 +79,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_APP_INSTANCE,
-      PersistAppType.Uninstall,
+      PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
     ];
@@ -128,7 +127,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_APP_INSTANCE,
-      PersistAppType.Uninstall,
+      PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
     ];

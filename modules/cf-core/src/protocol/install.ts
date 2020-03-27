@@ -172,7 +172,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelAfter.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
 
     substart = Date.now();
     yield [
@@ -325,7 +325,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelAfter.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
 
     const m4 = {
       processID,

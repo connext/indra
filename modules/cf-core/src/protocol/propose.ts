@@ -1,20 +1,20 @@
-import { CommitmentTypes, ProtocolParams, ProtocolNames, PersistAppType } from "@connext/types";
+import { CommitmentTypes, ProtocolParams, ProtocolNames } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { AppInstance, AppInstanceProposal, StateChannel } from "../models";
+import { AppInstance, AppInstanceProposal } from "../models";
 import {
   Context,
   Opcode,
   ProtocolExecutionFlow,
   ProtocolMessage,
+  PersistAppType,
 } from "../types";
 import { appIdentityToHash, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
@@ -139,7 +139,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
-      PersistAppType.Proposal,
+      PersistAppType.CreateProposal,
       postProtocolStateChannel,
       appInstanceProposal,
     ];
@@ -264,7 +264,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     // will also save the app array into the state channel
     yield [
       PERSIST_APP_INSTANCE,
-      PersistAppType.Proposal,
+      PersistAppType.CreateProposal,
       postProtocolStateChannel,
       appInstanceProposal,
     ];

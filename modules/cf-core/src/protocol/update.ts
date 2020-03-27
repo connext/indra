@@ -2,13 +2,7 @@ import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import {
-  Context,
-  Opcode,
-  PersistAppType,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-} from "../types";
+import { Context, Opcode, PersistAppType, ProtocolExecutionFlow, ProtocolMessage } from "../types";
 
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -42,7 +36,10 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       newState,
     } = params as ProtocolParams.Update;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
@@ -50,10 +47,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = getSetStateCommitment(
-      context,
-      appInstance,
-    );
+    const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     const initiatorSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
@@ -83,7 +77,12 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateInstance,
+      postProtocolStateChannel,
+      appInstance,
+    ];
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -107,7 +106,10 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       newState,
     } = params as ProtocolParams.Update;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
@@ -115,10 +117,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
 
-    const setStateCommitment = getSetStateCommitment(
-      context,
-      appInstance,
-    );
+    const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     substart = Date.now();
     await assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);
@@ -130,7 +129,12 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateInstance,
+      postProtocolStateChannel,
+      appInstance,
+    ];
 
     yield [
       IO_SEND,

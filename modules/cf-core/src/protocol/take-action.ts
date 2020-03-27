@@ -2,19 +2,11 @@ import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import {
-  Context,
-  Opcode,
-  PersistAppType,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-} from "../types";
+import { Context, Opcode, PersistAppType, ProtocolExecutionFlow, ProtocolMessage } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
-import { StateChannel } from "../models";
-import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 const protocol = ProtocolNames.takeAction;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
@@ -43,7 +35,10 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       action,
     } = params as ProtocolParams.TakeAction;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       appIdentityHash,
@@ -87,7 +82,12 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateInstance,
+      postProtocolStateChannel,
+      appInstance,
+    ];
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -111,7 +111,10 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       action,
     } = params as ProtocolParams.TakeAction;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       appIdentityHash,
@@ -137,7 +140,12 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, postProtocolStateChannel, appInstance];
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateInstance,
+      postProtocolStateChannel,
+      appInstance,
+    ];
 
     yield [
       IO_SEND,
