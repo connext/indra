@@ -19,13 +19,13 @@ import {
   ConditionalTransactionCommitmentRepository,
   convertConditionalCommitmentToJson,
 } from "../conditionalCommitment/conditionalCommitment.repository";
-import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 import { xkeyKthAddress } from "src/util";
 import { AppInstance, AppType } from "src/appInstance/appInstance.entity";
 import { Zero, AddressZero } from "ethers/constants";
+import { Channel } from "src/channel/channel.entity";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -44,7 +44,7 @@ export class CFCoreStore implements IStoreService {
     return Promise.resolve(this.schemaVersion);
   }
 
-  setSchemaVersion(): Promise<void> {
+  updateSchemaVersion(): Promise<void> {
     throw new Error("Method not implemented");
   }
 
@@ -191,10 +191,18 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.getAppInstance(appInstanceId);
   }
 
-  async saveAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    await this.appInstanceRepository.saveAppInstance(channel, appJson);
+  async createAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
+    throw new Error("Method not correctly implemented");
   }
+
+  async updateAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
+    throw new Error("Method not correctly implemented");
+  }
+
+  // async saveAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
+  //   const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+  //   await this.appInstanceRepository.saveAppInstance(channel, appJson);
+  // }
 
   async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
     const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
@@ -208,9 +216,10 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.getAppProposal(appInstanceId);
   }
 
-  async saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    return this.appInstanceRepository.saveAppProposal(channel, appProposal);
+  async createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal, numProposedApps: number): Promise<void> {
+    throw new Error("Method not correctly implemented");
+    // const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+    // return this.appInstanceRepository.saveAppProposal(channel, appProposal);
   }
 
   async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
@@ -224,18 +233,36 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.getFreeBalance(multisigAddress);
   }
 
-  async saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+  async createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    throw new Error("Method not correctly implemented");
+  }
+
+  async updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     await this.appInstanceRepository.saveFreeBalance(channel, freeBalance);
   }
 
-  getLatestSetStateCommitment(
+  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction> {
+    return this.setupCommitmentRepository.getCommitment(multisigAddress);
+  }
+
+  async createSetupCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    // there may not be a channel at the time the setup commitment is
+    // created, so add the multisig address
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    await this.setupCommitmentRepository.saveCommitment(multisigAddress, commitment, channel);
+  }
+
+  getSetStateCommitment(
     appIdentityHash: string,
   ): Promise<SetStateCommitmentJSON | undefined> {
     return this.setStateCommitmentRepository.getLatestSetStateCommitment(appIdentityHash);
   }
 
-  async saveLatestSetStateCommitment(
+  async createSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -244,6 +271,13 @@ export class CFCoreStore implements IStoreService {
       throw new Error(`[saveLatestSetStateCommitment] Cannot find app with id: ${appIdentityHash}`);
     }
     return this.setStateCommitmentRepository.saveLatestSetStateCommitment(app, commitment);
+  }
+
+  updateSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    throw new Error("Method not correctly implemented");
   }
 
   async getConditionalTransactionCommitment(
@@ -261,7 +295,7 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
-  async saveConditionalTransactionCommitment(
+  async createConditionalTransactionCommitment(
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
@@ -277,11 +311,18 @@ export class CFCoreStore implements IStoreService {
     );
   }
 
+  async updateConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    throw new Error("Method not implemented");
+  }
+
   getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.withdrawCommitmentRepository.getWithdrawalCommitmentTx(multisigAddress);
   }
 
-  async saveWithdrawalCommitment(
+  async createWithdrawalCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void> {
@@ -292,18 +333,11 @@ export class CFCoreStore implements IStoreService {
     return this.withdrawCommitmentRepository.saveWithdrawalCommitment(channel, commitment);
   }
 
-  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction> {
-    return this.setupCommitmentRepository.getCommitment(multisigAddress);
-  }
-
-  async saveSetupCommitment(
+  async updateWithdrawalCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void> {
-    // there may not be a channel at the time the setup commitment is
-    // created, so add the multisig address
-    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
-    await this.setupCommitmentRepository.saveCommitment(multisigAddress, commitment, channel);
+    throw new Error("Method not implemented");
   }
 
   clear(): Promise<void> {

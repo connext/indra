@@ -19,9 +19,9 @@ import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import {
-  ConditionalTransactionCommitment,
   MultisigCommitment,
   SetStateCommitment,
+  ConditionalTransactionCommitment,
 } from "./ethereum";
 import { ProtocolRunner } from "./machine";
 import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
@@ -110,7 +110,7 @@ export class Node {
     private readonly publicExtendedKey: string,
     private readonly privateKeyGetter: PrivateKeysGetter,
     private readonly messagingService: IMessagingService,
-    private readonly store: IStoreService,
+    private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
     private readonly provider: JsonRpcProvider,
     public readonly networkContext: NetworkContext,
@@ -133,7 +133,7 @@ export class Node {
       this.publicIdentifier,
       this.incoming,
       this.outgoing,
-      this.store,
+      this.storeService,
       this.messagingService,
       this.protocolRunner,
       this.networkContext,
@@ -177,7 +177,7 @@ export class Node {
     const protocolRunner = new ProtocolRunner(
       this.networkContext,
       this.provider,
-      this.store,
+      this.storeService,
       this.log.newContext("CF-ProtocolRunner"),
     );
 
@@ -242,11 +242,10 @@ export class Node {
     });
 
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
-      const { store } = this.requestHandler;
       const [stateChannels] = args;
 
       for (const stateChannel of stateChannels) {
-        await store.createStateChannel(stateChannel.toJson());
+        await this.storeService.createStateChannel(stateChannel.toJson());
       }
     });
 
@@ -259,45 +258,51 @@ export class Node {
           string,
         ],
       ) => {
-        const { store } = this.requestHandler;
-
         const [commitmentType, commitment, identifier] = args;
 
+        // will create a commitment if it does not exist, or update an
+        // existing commitment
         switch (commitmentType) {
           case PersistCommitmentType.CreateConditional: {
-            store.createConditionalTransactionCommitment(
+            this.storeService.createConditionalTransactionCommitment(
               identifier,
               (commitment as ConditionalTransactionCommitment).toJson(),
             );
             break;
           }
           case PersistCommitmentType.UpdateConditional: {
-            store.updateConditionalTransactionCommitment(
+            this.storeService.updateConditionalTransactionCommitment(
               identifier,
               (commitment as ConditionalTransactionCommitment).toJson(),
             );
             break;
           }
           case PersistCommitmentType.CreateSetState: {
-            store.createLatestSetStateCommitment(
+            this.storeService.createLatestSetStateCommitment(
               identifier,
               (commitment as SetStateCommitment).toJson(),
             );
             break;
           }
           case PersistCommitmentType.UpdateSetState: {
-            store.updateLatestSetStateCommitment(
+            this.storeService.updateLatestSetStateCommitment(
               identifier,
               (commitment as SetStateCommitment).toJson(),
             );
             break;
           }
           case PersistCommitmentType.CreateWithdrawal: {
-            store.createWithdrawalCommitment(identifier, commitment as MinimalTransaction);
+            this.storeService.createWithdrawalCommitment(
+              identifier,
+              commitment as MinimalTransaction,
+            );
             break;
           }
           case PersistCommitmentType.UpdateWithdrawal: {
-            store.updateWithdrawalCommitment(identifier, commitment as MinimalTransaction);
+            this.storeService.updateWithdrawalCommitment(
+              identifier,
+              commitment as MinimalTransaction,
+            );
             break;
           }
           default: {
@@ -310,12 +315,11 @@ export class Node {
     protocolRunner.register(
       Opcode.PERSIST_APP_INSTANCE,
       async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
-        const { store } = this.requestHandler;
         const [type, postProtocolChannel, app] = args;
 
         switch (type) {
           case PersistAppType.CreateProposal: {
-            await store.createAppProposal(
+            await this.storeService.createAppProposal(
               postProtocolChannel.multisigAddress,
               app as AppInstanceProposal,
               postProtocolChannel.numProposedApps,
@@ -324,7 +328,7 @@ export class Node {
           }
 
           case PersistAppType.RemoveProposal: {
-            await store.removeAppProposal(
+            await this.storeService.removeAppProposal(
               postProtocolChannel.multisigAddress,
               (app as AppInstanceProposal).identityHash,
             );
@@ -332,7 +336,7 @@ export class Node {
           }
 
           case PersistAppType.UpdateFreeBalance: {
-            await store.updateFreeBalance(
+            await this.storeService.updateFreeBalance(
               postProtocolChannel.multisigAddress,
               (app as AppInstance).toJson(),
             );
@@ -340,7 +344,7 @@ export class Node {
           }
 
           case PersistAppType.CreateInstance: {
-            await store.createAppInstance(
+            await this.storeService.createAppInstance(
               postProtocolChannel.multisigAddress,
               (app as AppInstance).toJson(),
             );
@@ -348,7 +352,7 @@ export class Node {
           }
 
           case PersistAppType.UpdateInstance: {
-            await store.updateAppInstance(
+            await this.storeService.updateAppInstance(
               postProtocolChannel.multisigAddress,
               (app as AppInstance).toJson(),
             );
@@ -356,7 +360,7 @@ export class Node {
           }
 
           case PersistAppType.RemoveInstance: {
-            await store.removeAppInstance(
+            await this.storeService.removeAppInstance(
               postProtocolChannel.multisigAddress,
               (app as AppInstance).identityHash,
             );
@@ -364,7 +368,7 @@ export class Node {
           }
 
           case PersistAppType.Reject: {
-            await store.removeAppProposal(
+            await this.storeService.removeAppProposal(
               postProtocolChannel.multisigAddress,
               (app as AppInstanceProposal).identityHash,
             );

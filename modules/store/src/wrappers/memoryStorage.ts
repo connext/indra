@@ -29,51 +29,52 @@ export class MemoryStorage implements IClientStore {
 
   constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
 
-  async getSchemaVersion(): Promise<number> {
+  getSchemaVersion(): Promise<number> {
     return Promise.resolve(this.schemaVersion);
   }
 
-  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+  updateSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
     this.schemaVersion = version;
     return Promise.resolve();
   }
 
-  async getAllChannels(): Promise<StateChannelJSON[]> {
-    return [...this.channels.values()];
+  getAllChannels(): Promise<StateChannelJSON[]> {
+    return Promise.resolve([...this.channels.values()]);
   }
 
-  async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
+  getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     if (!this.channels.has(multisigAddress)) {
-      return undefined;
+      return Promise.resolve(undefined);
     }
-    return {
+    return Promise.resolve({
       ...this.channels.get(multisigAddress),
+      schemaVersion: this.schemaVersion,
       appInstances: [...this.appInstances.entries()],
       proposedAppInstances: [...this.proposedApps.entries()],
       freeBalanceAppInstance: this.freeBalances.get(multisigAddress),
-    };
+    });
   }
 
-  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
-    return [...this.channels.values()].find(
+  getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
+    return Promise.resolve([...this.channels.values()].find(
       channel => channel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString(),
-    );
+    ));
   }
 
-  async getStateChannelByAppInstanceId(
+  getStateChannelByAppInstanceId(
     appInstanceId: string,
   ): Promise<StateChannelJSON | undefined> {
-    return [...this.channels.values()].find(channel => {
+    return Promise.resolve([...this.channels.values()].find(channel => {
       return (
         channel.proposedAppInstances.find(([app]) => app === appInstanceId) ||
         channel.appInstances.find(([app]) => app === appInstanceId) ||
         (channel.freeBalanceAppInstance &&
           channel.freeBalanceAppInstance.identityHash === appInstanceId)
       );
-    });
+    }));
   }
 
-  async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+  createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     this.channels.set(stateChannel.multisigAddress, stateChannel);
     stateChannel.appInstances.forEach(([identityHash, app]) => {
       this.appInstances.set(identityHash, app);
@@ -82,82 +83,33 @@ export class MemoryStorage implements IClientStore {
       this.proposedApps.set(identityHash, app);
     });
     this.freeBalances.set(stateChannel.multisigAddress, stateChannel.freeBalanceAppInstance);
+    return Promise.resolve();
   }
 
-  async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
-    return this.appInstances.get(appInstanceId);
-  }
-
-  async saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
-    const channel = this.channels.get(multisigAddress);
-    if (!channel) {
-      throw new Error(`Channel not found: ${multisigAddress}`);
+  getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
+    if (!this.appInstances.has(appInstanceId)) {
+      return Promise.resolve(undefined);
     }
+    return Promise.resolve(this.appInstances.get(appInstanceId));
+  }
+
+  createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     // add app
-    channel.appInstances.push([appInstance.identityHash, appInstance]);
     this.appInstances.set(appInstance.identityHash, appInstance);
+    return Promise.resolve();
   }
 
-  async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
-    const channel = await this.getStateChannel(multisigAddress);
+  updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    if (!this.appInstances.has(appInstance.identityHash)) {
+      throw new Error(`App not found: ${appInstance.identityHash}`);
+    }
+    // update app
+    return this.createAppInstance(multisigAddress, appInstance);
+  }
+
+  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
     this.appInstances.delete(appInstanceId);
-    this.channels.set(channel.multisigAddress, {
-      ...channel,
-      appInstances: channel.appInstances.filter(([appId]) => appId !== appInstanceId),
-    });
-  }
-
-  async getSetupCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
-    return this.setupCommitments.get(multisigAddress);
-  }
-
-  async saveSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    this.setupCommitments.set(multisigAddress, commitment);
-    return;
-  }
-
-  async getLatestSetStateCommitment(
-    appInstanceId: string,
-  ): Promise<SetStateCommitmentJSON | undefined> {
-    return this.setStateCommitments.get(appInstanceId);
-  }
-
-  async saveLatestSetStateCommitment(
-    appInstanceId: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    this.setStateCommitments.set(appInstanceId, commitment);
-  }
-
-  async getConditionalTransactionCommitment(
-    appInstanceId: string,
-  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    return this.conditionalTxCommitment.get(appInstanceId);
-  }
-
-  async saveConditionalTransactionCommitment(
-    appInstanceId: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {
-    this.conditionalTxCommitment.set(appInstanceId, commitment);
-  }
-
-  async getWithdrawalCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
-    return this.withdrawals.get(multisigAddress);
-  }
-
-  async saveWithdrawalCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    this.withdrawals.set(multisigAddress, commitment);
+    return Promise.resolve();
   }
 
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
@@ -167,25 +119,14 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve(this.proposedApps.get(appInstanceId));
   }
 
-  saveAppProposal(multisigAddress: string, proposal: AppInstanceProposal): Promise<void> {
-    const channel = this.channels.get(multisigAddress);
-    if (!channel) {
-      throw new Error(`Channel not found: ${multisigAddress}`);
-    }
-    channel.proposedAppInstances.push([proposal.identityHash, proposal]);
+  createAppProposal(multisigAddress: string, proposal: AppInstanceProposal): Promise<void> {
     this.proposedApps.set(proposal.identityHash, proposal);
     return Promise.resolve();
   }
 
-  async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
-    const channel = await this.getStateChannel(multisigAddress);
+  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
     this.proposedApps.delete(appInstanceId);
-    this.channels.set(channel.multisigAddress, {
-      ...channel,
-      proposedAppInstances: channel.proposedAppInstances.filter(
-        ([appId]) => appId !== appInstanceId,
-      ),
-    });
+    return Promise.resolve();
   }
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
@@ -195,24 +136,142 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve(this.freeBalances.get(multisigAddress));
   }
 
-  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+  createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     this.freeBalances.set(multisigAddress, freeBalance);
     return Promise.resolve();
   }
 
-  async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
-    return this.userWithdrawals;
+  updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    if (!this.freeBalances.has(multisigAddress)) {
+      throw new Error(`Could not find free balance for multisig: ${multisigAddress}`);
+    }
+    return this.createFreeBalance(multisigAddress, freeBalance);
   }
 
-  async setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+  getSetupCommitment(
+    multisigAddress: string,
+  ): Promise<MinimalTransaction | undefined> {
+    if (!this.setupCommitments.has(multisigAddress)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(this.setupCommitments.get(multisigAddress));
+  }
+
+  createSetupCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    this.setupCommitments.set(multisigAddress, commitment);
+    return Promise.resolve();
+  }
+
+  getSetStateCommitment(
+    appInstanceId: string,
+  ): Promise<SetStateCommitmentJSON | undefined> {
+    if (!this.setStateCommitments.has(appInstanceId)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(this.setStateCommitments.get(appInstanceId));
+  }
+
+  createSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    this.setStateCommitments.set(appInstanceId, commitment);
+    return Promise.resolve();
+  }
+
+  updateSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    if (!this.setStateCommitments.has(appInstanceId)) {
+      throw new Error(`Could not find set state commitment for app: ${appInstanceId}`);
+    }
+    return this.createSetStateCommitment(appInstanceId, commitment);
+  }
+
+  getConditionalTransactionCommitment(
+    appInstanceId: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    if (!this.conditionalTxCommitment.has(appInstanceId)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(this.conditionalTxCommitment.get(appInstanceId));
+  }
+
+  createConditionalTransactionCommitment(
+    appInstanceId: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    this.conditionalTxCommitment.set(appInstanceId, commitment);
+    return Promise.resolve();
+  }
+
+  updateConditionalTransactionCommitment(
+    appInstanceId: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    if (!this.conditionalTxCommitment.has(appInstanceId)) {
+      throw new Error(`Could not find conditional tx for app: ${appInstanceId}`);
+    }
+    return this.createConditionalTransactionCommitment(appInstanceId, commitment);
+  }
+
+  getWithdrawalCommitment(
+    multisigAddress: string,
+  ): Promise<MinimalTransaction | undefined> {
+    if (!this.withdrawals.has(multisigAddress)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(this.withdrawals.get(multisigAddress));
+  }
+
+  createWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    this.withdrawals.set(multisigAddress, commitment);
+    return Promise.resolve();
+  }
+
+  updateWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    if (!this.withdrawals.has(multisigAddress)) {
+      throw new Error(`Could not find withdrawal commitment for multisig: ${multisigAddress}`);
+    }
+    return this.createWithdrawalCommitment(multisigAddress, commitment);
+  }
+
+  getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
+    return Promise.resolve(this.userWithdrawals);
+  }
+
+  createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
     this.userWithdrawals = withdrawalObject;
+    return Promise.resolve();
   }
 
-  async clear(): Promise<void> {
+  updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    if (!this.userWithdrawals || withdrawalObject.tx.data !== this.userWithdrawals.tx.data) {
+      throw new Error(`Could not find user withdrawal to update`);
+    }
+    return this.updateUserWithdrawal(withdrawalObject);
+  }
+  removeUserWithdrawal(): Promise<void> {
+    this.userWithdrawals = undefined;
+    return Promise.resolve();
+  }
+
+  clear(): Promise<void> {
     this.channels = new Map();
     this.withdrawals = new Map();
     this.appInstances = new Map();
     this.userWithdrawals = undefined;
+    return Promise.resolve();
   }
 
   async restore(): Promise<void> {

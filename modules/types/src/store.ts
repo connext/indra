@@ -70,7 +70,7 @@ export const STORE_SCHEMA_VERSION = 1;
 export interface IStoreService {
   ///// Schema version
   getSchemaVersion(): Promise<number>;
-  setSchemaVersion(version?: number): Promise<void>;
+  updateSchemaVersion(version?: number): Promise<void>;
 
   ///// State channels
   getAllChannels(): Promise<StateChannelJSON[]>;
@@ -93,6 +93,7 @@ export interface IStoreService {
     numProposedApps: number,
   ): Promise<void>;
   removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void>;
+  // proposals dont need to be updated
 
   ///// Free balance
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
@@ -106,12 +107,12 @@ export interface IStoreService {
   // no update, only ever created once
 
   ///// SetState commitment
-  getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
-  createLatestSetStateCommitment(
+  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
+  createSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
-  updateLatestSetStateCommitment(
+  updateSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
@@ -152,6 +153,7 @@ export interface IClientStore extends IStoreService {
   getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
   createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
   updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void>;
+  removeUserWithdrawal(): Promise<void>;
 }
 
 // Used to monitor node submitted withdrawals on behalf of user

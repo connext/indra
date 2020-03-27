@@ -4,6 +4,7 @@ import {
   NetworkContext,
   nullLogger,
   PersistAppType,
+  IStoreService,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { HDNode } from "ethers/utils/hdnode";
@@ -12,7 +13,6 @@ import { signDigest } from "@connext/crypto";
 import { Opcode } from "../types";
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
-import { Store } from "../store";
 
 import { getRandomHDNodes } from "./random-signing-keys";
 
@@ -42,7 +42,7 @@ export class MiniNode {
   constructor(
     readonly networkContext: NetworkContext,
     readonly provider: JsonRpcProvider,
-    readonly store: Store,
+    readonly store: IStoreService,
   ) {
     [this.hdNode] = getRandomHDNodes(1);
     this.xpub = this.hdNode.neuter().extendedKey;
@@ -53,7 +53,8 @@ export class MiniNode {
     this.protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
       const [stateChannels] = args;
       for (const stateChannel of stateChannels) {
-        await this.store.saveStateChannel(stateChannel);
+        await this.store.createStateChannel(stateChannel.toJson());
+        await this.store.createFreeBalance(stateChannel.multisigAddress, stateChannel.freeBalance.toJson());
       }
     });
     this.protocolRunner.register(
@@ -61,27 +62,41 @@ export class MiniNode {
       async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
         const [type, postProtocolChannel, app] = args;
 
-        // always persist the free balance
-        // this will error if channel does not exist
-        await this.store.saveFreeBalance(postProtocolChannel);
+        const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
 
         switch (type) {
+
           case PersistAppType.Proposal:
-            await this.store.saveAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            await this.store.createAppProposal(multisigAddress, app as AppInstanceProposal, numProposedApps);
             break;
+
           case PersistAppType.Reject:
-            await this.store.removeAppProposal(postProtocolChannel, app as AppInstanceProposal);
+            await this.store.removeAppProposal(multisigAddress, (app as AppInstanceProposal).identityHash);
             break;
 
           case PersistAppType.Instance:
-            if (app.identityHash === postProtocolChannel.freeBalance.identityHash) {
+            // handle free balance case
+            if (app.identityHash === freeBalance.identityHash) {
+              await this.store.updateFreeBalance(multisigAddress, freeBalance.toJson());
               break;
             }
-            await this.store.saveAppInstance(postProtocolChannel, app as AppInstance);
+            // check if app instance needs to be created, or if it
+            // is being updated
+            const existing = await this.store.getAppInstance(app.identityHash);
+            if (existing) {
+              // update app and continue, no need to touch free balance
+              await this.store.updateAppInstance(multisigAddress, (app as AppInstance).toJson());
+              break;
+            }
+            // create app instance and update the free balance
+            await this.store.createAppInstance(multisigAddress, (app as AppInstance).toJson());
+            await this.store.updateFreeBalance(multisigAddress, freeBalance.toJson());
             break;
 
           case PersistAppType.Uninstall:
-            await this.store.removeAppInstance(postProtocolChannel, app as AppInstance);
+            await this.store.removeAppInstance(multisigAddress, app.identityHash);
+            // update free balance
+            await this.store.updateFreeBalance(multisigAddress, freeBalance.toJson());
             break;
 
           default:

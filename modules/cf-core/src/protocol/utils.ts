@@ -1,4 +1,4 @@
-import { delay, EthereumCommitment, recoverAddressWithEthers } from "@connext/types";
+import { delay, EthereumCommitment, recoverAddressWithEthers, IStoreService } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 
@@ -7,6 +7,7 @@ import {
   CoinTransfer,
   convertCoinTransfersToCoinTransfersMap,
   TokenIndexedCoinTransferMap,
+  StateChannel,
 } from "../models";
 import {
   CoinBalanceRefundAppState,
@@ -17,6 +18,7 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 export async function assertIsValidSignature(
   expectedSigner: string,
@@ -37,6 +39,14 @@ export async function assertIsValidSignature(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${hash}.`,
     );
   }
+}
+
+export async function stateChannelClassFromStoreByMultisig(multisigAddress: string, store: IStoreService) {
+  const json = await store.getStateChannel(multisigAddress);
+  if (!json) {
+    throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+  }
+  return StateChannel.fromJson(json);
 }
 
 /**

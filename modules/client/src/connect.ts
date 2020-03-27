@@ -263,7 +263,7 @@ export const connect = async (
     await client.restoreState();
     // increment / update store schema version, defaults to types const
     // of `STORE_SCHEMA_VERSION`
-    await client.store.setSchemaVersion();
+    await client.store.updateSchemaVersion();
   }
 
   try {

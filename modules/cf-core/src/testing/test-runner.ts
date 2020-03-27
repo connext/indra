@@ -6,7 +6,6 @@ import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { Store } from "../store";
 import { getCreate2MultisigAddress } from "../utils";
 import { sortAddresses, xkeyKthAddress } from "../xkeys";
 
@@ -15,6 +14,7 @@ import { toBeEq } from "./bignumber-jest-matcher";
 import { MessageRouter } from "./message-router";
 import { MiniNode } from "./mininode";
 import { newWallet } from "./utils";
+import { StateChannel } from "../models";
 
 expect.extend({ toBeEq });
 
@@ -48,9 +48,9 @@ export class TestRunner {
       wallet,
     ).deploy();
 
-    this.mininodeA = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
-    this.mininodeB = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
-    this.mininodeC = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
+    this.mininodeA = new MiniNode(network, this.provider, new MemoryStoreService());
+    this.mininodeB = new MiniNode(network, this.provider, new MemoryStoreService());
+    this.mininodeC = new MiniNode(network, this.provider, new MemoryStoreService());
 
     this.multisigAB = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
@@ -93,10 +93,10 @@ export class TestRunner {
       multisigAddress: this.multisigAB,
     });
 
-    await this.mininodeA.store.getStateChannel(this.multisigAB);
+    const jsonAB = await this.mininodeA.store.getStateChannel(this.multisigAB);
     this.mininodeA.scm.set(
       this.multisigAB,
-      await this.mininodeA.store.getStateChannel(this.multisigAB),
+      StateChannel.fromJson(jsonAB!),
     );
 
     await this.mr.waitForAllPendingPromises();
@@ -107,9 +107,10 @@ export class TestRunner {
       multisigAddress: this.multisigBC,
     });
 
+    const jsonBC = await this.mininodeB.store.getStateChannel(this.multisigBC);
     this.mininodeB.scm.set(
       this.multisigBC,
-      await this.mininodeB.store.getStateChannel(this.multisigBC),
+      StateChannel.fromJson(jsonBC!),
     );
 
     await this.mr.waitForAllPendingPromises();
@@ -121,7 +122,8 @@ export class TestRunner {
   */
   async unsafeFund() {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
-      const sc = await mininode.store.getStateChannel(this.multisigAB)!;
+      const json = await mininode.store.getStateChannel(this.multisigAB)!;
+      const sc = StateChannel.fromJson(json!);
       const updatedBalance = sc.incrementFreeBalance({
         [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
           [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
@@ -132,12 +134,13 @@ export class TestRunner {
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
         },
       });
-      await mininode.store.saveFreeBalance(updatedBalance);
+      await mininode.store.updateFreeBalance(updatedBalance.multisigAddress, updatedBalance.freeBalance.toJson());
       mininode.scm.set(this.multisigAB, updatedBalance);
     }
 
     for (const mininode of [this.mininodeB, this.mininodeC]) {
-      const sc = await mininode.store.getStateChannel(this.multisigBC)!;
+      const json = await mininode.store.getStateChannel(this.multisigBC)!;
+      const sc = StateChannel.fromJson(json!);
       const updatedSc = sc.incrementFreeBalance({
         [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
@@ -148,7 +151,7 @@ export class TestRunner {
           [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
         },
       });
-      await mininode.store.saveFreeBalance(updatedSc);
+      await mininode.store.updateFreeBalance(updatedSc.multisigAddress, updatedSc.freeBalance.toJson());
       mininode.scm.set(this.multisigBC, updatedSc);
     }
   }
@@ -284,7 +287,7 @@ export class TestRunner {
     if (!multisig) {
       throw new Error(`uninstall: Couldn't find multisig for ${this.multisigAC}`);
     }
-    const appInstances = multisig.appInstances;
+    const appInstances = StateChannel.fromJson(multisig!).appInstances;
 
     const [key] = [...appInstances.keys()].filter(key => {
       return key !== this.mininodeA.scm.get(this.multisigAB)!.freeBalance.identityHash;

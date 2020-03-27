@@ -3,7 +3,7 @@ import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
+import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS, NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 import { getConditionalTransactionCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
@@ -20,7 +20,7 @@ import {
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.install;
 const {
@@ -69,7 +69,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorXpub,
     } = params as ProtocolParams.Install;
 
-    const stateChannelBefore = await store.getStateChannel(multisigAddress);
+    const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
 
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
@@ -227,7 +227,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress,
     } = params as ProtocolParams.Install;
 
-    const stateChannelBefore = await store.getStateChannel(multisigAddress);
+    const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
 
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
