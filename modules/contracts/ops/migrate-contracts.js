@@ -51,6 +51,10 @@ const ganacheId = 4447;
 const addressBookPath = "./address-book.json";
 const addressBook = JSON.parse(fs.readFileSync(addressBookPath, "utf8") || "{}");
 
+const classicProviders = [
+  "https://www.ethercluster.com/etc",
+];
+
 // Global scope vars
 let chainId;
 let wallet;
@@ -174,7 +178,10 @@ const sendGift = async (address, token) => {
     process.exit(1);
   }
 
-  provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER);
+  provider = new eth.providers.JsonRpcProvider(
+    process.env.ETH_PROVIDER,
+    classicProviders.includes(process.env.ETH_PROVIDER) ? "classic" : null,
+  );
   mnemonic = process.env.ETH_MNEMONIC;
   wallet = eth.Wallet.fromMnemonic(mnemonic).connect(provider); // saved to global scope
 
