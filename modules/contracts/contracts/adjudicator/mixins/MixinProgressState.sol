@@ -51,7 +51,7 @@ contract MixinProgressState is LibStateChannelApp, LibDispute, MChallengeRegistr
         );
 
         // This should throw an error if reverts
-        bytes memory newState = applyAction(
+        bytes memory newAppState = applyAction(
             appIdentity.appDefinition,
             appState,
             action.encodedAction
@@ -60,12 +60,12 @@ contract MixinProgressState is LibStateChannelApp, LibDispute, MChallengeRegistr
         // Update challenge
         challenge.status = ChallengeStatus.IN_ONCHAIN_PROGRESSION;
         challenge.latestSubmitter = msg.sender;
-        challenge.appStateHash = appStateToHash(newState);
+        challenge.appStateHash = appStateToHash(newAppState);
         challenge.versionNumber++;
         challenge.finalizesAt = block.number.add(appIdentity.defaultTimeout);
 
         // Check whether state is terminal, for immediate finalization (could be optional)
-        if (isStateTerminal(appIdentity.appDefinition, newState)) {
+        if (isStateTerminal(appIdentity.appDefinition, newAppState)) {
             challenge.status = ChallengeStatus.EXPLICITLY_FINALIZED;
         }
     }
