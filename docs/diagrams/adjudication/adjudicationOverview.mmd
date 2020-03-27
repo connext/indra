@@ -1,0 +1,62 @@
+sequenceDiagram
+  participant Alice
+  participant Contracts
+  participant Bob
+
+  autonumber
+
+  Note left of Alice: Disputes state n
+
+  alt 0 timeout & action
+    Alice->>Contracts: `setAndProgress`
+
+  else otherwise
+    Alice->>Contracts: `setState`
+  
+  end
+
+  Note over Contracts: Emit SetStateEvent
+  
+  alt has state n'>n
+    Bob->>Contracts: `setState`
+
+  else app not funded
+    Bob->>Contracts: begin free balance dispute
+  end
+
+  Note over Contracts: Emit SetStateEvent
+
+  loop Dispute state game
+    Note over Alice,Bob: `setState` is called until state is finalized at nonce k > n
+
+    Note over Contracts: Emit SetStateEvent
+  end
+
+  alt has action on k
+    Bob->>Bob: Wait out timeout
+    Bob->>Contracts: `progressState`
+    Note over Contracts: Emit SetStateEvent
+
+    loop Dispute action game
+      Note over Alice,Bob: `setState` is called until state is finalized at nonce k > n
+
+      Note over Contracts: Emit SetStateEvent
+    end
+
+  end
+
+  loop Free balance dispute
+    Note over Alice,Bob: Free balance is disputed with `setState` to determine active apps
+
+    Note over Contracts: Emit SetStateEvent
+  end
+
+  Note left of Alice: Wants to claim funds
+  Alice->>Contracts: `conditionalTransaction`
+  
+  Contracts->>Contracts: interpret outcome
+  Note over Contracts: Emit DisputeFinal
+  Contracts->>Alice: disburse app funds at state k
+  Contracts->>Bob: disburse app funds at state k
+
+

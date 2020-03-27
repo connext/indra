@@ -1,0 +1,36 @@
+sequenceDiagram
+  participant Alice
+  participant Contracts
+  participant Bob
+
+  autonumber
+
+  Note left of Alice: Disputes state n
+
+  Alice->>Contracts: `setState`
+
+  Note over Contracts: Emit SetStateEvent
+  
+  alt app uninstalled
+    Bob->>Contracts: begin free balance dispute
+  
+  else app installed
+    Bob->>Bob: wait out timeout
+
+  end
+
+  loop Free balance dispute
+    Note over Alice,Bob: Free balance disputed to determine the funded applications
+
+    Note over Contracts: Emit SetStateEvent
+  end
+
+  Note left of Alice: Wants to claim funds
+  Alice->>Contracts: `conditionalTransaction`
+  
+  Contracts->>Contracts: interpret outcome
+  Note over Contracts: Emit DisputeFinal
+  Contracts->>Alice: disburse app funds at state k
+  Contracts->>Bob: disburse app funds at state k
+
+
