@@ -57,6 +57,7 @@ contract MixinProgressState is LibStateChannelApp, LibDispute, MChallengeRegistr
             action.encodedAction
         );
 
+        // Update challenge
         challenge.status = ChallengeStatus.IN_ONCHAIN_PROGRESSION;
         challenge.latestSubmitter = msg.sender;
         challenge.appStateHash = appStateToHash(newState);

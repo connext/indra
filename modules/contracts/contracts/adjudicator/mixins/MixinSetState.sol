@@ -52,6 +52,7 @@ contract MixinSetState is LibStateChannelApp, LibDispute, MChallengeRegistryCore
             "setState was called with outdated state"
         );
 
+        // Update challenge
         challenge.status = ChallengeStatus.IN_DISPUTE;
         challenge.latestSubmitter = msg.sender;
         challenge.appStateHash = req.appStateHash;
