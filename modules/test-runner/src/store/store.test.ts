@@ -103,7 +103,7 @@ describe("ConnextStore", () => {
         await store.createStateChannel(channel);
         const nullValue = await store.getAppInstance(app.identityHash);
         expect(nullValue).to.be.undefined;
-        await store.createAppInstance(multisigAddress, app);
+        await store.createAppInstance(multisigAddress, app, channel.freeBalanceAppInstance!);
         const retrieved = await store.getAppInstance(app.identityHash);
         expect(retrieved).to.deep.eq(app);
         const chan = await store.getStateChannel(multisigAddress);
@@ -122,7 +122,7 @@ describe("ConnextStore", () => {
         const multisigAddress = channel.multisigAddress;
         await store.createStateChannel(channel);
         const edited = { ...app, latestVersionNumber: 14 };
-        await store.createAppInstance(multisigAddress, app);
+        await store.createAppInstance(multisigAddress, app, channel.freeBalanceAppInstance!);
         const retrieved = await store.getAppInstance(app.identityHash);
         expect(retrieved).to.deep.eq(app);
         await store.updateAppInstance(multisigAddress, edited);
@@ -143,8 +143,12 @@ describe("ConnextStore", () => {
         const app = TEST_STORE_CHANNEL.appInstances[0][1];
         const multisigAddress = channel.multisigAddress;
         await store.createStateChannel(channel);
-        await store.createAppInstance(multisigAddress, app);
-        await store.removeAppInstance(multisigAddress, app.identityHash);
+        await store.createAppInstance(multisigAddress, app, channel.freeBalanceAppInstance!);
+        await store.removeAppInstance(
+          multisigAddress,
+          app.identityHash,
+          channel.freeBalanceAppInstance!,
+        );
         const retrieved = await store.getAppInstance(app.identityHash);
         expect(retrieved).to.be.undefined;
         const chan = await store.getStateChannel(multisigAddress);

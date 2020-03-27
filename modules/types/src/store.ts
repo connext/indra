@@ -81,9 +81,17 @@ export interface IStoreService {
 
   ///// App instances
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
-  createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
+  createAppInstance(
+    multisigAddress: string,
+    appInstance: AppInstanceJson,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void>;
   updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
-  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void>;
+  removeAppInstance(
+    multisigAddress: string,
+    appInstanceId: string,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void>;
 
   ///// App proposals
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined>;

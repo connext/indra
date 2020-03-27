@@ -123,23 +123,35 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getAppInstance(appInstanceId);
   }
 
-  createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
-    return this.internalStore.createAppInstance(multisigAddress, appInstance);
+  createAppInstance(
+    multisigAddress: string,
+    appInstance: AppInstanceJson,
+    freeBalance: AppInstanceJson,
+  ): Promise<void> {
+    return this.internalStore.createAppInstance(multisigAddress, appInstance, freeBalance);
   }
 
   updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     return this.internalStore.updateAppInstance(multisigAddress, appInstance);
   }
 
-  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
-    return this.internalStore.removeAppInstance(multisigAddress, appInstanceId);
+  removeAppInstance(
+    multisigAddress: string,
+    appInstanceId: string,
+    freeBalance: AppInstanceJson,
+  ): Promise<void> {
+    return this.internalStore.removeAppInstance(multisigAddress, appInstanceId, freeBalance);
   }
 
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
     return this.internalStore.getAppProposal(appInstanceId);
   }
 
-  createAppProposal(appInstanceId: string, proposal: AppInstanceProposal, numProposedApps: number): Promise<void> {
+  createAppProposal(
+    appInstanceId: string,
+    proposal: AppInstanceProposal,
+    numProposedApps: number,
+  ): Promise<void> {
     return this.internalStore.createAppProposal(appInstanceId, proposal, numProposedApps);
   }
 
@@ -159,16 +171,11 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.updateFreeBalance(multisigAddress, freeBalance);
   }
 
-  getSetupCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
+  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return this.internalStore.getSetupCommitment(multisigAddress);
   }
 
-  createSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
+  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void> {
     return this.internalStore.createSetupCommitment(multisigAddress, commitment);
   }
 
