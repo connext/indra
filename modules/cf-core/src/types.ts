@@ -1,10 +1,26 @@
-import {
-  ILoggerService,
-  NetworkContext,
-  ProtocolMessage,
-} from "@connext/types";
+import { ILoggerService, NetworkContext, ProtocolMessage, enumify, IStoreService } from "@connext/types";
 
-import { Store } from "./store";
+export const PersistAppType = enumify({
+  CreateProposal: "CreateProposal",
+  RemoveProposal: "RemoveProposal",
+  CreateInstance: "CreateInstance",
+  UpdateInstance: "UpdateInstance",
+  RemoveInstance: "RemoveInstance",
+  UpdateFreeBalance: "UpdateFreeBalance",
+  Reject: "Reject",
+});
+export type PersistAppType = typeof PersistAppType[keyof typeof PersistAppType];
+
+export const PersistCommitmentType = enumify({
+  CreateSetup: "CreateSetup",
+  CreateSetState: "CreateSetState",
+  UpdateSetState: "UpdateSetState",
+  CreateConditional: "CreateConditional",
+  UpdateConditional: "UpdateConditional",
+  CreateWithdrawal: "CreateWithdrawal",
+  UpdateWithdrawal: "UpdateWithdrawal",
+});
+export type PersistCommitmentType = typeof PersistCommitmentType[keyof typeof PersistCommitmentType];
 
 export enum Opcode {
   // Middleware hook to send a ProtocolMessage to a peer.
@@ -37,7 +53,7 @@ export type Instruction = Function | Opcode;
 
 // Arguments passed to a protocol execulion flow
 export interface Context {
-  store: Store;
+  store: IStoreService;
   log: ILoggerService;
   message: ProtocolMessage;
   network: NetworkContext;
@@ -80,7 +96,6 @@ export {
   NodeMessage,
   NodeMessageWrappedProtocolMessage,
   OutcomeType,
-  PersistAppType,
   ProposeMessage,
   ProtocolMessage,
   ProtocolName,
