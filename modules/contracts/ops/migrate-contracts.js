@@ -164,20 +164,18 @@ const sendGift = async (address, token) => {
 (async function() {
   let provider, balance, nonce, token;
 
-  if (process.env.ETH_PROVIDER) {
-    provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER);
-  } else {
-    provider = eth.getDefaultProvider(process.env.ETH_NETWORK);
-  }
-
-  if (process.env.ETH_MNEMONIC_FILE) {
-    mnemonic = fs.readFileSync(process.env.ETH_MNEMONIC_FILE, "utf8");
-  } else if (process.env.ETH_MNEMONIC) {
-    mnemonic = process.env.ETH_MNEMONIC;
-  } else {
-    console.error("Couldn't setup signer: no mnemonic found");
+  if (!process.env.ETH_PROVIDER) {
+    console.error("Couldn't setup provider: no url found in ETH_PROVIDER env var");
     process.exit(1);
   }
+
+  if (!process.env.ETH_MNEMONIC) {
+    console.error("Couldn't setup signer: no mnemonic found in ETH_MNEMONIC env var");
+    process.exit(1);
+  }
+
+  provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER);
+  mnemonic = process.env.ETH_MNEMONIC;
   wallet = eth.Wallet.fromMnemonic(mnemonic).connect(provider); // saved to global scope
 
   try {
@@ -189,7 +187,7 @@ const sendGift = async (address, token) => {
     process.exit(1);
   }
 
-  console.log(`\nPreparing to migrate contracts to network ${chainId}`);
+  console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);
   console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`);
 
   ////////////////////////////////////////
@@ -199,7 +197,7 @@ const sendGift = async (address, token) => {
     await deployContract(contract, artifacts[contract], []);
   }
 
-  // If this network has not token yet, deploy one
+  // If this network has no token yet, deploy one
   if (chainId === ganacheId || !getSavedData("Token", "address")) {
     token = await deployContract("Token", tokenArtifacts, []);
   }
