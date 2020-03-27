@@ -51,7 +51,7 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
-if [[ "$mode" == "local" && "$ETH_PROVIDER" == "$localProvider" ]]
+if [[ "$mode" == "local" ]]
 then
   echo "Deploying $mode-mode contract deployer (image: builder)..."
   exec docker run \
@@ -69,7 +69,6 @@ elif [[ "$mode" == "release" ]]
 then image="${project}_ethprovider:$release"
 elif [[ "$mode" == "staging" ]]
 then image="${project}_ethprovider:$commit"
-else image="${project}_ethprovider:latest"
 fi
 
 echo "Deploying $mode-mode contract deployer (image: $image)..."
