@@ -129,6 +129,14 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     });
   }
 
+  async findByIdentityHashOrThrow(identityHash: string): Promise<AppInstance> {
+    const app = await this.findByIdentityHash(identityHash);
+    if (!app) {
+      throw new Error(`Could not find app with identity hash ${identityHash}`);
+    }
+    return app;
+  }
+
   findByMultisigAddressAndType(multisigAddress: string, type: AppType): Promise<AppInstance[]> {
     return this.createQueryBuilder("app_instances")
       .leftJoinAndSelect(
@@ -237,6 +245,43 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       return undefined;
     }
     return convertAppToInstanceJSON(app, app.channel);
+  }
+
+  async createAppInstance(channel: Channel, appJson: AppInstanceJson): Promise<void> {
+    const {
+      identityHash,
+      multiAssetMultiPartyCoinTransferInterpreterParams,
+      participants,
+      singleAssetTwoPartyCoinTransferInterpreterParams,
+      twoPartyOutcomeInterpreterParams,
+    } = appJson;
+    // will be proposal
+    const app = await this.findByIdentityHashOrThrow(identityHash);
+    app.type = AppType.INSTANCE;
+    let userAddr = xkeyKthAddress(channel.userPublicIdentifier, app.appSeqNo);
+    if (!participants.filter(p => p === userAddr)[0]) {
+      userAddr = xkeyKthAddress(channel.userPublicIdentifier);
+    }
+    app.userParticipantAddress = participants.filter(p => p === userAddr)[0];
+    app.nodeParticipantAddress = participants.filter(p => p !== userAddr)[0];
+
+    // interpreter params
+    switch (OutcomeType[app.outcomeType]) {
+      case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
+        app.outcomeInterpreterParameters = twoPartyOutcomeInterpreterParams;
+        break;
+
+      case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
+        app.outcomeInterpreterParameters = multiAssetMultiPartyCoinTransferInterpreterParams;
+        break;
+
+      case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
+        app.outcomeInterpreterParameters = singleAssetTwoPartyCoinTransferInterpreterParams;
+        break;
+
+      default:
+        throw new Error(`Unrecognized outcome type: ${OutcomeType[app.outcomeType]}`);
+    }
   }
 
   async saveAppInstance(
