@@ -2,12 +2,11 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
-import "../libs/LibDispute.sol";
 import "./MChallengeRegistryCore.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MixinProgressState is LibStateChannelApp, LibDispute, MChallengeRegistryCore {
+contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
 
     using SafeMath for uint256;
 

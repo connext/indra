@@ -6,6 +6,14 @@ pragma experimental ABIEncoderV2;
 /// @notice Contains the structures and enums needed or generally useful in disputes
 contract LibDispute {
 
+    // The status of a challenge in the ChallengeRegistry
+    enum ChallengeStatus {
+        NO_CHALLENGE,
+        IN_DISPUTE,
+        IN_ONCHAIN_PROGRESSION,
+        EXPLICITLY_FINALIZED
+    }
+
     // State hash with version number and timeout, signed by all parties
     struct SignedAppChallengeUpdate {
         bytes32 appStateHash;
@@ -18,6 +26,14 @@ contract LibDispute {
     struct SignedAction {
         bytes encodedAction;
         bytes signature;
+    }
+
+    // Used to cancel a challenge. Inc. current onchain state hash,
+    // challenge status, and signatures on this
+    struct SignedCancelChallengeRequest {
+        bytes32 appStateHash;
+        ChallengeStatus status;
+        bytes[] signatures;
     }
 
 }
