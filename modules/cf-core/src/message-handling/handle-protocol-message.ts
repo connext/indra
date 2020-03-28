@@ -61,7 +61,7 @@ export async function handleReceivedProtocolMessage(
       outgoingEventData!.data["appInstanceId"] ||
       (outgoingEventData!.data as any).params["appInstanceId"];
 
-  if (protocol !== ProtocolNames.install || !appInstanceId) {
+  if (!appInstanceId) {
     await emitOutgoingNodeMessage(router, outgoingEventData);
     return;
   }

@@ -1,7 +1,7 @@
 import { ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { getSetupCommitment } from "../ethereum";
+import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
 
 import { StateChannel } from "../models";
 import {
@@ -51,12 +51,19 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 32 ms
-    const initiatorSignature = yield [OP_SIGN, setupCommitment];
+    const mySetupSignature = yield [OP_SIGN, setupCommitment];
+
+    // 32 ms
+    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
+    const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData];
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
     const {
-      customData: { signature: responderSignature },
+      customData: {
+        setupSignature: responderSetupSignature,
+        setStateSignature: responderSignatureOnFreeBalanceState,
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -66,7 +73,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
         toXpub: responderXpub,
         customData: {
-          signature: initiatorSignature,
+          setupSignature: mySetupSignature,
+          setStateSignature: mySignatureOnFreeBalanceState,
         },
       } as ProtocolMessage,
     ];
@@ -74,16 +82,24 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
-    // 34 ms
+    // 68 ms
     substart = Date.now();
+    const responderAddr = xkeyKthAddress(responderXpub, 0);
     await assertIsValidSignature(
-      xkeyKthAddress(responderXpub, 0),
+      responderAddr,
       setupCommitment,
-      responderSignature,
+      responderSetupSignature,
     );
-    logTime(log, substart, `Verified responder's sig`);
+    await assertIsValidSignature(
+      responderAddr,
+      freeBalanceUpdateData,
+      responderSignatureOnFreeBalanceState,
+    );
+    logTime(log, substart, `Verified responder's sigs`);
 
-    setupCommitment.signatures = [responderSignature, initiatorSignature];
+    // add sigs to commitments
+    setupCommitment.signatures = [responderSetupSignature, mySetupSignature];
+    freeBalanceUpdateData.signatures = [responderSignatureOnFreeBalanceState, mySignatureOnFreeBalanceState];
 
     // 33 ms
     yield [
@@ -93,6 +109,14 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.multisigAddress,
     ];
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
+
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.CreateSetState,
+      freeBalanceUpdateData,
+      stateChannel.freeBalance.identityHash,
+    ];
+
     logTime(log, start, `Finished initiating`);
   },
 
@@ -106,7 +130,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       processID,
       params,
-      customData: { signature: initiatorSignature },
+      customData: {
+        setupSignature: initiatorSetupSignature,
+        setStateSignature: initiatorSignatureOnFreeBalanceState,
+      },
     } = message;
 
     const { multisigAddress, initiatorXpub, responderXpub } = params as ProtocolParams.Setup;
@@ -120,22 +147,31 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const setupCommitment = getSetupCommitment(context, stateChannel);
+    const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
     substart = Date.now();
+    const initatorAddr = xkeyKthAddress(initiatorXpub, 0);
     await assertIsValidSignature(
-      xkeyKthAddress(initiatorXpub, 0),
+      initatorAddr,
       setupCommitment,
-      initiatorSignature,
+      initiatorSetupSignature,
+    );
+    await assertIsValidSignature(
+      initatorAddr,
+      freeBalanceUpdateData,
+      initiatorSignatureOnFreeBalanceState,
     );
     logTime(log, substart, `Verified initator's sig`);
 
     // 49 ms
-    const responderSignature = yield [OP_SIGN, setupCommitment];
+    const mySetupSignature = yield [OP_SIGN, setupCommitment];
+    const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData];
 
-    setupCommitment.signatures = [responderSignature, initiatorSignature];
+    setupCommitment.signatures = [mySetupSignature, initiatorSetupSignature];
+    freeBalanceUpdateData.signatures = [mySignatureOnFreeBalanceState, initiatorSetupSignature];
 
     yield [
       PERSIST_COMMITMENT,
@@ -143,7 +179,15 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       await setupCommitment.getSignedTransaction(),
       stateChannel.multisigAddress,
     ];
+
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
+
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.CreateSetState,
+      freeBalanceUpdateData,
+      stateChannel.freeBalance.identityHash,
+    ];
 
     yield [
       IO_SEND,
@@ -153,7 +197,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: initiatorXpub,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
-          signature: responderSignature,
+          setupSignature: mySetupSignature,
+          setStateSignature: mySignatureOnFreeBalanceState,
         },
       } as ProtocolMessage,
     ];

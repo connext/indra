@@ -1,9 +1,9 @@
-import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
+import { ProtocolNames, ProtocolParams } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
-import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS, NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
+import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../errors";
 import { getConditionalTransactionCommitment, getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
@@ -16,6 +16,7 @@ import {
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
+  PersistCommitmentType,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -30,7 +31,6 @@ const {
   PERSIST_APP_INSTANCE,
   PERSIST_COMMITMENT,
 } = Opcode;
-const { Conditional, SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -140,7 +140,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Conditional,
+      PersistCommitmentType.CreateConditional,
       conditionalTxCommitment,
       newAppInstance.identityHash,
     ];
@@ -167,12 +167,26 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      SetState,
+      PersistCommitmentType.UpdateSetState,
       freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
     ];
 
     yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.RemoveProposal,
+      stateChannelAfter,
+      stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
+    ];
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateFreeBalance,
+      stateChannelAfter,
+      stateChannelAfter.freeBalance,
+    ];
 
     substart = Date.now();
     yield [
@@ -276,7 +290,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Conditional,
+      PersistCommitmentType.CreateConditional,
       conditionalTxCommitment,
       newAppInstance.identityHash,
     ];
@@ -320,12 +334,26 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      SetState,
+      PersistCommitmentType.UpdateSetState,
       freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
     ];
 
     yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.RemoveProposal,
+      stateChannelAfter,
+      stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
+    ];
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateFreeBalance,
+      stateChannelAfter,
+      stateChannelAfter.freeBalance,
+    ];
 
     const m4 = {
       processID,

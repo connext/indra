@@ -1,4 +1,4 @@
-import { CommitmentTypes, ProtocolNames, ProtocolParams, IStoreService } from "@connext/types";
+import { ProtocolNames, ProtocolParams, IStoreService } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -9,6 +9,7 @@ import {
   ProtocolExecutionFlow,
   ProtocolMessage,
   PersistAppType,
+  PersistCommitmentType,
 } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -17,7 +18,6 @@ import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements, state
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -75,13 +75,20 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     uninstallCommitment.signatures = [signature, responderSignature];
 
-    yield [PERSIST_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, PersistCommitmentType.UpdateSetState, uninstallCommitment, postProtocolStateChannel.freeBalance.identityHash];
 
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
+    ];
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateFreeBalance,
+      postProtocolStateChannel,
+      postProtocolStateChannel.freeBalance,
     ];
 
     logTime(log, start, `Finished Initiating`);
@@ -123,13 +130,20 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     uninstallCommitment.signatures = [responderSignature, initiatorSignature];
 
-    yield [PERSIST_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, PersistCommitmentType.UpdateSetState, uninstallCommitment, postProtocolStateChannel.freeBalance.identityHash];
 
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
+    ];
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.UpdateFreeBalance,
+      postProtocolStateChannel,
+      postProtocolStateChannel.freeBalance,
     ];
 
     yield [

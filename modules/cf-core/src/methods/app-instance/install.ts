@@ -23,7 +23,7 @@ export class InstallAppInstanceController extends NodeController {
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: MethodParams.Install,
-  ): Promise<string[]> { 
+  ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
 

@@ -1,8 +1,8 @@
-import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
+import { ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { Context, Opcode, PersistAppType, ProtocolExecutionFlow, ProtocolMessage } from "../types";
+import { Context, Opcode, PersistAppType, ProtocolExecutionFlow, ProtocolMessage, PersistCommitmentType } from "../types";
 
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -11,7 +11,6 @@ import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./
 
 const protocol = ProtocolNames.update;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -75,7 +74,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, PersistCommitmentType.UpdateSetState, setStateCommitment, appIdentityHash];
 
     yield [
       PERSIST_APP_INSTANCE,
@@ -127,7 +126,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+    yield [PERSIST_COMMITMENT, PersistCommitmentType.UpdateSetState, setStateCommitment, appIdentityHash];
 
     yield [
       PERSIST_APP_INSTANCE,

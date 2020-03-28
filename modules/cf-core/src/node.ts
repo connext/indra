@@ -245,6 +245,7 @@ export class Node {
 
       for (const stateChannel of stateChannels) {
         await this.storeService.createStateChannel(stateChannel.toJson());
+        await this.storeService.createFreeBalance(stateChannel.multisigAddress, stateChannel.freeBalance.toJson());
       }
     });
 

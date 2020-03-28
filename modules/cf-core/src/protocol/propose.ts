@@ -1,4 +1,4 @@
-import { CommitmentTypes, ProtocolParams, ProtocolNames } from "@connext/types";
+import { ProtocolParams, ProtocolNames } from "@connext/types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
@@ -10,6 +10,7 @@ import {
   ProtocolExecutionFlow,
   ProtocolMessage,
   PersistAppType,
+  PersistCommitmentType,
 } from "../types";
 import { appIdentityToHash, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -18,7 +19,6 @@ import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./
 
 const protocol = ProtocolNames.propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
-const { SetState } = CommitmentTypes;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
@@ -144,7 +144,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
     ];
 
-    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+    yield [PERSIST_COMMITMENT, PersistCommitmentType.CreateSetState, setStateCommitment, appInstanceProposal.identityHash];
 
     logTime(log, start, `Finished Initiating`);
   },
@@ -268,7 +268,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
     ];
-    yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
+    yield [PERSIST_COMMITMENT, PersistCommitmentType.CreateSetState, setStateCommitment, appInstanceProposal.identityHash];
     logTime(log, start, `Finished responding`);
   },
 };
