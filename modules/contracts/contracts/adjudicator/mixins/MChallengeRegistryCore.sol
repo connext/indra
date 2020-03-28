@@ -102,6 +102,31 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
         );
     }
 
+    /// @notice Compute a unique hash for the state of a channelized app instance
+    /// @param status The unique hash of an `AppIdentity`
+    /// @param appStateHash The hash of the app state to be signed
+    /// @param versionNumber The versionNumber corresponding to the version of the state
+    /// @param timeout A dynamic timeout value representing the timeout for this state
+    /// @return A bytes32 hash of the RLP encoded arguments
+    function computeCancelChallengeHash(
+        bytes32 identityHash,
+        bytes32 appStateHash,
+        ChallengeStatus status
+    )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                byte(0x19),
+                status,
+                identityHash,
+                appStateHash
+            )
+        );
+    }
+
     /// @notice Checks if an application's state has been finalized by challenge
     /// @param identityHash The unique hash of an `AppIdentity`
     /// @return A boolean indicator
