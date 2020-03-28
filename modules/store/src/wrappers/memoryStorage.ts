@@ -39,6 +39,9 @@ export class MemoryStorage implements IClientStore {
   }
 
   getAllChannels(): Promise<StateChannelJSON[]> {
+    if (this.channels.size === 0) {
+      return Promise.resolve([]);
+    }
     return Promise.resolve([...this.channels.values()]);
   }
 
