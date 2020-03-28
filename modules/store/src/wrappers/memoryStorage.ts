@@ -12,7 +12,7 @@ import {
 } from "@connext/types";
 
 export class MemoryStorage implements IClientStore {
-  channels: Map<string, StateChannelJSON> = new Map();
+  public channels: Map<string, StateChannelJSON> = new Map();
   private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
   private conditionalTxCommitment: Map<
     string,
@@ -97,6 +97,9 @@ export class MemoryStorage implements IClientStore {
   }
 
   createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    const channel = this.getChannelOrThrow(multisigAddress);
+    channel.appInstances.push([appInstance.identityHash, appInstance]);
+    this.channels.set(channel.multisigAddress, channel);
     // add app
     this.appInstances.set(appInstance.identityHash, appInstance);
     return Promise.resolve();
@@ -107,10 +110,17 @@ export class MemoryStorage implements IClientStore {
       throw new Error(`App not found: ${appInstance.identityHash}`);
     }
     // update app
-    return this.createAppInstance(multisigAddress, appInstance);
+    const channel = this.getChannelOrThrow(multisigAddress);
+    this.channels.set(channel.multisigAddress, channel);
+    // add app
+    this.appInstances.set(appInstance.identityHash, appInstance);
+    return Promise.resolve();
   }
 
   removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+    const channel = this.getChannelOrThrow(multisigAddress);
+    channel.appInstances.filter(([id]) => id !== appInstanceId);
+    this.channels.set(channel.multisigAddress, channel);
     this.appInstances.delete(appInstanceId);
     return Promise.resolve();
   }
@@ -122,12 +132,21 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve(this.proposedApps.get(appInstanceId));
   }
 
-  createAppProposal(multisigAddress: string, proposal: AppInstanceProposal): Promise<void> {
+  createAppProposal(multisigAddress: string, proposal: AppInstanceProposal, numProposedApps: number): Promise<void> {
+    const channel = this.getChannelOrThrow(multisigAddress);
+    channel.proposedAppInstances.push([proposal.identityHash, proposal]);
+    this.channels.set(channel.multisigAddress, {
+      ...channel,
+      monotonicNumProposedApps: numProposedApps,
+    });
     this.proposedApps.set(proposal.identityHash, proposal);
     return Promise.resolve();
   }
 
   removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+    const channel = this.getChannelOrThrow(multisigAddress);
+    channel.proposedAppInstances.filter(([id]) => id !== appInstanceId);
+    this.channels.set(channel.multisigAddress, channel);
     this.proposedApps.delete(appInstanceId);
     return Promise.resolve();
   }
@@ -140,7 +159,6 @@ export class MemoryStorage implements IClientStore {
   }
 
   createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    this.freeBalances.set(multisigAddress, freeBalance);
     return Promise.resolve();
   }
 
@@ -148,7 +166,12 @@ export class MemoryStorage implements IClientStore {
     if (!this.freeBalances.has(multisigAddress)) {
       throw new Error(`Could not find free balance for multisig: ${multisigAddress}`);
     }
-    return this.createFreeBalance(multisigAddress, freeBalance);
+    this.channels.set(multisigAddress, {
+      ...this.getChannelOrThrow(multisigAddress),
+      freeBalanceAppInstance: freeBalance,
+    });
+    this.freeBalances.set(multisigAddress, freeBalance);
+    return Promise.resolve();
   }
 
   getSetupCommitment(
@@ -283,5 +306,13 @@ export class MemoryStorage implements IClientStore {
       throw new Error(`No backup provided, store cleared`);
     }
     throw new Error(`Method not implemented for MemoryStorage`);
+  }
+
+  private getChannelOrThrow(multisigAddress: string) {
+    const channel = this.channels.get(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel found for multsig ${multisigAddress}`);
+    }
+    return channel;
   }
 }
