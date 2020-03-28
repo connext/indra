@@ -1,4 +1,4 @@
-import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
+import { ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment } from "../ethereum";
@@ -9,6 +9,7 @@ import {
   Opcode,
   ProtocolExecutionFlow,
   ProtocolMessage,
+  PersistCommitmentType,
 } from "../types";
 
 import { logTime } from "../utils";
@@ -18,7 +19,7 @@ import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.setup;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
-const { Setup } = CommitmentTypes;
+const { CreateSetup } = PersistCommitmentType;
 
 /**
  * @description This exchange is described at the following URL:
@@ -87,7 +88,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // 33 ms
     yield [
       PERSIST_COMMITMENT,
-      Setup,
+      CreateSetup,
       await setupCommitment.getSignedTransaction(),
       stateChannel.multisigAddress,
     ];
@@ -138,7 +139,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_COMMITMENT,
-      Setup,
+      CreateSetup,
       await setupCommitment.getSignedTransaction(),
       stateChannel.multisigAddress,
     ];

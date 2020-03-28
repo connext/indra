@@ -1,7 +1,6 @@
 import { signDigest } from "@connext/crypto";
 import {
   AppInstanceProposal,
-  CommitmentTypes,
   delay,
   EventNames,
   ILoggerService,
@@ -263,6 +262,13 @@ export class Node {
         // will create a commitment if it does not exist, or update an
         // existing commitment
         switch (commitmentType) {
+          case PersistCommitmentType.CreateSetup: {
+            await this.storeService.createSetupCommitment(
+              identifier,
+              commitment as MinimalTransaction,
+            );
+            break;
+          }
           case PersistCommitmentType.CreateConditional: {
             await this.storeService.createConditionalTransactionCommitment(
               identifier,
