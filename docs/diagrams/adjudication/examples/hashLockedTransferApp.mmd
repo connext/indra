@@ -69,6 +69,8 @@ sequenceDiagram
   end
 
   Note right of Receiver: Wants to claim funds
+  Receiver->>Contracts: `setOutcome` free balance
+  Receiver->>Contracts: `setOutcome` app
   Receiver->>Contracts: `conditionalTransaction`
   
   Contracts->>Contracts: interpret outcome
@@ -77,6 +79,8 @@ sequenceDiagram
   Contracts->>Node: disburse app funds at state k
 
   Note over Node: Wants to claim funds
+  Node->>Contracts: `setOutcome` free balance
+  Node->>Contracts: `setOutcome` app
   Node->>Contracts: `conditionalTransaction`
   
   Contracts->>Contracts: interpret outcome

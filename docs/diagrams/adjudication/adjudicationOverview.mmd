@@ -52,6 +52,8 @@ sequenceDiagram
   end
 
   Note left of Alice: Wants to claim funds
+  Alice->>Contracts: `setOutcome` free balance
+  Alice->>Contracts: `setOutcome` app
   Alice->>Contracts: `conditionalTransaction`
   
   Contracts->>Contracts: interpret outcome
