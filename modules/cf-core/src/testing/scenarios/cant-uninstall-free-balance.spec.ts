@@ -1,9 +1,8 @@
 import { Node } from "../../node";
 import { CANNOT_UNINSTALL_FREE_BALANCE } from "../../errors";
-import { StateChannel } from "../../models";
 
 import { setup, SetupContext } from "../setup";
-import { constructUninstallRpc, createChannel } from "../utils";
+import { constructUninstallRpc, createChannel, constructGetStateChannelRpc } from "../utils";
 
 describe("Confirms that a FreeBalance cannot be uninstalled", () => {
   let nodeA: Node;
@@ -19,15 +18,14 @@ describe("Confirms that a FreeBalance cannot be uninstalled", () => {
     it("can't uninstall FreeBalance", async () => {
       const multisigAddress = await createChannel(nodeA, nodeB);
 
-      // channel to expose the FreeBalance appInstanceId
-      const channel = StateChannel.setupChannel(
-        global["network"].IdentityApp,
-        global["network"].ProxyFactory,
-        multisigAddress,
-        [nodeA.publicIdentifier, nodeB.publicIdentifier],
-      );
+      const {
+        result: {
+          result: { data: channel },
+        },
+      } = await nodeA.rpcRouter.dispatch(constructGetStateChannelRpc(multisigAddress));
+      expect(channel.multisigAddress).toBe(multisigAddress);
 
-      const fbUninstallReq = constructUninstallRpc(channel.freeBalance.identityHash);
+      const fbUninstallReq = constructUninstallRpc(channel.freeBalanceAppInstance.identityHash);
 
       try {
         await nodeA.rpcRouter.dispatch(fbUninstallReq);

@@ -17,6 +17,7 @@ import {
   ProtocolParams,
   SolidityValueType,
   UninstallMessage,
+  DepositFailedMessage,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -116,11 +117,22 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
 }
 
 export async function requestDepositRights(
-  node: Node,
+  depositor: Node,
+  counterparty: Node,
   multisigAddress: string,
   tokenAddress: string = AddressZero,
 ) {
-  return await node.rpcRouter.dispatch({
+  const parameters = await getProposeCoinBalanceRefundAppParams(multisigAddress, depositor.publicIdentifier, counterparty.publicIdentifier, tokenAddress);
+  await new Promise(async (resolve, reject) => {
+    counterparty.once("PROPOSE_INSTALL_EVENT", resolve);
+    counterparty.once("REJECT_INSTALL_EVENT", reject);
+    await depositor.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: MethodNames.chan_proposeInstall,
+      parameters,
+    });
+  });
+  return await depositor.rpcRouter.dispatch({
     id: Date.now(),
     methodName: MethodNames.chan_requestDepositRights,
     parameters: {
@@ -424,7 +436,7 @@ export async function deposit(
       resolve();
     });
 
-    node.rpcRouter.dispatch({
+  await node.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_proposeInstall,
       parameters: proposeParams,
@@ -432,7 +444,7 @@ export async function deposit(
   });
   const depositReq = constructDepositRpc(multisigAddress, amount, tokenAddress);
 
-  return new Promise(async resolve => {
+  return new Promise(async (resolve, reject) => {
     node.once(`DEPOSIT_CONFIRMED_EVENT`, (msg: DepositConfirmationMessage) => {
       assertNodeMessage(msg, {
         from: node.publicIdentifier,
@@ -460,7 +472,21 @@ export async function deposit(
       );
     });
 
-    // TODO: how to test deposit failed events?
+    node.once(`DEPOSIT_FAILED_EVENT`, (msg: DepositFailedMessage) => {
+      assertNodeMessage(
+        msg,
+        {
+          from: node.publicIdentifier,
+          type: `DEPOSIT_STARTED_EVENT`,
+          data: {
+            params: depositReq.parameters,
+          },
+        },
+        [`data.errors`],
+      );
+      reject(msg.data.errors.toString());
+    });
+
     await node.rpcRouter.dispatch(depositReq);
   });
 }
@@ -585,6 +611,16 @@ export function constructGetStateRpc(appInstanceId: string): Rpc {
     },
     id: Date.now(),
     methodName: MethodNames.chan_getState,
+  };
+}
+
+export function constructGetStateChannelRpc(multisigAddress: string): Rpc {
+  return {
+    parameters: {
+      multisigAddress,
+    },
+    id: Date.now(),
+    methodName: MethodNames.chan_getStateChannel,
   };
 }
 

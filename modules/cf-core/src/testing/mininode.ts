@@ -63,8 +63,8 @@ export class MiniNode {
       Opcode.PERSIST_APP_INSTANCE,
       async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
         const [type, postProtocolChannel, app] = args;
-
         const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
+        const { identityHash } = app;
 
         switch (type) {
           case PersistAppType.CreateProposal: {
@@ -76,10 +76,15 @@ export class MiniNode {
             break;
           }
 
-          case PersistAppType.Reject: {
-            await this.store.removeAppProposal(
+          case PersistAppType.RemoveProposal: {
+            await this.store.removeAppProposal(multisigAddress, identityHash);
+            break;
+          }
+
+          case PersistAppType.UpdateFreeBalance: {
+            await this.store.updateFreeBalance(
               multisigAddress,
-              (app as AppInstanceProposal).identityHash,
+              (app as AppInstance).toJson(),
             );
             break;
           }
@@ -94,21 +99,30 @@ export class MiniNode {
           }
 
           case PersistAppType.UpdateInstance: {
-            await this.store.updateAppInstance(multisigAddress, (app as AppInstance).toJson());
+            await this.store.updateAppInstance(
+              multisigAddress,
+              (app as AppInstance).toJson(),
+            );
             break;
           }
 
           case PersistAppType.RemoveInstance: {
             await this.store.removeAppInstance(
               multisigAddress,
-              app.identityHash,
+              identityHash,
               freeBalance.toJson(),
             );
             break;
           }
 
-          default:
+          case PersistAppType.Reject: {
+            await this.store.removeAppProposal(multisigAddress, identityHash);
+            break;
+          }
+
+          default: {
             throw new Error(`Unrecognized app persistence call: ${type}`);
+          }
         }
       },
     );

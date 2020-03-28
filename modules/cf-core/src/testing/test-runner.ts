@@ -3,7 +3,7 @@ import { OutcomeType, ProtocolNames } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { getCreate2MultisigAddress } from "../utils";
@@ -189,10 +189,30 @@ export class TestRunner {
       ],
     }[outcomeType];
 
+    await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.propose, {
+      multisigAddress: this.multisigAB,
+      initiatorXpub: this.mininodeA.xpub,
+      responderXpub: this.mininodeB.xpub,
+      appDefinition: this.identityApp.address,
+      abiEncodings: {
+        stateEncoding,
+        actionEncoding: undefined,
+      },
+      initiatorDeposit: One,
+      initiatorDepositTokenAddress: tokenAddress,
+      responderDeposit: One,
+      responderDepositTokenAddress: tokenAddress,
+      timeout: bigNumberify(100),
+      initialState,
+      outcomeType,
+    });
+
+    const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
+    const [proposal] = [...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values()];
     // TODO: fix sortAddresses sometimes not sorting correctly
     const participants = sortAddresses([
-      xkeyKthAddress(this.mininodeA.xpub, 1),
-      xkeyKthAddress(this.mininodeB.xpub, 1),
+      xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
+      xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
     ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
@@ -201,7 +221,7 @@ export class TestRunner {
         addr: this.identityApp.address,
         actionEncoding: undefined,
       },
-      appSeqNo: 1,
+      appSeqNo: proposal.appSeqNo,
       defaultTimeout: 40,
       disableLimit: false,
       initialState,
@@ -254,10 +274,30 @@ export class TestRunner {
       ],
     }[outcomeType];
 
+    await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.propose, {
+      multisigAddress: this.multisigAB,
+      initiatorXpub: this.mininodeA.xpub,
+      responderXpub: this.mininodeB.xpub,
+      appDefinition: this.identityApp.address,
+      abiEncodings: {
+        stateEncoding,
+        actionEncoding: undefined,
+      },
+      initiatorDeposit: One,
+      initiatorDepositTokenAddress: tokenAddressA,
+      responderDeposit: One,
+      responderDepositTokenAddress: tokenAddressB,
+      timeout: bigNumberify(100),
+      initialState,
+      outcomeType,
+    });
+
+    const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
+    const [proposal] = [...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values()];
     // TODO: fix sortAddresses sometimes not sorting correctly
     const participants = sortAddresses([
-      xkeyKthAddress(this.mininodeA.xpub, 1),
-      xkeyKthAddress(this.mininodeB.xpub, 1),
+      xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
+      xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
     ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
@@ -274,7 +314,7 @@ export class TestRunner {
         addr: this.identityApp.address,
         actionEncoding: undefined,
       },
-      appSeqNo: 1,
+      appSeqNo: proposal.appSeqNo,
       defaultTimeout: 40,
       initiatorDepositTokenAddress: tokenAddressA,
       responderDepositTokenAddress: tokenAddressB,
