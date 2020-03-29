@@ -3,14 +3,22 @@ pragma experimental "ABIEncoderV2";
 
 import "../adjudicator/ChallengeRegistry.sol";
 import "./libs/LibOutcome.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 
 /// @title ConditionalTransactionDelegateTarget
 /// @author Liam Horne - <liam@l4v.io>
 contract ConditionalTransactionDelegateTarget {
 
+    mapping(address => uint256) public totalAmountWithdrawn;
     uint256 constant MAX_UINT256 = 2 ** 256 - 1;
     address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
+
+    struct WithdrawParams {
+        address payable recipient;
+        address assetId;
+        uint256 amount;
+    }
 
     struct FreeBalanceAppState {
         address[] tokenAddresses;
@@ -24,6 +32,23 @@ contract ConditionalTransactionDelegateTarget {
     struct MultiAssetMultiPartyCoinTransferInterpreterParams {
         uint256[] limit;
         address[] tokenAddresses;
+    }
+
+    function withdrawWrapper(
+        bytes calldata encodedParams
+    )
+        external
+    {
+        WithdrawParams memory params = abi.decode(encodedParams, (WithdrawParams));
+
+        // Note, explicitly do NOT use safemath here. See discussion in: TODO
+        totalAmountWithdrawn[params.assetId] += params.amount;
+
+        if (params.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
+            params.recipient.send(params.amount);
+        } else {
+            ERC20(params.assetId).transfer(params.recipient, params.amount);
+        }
     }
 
     function executeEffectOfFreeBalance(
@@ -129,5 +154,4 @@ contract ConditionalTransactionDelegateTarget {
             "Execution of executeEffectOfInterpretedAppOutcome failed"
         );
     }
-
 }
