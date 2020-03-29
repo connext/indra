@@ -8,6 +8,7 @@ import "../Interpreter.sol";
 
 contract MultiAssetMultiPartyCoinTransferInterpreter is Interpreter {
 
+    mapping(address => uint256) public totalAmountWithdrawn;
     uint256 constant MAX_UINT256 = 2 ** 256 - 1;
     address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
 
@@ -52,6 +53,9 @@ contract MultiAssetMultiPartyCoinTransferInterpreter is Interpreter {
 
                 if (coinTransfer.amount > 0) {
                     limitRemaining -= coinTransfer.amount;
+
+                    // Note, explicitly do NOT use safemath here. See discussion in: TODO
+                    totalAmountWithdrawn[tokenAddress] += coinTransfer.amount;
 
                     if (tokenAddress == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
                         // note: send() is deliberately used instead of coinTransfer() here

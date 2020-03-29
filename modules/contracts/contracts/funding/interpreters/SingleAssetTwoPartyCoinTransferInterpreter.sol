@@ -12,6 +12,7 @@ import "../Interpreter.sol";
  */
 contract SingleAssetTwoPartyCoinTransferInterpreter is Interpreter {
 
+    mapping(address => uint256) public totalAmountWithdrawn;
     address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
 
     struct Params {
@@ -37,6 +38,9 @@ contract SingleAssetTwoPartyCoinTransferInterpreter is Interpreter {
             (LibOutcome.CoinTransfer[2])
         );
 
+        // Note, explicitly do NOT use safemath here. See discussion in: TODO
+        totalAmountWithdrawn[params.tokenAddress] += (outcome[0].amount + outcome[1].amount);
+
         if (params.tokenAddress == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
             // note: send() is deliberately used instead of coinTransfer() here
             // so that a revert does not stop the rest of the sends
@@ -49,6 +53,5 @@ contract SingleAssetTwoPartyCoinTransferInterpreter is Interpreter {
             ERC20(params.tokenAddress).transfer(outcome[0].to, outcome[0].amount);
             ERC20(params.tokenAddress).transfer(outcome[1].to, outcome[1].amount);
         }
-
     }
 }

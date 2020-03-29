@@ -13,6 +13,7 @@ import "../libs/LibOutcome.sol";
 /// or split in half according to the outcome
 contract TwoPartyFixedOutcomeInterpreter is Interpreter {
 
+    mapping(address => uint256) public totalAmountWithdrawn;
     address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
 
     struct Params {
@@ -33,6 +34,9 @@ contract TwoPartyFixedOutcomeInterpreter is Interpreter {
         );
 
         Params memory params = abi.decode(encodedParams, (Params));
+
+        // Note, explicitly do NOT use safemath here. See discussion in: TODO
+        totalAmountWithdrawn[params.tokenAddress] += params.amount;
 
         if (outcome == LibOutcome.TwoPartyFixedOutcome.SEND_TO_ADDR_ONE) {
             if (params.tokenAddress == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
