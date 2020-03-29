@@ -45,7 +45,7 @@ function encodeAction(action: SolidityValueType) {
   return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
 }
 
-describe("progressState", () => {
+describe.only("progressState", () => {
   let provider = buidler.provider;
   let wallet: Wallet;
 
