@@ -35,19 +35,19 @@ contract ConditionalTransactionDelegateTarget {
     }
 
     function withdrawWrapper(
-        bytes calldata encodedParams
+        address payable recipient,
+        address assetId,
+        uint256 amount
     )
-        external
+        public
     {
-        WithdrawParams memory params = abi.decode(encodedParams, (WithdrawParams));
-
         // Note, explicitly do NOT use safemath here. See discussion in: TODO
-        totalAmountWithdrawn[params.assetId] += params.amount;
+        totalAmountWithdrawn[assetId] += amount;
 
-        if (params.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
-            params.recipient.send(params.amount);
+        if (assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
+            recipient.send(amount);
         } else {
-            ERC20(params.assetId).transfer(params.recipient, params.amount);
+            ERC20(assetId).transfer(recipient, amount);
         }
     }
 
