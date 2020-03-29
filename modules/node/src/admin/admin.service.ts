@@ -277,7 +277,11 @@ export class AdminService implements OnApplicationBootstrap {
           channelJSON.multisigAddress,
         );
         for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
-          await this.cfCoreStore.createAppProposal(channelJSON.multisigAddress, proposedApp, proposedApp.appSeqNo);
+          await this.cfCoreStore.createAppProposal(
+            channelJSON.multisigAddress,
+            proposedApp,
+            proposedApp.appSeqNo,
+          );
         }
 
         for (const [, appInstance] of channelJSON.appInstances || []) {
@@ -285,15 +289,25 @@ export class AdminService implements OnApplicationBootstrap {
           if (existing) {
             await this.cfCoreStore.updateAppInstance(appInstance.identityHash, appInstance);
           } else {
-            await this.cfCoreStore.createAppInstance(savedChannel.multisigAddress, appInstance);
+            await this.cfCoreStore.createAppInstance(
+              savedChannel.multisigAddress,
+              appInstance,
+              channelJSON.freeBalanceAppInstance,
+            );
           }
         }
 
         const existing = await this.cfCoreStore.getFreeBalance(channel.multisigAddress);
         if (existing) {
-          await this.cfCoreStore.updateFreeBalance(channel.multisigAddress, channelJSON.freeBalanceAppInstance);
+          await this.cfCoreStore.updateFreeBalance(
+            channel.multisigAddress,
+            channelJSON.freeBalanceAppInstance,
+          );
         } else {
-          await this.cfCoreStore.createFreeBalance(channel.multisigAddress, channelJSON.freeBalanceAppInstance);
+          await this.cfCoreStore.createFreeBalance(
+            channel.multisigAddress,
+            channelJSON.freeBalanceAppInstance,
+          );
         }
 
         this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
