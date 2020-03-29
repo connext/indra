@@ -65,38 +65,6 @@ export class ChannelRepository extends Repository<Channel> {
     return convertChannelToJSON(channel);
   }
 
-  async createAppProposal(
-    multisigAddress: string,
-    appProposal: AppInstanceProposal,
-    numProposedApps: number,
-  ): Promise<void> {
-    const channel = await this.findByMultisigAddressOrThrow(multisigAddress);
-
-    const app = new AppInstance();
-    app.type = AppType.PROPOSAL;
-    app.identityHash = appProposal.identityHash;
-    app.actionEncoding = appProposal.abiEncodings.actionEncoding;
-    app.stateEncoding = appProposal.abiEncodings.stateEncoding;
-    app.appDefinition = appProposal.appDefinition;
-    app.appSeqNo = appProposal.appSeqNo;
-    app.initialState = appProposal.initialState;
-    app.initiatorDeposit = bigNumberify(appProposal.initiatorDeposit);
-    app.initiatorDepositTokenAddress = appProposal.initiatorDepositTokenAddress;
-    app.latestState = appProposal.initialState;
-    app.latestTimeout = bigNumberify(appProposal.timeout).toNumber();
-    app.latestVersionNumber = 0;
-    app.responderDeposit = bigNumberify(appProposal.responderDeposit);
-    app.responderDepositTokenAddress = appProposal.responderDepositTokenAddress;
-    app.timeout = bigNumberify(appProposal.timeout).toNumber();
-    app.proposedToIdentifier = appProposal.proposedToIdentifier;
-    app.proposedByIdentifier = appProposal.proposedByIdentifier;
-    app.outcomeType = appProposal.outcomeType;
-    app.meta = appProposal.meta;
-
-    channel.monotonicNumProposedApps = numProposedApps;
-    channel.appInstances.push(app);
-    await this.save(channel);
-  }
   // NODE-SPECIFIC METHODS
 
   async findAll(available: boolean = true): Promise<Channel[]> {
@@ -113,7 +81,6 @@ export class ChannelRepository extends Repository<Channel> {
   async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
     return this.findOne({
       where: { userPublicIdentifier },
-      relations: ["appInstances"],
     });
   }
 
@@ -127,7 +94,6 @@ export class ChannelRepository extends Repository<Channel> {
       .getOne();
     return this.findOne({
       where: { id: channel.id },
-      relations: ["appInstances"],
     });
   }
 

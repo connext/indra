@@ -31,7 +31,7 @@ export const createAppInstanceJson = (
     latestVersionNumber: 0,
     multisigAddress: AddressZero,
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    participants: [],
+    participants: [AddressZero, AddressZero],
     multiAssetMultiPartyCoinTransferInterpreterParams: null,
     singleAssetTwoPartyCoinTransferInterpreterParams: null,
     twoPartyOutcomeInterpreterParams: null,

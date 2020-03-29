@@ -9,6 +9,7 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   OutcomeType,
+  bigNumberifyJson,
 } from "@connext/types";
 import { Zero, AddressZero } from "ethers/constants";
 
@@ -26,6 +27,8 @@ import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.re
 import { xkeyKthAddress } from "../util";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { Channel } from "../channel/channel.entity";
+import { getManager } from "typeorm";
+import { bigNumberify } from "ethers/utils";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -120,6 +123,8 @@ export class CFCoreStore implements IStoreService {
     freeBalanceApp.latestVersionNumber = latestVersionNumber;
     freeBalanceApp.timeout = defaultTimeout;
     freeBalanceApp.latestTimeout = latestTimeout;
+
+    // app proposal defaults
     freeBalanceApp.initiatorDeposit = Zero;
     freeBalanceApp.initiatorDepositTokenAddress = AddressZero;
     freeBalanceApp.responderDeposit = Zero;
@@ -148,31 +153,109 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Method not implemented.");
   }
 
-  async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {}
-
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
     return this.appInstanceRepository.getAppInstance(appInstanceId);
   }
 
-  async createAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
-    throw new Error("Method not correctly implemented");
+  async createAppInstance(
+    multisigAddress: string,
+    appJson: AppInstanceJson,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
+    const {
+      identityHash,
+      participants,
+      latestState,
+      latestTimeout,
+      latestVersionNumber,
+      meta,
+    } = appJson;
+    const proposal = await this.appInstanceRepository.findByIdentityHashOrThrow(identityHash);
+    if (proposal.type !== AppType.PROPOSAL) {
+      throw new Error(`Application already exists: ${appJson.identityHash}`);
+    }
+
+    // upgrade proposal to instance
+    proposal.type = AppType.INSTANCE;
+    // save participants
+    let userAddr = xkeyKthAddress(this.configService.getPublicIdentifier(), proposal.appSeqNo);
+    if (!participants.find(p => p === userAddr)) {
+      userAddr = xkeyKthAddress(this.configService.getPublicIdentifier());
+    }
+    proposal.userParticipantAddress = participants.find(p => p === userAddr);
+    proposal.nodeParticipantAddress = participants.find(p => p !== userAddr);
+
+    proposal.meta = meta;
+
+    // TODO: THIS SHOULD PROB BE DONE UPSTREAM
+    const latestStateFixed = latestState;
+    if (latestState["coinTransfers"]) {
+      if (proposal.outcomeType === OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER) {
+        latestStateFixed["coinTransfers"] = bigNumberifyJson(latestState["coinTransfers"]);
+      }
+    }
+
+    proposal.initialState = latestStateFixed;
+    proposal.latestState = latestStateFixed;
+    proposal.latestTimeout = latestTimeout;
+    proposal.latestVersionNumber = latestVersionNumber;
+
+    // update free balance app
+    const freeBalanceAppEntity = await this.appInstanceRepository.findByIdentityHashOrThrow(
+      freeBalanceAppInstance.identityHash,
+    );
+    freeBalanceAppEntity.latestState = freeBalanceAppInstance.latestState;
+    freeBalanceAppEntity.latestTimeout = freeBalanceAppInstance.latestTimeout;
+    freeBalanceAppEntity.latestVersionNumber = freeBalanceAppInstance.latestVersionNumber;
+
+    await getManager().transaction(async transactionalEntityManager => {
+      await transactionalEntityManager.save(proposal);
+      await transactionalEntityManager.save(freeBalanceAppEntity);
+    });
   }
 
   async updateAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
-    throw new Error("Method not correctly implemented");
+    const { identityHash, latestState, latestTimeout, latestVersionNumber } = appJson;
+    const appInstance = await this.appInstanceRepository.findByIdentityHashOrThrow(identityHash);
+    const latestStateFixed = latestState;
+    if (latestState["coinTransfers"]) {
+      if (appInstance.outcomeType === OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER) {
+        latestStateFixed["coinTransfers"] = bigNumberifyJson(latestState["coinTransfers"]);
+      }
+    }
+    appInstance.latestState = latestStateFixed;
+    appInstance.latestTimeout = latestTimeout;
+    appInstance.latestVersionNumber = latestVersionNumber;
+    await this.appInstanceRepository.save(appInstance);
   }
 
-  // async saveAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
-  //   const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-  //   await this.appInstanceRepository.saveAppInstance(channel, appJson);
-  // }
-
-  async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+  async removeAppInstance(
+    multisigAddress: string,
+    appInstanceId: string,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
     const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
     if (!app) {
       throw new Error(`No app found when trying to remove. AppId: ${appInstanceId}`);
     }
-    await this.appInstanceRepository.removeAppInstance(app);
+    if (app.type !== AppType.INSTANCE) {
+      throw new Error(`App is not of correct type`);
+    }
+    app.type = AppType.UNINSTALLED;
+    app.channel = null;
+
+    // update free balance
+    const freeBalanceAppEntity = await this.appInstanceRepository.findByIdentityHashOrThrow(
+      freeBalanceAppInstance.identityHash,
+    );
+    freeBalanceAppEntity.latestState = freeBalanceAppInstance.latestState;
+    freeBalanceAppEntity.latestTimeout = freeBalanceAppInstance.latestTimeout;
+    freeBalanceAppEntity.latestVersionNumber = freeBalanceAppInstance.latestVersionNumber;
+
+    await getManager().transaction(async transactionalEntityManager => {
+      await transactionalEntityManager.save(app);
+      await transactionalEntityManager.save(freeBalanceAppEntity);
+    });
   }
 
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal> {
@@ -184,7 +267,32 @@ export class CFCoreStore implements IStoreService {
     appProposal: AppInstanceProposal,
     numProposedApps: number,
   ): Promise<void> {
-    return this.channelRepository.createAppProposal(multisigAddress, appProposal, numProposedApps);
+    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
+
+    const app = new AppInstance();
+    app.type = AppType.PROPOSAL;
+    app.identityHash = appProposal.identityHash;
+    app.actionEncoding = appProposal.abiEncodings.actionEncoding;
+    app.stateEncoding = appProposal.abiEncodings.stateEncoding;
+    app.appDefinition = appProposal.appDefinition;
+    app.appSeqNo = appProposal.appSeqNo;
+    app.initiatorDeposit = bigNumberify(appProposal.initiatorDeposit);
+    app.initiatorDepositTokenAddress = appProposal.initiatorDepositTokenAddress;
+    app.responderDeposit = bigNumberify(appProposal.responderDeposit);
+    app.responderDepositTokenAddress = appProposal.responderDepositTokenAddress;
+    app.timeout = bigNumberify(appProposal.timeout).toNumber();
+    app.proposedToIdentifier = appProposal.proposedToIdentifier;
+    app.proposedByIdentifier = appProposal.proposedByIdentifier;
+    app.outcomeType = appProposal.outcomeType;
+    app.meta = appProposal.meta;
+    app.initialState = {};
+    app.latestState = {};
+    app.latestTimeout = 0;
+    app.latestVersionNumber = 0;
+
+    channel.monotonicNumProposedApps = numProposedApps;
+    channel.appInstances.push(app);
+    await this.channelRepository.save(channel);
   }
 
   async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
@@ -192,6 +300,13 @@ export class CFCoreStore implements IStoreService {
     // but we dont "remove" app proposals, they get upgraded. so
     // simply return without editing, and set the status to `REJECTED`
     // in the listener
+    const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
+    if (!app || app.type !== AppType.PROPOSAL) {
+      throw new Error(`No app proposal existed for ${appInstanceId}`);
+    }
+    app.type = AppType.REJECTED;
+    app.channel = undefined;
+    await this.appInstanceRepository.save(app);
   }
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
@@ -200,11 +315,6 @@ export class CFCoreStore implements IStoreService {
 
   async createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     throw new Error("Method not correctly implemented");
-  }
-
-  async updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
-    await this.appInstanceRepository.saveFreeBalance(channel, freeBalance);
   }
 
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction> {
