@@ -14,6 +14,9 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 /// (d) Uses hash-based instead of nonce-based replay protection
 contract MinimumViableMultisig {
 
+    // Note, this is deliberately kept here so that all delegatecalled contracts can access 0th storage slot
+    mapping(address => uint256) public totalAmountWithdrawn;
+
     using ECDSA for bytes32;
 
     address masterCopy;
