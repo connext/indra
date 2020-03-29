@@ -8,11 +8,31 @@ import {
   hexlify,
   randomBytes,
   solidityPack,
+  BigNumber,
 } from "ethers/utils";
 
+import { use } from "chai";
+
+use(require("chai-subset"));
+use(solidity);
 export const expect = chai.use(solidity).expect;
 
 export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
+
+// App State With Action types for testing
+export type AppWithCounterState = {
+  counter: BigNumber;
+}
+
+export enum ActionType {
+  SUBMIT_COUNTER_INCREMENT,
+  ACCEPT_INCREMENT,
+}
+
+export type AppWithCounterAction = {
+  actionType: ActionType,
+  increment: BigNumber,
+}
 
 // TS version of MChallengeRegistryCore::appStateToHash
 export const appStateToHash = (state: string) => keccak256(state);
@@ -56,8 +76,8 @@ export class AppIdentityTestClass {
     return {
       participants: this.participants,
       appDefinition: this.appDefinition,
-      defaultTimeout: this.defaultTimeout,
-      channelNonce: this.channelNonce,
+      defaultTimeout: this.defaultTimeout.toString(),
+      channelNonce: this.channelNonce.toString(),
     };
   }
 
