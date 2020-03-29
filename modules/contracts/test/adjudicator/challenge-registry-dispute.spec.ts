@@ -49,7 +49,7 @@ function encodeAction(action: SolidityValueType) {
   return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
 }
 
-describe("ChallengeRegistry Challenge", () => {
+describe.only("ChallengeRegistry Challenge", () => {
   let provider = buidler.provider;
   let wallet: Wallet;
 
@@ -60,6 +60,7 @@ describe("ChallengeRegistry Challenge", () => {
 
   let latestTimeout: () => Promise<number>;
   let latestState: () => Promise<string>;
+  let getChallengeStatus: () => Promise<number>;
   let latestVersionNumber: () => Promise<number>;
   let setState: (versionNumber: number, appState?: string) => Promise<void>;
   let progressState: (state: any, action: any, actionSig: any) => Promise<any>;
@@ -101,9 +102,12 @@ describe("ChallengeRegistry Challenge", () => {
     const appInstance = new AppIdentityTestClass(
       [ALICE.address, BOB.address],
       appDefinition.address,
-      10,
-      123456,
+      10, // default timeout
+      123456, // channel nonce
     );
+
+    getChallengeStatus = async () =>
+      (await appRegistry.functions.getAppChallenge(appInstance.identityHash)).status;
 
     latestTimeout = async () =>
       (await appRegistry.functions.getAppChallenge(appInstance.identityHash)).finalizesAt;
@@ -174,6 +178,40 @@ describe("ChallengeRegistry Challenge", () => {
     expect(await latestState()).to.be.eql(keccak256(encodeState(POST_STATE)));
   });
 
+  it("Can be called multiple times", async () => {
+    await setState(1, encodeState(PRE_STATE));
+
+    const thingToSign1 = computeActionHash(
+      BOB.address,
+      keccak256(encodeState(PRE_STATE)),
+      encodeAction(ACTION),
+      1,
+    );
+    const signature1 = await signDigest(BOB.privateKey, thingToSign1);
+
+    expect(await latestState()).to.be.eql(keccak256(encodeState(PRE_STATE)));
+
+    await moveToBlock(33);
+
+    await progressState(PRE_STATE, ACTION, signature1);
+
+    expect(await latestState()).to.be.eql(keccak256(encodeState(POST_STATE)));
+
+    const thingToSign2 = computeActionHash(
+      ALICE.address,
+      keccak256(encodeState(POST_STATE)),
+      encodeAction(ACTION),
+      2,
+    );
+    const signature2 = await signDigest(ALICE.privateKey, thingToSign2);
+
+    await progressState(POST_STATE, ACTION, signature2);
+    expect(await latestState()).to.be.eql(keccak256(encodeState(
+      { counter: bigNumberify(4) },
+    )));
+    expect(await latestVersionNumber()).to.eq(3);
+  });
+
   it("Cannot call progressState with incorrect turn taker", async () => {
     expect(await latestVersionNumber()).to.eq(0);
 
@@ -195,4 +233,45 @@ describe("ChallengeRegistry Challenge", () => {
       "progressState called with action signed by incorrect turn taker",
     );
   });
+
+  it("progressState should fail if incorrect state submitted", async () => {
+    await setState(1, encodeState(PRE_STATE));
+    expect(await latestVersionNumber()).to.eq(1);
+
+    const thingToSign = computeActionHash(
+      BOB.address,
+      keccak256(encodeState(PRE_STATE)),
+      encodeAction(ACTION),
+      1,
+    );
+    const signature = await signDigest(ALICE.privateKey, thingToSign);
+
+    await moveToBlock(33);
+
+    await expect(progressState(POST_STATE, ACTION, signature)).to.be.revertedWith(
+      "Tried to progress a challenge with non-agreed upon app",
+    );
+  });
+
+  it("progressState should fail if dispute is not progressable", async () => {
+    await setState(1, encodeState(PRE_STATE));
+    expect(await latestVersionNumber()).to.eq(1);
+
+    const thingToSign = computeActionHash(
+      BOB.address,
+      keccak256(encodeState(PRE_STATE)),
+      encodeAction(ACTION),
+      1,
+    );
+    const signature = await signDigest(ALICE.privateKey, thingToSign);
+
+    await expect(progressState(POST_STATE, ACTION, signature)).to.be.revertedWith(
+      "progressState called on app not in a progressable state",
+    );
+  });
+
+  it("progressState should fail if apply action fails", async () => {
+    // TODO: how to make sure the action is invalid?
+  });
+
 });
