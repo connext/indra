@@ -32,19 +32,4 @@ export class WithdrawCommitmentRepository extends Repository<WithdrawCommitment>
     }
     return convertWithdrawToMinimalTransaction(withdrawal);
   }
-
-  async saveWithdrawalCommitment(
-    channel: Channel,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    let commitmentEnt = await this.findByMultisigAddress(channel.multisigAddress);
-    if (!commitmentEnt) {
-      commitmentEnt = new WithdrawCommitment();
-      commitmentEnt.channel = channel;
-    }
-    commitmentEnt.to = commitment.to;
-    commitmentEnt.value = bigNumberify(commitment.value);
-    commitmentEnt.data = commitment.data;
-    this.save(commitmentEnt);
-  }
 }
