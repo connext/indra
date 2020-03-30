@@ -1,9 +1,8 @@
-FROM alpine:3.10
+FROM haproxy:2.1.3-alpine
 WORKDIR /root
 ENV HOME /root
-RUN apk add --update --no-cache bash certbot curl iputils haproxy openssl && \
+RUN apk add --update --no-cache bash certbot curl iputils openssl && \
     openssl dhparam -out /etc/ssl/dhparam.pem 2048
-COPY wait-for.sh wait-for.sh
-COPY proxy/indra/entry.sh entry.sh
-COPY proxy/indra/dev.cfg haproxy.cfg
+COPY wait-for.sh /root/wait-for.sh
+COPY proxy/indra/ /root/
 ENTRYPOINT ["bash", "/root/entry.sh"]

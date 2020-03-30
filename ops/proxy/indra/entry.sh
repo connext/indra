@@ -1,15 +1,16 @@
 #!/bin/bash
 
 # Set default email & domain name
-domain="${DOMAINNAME:-localhost}"
-email="${EMAIL:-noreply@gmail.com}"
-ETH_RPC_URL="${ETH_RPC_URL:-http://ethprovider:8545}"
-MESSAGING_URL="${MESSAGING_URL:-http://nats:4221}"
-mode="${MODE:-dev}"
-NODE_URL="${NODE_URL:-http://node:8080}"
-WEBSERVER_URL="${WEBSERVER_URL:-http://webserver:80}"
+DOMAINNAME="${DOMAINNAME:-localhost}"
+EMAIL="${EMAIL:-noreply@gmail.com}"
+MODE="${MODE:-dev}"
 
-echo "domain=$domain mode=$mode email=$email eth=$ETH_RPC_URL messaging=$MESSAGING_URL ui=$WEBSERVER_URL node=$NODE_URL"
+ETH_RPC_URL="${ETH_RPC_URL:-ethprovider:8545}"
+MESSAGING_URL="${MESSAGING_URL:-nats:4221}"
+NODE_URL="${NODE_URL:-node:8080}"
+WEBSERVER_URL="${WEBSERVER_URL:-webserver:3000}"
+
+echo "domain=$DOMAINNAME mode=$MODE email=$EMAIL eth=$ETH_RPC_URL messaging=$MESSAGING_URL ui=$WEBSERVER_URL node=$NODE_URL"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -24,30 +25,27 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-echo "waiting for ${ETH_RPC_URL#*://}..."
-bash wait_for.sh -t 60 ${ETH_RPC_URL#*://} 2> /dev/null
+echo "waiting for $ETH_RPC_URL..."
+bash wait_for.sh -t 60 $ETH_RPC_URL 2> /dev/null
 while ! curl -s $ETH_RPC_URL > /dev/null
 do sleep 2
 done
 
-echo "waiting for ${MESSAGING_URL#*://}..."
-bash wait_for.sh -t 60 ${MESSAGING_URL#*://} 2> /dev/null
+echo "waiting for $MESSAGING_URL..."
+bash wait_for.sh -t 60 $MESSAGING_URL 2> /dev/null
 
-echo "waiting for ${NODE_URL#*://}..."
-bash wait_for.sh -t 60 ${NODE_URL#*://} 2> /dev/null
+echo "waiting for $NODE_URL..."
+bash wait_for.sh -t 60 $NODE_URL 2> /dev/null
 while ! curl -s $NODE_URL > /dev/null
 do sleep 2
 done
 
-if [[ "$mode" == "dev" ]]
-then
-  echo "waiting for ${WEBSERVER_URL#*://}..."
-  bash wait_for.sh -t 60 ${WEBSERVER_URL#*://} 2> /dev/null
-  # Do a more thorough check to ensure the dashboard is online
-  while ! curl -s $WEBSERVER_URL > /dev/null
-  do sleep 2
-  done
-fi
+echo "waiting for $WEBSERVER_URL..."
+bash wait_for.sh -t 60 $WEBSERVER_URL 2> /dev/null
+# Do a more thorough check to ensure the dashboard is online
+while ! curl -s $WEBSERVER_URL > /dev/null
+do sleep 2
+done
 
 # Kill the loading message server
 kill "$loading_pid" && pkill nc
@@ -62,38 +60,31 @@ mkdir -p /etc/ssl/certs
 mkdir -p /etc/ssl/private
 mkdir -p /var/www/letsencrypt
 
-if [[ "$domain" == "localhost" && ! -f "$devcerts/privkey.pem" ]]
+if [[ "$DOMAINNAME" == "localhost" && ! -f "$devcerts/privkey.pem" ]]
 then
   echo "Developing locally, generating self-signed certs"
   openssl req -x509 -newkey rsa:4096 -keyout $devcerts/privkey.pem -out $devcerts/fullchain.pem -days 365 -nodes -subj '/CN=localhost'
 fi
 
-if [[ ! -f "$letsencrypt/$domain/privkey.pem" ]]
+if [[ ! -f "$letsencrypt/$DOMAINNAME/privkey.pem" ]]
 then
-  echo "Couldn't find certs for $domain, using certbot to initialize those now.."
-  certbot certonly --standalone -m $email --agree-tos --no-eff-email -d $domain -n
+  echo "Couldn't find certs for $DOMAINNAME, using certbot to initialize those now.."
+  certbot certonly --standalone -m $EMAIL --agree-tos --no-eff-email -d $DOMAINNAME -n
   [[ $? -eq 0 ]] || sleep 9999 # FREEZE! Don't pester eff & get throttled
 fi
 
-echo "Using certs for $domain"
-ln -sf $letsencrypt/$domain/fullchain.pem /etc/ssl/certs/fullchain.pem
-ln -sf $letsencrypt/$domain/privkey.pem /etc/ssl/private/privkey.pem
-
-# Hack way to implement variables in the haproxy.conf file
-sed -i 's/$hostname/'"$domain"'/' /root/haproxy.conf
-sed -i 's|$WEBSERVER_URL|'"$WEBSERVER_URL"'|' /root/haproxy.conf
-sed -i 's|$ETH_RPC_URL|'"$ETH_RPC_URL"'|' /root/haproxy.conf
-sed -i 's|$MESSAGING_URL|'"$MESSAGING_URL"'|' /root/haproxy.conf
-sed -i 's|$NODE_URL|'"$NODE_URL"'|' /root/haproxy.conf
+echo "Using certs for $DOMAINNAME"
+ln -sf $letsencrypt/$DOMAINNAME/fullchain.pem /etc/ssl/certs/fullchain.pem
+ln -sf $letsencrypt/$DOMAINNAME/privkey.pem /etc/ssl/private/privkey.pem
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
   while true
   do
     echo -n "Preparing to renew certs... "
-    if [[ -d "/etc/letsencrypt/live/$domain" ]]
+    if [[ -d "/etc/letsencrypt/live/$DOMAINNAME" ]]
     then
-      echo -n "Found certs to renew for $domain... "
+      echo -n "Found certs to renew for $DOMAINNAME... "
       certbot renew --webroot -w /var/www/letsencrypt/ -n
       echo "Done!"
     fi
@@ -101,11 +92,11 @@ function renewcerts {
   done
 }
 
-if [[ "$domain" != "localhost" ]]
-then renewcerts &
+if [[ "$DOMAINNAME" != "localhost" ]]
+then
+  renewcerts &
+  sleep 3 # give renewcerts a sec to do it's first check
 fi
 
-sleep 3 # give renewcerts a sec to do it's first check
-
 echo "Entrypoint finished, executing haproxy..."; echo
-exec haproxy -f haproxy.cfg
+exec haproxy -db -f $MODE.cfg
