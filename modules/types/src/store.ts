@@ -105,9 +105,6 @@ export interface IStoreService {
 
   ///// Free balance
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
-  // TODO: on chopping block
-  createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
-  updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void>;
 
   ///// Setup commitment
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined>;
