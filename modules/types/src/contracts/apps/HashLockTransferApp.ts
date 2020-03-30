@@ -59,6 +59,7 @@ export type HashLockTransferParameters = {
   amount: BigNumberish;
   timelock: BigNumberish;
   lockHash: string;
+  recipient: string;
   assetId?: string;
   meta?: object;
 };

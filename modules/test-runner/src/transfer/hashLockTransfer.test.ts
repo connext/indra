@@ -8,6 +8,7 @@ import {
   HashLockTransferStatus,
   IConnextClient,
   ResolveHashLockTransferParameters,
+  InstallMessage,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
@@ -56,7 +57,7 @@ describe("HashLock Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: client A hashlock transfers eth to client B through node", async () => {
+  it.only("happy case: client A hashlock transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = createRandom32ByteHexString();
@@ -78,6 +79,17 @@ describe("HashLock Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
+
+    // receiver app installed
+    await new Promise(async res => {
+      clientB.on("INSTALL_EVENT", async (msg: InstallMessage) => {
+        const details = await clientB.getAppInstanceDetails(msg.data.params.appInstanceId);
+        console.log("details: ", details);
+        if (details.appInstance.latestState["lockHash"] === lockHash) {
+          res();
+        }
+      });
+    });
 
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
@@ -271,13 +283,11 @@ describe("HashLock Transfers", () => {
         [clientA.freeBalanceAddress]: clientAPreBal,
         [clientA.nodeFreeBalanceAddress]: nodeAPreBal,
       } = await clientA.getFreeBalance(transfer.assetId);
-      const { 
+      const {
         [clientB.freeBalanceAddress]: clientBPreBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPreBal, 
-      } = await clientB.getFreeBalance(
-        transfer.assetId,
-      );
-      
+        [clientB.nodeFreeBalanceAddress]: nodeBPreBal,
+      } = await clientB.getFreeBalance(transfer.assetId);
+
       const preImage = createRandom32ByteHexString();
       const timelock = ((await provider.getBlockNumber()) + 5000).toString();
       const lockHash = soliditySha256(["bytes32"], [preImage]);
@@ -293,7 +303,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
       } as HashLockTransferParameters);
-  
+
       await new Promise(async res => {
         clientA.once("UNINSTALL_EVENT", async data => {
           res();
@@ -306,24 +316,22 @@ describe("HashLock Transfers", () => {
 
       // Stop timer and add to sum
       runTime[i] = Date.now() - start;
-      console.log(`Run: ${i}, Runtime: ${runTime[i]}`)
+      console.log(`Run: ${i}, Runtime: ${runTime[i]}`);
       sum = sum + runTime[i];
 
       const {
         [clientA.freeBalanceAddress]: clientAPostBal,
         [clientA.nodeFreeBalanceAddress]: nodeAPostBal,
       } = await clientA.getFreeBalance(transfer.assetId);
-      const { 
+      const {
         [clientB.freeBalanceAddress]: clientBPostBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPostBal, 
-      } = await clientB.getFreeBalance(
-        transfer.assetId,
-      );
+        [clientB.nodeFreeBalanceAddress]: nodeBPostBal,
+      } = await clientB.getFreeBalance(transfer.assetId);
       expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
       expect(nodeAPostBal).to.eq(nodeAPreBal.add(transfer.amount));
       expect(nodeBPostBal).to.eq(nodeBPreBal.sub(transfer.amount));
       expect(clientBPostBal).to.eq(clientBPreBal.add(transfer.amount));
     }
-    console.log(`Average = ${sum/numberOfRuns} ms`)
+    console.log(`Average = ${sum / numberOfRuns} ms`);
   });
 });
