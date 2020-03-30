@@ -46,7 +46,7 @@ log_level=3
 nats_port=4222
 node_port=8080
 dash_port=9999
-ui_port=3000
+webserver_port=3000
 ganacheId="4447"
 
 # Prefer top-level address-book override otherwise default to one in contracts
@@ -87,54 +87,49 @@ nats_ws_port="4221"
 
 # docker images
 builder_image="${project}_builder"
-ui_image="$builder_image"
+webserver_image="$builder_image"
 database_image="postgres:9-alpine"
 ethprovider_image="$builder_image"
 nats_image="provide/nats-server:indra"
 node_image="$builder_image"
 proxy_image="${project}_proxy"
-redis_image=redis:5-alpine
-redis_url="redis://redis:6379"
+redis_image="redis:5-alpine"
 
 ####################
 # Deploy according to above configuration
 
 if [[ "$INDRA_UI" == "headless" ]]
 then
-  ui_service=""
-  proxy_mode="ci"
-  proxy_ui_url=""
+  webserver_service=""
 else
   if [[ "$INDRA_UI" == "dashboard" ]]
-  then ui_working_dir=/root/modules/dashboard
+  then webserver_working_dir=/root/modules/dashboard
   elif [[ "$INDRA_UI" == "daicard" ]]
-  then ui_working_dir=/root/modules/daicard
+  then webserver_working_dir=/root/modules/daicard
   else
     echo "INDRA_UI: Expected headless, dashboard, or daicard"
     exit 1
   fi
   number_of_services=$(( $number_of_services + 2 ))
-  proxy_mode="dev"
-  proxy_ui_url="http://ui:3000"
-  ui_services="
+  webserver_services="
   proxy:
     image: '$proxy_image'
     environment:
       DOMAINNAME: 'localhost'
-      ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
-      MESSAGING_URL: 'http://nats:4221'
-      NODE_URL: 'http://node:8080'
-      MODE: '$proxy_mode'
-      UI_URL: '$proxy_ui_url'
+      ETH_RPC_URL: '${INDRA_ETH_PROVIDER#*://}'
+      MESSAGING_URL: 'nats:4221'
+      NODE_URL: 'node:8080'
+      MODE: 'dev'
+      WEBSERVER_URL: 'webserver:3000'
     networks:
       - '$project'
     ports:
-      - '$ui_port:80'
+      - '3000:80'
     volumes:
       - 'certs:/etc/letsencrypt'
 
-  ui:
-    image: '$ui_image'
+  webserver:
+    image: '$webserver_image'
     entrypoint: 'npm start'
     environment:
       NODE_ENV: 'development'
@@ -142,7 +137,7 @@ else
       - '$project'
     volumes:
       - '`pwd`:/root'
-    working_dir: '$ui_working_dir'
+    working_dir: '$webserver_working_dir'
   "
 fi
 
@@ -155,6 +150,7 @@ function pull_if_unavailable {
 pull_if_unavailable "$database_image"
 pull_if_unavailable "$ethprovider_image"
 pull_if_unavailable "$nats_image"
+pull_if_unavailable "$redis_image"
 
 # Initialize random new secrets
 function new_secret {
@@ -196,7 +192,7 @@ volumes:
 
 services:
 
-  $ui_services
+  $webserver_services
 
   node:
     image: '$node_image'
@@ -219,7 +215,7 @@ services:
       INDRA_PG_PORT: '$pg_port'
       INDRA_PG_USERNAME: '$pg_user'
       INDRA_PORT: '$node_port'
-      INDRA_REDIS_URL: '$redis_url'
+      INDRA_REDIS_URL: 'redis://redis:6379'
       NODE_ENV: 'development'
     networks:
       - '$project'

@@ -26,7 +26,7 @@ interactive=$(shell if [[ -t 0 && -t 2 ]]; then echo "--interactive"; else echo 
 ########################################
 # Setup more vars
 
-find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -path "*/build/*" -not -path "*/dist/*" -not -name "*.log"
+find_options=-type f -not -path "*/node_modules/*" -not -name "address-book.json" -not -name "*.swp" -not -path "*/.*" -not -path "*/build/*" -not -path "*/dist/*" -not -name "*.log"
 
 docker_run=docker run --name=$(project)_builder $(interactive) --tty --rm --volume=$(cwd):/root $(project)_builder $(id)
 
