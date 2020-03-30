@@ -18,10 +18,9 @@ then
     --mnemonic="$ETH_MNEMONIC" \
     --networkId="4447" \
     --port="8545" \
-    --defaultBalanceEther="1000000000" # default 1bil ETH to each account $$$
+    --defaultBalanceEther="1000000000"
 elif [[ "$1" == "deploy" ]]
 then
-  echo "Deploying contracts.."
   if [[ "${ETH_PROVIDER#*://}" == "localhost"* ]]
   then
     echo "Starting Ganache.."
@@ -36,6 +35,7 @@ then
        > $dir/.ganache.log &
     bash /wait-for.sh localhost:8545
   fi
+  echo "Deploying contracts.."
   touch $dir/address-book.json
   node $dir/ops/migrate-contracts.js
 else
