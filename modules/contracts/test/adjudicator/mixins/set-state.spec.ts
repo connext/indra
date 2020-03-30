@@ -19,6 +19,8 @@ import {
   moveToBlock,
   computeAppChallengeHash,
   AppWithCounterClass,
+  restore,
+  snapshot,
 } from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
@@ -27,6 +29,7 @@ import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 describe("setState", () => {
   let provider = buidler.provider;
   let wallet: Wallet;
+  let snapshotId: number;
 
   let bob: Wallet;
 
@@ -52,6 +55,7 @@ describe("setState", () => {
   });
 
   beforeEach(async () => {
+    snapshotId = await snapshot();
     const context = await setupContext(appRegistry, appDefinition);
     setState = context["setState"];
     verifyChallenge = context["verifyChallenge"];
@@ -59,15 +63,10 @@ describe("setState", () => {
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
     appInstance = context["appInstance"];
     bob = context["bob"];
+  });
 
-    /* TODO [OLD]: doesn't work currently
-    sendSignedFinalizationToChain = async () =>
-      await setState(
-        (await latestVersionNumber()) + 1,
-        await latestAppStateHash(),
-        0,
-      );
-    */
+  afterEach(async () => {
+    await restore(snapshotId);
   });
 
   describe("setState", () => {
@@ -176,14 +175,4 @@ describe("setState", () => {
       await expect(setState(1, state)).to.be.revertedWith("setState was called with outdated state");
     });
   });
-
-  /* TODO [OLD]: doesn't work currently
-  describe("finalizing app state", async () => {
-    it("should work with keys", async () => {
-      expect(await isStateFinalized()).to.be.false;
-      await sendSignedFinalizationToChain();
-      expect(await isStateFinalized()).to.be.true;
-    });
-  });
-  */
 });

@@ -1,8 +1,7 @@
 /* global before */
-import { ChallengeStatus, AppChallengeBigNumber } from "@connext/types";
+import { AppChallengeBigNumber } from "@connext/types";
 import { signDigest } from "@connext/crypto";
 import { Wallet, Contract } from "ethers";
-import { One } from "ethers/constants";
 import { keccak256 } from "ethers/utils";
 import * as waffle from "ethereum-waffle";
 
@@ -53,7 +52,7 @@ describe("progressState", () => {
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
 
     // get helpers
-    setState = context["setState"];
+    setState = context["setStateAndVerify"];
     progressState = context["progressState"];
     verifyChallenge = context["verifyChallenge"];
     isProgressable = context["isProgressable"];
@@ -67,33 +66,20 @@ describe("progressState", () => {
   it("Can call progressState", async () => {
     await verifyChallenge(EMPTY_CHALLENGE);
 
-    const originalChallenge = {
-      latestSubmitter: wallet.address,
-      versionNumber: One,
-      appStateHash: keccak256(encodeState(PRE_STATE)),
-      status: ChallengeStatus.IN_DISPUTE,
-    };
     await setState(1, encodeState(PRE_STATE));
-    await verifyChallenge(originalChallenge);
 
     expect(await isProgressable()).to.be.false;
-    await moveToBlock(ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    expect(await isProgressable()).to.be.true;
+
     await progressStateAndVerify(PRE_STATE, ACTION);
   });
 
   it("Can be called multiple times", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    const expected = {
-      latestSubmitter: wallet.address,
-      versionNumber: One,
-      appStateHash: keccak256(encodeState(PRE_STATE)),
-      status: ChallengeStatus.IN_DISPUTE,
-    };
-    await verifyChallenge(expected);
-
     expect(await isProgressable()).to.be.false;
-    await moveToBlock(ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
     await progressStateAndVerify(PRE_STATE, ACTION);
 
     const thingToSign2 = computeActionHash(
@@ -109,7 +95,7 @@ describe("progressState", () => {
   it("Cannot call progressState with incorrect turn taker", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock(ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(PRE_STATE, ACTION, ALICE)).to.be.revertedWith(
       "progressState called with action signed by incorrect turn taker",
@@ -119,7 +105,7 @@ describe("progressState", () => {
   it("progressState should fail if incorrect state submitted", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock(ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(POST_STATE, ACTION)).to.be.revertedWith(
       "Tried to progress a challenge with non-agreed upon app",
@@ -143,7 +129,7 @@ describe("progressState", () => {
     );
   });
 
-  it("progressState should fail if apply action fails", async () => {
+  it.skip("progressState should fail if apply action fails", async () => {
     // TODO: how to make sure the action is invalid?
   });
 
