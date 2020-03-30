@@ -58,6 +58,15 @@ contract MixinSetState is LibStateChannelApp, LibDispute, MChallengeRegistryCore
         challenge.appStateHash = req.appStateHash;
         challenge.versionNumber = req.versionNumber;
         challenge.finalizesAt = block.number.add(req.timeout);
+
+        emit ChallengeUpdated(
+            identityHash,
+            challenge.status,
+            challenge.latestSubmitter,
+            challenge.appStateHash,
+            challenge.versionNumber,
+            challenge.finalizesAt
+        );
     }
 
     function correctKeysSignedAppChallengeUpdate(

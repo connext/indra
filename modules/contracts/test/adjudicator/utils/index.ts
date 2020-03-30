@@ -24,14 +24,19 @@ export const restore = async (snapshotId: any) => await provider.send("evm_rever
 
 // TODO: Not sure this works correctly/reliably...
 export const moveToBlock = async (blockNumber: BigNumberish) => {
-  const blockNumberBN: BigNumber = toBN(blockNumber);
-  let currentBlockNumberBN: BigNumber = toBN(await provider.getBlockNumber());
-  expect(currentBlockNumberBN).to.be.at.most(blockNumberBN);
-  while (currentBlockNumberBN.lt(blockNumberBN)) {
-    await mineBlock();
-    currentBlockNumberBN = toBN(await provider.getBlockNumber());
+  const desired: BigNumber = toBN(blockNumber);
+  const current: BigNumber = toBN(await provider.getBlockNumber());
+  if (current.gt(desired)) {
+    throw new Error(`Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`);
   }
-  expect(currentBlockNumberBN).to.be.equal(blockNumberBN);
+  if (current.eq(desired)) {
+    return;
+  }
+  for (const _ of Array(desired.sub(current).toNumber())) {
+    await mineBlock();
+  }
+  const final: BigNumber = toBN(await provider.getBlockNumber());
+  expect(final).to.be.eq(desired);
 };
 
 use(require("chai-subset"));

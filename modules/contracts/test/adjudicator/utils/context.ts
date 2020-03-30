@@ -1,6 +1,5 @@
 import { signDigest } from "@connext/crypto";
-import { AppChallengeBigNumber, toBN, ChallengeStatus, sortSignaturesBySignerAddress, createRandom32ByteHexString } from "@connext/types";
-// import * as waffle from "ethereum-waffle";
+import { AppChallengeBigNumber, toBN, ChallengeStatus, sortSignaturesBySignerAddress, createRandom32ByteHexString, ChallengeEvents } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
 import { keccak256, BigNumberish } from "ethers/utils";
@@ -96,15 +95,37 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     return appRegistry.functions.verifySignatures(signatures, digest, signers);
   };
 
+  const wrapInEventVerification = async (
+    contractCall: any,
+    expected: Partial<AppChallengeBigNumber> = {},
+  ) => {
+    const { status, appStateHash, finalizesAt, versionNumber } = await getChallenge();
+    await expect(contractCall).to.emit(
+      appRegistry,
+      ChallengeEvents.ChallengeUpdated,
+    ).withArgs(
+      appInstance.identityHash, // identityHash
+      expected.status || status, // status
+      wallet.address, // latestSubmitter
+      expected.appStateHash || appStateHash, // appStateHash
+      expected.versionNumber || versionNumber, // versionNumber
+      expected.finalizesAt || finalizesAt, // finalizesAt
+    );
+  };
+
   // State Progression methods
   const setOutcome = async (encodedFinalState?: string): Promise<void> => {
-    await appRegistry.functions.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero);
+    await wrapInEventVerification(
+      appRegistry.functions.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero),
+      { status: ChallengeStatus.OUTCOME_SET },
+    );
   };
 
   const setOutcomeAndVerify = async (encodedFinalState?: string): Promise<void> => {
-    await appRegistry.functions.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero);
+    await setOutcome(encodedFinalState);
     const outcome = await getOutcome();
     expect(outcome).to.eq(encodeOutcome());
+    await verifyChallenge({ status: ChallengeStatus.OUTCOME_SET });
   };
 
   const setState = async (versionNumber: number, appState?: string, timeout: number = ONCHAIN_CHALLENGE_TIMEOUT) => {
@@ -115,7 +136,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
       versionNumber,
       timeout,
     );
-    await appRegistry.functions.setState(appInstance.appIdentity, {
+    const call = appRegistry.functions.setState(appInstance.appIdentity, {
       versionNumber,
       appStateHash: stateHash,
       timeout,
@@ -123,6 +144,13 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
         await signDigest(alice.privateKey, digest),
         await signDigest(bob.privateKey, digest),
       ]),
+    });
+    await wrapInEventVerification(call, {
+      status: ChallengeStatus.IN_DISPUTE,
+      appStateHash: stateHash,
+      versionNumber: toBN(versionNumber),
+      // FIXME: why is this off by one?
+      finalizesAt: toBN(await provider.getBlockNumber() + timeout + 1),
     });
   };
 
@@ -137,14 +165,57 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
   };
 
   const progressState = async (state: AppWithCounterState, action: AppWithCounterAction, actionSig: string) => {
-    await appRegistry.functions.progressState(
-      appInstance.appIdentity,
-      encodeState(state),
+    const resultingState: AppWithCounterState = {
+      counter: action.actionType === ActionType.ACCEPT_INCREMENT
+        ? state.counter
+        : state.counter.add(action.increment),
+    };
+    const latestVersionNumber = (await getChallenge()).versionNumber.add(1);
+    await wrapInEventVerification(
+      appRegistry.functions.progressState(
+        appInstance.appIdentity,
+        encodeState(state),
+        {
+          encodedAction: encodeAction(action),
+          signature: actionSig,
+        },
+      ), 
       {
-        encodedAction: encodeAction(action),
-        signature: actionSig,
+        status: resultingState.counter.gt(5)
+          ? ChallengeStatus.EXPLICITLY_FINALIZED
+          : ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+        appStateHash: keccak256(encodeState(resultingState)),
+        versionNumber: latestVersionNumber,
+        // FIXME: why is this off by one?
+        finalizesAt: toBN(await provider.getBlockNumber() + appInstance.defaultTimeout + 1),
       },
     );
+  };
+
+  const progressStateAndVerify = async (state: AppWithCounterState, action: AppWithCounterAction, signer: Wallet = bob) => {
+    const existingChallenge = await getChallenge();
+    const thingToSign = computeActionHash(
+      signer.address,
+      keccak256(encodeState(state)),
+      encodeAction(action),
+      existingChallenge.versionNumber.toNumber(),
+    );
+    const signature = await signDigest(signer.privateKey, thingToSign);
+    expect(await isProgressable()).to.be.true;
+    const resultingState: AppWithCounterState = {
+      counter: action.actionType === ActionType.ACCEPT_INCREMENT
+        ? state.counter
+        : state.counter.add(action.increment),
+    };
+    const expected = {
+      latestSubmitter: wallet.address,
+      appStateHash: keccak256(encodeState(resultingState)),
+      versionNumber: existingChallenge.versionNumber.add(One),
+      status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+    };
+    await progressState(state, action, signature);
+    await verifyChallenge(expected);
+    expect(await isProgressable()).to.be.true;
   };
 
   const setAndProgressStateAndVerify = async (versionNumber: number, state: AppWithCounterState, action: AppWithCounterAction, timeout: number = 0, turnTaker: Wallet = bob) => {
@@ -163,6 +234,8 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     expect(await isProgressable()).to.be.true;
   };
 
+  // No need to verify events here because `setAndProgress` simply emits
+  // the events from other contracts
   const setAndProgressState = async (versionNumber: number, state: AppWithCounterState, action: AppWithCounterAction, timeout: number = 0, turnTaker: Wallet = bob) => {
     const stateHash = keccak256(encodeState(state));
     const stateDigest = computeAppChallengeHash(
@@ -194,32 +267,6 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
         signature: await signDigest(turnTaker.privateKey, actionDigest),
       },
     );
-  };
-
-  const progressStateAndVerify = async (state: AppWithCounterState, action: AppWithCounterAction, signer: Wallet = bob) => {
-    const existingChallenge = await getChallenge();
-    const thingToSign = computeActionHash(
-      signer.address,
-      keccak256(encodeState(state)),
-      encodeAction(action),
-      existingChallenge.versionNumber.toNumber(),
-    );
-    const signature = await signDigest(signer.privateKey, thingToSign);
-    expect(await isProgressable()).to.be.true;
-    const resultingState: AppWithCounterState = {
-      counter: action.actionType === ActionType.ACCEPT_INCREMENT
-        ? state.counter
-        : state.counter.add(action.increment),
-    };
-    const expected = {
-      latestSubmitter: wallet.address,
-      appStateHash: keccak256(encodeState(resultingState)),
-      versionNumber: existingChallenge.versionNumber.add(One),
-      status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
-    };
-    await progressState(state, action, signature);
-    await verifyChallenge(expected);
-    expect(await isProgressable()).to.be.true;
   };
 
   return {

@@ -10,6 +10,11 @@ export const enum ChallengeStatus {
   IN_DISPUTE = 1,
   IN_ONCHAIN_PROGRESSION = 2,
   EXPLICITLY_FINALIZED = 3,
+  OUTCOME_SET = 4,
+}
+
+export const enum ChallengeEvents {
+  ChallengeUpdated = "ChallengeUpdated",
 }
 
 // A minimal structure that uniquely identifies a single instance of an App
