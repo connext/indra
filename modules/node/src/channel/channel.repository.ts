@@ -1,4 +1,4 @@
-import { StateChannelJSON, AppInstanceProposal } from "@connext/types";
+import { StateChannelJSON } from "@connext/types";
 import { NotFoundException } from "@nestjs/common";
 import { AddressZero } from "ethers/constants";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
@@ -11,8 +11,7 @@ import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 import { Channel } from "./channel.entity";
-import { AppType, AppInstance } from "../appInstance/appInstance.entity";
-import { bigNumberify } from "ethers/utils";
+import { AppType } from "../appInstance/appInstance.entity";
 
 const log = new LoggerService("ChannelRepository");
 
