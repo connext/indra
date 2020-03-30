@@ -3,18 +3,27 @@ import {
   OutcomeType,
   AppInstanceProposal,
   StateChannelJSON,
+  SetStateCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,
+  MinimalTransaction,
 } from "@connext/types";
-import { AddressZero, HashZero } from "ethers/constants";
-import { mkXpub, mkHash } from "./utils";
+import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { mkHash } from "./utils";
 import { Wallet } from "ethers";
-import { HDNode } from "ethers/utils";
+import { HDNode, hexlify } from "ethers/utils";
 import { xkeyKthAddress } from "@connext/cf-core";
+import { randomBytes } from "crypto";
 
 export const generateRandomXpub = () =>
   HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
 
+export const generateRandomAddress = () => Wallet.createRandom().address;
+
+export const generateRandomBytes32 = () => hexlify(randomBytes(32));
+
+export const generateRandomSignature = () => hexlify(randomBytes(65));
+
 export const createAppInstanceJson = (
-  identityHash = HashZero,
   overrides: Partial<AppInstanceJson> = {},
 ): AppInstanceJson => {
   return {
@@ -25,13 +34,13 @@ export const createAppInstanceJson = (
     },
     appSeqNo: 0,
     defaultTimeout: 0,
-    identityHash,
+    identityHash: generateRandomBytes32(),
     latestState: {},
     latestTimeout: 1000,
     latestVersionNumber: 0,
-    multisigAddress: AddressZero,
+    multisigAddress: generateRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    participants: [AddressZero, AddressZero],
+    participants: [generateRandomAddress(), generateRandomAddress()],
     multiAssetMultiPartyCoinTransferInterpreterParams: null,
     singleAssetTwoPartyCoinTransferInterpreterParams: null,
     twoPartyOutcomeInterpreterParams: null,
@@ -40,13 +49,12 @@ export const createAppInstanceJson = (
 };
 
 export const createAppInstanceProposal = (
-  identityHash = HashZero,
   overrides: Partial<AppInstanceProposal> = {},
 ): AppInstanceProposal => {
   return {
     appDefinition: AddressZero,
     appSeqNo: 0,
-    identityHash,
+    identityHash: generateRandomBytes32(),
     abiEncodings: {
       actionEncoding: "",
       stateEncoding: "",
@@ -54,8 +62,8 @@ export const createAppInstanceProposal = (
     initialState: {},
     initiatorDeposit: "0x00",
     initiatorDepositTokenAddress: AddressZero,
-    proposedByIdentifier: mkXpub(),
-    proposedToIdentifier: mkXpub(),
+    proposedByIdentifier: generateRandomXpub(),
+    proposedToIdentifier: generateRandomXpub(),
     responderDeposit: "0x00",
     responderDepositTokenAddress: AddressZero,
     timeout: "0x00",
@@ -78,7 +86,7 @@ export const createStateChannelJSON = (
     },
     appInstances: [],
     monotonicNumProposedApps: 0,
-    multisigAddress: AddressZero,
+    multisigAddress: generateRandomAddress(),
     proposedAppInstances: [],
     schemaVersion: 1,
     userNeuteredExtendedKeys,
@@ -90,10 +98,57 @@ export const createStateChannelJSON = (
   );
   return {
     ...channelData,
-    freeBalanceAppInstance: createAppInstanceJson(mkHash("0xf"), {
+    freeBalanceAppInstance: createAppInstanceJson({
       multisigAddress: channelData.multisigAddress,
       participants: freeBalanceParticipants,
       ...overrides.freeBalanceAppInstance,
     }),
+  };
+};
+
+export const createSetStateCommitmentJSON = (
+  overrides: Partial<SetStateCommitmentJSON> = {},
+): SetStateCommitmentJSON => {
+  return {
+    appIdentity: {
+      channelNonce: 0,
+      participants: [generateRandomAddress(), generateRandomAddress()],
+      appDefinition: AddressZero,
+      defaultTimeout: 0,
+    },
+    appIdentityHash: generateRandomBytes32(),
+    appStateHash: generateRandomBytes32(),
+    challengeRegistryAddress: AddressZero,
+    signatures: [generateRandomSignature(), generateRandomSignature()],
+    timeout: 0,
+    versionNumber: 0,
+    ...overrides,
+  };
+};
+
+export const createConditionalTransactionCommitmentJSON = (
+  overrides: Partial<ConditionalTransactionCommitmentJSON> = {},
+): ConditionalTransactionCommitmentJSON => {
+  return {
+    appIdentityHash: generateRandomBytes32(),
+    freeBalanceAppIdentityHash: generateRandomBytes32(),
+    interpreterAddr: AddressZero,
+    interpreterParams: "",
+    multisigAddress: generateRandomAddress(),
+    multisigOwners: [generateRandomAddress(), generateRandomAddress()],
+    networkContext: {} as any,
+    signatures: [generateRandomSignature(), generateRandomSignature()],
+    ...overrides,
+  };
+};
+
+export const createMinimalTransaction = (
+  overrides: Partial<MinimalTransaction> = {},
+): MinimalTransaction => {
+  return {
+    data: HashZero,
+    to: AddressZero,
+    value: Zero,
+    ...overrides,
   };
 };
