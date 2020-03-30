@@ -1,9 +1,9 @@
 import { signDigest } from "@connext/crypto";
-import { AppChallengeBigNumber, toBN, ChallengeStatus, sortSignaturesBySignerAddress } from "@connext/types";
+import { AppChallengeBigNumber, toBN, ChallengeStatus, sortSignaturesBySignerAddress, createRandom32ByteHexString } from "@connext/types";
 // import * as waffle from "ethereum-waffle";
 import { Wallet, Contract } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
-import { keccak256 } from "ethers/utils";
+import { keccak256, BigNumberish } from "ethers/utils";
 
 import { provider, AppWithCounterState, AppWithCounterAction, ActionType, expect, AppWithCounterClass, encodeState, encodeAction, computeAppChallengeHash, computeActionHash, EMPTY_CHALLENGE } from "./index";
 
@@ -28,7 +28,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     CHANNEL_NONCE, // channel nonce
   );
 
-  // contract helpers
+  // Contract helpers
   const getChallenge = async (): Promise<AppChallengeBigNumber> => {
     const [
       status, 
@@ -52,14 +52,46 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
   };
 
   const isProgressable = async () => {
-    const challenge = await appRegistry.functions.getAppChallenge(appInstance.identityHash); 
+    const challenge = await getChallenge(); 
     return await appRegistry.functions.isProgressable(challenge, appInstance.defaultTimeout);
   };
+
+  const isDisputable = async (challenge?: AppChallengeBigNumber) => {
+    if (!challenge) {
+      challenge = await getChallenge();
+    }
+    return await appRegistry.functions.isDisputable(challenge);
+  };
+
 
   const isStateFinalized = () => {
     return appRegistry.functions.isStateFinalized(appInstance.identityHash);
   };
 
+  const hasPassed = (timeout: BigNumberish) => {
+    return appRegistry.functions.hasPassed(toBN(timeout));
+  };
+
+  const verifySignatures = async (
+    digest: string = createRandom32ByteHexString(),
+    signatures?: string[],
+    signers?: string[],
+  ) => {
+    if (!signatures) {
+      signatures = await sortSignaturesBySignerAddress(digest, [
+        await signDigest(bob.privateKey, digest),
+        await signDigest(alice.privateKey, digest),
+      ]);
+    }
+
+    if (!signers) {
+      signers = [alice.address, bob.address];
+    }
+
+    return appRegistry.functions.verifySignatures(signatures, digest, signers);
+  };
+
+  // State Progression methods
   const setState = async (versionNumber: number, appState?: string, timeout: number = ONCHAIN_CHALLENGE_TIMEOUT) => {
     const stateHash = keccak256(appState || HashZero);
     const digest = computeAppChallengeHash(
@@ -185,6 +217,10 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     verifyEmptyChallenge: () => verifyChallenge(EMPTY_CHALLENGE),
     isProgressable,
     isStateFinalized,
+    hasPassed,
+    isDisputable,
+    verifySignatures,
+    // state progression
     setState,
     progressState,
     progressStateAndVerify,
