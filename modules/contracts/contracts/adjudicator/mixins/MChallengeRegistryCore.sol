@@ -16,7 +16,7 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller, LibDispute 
 
     // A mapping of appIdentityHash to AppChallenge structs which represents
     // the current on-chain status of some particular application's state.
-    mapping (bytes32 => LibStateChannelApp.AppChallenge) public appChallenges;
+    mapping (bytes32 => AppChallenge) public appChallenges;
 
     // A mapping of appIdentityHash to outcomes
     mapping (bytes32 => bytes) public appOutcomes;
@@ -38,7 +38,7 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller, LibDispute 
     /// @param appIdentity An `AppIdentity` struct that encodes all unique info for an App
     /// @return A bytes32 hash of the AppIdentity
     function appIdentityToHash(
-        LibStateChannelApp.AppIdentity memory appIdentity
+        AppIdentity memory appIdentity
     )
         internal
         pure
@@ -111,19 +111,19 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller, LibDispute 
         view
         returns (bool)
     {
-        LibStateChannelApp.AppChallenge storage appChallenge = appChallenges[identityHash];
+        AppChallenge storage appChallenge = appChallenges[identityHash];
 
         return (
           (
-              appChallenge.status == LibStateChannelApp.ChallengeStatus.IN_DISPUTE &&
-              LibStateChannelApp.hasPassed(appChallenge.finalizesAt.add(appTimeouts[identityHash]))
+              appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+              hasPassed(appChallenge.finalizesAt.add(appTimeouts[identityHash]))
           ) ||
           (
-              appChallenge.status == LibStateChannelApp.ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
-              LibStateChannelApp.hasPassed(appChallenge.finalizesAt)
+              appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
+              hasPassed(appChallenge.finalizesAt)
           ) ||
           (
-              appChallenge.status == LibStateChannelApp.ChallengeStatus.EXPLICITLY_FINALIZED
+              appChallenge.status == ChallengeStatus.EXPLICITLY_FINALIZED
           )
         );
     }
