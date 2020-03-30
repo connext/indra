@@ -1,16 +1,14 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../state-deposit-holders/MultisigTransfer.sol";
 import "../libs/LibOutcome.sol";
 import "../Interpreter.sol";
 
 
-contract MultiAssetMultiPartyCoinTransferInterpreter is Interpreter {
+contract MultiAssetMultiPartyCoinTransferInterpreter is MultisigTransfer, Interpreter {
 
-    mapping(address => uint256) public totalAmountWithdrawn;
     uint256 constant MAX_UINT256 = 2 ** 256 - 1;
-    address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
 
     struct MultiAssetMultiPartyCoinTransferInterpreterParams {
         uint256[] limit;
@@ -28,7 +26,6 @@ contract MultiAssetMultiPartyCoinTransferInterpreter is Interpreter {
     )
         external
     {
-
         MultiAssetMultiPartyCoinTransferInterpreterParams memory params = abi.decode(
             encodedParams,
             (MultiAssetMultiPartyCoinTransferInterpreterParams)
@@ -53,18 +50,7 @@ contract MultiAssetMultiPartyCoinTransferInterpreter is Interpreter {
 
                 if (coinTransfer.amount > 0) {
                     limitRemaining -= coinTransfer.amount;
-
-                    // Note, explicitly do NOT use safemath here. See discussion in: TODO
-                    totalAmountWithdrawn[tokenAddress] += coinTransfer.amount;
-
-                    if (tokenAddress == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
-                        // note: send() is deliberately used instead of coinTransfer() here
-                        // so that a revert does not stop the rest of the sends
-                        // solium-disable-next-line security/no-send
-                        to.send(coinTransfer.amount);
-                    } else {
-                        ERC20(tokenAddress).transfer(to, coinTransfer.amount);
-                    }
+                    multisigTransfer(to, tokenAddress, coinTransfer.amount);
                 }
 
             }
@@ -80,4 +66,5 @@ contract MultiAssetMultiPartyCoinTransferInterpreter is Interpreter {
 
         }
     }
+
 }
