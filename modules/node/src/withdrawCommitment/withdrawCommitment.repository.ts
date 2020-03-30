@@ -1,9 +1,7 @@
 import { MinimalTransaction } from "@connext/types";
-import { bigNumberify } from "ethers/utils";
 import { EntityRepository, Repository } from "typeorm";
 
 import { WithdrawCommitment } from "./withdrawCommitment.entity";
-import { Channel } from "../channel/channel.entity";
 
 export const convertWithdrawToMinimalTransaction = (commitment: WithdrawCommitment) => {
   return {
