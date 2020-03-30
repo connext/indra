@@ -1,7 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
 import { AppIdentity } from "@connext/types";
 import { IsKeccak256Hash, IsEthAddress } from "../util";
-import { Signature } from "ethers/utils";
 import { AppInstance } from "../appInstance/appInstance.entity";
 
 @Entity()
