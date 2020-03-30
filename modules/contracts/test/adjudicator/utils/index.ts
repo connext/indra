@@ -1,4 +1,5 @@
-import { AppIdentity } from "@connext/types";
+import { waffle as buidler } from "@nomiclabs/buidler";
+import { AppIdentity, toBN, ChallengeStatus } from "@connext/types";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import {
@@ -12,6 +13,26 @@ import {
 } from "ethers/utils";
 
 import { use } from "chai";
+import { AddressZero, Zero, HashZero } from "ethers/constants";
+export * from "./context";
+
+// ETH helpers
+export const provider = buidler.provider;
+export const mineBlock = async () => await provider.send("evm_mine", []);
+export const snapshot = async () => await provider.send("evm_snapshot", []);
+export const restore = async (snapshotId: any) => await provider.send("evm_revert", [snapshotId]);
+
+// TODO: Not sure this works correctly/reliably...
+export const moveToBlock = async (blockNumber: BigNumberish) => {
+  const blockNumberBN: BigNumber = toBN(blockNumber);
+  let currentBlockNumberBN: BigNumber = toBN(await provider.getBlockNumber());
+  expect(currentBlockNumberBN).to.be.at.most(blockNumberBN);
+  while (currentBlockNumberBN.lt(blockNumberBN)) {
+    await mineBlock();
+    currentBlockNumberBN = toBN(await provider.getBlockNumber());
+  }
+  expect(currentBlockNumberBN).to.be.equal(blockNumberBN);
+};
 
 use(require("chai-subset"));
 use(solidity);
@@ -32,6 +53,14 @@ export enum ActionType {
 export type AppWithCounterAction = {
   actionType: ActionType,
   increment: BigNumber,
+}
+
+export function encodeState(state: AppWithCounterState) {
+  return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
+}
+
+export function encodeAction(action: AppWithCounterAction) {
+  return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
 }
 
 // TS version of MChallengeRegistryCore::appStateToHash
@@ -65,7 +94,7 @@ export const computeActionHash = (
     ),
   );
 
-export class AppIdentityTestClass {
+export class AppWithCounterClass {
   get identityHash(): string {
     return keccak256(
       defaultAbiCoder.encode(["uint256", "address[]"], [this.channelNonce, this.participants]),
@@ -88,3 +117,11 @@ export class AppIdentityTestClass {
     readonly channelNonce: number,
   ) {}
 }
+
+export const EMPTY_CHALLENGE = {
+  latestSubmitter: AddressZero,
+  versionNumber: Zero,
+  appStateHash: HashZero,
+  status: ChallengeStatus.NO_CHALLENGE,
+  finalizesAt: Zero,
+};
