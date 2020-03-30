@@ -1,6 +1,7 @@
 pragma solidity 0.5.11;
 pragma experimental ABIEncoderV2;
 
+import "./MultisigData.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 
 
@@ -12,14 +13,9 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 /// (b) Requires n-of-n unanimous consent
 /// (c) Does not use on-chain address for signature verification
 /// (d) Uses hash-based instead of nonce-based replay protection
-contract MinimumViableMultisig {
-
-    // Note, this is deliberately kept here so that all delegatecalled contracts can access 0th storage slot
-    mapping(address => uint256) public totalAmountWithdrawn;
+contract MinimumViableMultisig is MultisigData {
 
     using ECDSA for bytes32;
-
-    address masterCopy;
 
     mapping(bytes32 => bool) isExecuted;
 
