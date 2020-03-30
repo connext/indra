@@ -6,10 +6,10 @@ import { One } from "ethers/constants";
 import { keccak256 } from "ethers/utils";
 import * as waffle from "ethereum-waffle";
 
-import { expect, computeActionHash, AppWithCounterState, AppWithCounterAction, snapshot, restore, moveToBlock, encodeState, encodeAction, setupContext, EMPTY_CHALLENGE, provider } from "./utils";
+import { expect, computeActionHash, AppWithCounterState, AppWithCounterAction, snapshot, restore, moveToBlock, encodeState, encodeAction, setupContext, EMPTY_CHALLENGE, provider } from "../utils";
 
-import AppWithAction from "../../build/AppWithAction.json";
-import ChallengeRegistry from "../../build/ChallengeRegistry.json";
+import AppWithAction from "../../../build/AppWithAction.json";
+import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("progressState", () => {
   let appRegistry: Contract;

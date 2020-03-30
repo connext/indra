@@ -1,5 +1,5 @@
 import { CommitmentTypes, ProtocolParams, ProtocolNames, PersistAppType } from "@connext/types";
-import { defaultAbiCoder, keccak256 } from "ethers/utils";
+import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -63,11 +63,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout: timeout.toHexString(),
       identityHash: appIdentityToHash({
         appDefinition,
-        channelNonce: preProtocolStateChannel.numProposedApps + 1,
+        channelNonce: bigNumberify(preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber(),
+        defaultTimeout: timeout.toString(),
       }),
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
@@ -85,11 +85,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const proposedAppInstance = {
       identity: {
         appDefinition,
-        channelNonce: preProtocolStateChannel.numProposedApps + 1,
+        channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber(),
+        defaultTimeout: timeout.toString(),
       },
       hashOfLatestState: keccak256(
         defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
@@ -124,12 +124,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
-    substart = Date.now()
+    substart = Date.now();
 
     // 200ms
     const m2 = yield [IO_SEND_AND_WAIT, m1];
     logTime(log, substart, `Received responder's m2`);
-    substart = Date.now()
+    substart = Date.now();
 
     const {
       customData: { signature: responderSignatureOnInitialState },
@@ -150,7 +150,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    substart = Date.now()
+    substart = Date.now();
 
     // 78 ms(!)
     // will also save the app array into the state channel
@@ -161,7 +161,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
     ];
     logTime(log, substart, `Persisted app instance`);
-    substart = Date.now()
+    substart = Date.now();
 
     // 14 ms
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
@@ -210,11 +210,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
       identityHash: appIdentityToHash({
         appDefinition,
-        channelNonce: preProtocolStateChannel.numProposedApps + 1,
+        channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber(),
+        defaultTimeout: timeout.toString(),
       }),
       timeout: timeout.toHexString(),
       initiatorDeposit: responderDeposit.toHexString(),
@@ -232,11 +232,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const proposedAppInstance = {
       identity: {
         appDefinition,
-        channelNonce: preProtocolStateChannel.numProposedApps + 1,
+        channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber(),
+        defaultTimeout: timeout.toString(),
       },
       hashOfLatestState: keccak256(
         defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
@@ -290,7 +290,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    substart = Date.now()
+    substart = Date.now();
 
     // 98ms
     // will also save the app array into the state channel
@@ -301,7 +301,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
     ];
     logTime(log, substart, `Persisted app instance`);
-    substart = Date.now()
+    substart = Date.now();
 
     // 11ms
     yield [PERSIST_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];

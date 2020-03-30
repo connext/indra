@@ -2,10 +2,10 @@
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 
-import { expect, provider, snapshot, setupContext, AppWithCounterState, AppWithCounterAction, restore } from "./utils";
+import { expect, provider, snapshot, setupContext, AppWithCounterState, AppWithCounterAction, restore } from "../utils";
 
-import AppWithAction from "../../build/AppWithAction.json";
-import ChallengeRegistry from "../../build/ChallengeRegistry.json";
+import AppWithAction from "../../../build/AppWithAction.json";
+import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("setAndProgressState", () => {
 

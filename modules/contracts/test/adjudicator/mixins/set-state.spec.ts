@@ -6,6 +6,8 @@ import {
   toBN,
   sortSignaturesBySignerAddress,
 } from "@connext/types";
+import { signDigest } from "@connext/crypto";
+import { One } from "ethers/constants";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 
@@ -17,12 +19,10 @@ import {
   moveToBlock,
   computeAppChallengeHash,
   AppWithCounterClass,
-} from "./utils";
+} from "../utils";
 
-import AppWithAction from "../../build/AppWithAction.json";
-import ChallengeRegistry from "../../build/ChallengeRegistry.json";
-import { signDigest } from "@connext/crypto";
-import { One } from "ethers/constants";
+import AppWithAction from "../../../build/AppWithAction.json";
+import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("setState", () => {
   let provider = buidler.provider;
