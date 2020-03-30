@@ -5,7 +5,7 @@ import { Wallet, Contract } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
 import { keccak256, BigNumberish } from "ethers/utils";
 
-import { provider, AppWithCounterState, AppWithCounterAction, ActionType, expect, AppWithCounterClass, encodeState, encodeAction, computeAppChallengeHash, computeActionHash, EMPTY_CHALLENGE } from "./index";
+import { provider, AppWithCounterState, AppWithCounterAction, ActionType, expect, AppWithCounterClass, encodeState, encodeAction, computeAppChallengeHash, computeActionHash, EMPTY_CHALLENGE, encodeOutcome } from "./index";
 
 export const setupContext = async (appRegistry: Contract, appDefinition: Contract) => {
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -44,6 +44,11 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
       versionNumber,
       finalizesAt,
     };
+  };
+
+  const getOutcome = async (): Promise<string> => {
+    const outcome = await appRegistry.functions.getOutcome(appInstance.identityHash);
+    return outcome;
   };
 
   const verifyChallenge = async (expected: Partial<AppChallengeBigNumber>) => {
@@ -92,6 +97,16 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
   };
 
   // State Progression methods
+  const setOutcome = async (encodedFinalState?: string): Promise<void> => {
+    await appRegistry.functions.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero);
+  };
+
+  const setOutcomeAndVerify = async (encodedFinalState?: string): Promise<void> => {
+    await appRegistry.functions.setOutcome(appInstance.appIdentity, encodedFinalState || HashZero);
+    const outcome = await getOutcome();
+    expect(outcome).to.eq(encodeOutcome());
+  };
+
   const setState = async (versionNumber: number, appState?: string, timeout: number = ONCHAIN_CHALLENGE_TIMEOUT) => {
     const stateHash = keccak256(appState || HashZero);
     const digest = computeAppChallengeHash(
@@ -221,6 +236,8 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     isDisputable,
     verifySignatures,
     // state progression
+    setOutcome,
+    setOutcomeAndVerify,
     setState,
     progressState,
     progressStateAndVerify,

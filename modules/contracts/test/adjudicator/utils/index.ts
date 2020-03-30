@@ -50,6 +50,12 @@ export enum ActionType {
   ACCEPT_INCREMENT,
 }
 
+export enum TwoPartyFixedOutcome {
+  SEND_TO_ADDR_ONE,
+  SEND_TO_ADDR_TWO,
+  SPLIT_AND_SEND_TO_BOTH_ADDRS
+}
+
 export type AppWithCounterAction = {
   actionType: ActionType,
   increment: BigNumber,
@@ -61,6 +67,10 @@ export function encodeState(state: AppWithCounterState) {
 
 export function encodeAction(action: AppWithCounterAction) {
   return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
+}
+
+export function encodeOutcome() {
+  return defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
 }
 
 // TS version of MChallengeRegistryCore::appStateToHash
