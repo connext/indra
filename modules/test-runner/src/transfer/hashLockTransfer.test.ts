@@ -9,6 +9,7 @@ import {
   IConnextClient,
   ResolveHashLockTransferParameters,
   InstallMessage,
+  delay,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
@@ -64,6 +65,29 @@ describe("HashLock Transfers", () => {
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
+    // receiver app installed
+    // TODO: WHYYYYY NOT WORKINGGGGG
+    // await new Promise(async res => {
+    //   clientB.on("INSTALL_EVENT", async (msg: any) => {
+    //     console.log("msg: ", msg);
+    //     const details = await clientB.getAppInstanceDetails(msg.params.appInstanceId);
+    //     console.log("details: ", details);
+    //     if (details.appInstance.latestState["lockHash"] === lockHash) {
+    //       res();
+    //     }
+    //   });
+
+    //   clientA.conditionalTransfer({
+    //     amount: transfer.amount.toString(),
+    //     conditionType: ConditionalTransferTypes.HashLockTransfer,
+    //     lockHash,
+    //     timelock,
+    //     assetId: transfer.assetId,
+    //     meta: { foo: "bar" },
+    //     recipient: clientB.publicIdentifier,
+    //   } as HashLockTransferParameters);
+    // });
+
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -71,7 +95,10 @@ describe("HashLock Transfers", () => {
       timelock,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
+      recipient: clientB.publicIdentifier,
     } as HashLockTransferParameters);
+
+    await delay(10_000);
 
     const {
       [clientA.freeBalanceAddress]: clientAPostTransferBal,
@@ -79,17 +106,6 @@ describe("HashLock Transfers", () => {
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
-
-    // receiver app installed
-    await new Promise(async res => {
-      clientB.on("INSTALL_EVENT", async (msg: InstallMessage) => {
-        const details = await clientB.getAppInstanceDetails(msg.data.params.appInstanceId);
-        console.log("details: ", details);
-        if (details.appInstance.latestState["lockHash"] === lockHash) {
-          res();
-        }
-      });
-    });
 
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {

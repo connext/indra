@@ -165,16 +165,6 @@ export class AppRegistryService implements OnModuleInit {
           from,
           this.cfCoreService.cfCore.publicIdentifier,
         );
-
-        // install for receiver or error
-        const recipient = proposeInstallParams.meta["recipient"];
-        await this.hashlockTransferService.resolveHashLockTransfer(
-          from,
-          recipient,
-          proposeInstallParams.initialState as HashLockTransferAppState,
-          proposeInstallParams.initiatorDepositTokenAddress,
-          proposeInstallParams.meta,
-        );
         break;
       }
       case HashLockTransferAppName: {
@@ -184,6 +174,17 @@ export class AppRegistryService implements OnModuleInit {
           blockNumber,
           from,
           this.cfCoreService.cfCore.publicIdentifier,
+        );
+
+        // install for receiver or error
+        // https://github.com/ConnextProject/indra/issues/942
+        const recipient = proposeInstallParams.meta["recipient"];
+        await this.hashlockTransferService.resolveHashLockTransfer(
+          from,
+          recipient,
+          proposeInstallParams.initialState as HashLockTransferAppState,
+          proposeInstallParams.initiatorDepositTokenAddress,
+          proposeInstallParams.meta,
         );
         break;
       }
