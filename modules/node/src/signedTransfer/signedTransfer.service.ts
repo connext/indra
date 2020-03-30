@@ -22,7 +22,6 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 
 const appStatusesToSignedTransferStatus = (
-  currentBlockNumber: number,
   senderApp: AppInstance<SimpleSignedTransferAppState>,
   receiverApp?: AppInstance<SimpleSignedTransferAppState>,
 ): SignedTransferStatus | undefined => {
@@ -197,8 +196,7 @@ export class SignedTransferService {
     const senderApp = await this.findSenderAppByPaymentId(paymentId);
     // node is sender
     const receiverApp = await this.findReceiverAppByPaymentId(paymentId);
-    const block = await this.configService.getEthProvider().getBlockNumber();
-    const status = appStatusesToSignedTransferStatus(block, senderApp, receiverApp);
+    const status = appStatusesToSignedTransferStatus(senderApp, receiverApp);
     return { senderApp, receiverApp, status };
   }
 

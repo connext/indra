@@ -205,6 +205,12 @@
       "creationCodeHash": "0x0761b233e19652b211a1ef47b0b1d2dd738b546a9c9cc712cbb9d7f685c782c1",
       "runtimeCodeHash": "0xd79f773a16e7b6459800341854346be7a82d3a694209fe8e87a5406f5413387e",
       "txHash": "0xdc3dc0728d95b57912fbbf4dd1a2c2a614798dd50a394e65d551faa0fc3ddac8"
+    },
+    "SimpleSignedTransferApp": {
+      "address": "0x0fB33d41df2eBCC9EB48c22f9f857B56538c63d5",
+      "creationCodeHash": "0xe70b85eb547f95a0e41cd0d188a52b836febeadbab6476d0897aa753ed54b11f",
+      "runtimeCodeHash": "0x7f018e4b1d7158a49809437b518c4ecd7c37d9d080d9b9235f5bb7fa47cd9018",
+      "txHash": "0x9384e36bd5b2e9cd75af33cdfe3fbfe6f11d57e0c9a30641efc714172e412d01"
     }
   },
   "6": {

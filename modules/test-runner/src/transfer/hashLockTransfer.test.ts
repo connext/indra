@@ -22,6 +22,7 @@ import {
   fundChannel,
   TOKEN_AMOUNT,
   env,
+  requestCollateral,
 } from "../util";
 
 describe("HashLock Transfers", () => {
@@ -255,5 +256,74 @@ describe("HashLock Transfers", () => {
         preImage,
       } as ResolveHashLockTransferParameters),
     ).to.be.rejectedWith(/Cannot resolve hash lock transfer with expired timelock/);
+  });
+
+  it("Experimental: Average latency of 5 signed transfers with Eth", async () => {
+    let runTime: number[] = [];
+    let sum = 0;
+    const numberOfRuns = 5;
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
+    await requestCollateral(clientB, transfer.assetId);
+
+    for (let i = 0; i < numberOfRuns; i++) {
+      const {
+        [clientA.freeBalanceAddress]: clientAPreBal,
+        [clientA.nodeFreeBalanceAddress]: nodeAPreBal,
+      } = await clientA.getFreeBalance(transfer.assetId);
+      const { 
+        [clientB.freeBalanceAddress]: clientBPreBal,
+        [clientB.nodeFreeBalanceAddress]: nodeBPreBal, 
+      } = await clientB.getFreeBalance(
+        transfer.assetId,
+      );
+      
+      const preImage = createRandom32ByteHexString();
+      const timelock = ((await provider.getBlockNumber()) + 5000).toString();
+      const lockHash = soliditySha256(["bytes32"], [preImage]);
+
+      // Start timer
+      const start = Date.now();
+
+      await clientA.conditionalTransfer({
+        amount: transfer.amount.toString(),
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        lockHash,
+        timelock,
+        assetId: transfer.assetId,
+        meta: { foo: "bar" },
+      } as HashLockTransferParameters);
+  
+      await new Promise(async res => {
+        clientA.once("UNINSTALL_EVENT", async data => {
+          res();
+        });
+        await clientB.resolveCondition({
+          conditionType: ConditionalTransferTypes.HashLockTransfer,
+          preImage,
+        } as ResolveHashLockTransferParameters);
+      });
+
+      // Stop timer and add to sum
+      runTime[i] = Date.now() - start;
+      console.log(`Run: ${i}, Runtime: ${runTime[i]}`)
+      sum = sum + runTime[i];
+
+      const {
+        [clientA.freeBalanceAddress]: clientAPostBal,
+        [clientA.nodeFreeBalanceAddress]: nodeAPostBal,
+      } = await clientA.getFreeBalance(transfer.assetId);
+      const { 
+        [clientB.freeBalanceAddress]: clientBPostBal,
+        [clientB.nodeFreeBalanceAddress]: nodeBPostBal, 
+      } = await clientB.getFreeBalance(
+        transfer.assetId,
+      );
+      expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
+      expect(nodeAPostBal).to.eq(nodeAPreBal.add(transfer.amount));
+      expect(nodeBPostBal).to.eq(nodeBPreBal.sub(transfer.amount));
+      expect(clientBPostBal).to.eq(clientBPreBal.add(transfer.amount));
+    }
+    console.log(`Average = ${sum/numberOfRuns} ms`)
   });
 });

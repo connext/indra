@@ -46,11 +46,12 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const setupCommitment = getSetupCommitment(context, stateChannel);
+    const setupCommitmentHash = setupCommitment.hashToSign();
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 32 ms
-    const initiatorSignature = yield [OP_SIGN, setupCommitment];
+    const initiatorSignature = yield [OP_SIGN, setupCommitmentHash];
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
@@ -75,11 +76,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 34 ms
     substart = Date.now();
-    await assertIsValidSignature(
-      xkeyKthAddress(responderXpub, 0),
-      setupCommitment,
-      responderSignature,
-    );
+    await assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitmentHash, responderSignature);
     logTime(log, substart, `Verified responder's sig`);
 
     setupCommitment.signatures = [responderSignature, initiatorSignature];
@@ -119,20 +116,17 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const setupCommitment = getSetupCommitment(context, stateChannel);
+    const setupCommitmentHash = setupCommitment.hashToSign();
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
     substart = Date.now();
-    await assertIsValidSignature(
-      xkeyKthAddress(initiatorXpub, 0),
-      setupCommitment,
-      initiatorSignature,
-    );
+    await assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitmentHash, initiatorSignature);
     logTime(log, substart, `Verified initator's sig`);
 
     // 49 ms
-    const responderSignature = yield [OP_SIGN, setupCommitment];
+    const responderSignature = yield [OP_SIGN, setupCommitmentHash];
 
     setupCommitment.signatures = [responderSignature, initiatorSignature];
 

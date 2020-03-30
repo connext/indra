@@ -1,4 +1,4 @@
-import { delay, EthereumCommitment, recoverAddressWithEthers } from "@connext/types";
+import { delay, recoverAddressWithEthers, ILoggerService } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 
@@ -17,24 +17,24 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
+import { logTime } from "../utils";
 
 export async function assertIsValidSignature(
   expectedSigner: string,
-  commitment?: EthereumCommitment,
+  commitmentHash?: string,
   signature?: string,
 ): Promise<void> {
-  if (typeof commitment === "undefined") {
+  if (typeof commitmentHash === "undefined") {
     throw new Error("assertIsValidSignature received an undefined commitment");
   }
   if (typeof signature === "undefined") {
     throw new Error("assertIsValidSignature received an undefined signature");
   }
-  const hash = commitment.hashToSign();
   // recoverAddress: 83 ms, hashToSign: 7 ms
-  const signer = await recoverAddressWithEthers(hash, signature);
+  const signer = await recoverAddressWithEthers(commitmentHash, signature);
   if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
-      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${hash}.`,
+      `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}.`,
     );
   }
 }
@@ -50,11 +50,16 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   provider: JsonRpcProvider,
   encodedOutcomeOverride: string = "",
   blockNumberToUseIfNecessary?: number,
+  log?: ILoggerService,
 ): Promise<TokenIndexedCoinTransferMap> {
   const { outcomeType } = appInstance;
 
+  let checkpoint = Date.now();
   const encodedOutcome =
     encodedOutcomeOverride || (await appInstance.computeOutcomeWithCurrentState(provider));
+
+  if(log)
+    logTime(log, checkpoint, `Computed outcome with current state`)
 
   // FIXME: This is a very sketchy way of handling this edge-case
   if (appInstance.state["threshold"] !== undefined) {
@@ -77,6 +82,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
       return handleSingleAssetTwoPartyCoinTransfer(
         encodedOutcome,
         appInstance.singleAssetTwoPartyCoinTransferInterpreterParams,
+        log
       );
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
@@ -187,9 +193,11 @@ function handleMultiAssetMultiPartyCoinTransfer(
 function handleSingleAssetTwoPartyCoinTransfer(
   encodedOutcome: string,
   interpreterParams: SingleAssetTwoPartyCoinTransferInterpreterParams,
+  log?: ILoggerService,
 ): TokenIndexedCoinTransferMap {
   const { tokenAddress } = interpreterParams;
 
+  // 0ms
   const [
     { to: to1, amount: amount1 },
     { to: to2, amount: amount2 },

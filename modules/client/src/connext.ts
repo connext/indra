@@ -94,6 +94,7 @@ export class ConnextClient implements IConnextClient {
   public network: Network;
   public node: INodeApiClient;
   public nodePublicIdentifier: string;
+  public nodeFreeBalanceAddress: string;
   public publicIdentifier: string;
   public signerAddress: Address;
   public store: IClientStore;
@@ -134,6 +135,7 @@ export class ConnextClient implements IConnextClient {
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
+    this.nodeFreeBalanceAddress = xpubToAddress(this.nodePublicIdentifier);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -368,15 +370,12 @@ export class ConnextClient implements IConnextClient {
    * async payments are the default transfer.
    */
   public transfer = async (params: TransferParameters): Promise<LinkedTransferResponse> => {
-    if (!params.paymentId) {
-      params.paymentId = createRandom32ByteHexString();
-    }
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
-      assetId: params.assetId,
+      assetId: params.assetId || AddressZero,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       meta: params.meta,
-      paymentId: params.paymentId,
+      paymentId: params.paymentId || createRandom32ByteHexString(),
       preImage: createRandom32ByteHexString(),
       recipient: params.recipient,
     }) as Promise<LinkedTransferResponse>;
@@ -620,7 +619,7 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[xpubToAddress(this.nodePublicIdentifier)] = new BigNumber(0);
+        obj[this.nodeFreeBalanceAddress] = new BigNumber(0);
         obj[this.freeBalanceAddress] = new BigNumber(0);
         return obj;
       }
