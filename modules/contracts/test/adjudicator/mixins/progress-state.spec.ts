@@ -8,6 +8,7 @@ import * as waffle from "ethereum-waffle";
 import { expect, computeActionHash, AppWithCounterState, AppWithCounterAction, snapshot, restore, moveToBlock, encodeState, encodeAction, setupContext, EMPTY_CHALLENGE, provider } from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
+import AppApplyActionFails from "../../../build/AppApplyActionFails.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("progressState", () => {
@@ -129,8 +130,20 @@ describe("progressState", () => {
     );
   });
 
-  it.skip("progressState should fail if apply action fails", async () => {
+  it("progressState should fail if apply action fails", async () => {
     // TODO: how to make sure the action is invalid?
+    const failingApp = await waffle.deployContract(wallet, AppApplyActionFails);
+    const context = await setupContext(appRegistry, failingApp);
+
+    await context["setStateAndVerify"](1, encodeState(context["state0"]));
+
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    expect(await context["isProgressable"]()).to.be.true;
+
+    await expect(context["progressStateAndVerify"](context["state0"], context["action"])).to.be.revertedWith(
+      "applyAction fails for this app",
+    );
+    
   });
 
 });

@@ -5,6 +5,7 @@ import { Contract, Wallet } from "ethers";
 import { setupContext, snapshot, provider, restore, AppWithCounterState, moveToBlock, expect, encodeState } from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
+import AppComputeOutcomeFails from "../../../build/AppComputeOutcomeFails.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("setOutcome", () => {
@@ -92,5 +93,24 @@ describe("setOutcome", () => {
     await expect(setOutcome(encodeState(state0))).to.be.revertedWith("setOutcome can only be called after a challenge has been finalized");
   });
 
-  it.skip("fails if compute outcome fails", async () => {});
+  it("fails if compute outcome fails", async () => {
+    const failingApp = await waffle.deployContract(wallet, AppComputeOutcomeFails);
+    const context = await setupContext(appRegistry, failingApp);
+
+    await context["setAndProgressStateAndVerify"](
+      1, // nonce
+      context["state0"], // state
+      context["action"], // action
+      undefined, // timeout
+      context["bob"], // turn taker
+    );
+
+    // must have passed:
+    // appChallenge.finalizesAt
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+
+    expect(await context["isStateFinalized"]()).to.be.true;
+
+    await expect(context["setOutcomeAndVerify"](encodeState(context["state1"]))).to.be.revertedWith("computeOutcome always fails for this app");
+  });
 });
