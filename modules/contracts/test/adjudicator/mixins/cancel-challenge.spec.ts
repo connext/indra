@@ -1,7 +1,7 @@
 /* global before */
 
 // TODO: merge cancel PR!
-describe.skip("setOutcome", () => {
+describe.skip("cancelChallenge", () => {
   it("works", async () => {});
 
   it("fails if incorrect sigs", async () => {});
