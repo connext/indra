@@ -61,8 +61,8 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev staging release
 dev: client database indra-proxy node test-runner-js
-staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging
-release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release
+staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging webserver
+release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release webserver
 
 start: start-daicard
 
@@ -283,6 +283,12 @@ test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops 
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+webserver: daicard-prod dashboard-prod $(shell find ops/webserver $(find_options))
+	$(log_start)
+	docker build --file ops/webserver/nginx.dockerfile $(cache_from) --tag $(project)_webserver .
+	docker tag $(project)_webserver $(project)_webserver:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################
