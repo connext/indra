@@ -52,7 +52,7 @@ const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
  * and trigger the InstallCommitment on-chain to resolve that app and verify
  * the balances have been updated on-chain.
  */
-describe("Scenario: install AppInstance, set state, put on-chain", () => {
+describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
   let context: Context;
   let wallet: Wallet;
   let network: NetworkContextForTestSuite;
