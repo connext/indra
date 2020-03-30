@@ -6,7 +6,6 @@ import {
   HashLockTransferAppName,
   HashLockTransferAppState,
   HashLockTransferStatus,
-  ResolveHashLockTransferResponse,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
@@ -107,12 +106,12 @@ export class HashLockTransferService {
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
-    const freeBal = await this.cfCoreService.getFreeBalance(
+    const receiverFreeBal = await this.cfCoreService.getFreeBalance(
       receiverPublicIdentifier,
       receiverChannel.multisigAddress,
       assetId,
     );
-    if (freeBal[freeBalanceAddr].lt(amount)) {
+    if (receiverFreeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {

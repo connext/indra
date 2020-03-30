@@ -8,8 +8,6 @@ import {
   HashLockTransferStatus,
   IConnextClient,
   ResolveHashLockTransferParameters,
-  InstallMessage,
-  delay,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
@@ -58,47 +56,29 @@ describe("HashLock Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it.only("happy case: client A hashlock transfers eth to client B through node", async () => {
+  it("happy case: client A hashlock transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = createRandom32ByteHexString();
     const timelock = ((await provider.getBlockNumber()) + 5000).toString();
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
-    // receiver app installed
-    // TODO: WHYYYYY NOT WORKINGGGGG
-    // await new Promise(async res => {
-    //   clientB.on("INSTALL_EVENT", async (msg: any) => {
-    //     console.log("msg: ", msg);
-    //     const details = await clientB.getAppInstanceDetails(msg.params.appInstanceId);
-    //     console.log("details: ", details);
-    //     if (details.appInstance.latestState["lockHash"] === lockHash) {
-    //       res();
-    //     }
-    //   });
-
-    //   clientA.conditionalTransfer({
-    //     amount: transfer.amount.toString(),
-    //     conditionType: ConditionalTransferTypes.HashLockTransfer,
-    //     lockHash,
-    //     timelock,
-    //     assetId: transfer.assetId,
-    //     meta: { foo: "bar" },
-    //     recipient: clientB.publicIdentifier,
-    //   } as HashLockTransferParameters);
-    // });
-
-    await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
-      conditionType: ConditionalTransferTypes.HashLockTransfer,
-      lockHash,
-      timelock,
-      assetId: transfer.assetId,
-      meta: { foo: "bar" },
-      recipient: clientB.publicIdentifier,
-    } as HashLockTransferParameters);
-
-    await delay(10_000);
+    // both sender + receiver apps installed, sender took action
+    await Promise.all([
+      clientA.conditionalTransfer({
+        amount: transfer.amount.toString(),
+        conditionType: ConditionalTransferTypes.HashLockTransfer,
+        lockHash,
+        timelock,
+        assetId: transfer.assetId,
+        meta: { foo: "bar" },
+        recipient: clientB.publicIdentifier,
+      } as HashLockTransferParameters),
+      new Promise(res => {
+        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
+        clientB.messaging.subscribe(subject, res);
+      }),
+    ]);
 
     const {
       [clientA.freeBalanceAddress]: clientAPostTransferBal,
