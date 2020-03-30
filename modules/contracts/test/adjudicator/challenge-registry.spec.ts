@@ -6,9 +6,12 @@ describe("setOutcome", () => {
 
   it("Can successfully play state dispute game using `setState`, continue onchain with `progressState` and `setOutcome`", async () => {});
 
-  it("Can cancel challenge at `setState` phase", async () => {});
+  // TODO: merge cancel PR!
+  it.skip("Can cancel challenge at `setState` phase", async () => {});
 
-  it("Can cancel challenge at `progressState` phase", async () => {});
+  // TODO: merge cancel PR!
+  it.skip("Can cancel challenge at `progressState` phase", async () => {});
 
-  it("Cannot cancel challenge after outcome set", async () => {});
+  // TODO: merge cancel PR!
+  it.skip("Cannot cancel challenge after outcome set", async () => {});
 });
