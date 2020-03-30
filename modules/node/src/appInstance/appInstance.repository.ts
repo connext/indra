@@ -1,7 +1,6 @@
 import {
   AppInstanceJson,
   AppInstanceProposal,
-  bigNumberifyJson,
   HashLockTransferAppName,
   OutcomeType,
   SimpleLinkedTransferAppName,
@@ -13,8 +12,8 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
 import { bigNumberify } from "ethers/utils";
-import { Zero, AddressZero, HashZero } from "ethers/constants";
-import { safeJsonParse, sortAddresses, xkeyKthAddress } from "../util";
+import { HashZero } from "ethers/constants";
+import { safeJsonParse, sortAddresses } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
@@ -123,7 +122,6 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
 export class AppInstanceRepository extends Repository<AppInstance> {
   findByIdentityHash(identityHash: string): Promise<AppInstance | undefined> {
     return this.findOne({
-      // @ts-ignore TS2589: Type instantiation is excessively deep and possibly infinite.
       where: { identityHash },
       relations: ["channel"],
     });
@@ -147,12 +145,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       )
       .where("app_instance.type = :type", { type })
       .getMany();
-    // return this.findOne({
-    //   where: {
-    //     type,
-    //   },
-    //   relations: ["channel"],
-    // });
   }
 
   async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
@@ -170,9 +162,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
     const app = await this.findByIdentityHash(appInstanceId);
-    if (!app) {
-      return undefined;
-    }
     return convertAppToInstanceJSON(app, app.channel);
   }
 
