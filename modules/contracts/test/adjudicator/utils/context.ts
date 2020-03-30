@@ -126,6 +126,16 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     });
   };
 
+  const setStateAndVerify = async (versionNumber: number, appState?: string, timeout: number = ONCHAIN_CHALLENGE_TIMEOUT) => {
+    await setState(versionNumber, appState, timeout);
+    await verifyChallenge({
+      latestSubmitter: wallet.address,
+      versionNumber: toBN(versionNumber),
+      appStateHash: keccak256(appState || HashZero),
+      status: ChallengeStatus.IN_DISPUTE,
+    });
+  };
+
   const progressState = async (state: AppWithCounterState, action: AppWithCounterAction, actionSig: string) => {
     await appRegistry.functions.progressState(
       appInstance.appIdentity,
@@ -201,11 +211,10 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
         ? state.counter
         : state.counter.add(action.increment),
     };
-    const expected: AppChallengeBigNumber = {
+    const expected = {
       latestSubmitter: wallet.address,
       appStateHash: keccak256(encodeState(resultingState)),
       versionNumber: existingChallenge.versionNumber.add(One),
-      finalizesAt: existingChallenge.finalizesAt.add(appInstance.defaultTimeout),
       status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
     };
     await progressState(state, action, signature);
@@ -239,6 +248,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     setOutcome,
     setOutcomeAndVerify,
     setState,
+    setStateAndVerify,
     progressState,
     progressStateAndVerify,
     setAndProgressState,

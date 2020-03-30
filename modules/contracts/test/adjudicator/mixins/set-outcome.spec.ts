@@ -7,7 +7,7 @@ import { setupContext, snapshot, provider, restore, AppWithCounterState, moveToB
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
-describe.only("setOutcome", () => {
+describe("setOutcome", () => {
 
   let appRegistry: Contract;
   let appDefinition: Contract;

@@ -1,14 +1,15 @@
 /* global before */
 import * as waffle from "ethereum-waffle";
 
-import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "../utils";
-
-import AppWithAction from "../../../build/AppWithAction.json";
-import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 import { Contract, Wallet } from "ethers";
 import { One } from "ethers/constants";
 import { ChallengeStatus, AppChallengeBigNumber, toBN } from "@connext/types";
 import { keccak256 } from "ethers/utils";
+
+import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "../utils";
+
+import AppWithAction from "../../../build/AppWithAction.json";
+import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("MChallengeRegistryCore", () => {
 
