@@ -14,10 +14,7 @@ import {
 export class MemoryStorage implements IClientStore {
   public channels: Map<string, StateChannelJSON> = new Map();
   private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
-  private conditionalTxCommitment: Map<
-    string,
-    ConditionalTransactionCommitmentJSON
-  > = new Map();
+  private conditionalTxCommitment: Map<string, ConditionalTransactionCommitmentJSON> = new Map();
   private withdrawals: Map<string, MinimalTransaction> = new Map();
   private proposedApps: Map<string, AppInstanceProposal> = new Map();
   private appInstances: Map<string, AppInstanceJson> = new Map();
@@ -52,6 +49,7 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve({
       ...this.channels.get(multisigAddress),
       schemaVersion: this.schemaVersion,
+      // TODO: this is broken, does not scope to current multisig
       appInstances: [...this.appInstances.entries()],
       proposedAppInstances: [...this.proposedApps.entries()],
       freeBalanceAppInstance: this.freeBalances.get(multisigAddress),
@@ -59,22 +57,24 @@ export class MemoryStorage implements IClientStore {
   }
 
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
-    return Promise.resolve([...this.channels.values()].find(
-      channel => channel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString(),
-    ));
+    return Promise.resolve(
+      [...this.channels.values()].find(
+        channel => channel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString(),
+      ),
+    );
   }
 
-  getStateChannelByAppInstanceId(
-    appInstanceId: string,
-  ): Promise<StateChannelJSON | undefined> {
-    return Promise.resolve([...this.channels.values()].find(channel => {
-      return (
-        channel.proposedAppInstances.find(([app]) => app === appInstanceId) ||
-        channel.appInstances.find(([app]) => app === appInstanceId) ||
-        (channel.freeBalanceAppInstance &&
-          channel.freeBalanceAppInstance.identityHash === appInstanceId)
-      );
-    }));
+  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined> {
+    return Promise.resolve(
+      [...this.channels.values()].find(channel => {
+        return (
+          channel.proposedAppInstances.find(([app]) => app === appInstanceId) ||
+          channel.appInstances.find(([app]) => app === appInstanceId) ||
+          (channel.freeBalanceAppInstance &&
+            channel.freeBalanceAppInstance.identityHash === appInstanceId)
+        );
+      }),
+    );
   }
 
   createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
@@ -96,12 +96,17 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve(this.appInstances.get(appInstanceId));
   }
 
-  createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+  createAppInstance(
+    multisigAddress: string,
+    appInstance: AppInstanceJson,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
     const channel = this.getChannelOrThrow(multisigAddress);
     channel.appInstances.push([appInstance.identityHash, appInstance]);
     this.channels.set(channel.multisigAddress, channel);
     // add app
     this.appInstances.set(appInstance.identityHash, appInstance);
+    this.freeBalances.set(multisigAddress, freeBalanceAppInstance);
     return Promise.resolve();
   }
 
@@ -117,11 +122,16 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve();
   }
 
-  removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+  removeAppInstance(
+    multisigAddress: string,
+    appInstanceId: string,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
     const channel = this.getChannelOrThrow(multisigAddress);
     channel.appInstances.filter(([id]) => id !== appInstanceId);
     this.channels.set(channel.multisigAddress, channel);
     this.appInstances.delete(appInstanceId);
+    this.freeBalances.set(multisigAddress, freeBalanceAppInstance);
     return Promise.resolve();
   }
 
@@ -132,7 +142,11 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve(this.proposedApps.get(appInstanceId));
   }
 
-  createAppProposal(multisigAddress: string, proposal: AppInstanceProposal, numProposedApps: number): Promise<void> {
+  createAppProposal(
+    multisigAddress: string,
+    proposal: AppInstanceProposal,
+    numProposedApps: number,
+  ): Promise<void> {
     const channel = this.getChannelOrThrow(multisigAddress);
     channel.proposedAppInstances.push([proposal.identityHash, proposal]);
     this.channels.set(channel.multisigAddress, {
@@ -174,26 +188,19 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve();
   }
 
-  getSetupCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
+  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     if (!this.setupCommitments.has(multisigAddress)) {
       return Promise.resolve(undefined);
     }
     return Promise.resolve(this.setupCommitments.get(multisigAddress));
   }
 
-  createSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
+  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void> {
     this.setupCommitments.set(multisigAddress, commitment);
     return Promise.resolve();
   }
 
-  getSetStateCommitment(
-    appInstanceId: string,
-  ): Promise<SetStateCommitmentJSON | undefined> {
+  getSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {
     if (!this.setStateCommitments.has(appInstanceId)) {
       return Promise.resolve(undefined);
     }
@@ -245,9 +252,7 @@ export class MemoryStorage implements IClientStore {
     return this.createConditionalTransactionCommitment(appInstanceId, commitment);
   }
 
-  getWithdrawalCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
+  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     if (!this.withdrawals.has(multisigAddress)) {
       return Promise.resolve(undefined);
     }

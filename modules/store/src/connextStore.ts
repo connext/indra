@@ -163,14 +163,6 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getFreeBalance(multisigAddress);
   }
 
-  createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    return this.internalStore.createFreeBalance(multisigAddress, freeBalance);
-  }
-
-  updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    return this.internalStore.updateFreeBalance(multisigAddress, freeBalance);
-  }
-
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return this.internalStore.getSetupCommitment(multisigAddress);
   }
