@@ -90,31 +90,80 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     );
   };
 
+  const setAndProgressStateAndVerify = async (versionNumber: number, state: AppWithCounterState, action: AppWithCounterAction, timeout: number = 0, turnTaker: Wallet = bob) => {
+    await setAndProgressState(versionNumber, state, action, timeout, turnTaker);
+    const resultingState: AppWithCounterState = {
+      counter: action.actionType === ActionType.ACCEPT_INCREMENT
+        ? state.counter
+        : state.counter.add(action.increment),
+    };
+    await verifyChallenge({
+      latestSubmitter: wallet.address,
+      appStateHash: keccak256(encodeState(resultingState)),
+      versionNumber: One.add(versionNumber),
+      status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+    });
+    expect(await isProgressable()).to.be.true;
+  };
+
+  const setAndProgressState = async (versionNumber: number, state: AppWithCounterState, action: AppWithCounterAction, timeout: number = 0, turnTaker: Wallet = bob) => {
+    const stateHash = keccak256(encodeState(state));
+    const stateDigest = computeAppChallengeHash(
+      appInstance.identityHash,
+      stateHash,
+      versionNumber,
+      timeout,
+    );
+    const actionDigest = computeActionHash(
+      turnTaker.address,
+      stateHash,
+      encodeAction(action),
+      versionNumber,
+    );
+    await appRegistry.functions.setAndProgressState(
+      appInstance.appIdentity,
+      {
+        versionNumber,
+        appStateHash: stateHash,
+        timeout,
+        signatures: await sortSignaturesBySignerAddress(stateDigest, [
+          await signDigest(alice.privateKey, stateDigest),
+          await signDigest(bob.privateKey, stateDigest),
+        ]),
+      },
+      encodeState(state),
+      {
+        encodedAction: encodeAction(action),
+        signature: await signDigest(turnTaker.privateKey, actionDigest),
+      },
+    );
+  };
+
   const progressStateAndVerify = async (state: AppWithCounterState, action: AppWithCounterAction, signer: Wallet = bob) => {
     const existingChallenge = await getChallenge();
-      const thingToSign = computeActionHash(
-        signer.address,
-        keccak256(encodeState(state)),
-        encodeAction(action),
-        existingChallenge.versionNumber.toNumber(),
-      );
-      const signature = await signDigest(signer.privateKey, thingToSign);
-      expect(await isProgressable()).to.be.true;
-      const resultingState: AppWithCounterState = {
-        counter: action.actionType === ActionType.ACCEPT_INCREMENT
-          ? state.counter
-          : state.counter.add(action.increment),
-      };
-      const expected: AppChallengeBigNumber = {
-        latestSubmitter: wallet.address,
-        appStateHash: keccak256(encodeState(resultingState)),
-        versionNumber: existingChallenge.versionNumber.add(One),
-        finalizesAt: existingChallenge.finalizesAt.add(appInstance.defaultTimeout),
-        status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
-      };
-      await progressState(state, action, signature);
-      await verifyChallenge(expected);
-      expect(await isProgressable()).to.be.true;
+    const thingToSign = computeActionHash(
+      signer.address,
+      keccak256(encodeState(state)),
+      encodeAction(action),
+      existingChallenge.versionNumber.toNumber(),
+    );
+    const signature = await signDigest(signer.privateKey, thingToSign);
+    expect(await isProgressable()).to.be.true;
+    const resultingState: AppWithCounterState = {
+      counter: action.actionType === ActionType.ACCEPT_INCREMENT
+        ? state.counter
+        : state.counter.add(action.increment),
+    };
+    const expected: AppChallengeBigNumber = {
+      latestSubmitter: wallet.address,
+      appStateHash: keccak256(encodeState(resultingState)),
+      versionNumber: existingChallenge.versionNumber.add(One),
+      finalizesAt: existingChallenge.finalizesAt.add(appInstance.defaultTimeout),
+      status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+    };
+    await progressState(state, action, signature);
+    await verifyChallenge(expected);
+    expect(await isProgressable()).to.be.true;
   };
 
   return {
@@ -139,5 +188,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     setState,
     progressState,
     progressStateAndVerify,
+    setAndProgressState,
+    setAndProgressStateAndVerify,
   };
 };
