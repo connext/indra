@@ -3,13 +3,13 @@
 # Set default email & domain name
 domain="${DOMAINNAME:-localhost}"
 email="${EMAIL:-noreply@gmail.com}"
-eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
-messaging_url="${MESSAGING_URL:-http://nats:4221}"
-node_url="${NODE_URL:-http://node:8080}"
+ETH_RPC_URL="${ETH_RPC_URL:-http://ethprovider:8545}"
+MESSAGING_URL="${MESSAGING_URL:-http://nats:4221}"
 mode="${MODE:-dev}"
-ui_url="${UI_URL:-$messaging_url}"
+NODE_URL="${NODE_URL:-http://node:8080}"
+WEBSERVER_URL="${WEBSERVER_URL:-http://webserver:80}"
 
-echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url ui=$ui_url mode=$mode node_url=$node_url"
+echo "domain=$domain mode=$mode email=$email eth=$ETH_RPC_URL messaging=$MESSAGING_URL ui=$WEBSERVER_URL node=$NODE_URL"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -24,27 +24,27 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-echo "waiting for ${eth_rpc_url#*://}..."
-bash wait_for.sh -t 60 ${eth_rpc_url#*://} 2> /dev/null
-while ! curl -s $eth_rpc_url > /dev/null
+echo "waiting for ${ETH_RPC_URL#*://}..."
+bash wait_for.sh -t 60 ${ETH_RPC_URL#*://} 2> /dev/null
+while ! curl -s $ETH_RPC_URL > /dev/null
 do sleep 2
 done
 
-echo "waiting for ${messaging_url#*://}..."
-bash wait_for.sh -t 60 ${messaging_url#*://} 2> /dev/null
+echo "waiting for ${MESSAGING_URL#*://}..."
+bash wait_for.sh -t 60 ${MESSAGING_URL#*://} 2> /dev/null
 
-echo "waiting for ${node_url#*://}..."
-bash wait_for.sh -t 60 ${node_url#*://} 2> /dev/null
-while ! curl -s $node_url > /dev/null
+echo "waiting for ${NODE_URL#*://}..."
+bash wait_for.sh -t 60 ${NODE_URL#*://} 2> /dev/null
+while ! curl -s $NODE_URL > /dev/null
 do sleep 2
 done
 
 if [[ "$mode" == "dev" ]]
 then
-  echo "waiting for ${ui_url#*://}..."
-  bash wait_for.sh -t 60 ${ui_url#*://} 2> /dev/null
+  echo "waiting for ${WEBSERVER_URL#*://}..."
+  bash wait_for.sh -t 60 ${WEBSERVER_URL#*://} 2> /dev/null
   # Do a more thorough check to ensure the dashboard is online
-  while ! curl -s $ui_url > /dev/null
+  while ! curl -s $WEBSERVER_URL > /dev/null
   do sleep 2
   done
 fi
@@ -58,7 +58,8 @@ kill "$loading_pid" && pkill nc
 letsencrypt=/etc/letsencrypt/live
 devcerts=$letsencrypt/localhost
 mkdir -p $devcerts
-mkdir -p /etc/certs
+mkdir -p /etc/ssl/certs
+mkdir -p /etc/ssl/private
 mkdir -p /var/www/letsencrypt
 
 if [[ "$domain" == "localhost" && ! -f "$devcerts/privkey.pem" ]]
@@ -75,15 +76,15 @@ then
 fi
 
 echo "Using certs for $domain"
-ln -sf $letsencrypt/$domain/privkey.pem /etc/certs/privkey.pem
-ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
+ln -sf $letsencrypt/$domain/fullchain.pem /etc/ssl/certs/fullchain.pem
+ln -sf $letsencrypt/$domain/privkey.pem /etc/ssl/private/privkey.pem
 
-# Hack way to implement variables in the nginx.conf file
-sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$UI_URL|'"$ui_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$ETH_RPC_URL|'"$eth_rpc_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$MESSAGING_URL|'"$messaging_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$NODE_URL|'"$node_url"'|' /etc/nginx/nginx.conf
+# Hack way to implement variables in the haproxy.conf file
+sed -i 's/$hostname/'"$domain"'/' /root/haproxy.conf
+sed -i 's|$WEBSERVER_URL|'"$WEBSERVER_URL"'|' /root/haproxy.conf
+sed -i 's|$ETH_RPC_URL|'"$ETH_RPC_URL"'|' /root/haproxy.conf
+sed -i 's|$MESSAGING_URL|'"$MESSAGING_URL"'|' /root/haproxy.conf
+sed -i 's|$NODE_URL|'"$NODE_URL"'|' /root/haproxy.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
@@ -106,5 +107,5 @@ fi
 
 sleep 3 # give renewcerts a sec to do it's first check
 
-echo "Entrypoint finished, executing nginx..."; echo
-exec nginx
+echo "Entrypoint finished, executing haproxy..."; echo
+exec haproxy -f haproxy.cfg

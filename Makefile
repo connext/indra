@@ -40,9 +40,9 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 
 default: dev
 all: dev staging release
-dev: client database indra-proxy node test-runner
-staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging webserver
-release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release webserver
+dev: proxy node test-runner
+staging: database ethprovider proxy-daicard proxy node-staging test-runner-staging webserver
+release: database ethprovider proxy-daicard proxy node-release test-runner-release webserver
 
 start: start-daicard
 
@@ -194,12 +194,6 @@ watch-node: node
 ########################################
 # Build Docker Images
 
-daicard-proxy: $(shell find ops/proxy $(find_options))
-	$(log_start)
-	docker build --file ops/proxy/daicard/prod.dockerfile $(image_cache) --tag daicard_proxy .
-	docker tag daicard_proxy daicard_proxy:$(commit)
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
 database: $(shell find ops/database $(find_options))
 	$(log_start)
 	docker build --file ops/database/db.dockerfile $(image_cache) --tag $(project)_database ops/database
@@ -226,14 +220,16 @@ node-staging: node $(shell find modules/node/ops $(find_options))
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-indra-proxy: $(shell find ops/proxy $(find_options))
+proxy: $(shell find ops/proxy $(find_options))
 	$(log_start)
-	docker build --file ops/proxy/indra/dev.dockerfile $(image_cache) --tag $(project)_proxy .
+	docker build --file ops/proxy/indra/Dockerfile $(image_cache) --tag $(project)_proxy ops
+	docker tag $(project)_proxy $(project)_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-indra-proxy-prod: $(shell find ops/proxy $(find_options))
+proxy-daicard: $(shell find ops/proxy $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra/prod.dockerfile $(image_cache) --tag $(project)_proxy:$(commit) .
+	docker build --file ops/proxy/daicard/Dockerfile $(image_cache) --tag daicard_proxy .
+	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ssh-action: $(shell find ops/ssh-action $(find_options))
