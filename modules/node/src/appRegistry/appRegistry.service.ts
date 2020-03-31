@@ -7,6 +7,7 @@ import {
   validateWithdrawApp,
   validateHashLockTransferApp,
   validateSignedTransferApp,
+  validateDepositApp,
 } from "@connext/apps";
 import {
   AppInstanceJson,
@@ -20,6 +21,7 @@ import {
   WithdrawAppName,
   WithdrawAppState,
   HashLockTransferAppState,
+  DepositAppName,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -166,6 +168,15 @@ export class AppRegistryService implements OnModuleInit {
           this.cfCoreService.cfCore.publicIdentifier,
         );
         break;
+      }
+      case DepositAppName: {
+        await validateDepositApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+          (await this.channelRepository.findByUserPublicIdentifierOrThrow(from)).multisigAddress,
+          this.configService.getEthProvider()
+        );
       }
       case HashLockTransferAppName: {
         const blockNumber = await this.configService.getEthProvider().getBlockNumber();
