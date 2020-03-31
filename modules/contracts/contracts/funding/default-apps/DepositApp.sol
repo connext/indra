@@ -17,7 +17,7 @@ contract DepositApp is CounterfactualApp {
     address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
 
     struct AppState {
-        LibOutcome.CoinTransfer[2] coinTransfers; // both amounts should be 0 in initial state
+        LibOutcome.CoinTransfer[2] transfers; // both amounts should be 0 in initial state
         address payable multisigAddress;
         address assetId;
         uint256 startingTotalAmountWithdrawn;
@@ -43,13 +43,13 @@ contract DepositApp is CounterfactualApp {
         return abi.encode(
             LibOutcome.CoinTransfer[2]([
                 LibOutcome.CoinTransfer(
-                    state.coinTransfers[0].to,
+                    state.transfers[0].to,
                     // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
                     (endingMultisigBalance - state.startingMultisigBalance) +
                     (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn)
                 ),
                 LibOutcome.CoinTransfer(
-                    state.coinTransfers[1].to,
+                    state.transfers[1].to,
                     0
                 )
             ])
