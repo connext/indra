@@ -47,6 +47,10 @@ const appStatusesToHashLockTransferStatus = (
     // iff there is a receiver app, check for expiry
     // do this last bc could be retrieving historically
     return HashLockTransferStatus.EXPIRED;
+  } else if (!isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
+    // iff there is a receiver app, check for expiry
+    // do this last bc could be retrieving historically
+    return HashLockTransferStatus.PENDING;
   } else {
     throw new Error(`Cound not determine hash lock transfer status`);
   }
@@ -83,7 +87,7 @@ export class HashLockTransferService {
     assetId: string,
     meta: any = {},
   ): Promise<any> {
-    this.log.debug(`resolveLinkedTransfer()`);
+    this.log.debug(`resolveHashLockTransfer()`);
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       receiverPublicIdentifier,
     );
