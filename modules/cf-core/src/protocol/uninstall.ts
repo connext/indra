@@ -14,7 +14,11 @@ import {
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements, stateChannelClassFromStoreByMultisig } from "./utils";
+import {
+  assertIsValidSignature,
+  computeTokenIndexedFreeBalanceIncrements,
+  stateChannelClassFromStoreByMultisig,
+} from "./utils";
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
@@ -35,7 +39,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
     const { responderXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const postProtocolStateChannel = await computeStateTransition(
@@ -75,7 +82,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     uninstallCommitment.signatures = [signature, responderSignature];
 
-    yield [PERSIST_COMMITMENT, PersistCommitmentType.UpdateSetState, uninstallCommitment, postProtocolStateChannel.freeBalance.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      uninstallCommitment,
+      postProtocolStateChannel.freeBalance.identityHash,
+    ];
 
     yield [
       PERSIST_APP_INSTANCE,
@@ -97,7 +109,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
     const { initiatorXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const postProtocolStateChannel = await computeStateTransition(
@@ -123,7 +138,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     uninstallCommitment.signatures = [responderSignature, initiatorSignature];
 
-    yield [PERSIST_COMMITMENT, PersistCommitmentType.UpdateSetState, uninstallCommitment, postProtocolStateChannel.freeBalance.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      uninstallCommitment,
+      postProtocolStateChannel.freeBalance.identityHash,
+    ];
 
     yield [
       PERSIST_APP_INSTANCE,
