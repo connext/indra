@@ -36,11 +36,11 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
           const subject = msg.subject;
           const response = await processor(msg.subject, msg.data);
           const diff = Date.now() - start;
-          if (diff >= 10 && diff < 100) {
+          if (diff >= 5 && diff < 50) {
             this.log.info(`Responded to ${subject} in ${diff} ms`);
-          } else if (diff >= 100 && diff < 1000) {
+          } else if (diff >= 50 && diff < 250) {
             this.log.warn(`Responded to ${subject} in ${diff} ms`);
-          } else if (diff >= 1000) {
+          } else if (diff >= 250) {
             this.log.error(`Responded to ${subject} in ${diff} ms`);
           }
           this.messaging.publish(msg.reply, {

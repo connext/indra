@@ -160,7 +160,7 @@ export default class ListenerService implements OnModuleInit {
         }
         await this.appActionsService.handleAppAction(
           appRegistryInfo.name,
-          appInstanceId,
+          app,
           newState as any, // AppState (excluding simple swap app)
           action as AppAction,
           data.from,

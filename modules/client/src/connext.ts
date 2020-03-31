@@ -30,12 +30,10 @@ import {
   WithdrawResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
-import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
-import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { LinkedTransferController } from "./controllers/LinkedTransferController";
@@ -94,6 +92,7 @@ export class ConnextClient implements IConnextClient {
   public network: Network;
   public node: INodeApiClient;
   public nodePublicIdentifier: string;
+  public nodeFreeBalanceAddress: string;
   public publicIdentifier: string;
   public signerAddress: Address;
   public store: IClientStore;
@@ -134,6 +133,7 @@ export class ConnextClient implements IConnextClient {
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
+    this.nodeFreeBalanceAddress = xpubToAddress(this.nodePublicIdentifier);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -368,15 +368,12 @@ export class ConnextClient implements IConnextClient {
    * async payments are the default transfer.
    */
   public transfer = async (params: TransferParameters): Promise<LinkedTransferResponse> => {
-    if (!params.paymentId) {
-      params.paymentId = createRandom32ByteHexString();
-    }
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
-      assetId: params.assetId,
+      assetId: params.assetId || AddressZero,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       meta: params.meta,
-      paymentId: params.paymentId,
+      paymentId: params.paymentId || createRandom32ByteHexString(),
       preImage: createRandom32ByteHexString(),
       recipient: params.recipient,
     }) as Promise<LinkedTransferResponse>;
@@ -620,7 +617,7 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[xpubToAddress(this.nodePublicIdentifier)] = new BigNumber(0);
+        obj[this.nodeFreeBalanceAddress] = new BigNumber(0);
         obj[this.freeBalanceAddress] = new BigNumber(0);
         return obj;
       }
@@ -762,12 +759,9 @@ export class ConnextClient implements IConnextClient {
   };
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.channelProvider.send(
-      MethodNames.chan_getStateChannel as any,
-      {
-        multisigAddress: this.multisigAddress,
-      },
-    );
+    const { data: sc } = await this.channelProvider.send(MethodNames.chan_getStateChannel as any, {
+      multisigAddress: this.multisigAddress,
+    });
     let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;

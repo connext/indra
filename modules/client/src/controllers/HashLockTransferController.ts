@@ -12,8 +12,6 @@ import {
 } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 
-import { xpubToAddress } from "../lib";
-
 import { AbstractController } from "./AbstractController";
 
 export class HashLockTransferController extends AbstractController {
@@ -23,17 +21,18 @@ export class HashLockTransferController extends AbstractController {
     // convert params + validate
     const amount = toBN(params.amount);
     const timelock = toBN(params.timelock);
-    const { assetId, lockHash, meta } = params;
+    params.meta = params.meta || {};
+    const { assetId, lockHash, meta, recipient } = params;
 
     const initialState: HashLockTransferAppState = {
       coinTransfers: [
         {
           amount,
-          to: xpubToAddress(this.connext.publicIdentifier),
+          to: this.connext.freeBalanceAddress,
         },
         {
           amount: Zero,
-          to: xpubToAddress(this.connext.nodePublicIdentifier),
+          to: this.connext.nodeFreeBalanceAddress,
         },
       ],
       timelock,
@@ -41,6 +40,8 @@ export class HashLockTransferController extends AbstractController {
       preImage: HashZero,
       finalized: false,
     };
+
+    meta["recipient"] = recipient;
 
     const {
       actionEncoding,

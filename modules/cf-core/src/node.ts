@@ -185,13 +185,12 @@ export class Node {
         throw new Error("OP_SIGN middleware received wrong number of arguments.");
       }
 
-      const [commitment, overrideKeyIndex] = args;
+      const [commitmentHash, overrideKeyIndex] = args;
       const keyIndex = overrideKeyIndex || 0;
 
       const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
-      const hash = commitment.hashToSign();
 
-      return await signDigest(privateKey, hash);
+      return signDigest(privateKey, commitmentHash);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {

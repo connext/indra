@@ -98,6 +98,7 @@ export async function install(
     initiatorDepositTokenAddress: proposal.initiatorDepositTokenAddress,
     responderDepositTokenAddress: proposal.responderDepositTokenAddress,
     disableLimit: false,
+    meta: proposal.meta,
   });
   stateChannel.removeProposal(appInstanceId);
   await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);

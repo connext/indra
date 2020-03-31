@@ -87,19 +87,22 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const responderAddr = xkeyKthAddress(responderXpub, 0);
     await assertIsValidSignature(
       responderAddr,
-      setupCommitment,
+      setupCommitment.hashToSign(),
       responderSetupSignature,
     );
     await assertIsValidSignature(
       responderAddr,
-      freeBalanceUpdateData,
+      freeBalanceUpdateData.hashToSign(),
       responderSignatureOnFreeBalanceState,
     );
     logTime(log, substart, `Verified responder's sigs`);
 
     // add sigs to commitments
     setupCommitment.signatures = [responderSetupSignature, mySetupSignature];
-    freeBalanceUpdateData.signatures = [responderSignatureOnFreeBalanceState, mySignatureOnFreeBalanceState];
+    freeBalanceUpdateData.signatures = [
+      responderSignatureOnFreeBalanceState,
+      mySignatureOnFreeBalanceState,
+    ];
 
     // 33 ms
     yield [
@@ -156,12 +159,12 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const initatorAddr = xkeyKthAddress(initiatorXpub, 0);
     await assertIsValidSignature(
       initatorAddr,
-      setupCommitment,
+      setupCommitment.hashToSign(),
       initiatorSetupSignature,
     );
     await assertIsValidSignature(
       initatorAddr,
-      freeBalanceUpdateData,
+      freeBalanceUpdateData.hashToSign(),
       initiatorSignatureOnFreeBalanceState,
     );
     logTime(log, substart, `Verified initator's sig`);

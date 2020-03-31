@@ -7,6 +7,7 @@ import {
   ResolveSignedTransferParameters,
   SignedTransferParameters,
   SignedTransferStatus,
+  SignedTransfer,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
@@ -21,6 +22,7 @@ import {
   fundChannel,
   TOKEN_AMOUNT,
   env,
+  requestCollateral,
 } from "../util";
 
 describe("Signed Transfers", () => {
@@ -255,5 +257,82 @@ describe("Signed Transfers", () => {
         signature: badSig,
       } as ResolveSignedTransferParameters),
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
+  });
+
+  it("Experimental: Average latency of 5 signed transfers with Eth", async () => {
+    let runTime: number[] = [];
+    let sum = 0;
+    const numberOfRuns = 5;
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const signerWallet = Wallet.createRandom();
+    const signerAddress = await signerWallet.getAddress();
+
+    await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
+    await requestCollateral(clientB, transfer.assetId);
+
+    for (let i = 0; i < numberOfRuns; i++) {
+      const {
+        [clientA.freeBalanceAddress]: clientAPreBal,
+        [clientA.nodeFreeBalanceAddress]: nodeAPreBal,
+      } = await clientA.getFreeBalance(transfer.assetId);
+      const { 
+        [clientB.freeBalanceAddress]: clientBPreBal,
+        [clientB.nodeFreeBalanceAddress]: nodeBPreBal, 
+      } = await clientB.getFreeBalance(
+        transfer.assetId,
+      );
+      const data = hexlify(randomBytes(32));
+      const paymentId = hexlify(randomBytes(32));
+
+      // Start timer
+      const start = Date.now();
+
+      await clientA.conditionalTransfer({
+        amount: transfer.amount,
+        conditionType: ConditionalTransferTypes[SignedTransfer],
+        paymentId,
+        signer: signerAddress,
+        assetId: transfer.assetId,
+        meta: { foo: "bar" },
+      } as SignedTransferParameters);
+  
+      // Including recipient signing in test to match real conditions
+      const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
+      const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+      const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
+  
+      await new Promise(async res => {
+        clientA.once("UNINSTALL_EVENT", async data => {
+          res();
+        });
+        await clientB.resolveCondition({
+          conditionType: ConditionalTransferTypes[SignedTransfer],
+          paymentId,
+          data,
+          signature,
+        } as ResolveSignedTransferParameters);
+      });
+
+      // Stop timer and add to sum
+      runTime[i] = Date.now() - start;
+      console.log(`Run: ${i}, Runtime: ${runTime[i]}`)
+      sum = sum + runTime[i];
+
+      const {
+        [clientA.freeBalanceAddress]: clientAPostBal,
+        [clientA.nodeFreeBalanceAddress]: nodeAPostBal,
+      } = await clientA.getFreeBalance(transfer.assetId);
+      const { 
+        [clientB.freeBalanceAddress]: clientBPostBal,
+        [clientB.nodeFreeBalanceAddress]: nodeBPostBal, 
+      } = await clientB.getFreeBalance(
+        transfer.assetId,
+      );
+      expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
+      expect(nodeAPostBal).to.eq(nodeAPreBal.add(transfer.amount));
+      expect(nodeBPostBal).to.eq(nodeBPreBal.sub(transfer.amount));
+      expect(clientBPostBal).to.eq(clientBPreBal.add(transfer.amount));
+    }
+    console.log(`Average = ${sum/numberOfRuns} ms`)
   });
 });

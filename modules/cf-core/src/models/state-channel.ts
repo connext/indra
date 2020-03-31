@@ -270,42 +270,28 @@ export class StateChannel {
     );
   };
 
-  public incrementFreeBalance(increments: TokenIndexedCoinTransferMap) {
-    return this.build({
-      freeBalanceAppInstance: this.getFreeBalanceClass()
-        .increment(increments)
-        .toAppInstance(this.freeBalance),
-    });
-  }
-
-  public addActiveApp(activeApp: string) {
-    return this.build({
-      freeBalanceAppInstance: this.getFreeBalanceClass()
-        .addActiveApp(activeApp)
-        .toAppInstance(this.freeBalance),
-    });
-  }
-
-  public removeActiveApp(activeApp: string) {
-    return this.build({
-      freeBalanceAppInstance: this.getFreeBalanceClass()
-        .removeActiveApp(activeApp)
-        .toAppInstance(this.freeBalance),
-    });
-  }
-
   public addActiveAppAndIncrementFreeBalance(
     activeApp: string,
     tokenIndexedIncrements: TokenIndexedCoinTransferMap,
   ) {
-    return this.incrementFreeBalance(tokenIndexedIncrements).addActiveApp(activeApp);
+    return this.build({
+      freeBalanceAppInstance: this.getFreeBalanceClass()
+        .increment(tokenIndexedIncrements)
+        .addActiveApp(activeApp)
+        .toAppInstance(this.freeBalance),
+    });
   }
 
   public removeActiveAppAndIncrementFreeBalance(
     activeApp: string,
     tokenIndexedIncrements: TokenIndexedCoinTransferMap,
   ) {
-    return this.removeActiveApp(activeApp).incrementFreeBalance(tokenIndexedIncrements);
+    return this.build({
+      freeBalanceAppInstance: this.getFreeBalanceClass()
+        .removeActiveApp(activeApp)
+        .increment(tokenIndexedIncrements)
+        .toAppInstance(this.freeBalance),
+    });
   }
 
   public setFreeBalance(newFreeBalanceClass: FreeBalanceClass) {
@@ -401,12 +387,11 @@ export class StateChannel {
     });
   }
 
-  public setState(appInstanceIdentityHash: string, state: SolidityValueType) {
-    const appInstance = this.getAppInstance(appInstanceIdentityHash);
+  public setState(appInstance: AppInstance, state: SolidityValueType) {
 
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
-    appInstances.set(appInstanceIdentityHash, appInstance.setState(state));
+    appInstances.set(appInstance.identityHash, appInstance.setState(state));
 
     return this.build({
       appInstances,
@@ -454,28 +439,20 @@ export class StateChannel {
   }
 
   public uninstallApp(
-    appInstanceIdentityHash: string,
+    appToBeUninstalled: AppInstance,
     tokenIndexedIncrements: TokenIndexedCoinTransferMap,
   ) {
-    const appToBeUninstalled = this.getAppInstance(appInstanceIdentityHash);
-
-    if (appToBeUninstalled.identityHash !== appInstanceIdentityHash) {
-      throw new Error(
-        `Consistency error: app stored under key ${appInstanceIdentityHash} has identityHah ${appToBeUninstalled.identityHash}`,
-      );
-    }
-
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
     if (!appInstances.delete(appToBeUninstalled.identityHash)) {
-      throw new Error(
-        `Consistency error: managed to call get on ${appInstanceIdentityHash} but failed to call delete`,
+      throw Error(
+        `Consistency error: managed to call get on ${appToBeUninstalled.identityHash} but failed to call delete`,
       );
     }
 
     return this.build({
       appInstances,
-    }).removeActiveAppAndIncrementFreeBalance(appInstanceIdentityHash, tokenIndexedIncrements);
+    }).removeActiveAppAndIncrementFreeBalance(appToBeUninstalled.identityHash, tokenIndexedIncrements);
   }
 
   toJson(): StateChannelJSON {

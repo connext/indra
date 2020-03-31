@@ -2,7 +2,14 @@ import { ProtocolNames, ProtocolParams } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { Context, Opcode, PersistAppType, ProtocolExecutionFlow, ProtocolMessage, PersistCommitmentType } from "../types";
+import {
+  Context,
+  Opcode,
+  PersistAppType,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
+  PersistCommitmentType,
+} from "../types";
 
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -40,6 +47,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
 
+    console.log(`[update] initiating update of: ${appIdentityHash}`);
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -48,7 +56,11 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
 
-    const initiatorSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
+    const initiatorSignature = yield [
+      OP_SIGN,
+      setStateCommitment.hashToSign(),
+      appInstance.appSeqNo,
+    ];
 
     substart = Date.now();
     const {
@@ -69,12 +81,21 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Received responder's sig`);
 
     substart = Date.now();
-    await assertIsValidSignature(responderEphemeralKey, setStateCommitment, responderSignature);
+    await assertIsValidSignature(
+      responderEphemeralKey,
+      setStateCommitment.hashToSign(),
+      responderSignature,
+    );
     logTime(log, substart, `Verified responder's sig`);
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    yield [PERSIST_COMMITMENT, PersistCommitmentType.UpdateSetState, setStateCommitment, appIdentityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      setStateCommitment,
+      appIdentityHash,
+    ];
 
     yield [
       PERSIST_APP_INSTANCE,
@@ -110,6 +131,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
 
+    console.log(`[update] responding to update of: ${appIdentityHash}`);
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -119,14 +141,27 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     substart = Date.now();
-    await assertIsValidSignature(initiatorEphemeralKey, setStateCommitment, initiatorSignature);
+    await assertIsValidSignature(
+      initiatorEphemeralKey,
+      setStateCommitment.hashToSign(),
+      initiatorSignature,
+    );
     logTime(log, substart, `Verified initator's sig`);
 
-    const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
+    const responderSignature = yield [
+      OP_SIGN,
+      setStateCommitment.hashToSign(),
+      appInstance.appSeqNo,
+    ];
 
     setStateCommitment.signatures = [initiatorSignature, responderSignature];
 
-    yield [PERSIST_COMMITMENT, PersistCommitmentType.UpdateSetState, setStateCommitment, appIdentityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      setStateCommitment,
+      appIdentityHash,
+    ];
 
     yield [
       PERSIST_APP_INSTANCE,

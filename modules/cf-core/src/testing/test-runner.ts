@@ -1,7 +1,7 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames, AppInstanceJson } from "@connext/types";
+import { OutcomeType, ProtocolNames } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
-import { One, Two, Zero, AddressZero } from "ethers/constants";
+import { One, Two, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
