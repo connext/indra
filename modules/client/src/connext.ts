@@ -30,12 +30,10 @@ import {
   WithdrawResponse,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
-import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
-import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { LinkedTransferController } from "./controllers/LinkedTransferController";
@@ -761,12 +759,9 @@ export class ConnextClient implements IConnextClient {
   };
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.channelProvider.send(
-      MethodNames.chan_getStateChannel as any,
-      {
-        multisigAddress: this.multisigAddress,
-      },
-    );
+    const { data: sc } = await this.channelProvider.send(MethodNames.chan_getStateChannel as any, {
+      multisigAddress: this.multisigAddress,
+    });
     let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
