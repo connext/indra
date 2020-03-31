@@ -150,6 +150,7 @@ export class CFCoreStore implements IStoreService {
     appJson: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
+    console.log("createAppInstance: ", appJson);
     const {
       identityHash,
       participants,
@@ -157,6 +158,10 @@ export class CFCoreStore implements IStoreService {
       latestTimeout,
       latestVersionNumber,
       meta,
+      outcomeType,
+      twoPartyOutcomeInterpreterParams,
+      multiAssetMultiPartyCoinTransferInterpreterParams,
+      singleAssetTwoPartyCoinTransferInterpreterParams,
     } = appJson;
     const proposal = await this.appInstanceRepository.findByIdentityHashOrThrow(identityHash);
     if (proposal.type !== AppType.PROPOSAL) {
@@ -180,21 +185,44 @@ export class CFCoreStore implements IStoreService {
     proposal.latestTimeout = latestTimeout;
     proposal.latestVersionNumber = latestVersionNumber;
 
-    // update free balance app
-    const freeBalanceAppEntity = await this.appInstanceRepository.findByIdentityHashOrThrow(
-      freeBalanceAppInstance.identityHash,
-    );
-    freeBalanceAppEntity.latestState = freeBalanceAppInstance.latestState;
-    freeBalanceAppEntity.latestTimeout = freeBalanceAppInstance.latestTimeout;
-    freeBalanceAppEntity.latestVersionNumber = freeBalanceAppInstance.latestVersionNumber;
+    // interpreter params
+    switch (OutcomeType[outcomeType]) {
+      case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
+        proposal.outcomeInterpreterParameters = twoPartyOutcomeInterpreterParams;
+        break;
+
+      case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
+        proposal.outcomeInterpreterParameters = multiAssetMultiPartyCoinTransferInterpreterParams;
+        break;
+
+      case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
+        proposal.outcomeInterpreterParameters = singleAssetTwoPartyCoinTransferInterpreterParams;
+        break;
+
+      default:
+        throw new Error(`Unrecognized outcome type: ${OutcomeType[proposal.outcomeType]}`);
+    }
 
     await getManager().transaction(async transactionalEntityManager => {
       await transactionalEntityManager.save(proposal);
-      await transactionalEntityManager.save(freeBalanceAppEntity);
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(AppInstance)
+        .set({
+          latestState: freeBalanceAppInstance.latestState as any,
+          latestTimeout: freeBalanceAppInstance.latestTimeout,
+          latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+        })
+        .where("identityHash = :identityHash", {
+          identityHash: freeBalanceAppInstance.identityHash,
+        })
+        .execute();
     });
   }
 
   async updateAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
+    console.log("updateAppInstance: ", appJson);
+
     const { identityHash, latestState, latestTimeout, latestVersionNumber } = appJson;
 
     await this.appInstanceRepository
@@ -214,6 +242,8 @@ export class CFCoreStore implements IStoreService {
     appInstanceId: string,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
+    console.log("removeAppInstance: ", appInstanceId);
+
     const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
     if (!app) {
       throw new Error(`No app found when trying to remove. AppId: ${appInstanceId}`);
@@ -226,23 +256,28 @@ export class CFCoreStore implements IStoreService {
     const channelId = app.channel.id;
     app.channel = null;
 
-    // update free balance
-    const freeBalanceAppEntity = await this.appInstanceRepository.findByIdentityHashOrThrow(
-      freeBalanceAppInstance.identityHash,
-    );
-    freeBalanceAppEntity.latestState = freeBalanceAppInstance.latestState;
-    freeBalanceAppEntity.latestTimeout = freeBalanceAppInstance.latestTimeout;
-    freeBalanceAppEntity.latestVersionNumber = freeBalanceAppInstance.latestVersionNumber;
-
     await getManager().transaction(async transactionalEntityManager => {
       await transactionalEntityManager.save(app);
-      await transactionalEntityManager.save(freeBalanceAppEntity);
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(AppInstance)
+        .set({
+          latestState: freeBalanceAppInstance.latestState as any,
+          latestTimeout: freeBalanceAppInstance.latestTimeout,
+          latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
+        })
+        .where("identityHash = :identityHash", {
+          identityHash: freeBalanceAppInstance.identityHash,
+        })
+        .execute();
       await transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "appInstances")
         .of(channelId)
         .remove(app.id);
     });
+    const channelAfterRemove = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    console.log("channelAfterRemove: ", channelAfterRemove);
   }
 
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal> {
@@ -254,6 +289,8 @@ export class CFCoreStore implements IStoreService {
     appProposal: AppInstanceProposal,
     numProposedApps: number,
   ): Promise<void> {
+    console.log("createAppProposal: ", appProposal);
+
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
     const app = new AppInstance();
@@ -272,9 +309,9 @@ export class CFCoreStore implements IStoreService {
     app.proposedByIdentifier = appProposal.proposedByIdentifier;
     app.outcomeType = appProposal.outcomeType;
     app.meta = appProposal.meta;
-    app.initialState = {};
-    app.latestState = {};
-    app.latestTimeout = 0;
+    app.initialState = appProposal.initialState;
+    app.latestState = appProposal.initialState;
+    app.latestTimeout = bigNumberify(appProposal.timeout).toNumber();
     app.latestVersionNumber = 0;
 
     channel.monotonicNumProposedApps = numProposedApps;
@@ -283,6 +320,8 @@ export class CFCoreStore implements IStoreService {
   }
 
   async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+    console.log("removeAppProposal: ", appInstanceId);
+
     // called in protocol during install and reject protocols
     // but we dont "remove" app proposals, they get upgraded. so
     // simply return without editing, and set the status to `REJECTED`
