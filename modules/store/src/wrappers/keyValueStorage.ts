@@ -208,7 +208,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       throw new Error(`App proposal with hash ${appInstance.identityHash} already exists`);
     }
     channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
-    return this.saveStateChannel(channel);
+    return this.saveStateChannel({ ...channel, monotonicNumProposedApps: numProposedApps });
   }
 
   async updateAppProposal(
