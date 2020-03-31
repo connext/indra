@@ -55,19 +55,18 @@ kill "$loading_pid" && pkill nc
 # Setup SSL Certs
 
 letsencrypt=/etc/letsencrypt/live
-devcerts=$letsencrypt/localhost
-mkdir -p $devcerts
-mkdir -p /etc/ssl/certs
-mkdir -p /etc/ssl/private
+certsdir=$letsencrypt/$DOMAINNAME
+mkdir -p $certsdir
+mkdir -p /etc/haproxy/certs
 mkdir -p /var/www/letsencrypt
 
-if [[ "$DOMAINNAME" == "localhost" && ! -f "$devcerts/privkey.pem" ]]
+if [[ "$DOMAINNAME" == "localhost" && ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Developing locally, generating self-signed certs"
-  openssl req -x509 -newkey rsa:4096 -keyout $devcerts/privkey.pem -out $devcerts/fullchain.pem -days 365 -nodes -subj '/CN=localhost'
+  openssl req -x509 -newkey rsa:4096 -keyout $certsdir/privkey.pem -out $certsdir/fullchain.pem -days 365 -nodes -subj '/CN=localhost'
 fi
 
-if [[ ! -f "$letsencrypt/$DOMAINNAME/privkey.pem" ]]
+if [[ ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Couldn't find certs for $DOMAINNAME, using certbot to initialize those now.."
   certbot certonly --standalone -m $EMAIL --agree-tos --no-eff-email -d $DOMAINNAME -n
@@ -75,18 +74,21 @@ then
 fi
 
 echo "Using certs for $DOMAINNAME"
-ln -sf $letsencrypt/$DOMAINNAME/fullchain.pem /etc/ssl/certs/fullchain.pem
-ln -sf $letsencrypt/$DOMAINNAME/privkey.pem /etc/ssl/private/privkey.pem
+
+cat $certsdir/fullchain.pem $certsdir/privkey.pem > /etc/haproxy/certs/$DOMAINNAME.pem
+
+export CERTBOT_PORT=31820
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
   while true
   do
     echo -n "Preparing to renew certs... "
-    if [[ -d "/etc/letsencrypt/live/$DOMAINNAME" ]]
+    if [[ -d "$certsdir" ]]
     then
       echo -n "Found certs to renew for $DOMAINNAME... "
-      certbot renew --webroot -w /var/www/letsencrypt/ -n
+      certbot renew -n --standalone --http-01-port=$CERTBOT_PORT
+      cat $certsdir/fullchain.pem $certsdir/privkey.pem > /etc/haproxy/certs/$DOMAINNAME.pem
       echo "Done!"
     fi
     sleep 48h
