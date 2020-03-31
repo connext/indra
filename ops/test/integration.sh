@@ -3,7 +3,6 @@ set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
-registry="`cat $dir/../../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 mode="${TEST_MODE:-local}"
 name="${project}_test_runner"
@@ -19,9 +18,9 @@ fi
 if [[ -n "`docker image ls -q $name:$1`" ]]
 then image=$name:$1; shift # rm $1 from $@
 elif [[ "$mode" == "release" ]]
-then image=$registry/$name:$release;
+then image=$name:$release;
 elif [[ "$mode" == "staging" ]]
-then image=$registry/$name:$commit;
+then image=$name:$commit;
 else
 
   exec docker run \
