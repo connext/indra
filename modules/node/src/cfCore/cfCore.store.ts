@@ -50,7 +50,9 @@ export class CFCoreStore implements IStoreService {
   }
 
   updateSchemaVersion(): Promise<void> {
-    throw new Error("Method not implemented");
+    // called when setup commitment is created in protocol
+    // managed node-side via migrations
+    return Promise.resolve();
   }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {

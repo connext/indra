@@ -257,6 +257,7 @@ export const connect = async (
   // Make sure our store schema is up-to-date
   const schemaVersion = await store.getSchemaVersion();
   if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
+    log.debug(`Outdated store schema detected, restoring state`);
     await client.restoreState();
     // increment / update store schema version, defaults to types const
     // of `STORE_SCHEMA_VERSION`
@@ -286,6 +287,7 @@ export const connect = async (
   await client.registerSubscriptions();
 
   // cleanup any hanging registry apps
+  log.debug("Cleaning up registry apps");
   await client.cleanupRegistryApps();
 
   // check if there is a coin refund app installed for eth and tokens
@@ -294,9 +296,9 @@ export const connect = async (
     app => app.appInterface.addr === client.config.contractAddresses.CoinBalanceRefundApp,
   );
   for (const coinBalance of coinBalanceRefundApps) {
-    await client.uninstallCoinBalanceIfNeeded(
-      (coinBalance.latestState as CoinBalanceRefundAppState).tokenAddress,
-    );
+    const tokenAddress = (coinBalance.latestState as CoinBalanceRefundAppState).tokenAddress;
+    log.debug(`Handling coin balance refund app for ${tokenAddress}`);
+    await client.uninstallCoinBalanceIfNeeded(tokenAddress);
   }
 
   // wait for wd verification to reclaim any pending async transfers

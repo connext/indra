@@ -7,6 +7,7 @@ import {
   MethodName,
   MinimalTransaction,
   nullLogger,
+  STORE_SCHEMA_VERSION,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
@@ -266,6 +267,9 @@ export class Node {
               identifier,
               commitment as MinimalTransaction,
             );
+            // if you are creating a setup commitment, make sure to
+            // update the store version
+            await this.storeService.updateSchemaVersion(STORE_SCHEMA_VERSION);
             break;
           }
           case PersistCommitmentType.CreateConditional: {
