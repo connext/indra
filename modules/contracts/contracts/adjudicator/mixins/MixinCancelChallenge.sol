@@ -48,6 +48,15 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
         challenge.appStateHash = 0;
         challenge.versionNumber = 0;
         challenge.finalizesAt = 0;
+
+        emit ChallengeUpdated(
+            identityHash,
+            ChallengeStatus.NO_CHALLENGE,
+            address(0x0),
+            0,
+            0,
+            0
+        );
     }
 
     function correctKeysSignedCancelChallengeRequest(
