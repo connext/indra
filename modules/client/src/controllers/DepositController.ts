@@ -1,100 +1,105 @@
-import { MethodParams, CoinBalanceRefundAppState, CoinBalanceRefundAppName, toBN } from "@connext/types";
+import { MethodParams, toBN, DepositParameters, DepositResponse, RequestDepositRightsParameters, RequestDepositRightsResponse, RescindDepositRightsResponse, RescindDepositRightsParameters, CheckDepositRightsParameters, CheckDepositRightsResponse } from "@connext/types";
+import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
+import { DepositAppName, DepositAppState } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
-
-import { stringify } from "../lib";
-import { ChannelState, DepositParameters } from "../types";
-import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
-// TODO: refactor to use unrolled version
 export class DepositController extends AbstractController {
-  public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    const myFreeBalanceAddress = this.connext.freeBalanceAddress;
-    const assetId = params.assetId;
-    const amount = toBN(params.amount);
-
-    validate(invalidAddress(assetId), notPositive(amount));
-
-    // check asset balance of address
-    let bal: BigNumber;
-    if (assetId === AddressZero) {
-      bal = await this.ethProvider.getBalance(myFreeBalanceAddress);
+  public deposit = async (params: DepositParameters): Promise<DepositResponse> => {
+    const amount = toBN(params.amount)
+    const { appInstanceId, multisigAddress } = await this.requestDepositRights({assetId: params.assetId})
+    if(params.assetId == AddressZero) {
+      // attempt to send Eth tx TODO
     } else {
-      // get token balance
-      const token = new Contract(assetId, tokenAbi, this.ethProvider);
-      // TODO: correct? how can i use allowance?
-      bal = await token.balanceOf(myFreeBalanceAddress);
+      const erc20 = new Contract(params.assetId, ERC20.abi, this.ethProvider);
+      // attempt to send erc20 tx TODO
     }
-    validate(notLessThanOrEqualTo(amount, bal)); // cant deposit more than default addr owns
-
-    // TODO: remove free balance stuff?
-    const preDepositBalances = await this.connext.getFreeBalance(assetId);
-
-    this.log.info(
-      `Depositing ${formatEther(amount)} ${
-        assetId === AddressZero ? "ETH" : "Tokens"
-      } into channel ${this.connext.multisigAddress}`,
-    );
-
-    // propose coin balance refund app
-    const appId = await this.proposeDepositInstall(assetId);
-    this.log.debug(`Proposed coin balance refund app, appId: ${appId}`);
-
-    try {
-      await this.connext.rescindDepositRights({ assetId });
-      const depositResponse = await this.connext.providerDeposit(amount, assetId);
-      this.log.debug(`Deposit response: ${stringify(depositResponse)}`);
-
-      const postDepositBalances = await this.connext.getFreeBalance(assetId);
-
-      const diff = postDepositBalances[myFreeBalanceAddress].sub(
-        preDepositBalances[myFreeBalanceAddress],
-      );
-
-      // changing this from !eq to lt. now that we have async deposits there is an edge case
-      // where it could be more than amount
-      if (diff.lt(amount)) {
-        throw new Error(`My balance was not increased by the deposit amount.`);
-      }
-    } catch (e) {
-      const msg = `Failed to deposit: ${e.stack || e.message}`;
-      this.log.error(msg);
-      throw new Error(msg);
-    }
-
-    return {
-      apps: await this.connext.getAppInstances(),
-      freeBalance: await this.connext.getFreeBalance(assetId),
-    };
+    return this.rescindDepositRights({appInstanceId});
   };
+
+  public requestDepositRights = async (params: RequestDepositRightsParameters): Promise<RequestDepositRightsResponse> => {
+    params.assetId = params.assetId ? params.assetId : AddressZero;
+
+    const appInstanceId = await this.proposeDepositInstall(params.assetId)
+  
+    return {
+      appInstanceId,
+      multisigAddress: this.connext.multisigAddress
+    }
+  }
+
+  public rescindDepositRights = async (params: RescindDepositRightsParameters): Promise<RescindDepositRightsResponse> => {
+    let appInstanceId
+    if (!params.appInstanceId) {
+      params.assetId = params.assetId ? params.assetId : AddressZero;
+
+      appInstanceId = this.getDepositApp({assetId: params.assetId});
+      if(!appInstanceId) {
+        throw new Error(`No existing deposit app found for this tokenAddress: ${params.assetId}`)
+      }
+    } else {
+      appInstanceId = params.appInstanceId;
+    }
+
+    this.log.debug(`Uninstalling deposit app`)
+    await this.connext.uninstallApp(appInstanceId);
+    const freeBalance = await this.connext.getFreeBalance();
+    return { freeBalance };
+  }
+
+  public getDepositApp = async (params: CheckDepositRightsParameters): Promise<CheckDepositRightsResponse> => {
+    const appInstances = await this.connext.getAppInstances()
+    return { appInstanceId: appInstances.filter((appInstance) => {
+      appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress == params.assetId
+    })[0].identityHash };
+  }
 
   /////////////////////////////////
   ////// PRIVATE METHODS
 
-  private proposeDepositInstall = async (assetId: string): Promise<string> => {
+  private proposeDepositInstall = async (
+    assetId: string,
+  ): Promise<string> => {
     const token = new Contract(assetId!, tokenAbi, this.ethProvider);
-    const threshold =
+
+    // generate initial totalAmountWithdrawn
+    const multisig = new Contract(this.connext.multisigAddress, MinimumViableMultisig.abi, this.ethProvider);
+    const startingTotalAmountWithdrawn = multisig
+    ? await multisig.functions.totalAmountWithdrawn(assetId)
+    : Zero;
+
+    // generate starting multisig balance
+    const startingMultisigBalance =
       assetId === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
         : await token.functions.balanceOf(this.connext.multisigAddress);
 
-    const initialState: CoinBalanceRefundAppState = {
-      multisig: this.connext.multisigAddress,
-      recipient: this.connext.freeBalanceAddress,
-      threshold,
-      tokenAddress: assetId,
-    };
+    const initialState: DepositAppState = {
+      transfers: [
+        {
+          amount: Zero,
+          to: this.connext.freeBalanceAddress,
+        },
+        {
+          amount: Zero,
+          to: this.connext.nodeFreeBalanceAddress,
+        },
+      ],
+      multisigAddress: this.connext.multisigAddress,
+      assetId,
+      startingTotalAmountWithdrawn, 
+      startingMultisigBalance
+    }
 
     const {
       actionEncoding,
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundAppName);
+    } = this.connext.getRegisteredAppDetails(DepositAppName);
 
     const params: MethodParams.ProposeInstall = {
       abiEncodings: {
@@ -112,7 +117,7 @@ export class DepositController extends AbstractController {
       timeout: Zero,
     };
 
-    const appId = await this.proposeAndWaitForAccepted(params);
+    const appId = await this.proposeAndInstallLedgerApp(params);
     return appId;
   };
 }
