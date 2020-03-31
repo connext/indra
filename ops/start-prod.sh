@@ -44,7 +44,7 @@ registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"
 ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 node_port="8080"
-number_of_services="6" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 
 ####################
 # Helper Functions
@@ -120,20 +120,20 @@ else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" &
 fi
 
 database_image="$registry${project}_database:$version"
-ethprovider_image="$registry${project}_ethprovider:$version"
 logdna_image="logdna/logspout:v1.2.0"
 nats_image="provide/nats-server:indra"
 node_image="$registry${project}_node:$version"
 proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
+webserver_image="$registry${project}_webserver:$version"
 
 pull_if_unavailable "$database_image"
-pull_if_unavailable "$ethprovider_image"
 pull_if_unavailable "$logdna_image"
 pull_if_unavailable "$nats_image"
 pull_if_unavailable "$node_image"
 pull_if_unavailable "$proxy_image"
 pull_if_unavailable "$redis_image"
+pull_if_unavailable "$webserver_image"
 
 ########################################
 ## Ethereum Config
@@ -159,6 +159,8 @@ token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.addre
 
 if [[ "$chainId" == "$ganache_chain_id" ]]
 then
+  ethprovider_image="$registry${project}_ethprovider:$version"
+  pull_if_unavailable "$ethprovider_image"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
@@ -175,7 +177,6 @@ then
       - '$eth_volume/data'
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
-  pull_if_unavailable "$ethprovider_image"
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
 fi
 
@@ -222,8 +223,12 @@ services:
     ports:
       - '80:80'
       - '443:443'
+      - '4221:4221'
     volumes:
       - 'certs:/etc/letsencrypt'
+
+  webserver:
+    image: '$webserver_image'
 
   node:
     image: '$node_image'
@@ -290,8 +295,6 @@ services:
 
   redis:
     image: '$redis_image'
-    ports:
-      - '6379:6379'
 
   logdna:
     image: '$logdna_image'
