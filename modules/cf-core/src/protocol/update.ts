@@ -46,8 +46,12 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       store,
     );
+    const preProtocolAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
+    const postProtocolStateChannel = preProtocolStateChannel.setState(
+      preProtocolAppInstance,
+      newState,
+    );
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
@@ -129,8 +133,12 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       store,
     );
+    const preProtocolAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
+    const postProtocolStateChannel = preProtocolStateChannel.setState(
+      preProtocolAppInstance,
+      newState,
+    );
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 

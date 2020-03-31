@@ -208,7 +208,7 @@ async function computeStateTransition(
 ) {
   const { blockNumberToUseIfNecessary } = params;
   return stateChannel.uninstallApp(
-    appInstance.identityHash,
+    appInstance,
     await computeTokenIndexedFreeBalanceIncrements(
       appInstance,
       provider,
