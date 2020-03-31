@@ -228,7 +228,7 @@ proxy: $(shell find ops/proxy $(find_options))
 
 proxy-daicard: $(shell find ops/proxy $(find_options))
 	$(log_start)
-	docker build --file ops/proxy/daicard/Dockerfile $(image_cache) --tag daicard_proxy .
+	docker build --file ops/proxy/daicard/Dockerfile $(image_cache) --tag daicard_proxy ops
 	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
