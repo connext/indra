@@ -135,11 +135,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!this.hasAppHash(appInstanceId, channel.appInstances)) {
       return undefined;
     }
-    const [_, app] = channel.appInstances.find(([id]) => id === appInstanceId);
+    const [, app] = channel.appInstances.find(([id]) => id === appInstanceId);
     return app;
   }
 
-  async createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+  async createAppInstance(
+    multisigAddress: string,
+    appInstance: AppInstanceJson,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       throw new Error(`Can't save app instance without channel`);
@@ -191,7 +195,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return proposal;
   }
 
-  async createAppProposal(multisigAddress: string, appInstance: AppInstanceProposal, numProposedApps: number): Promise<void> {
+  async createAppProposal(
+    multisigAddress: string,
+    appInstance: AppInstanceProposal,
+    numProposedApps: number,
+  ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       throw new Error(`Can't save app proposal without channel`);
@@ -203,17 +211,20 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.saveStateChannel(channel);
   }
 
-  async updateAppProposal(multisigAddress: string, appInstance: AppInstanceProposal): Promise<void> {
+  async updateAppProposal(
+    multisigAddress: string,
+    appInstance: AppInstanceProposal,
+  ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       throw new Error(`Can't save app proposal without channel`);
     }
     if (!this.hasAppHash(appInstance.identityHash, channel.proposedAppInstances)) {
-      throw new Error(`Could not find app proposal with hash ${appInstance.identityHash} already exists`);
+      throw new Error(
+        `Could not find app proposal with hash ${appInstance.identityHash} already exists`,
+      );
     }
-    const idx = channel.proposedAppInstances.findIndex(
-      ([app]) => app === appInstance.identityHash,
-    );
+    const idx = channel.proposedAppInstances.findIndex(([app]) => app === appInstance.identityHash);
     channel.proposedAppInstances[idx] = [appInstance.identityHash, appInstance];
 
     return this.saveStateChannel(channel);
@@ -227,9 +238,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!this.hasAppHash(appInstanceId, channel.proposedAppInstances)) {
       return;
     }
-    const idx = channel.proposedAppInstances.findIndex(
-      ([app]) => app === appInstanceId,
-    );
+    const idx = channel.proposedAppInstances.findIndex(([app]) => app === appInstanceId);
     channel.proposedAppInstances.splice(idx, 1);
 
     return this.saveStateChannel(channel);
@@ -259,9 +268,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.saveStateChannel({ ...channel, freeBalanceAppInstance: freeBalance });
   }
 
-  async getSetupCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
+  async getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
     return safeJsonParse(await this.getItem(setupCommitmentKey));
   }
@@ -335,9 +342,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(conditionalCommitmentKey, safeJsonStringify(commitment));
   }
 
-  async getWithdrawalCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
+  async getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
     return safeJsonParse(await this.getItem(withdrawalKey));
   }
@@ -363,7 +368,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     }
     return this.setItem(withdrawalKey, safeJsonStringify(commitment));
   }
-
 
   async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
@@ -407,7 +411,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     );
   }
 
-  private hasAppHash(hash: string, toSearch: [string, AppInstanceJson][] | [string, AppInstanceProposal][]) {
+  private hasAppHash(
+    hash: string,
+    toSearch: [string, AppInstanceJson][] | [string, AppInstanceProposal][],
+  ) {
     const existsIndex = toSearch.findIndex(([idHash, app]) => idHash === hash);
     return existsIndex >= 0;
   }

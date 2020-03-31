@@ -105,6 +105,10 @@ export interface IStoreService {
 
   ///// Free balance
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
+  updateFreeBalance(
+    multisigAddress: string,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void>;
 
   ///// Setup commitment
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined>;

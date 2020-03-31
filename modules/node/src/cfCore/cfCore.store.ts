@@ -309,6 +309,13 @@ export class CFCoreStore implements IStoreService {
     return this.appInstanceRepository.getFreeBalance(multisigAddress);
   }
 
+  async updateFreeBalance(
+    multisigAddress: string,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
+    await this.updateAppInstance(multisigAddress, freeBalanceAppInstance);
+  }
+
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     return this.setupCommitmentRepository.getCommitment(multisigAddress);
   }
