@@ -212,7 +212,8 @@ services:
       DOMAINNAME: '$INDRA_DOMAINNAME'
       EMAIL: '$INDRA_EMAIL'
       ETH_RPC_URL: '${INDRA_ETH_PROVIDER#*://}'
-      MESSAGING_URL: 'nats:4221'
+      MESSAGING_TCP_URL: 'nats:4222'
+      MESSAGING_WS_URL: 'nats:4221'
       MODE: 'prod'
       NODE_URL: 'node:8080'
       WEBSERVER_URL: 'webserver:80'
@@ -289,9 +290,6 @@ services:
       driver: 'json-file'
       options:
           max-size: 100m
-    ports:
-      - '$nats_port:$nats_port'
-      - '$nats_ws_port:$nats_ws_port'
 
   redis:
     image: '$redis_image'

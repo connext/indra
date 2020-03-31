@@ -4,7 +4,8 @@ echo "Proxy container launched in env:"
 echo "DOMAINNAME=$DOMAINNAME"
 echo "EMAIL=$EMAIL"
 echo "ETH_RPC_URL=$ETH_RPC_URL"
-echo "MESSAGING_URL=$MESSAGING_URL"
+echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
+echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
 echo "MODE=$MODE"
 echo "NODE_URL=$NODE_URL"
 echo "WEBSERVER_URL=$WEBSERVER_URL"
@@ -28,8 +29,11 @@ while ! curl -s $ETH_RPC_URL > /dev/null
 do sleep 2
 done
 
-echo "waiting for $MESSAGING_URL..."
-bash wait_for.sh -t 60 $MESSAGING_URL 2> /dev/null
+echo "waiting for $MESSAGING_WS_URL..."
+bash wait_for.sh -t 60 $MESSAGING_WS_URL 2> /dev/null
+
+echo "waiting for $MESSAGING_TCP_URL..."
+bash wait_for.sh -t 60 $MESSAGING_TCP_URL 2> /dev/null
 
 echo "waiting for $NODE_URL..."
 bash wait_for.sh -t 60 $NODE_URL 2> /dev/null
