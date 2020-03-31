@@ -72,9 +72,12 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     return appRegistry.functions.isStateFinalized(appInstance.identityHash);
   };
 
-  const isCancellable = () => {
+  const isCancellable = async (challenge?: AppChallengeBigNumber) => {
+    if (!challenge) {
+      challenge = await getChallenge();
+    }
     return appRegistry.functions.isCancellable(
-      appInstance.identityHash,
+      challenge,
       appInstance.defaultTimeout,
     );
   };
@@ -225,20 +228,29 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     expect(await isProgressable()).to.be.true;
   };
 
-  const setAndProgressStateAndVerify = async (versionNumber: number, state: AppWithCounterState, action: AppWithCounterAction, timeout: number = 0, turnTaker: Wallet = bob) => {
+  const setAndProgressStateAndVerify = async (
+    versionNumber: number,
+    state: AppWithCounterState,
+    action: AppWithCounterAction,
+    timeout: number = 0,
+    turnTaker: Wallet = bob,
+  ) => {
     await setAndProgressState(versionNumber, state, action, timeout, turnTaker);
     const resultingState: AppWithCounterState = {
       counter: action.actionType === ActionType.ACCEPT_INCREMENT
         ? state.counter
         : state.counter.add(action.increment),
     };
+    const status = resultingState.counter.gt(5)
+    ? ChallengeStatus.EXPLICITLY_FINALIZED
+    : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     await verifyChallenge({
       latestSubmitter: wallet.address,
       appStateHash: keccak256(encodeState(resultingState)),
       versionNumber: One.add(versionNumber),
-      status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+      status,
     });
-    expect(await isProgressable()).to.be.true;
+    expect(await isProgressable()).to.be.equal(status === ChallengeStatus.IN_ONCHAIN_PROGRESSION);
   };
 
   // No need to verify events here because `setAndProgress` simply emits
