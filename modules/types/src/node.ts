@@ -173,7 +173,6 @@ export interface INodeApiClient {
   fetchSignedTransfer(paymentId: string): Promise<GetSignedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
-  resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
   resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;

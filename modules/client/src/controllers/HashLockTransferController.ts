@@ -21,7 +21,8 @@ export class HashLockTransferController extends AbstractController {
     // convert params + validate
     const amount = toBN(params.amount);
     const timelock = toBN(params.timelock);
-    const { assetId, lockHash, meta } = params;
+    params.meta = params.meta || {};
+    const { assetId, lockHash, meta, recipient } = params;
 
     const initialState: HashLockTransferAppState = {
       coinTransfers: [
@@ -39,6 +40,8 @@ export class HashLockTransferController extends AbstractController {
       preImage: HashZero,
       finalized: false,
     };
+
+    meta["recipient"] = recipient;
 
     const {
       actionEncoding,
