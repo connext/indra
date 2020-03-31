@@ -194,6 +194,7 @@ describe("ConnextStore", () => {
         const retrieved = await store.getAppProposal(proposal.identityHash);
         expect(retrieved).to.deep.eq(proposal);
         const chan = await store.getStateChannel(multisigAddress);
+        expect(chan.monotonicNumProposedApps).to.be.eq(channel.monotonicNumProposedApps);
         expect(chan.proposedAppInstances).to.deep.eq([[proposal.identityHash, proposal]]);
         await store.clear();
       });
