@@ -11,7 +11,8 @@ contract LibDispute {
         NO_CHALLENGE,
         IN_DISPUTE,
         IN_ONCHAIN_PROGRESSION,
-        EXPLICITLY_FINALIZED
+        EXPLICITLY_FINALIZED,
+        OUTCOME_SET
     }
 
     // State hash with version number and timeout, signed by all parties
