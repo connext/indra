@@ -31,8 +31,7 @@ contract LibDispute {
     // Used to cancel a challenge. Inc. current onchain state hash,
     // challenge status, and signatures on this
     struct SignedCancelChallengeRequest {
-        bytes32 appStateHash;
-        ChallengeStatus status;
+        uint256 versionNumber;
         bytes[] signatures;
     }
 

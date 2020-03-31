@@ -24,16 +24,6 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
         AppChallenge storage challenge = appChallenges[identityHash];
 
         require(
-            challenge.status == req.status,
-            "cancelChallenge called with incorrect status"
-        );
-
-        require(
-            challenge.appStateHash == req.appStateHash,
-            "cancelChallenge called with incorrect state"
-        );
-
-        require(
             isCancellable(challenge, appIdentity.defaultTimeout),
             "cancelChallenge called on challenge that cannot be cancelled"
         );
@@ -47,13 +37,17 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
             "Call to cancelChallenge included incorrectly signed request"
         );
 
-        // update the challenge
+        require(
+            req.versionNumber == challenge.versionNumber,
+            "cancelChallenge was called with wrong version number"
+        );
+
+        // Clear challenge
         challenge.status = ChallengeStatus.NO_CHALLENGE;
-        challenge.latestSubmitter = msg.sender;
-        challenge.finalizesAt = 0;
-        // reset version number so challenge
-        // can go through `setState` again if need be
+        challenge.latestSubmitter = address(0x0);
+        challenge.appStateHash = 0;
         challenge.versionNumber = 0;
+        challenge.finalizesAt = 0;
     }
 
     function correctKeysSignedCancelChallengeRequest(
@@ -67,10 +61,14 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
     {
         bytes32 digest = computeCancelChallengeHash(
             identityHash,
-            req.appStateHash,
-            req.status
+            req.versionNumber
         );
 
-        return verifySignatures(req.signatures, digest, participants);
+        return verifySignatures(
+            req.signatures,
+            digest,
+            participants
+        );
     }
+
 }
