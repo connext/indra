@@ -60,13 +60,22 @@ contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
         challenge.status = ChallengeStatus.IN_ONCHAIN_PROGRESSION;
         challenge.latestSubmitter = msg.sender;
         challenge.appStateHash = appStateToHash(newAppState);
-        challenge.versionNumber++;
+        challenge.versionNumber = challenge.versionNumber.add(1);
         challenge.finalizesAt = block.number.add(appIdentity.defaultTimeout);
 
         // Check whether state is terminal, for immediate finalization (could be optional)
         if (isStateTerminal(appIdentity.appDefinition, newAppState)) {
             challenge.status = ChallengeStatus.EXPLICITLY_FINALIZED;
         }
+
+        emit ChallengeUpdated(
+            identityHash,
+            challenge.status,
+            challenge.latestSubmitter,
+            challenge.appStateHash,
+            challenge.versionNumber,
+            challenge.finalizesAt
+        );
     }
 
     function correctKeySignedTheAction(

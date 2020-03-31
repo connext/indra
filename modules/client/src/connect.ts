@@ -1,6 +1,3 @@
-import "core-js/stable";
-import "regenerator-runtime/runtime";
-
 import { MessagingService } from "@connext/messaging";
 import {
   ChannelMethods,

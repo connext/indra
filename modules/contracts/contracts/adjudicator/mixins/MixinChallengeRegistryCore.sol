@@ -16,7 +16,7 @@ contract MixinChallengeRegistryCore is MChallengeRegistryCore {
     function getAppChallenge(bytes32 identityHash)
         external
         view
-        returns (LibStateChannelApp.AppChallenge memory)
+        returns (AppChallenge memory)
     {
         return appChallenges[identityHash];
     }

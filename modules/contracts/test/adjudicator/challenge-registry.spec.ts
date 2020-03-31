@@ -1,300 +1,165 @@
 /* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
-import {
-  sortSignaturesBySignerAddress,
-  createRandomAddress,
-} from "@connext/types";
-import { signDigest } from "@connext/crypto";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { AddressZero, HashZero } from "ethers/constants";
-import {
-  BigNumberish,
-  keccak256,
-} from "ethers/utils";
 
+import { expect, provider, restore, setupContext, snapshot, AppWithCounterState, AppWithCounterAction, encodeState, encodeAction, computeActionHash, moveToBlock } from "./utils";
+
+import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
-import {
-  AppIdentityTestClass,
-  randomState,
-  appStateToHash,
-  computeAppChallengeHash,
-  expect,
-} from "./utils";
-
-enum ChallengeStatus {
-  NO_CHALLENGE,
-  IN_DISPUTE,
-  IN_ONCHAIN_PROGRESSION,
-  EXPLICITLY_FINALIZED,
-};
-
-type Challenge = {
-  status: ChallengeStatus;
-  latestSubmitter: string;
-  appStateHash: string;
-  versionNumber: BigNumberish;
-  finalizesAt: BigNumberish;
-};
-
-const ALICE =
-  // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
-  new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
-
-const BOB =
-  // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
-  new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
-
-// HELPER DATA
-const ONCHAIN_CHALLENGE_TIMEOUT = 30;
+import { ChallengeStatus, toBN, AppChallengeBigNumber } from "@connext/types";
+import { keccak256 } from "ethers/utils";
+import { signDigest } from "@connext/crypto";
 
 describe("ChallengeRegistry", () => {
-  let provider = buidler.provider;
-  let wallet: Wallet;
-  let globalChannelNonce = 0;
-
   let appRegistry: Contract;
+  let appDefinition: Contract;
+  let wallet: Wallet;
 
-  let setStateWithSignatures: (
-    versionNumber: BigNumberish,
-    appState?: string,
-    timeout?: number,
+  let snapshotId: any;
+
+  let ONCHAIN_CHALLENGE_TIMEOUT: number;
+  let alice: Wallet;
+  let action: AppWithCounterAction;
+  let state1: AppWithCounterState;
+  let state0: AppWithCounterState;
+
+  // helpers
+  let setState: (
+    versionNumber: number, 
+    appState?: string, 
+    timeout?: number
   ) => Promise<void>;
-  let cancelChallenge: () => Promise<void>;
-  let sendSignedFinalizationToChain: () => Promise<any>;
-  let getChallenge: () => Promise<Challenge>;
-  let latestAppStateHash: () => Promise<string>;
-  let latestVersionNumber: () => Promise<BigNumberish>;
-  let isStateFinalized: () => Promise<boolean>;
-  let verifyChallenge: (expected: Challenge) => Promise<void>;
-  let verifyEmptyChallenge: () => Promise<void>;
-  let verifyVersionNumber: (expected: BigNumberish) => Promise<void>;
+  let setAndProgressState: (
+    versionNumber: number, 
+    state?: AppWithCounterState, 
+    turnTaker?: Wallet
+  ) => Promise<void>;
+  let setOutcome: (finalState?: string) => Promise<void>;
+  let progressState: (
+    state: AppWithCounterState,
+    action: AppWithCounterAction,
+    actionSig: string
+  ) => Promise<void>;
+  let progressStateAndVerify: (
+    state: AppWithCounterState,
+    action: AppWithCounterAction,
+    signer?: Wallet
+  ) => Promise<void>;
+
+  let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
+  let isProgressable: () => Promise<boolean>;
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
 
     appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
+    appDefinition = await waffle.deployContract(wallet, AppWithAction);
   });
 
   beforeEach(async () => {
-    const appIdentityTestObject = new AppIdentityTestClass(
-      [ALICE.address, BOB.address],
-      createRandomAddress(),
-      10,
-      globalChannelNonce,
+    snapshotId = await snapshot();
+    const context = await setupContext(appRegistry, appDefinition);
+
+    // apps / constants
+    ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
+    alice = context["alice"];
+    state0 = context["state0"];
+    action = context["action"];
+    state1 = context["state1"];
+
+
+    // helpers
+    setState = context["setStateAndVerify"];
+    progressState = context["progressState"];
+    progressStateAndVerify = context["progressStateAndVerify"];
+    setOutcome = context["setOutcomeAndVerify"];
+    setAndProgressState = 
+      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressStateAndVerify"](
+        versionNumber, // nonce
+        state || state0, // state
+        action, // action
+        undefined, // timeout
+        turnTaker || context["bob"], // turn taker
+      );
+    verifyChallenge = context["verifyChallenge"];
+    isProgressable = context["isProgressable"];
+  });
+
+  afterEach(async () => {
+    await restore(snapshotId);
+  });
+
+  it("Can successfully dispute using: `setAndProgressState` + `progressState` + `setOutcome`", async () => {
+    // first set the state
+    await setAndProgressState(1, state0);
+
+    // update with `progressState` to finalized state
+    // state finalizes when counter > 5
+    const finalizingAction = { ...action, increment: toBN(10) };
+    const thingToSign = computeActionHash(
+      alice.address,
+      keccak256(encodeState(state1)),
+      encodeAction(finalizingAction),
+      2, // version number after action applied
     );
-
-    globalChannelNonce += 1;
-
-    getChallenge = () => appRegistry.functions.getAppChallenge(appIdentityTestObject.identityHash);
-
-    latestAppStateHash = async () => (await getChallenge()).appStateHash;
-
-    latestVersionNumber = async () => (await getChallenge()).versionNumber;
-
-    isStateFinalized = async () =>
-      await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
-
-    verifyChallenge = async (expected: Challenge) => {
-      const {
-        status,
-        latestSubmitter,
-        appStateHash,
-        versionNumber,
-        finalizesAt,
-      } = await getChallenge();
-
-      expect(status).to.be.eq(expected.status);
-      expect(latestSubmitter).to.be.eq(expected.latestSubmitter);
-      expect(appStateHash).to.be.eq(expected.appStateHash);
-      expect(versionNumber).to.be.eq(expected.versionNumber);
-      expect(finalizesAt).to.be.eq(expected.finalizesAt);
+    const signature = await signDigest(alice.privateKey, thingToSign);
+    await progressState(state1, finalizingAction, signature);
+    // verify explicitly finalized
+    const finalState = {
+      counter: state1.counter.add(finalizingAction.increment),
     };
-
-    verifyEmptyChallenge = async () => {
-      await verifyChallenge({
-        status: ChallengeStatus.NO_CHALLENGE,
-        latestSubmitter: AddressZero,
-        appStateHash: HashZero,
-        versionNumber: 0,
-        finalizesAt: 0,
-      });
-    };
-
-    verifyVersionNumber = async (expectedVersionNumber: BigNumberish) => {
-      const { versionNumber } = await getChallenge();
-      expect(versionNumber).to.be.eq(expectedVersionNumber);
-    };
-
-    cancelChallenge = async () => {
-      const digest = computeAppChallengeHash(
-        appIdentityTestObject.identityHash,
-        await latestAppStateHash(),
-        await latestVersionNumber(),
-        appIdentityTestObject.defaultTimeout,
-      );
-
-      await appRegistry.functions.cancelChallenge(
-        appIdentityTestObject.appIdentity,
-        await sortSignaturesBySignerAddress(digest, [
-          await signDigest(ALICE.privateKey, digest),
-          await signDigest(BOB.privateKey, digest),
-        ]),
-      );
-    };
-
-    setStateWithSignatures = async (
-      versionNumber: BigNumberish,
-      appState: string = HashZero,
-      timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
-    ) => {
-      const stateHash = keccak256(appState);
-      const digest = computeAppChallengeHash(
-        appIdentityTestObject.identityHash,
-        stateHash,
-        versionNumber,
-        timeout,
-      );
-      await appRegistry.functions.setState(appIdentityTestObject.appIdentity, {
-        timeout,
-        versionNumber,
-        appStateHash: stateHash,
-        signatures: await sortSignaturesBySignerAddress(digest, [
-          await signDigest(ALICE.privateKey, digest),
-          await signDigest(BOB.privateKey, digest),
-        ]),
-      });
-    };
-
-    /* TODO [OLD]: doesn't work currently
-    sendSignedFinalizationToChain = async () =>
-      await setStateWithSignatures(
-        (await latestVersionNumber()) + 1,
-        await latestAppStateHash(),
-        0,
-      );
-    */
-  });
-
-  describe("setState -- happy case", () => {
-    it("should work when a challenge is submitted for the first time", async () => {
-      await verifyEmptyChallenge();
-
-      const versionNumber = 3;
-      const state = randomState();
-      const timeout = 4;
-
-      await setStateWithSignatures(versionNumber, state, timeout);
-
-      await verifyChallenge({
-        status: ChallengeStatus.IN_DISPUTE,
-        latestSubmitter: await wallet.getAddress(),
-        appStateHash: appStateToHash(state),
-        versionNumber: versionNumber,
-        finalizesAt: await provider.getBlockNumber() + timeout,
-      });
+    await verifyChallenge({
+      appStateHash: keccak256(encodeState(finalState)),
+      status: ChallengeStatus.EXPLICITLY_FINALIZED,
+      latestSubmitter: wallet.address,
+      versionNumber: toBN(3),
     });
 
-    it("should work when a challenge with a higher version number is submmitted", async () => {
-      const versionNumber = 3;
-      const state = randomState();
-      const timeout = 4;
-
-      await setStateWithSignatures(versionNumber, state, timeout);
-
-      await verifyChallenge({
-        status: ChallengeStatus.IN_DISPUTE,
-        latestSubmitter: await wallet.getAddress(),
-        appStateHash: appStateToHash(state),
-        versionNumber: versionNumber,
-        finalizesAt: await provider.getBlockNumber() + timeout,
-      });
-
-      const newVersionNumber = 4;
-      const newState = randomState();
-      const newTimeout = 2;
-
-      await setStateWithSignatures(newVersionNumber, newState, newTimeout);
-
-      await verifyChallenge({
-        status: ChallengeStatus.IN_DISPUTE,
-        latestSubmitter: await wallet.getAddress(),
-        appStateHash: appStateToHash(newState),
-        versionNumber: newVersionNumber,
-        finalizesAt: await provider.getBlockNumber() + newTimeout,
-      });
-    });
+    // set + verify outcome
+    await setOutcome(encodeState(finalState));
   });
 
-  // Old stuff
-  describe("updating app state", () => {
-    describe("with signing keys", async () => {
-      it("should work with higher versionNumber", async () => {
-        expect(await latestVersionNumber()).to.eq(0);
-        await setStateWithSignatures(1);
-        expect(await latestVersionNumber()).to.eq(1);
-      });
+  it("Can successfully dispute using: `setState` + `setState` + `setOutcome`", async () => {
+    await setState(1, encodeState(state0));
 
-      it("should work many times", async () => {
-        expect(await latestVersionNumber()).to.eq(0);
-        await setStateWithSignatures(1);
-        expect(await latestVersionNumber()).to.eq(1);
-        await cancelChallenge();
-        await setStateWithSignatures(2);
-        expect(await latestVersionNumber()).to.eq(2);
-        await cancelChallenge();
-        await setStateWithSignatures(3);
-        expect(await latestVersionNumber()).to.eq(3);
-      });
+    await setState(10, encodeState(state0));
 
-      it("should work with much higher versionNumber", async () => {
-        expect(await latestVersionNumber()).to.eq(0);
-        await setStateWithSignatures(1000);
-        expect(await latestVersionNumber()).to.eq(1000);
-      });
+    await setState(15, encodeState(state0));
 
-      it("shouldn't work with an equal versionNumber", async () => {
-        await expect(setStateWithSignatures(0)).to.be.reverted;  // TODO: check revert message
-        expect(await latestVersionNumber()).to.eq(0);
-      });
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 15);
 
-      it("shouldn't work with a lower versionNumber", async () => {
-        await setStateWithSignatures(1);
-        await expect(setStateWithSignatures(0)).to.be.reverted;  // TODO: check revert message
-        expect(await latestVersionNumber()).to.eq(1);
-      });
-    });
+    await setOutcome(encodeState(state0));
   });
 
-  /* TODO [OLD]: doesn't work currently
-  describe("finalizing app state", async () => {
-    it("should work with keys", async () => {
-      expect(await isStateFinalized()).to.be.false;
-      await sendSignedFinalizationToChain();
-      expect(await isStateFinalized()).to.be.true;
-    });
+  it("Can successfully dispute using: `setState` + `progressState` + `progressState` + `setOutcome`", async () => {
+    await setState(1, encodeState(state0));
+
+    await setState(10, encodeState(state0));
+
+    await setState(15, encodeState(state0));
+
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    expect(await isProgressable()).to.be.true;
+
+    await progressStateAndVerify(state0, action);
+    await progressStateAndVerify(state1, action, alice);
+
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+    expect(await isProgressable()).to.be.false;
+
+    await setOutcome(encodeState({
+      ...state1,
+      counter: state1.counter.add(action.increment),
+    }));
   });
-  */
 
-  /* TODO [OLD]: doesn't work currently
-  describe("waiting for timeout", async () => {
-    it("should block updates after the timeout", async () => {
-      expect(await isStateFinalized()).to.be.false;
+  // TODO: merge cancel PR!
+  it.skip("Can cancel challenge at `setState` phase", async () => {});
 
-      await setStateWithSignatures(1);
+  // TODO: merge cancel PR!
+  it.skip("Can cancel challenge at `progressState` phase", async () => {});
 
-      for (let index = 0; index <= ONCHAIN_CHALLENGE_TIMEOUT + 1; index++) {
-        await provider.send("evm_mine", []);
-      }
-
-      expect(await isStateFinalized()).to.be.true;
-
-      await expect(setStateWithSignatures(2)).to.be.reverted;  // TODO: check revert message
-
-      await expect(setStateWithSignatures(0)).to.be.reverted;  // TODO: check revert message
-    });
-  });
-  */
-
+  // TODO: merge cancel PR!
+  it.skip("Cannot cancel challenge after outcome set", async () => {});
 });

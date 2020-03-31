@@ -32,6 +32,16 @@ contract LibStateChannelApp is LibDispute {
         uint256 finalizesAt;
     }
 
+    // Event emitted when the challenge is updated
+    event ChallengeUpdated (
+      bytes32 identityHash,
+      ChallengeStatus status,
+      address latestSubmitter,
+      bytes32 appStateHash,
+      uint256 versionNumber,
+      uint256 finalizesAt
+    );
+
     /// @dev Checks whether the given timeout has passed
     /// @param timeout a timeout as block number
     function hasPassed(
