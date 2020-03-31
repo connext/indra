@@ -43,7 +43,6 @@ done
 
 echo "waiting for $WEBSERVER_URL..."
 bash wait_for.sh -t 60 $WEBSERVER_URL 2> /dev/null
-# Do a more thorough check to ensure the dashboard is online
 while ! curl -s $WEBSERVER_URL > /dev/null
 do sleep 2
 done
@@ -74,13 +73,13 @@ then
 fi
 
 echo "Using certs for $DOMAINNAME"
-
-cat $certsdir/fullchain.pem $certsdir/privkey.pem > /etc/haproxy/certs/$DOMAINNAME.pem
+cat $certsdir/fullchain.pem $certsdir/privkey.pem > /root/$DOMAINNAME.pem
 
 export CERTBOT_PORT=31820
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
+  sleep 3 # give proxy a sec to wake up before attempting first renewal
   while true
   do
     echo -n "Preparing to renew certs... "
@@ -88,7 +87,7 @@ function renewcerts {
     then
       echo -n "Found certs to renew for $DOMAINNAME... "
       certbot renew -n --standalone --http-01-port=$CERTBOT_PORT
-      cat $certsdir/fullchain.pem $certsdir/privkey.pem > /etc/haproxy/certs/$DOMAINNAME.pem
+      cat $certsdir/fullchain.pem $certsdir/privkey.pem > /root/$DOMAINNAME.pem
       echo "Done!"
     fi
     sleep 48h
@@ -96,9 +95,7 @@ function renewcerts {
 }
 
 if [[ "$DOMAINNAME" != "localhost" ]]
-then
-  renewcerts &
-  sleep 3 # give renewcerts a sec to do it's first check
+then renewcerts &
 fi
 
 echo "Entrypoint finished, executing haproxy..."; echo

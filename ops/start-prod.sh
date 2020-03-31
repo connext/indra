@@ -220,7 +220,7 @@ services:
     logging:
       driver: 'json-file'
       options:
-          max-size: 100m
+          max-size: '100m'
     ports:
       - '80:80'
       - '443:443'
@@ -258,7 +258,7 @@ services:
     logging:
       driver: 'json-file'
       options:
-          max-size: 100m
+          max-size: '100m'
     secrets:
       - '$db_secret'
       - '$eth_mnemonic_name'
@@ -289,7 +289,7 @@ services:
     logging:
       driver: 'json-file'
       options:
-          max-size: 100m
+          max-size: '100m'
 
   redis:
     image: '$redis_image'
