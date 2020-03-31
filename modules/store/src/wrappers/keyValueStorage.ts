@@ -152,7 +152,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       throw new Error(`App instance with hash ${appInstance.identityHash} already exists`);
     }
     channel.appInstances.push([appInstance.identityHash, appInstance]);
-    return this.saveStateChannel(channel);
+    return this.saveStateChannel({ ...channel, freeBalanceAppInstance });
   }
 
   async updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
@@ -168,7 +168,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.saveStateChannel(channel);
   }
 
-  async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
+  async removeAppInstance(
+    multisigAddress: string,
+    appInstanceId: string,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       return;
@@ -180,7 +184,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const idx = channel.appInstances.findIndex(([app]) => app === appInstanceId);
     channel.appInstances.splice(idx, 1);
 
-    return this.saveStateChannel(channel);
+    return this.saveStateChannel({ ...channel, freeBalanceAppInstance });
   }
 
   async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
