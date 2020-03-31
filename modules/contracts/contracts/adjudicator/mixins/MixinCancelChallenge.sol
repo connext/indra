@@ -51,11 +51,11 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
 
         emit ChallengeUpdated(
             identityHash,
-            ChallengeStatus.NO_CHALLENGE,
-            address(0x0),
-            0,
-            0,
-            0
+            challenge.status,
+            challenge.latestSubmitter,
+            challenge.appStateHash,
+            challenge.versionNumber,
+            challenge.finalizesAt
         );
     }
 
