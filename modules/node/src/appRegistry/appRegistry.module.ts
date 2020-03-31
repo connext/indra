@@ -15,6 +15,7 @@ import { MessagingModule } from "../messaging/messaging.module";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
 import { SignedTransferModule } from "../signedTransfer/signedTransfer.module";
+import { HashLockTransferModule } from "../hashLockTransfer/hashLockTransfer.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -29,6 +30,7 @@ import { AppActionsService } from "./appActions.service";
     ChannelModule,
     ConfigModule,
     FastSignedTransferModule,
+    HashLockTransferModule,
     LinkedTransferModule,
     LoggerModule,
     LinkedTransferModule,

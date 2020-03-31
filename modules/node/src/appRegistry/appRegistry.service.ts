@@ -19,6 +19,7 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   WithdrawAppState,
+  HashLockTransferAppState,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -33,6 +34,7 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
 import { WithdrawService } from "../withdraw/withdraw.service";
+import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -44,6 +46,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
+    private readonly hashlockTransferService: HashLockTransferService,
     private readonly swapRateService: SwapRateService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
@@ -171,6 +174,17 @@ export class AppRegistryService implements OnModuleInit {
           blockNumber,
           from,
           this.cfCoreService.cfCore.publicIdentifier,
+        );
+
+        // install for receiver or error
+        // https://github.com/ConnextProject/indra/issues/942
+        const recipient = proposeInstallParams.meta["recipient"];
+        await this.hashlockTransferService.resolveHashLockTransfer(
+          from,
+          recipient,
+          proposeInstallParams.initialState as HashLockTransferAppState,
+          proposeInstallParams.initiatorDepositTokenAddress,
+          proposeInstallParams.meta,
         );
         break;
       }
