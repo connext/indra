@@ -1,6 +1,7 @@
 import {
   bigNumberifyJson,
   CoinBalanceRefundAppName,
+  DepositAppName,
   EventNames,
   EventPayloads,
   FastSignedTransferAppName,
@@ -21,6 +22,7 @@ import {
   validateFastSignedTransferApp,
   validateHashLockTransferApp,
   validateSignedTransferApp,
+  validateDepositApp,
 } from "@connext/apps";
 
 import { ConnextClient } from "./connext";
@@ -315,6 +317,9 @@ export class ConnextListener extends ConnextEventEmitter {
         case SimpleSignedTransferAppName: {
           validateSignedTransferApp(params, from, this.connext.publicIdentifier);
           break;
+        }
+        case DepositAppName: {
+          validateDepositApp(params, from, this.connext.publicIdentifier, this.connext.multisigAddress, this.connext.ethProvider);
         }
         default: {
           throw new Error(

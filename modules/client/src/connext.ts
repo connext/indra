@@ -10,6 +10,8 @@ import {
   ConditionalTransferResponse,
   ConditionalTransferTypes,
   createRandom32ByteHexString,
+  DepositParameters,
+  DepositResponse,
   EventNames,
   GetHashLockTransferResponse,
   GetLinkedTransferResponse,
@@ -38,7 +40,6 @@ import tokenAbi from "human-standard-token-abi";
 import { createCFChannelProvider } from "./channelProvider";
 import { LinkedTransferController } from "./controllers/LinkedTransferController";
 import { DepositController } from "./controllers/DepositController";
-import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
 import { SwapController } from "./controllers/SwapController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { stringify, withdrawalKey, xpubToAddress } from "./lib";
@@ -53,7 +54,6 @@ import {
   ConnextClientStorePrefix,
   CreateChannelResponse,
   DefaultApp,
-  DepositParameters,
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
@@ -69,8 +69,6 @@ import {
   TransferInfo,
   TransferParameters,
 } from "./types";
-import { invalidAddress } from "./validation/addresses";
-import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 import { ResolveLinkedTransferController } from "./controllers/ResolveLinkedTransferController";
 import { FastSignedTransferController } from "./controllers/FastSignedTransferController";
 import { ResolveFastSignedTransferController } from "./controllers/ResolveFastSignedTransferController";
@@ -106,7 +104,6 @@ export class ConnextClient implements IConnextClient {
   private withdrawalController: WithdrawalController;
   private linkedTransferController: LinkedTransferController;
   private resolveLinkedTransferController: ResolveLinkedTransferController;
-  private requestDepositRightsController: RequestDepositRightsController;
   private fastSignedTransferController: FastSignedTransferController;
   private resolveFastSignedTransferController: ResolveFastSignedTransferController;
   private hashlockTransferController: HashLockTransferController;
@@ -145,10 +142,6 @@ export class ConnextClient implements IConnextClient {
     this.linkedTransferController = new LinkedTransferController("LinkedTransferController", this);
     this.resolveLinkedTransferController = new ResolveLinkedTransferController(
       "ResolveLinkedTransferController",
-      this,
-    );
-    this.requestDepositRightsController = new RequestDepositRightsController(
-      "RequestDepositRightsController",
       this,
     );
     this.fastSignedTransferController = new FastSignedTransferController(
@@ -313,49 +306,26 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // CORE CHANNEL METHODS
 
-  public deposit = async (params: DepositParameters): Promise<ChannelState> => {
+  public deposit = async (params: DepositParameters): Promise<DepositResponse> => {
     return this.depositController.deposit(params);
   };
 
   public requestDepositRights = async (
     params: RequestDepositRightsParameters,
   ): Promise<MethodResults.RequestDepositRights> => {
-    return await this.requestDepositRightsController.requestDepositRights(params);
+    return this.depositController.requestDepositRights(params);
   };
 
   public rescindDepositRights = async (
     params: RescindDepositRightsParameters,
   ): Promise<RescindDepositRightsResponse> => {
-    return this.channelProvider.send(MethodNames.chan_rescindDepositRights, {
-      multisigAddress: this.multisigAddress,
-      tokenAddress: params.assetId,
-    } as MethodParams.RescindDepositRights);
+    return this.depositController.rescindDepositRights(params);
   };
 
   public checkDepositRights = async (
     params: CheckDepositRightsParameters,
   ): Promise<CheckDepositRightsResponse> => {
-    const refundApp = await this.getBalanceRefundApp(params.assetId);
-    if (!refundApp) {
-      throw new Error(`No balance refund app installed for ${params.assetId}`);
-    }
-    const multisigBalance =
-      !refundApp.latestState["tokenAddress"] &&
-      refundApp.latestState["tokenAddress"] !== AddressZero
-        ? await this.ethProvider.getBalance(this.multisigAddress)
-        : await new Contract(
-            refundApp.latestState["tokenAddress"],
-            tokenAbi,
-            this.ethProvider,
-          ).functions.balanceOf(this.multisigAddress);
-    return refundApp
-      ? {
-          assetId: refundApp.latestState["tokenAddress"],
-          multisigBalance: multisigBalance.toString(),
-          recipient: refundApp.latestState["recipient"],
-          threshold: refundApp.latestState["threshold"],
-        }
-      : undefined;
+    return this.depositController.getDepositApp({assetId: params.assetId});
   };
 
   public swap = async (params: SwapParameters): Promise<GetChannelResponse> => {
@@ -554,40 +524,6 @@ export class ConnextClient implements IConnextClient {
     return await this.channelProvider.send(MethodNames.chan_getStateChannel, {
       multisigAddress: this.multisigAddress,
     });
-  };
-
-  public providerDeposit = async (
-    amount: BigNumber,
-    assetId: string,
-    notifyCounterparty: boolean = false,
-  ): Promise<MethodResults.Deposit> => {
-    const depositAddr = xpubToAddress(this.publicIdentifier);
-    let bal: BigNumber;
-
-    if (assetId === AddressZero) {
-      bal = await this.ethProvider.getBalance(depositAddr);
-    } else {
-      // get token balance
-      const token = new Contract(assetId, tokenAbi, this.ethProvider);
-      // TODO: correct? how can i use allowance?
-      bal = await token.balanceOf(depositAddr);
-    }
-
-    const err = [
-      notPositive(amount),
-      invalidAddress(assetId),
-      notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
-    ].filter(falsy)[0];
-    if (err) {
-      this.log.error(err);
-      throw new Error(err);
-    }
-    return await this.channelProvider.send(MethodNames.chan_deposit, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      notifyCounterparty,
-      tokenAddress: getAddress(assetId),
-    } as MethodParams.Deposit);
   };
 
   public getAppInstances = async (): Promise<AppInstanceJson[]> => {
