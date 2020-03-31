@@ -185,7 +185,7 @@ allowed_swaps='[{"from":"'"$token_address"'","to":"0x000000000000000000000000000
 ########################################
 ## Deploy according to configuration
 
-echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
+echo "Deploying $number_of_services services eg node=$node_image to $INDRA_DOMAINNAME"
 
 mkdir -p `pwd`/ops/database/snapshots
 mkdir -p /tmp/$project

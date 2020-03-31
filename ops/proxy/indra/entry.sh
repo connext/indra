@@ -13,7 +13,7 @@ echo "WEBSERVER_URL=$WEBSERVER_URL"
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
   while true # unix.stackexchange.com/a/37762
-  do echo 'Waiting for the rest of the app to wake up..' | nc -lk -p 80
+  do echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nWaiting for Indra to wake up" | nc -lk -p 80
   done > /dev/null
 }
 loading_msg &
