@@ -33,6 +33,7 @@ describe("ConnextStore", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
         const store = createConnextStore(type as StoreTypes, { fileDir });
+        await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         await store.createStateChannel(channel);
         const retrieved = await store.getStateChannel(channel.multisigAddress);
@@ -46,6 +47,7 @@ describe("ConnextStore", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
         const store = createConnextStore(type as StoreTypes, { fileDir });
+        await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         const nullValue = await store.getStateChannel(channel.multisigAddress);
         expect(nullValue).to.be.undefined;
@@ -65,6 +67,7 @@ describe("ConnextStore", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
         const store = createConnextStore(type as StoreTypes, { fileDir });
+        await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         const owners = channel.userNeuteredExtendedKeys;
         const nullValue = await store.getStateChannelByOwners(owners);
@@ -81,6 +84,7 @@ describe("ConnextStore", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
         const store = createConnextStore(type as StoreTypes, { fileDir });
+        await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
         const appInstanceId = channel.appInstances[0][0];
         const nullValue = await store.getStateChannelByAppInstanceId(appInstanceId);
@@ -352,6 +356,7 @@ describe("ConnextStore", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should work`, async () => {
         const store = createConnextStore(type as StoreTypes, { fileDir });
+        await store.updateSchemaVersion();
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         await store.createStateChannel(TEST_STORE_CHANNEL);
         const retrieved = await store.getStateChannel(multisigAddress);
@@ -366,6 +371,7 @@ describe("ConnextStore", () => {
     Object.keys(StoreTypes).forEach(type => {
       it(`${type} - should restore empty state when not provided with a backup service`, async () => {
         const store = createConnextStore(type as StoreTypes, { fileDir });
+        await store.updateSchemaVersion();
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         await store.createStateChannel(TEST_STORE_CHANNEL);
         const retrieved = await store.getStateChannel(multisigAddress);
@@ -384,6 +390,7 @@ describe("ConnextStore", () => {
           backupService: new MockBackupService(),
           fileDir,
         });
+        await store.updateSchemaVersion();
         const multisigAddress = TEST_STORE_ETH_ADDRESS;
         await store.createStateChannel(TEST_STORE_CHANNEL);
         const retrieved = await store.getStateChannel(multisigAddress);
