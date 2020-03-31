@@ -157,12 +157,12 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
     const [app] = await this.findByMultisigAddressAndType(multisigAddress, AppType.FREE_BALANCE);
-    return convertAppToInstanceJSON(app, app.channel);
+    return app && convertAppToInstanceJSON(app, app.channel);
   }
 
   async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
     const app = await this.findByIdentityHash(appInstanceId);
-    return convertAppToInstanceJSON(app, app.channel);
+    return app && convertAppToInstanceJSON(app, app.channel);
   }
 
   async findLinkedTransferAppsByPaymentIdAndType(
