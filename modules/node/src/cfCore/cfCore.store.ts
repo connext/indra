@@ -23,7 +23,7 @@ import {
   ConditionalTransactionCommitmentRepository,
   convertConditionalCommitmentToJson,
 } from "../conditionalCommitment/conditionalCommitment.repository";
-import { ChannelRepository } from "../channel/channel.repository";
+import { ChannelRepository, convertChannelToJSON } from "../channel/channel.repository";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 import { xkeyKthAddress } from "../util";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
@@ -54,7 +54,8 @@ export class CFCoreStore implements IStoreService {
   }
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
-    throw new Error("Method not implemented.");
+    const allChannels = await this.channelRepository.find();
+    return allChannels.map(channel => convertChannelToJSON(channel));
   }
 
   getStateChannel(multisigAddress: string): Promise<StateChannelJSON> {
