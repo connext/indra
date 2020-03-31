@@ -80,6 +80,7 @@ export class ChannelRepository extends Repository<Channel> {
   async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
     return this.findOne({
       where: { userPublicIdentifier },
+      relations: ["appInstances"],
     });
   }
 
@@ -93,6 +94,7 @@ export class ChannelRepository extends Repository<Channel> {
       .getOne();
     return this.findOne({
       where: { id: channel.id },
+      relations: ["appInstances"],
     });
   }
 
