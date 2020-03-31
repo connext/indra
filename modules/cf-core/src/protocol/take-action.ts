@@ -50,7 +50,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     // 40ms
     let substart = Date.now();
     const postProtocolStateChannel = preProtocolStateChannel.setState(
-      preAppInstance,
+      appIdentityHash,
       await preAppInstance.computeStateTransition(action, network.provider),
     );
     logTime(log, substart, `SetState called in takeAction initiating`);
