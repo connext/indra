@@ -14,7 +14,7 @@ contract DelegateProxy {
         require(success, "Delegate call failed.");
     }
 
-    function withdraw(address assetId, address recipient, uint256 amount) public {
+    function withdraw(address assetId, address payable recipient, uint256 amount) public {
         totalAmountWithdrawn[assetId] += amount;
         if (assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
             recipient.send(amount);
