@@ -1,7 +1,7 @@
 import { ILogger, ClientOptions, createRandom32ByteHexString } from "@connext/types";
 import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
-import { RINKEBY_NETWORK, MAINNET_NETWORK } from "./constants";
+import { RINKEBY_NETWORK, MAINNET_NETWORK, LOCALHOST_NETWORK } from "./constants";
 
 export const logTime = (log: ILogger, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -108,6 +108,10 @@ export function isMainnet(network: string): boolean {
 
 export function isRinkeby(network: string): boolean {
   return network.toLowerCase() === RINKEBY_NETWORK.toLowerCase();
+}
+
+export function isLocalhost(network: string): boolean {
+  return network.toLowerCase() === LOCALHOST_NETWORK.toLowerCase();
 }
 
 export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
