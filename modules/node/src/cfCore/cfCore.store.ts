@@ -289,7 +289,7 @@ export class CFCoreStore implements IStoreService {
     // in the listener
     const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
     if (!app || app.type !== AppType.PROPOSAL) {
-      throw new Error(`No app proposal existed for ${appInstanceId}`);
+      return;
     }
     app.type = AppType.REJECTED;
 
