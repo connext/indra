@@ -78,6 +78,17 @@ export function encodeOutcome() {
   return defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
 }
 
+// TS version of MChallengeRegistryCore::computeCancelChallengeHash
+export const computeCancelChallengeHash = (
+  identityHash: string,
+  versionNumber: BigNumberish,
+) => keccak256(
+  solidityPack(
+    ["bytes1", "bytes32", "uint256"],
+    ["0x19", identityHash, versionNumber],
+  ),
+);
+
 // TS version of MChallengeRegistryCore::appStateToHash
 export const appStateToHash = (state: string) => keccak256(state);
 
