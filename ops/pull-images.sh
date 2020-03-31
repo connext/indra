@@ -6,7 +6,7 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 version="$1"
-images="database ethprovider node proxy test_runner"
+images="database ethprovider node proxy test_runner webserver"
 
 for image in $images
 do

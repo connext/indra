@@ -8,7 +8,7 @@ registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"
 version="$1"
 
 commit=`git rev-parse HEAD | head -c 8`
-images="database ethprovider node proxy test_runner"
+images="database ethprovider node proxy test_runner webserver"
 registry_url="https://index.docker.io/v1/repositories/${registry#*/}"
 
 function safePush {
