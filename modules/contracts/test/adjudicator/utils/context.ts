@@ -289,7 +289,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
   };
 
   const cancelChallenge = async (versionNumber: number, signatures?: string[]): Promise<void> => {
-    const digest = computeCancelChallengeHash(appInstance.identityHash, versionNumber);
+    const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
     if (!signatures) {
       signatures = await sortSignaturesBySignerAddress(digest, [
         await signDigest(alice.privateKey, digest),
@@ -311,9 +311,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
 
   const cancelChallengeAndVerify = async (versionNumber: number, signatures?: string[]): Promise<void> => {
     await cancelChallenge(versionNumber, signatures);
-    console.log(`cancelled challenge, verifying...`);
     await verifyChallenge(EMPTY_CHALLENGE);
-    console.log(`verified!`);
   };
 
   return {

@@ -81,7 +81,7 @@ export function encodeOutcome() {
 // TS version of MChallengeRegistryCore::computeCancelChallengeHash
 export const computeCancelChallengeHash = (
   identityHash: string,
-  versionNumber: BigNumberish,
+  versionNumber: BigNumber,
 ) => keccak256(
   solidityPack(
     ["bytes1", "bytes32", "uint256"],

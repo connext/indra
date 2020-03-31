@@ -9,7 +9,7 @@ import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 import { BigNumberish } from "ethers/utils";
 import { AppChallengeBigNumber, ChallengeStatus, toBN } from "@connext/types";
 
-describe.only("LibStateChannelApp", () => {
+describe("LibStateChannelApp", () => {
 
   let appRegistry: Contract;
   let appDefinition: Contract;

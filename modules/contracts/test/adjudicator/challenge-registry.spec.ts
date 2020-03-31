@@ -45,6 +45,10 @@ describe("ChallengeRegistry", () => {
     action: AppWithCounterAction,
     signer?: Wallet
   ) => Promise<void>;
+  let cancelChallengeAndVerify: (
+    versionNumber: number,
+    signatures?: string[],
+  ) => Promise<void>;
 
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
@@ -84,6 +88,7 @@ describe("ChallengeRegistry", () => {
       );
     verifyChallenge = context["verifyChallenge"];
     isProgressable = context["isProgressable"];
+    cancelChallengeAndVerify = context["cancelChallengeAndVerify"];
   });
 
   afterEach(async () => {
@@ -154,12 +159,28 @@ describe("ChallengeRegistry", () => {
     }));
   });
 
-  // TODO: merge cancel PR!
-  it.skip("Can cancel challenge at `setState` phase", async () => {});
+  it("Can cancel challenge at `setState` phase", async () => {
+    await setState(1, encodeState(state0));
+    await cancelChallengeAndVerify(1);
 
-  // TODO: merge cancel PR!
-  it.skip("Can cancel challenge at `progressState` phase", async () => {});
+    await setState(15, encodeState(state0));
+    await cancelChallengeAndVerify(15);
+  });
 
-  // TODO: merge cancel PR!
-  it.skip("Cannot cancel challenge after outcome set", async () => {});
+  it("Can cancel challenge at `progressState` phase", async () => {
+    await setAndProgressState(1, state0);
+    await cancelChallengeAndVerify(2);
+
+    await setAndProgressState(2, state0);
+    await cancelChallengeAndVerify(3);
+  });
+
+  it("Cannot cancel challenge after outcome set", async () => {
+    await setState(1, encodeState(state0));
+
+    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+
+    await setOutcome(encodeState(state0));
+    await expect(cancelChallengeAndVerify(1)).to.be.revertedWith("cancelChallenge called on challenge that cannot be cancelled");
+  });
 });

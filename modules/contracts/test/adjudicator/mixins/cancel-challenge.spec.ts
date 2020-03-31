@@ -6,7 +6,7 @@ import { expect, restore, snapshot, setupContext, provider, AppWithCounterState,
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
-import { sortSignaturesBySignerAddress } from "@connext/types";
+import { sortSignaturesBySignerAddress, toBN } from "@connext/types";
 import { signDigest } from "@connext/crypto";
 
 describe("cancelChallenge", () => {
@@ -97,7 +97,7 @@ describe("cancelChallenge", () => {
     const versionNumber = 2;
     await setState(versionNumber);
 
-    const digest = computeCancelChallengeHash(appInstance.identityHash, versionNumber);
+    const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
     const signatures = await sortSignaturesBySignerAddress(digest, [
       await signDigest(wallet.privateKey, digest),
       await signDigest(bob.privateKey, digest),
