@@ -1,5 +1,6 @@
 import {
   CoinBalanceRefundAppName,
+  DepositAppName,
   enumify,
   FastSignedTransferAppName,
   HashLockTransferAppName,
@@ -18,6 +19,7 @@ export const SupportedApplications = enumify({
   [FastSignedTransferAppName]: FastSignedTransferAppName,
   [WithdrawAppName]: WithdrawAppName,
   [HashLockTransferAppName]: HashLockTransferAppName,
+  [DepositAppName]: DepositAppName
 });
 
 export type SupportedApplications =
