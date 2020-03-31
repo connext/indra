@@ -23,6 +23,7 @@ import {
   ResolveSignedTransferResponse,
 } from "./SimpleSignedTransferApp";
 export * from "./CoinBalanceRefundApp";
+export * from "./DepositApp";
 export * from "./common";
 export * from "./FastSignedTransfer";
 export * from "./HashLockTransferApp";
