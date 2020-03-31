@@ -1,16 +1,13 @@
 #!/bin/bash
 
-# Set default email & domain name
-DOMAINNAME="${DOMAINNAME:-localhost}"
-EMAIL="${EMAIL:-noreply@gmail.com}"
-MODE="${MODE:-dev}"
-
-ETH_RPC_URL="${ETH_RPC_URL:-ethprovider:8545}"
-MESSAGING_URL="${MESSAGING_URL:-nats:4221}"
-NODE_URL="${NODE_URL:-node:8080}"
-WEBSERVER_URL="${WEBSERVER_URL:-webserver:3000}"
-
-echo "domain=$DOMAINNAME mode=$MODE email=$EMAIL eth=$ETH_RPC_URL messaging=$MESSAGING_URL ui=$WEBSERVER_URL node=$NODE_URL"
+echo "Proxy container launched in env:"
+echo "DOMAINNAME=$DOMAINNAME"
+echo "EMAIL=$EMAIL"
+echo "ETH_RPC_URL=$ETH_RPC_URL"
+echo "MESSAGING_URL=$MESSAGING_URL"
+echo "MODE=$MODE"
+echo "NODE_URL=$NODE_URL"
+echo "WEBSERVER_URL=$WEBSERVER_URL"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {

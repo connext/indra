@@ -116,10 +116,11 @@ else
     image: '$proxy_image'
     environment:
       DOMAINNAME: 'localhost'
+      EMAIL: 'noreply@gmail.com'
       ETH_RPC_URL: '${INDRA_ETH_PROVIDER#*://}'
       MESSAGING_URL: 'nats:4221'
-      NODE_URL: 'node:8080'
       MODE: 'dev'
+      NODE_URL: 'node:8080'
       WEBSERVER_URL: 'webserver:3000'
     networks:
       - '$project'

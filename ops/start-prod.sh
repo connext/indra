@@ -210,10 +210,11 @@ services:
     environment:
       DOMAINNAME: '$INDRA_DOMAINNAME'
       EMAIL: '$INDRA_EMAIL'
-      ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
-      MESSAGING_URL: 'http://nats:4221'
-      NODE_URL: 'http://node:8080'
+      ETH_RPC_URL: '${INDRA_ETH_PROVIDER#*://}'
+      MESSAGING_URL: 'nats:4221'
       MODE: 'prod'
+      NODE_URL: 'node:8080'
+      WEBSERVER_URL: 'webserver:80'
     logging:
       driver: 'json-file'
       options:
