@@ -150,7 +150,6 @@ export class CFCoreStore implements IStoreService {
     appJson: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
-    console.log("createAppInstance: ", appJson);
     const {
       identityHash,
       participants,
@@ -221,8 +220,6 @@ export class CFCoreStore implements IStoreService {
   }
 
   async updateAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
-    console.log("updateAppInstance: ", appJson);
-
     const { identityHash, latestState, latestTimeout, latestVersionNumber } = appJson;
 
     await this.appInstanceRepository
@@ -242,8 +239,6 @@ export class CFCoreStore implements IStoreService {
     appInstanceId: string,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
-    console.log("removeAppInstance: ", appInstanceId);
-
     const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
     if (!app) {
       throw new Error(`No app found when trying to remove. AppId: ${appInstanceId}`);
@@ -276,8 +271,6 @@ export class CFCoreStore implements IStoreService {
         .of(channelId)
         .remove(app.id);
     });
-    const channelAfterRemove = await this.channelRepository.findByMultisigAddress(multisigAddress);
-    console.log("channelAfterRemove: ", channelAfterRemove);
   }
 
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal> {
@@ -289,8 +282,6 @@ export class CFCoreStore implements IStoreService {
     appProposal: AppInstanceProposal,
     numProposedApps: number,
   ): Promise<void> {
-    console.log("createAppProposal: ", appProposal);
-
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
     const app = new AppInstance();
@@ -320,8 +311,6 @@ export class CFCoreStore implements IStoreService {
   }
 
   async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
-    console.log("removeAppProposal: ", appInstanceId);
-
     // called in protocol during install and reject protocols
     // but we dont "remove" app proposals, they get upgraded. so
     // simply return without editing, and set the status to `REJECTED`
