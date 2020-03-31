@@ -245,7 +245,6 @@ export class Node {
 
       for (const stateChannel of stateChannels) {
         await this.storeService.createStateChannel(stateChannel.toJson());
-        await this.storeService.createFreeBalance(stateChannel.multisigAddress, stateChannel.freeBalance.toJson());
       }
     });
 
@@ -338,14 +337,6 @@ export class Node {
 
           case PersistAppType.RemoveProposal: {
             await this.storeService.removeAppProposal(multisigAddress, identityHash);
-            break;
-          }
-
-          case PersistAppType.UpdateFreeBalance: {
-            await this.storeService.updateFreeBalance(
-              multisigAddress,
-              (app as AppInstance).toJson(),
-            );
             break;
           }
 

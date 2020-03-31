@@ -53,10 +53,6 @@ export class MiniNode {
       const [stateChannels] = args;
       for (const stateChannel of stateChannels) {
         await this.store.createStateChannel(stateChannel.toJson());
-        await this.store.createFreeBalance(
-          stateChannel.multisigAddress,
-          stateChannel.freeBalance.toJson(),
-        );
       }
     });
     this.protocolRunner.register(
@@ -78,14 +74,6 @@ export class MiniNode {
 
           case PersistAppType.RemoveProposal: {
             await this.store.removeAppProposal(multisigAddress, identityHash);
-            break;
-          }
-
-          case PersistAppType.UpdateFreeBalance: {
-            await this.store.updateFreeBalance(
-              multisigAddress,
-              (app as AppInstance).toJson(),
-            );
             break;
           }
 

@@ -94,10 +94,7 @@ export class TestRunner {
     });
 
     const jsonAB = await this.mininodeA.store.getStateChannel(this.multisigAB);
-    this.mininodeA.scm.set(
-      this.multisigAB,
-      StateChannel.fromJson(jsonAB!),
-    );
+    this.mininodeA.scm.set(this.multisigAB, StateChannel.fromJson(jsonAB!));
 
     await this.mr.waitForAllPendingPromises();
 
@@ -108,10 +105,7 @@ export class TestRunner {
     });
 
     const jsonBC = await this.mininodeB.store.getStateChannel(this.multisigBC);
-    this.mininodeB.scm.set(
-      this.multisigBC,
-      StateChannel.fromJson(jsonBC!),
-    );
+    this.mininodeB.scm.set(this.multisigBC, StateChannel.fromJson(jsonBC!));
 
     await this.mr.waitForAllPendingPromises();
   }
@@ -134,7 +128,11 @@ export class TestRunner {
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
         },
       });
-      await mininode.store.updateFreeBalance(updatedBalance.multisigAddress, updatedBalance.freeBalance.toJson());
+      await mininode.store.createAppInstance(
+        updatedBalance.multisigAddress,
+        {} as any,
+        updatedBalance.freeBalance.toJson(),
+      );
       mininode.scm.set(this.multisigAB, updatedBalance);
     }
 
@@ -151,7 +149,11 @@ export class TestRunner {
           [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
         },
       });
-      await mininode.store.updateFreeBalance(updatedSc.multisigAddress, updatedSc.freeBalance.toJson());
+      await mininode.store.createAppInstance(
+        updatedSc.multisigAddress,
+        {} as any,
+        updatedSc.freeBalance.toJson(),
+      );
       mininode.scm.set(this.multisigBC, updatedSc);
     }
   }
@@ -208,7 +210,9 @@ export class TestRunner {
     });
 
     const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
-    const [proposal] = [...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values()];
+    const [proposal] = [
+      ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
+    ];
     // TODO: fix sortAddresses sometimes not sorting correctly
     const participants = sortAddresses([
       xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
@@ -293,7 +297,9 @@ export class TestRunner {
     });
 
     const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
-    const [proposal] = [...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values()];
+    const [proposal] = [
+      ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
+    ];
     // TODO: fix sortAddresses sometimes not sorting correctly
     const participants = sortAddresses([
       xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),

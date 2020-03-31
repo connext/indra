@@ -297,19 +297,6 @@ export class AdminService implements OnApplicationBootstrap {
           }
         }
 
-        const existing = await this.cfCoreStore.getFreeBalance(channel.multisigAddress);
-        if (existing) {
-          await this.cfCoreStore.updateFreeBalance(
-            channel.multisigAddress,
-            channelJSON.freeBalanceAppInstance,
-          );
-        } else {
-          await this.cfCoreStore.createFreeBalance(
-            channel.multisigAddress,
-            channelJSON.freeBalanceAppInstance,
-          );
-        }
-
         this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
         // delete old channel record
         const removed = await this.cfCoreRepository.delete({

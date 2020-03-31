@@ -225,33 +225,10 @@ describe("ConnextStore", () => {
         const nullValue = await store.getFreeBalance(multisigAddress);
         expect(nullValue).to.deep.eq(undefined);
         await store.createStateChannel(channel);
-        await store.createFreeBalance(multisigAddress, freeBalance);
         const retrieved = await store.getFreeBalance(multisigAddress);
         expect(retrieved).to.deep.eq(freeBalance);
         const chan = await store.getStateChannel(multisigAddress);
         expect(chan.freeBalanceAppInstance).to.deep.eq(freeBalance);
-        await store.clear();
-      });
-    });
-  });
-
-  describe("createFreeBalance + updateFreeBalance", () => {
-    Object.keys(StoreTypes).forEach(type => {
-      it(`${type} - should work`, async () => {
-        const store = createConnextStore(type as StoreTypes, { fileDir });
-        const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
-        const freeBalance = channel.freeBalanceAppInstance!;
-        const multisigAddress = channel.multisigAddress;
-        const edited = { ...freeBalance, latestVersionNumber: 8 };
-        await store.createStateChannel(channel);
-        await store.createFreeBalance(multisigAddress, freeBalance);
-        const retrieved = await store.getFreeBalance(multisigAddress);
-        expect(retrieved).to.deep.eq(freeBalance);
-        await store.updateFreeBalance(multisigAddress, edited);
-        const editedRetrieved = await store.getFreeBalance(multisigAddress);
-        expect(editedRetrieved).to.deep.eq(edited);
-        const chan = await store.getStateChannel(multisigAddress);
-        expect(chan.freeBalanceAppInstance).to.deep.eq(edited);
         await store.clear();
       });
     });

@@ -84,13 +84,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       appToUninstall,
     ];
 
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.UpdateFreeBalance,
-      postProtocolStateChannel,
-      postProtocolStateChannel.freeBalance,
-    ];
-
     logTime(log, start, `Finished Initiating`);
   },
 
@@ -137,13 +130,6 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
-    ];
-
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.UpdateFreeBalance,
-      postProtocolStateChannel,
-      postProtocolStateChannel.freeBalance,
     ];
 
     yield [

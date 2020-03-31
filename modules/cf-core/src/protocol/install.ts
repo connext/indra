@@ -181,13 +181,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
     ];
 
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.UpdateFreeBalance,
-      stateChannelAfter,
-      stateChannelAfter.freeBalance,
-    ];
-
     substart = Date.now();
     yield [
       IO_SEND_AND_WAIT,
@@ -346,13 +339,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       PersistAppType.RemoveProposal,
       stateChannelAfter,
       stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
-    ];
-
-    yield [
-      PERSIST_APP_INSTANCE,
-      PersistAppType.UpdateFreeBalance,
-      stateChannelAfter,
-      stateChannelAfter.freeBalance,
     ];
 
     const m4 = {

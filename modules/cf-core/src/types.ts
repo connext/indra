@@ -6,7 +6,6 @@ export const PersistAppType = enumify({
   CreateInstance: "CreateInstance",
   UpdateInstance: "UpdateInstance",
   RemoveInstance: "RemoveInstance",
-  UpdateFreeBalance: "UpdateFreeBalance",
   Reject: "Reject",
 });
 export type PersistAppType = typeof PersistAppType[keyof typeof PersistAppType];
