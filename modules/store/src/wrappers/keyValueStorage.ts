@@ -171,7 +171,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.saveStateChannel(channel);
   }
 
-  async removeAppInstance(multisigAddress: string, appInstanceId: string, freeBalanceAppInstance: AppInstanceJson): Promise<void> {
+  async removeAppInstance(
+    multisigAddress: string,
+    appInstanceId: string,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       return;
