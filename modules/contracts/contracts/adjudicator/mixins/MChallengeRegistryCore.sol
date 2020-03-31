@@ -128,17 +128,4 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller, LibDispute 
         );
     }
 
-    /// @notice Checks if an application's outcome is set
-    /// @param identityHash The unique hash of an `AppIdentity`
-    /// @return A boolean indicator
-    function isOutcomeSet(bytes32 identityHash)
-        public
-        view
-        returns (bool)
-    {
-        AppChallenge storage appChallenge = appChallenges[identityHash];
-
-        return appChallenge.status == ChallengeStatus.OUTCOME_SET;
-    }
-
 }

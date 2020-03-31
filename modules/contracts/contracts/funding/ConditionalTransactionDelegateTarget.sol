@@ -33,11 +33,6 @@ contract ConditionalTransactionDelegateTarget {
     )
         public
     {
-        require(
-            challengeRegistry.isOutcomeSet(freeBalanceAppIdentityHash),
-            "Outcome hasn't been set yet for free balance app"
-        );
-
         FreeBalanceAppState memory freeBalanceAppState = abi.decode(
             challengeRegistry.getOutcome(freeBalanceAppIdentityHash),
             (FreeBalanceAppState)
@@ -89,11 +84,6 @@ contract ConditionalTransactionDelegateTarget {
     )
         public
     {
-        require(
-            challengeRegistry.isOutcomeSet(freeBalanceAppIdentityHash),
-            "Outcome hasn't been set yet for free balance app"
-        );
-
         bytes32[] memory activeApps = abi.decode(
             challengeRegistry.getOutcome(freeBalanceAppIdentityHash),
             (FreeBalanceAppState)
@@ -108,11 +98,6 @@ contract ConditionalTransactionDelegateTarget {
         }
 
         require(appIsFunded, "Referenced AppInstance is not funded");
-
-        require(
-            challengeRegistry.isOutcomeSet(appIdentityHash),
-            "Outcome hasn't been set yet for app instance"
-        );
 
         bytes memory outcome = challengeRegistry.getOutcome(appIdentityHash);
 
