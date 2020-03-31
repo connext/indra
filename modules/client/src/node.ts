@@ -189,12 +189,6 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse> {
-    return this.send(`${this.userPublicIdentifier}.transfer.resolve-hashlock`, {
-      lockHash,
-    });
-  }
-
   public async resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse> {
     return this.send(`${this.userPublicIdentifier}.transfer.resolve-signed`, {
       paymentId,
