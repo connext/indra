@@ -46,7 +46,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       meta,
     } = params as ProtocolParams.Propose;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -92,10 +95,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout: timeout.toNumber(),
     };
 
-    const setStateCommitment = getSetStateCommitment(
-      context,
-      proposedAppInstance as AppInstance,
-    );
+    const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
 
     const initiatorSignatureOnInitialState = yield [
       OP_SIGN,
@@ -144,7 +144,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       appInstanceProposal,
     ];
 
-    yield [PERSIST_COMMITMENT, PersistCommitmentType.CreateSetState, setStateCommitment, appInstanceProposal.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.CreateSetState,
+      setStateCommitment,
+      appInstanceProposal.identityHash,
+    ];
 
     logTime(log, start, `Finished Initiating`);
   },
@@ -178,7 +183,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -222,10 +230,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout: timeout.toNumber(),
     };
 
-    const setStateCommitment = getSetStateCommitment(
-      context,
-      proposedAppInstance as AppInstance,
-    );
+    const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
@@ -268,7 +273,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
     ];
-    yield [PERSIST_COMMITMENT, PersistCommitmentType.CreateSetState, setStateCommitment, appInstanceProposal.identityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.CreateSetState,
+      setStateCommitment,
+      appInstanceProposal.identityHash,
+    ];
     logTime(log, start, `Finished responding`);
   },
 };
