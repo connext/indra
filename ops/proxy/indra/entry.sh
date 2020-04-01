@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [[ "${ETH_PROVIDER_URL%%://*}" == "https" ]]
+then export ETH_PROVIDER_PROTOCOL="ssl"
+else export ETH_PROVIDER_PROTOCOL=""
+fi
+
+ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
+
 export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
 if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
 then export ETH_PROVIDER_PATH="${ETH_PROVIDER_URL#*/}"
@@ -9,6 +16,7 @@ fi
 echo "Proxy container launched in env:"
 echo "DOMAINNAME=$DOMAINNAME"
 echo "EMAIL=$EMAIL"
+echo "ETH_PROVIDER_PROTOCOL=$ETH_PROVIDER_PROTOCOL"
 echo "ETH_PROVIDER_HOST=$ETH_PROVIDER_HOST"
 echo "ETH_PROVIDER_PATH=$ETH_PROVIDER_PATH"
 echo "ETH_PROVIDER_URL=$ETH_PROVIDER_URL"
