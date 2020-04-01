@@ -94,16 +94,12 @@ export class LinkedTransferService {
     );
     if (freeBal[freeBalanceAddr].lt(amountBN)) {
       // request collateral and wait for deposit to come through
-      try {
-        await this.channelService.rebalance(
-          userPublicIdentifier,
-          assetId,
-          RebalanceType.COLLATERALIZE,
-          amountBN,
-        );
-      } catch (e) {
-        this.log.error(e)
-      }
+      await this.channelService.rebalance(
+        userPublicIdentifier,
+        assetId,
+        RebalanceType.COLLATERALIZE,
+        amountBN,
+      );
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(

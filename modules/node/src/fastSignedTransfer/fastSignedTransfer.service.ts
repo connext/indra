@@ -123,16 +123,12 @@ export class FastSignedTransferService {
     let depositAmount = nodeFreeBalancePreCollateral;
     if (nodeFreeBalancePreCollateral.lt(transferAmount)) {
       // request collateral and wait for deposit to come through
-      try {
-        await this.channelService.rebalance(
-          channel.userPublicIdentifier,
-          assetId,
-          RebalanceType.COLLATERALIZE,
-          transferAmount,
-        );
-      } catch (e) {
-        this.log.error(e);
-      }
+      await this.channelService.rebalance(
+        channel.userPublicIdentifier,
+        assetId,
+        RebalanceType.COLLATERALIZE,
+        transferAmount,
+      );
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(

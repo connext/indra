@@ -19,6 +19,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
+import { DepositService } from "../deposit/deposit.service";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { xkeyKthAddress } from "../util";
@@ -26,7 +27,6 @@ import { CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
-import { DepositService } from "src/deposit/deposit.service";
 
 type RebalancingTargetsResponse<T = string> = {
   assetId: string;
@@ -194,7 +194,7 @@ export class ChannelService {
     assetId: string,
     upperBoundReclaim: BigNumber,
     lowerBoundReclaim: BigNumber,
-  ): Promise<TransactionResponse> {
+  ): Promise<void> {
     if (upperBoundReclaim.isZero() && lowerBoundReclaim.isZero()) {
       this.log.info(
         `Collateral for channel ${channel.multisigAddress} is within bounds, nothing to reclaim.`,
@@ -229,7 +229,7 @@ export class ChannelService {
       `Reclaiming ${channel.multisigAddress}, ${amountWithdrawal.toString()}, token: ${assetId}`,
     );
 
-    return this.withdrawService.withdraw(channel, amountWithdrawal, assetId);
+    await this.withdrawService.withdraw(channel, amountWithdrawal, assetId);
   }
 
   async clearCollateralizationInFlight(multisigAddress: string): Promise<Channel> {

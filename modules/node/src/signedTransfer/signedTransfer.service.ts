@@ -99,16 +99,12 @@ export class SignedTransferService {
     );
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
-      try {
-        await this.channelService.rebalance(
-          userPublicIdentifier,
-          assetId,
-          RebalanceType.COLLATERALIZE,
-          amount,
-        );
-      } catch (e) {
-        this.log.error(e);
-      }
+      await this.channelService.rebalance(
+        userPublicIdentifier,
+        assetId,
+        RebalanceType.COLLATERALIZE,
+        amount,
+      );
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
