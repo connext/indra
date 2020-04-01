@@ -8,7 +8,6 @@ import {
   MinimalTransaction,
 } from "@connext/types";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
-import { mkHash } from "./utils";
 import { Wallet } from "ethers";
 import { HDNode, hexlify } from "ethers/utils";
 import { xkeyKthAddress } from "@connext/cf-core";
@@ -111,10 +110,10 @@ export const createSetStateCommitmentJSON = (
 ): SetStateCommitmentJSON => {
   return {
     appIdentity: {
-      channelNonce: 0,
+      channelNonce: "0",
       participants: [generateRandomAddress(), generateRandomAddress()],
       appDefinition: AddressZero,
-      defaultTimeout: 0,
+      defaultTimeout: "0",
     },
     appIdentityHash: generateRandomBytes32(),
     appStateHash: generateRandomBytes32(),

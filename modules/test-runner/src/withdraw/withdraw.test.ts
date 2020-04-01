@@ -29,6 +29,7 @@ describe("Withdrawal", () => {
 
   it("happy case: client successfully withdraws eth and node submits the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
+    console.log(`FUNDED!`);
     // withdraw
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
   });

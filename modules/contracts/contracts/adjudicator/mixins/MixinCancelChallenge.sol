@@ -21,6 +21,8 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
         // external
         public
     {
+        /* TODO
+
         bytes32 identityHash = appIdentityToHash(appIdentity);
 
         AppChallenge storage challenge = appChallenges[identityHash];
@@ -47,5 +49,7 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
         challenge.finalizesAt = 0;
         challenge.status = ChallengeStatus.NO_CHALLENGE;
         challenge.latestSubmitter = msg.sender;
+
+        */
     }
 }

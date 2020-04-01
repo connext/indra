@@ -2,6 +2,7 @@ pragma solidity 0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 /// @title LibStateChannelApp
@@ -10,12 +11,15 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 contract LibStateChannelApp {
 
     using ECDSA for bytes32;
+    using SafeMath for uint256;
 
     // The status of a challenge in the ChallengeRegistry
     enum ChallengeStatus {
         NO_CHALLENGE,
-        FINALIZES_AFTER_DEADLINE,
-        EXPLICITLY_FINALIZED
+        IN_DISPUTE,
+        IN_ONCHAIN_PROGRESSION,
+        EXPLICITLY_FINALIZED,
+        OUTCOME_SET
     }
 
     // A minimal structure that uniquely identifies a single instance of an App
@@ -30,12 +34,84 @@ contract LibStateChannelApp {
     // NOTE: AppChallenge is the overall state of a channelized app instance,
     // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
     struct AppChallenge {
+        ChallengeStatus status;
         address latestSubmitter;
         bytes32 appStateHash;
-        uint128 challengeCounter;
-        uint128 versionNumber;
-        uint248 finalizesAt;
-        ChallengeStatus status;
+        uint256 versionNumber;
+        uint256 finalizesAt;
+    }
+
+    // Event emitted when the challenge is updated
+    event ChallengeUpdated (
+      bytes32 identityHash,
+      ChallengeStatus status,
+      address latestSubmitter,
+      bytes32 appStateHash,
+      uint256 versionNumber,
+      uint256 finalizesAt
+    );
+
+    /// @dev Checks whether the given timeout has passed
+    /// @param timeout a timeout as block number
+    function hasPassed(
+        uint256 timeout
+    )
+        public
+        view
+        returns (bool)
+    {
+        return timeout <= block.number;
+    }
+
+    /// @dev Checks whether it is still possible to send all-party-signed states
+    /// @param appChallenge the app challenge to check
+    function isDisputable(
+        AppChallenge memory appChallenge
+    )
+        public
+        view
+        returns (bool)
+    {
+        return appChallenge.status == ChallengeStatus.NO_CHALLENGE ||
+            (
+                appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+                !hasPassed(appChallenge.finalizesAt)
+            );
+    }
+
+    /// @dev Checks an outcome for a challenge has been set
+    /// @param appChallenge the app challenge to check
+    function isOutcomeSet(
+        AppChallenge memory appChallenge
+    )
+        public
+        view
+        returns (bool)
+    {
+        return appChallenge.status == ChallengeStatus.OUTCOME_SET;
+    }
+
+    /// @dev Checks whether it is possible to send actions to progress state
+    /// @param appChallenge the app challenge to check
+    /// @param defaultTimeout the app instance's default timeout
+    function isProgressable(
+        AppChallenge memory appChallenge,
+        uint256 defaultTimeout
+    )
+        public
+        view
+        returns (bool)
+    {
+        return
+            (
+                appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+                hasPassed(appChallenge.finalizesAt) &&
+                !hasPassed(appChallenge.finalizesAt.add(defaultTimeout))
+            ) ||
+            (
+                appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
+                !hasPassed(appChallenge.finalizesAt)
+            );
     }
 
     /// @dev Verifies signatures given the signer addresses

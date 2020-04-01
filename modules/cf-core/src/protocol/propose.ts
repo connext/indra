@@ -1,5 +1,5 @@
 import { ProtocolParams, ProtocolNames } from "@connext/types";
-import { defaultAbiCoder, keccak256 } from "ethers/utils";
+import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -66,11 +66,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout: timeout.toHexString(),
       identityHash: appIdentityToHash({
         appDefinition,
-        channelNonce: preProtocolStateChannel.numProposedApps + 1,
+        channelNonce: bigNumberify(preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber(),
+        defaultTimeout: timeout.toString(),
       }),
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
@@ -88,11 +88,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const proposedAppInstance = {
       identity: {
         appDefinition,
-        channelNonce: preProtocolStateChannel.numProposedApps + 1,
+        channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber(),
+        defaultTimeout: timeout.toString(),
       },
       hashOfLatestState: keccak256(
         defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
@@ -214,11 +214,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
       identityHash: appIdentityToHash({
         appDefinition,
-        channelNonce: preProtocolStateChannel.numProposedApps + 1,
+        channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber(),
+        defaultTimeout: timeout.toString(),
       }),
       timeout: timeout.toHexString(),
       initiatorDeposit: responderDeposit.toHexString(),
@@ -236,11 +236,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const proposedAppInstance = {
       identity: {
         appDefinition,
-        channelNonce: preProtocolStateChannel.numProposedApps + 1,
+        channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber(),
+        defaultTimeout: timeout.toString(),
       },
       hashOfLatestState: keccak256(
         defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
@@ -300,6 +300,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       appInstanceProposal,
     ];
+    logTime(log, substart, `Persisted app instance`);
+    substart = Date.now();
+
     yield [
       PERSIST_COMMITMENT,
       PersistCommitmentType.CreateSetState,
