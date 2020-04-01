@@ -15,14 +15,14 @@ $cypress install
 ########################################
 ## Start the UI e2e watcher if in watch mode
 
-# If there's no ui service (webpack dev server) then we're running in prod mode
-if [[ -z "`docker service ls | grep ${project}_ui`" ]]
+# If there's no response from port 3000 we're in prod mode using ssl
+if [[ -z "`curl -s http://localhost:3000`" ]]
 then env="--env publicUrl=https://localhost"
 fi
 
 if [[ "$1" == "--watch" ]]
 then
-  nice $cypress open $env
+  $cypress open $env
   exit 0
 fi
 
@@ -30,4 +30,4 @@ fi
 ## Start the UI e2e tests if in standalone test mode
 
 export ELECTRON_ENABLE_LOGGING=true
-nice $cypress run $env --spec cypress/tests/$ui.js
+$cypress run $env --spec cypress/tests/$ui.js
