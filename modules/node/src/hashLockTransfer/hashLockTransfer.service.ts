@@ -1,7 +1,5 @@
 import {
   bigNumberifyJson,
-  DepositConfirmationMessage,
-  DepositFailedMessage,
   EventNames,
   HashLockTransferAppName,
   HashLockTransferAppState,
@@ -117,44 +115,16 @@ export class HashLockTransferService {
     );
     if (receiverFreeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
-      // TODO: expose remove listener
-      await new Promise(async (resolve, reject) => {
-        this.cfCoreService.cfCore.on(
-          EventNames.DEPOSIT_CONFIRMED_EVENT,
-          async (msg: DepositConfirmationMessage) => {
-            if (
-              msg.from === this.cfCoreService.cfCore.publicIdentifier &&
-              msg.data.multisigAddress === receiverChannel.multisigAddress
-            ) {
-              resolve();
-              return;
-            }
-            // do not reject promise here, since theres a chance the event is
-            // emitted for another user depositing into their channel
-            this.log.debug(
-              `Deposit event did not match desired: ${
-                this.cfCoreService.cfCore.publicIdentifier
-              }, ${receiverChannel.multisigAddress}: ${JSON.stringify(msg)} `,
-            );
-          },
+      try {
+        await this.channelService.rebalance(
+          receiverPublicIdentifier,
+          assetId,
+          RebalanceType.COLLATERALIZE,
+          amount,
         );
-        this.cfCoreService.cfCore.on(
-          EventNames.DEPOSIT_FAILED_EVENT,
-          (msg: DepositFailedMessage) => {
-            return reject(JSON.stringify(msg, null, 2));
-          },
-        );
-        try {
-          await this.channelService.rebalance(
-            receiverPublicIdentifier,
-            assetId,
-            RebalanceType.COLLATERALIZE,
-            amount,
-          );
-        } catch (e) {
-          return reject(e);
-        }
-      });
+      } catch (e) {
+        this.log.error(e);
+      }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(

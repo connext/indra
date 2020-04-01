@@ -1,7 +1,4 @@
 import {
-  DepositConfirmationMessage,
-  DepositFailedMessage,
-  EventNames,
   LinkedTransferStatus,
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppName,
@@ -97,58 +94,16 @@ export class LinkedTransferService {
     );
     if (freeBal[freeBalanceAddr].lt(amountBN)) {
       // request collateral and wait for deposit to come through
-      // TODO: expose remove listener
-      await new Promise(async (resolve, reject) => {
-        this.cfCoreService.cfCore.on(
-          EventNames.DEPOSIT_CONFIRMED_EVENT,
-          async (msg: DepositConfirmationMessage) => {
-            if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
-              // do not reject promise here, since theres a chance the event is
-              // emitted for another user depositing into their channel
-              this.log.debug(
-                `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
-              );
-              return;
-            }
-            if (msg.data.multisigAddress !== receiverChannel.multisigAddress) {
-              // do not reject promise here, since theres a chance the event is
-              // emitted for node collateralizing another users' channel
-              this.log.debug(
-                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${receiverChannel.multisigAddress}`,
-              );
-              return;
-            }
-            // make sure free balance is appropriate
-            const fb = await this.cfCoreService.getFreeBalance(
-              userPublicIdentifier,
-              receiverChannel.multisigAddress,
-              assetId,
-            );
-            if (fb[freeBalanceAddr].lt(amountBN)) {
-              return reject(
-                `Free balance associated with ${freeBalanceAddr} is less than transfer amount: ${amountBN}`,
-              );
-            }
-            resolve();
-          },
+      try {
+        await this.channelService.rebalance(
+          userPublicIdentifier,
+          assetId,
+          RebalanceType.COLLATERALIZE,
+          amountBN,
         );
-        this.cfCoreService.cfCore.on(
-          EventNames.DEPOSIT_FAILED_EVENT,
-          (msg: DepositFailedMessage) => {
-            return reject(JSON.stringify(msg, null, 2));
-          },
-        );
-        try {
-          await this.channelService.rebalance(
-            userPublicIdentifier,
-            assetId,
-            RebalanceType.COLLATERALIZE,
-            amountBN,
-          );
-        } catch (e) {
-          return reject(e);
-        }
-      });
+      } catch (e) {
+        this.log.error(e)
+      }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
