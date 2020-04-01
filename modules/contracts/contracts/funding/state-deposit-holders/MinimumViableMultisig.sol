@@ -109,7 +109,7 @@ contract MinimumViableMultisig {
                 to,
                 value,
                 uint8(operation),
-                data,
+                data
             )
         );
     }
