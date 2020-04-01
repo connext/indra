@@ -65,7 +65,7 @@ describe("Get State Channel", () => {
 
     (channel as any).multisigAddress = wrongAddress;
     expect(channel!.multisigAddress).to.be.eq(wrongAddress);
-    await clientA.store.saveStateChannel(channel!);
+    await clientA.store.createStateChannel(channel!);
 
     // Expect to error in case we keep this test
     await expect(clientA.getStateChannel()).to.be.rejectedWith("");
@@ -81,7 +81,7 @@ describe("Get State Channel", () => {
 
     (channel as any).addresses.proxyFactory = null;
     expect(channel!.addresses.proxyFactory).to.not.be.ok;
-    await clientA.store.saveStateChannel(channel!);
+    await clientA.store.createStateChannel(channel!);
 
     await expect(clientA.getStateChannel()).to.be.rejected;
   });
@@ -94,7 +94,7 @@ describe("Get State Channel", () => {
 
     (channel as any).freeBalanceAppInstance = null;
     expect(channel!.freeBalanceAppInstance).to.not.be.ok;
-    await clientA.store.saveStateChannel(channel!);
+    await clientA.store.createStateChannel(channel!);
 
     await expect(clientA.getStateChannel()).to.be.rejected;
   });

@@ -4,5 +4,6 @@
   "rootDir": "../src",
   "testEnvironment": "node",
   "testRegex": ".spec.ts$",
-  "transform": { "^.+\\.tsx?$": "ts-jest" }
+  "transform": { "^.+\\.tsx?$": "ts-jest" },
+  "testTimeout": 30000
 }

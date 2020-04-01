@@ -3,10 +3,9 @@ import { OutcomeType, ProtocolNames } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { Store } from "../store";
 import { getCreate2MultisigAddress } from "../utils";
 import { sortAddresses, xkeyKthAddress } from "../xkeys";
 
@@ -15,6 +14,7 @@ import { toBeEq } from "./bignumber-jest-matcher";
 import { MessageRouter } from "./message-router";
 import { MiniNode } from "./mininode";
 import { newWallet } from "./utils";
+import { StateChannel } from "../models";
 
 expect.extend({ toBeEq });
 
@@ -48,9 +48,9 @@ export class TestRunner {
       wallet,
     ).deploy();
 
-    this.mininodeA = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
-    this.mininodeB = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
-    this.mininodeC = new MiniNode(network, this.provider, new Store(new MemoryStoreService()));
+    this.mininodeA = new MiniNode(network, this.provider, new MemoryStoreService());
+    this.mininodeB = new MiniNode(network, this.provider, new MemoryStoreService());
+    this.mininodeC = new MiniNode(network, this.provider, new MemoryStoreService());
 
     this.multisigAB = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
@@ -93,11 +93,8 @@ export class TestRunner {
       multisigAddress: this.multisigAB,
     });
 
-    await this.mininodeA.store.getStateChannel(this.multisigAB);
-    this.mininodeA.scm.set(
-      this.multisigAB,
-      await this.mininodeA.store.getStateChannel(this.multisigAB),
-    );
+    const jsonAB = await this.mininodeA.store.getStateChannel(this.multisigAB);
+    this.mininodeA.scm.set(this.multisigAB, StateChannel.fromJson(jsonAB!));
 
     await this.mr.waitForAllPendingPromises();
 
@@ -107,10 +104,8 @@ export class TestRunner {
       multisigAddress: this.multisigBC,
     });
 
-    this.mininodeB.scm.set(
-      this.multisigBC,
-      await this.mininodeB.store.getStateChannel(this.multisigBC),
-    );
+    const jsonBC = await this.mininodeB.store.getStateChannel(this.multisigBC);
+    this.mininodeB.scm.set(this.multisigBC, StateChannel.fromJson(jsonBC!));
 
     await this.mr.waitForAllPendingPromises();
   }
@@ -121,7 +116,8 @@ export class TestRunner {
   */
   async unsafeFund() {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
-      const sc = await mininode.store.getStateChannel(this.multisigAB)!;
+      const json = await mininode.store.getStateChannel(this.multisigAB)!;
+      const sc = StateChannel.fromJson(json!);
       const updatedBalance = sc.addActiveAppAndIncrementFreeBalance(
         HashZero,  
       {
@@ -134,12 +130,16 @@ export class TestRunner {
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
         },
       });
-      await mininode.store.saveFreeBalance(updatedBalance);
+      await mininode.store.updateFreeBalance(
+        updatedBalance.multisigAddress,
+        updatedBalance.freeBalance.toJson(),
+      );
       mininode.scm.set(this.multisigAB, updatedBalance);
     }
 
     for (const mininode of [this.mininodeB, this.mininodeC]) {
-      const sc = await mininode.store.getStateChannel(this.multisigBC)!;
+      const json = await mininode.store.getStateChannel(this.multisigBC)!;
+      const sc = StateChannel.fromJson(json!);
       const updatedSc = sc.addActiveAppAndIncrementFreeBalance(
         HashZero,
       {
@@ -152,7 +152,10 @@ export class TestRunner {
           [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
         },
       });
-      await mininode.store.saveFreeBalance(updatedSc);
+      await mininode.store.updateFreeBalance(
+        updatedSc.multisigAddress,
+        updatedSc.freeBalance.toJson(),
+      );
       mininode.scm.set(this.multisigBC, updatedSc);
     }
   }
@@ -190,10 +193,32 @@ export class TestRunner {
       ],
     }[outcomeType];
 
+    await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.propose, {
+      multisigAddress: this.multisigAB,
+      initiatorXpub: this.mininodeA.xpub,
+      responderXpub: this.mininodeB.xpub,
+      appDefinition: this.identityApp.address,
+      abiEncodings: {
+        stateEncoding,
+        actionEncoding: undefined,
+      },
+      initiatorDeposit: One,
+      initiatorDepositTokenAddress: tokenAddress,
+      responderDeposit: One,
+      responderDepositTokenAddress: tokenAddress,
+      timeout: bigNumberify(100),
+      initialState,
+      outcomeType,
+    });
+
+    const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
+    const [proposal] = [
+      ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
+    ];
     // TODO: fix sortAddresses sometimes not sorting correctly
     const participants = sortAddresses([
-      xkeyKthAddress(this.mininodeA.xpub, 1),
-      xkeyKthAddress(this.mininodeB.xpub, 1),
+      xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
+      xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
     ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
@@ -202,7 +227,7 @@ export class TestRunner {
         addr: this.identityApp.address,
         actionEncoding: undefined,
       },
-      appSeqNo: 1,
+      appSeqNo: proposal.appSeqNo,
       defaultTimeout: 40,
       disableLimit: false,
       initialState,
@@ -255,10 +280,32 @@ export class TestRunner {
       ],
     }[outcomeType];
 
+    await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.propose, {
+      multisigAddress: this.multisigAB,
+      initiatorXpub: this.mininodeA.xpub,
+      responderXpub: this.mininodeB.xpub,
+      appDefinition: this.identityApp.address,
+      abiEncodings: {
+        stateEncoding,
+        actionEncoding: undefined,
+      },
+      initiatorDeposit: One,
+      initiatorDepositTokenAddress: tokenAddressA,
+      responderDeposit: One,
+      responderDepositTokenAddress: tokenAddressB,
+      timeout: bigNumberify(100),
+      initialState,
+      outcomeType,
+    });
+
+    const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
+    const [proposal] = [
+      ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
+    ];
     // TODO: fix sortAddresses sometimes not sorting correctly
     const participants = sortAddresses([
-      xkeyKthAddress(this.mininodeA.xpub, 1),
-      xkeyKthAddress(this.mininodeB.xpub, 1),
+      xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
+      xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
     ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
@@ -275,7 +322,7 @@ export class TestRunner {
         addr: this.identityApp.address,
         actionEncoding: undefined,
       },
-      appSeqNo: 1,
+      appSeqNo: proposal.appSeqNo,
       defaultTimeout: 40,
       initiatorDepositTokenAddress: tokenAddressA,
       responderDepositTokenAddress: tokenAddressB,
@@ -288,7 +335,7 @@ export class TestRunner {
     if (!multisig) {
       throw new Error(`uninstall: Couldn't find multisig for ${this.multisigAC}`);
     }
-    const appInstances = multisig.appInstances;
+    const appInstances = StateChannel.fromJson(multisig!).appInstances;
 
     const [key] = [...appInstances.keys()].filter(key => {
       return key !== this.mininodeA.scm.get(this.multisigAB)!.freeBalance.identityHash;

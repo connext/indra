@@ -3,6 +3,7 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 
 /**
  * Gets all installed appInstances across all of the channels open on
@@ -23,8 +24,13 @@ export class GetInstalledAppInstancesController extends NodeController {
       throw new Error("Multisig address must be provided");
     }
 
+    const channel = await store.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+
     return {
-      appInstances: await store.getAppInstances(multisigAddress),
+      appInstances: channel.appInstances.map(([id, json]) => json),
     };
   }
 }

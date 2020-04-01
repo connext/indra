@@ -84,7 +84,6 @@ export {
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
   StateChannelJSON,
-  Store,
   StorePair,
   SwapParameters,
   toBN,

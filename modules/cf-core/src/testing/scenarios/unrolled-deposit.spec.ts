@@ -1,4 +1,4 @@
-import { CoinBalanceRefundAppState, MethodNames, ProposeMessage, EventNames } from "@connext/types";
+import { CoinBalanceRefundAppState, MethodNames, ProposeMessage, EventNames, InstallMessage } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
@@ -17,6 +17,7 @@ import {
   rescindDepositRights,
   requestDepositRights,
   transferERC20Tokens,
+  getAppInstance,
 } from "../utils";
 
 expect.extend({ toBeLt, toBeEq });
@@ -81,7 +82,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       done();
     });
 
-    await requestDepositRights(nodeA, multisigAddress);
+    await requestDepositRights(nodeA, nodeB, multisigAddress);
   });
 
   it(`install app with tokens, sending tokens should increase free balance`, async done => {
@@ -124,30 +125,33 @@ describe(`Node method follows spec - install balance refund`, () => {
       done();
     });
 
-    await requestDepositRights(nodeA, multisigAddress, erc20TokenAddress);
+    await requestDepositRights(nodeA, nodeB, multisigAddress, erc20TokenAddress);
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async done => {
     const erc20TokenAddress = global[`network`].DolphinCoin;
 
     let installedCount = 0;
-    nodeB.on(EventNames.INSTALL_EVENT, async () => {
+    nodeB.on(EventNames.INSTALL_EVENT, async (msg: InstallMessage) => {
       installedCount += 1;
-      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
-      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
+      const appId = msg.data.params.appInstanceId;
+      const appInstanceNodeA = await getAppInstance(nodeA, appId);
+      const appInstanceNodeB = await getAppInstance(nodeB, appId);
       expect(appInstanceNodeA).toBeDefined();
       expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(
-        xkeyKthAddress(nodeA.publicIdentifier, 0),
-      );
-
-      const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
-      expect(proposedAppsA.length).toBe(0);
+      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(nodeA.freeBalanceAddress);
 
       // wait for both apps to install
       if (installedCount < 2) {
         return;
       }
+
+      const appsA = await getInstalledAppInstances(nodeA, multisigAddress);
+      const appsB = await getInstalledAppInstances(nodeB, multisigAddress);
+      expect(appsA.length).toBe(appsB.length);
+      expect(appsA.length).toBe(2);
+      const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
+      expect(proposedAppsA.length).toBe(0);
 
       // tokens
       const [preSendBalAToken, preSendBalBToken] = await getBalances(
@@ -205,42 +209,8 @@ describe(`Node method follows spec - install balance refund`, () => {
       done();
     });
 
-    let parameters = await getProposeCoinBalanceRefundAppParams(
-      multisigAddress,
-      nodeA.publicIdentifier,
-      nodeB.publicIdentifier,
-      AddressZero,
-    );
-
-    const proposeEth: ProposeMessage = await new Promise(async res => {
-      nodeB.once(`PROPOSE_INSTALL_EVENT`, data => res(data));
-      await nodeA.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: MethodNames.chan_proposeInstall,
-        parameters,
-      });
-    });
-
-    await requestDepositRights(nodeA, multisigAddress);
-
-    parameters = await getProposeCoinBalanceRefundAppParams(
-      multisigAddress,
-      nodeA.publicIdentifier,
-      nodeB.publicIdentifier,
-      erc20TokenAddress,
-    );
-
-    const proposeTokens: ProposeMessage = await new Promise(async res => {
-      nodeB.once(`PROPOSE_INSTALL_EVENT`, data => res(data));
-      await nodeA.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: MethodNames.chan_proposeInstall,
-        parameters,
-      });
-    });
-    expect(proposeTokens.data.appInstanceId === proposeEth.data.appInstanceId).toBe(false);
-
-    await requestDepositRights(nodeA, multisigAddress, erc20TokenAddress);
+    await requestDepositRights(nodeA, nodeB, multisigAddress, erc20TokenAddress);
+    await requestDepositRights(nodeA, nodeB, multisigAddress);
   });
 
   it(`install does not error if already installed`, async done => {
@@ -255,7 +225,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       done();
     });
 
-    await requestDepositRights(nodeA, multisigAddress);
+    await requestDepositRights(nodeA, nodeB, multisigAddress);
   });
 
   it(`uninstall does error if caller is not recipient`, async done => {
@@ -265,7 +235,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       );
       done();
     });
-    await requestDepositRights(nodeA, multisigAddress);
+    await requestDepositRights(nodeA, nodeB, multisigAddress);
   });
 
   it(`can uninstall with no changes`, async done => {
@@ -278,7 +248,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       done();
     });
 
-    await requestDepositRights(nodeA, multisigAddress);
+    await requestDepositRights(nodeA, nodeB, multisigAddress);
   });
 
   it(`uninstall does not error if not installed`, async () => {

@@ -4,10 +4,10 @@ import {
   StateSchemaVersion,
   stringify,
   deBigNumberifyJson,
+  IStoreService,
 } from "@connext/types";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
-import { Store } from "../store";
 import { AppInstanceJson, SolidityValueType } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 
@@ -525,21 +525,26 @@ export class StateChannel {
 
   static async getPeersAddressFromChannel(
     myIdentifier: string,
-    store: Store,
+    store: IStoreService,
     multisigAddress: string,
   ): Promise<string[]> {
     const stateChannel = await store.getStateChannel(multisigAddress);
+    if (!stateChannel) {
+      throw new Error(`[getPeersAddressFromChannel] No state channel found in store for ${multisigAddress}`);
+    }
     const owners = stateChannel.userNeuteredExtendedKeys;
     return owners.filter(owner => owner !== myIdentifier);
   }
 
   static async getPeersAddressFromAppInstanceID(
     myIdentifier: string,
-    store: Store,
+    store: IStoreService,
     appInstanceId: string,
   ): Promise<string[]> {
-    const multisigAddress = await store.getMultisigAddressFromAppInstance(appInstanceId);
-
-    return StateChannel.getPeersAddressFromChannel(myIdentifier, store, multisigAddress);
+    const channel = await store.getStateChannelByAppInstanceId(appInstanceId);
+    if (!channel) {
+      throw new Error(`[getPeersAddressFromAppInstanceID] No state channel found in store for appId ${appInstanceId}`);
+    }
+    return StateChannel.getPeersAddressFromChannel(myIdentifier, store, channel.multisigAddress);
   }
 }

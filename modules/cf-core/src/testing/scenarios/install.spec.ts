@@ -1,6 +1,6 @@
 import { ProtocolParams } from "@connext/types";
 import { One } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, isHexString } from "ethers/utils";
 
 import { Node } from "../../node";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
@@ -45,6 +45,8 @@ describe("Node method follows spec - install", () => {
         nodeB = context["B"].node;
 
         multisigAddress = await createChannel(nodeA, nodeB);
+        expect(multisigAddress).toBeDefined();
+        expect(isHexString(multisigAddress)).toBeTruthy();
       });
 
       it("install app with ETH", async done => {

@@ -1,9 +1,11 @@
 import { utils } from "@connext/client";
+import { ConnextStore } from "@connext/store";
 import {
   CF_PATH,
   ConditionalTransferTypes, 
   createRandom32ByteHexString,
   IConnextClient,
+  StoreTypes,
 } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -58,6 +60,15 @@ describe("Async Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+  });
+
+  it("happy case: client A transfers eth to client B through node with localstorage", async () => {
+    const localStore = new ConnextStore(StoreTypes.LocalStorage);
+    const localStorageClient = await createClient({ store: localStore });
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(localStorageClient, transfer.amount, transfer.assetId);
+    await requestCollateral(clientB, transfer.assetId);
+    await asyncTransferAsset(localStorageClient, clientB, transfer.amount, transfer.assetId, nats);
   });
 
   it("happy case: client A transfers tokens to client B through node", async () => {
