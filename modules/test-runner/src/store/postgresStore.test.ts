@@ -1,17 +1,46 @@
-import { createConnextStore } from "../util";
-import { ConnextStore } from "@connext/store";
-import { StoreTypes } from "@connext/types";
+import { StoreTypes, STORE_SCHEMA_VERSION } from "@connext/types";
+import { ConnextStore, WrappedPostgresStorage } from "@connext/store";
+import { Sequelize, Op } from "sequelize";
+import { before } from "mocha";
 
-describe("ConnextStore", () => {
-  const fileDir = env.storeDir;
+import {
+  expect,
+  TEST_STORE_CHANNEL,
+  TEST_STORE_MINIMAL_TX,
+  TEST_STORE_ETH_ADDRESS,
+  TEST_STORE_SET_STATE_COMMITMENT,
+  TEST_STORE_APP_INSTANCE,
+  TEST_STORE_CONDITIONAL_COMMITMENT,
+  env,
+} from "../util";
+
+/**
+ * Runs against a local postgres DB
+ * 
+ * Skipped during normal operation
+ */
+
+describe.only("ConnextStore", () => {
   let store: ConnextStore;
+
   beforeEach(async () => {
-    store = new ConnextStore(StoreTypes.Postgres, {})
-  })
+    const wrappedStore = new WrappedPostgresStorage(
+      "test",
+      "/",
+      undefined,
+      undefined,
+      `postgres://${env.dbConfig.user}:${env.dbConfig.password}@${env.dbConfig.host}:${env.dbConfig.port}/${env.dbConfig.database}`,
+      undefined,
+    );
+    store = new ConnextStore(StoreTypes.Postgres, {
+      storage: wrappedStore,
+    });
+    await wrappedStore.sequelize.authenticate();
+    await wrappedStore.sequelize.sync({ force: true });
+  });
 
   describe("getSchemaVersion", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const schema = await store.getSchemaVersion();
       expect(schema).to.be.eq(0);
       await store.updateSchemaVersion();
@@ -22,8 +51,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getStateChannel", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       await store.updateSchemaVersion();
       const channel = TEST_STORE_CHANNEL;
       await store.createStateChannel(channel);
@@ -34,8 +62,7 @@ describe("ConnextStore", () => {
   });
 
   describe("createStateChannel", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       await store.updateSchemaVersion();
       const channel = TEST_STORE_CHANNEL;
       const nullValue = await store.getStateChannel(channel.multisigAddress);
@@ -43,16 +70,12 @@ describe("ConnextStore", () => {
       await store.createStateChannel(channel);
       const retrieved = await store.getStateChannel(channel.multisigAddress);
       expect(retrieved).to.deep.eq(channel);
-      // edit channel
-      await store.createStateChannel({ ...channel, monotonicNumProposedApps: 14 });
-      const edited = await store.getStateChannel(channel.multisigAddress);
-      expect(edited).to.deep.eq({ ...channel, monotonicNumProposedApps: 14 });
       await store.clear();
     });
   });
+
   describe("getStateChannelByOwners", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       await store.updateSchemaVersion();
       const channel = TEST_STORE_CHANNEL;
       const owners = channel.userNeuteredExtendedKeys;
@@ -66,8 +89,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getStateChannelByAppInstanceId", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       await store.updateSchemaVersion();
       const channel = TEST_STORE_CHANNEL;
       const appInstanceId = channel.appInstances[0][0];
@@ -81,8 +103,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getAppInstance", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
       const app = TEST_STORE_CHANNEL.appInstances[0][1];
       const multisigAddress = channel.multisigAddress;
@@ -99,8 +120,7 @@ describe("ConnextStore", () => {
   });
 
   describe("createAppInstance + updateAppInstance", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
       const app = TEST_STORE_CHANNEL.appInstances[0][1];
       const multisigAddress = channel.multisigAddress;
@@ -119,8 +139,7 @@ describe("ConnextStore", () => {
   });
 
   describe("removeAppInstance", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
       const app = TEST_STORE_CHANNEL.appInstances[0][1];
       const multisigAddress = channel.multisigAddress;
@@ -140,8 +159,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getAppProposal", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
       const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
       const multisigAddress = channel.multisigAddress;
@@ -158,8 +176,7 @@ describe("ConnextStore", () => {
   });
 
   describe("createAppProposal", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
       const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
       const multisigAddress = channel.multisigAddress;
@@ -175,8 +192,7 @@ describe("ConnextStore", () => {
   });
 
   describe("removeAppProposal", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
       const proposal = TEST_STORE_CHANNEL.proposedAppInstances[0][1];
       const multisigAddress = channel.multisigAddress;
@@ -192,8 +208,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getFreeBalance", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const channel = { ...TEST_STORE_CHANNEL, appInstances: [], proposedAppInstances: [] };
       const freeBalance = channel.freeBalanceAppInstance!;
       const multisigAddress = channel.multisigAddress;
@@ -209,8 +224,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getSetupCommitment + createSetupCommitment", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const setup = TEST_STORE_MINIMAL_TX;
       const multisigAddress = TEST_STORE_ETH_ADDRESS;
       expect(await store.getSetupCommitment(multisigAddress)).to.be.undefined;
@@ -222,8 +236,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getSetStateCommitment", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const setState = TEST_STORE_SET_STATE_COMMITMENT;
       const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
       expect(await store.getSetStateCommitment(appIdentityHash)).to.be.undefined;
@@ -235,8 +248,7 @@ describe("ConnextStore", () => {
   });
 
   describe("createLatestSetStateCommitment + updateLatestSetStateCommitment", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const setState = TEST_STORE_SET_STATE_COMMITMENT;
       const edited = { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: 9 };
       const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
@@ -251,8 +263,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getConditionalTransactionCommitment", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const conditional = TEST_STORE_CONDITIONAL_COMMITMENT;
       const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
       expect(await store.getConditionalTransactionCommitment(appIdentityHash)).to.be.undefined;
@@ -264,8 +275,7 @@ describe("ConnextStore", () => {
   });
 
   describe("createConditionalTransactionCommitment + updateConditionalTransactionCommitment", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const conditional = TEST_STORE_CONDITIONAL_COMMITMENT;
       const edited = { ...conditional, freeBalanceAppIdentityHash: "0xtesting" };
       const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
@@ -280,8 +290,7 @@ describe("ConnextStore", () => {
   });
 
   describe("getWithdrawalCommitment", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const withdraw = TEST_STORE_MINIMAL_TX;
       const multisigAddress = TEST_STORE_ETH_ADDRESS;
       expect(await store.getWithdrawalCommitment(multisigAddress)).to.be.undefined;
@@ -293,8 +302,7 @@ describe("ConnextStore", () => {
   });
 
   describe("createWithdrawalCommitment + updateWithdrawalCommitment", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       const withdraw = TEST_STORE_MINIMAL_TX;
       const edited = { ...TEST_STORE_MINIMAL_TX, value: 5 };
       const multisigAddress = TEST_STORE_ETH_ADDRESS;
@@ -309,8 +317,7 @@ describe("ConnextStore", () => {
   });
 
   describe("clear", () => {
-    it(`${type} - should work`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should work`, async () => {
       await store.updateSchemaVersion();
       const multisigAddress = TEST_STORE_ETH_ADDRESS;
       await store.createStateChannel(TEST_STORE_CHANNEL);
@@ -322,8 +329,7 @@ describe("ConnextStore", () => {
   });
 
   describe("restore", async () => {
-    it(`${type} - should restore empty state when not provided with a backup service`, async () => {
-      const store = createConnextStore(type as StoreTypes, { fileDir });
+    it(`Postgres - should restore empty state when not provided with a backup service`, async () => {
       await store.updateSchemaVersion();
       const multisigAddress = TEST_STORE_ETH_ADDRESS;
       await store.createStateChannel(TEST_STORE_CHANNEL);
@@ -334,22 +340,18 @@ describe("ConnextStore", () => {
       expect(await store.getStateChannel(multisigAddress)).to.containSubset(undefined);
     });
 
-    if (type === StoreTypes.Memory) {
-      return;
-    }
-
-    it(`${type} - should backup state when provided with a backup service`, async () => {
-      const store = createConnextStore(type as StoreTypes, {
-        backupService: new MockBackupService(),
-        fileDir,
-      });
-      await store.updateSchemaVersion();
-      const multisigAddress = TEST_STORE_ETH_ADDRESS;
-      await store.createStateChannel(TEST_STORE_CHANNEL);
-      const retrieved = await store.getStateChannel(multisigAddress);
-      expect(retrieved).to.containSubset(TEST_STORE_CHANNEL);
-      await store.restore();
-      expect(await store.getStateChannel(multisigAddress)).to.containSubset(TEST_STORE_CHANNEL);
-    });
+    // it(`Postgres - should backup state when provided with a backup service`, async () => {
+    //   const backstore = createConnextStore(type as StoreTypes, {
+    //     backupService: new MockBackupService(),
+    //     fileDir,
+    //   });
+    //   await store.updateSchemaVersion();
+    //   const multisigAddress = TEST_STORE_ETH_ADDRESS;
+    //   await store.createStateChannel(TEST_STORE_CHANNEL);
+    //   const retrieved = await store.getStateChannel(multisigAddress);
+    //   expect(retrieved).to.containSubset(TEST_STORE_CHANNEL);
+    //   await store.restore();
+    //   expect(await store.getStateChannel(multisigAddress)).to.containSubset(TEST_STORE_CHANNEL);
+    // });
   });
 });

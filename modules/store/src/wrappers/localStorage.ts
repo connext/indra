@@ -5,6 +5,8 @@ import {
   DEFAULT_STORE_SEPARATOR,
   CHANNEL_KEY,
   COMMITMENT_KEY,
+  safeJsonParse,
+  safeJsonStringify,
 } from "../helpers";
 
 // @ts-ignore
@@ -18,12 +20,12 @@ export class WrappedLocalStorage implements WrappedStorage {
     private readonly backupService?: IBackupServiceAPI,
   ) {}
 
-  async getItem(key: string): Promise<string | undefined> {
+  async getItem(key: string): Promise<any | undefined> {
     const item = this.localStorage.getItem(`${this.prefix}${this.separator}${key}`);
-    return item || undefined;
+    return safeJsonParse(item) || undefined;
   }
 
-  async setItem(key: string, value: string): Promise<void> {
+  async setItem(key: string, value: any): Promise<void> {
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
       try {
@@ -32,7 +34,7 @@ export class WrappedLocalStorage implements WrappedStorage {
         console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
       }
     }
-    this.localStorage.setItem(`${this.prefix}${this.separator}${key}`, value);
+    this.localStorage.setItem(`${this.prefix}${this.separator}${key}`, safeJsonStringify(value));
   }
 
   async removeItem(key: string): Promise<void> {

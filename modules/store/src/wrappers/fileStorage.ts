@@ -14,6 +14,8 @@ import {
   DEFAULT_STORE_PREFIX,
   CHANNEL_KEY,
   COMMITMENT_KEY,
+  safeJsonParse,
+  safeJsonStringify,
 } from "../helpers";
 
 export class FileStorage implements WrappedStorage {
@@ -49,12 +51,12 @@ export class FileStorage implements WrappedStorage {
     return path.join(this.fileDir, fileName);
   }
 
-  async getItem(key: string): Promise<string | undefined> {
+  async getItem(key: string): Promise<any | undefined> {
     const filePath = await this.getFilePath(key);
-    return safeFsRead(filePath) || undefined;
+    return safeJsonParse(safeFsRead(filePath))|| undefined;
   }
 
-  async setItem(key: string, data: string): Promise<void> {
+  async setItem(key: string, data: any): Promise<void> {
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
       try {
@@ -64,7 +66,7 @@ export class FileStorage implements WrappedStorage {
       }
     }
     const filePath = await this.getFilePath(key);
-    return fsWrite(filePath, data);
+    return fsWrite(filePath, safeJsonStringify(data));
   }
 
   async removeItem(key: string): Promise<void> {

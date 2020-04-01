@@ -25,7 +25,7 @@ import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
 
 import { expect } from "../";
-import { One } from "ethers/constants";
+import { One, AddressZero } from "ethers/constants";
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
@@ -48,9 +48,11 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
     counter: 4,
   },
   outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-  twoPartyOutcomeInterpreterParams: undefined,
-  singleAssetTwoPartyCoinTransferInterpreterParams: undefined,
-  multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
+  twoPartyOutcomeInterpreterParams: {
+    amount: { _hex: "0x42" } as any,
+    playerAddrs: [AddressZero, AddressZero],
+    tokenAddress: AddressZero,
+  },
 };
 
 export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
@@ -72,9 +74,10 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   responderDeposit: "11",
   responderDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
   timeout: "123456",
-  twoPartyOutcomeInterpreterParams: undefined,
-  singleAssetTwoPartyCoinTransferInterpreterParams: undefined,
-  multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
+  singleAssetTwoPartyCoinTransferInterpreterParams: {
+    limit: { _hex: "0x1" } as any,
+    tokenAddress: AddressZero,
+  },
 };
 
 export const TEST_STORE_CHANNEL: StateChannelJSON = {
