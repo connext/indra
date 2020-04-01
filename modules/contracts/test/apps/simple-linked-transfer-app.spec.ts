@@ -1,15 +1,12 @@
 /* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
 import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
 
-chai.use(waffle.solidity);
+import { expect, provider } from "../utils";
 
 type CoinTransfer = {
   to: string;
@@ -28,8 +25,6 @@ type SimpleLinkedTransferAppState = {
 type SimpleLinkedTransferAppAction = {
   preImage: string;
 };
-
-const { expect } = chai;
 
 const singleAssetTwoPartyCoinTransferEncoding = `
   tuple(address to, uint256 amount)[2]
@@ -90,7 +85,6 @@ function createLinkedHash(
 
 describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
-  let provider = buidler.provider;
 
   async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<string> {
     return await simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
@@ -105,7 +99,11 @@ describe("SimpleLinkedTransferApp", () => {
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];
-    simpleLinkedTransferApp = await waffle.deployContract(wallet, SimpleLinkedTransferApp);
+    simpleLinkedTransferApp = await new ContractFactory(
+      SimpleLinkedTransferApp.abi,
+      SimpleLinkedTransferApp.bytecode,
+      wallet,
+    ).deploy();
   });
 
   describe("update state", () => {

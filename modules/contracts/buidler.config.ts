@@ -1,7 +1,6 @@
 import { BuidlerConfig } from "@nomiclabs/buidler/config";
 import { usePlugin } from "@nomiclabs/buidler/config";
 
-usePlugin("@nomiclabs/buidler-ethers");
 usePlugin("@nomiclabs/buidler-waffle");
 
 const config: BuidlerConfig = {

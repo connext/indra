@@ -1,4 +1,3 @@
-import { waffle as buidler } from "@nomiclabs/buidler";
 import { signDigest } from "@connext/crypto";
 
 import {
@@ -9,15 +8,13 @@ import {
   WithdrawAppState,
   WithdrawAppStateEncoding,
 } from "@connext/types";
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract, Wallet } from "ethers";
+import { Wallet, ContractFactory } from "ethers";
 import { BigNumber, defaultAbiCoder, SigningKey } from "ethers/utils";
 
 import WithdrawApp from "../../build/WithdrawApp.json";
 import { Zero, HashZero } from "ethers/constants";
 
-const { expect } = chai;
+import { expect, provider } from "../utils";
 
 function mkHash(prefix: string = "0xa"): string {
   return prefix.padEnd(66, "0");
@@ -42,9 +39,12 @@ const encodeAppAction = (state: WithdrawAppAction): string => {
 };
 
 describe("WithdrawApp", async () => {
-  let provider = buidler.provider;
   const wallet = (await provider.getWallets())[0];
-  const withdrawApp: Contract = await waffle.deployContract(wallet, WithdrawApp);
+  const withdrawApp = await new ContractFactory(
+    WithdrawApp.abi,
+    WithdrawApp.bytecode,
+    wallet,
+  ).deploy();
   let withdrawerWallet = Wallet.createRandom();
   let counterpartyWallet = Wallet.createRandom();
 

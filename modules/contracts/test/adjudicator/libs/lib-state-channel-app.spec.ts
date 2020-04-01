@@ -1,12 +1,11 @@
 /* global before */
-import { Contract, Wallet } from "ethers";
-import * as waffle from "ethereum-waffle";
+import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
-import { BigNumberish } from "ethers/utils";
+import { BigNumberish, Interface } from "ethers/utils";
 import { AppChallengeBigNumber, ChallengeStatus, toBN } from "@connext/types";
 
 describe("LibStateChannelApp", () => {
@@ -37,8 +36,16 @@ describe("LibStateChannelApp", () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+    appRegistry = await new ContractFactory(
+      ChallengeRegistry.abi as any,
+      ChallengeRegistry.bytecode,
+      wallet,
+    ).deploy();
+    appDefinition = await new ContractFactory(
+      AppWithAction.abi as any,
+      AppWithAction.bytecode,
+      wallet,
+    ).deploy();
   });
 
   beforeEach(async () => {

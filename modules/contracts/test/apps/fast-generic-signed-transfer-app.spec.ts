@@ -1,7 +1,6 @@
-import { expect, use } from "chai";
 import { solidity, deployContract } from "ethereum-waffle";
 import { waffle } from "@nomiclabs/buidler";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { defaultAbiCoder, bigNumberify } from "ethers/utils";
 
 import FastSignedTransferApp from "../../build/FastSignedTransferApp.json";
@@ -16,7 +15,7 @@ import {
   FastSignedTransferActionType,
 } from "@connext/types";
 
-use(solidity);
+import { expect, provider } from "../utils";
 
 const decodeAppState = (encodedAppState: string): FastSignedTransferAppState[] =>
   defaultAbiCoder.decode([FastSignedTransferAppStateEncoding], encodedAppState);
@@ -40,9 +39,13 @@ describe("FastGenericSignedTransferApp", () => {
   }
 
   beforeEach(async () => {
-    const provider = waffle.provider;
-    const wallet = provider.getWallets()[0];
-    transferApp = await deployContract(wallet, FastSignedTransferApp);
+    const wallet = (await provider.getWallets())[0];
+    transferApp = await new ContractFactory(
+      FastSignedTransferApp.abi,
+      FastSignedTransferApp.bytecode,
+      wallet,
+    ).deploy();
+    transferApp = await transferApp.deployed();
   });
 
   it("happy case: sender creates locked tranfers", async () => {

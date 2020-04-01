@@ -1,5 +1,4 @@
 /* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
 import {
   AppChallengeBigNumber,
   ChallengeStatus,
@@ -8,8 +7,7 @@ import {
 } from "@connext/types";
 import { signDigest } from "@connext/crypto";
 import { One } from "ethers/constants";
-import * as waffle from "ethereum-waffle";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, ContractFactory } from "ethers";
 
 import {
   randomState,
@@ -21,13 +19,13 @@ import {
   AppWithCounterClass,
   restore,
   snapshot,
+  provider,
 } from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
 describe("setState", () => {
-  let provider = buidler.provider;
   let wallet: Wallet;
   let snapshotId: number;
 
@@ -50,8 +48,16 @@ describe("setState", () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+    appRegistry = await new ContractFactory(
+      ChallengeRegistry.abi as any,
+      ChallengeRegistry.bytecode,
+      wallet,
+    ).deploy();
+    appDefinition = await new ContractFactory(
+      AppWithAction.abi as any,
+      AppWithAction.bytecode,
+      wallet,
+    ).deploy();
   });
 
   beforeEach(async () => {
