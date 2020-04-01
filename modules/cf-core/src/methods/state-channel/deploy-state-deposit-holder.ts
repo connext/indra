@@ -12,6 +12,7 @@ import {
   INCORRECT_MULTISIG_ADDRESS,
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
+  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
 } from "../../errors";
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
@@ -37,7 +38,11 @@ export class DeployStateDepositController extends NodeController {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
 
-    const channel = await store.getStateChannel(multisigAddress);
+    const json = await store.getStateChannel(multisigAddress);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+    const channel = StateChannel.fromJson(json);
 
     if (!channel.addresses.proxyFactory) {
       throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
@@ -69,7 +74,11 @@ export class DeployStateDepositController extends NodeController {
     // DB has records of it, controller will return HashZero
     let tx = { hash: HashZero } as TransactionResponse;
 
-    const channel = await store.getStateChannel(multisigAddress);
+    const json = await store.getStateChannel(multisigAddress);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+    const channel = StateChannel.fromJson(json);
 
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(

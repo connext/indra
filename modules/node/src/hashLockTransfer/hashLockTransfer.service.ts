@@ -6,7 +6,6 @@ import {
   HashLockTransferAppName,
   HashLockTransferAppState,
   HashLockTransferStatus,
-  ResolveHashLockTransferResponse,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
@@ -48,6 +47,10 @@ const appStatusesToHashLockTransferStatus = (
     // iff there is a receiver app, check for expiry
     // do this last bc could be retrieving historically
     return HashLockTransferStatus.EXPIRED;
+  } else if (!isReceiverExpired && receiverApp.type === AppType.INSTANCE) {
+    // iff there is a receiver app, check for expiry
+    // do this last bc could be retrieving historically
+    return HashLockTransferStatus.PENDING;
   } else {
     throw new Error(`Cound not determine hash lock transfer status`);
   }
@@ -78,27 +81,16 @@ export class HashLockTransferService {
   }
 
   async resolveHashLockTransfer(
-    userPubId: string,
-    lockHash: string,
-  ): Promise<ResolveHashLockTransferResponse> {
-    this.log.debug(`resolveLinkedTransfer(${userPubId}, ${lockHash})`);
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
-
-    // TODO: could there be more than 1? how to handle that case?
-    const [senderApp] = await this.appInstanceRepository.findHashLockTransferAppsByLockHash(
-      lockHash,
+    senderPublicIdentifier: string,
+    receiverPublicIdentifier: string,
+    appState: HashLockTransferAppState,
+    assetId: string,
+    meta: any = {},
+  ): Promise<any> {
+    this.log.debug(`resolveHashLockTransfer()`);
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
+      receiverPublicIdentifier,
     );
-    if (!senderApp) {
-      throw new Error(`No sender app installed for lockHash: ${lockHash}`);
-    }
-
-    const senderChannel = await this.channelRepository.findByMultisigAddressOrThrow(
-      senderApp.channel.multisigAddress,
-    );
-
-    const appState = bigNumberifyJson(senderApp.latestState) as HashLockTransferAppState;
-
-    const assetId = senderApp.outcomeInterpreterParameters.tokenAddress;
 
     // sender amount
     const amount = appState.coinTransfers[0].amount;
@@ -118,12 +110,12 @@ export class HashLockTransferService {
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
-    const freeBal = await this.cfCoreService.getFreeBalance(
-      userPubId,
-      channel.multisigAddress,
+    const receiverFreeBal = await this.cfCoreService.getFreeBalance(
+      receiverPublicIdentifier,
+      receiverChannel.multisigAddress,
       assetId,
     );
-    if (freeBal[freeBalanceAddr].lt(amount)) {
+    if (receiverFreeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
@@ -132,7 +124,7 @@ export class HashLockTransferService {
           async (msg: DepositConfirmationMessage) => {
             if (
               msg.from === this.cfCoreService.cfCore.publicIdentifier &&
-              msg.data.multisigAddress === channel.multisigAddress
+              msg.data.multisigAddress === receiverChannel.multisigAddress
             ) {
               resolve();
               return;
@@ -142,7 +134,7 @@ export class HashLockTransferService {
             this.log.debug(
               `Deposit event did not match desired: ${
                 this.cfCoreService.cfCore.publicIdentifier
-              }, ${channel.multisigAddress}: ${JSON.stringify(msg)} `,
+              }, ${receiverChannel.multisigAddress}: ${JSON.stringify(msg)} `,
             );
           },
         );
@@ -154,7 +146,7 @@ export class HashLockTransferService {
         );
         try {
           await this.channelService.rebalance(
-            userPubId,
+            receiverPublicIdentifier,
             assetId,
             RebalanceType.COLLATERALIZE,
             amount,
@@ -165,7 +157,12 @@ export class HashLockTransferService {
       });
     } else {
       // request collateral normally without awaiting
-      this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amount);
+      this.channelService.rebalance(
+        receiverPublicIdentifier,
+        assetId,
+        RebalanceType.COLLATERALIZE,
+        amount,
+      );
     }
 
     const initialState: HashLockTransferAppState = {
@@ -176,23 +173,24 @@ export class HashLockTransferService {
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(userPubId),
+          to: xkeyKthAddress(receiverPublicIdentifier),
         },
       ],
-      lockHash,
+      lockHash: appState.lockHash,
       preImage: HashZero,
       timelock,
       finalized: false,
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
-      channel,
+      receiverChannel,
       initialState,
       amount,
       assetId,
       Zero,
       assetId,
       HashLockTransferAppName,
+      { ...meta, sender: senderPublicIdentifier },
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
@@ -201,10 +199,6 @@ export class HashLockTransferService {
 
     return {
       appId: receiverAppInstallRes.appInstanceId,
-      sender: senderChannel.userPublicIdentifier,
-      meta: senderApp["meta"] || {},
-      amount,
-      assetId,
     };
   }
 
@@ -213,10 +207,8 @@ export class HashLockTransferService {
   ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
     // node receives from sender
     const senderApp = await this.findSenderAppByLockHash(lockHash);
-    console.log("***** senderApp: ", senderApp);
     // node is sender
     const receiverApp = await this.findReceiverAppByLockHash(lockHash);
-    console.log("***** receiverApp: ", receiverApp);
     const block = await this.configService.getEthProvider().getBlockNumber();
     const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
     return { senderApp, receiverApp, status };

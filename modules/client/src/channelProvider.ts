@@ -8,6 +8,9 @@ import {
   StateChannelJSON,
   WithdrawalMonitorObject,
   deBigNumberifyJson,
+  SetStateCommitmentJSON,
+  MinimalTransaction,
+  ConditionalTransactionCommitmentJSON,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { signChannelMessage, signDigest } from "@connext/crypto";
@@ -92,6 +95,15 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
+      case ChannelMethods.chan_createSetupCommitment:
+        result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
+        break;
+      case ChannelMethods.chan_createSetStateCommitment:
+        result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
+        break;
+      case ChannelMethods.chan_createConditionalCommitment:
+        result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
+        break;
       default:
         result = await this.routerDispatch(method, params);
         break;
@@ -140,15 +152,46 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   private storeSetUserWithdrawal = async (
     value: WithdrawalMonitorObject | undefined,
   ): Promise<void> => {
-    return this.store.setUserWithdrawal(value);
+    if (!value) {
+      return this.store.removeUserWithdrawal();
+    }
+    const existing = await this.store.getUserWithdrawal();
+    if (!existing) {
+      return this.store.createUserWithdrawal(value);
+    }
+    return this.store.updateUserWithdrawal(value);
   };
 
   private setStateChannel = async (channel: StateChannelJSON): Promise<void> => {
-    return this.store.saveStateChannel(channel);
+    return this.store.createStateChannel(channel);
   };
 
   private restoreState = async (): Promise<void> => {
     await this.store.restore();
+  };
+
+  public createSetupCommitment = async (
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> => {
+    await this.store.createSetupCommitment(multisigAddress, commitment);
+    // may be called on restore, if this is ever called assume the schema
+    // should be updated (either on start or restart)
+    await this.store.updateSchemaVersion();
+  };
+
+  public createSetStateCommitment = async (
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> => {
+    await this.store.createSetStateCommitment(appIdentityHash, commitment);
+  };
+
+  public createConditionalCommitment = async (
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> => {
+    await this.store.createConditionalTransactionCommitment(appIdentityHash, commitment);
   };
 
   private routerDispatch = async (method: string, params: any = {}) => {

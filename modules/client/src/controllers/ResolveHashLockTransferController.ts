@@ -5,6 +5,7 @@ import {
   ResolveHashLockTransferParameters,
   ResolveHashLockTransferResponse,
   ConditionalTransferTypes,
+  HashLockTransferAppState,
 } from "@connext/types";
 import { HashZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
@@ -25,12 +26,21 @@ export class ResolveHashLockTransferController extends AbstractController {
       publicIdentifier: this.connext.publicIdentifier,
     });
 
-    let resolveRes: ResolveHashLockTransferResponse;
+    const installedApps = await this.connext.getAppInstances();
+    const hashlockApp = installedApps.find(
+      app => (app.latestState as HashLockTransferAppState).lockHash === lockHash,
+    );
+    if (!hashlockApp) {
+      throw new Error(`Hashlock app has not been installed`);
+    }
+
+    const amount = (hashlockApp.latestState as HashLockTransferAppState).coinTransfers[0].amount;
+    const assetId = hashlockApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
+
     try {
       // node installs app, validation happens in listener
-      resolveRes = await this.connext.node.resolveHashLockTransfer(lockHash);
-      await this.connext.takeAction(resolveRes.appId, { preImage });
-      await this.connext.uninstallApp(resolveRes.appId);
+      await this.connext.takeAction(hashlockApp.identityHash, { preImage });
+      await this.connext.uninstallApp(hashlockApp.identityHash);
     } catch (e) {
       this.connext.emit(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,
@@ -38,17 +48,26 @@ export class ResolveHashLockTransferController extends AbstractController {
       });
       throw e;
     }
+    const sender = hashlockApp.meta["sender"];
+    this.connext.emit(
+      EventNames.RECEIVE_TRANSFER_FINISHED_EVENT,
+      deBigNumberifyJson({
+        type: ConditionalTransferTypes.HashLockTransfer,
+        amount: amount,
+        assetId: assetId,
+        paymentId: HashZero,
+        sender,
+        recipient: this.connext.publicIdentifier,
+        meta: hashlockApp.meta,
+      }) as EventPayloads.ReceiveTransferFinished,
+    );
 
-    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, deBigNumberifyJson({
-      type: ConditionalTransferTypes.HashLockTransfer,
-      amount: resolveRes.amount,
-      assetId: resolveRes.assetId,
-      paymentId: HashZero,
-      sender: resolveRes.sender,
-      recipient: this.connext.publicIdentifier,
-      meta: resolveRes.meta,
-    }) as EventPayloads.ReceiveTransferFinished);
-
-    return resolveRes;
+    return {
+      amount,
+      appId: hashlockApp.identityHash,
+      assetId,
+      sender,
+      meta: hashlockApp.meta,
+    };
   };
 }

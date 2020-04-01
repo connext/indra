@@ -28,21 +28,6 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
     log.setContext("LinkedTransferMessaging");
   }
 
-  async resolveHashLockTransfer(
-    pubId: string,
-    { lockHash }: { lockHash: string },
-  ): Promise<ResolveHashLockTransferResponse> {
-    this.log.error(`Got resolve link request with lockHash: ${lockHash}`);
-    if (!lockHash) {
-      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(lockHash)}`);
-    }
-    const response = await this.hashLockTransferService.resolveHashLockTransfer(pubId, lockHash);
-    return {
-      ...response,
-      amount: response.amount,
-    };
-  }
-
   async getHashLockTransferByLockHash(
     pubId: string,
     data: { lockHash: string },
@@ -70,8 +55,8 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       ? latestState.coinTransfers[1].amount
       : latestState.coinTransfers[0].amount;
     return {
-      receiverPublicIdentifier: receiverApp ? receiverApp.channel.userPublicIdentifier : undefined,
-      senderPublicIdentifier: senderApp.channel.userPublicIdentifier,
+      receiverPublicIdentifier: receiverApp ? receiverApp.proposedToIdentifier : undefined,
+      senderPublicIdentifier: senderApp.proposedByIdentifier,
       assetId: senderApp.initiatorDepositTokenAddress,
       amount: amount.toString(),
       lockHash: latestState.lockHash,
@@ -81,11 +66,6 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    await super.connectRequestReponse(
-      "*.transfer.resolve-hashlock",
-      this.authService.parseXpub(this.resolveHashLockTransfer.bind(this)),
-    );
-
     await super.connectRequestReponse(
       "*.transfer.get-hashlock",
       this.authService.parseXpub(this.getHashLockTransferByLockHash.bind(this)),

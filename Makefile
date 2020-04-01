@@ -101,6 +101,7 @@ quick-reset:
 	bash ops/db.sh 'truncate table node_records cascade;'
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
 	bash ops/db.sh 'truncate table rebalance_profile cascade;'
+	bash ops/db.sh 'truncate table app_instance cascade;'
 	touch modules/node/src/main.ts
 
 reset: stop
