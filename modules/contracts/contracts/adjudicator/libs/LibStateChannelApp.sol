@@ -79,6 +79,18 @@ contract LibStateChannelApp {
             );
     }
 
+    /// @dev Checks an outcome for a challenge has been set
+    /// @param appChallenge the app challenge to check
+    function isOutcomeSet(
+        AppChallenge memory appChallenge
+    )
+        public
+        view
+        returns (bool)
+    {
+        return appChallenge.status == ChallengeStatus.OUTCOME_SET;
+    }
+
     /// @dev Checks whether it is possible to send actions to progress state
     /// @param appChallenge the app challenge to check
     /// @param defaultTimeout the app instance's default timeout
