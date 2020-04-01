@@ -58,18 +58,12 @@ describe("ChallengeRegistry", () => {
     // completed). Hacky fix -- use a different wallet
     wallet = (await provider.getWallets())[2];
 
-    const nonce0 = await wallet.getTransactionCount();
-    console.log(`nonce0`, nonce0);
-
     appRegistry = await new ContractFactory(
       ChallengeRegistry.abi as any,
       ChallengeRegistry.bytecode,
       wallet,
     ).deploy();
     appRegistry = await appRegistry.deployed();
-
-    const nonce1 = await wallet.getTransactionCount();
-    console.log(`nonce1`, nonce1);
 
     appDefinition = await new ContractFactory(
       AppWithAction.abi as any,

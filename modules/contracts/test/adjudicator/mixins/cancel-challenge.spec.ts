@@ -84,14 +84,11 @@ describe("cancelChallenge", () => {
   it("works", async () => {
     // when in set state phase
     await setState(1);
-    console.log(`set state!`);
     expect(await isDisputable()).to.be.true;
     await cancelChallengeAndVerify(1);
-    console.log(`cancelled challenge`);
 
     // when in progress state phase
     await setAndProgressState(1);
-    console.log(`set + progressed state!`);
     expect(await isProgressable()).to.be.true;
     await cancelChallengeAndVerify(2);
   });
