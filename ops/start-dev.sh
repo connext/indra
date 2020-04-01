@@ -15,7 +15,7 @@ localProvider="http://ethprovider:8545"
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-$localProvider}"
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 INDRA_UI="${INDRA_UI:-daicard}"
-log_level="${LOG_LEVEL:-3}"
+INDRA_LOG_LEVEL="${LOG_LEVEL:-3}"
 
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-}" # pass this in through CI
 INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-}" # pass this in through CI
@@ -42,7 +42,6 @@ INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
 
 number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
 
-log_level=3
 nats_port=4222
 node_port=8080
 dash_port=9999
@@ -205,7 +204,7 @@ services:
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: '$eth_mnemonic'
       INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
-      INDRA_LOG_LEVEL: '$log_level'
+      INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_CLUSTER_ID:
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'

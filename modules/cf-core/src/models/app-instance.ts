@@ -174,8 +174,8 @@ export class AppInstance {
     return {
       participants: this.participants,
       appDefinition: this.appInterface.addr,
-      defaultTimeout: this.defaultTimeout,
-      channelNonce: this.appSeqNo,
+      defaultTimeout: (this.defaultTimeout).toString(),
+      channelNonce: (this.appSeqNo).toString(),
     };
   }
 

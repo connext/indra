@@ -1,0 +1,141 @@
+/* global before */
+import * as waffle from "ethereum-waffle";
+
+import { Contract, Wallet } from "ethers";
+import { One } from "ethers/constants";
+import { ChallengeStatus, AppChallengeBigNumber, toBN } from "@connext/types";
+import { keccak256 } from "ethers/utils";
+
+import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "../utils";
+
+import AppWithAction from "../../../build/AppWithAction.json";
+import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
+
+describe("MChallengeRegistryCore", () => {
+
+  let appRegistry: Contract;
+  let appDefinition: Contract;
+
+  let wallet: Wallet;
+
+  let snapshotId: any;
+
+  let ONCHAIN_CHALLENGE_TIMEOUT: number;
+  let alice: Wallet;
+  let action: AppWithCounterAction;
+
+  let setState: (versionNumber: number, appState?: string, timeout?: number) => Promise<void>;
+  let setAndProgressState: (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => Promise<void>;
+
+  let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
+  let isStateFinalized: () => Promise<boolean>;
+
+  before(async () => {
+    wallet = (await provider.getWallets())[0];
+    await wallet.getTransactionCount();
+
+    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
+    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+  });
+
+  beforeEach(async () => {
+    snapshotId = await snapshot();
+    const context = await setupContext(appRegistry, appDefinition);
+
+    ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
+    alice = context["alice"];
+    action = context["action"];
+
+    setState = context["setState"];
+    isStateFinalized = context["isStateFinalized"];
+    verifyChallenge = context["verifyChallenge"];
+    setAndProgressState = 
+      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressState"](
+        versionNumber, // nonce
+        state || context["state0"], // state
+        context["action"], // action
+        undefined, // timeout
+        turnTaker || context["bob"], // turn taker
+      );
+  });
+
+  afterEach(async () => {
+    await restore(snapshotId);
+  });
+
+  describe("isStateFinalized", () => {
+    it("should return true if state is explicitly finalized", async () => {
+      const state = { counter: toBN(10) };
+      // NOTE: cannot get to `EXPLICITLY_FINALIZED` status without calling
+      // `progressState`. This is because `MixinSetState` only has access
+      // to the state hash, and cannot call `isStateTerminal` on the
+      // counterfactual app
+      const resultingState = { counter: state.counter.add(action.increment) };
+      await setAndProgressState(1, state, alice);
+      await verifyChallenge({
+        appStateHash: keccak256(encodeState(resultingState)),
+        latestSubmitter: wallet.address,
+        versionNumber: toBN(2),
+        status: ChallengeStatus.EXPLICITLY_FINALIZED,
+      });
+
+      expect(await isStateFinalized()).to.be.true;
+    });
+
+    it("should return true if set state period elapsed", async () => {
+      await setState(1);
+      await verifyChallenge({
+        latestSubmitter: wallet.address,
+        versionNumber: One,
+        status: ChallengeStatus.IN_DISPUTE,
+      });
+
+      // must have passed:
+      // appChallenge.finalizesAt.add(appTimeouts[identityHash])
+      await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+
+      expect(await isStateFinalized()).to.be.true;
+    });
+
+    it("should return true if state progression period elapsed", async () => {
+      await setAndProgressState(1);
+      await verifyChallenge({
+        latestSubmitter: wallet.address,
+        versionNumber: toBN(2),
+        status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+      });
+
+      // must have passed:
+      // appChallenge.finalizesAt
+      await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+
+      expect(await isStateFinalized()).to.be.true;
+    });
+
+    it("should return false if challenge is in set state period", async () => {
+      await setState(1);
+      await verifyChallenge({
+        latestSubmitter: wallet.address,
+        versionNumber: One,
+        status: ChallengeStatus.IN_DISPUTE,
+      });
+
+      expect(await isStateFinalized()).to.be.false;
+    });
+
+    it("should return false if challenge is in state progression period", async () => {
+      await setAndProgressState(1);
+      await verifyChallenge({
+        latestSubmitter: wallet.address,
+        versionNumber: toBN(2),
+        status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+      });
+
+      expect(await isStateFinalized()).to.be.false;
+    });
+
+    it("should return false if challenge is empty", async () => {
+      expect(await isStateFinalized()).to.be.false;
+    });
+  });
+});
