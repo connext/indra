@@ -2,13 +2,12 @@
 import { Contract, Wallet } from "ethers";
 import * as waffle from "ethereum-waffle";
 
-import { provider, snapshot, setupContext, restore, expect, moveToBlock } from "../utils";
+import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 import { BigNumberish } from "ethers/utils";
 import { AppChallengeBigNumber, ChallengeStatus, toBN } from "@connext/types";
-import { One } from "ethers/constants";
 
 describe("LibStateChannelApp", () => {
 
@@ -29,9 +28,10 @@ describe("LibStateChannelApp", () => {
   let isDisputable: (challenge?: AppChallengeBigNumber) => Promise<boolean>;
   let setState: (versionNumber: number) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
-  let setAndProgressState: (versionNumber: number) => Promise<void>;
+  let setAndProgressState: (versionNumber: number, action?: AppWithCounterAction) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
   let verifySignatures: (digest?: string, sigs?: string[], signers?: string[]) => Promise<boolean>;
+  let isCancellable: () => Promise<boolean>;
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
@@ -53,14 +53,15 @@ describe("LibStateChannelApp", () => {
     // helpers
     hasPassed = context["hasPassed"];
     isProgressable = context["isProgressable"];
+    isCancellable = context["isCancellable"];
     isDisputable = context["isDisputable"];
-    setState = context["setState"];
+    setState = context["setStateAndVerify"];
     verifyChallenge = context["verifyChallenge"];
     setAndProgressState = 
-      (versionNumber: number) => context["setAndProgressStateAndVerify"](
+      (versionNumber: number, action?: AppWithCounterAction) => context["setAndProgressStateAndVerify"](
         versionNumber,
         context["state0"],
-        context["action"],
+        action || context["action"],
       );
 
     verifySignatures = context["verifySignatures"];
@@ -94,31 +95,17 @@ describe("LibStateChannelApp", () => {
 
     it("should return true for a challenge IN_DISPUTE phase", async () => {
       await setState(1);
-      await verifyChallenge({
-        latestSubmitter: wallet.address,
-        versionNumber: One,
-      });
       expect(await isDisputable()).to.be.true;
     });
 
     it("should return false once the IN_DISPUTE phase elapses", async () => {
       await setState(1);
-      await verifyChallenge({
-        latestSubmitter: wallet.address,
-        versionNumber: One,
-        status: ChallengeStatus.IN_DISPUTE,
-      });
       await moveToBlock(45);
       expect(await isDisputable()).to.be.false;
     });
 
     it("should return false if status is not IN_DISPUTE", async () => {
       await setAndProgressState(1);
-      await verifyChallenge({
-        latestSubmitter: wallet.address,
-        versionNumber: toBN(2),
-        status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
-      });
       expect(await isDisputable()).to.be.false;
     });
   });
@@ -126,11 +113,6 @@ describe("LibStateChannelApp", () => {
   describe("isProgressable", () => {
     it("should return true if challenge is in dispute, and the progress state period has not elapsed, but the set state period has", async () => {
       await setState(1);
-      await verifyChallenge({
-        latestSubmitter: wallet.address,
-        versionNumber: One,
-        status: ChallengeStatus.IN_DISPUTE,
-      });
 
       await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
@@ -152,11 +134,6 @@ describe("LibStateChannelApp", () => {
 
     it("should return false if progress state period has elapsed", async () => {
       await setAndProgressState(1);
-      await verifyChallenge({
-        latestSubmitter: wallet.address,
-        versionNumber: toBN(2),
-        status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
-      });
 
       await moveToBlock(await provider.getBlockNumber() + 100);
 
@@ -165,11 +142,6 @@ describe("LibStateChannelApp", () => {
 
     it("should return false if channel is still in set state period", async () => {
       await setState(1);
-      await verifyChallenge({
-        latestSubmitter: wallet.address,
-        versionNumber: One,
-        status: ChallengeStatus.IN_DISPUTE,
-      });
 
       expect(await isProgressable()).to.be.false;
     });
@@ -179,8 +151,34 @@ describe("LibStateChannelApp", () => {
     });
   });
 
-  // TODO: Merge MixinCancelChallenge pr
-  describe.skip("isCancellable", () => {});
+  describe("isCancellable", () => {
+    it("should return true if it is set state phase", async () => {
+      await setState(1);
+      expect(await isCancellable()).to.be.true;
+    });
+
+    it("should return true if it is state progression phase", async () => {
+      await setAndProgressState(1);
+      expect(await isCancellable()).to.be.true;
+    });
+
+    it("should return false if it is explicitly finalized", async () => {
+      await setAndProgressState(1, { actionType: ActionType.SUBMIT_COUNTER_INCREMENT, increment: toBN(10) });
+      await verifyChallenge({ status: ChallengeStatus.EXPLICITLY_FINALIZED });
+      expect(await isProgressable()).to.be.false;
+      expect(await isCancellable()).to.be.false;
+    });
+
+    it("should return false if the progress state period has elapsed", async () => {
+      await setAndProgressState(1);
+      await moveToBlock(await provider.getBlockNumber() + 100);
+      expect(await isCancellable()).to.be.false;
+    });
+
+    it("should return false if there is no challenge", async () => {
+      expect(await isCancellable()).to.be.false;
+    });
+  });
 
   describe("verifySignatures", () => {
     it("should fail if signatures.length !== signers.length", async () => {

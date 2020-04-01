@@ -3,11 +3,10 @@ pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
 import "../libs/LibAppCaller.sol";
-import "../libs/LibDispute.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller, LibDispute {
+contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
 
     using SafeMath for uint256;
 
@@ -98,6 +97,27 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller, LibDispute 
                 turnTaker,
                 previousState,
                 action,
+                versionNumber
+            )
+        );
+    }
+
+    /// @notice Compute a unique hash for the state of a channelized app instance
+    /// @param identityHash The unique hash of an `AppIdentity`
+    /// @param versionNumber The versionNumber corresponding to the version of the state
+    /// @return A bytes32 hash of the RLP encoded arguments
+    function computeCancelChallengeHash(
+        bytes32 identityHash,
+        uint256 versionNumber
+    )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                byte(0x19),
+                identityHash,
                 versionNumber
             )
         );

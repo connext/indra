@@ -7,7 +7,7 @@ import "./MChallengeRegistryCore.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MixinSetState is LibStateChannelApp, LibDispute, MChallengeRegistryCore {
+contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
 
     using SafeMath for uint256;
 

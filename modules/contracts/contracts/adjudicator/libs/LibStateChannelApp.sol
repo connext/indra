@@ -3,24 +3,15 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-
+import "./LibDispute.sol";
 
 /// @title LibStateChannelApp
 /// @author Liam Horne - <liam@l4v.io>
-/// @notice Contains the structures and enums needed for the ChallengeRegistry
-contract LibStateChannelApp {
+/// @notice Contains the structures and enums needed when disputing apps
+contract LibStateChannelApp is LibDispute {
 
     using ECDSA for bytes32;
     using SafeMath for uint256;
-
-    // The status of a challenge in the ChallengeRegistry
-    enum ChallengeStatus {
-        NO_CHALLENGE,
-        IN_DISPUTE,
-        IN_ONCHAIN_PROGRESSION,
-        EXPLICITLY_FINALIZED,
-        OUTCOME_SET
-    }
 
     // A minimal structure that uniquely identifies a single instance of an App
     struct AppIdentity {
@@ -40,16 +31,6 @@ contract LibStateChannelApp {
         uint256 versionNumber;
         uint256 finalizesAt;
     }
-
-    // Event emitted when the challenge is updated
-    event ChallengeUpdated (
-      bytes32 identityHash,
-      ChallengeStatus status,
-      address latestSubmitter,
-      bytes32 appStateHash,
-      uint256 versionNumber,
-      uint256 finalizesAt
-    );
 
     /// @dev Checks whether the given timeout has passed
     /// @param timeout a timeout as block number
@@ -110,6 +91,23 @@ contract LibStateChannelApp {
             ) ||
             (
                 appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
+                !hasPassed(appChallenge.finalizesAt)
+            );
+    }
+
+    /// @dev Checks whether it is possible to cancel a given challenge
+    /// @param appChallenge the app challenge to check
+    /// @param defaultTimeout the app instance's default timeout
+    function isCancellable(
+        AppChallenge memory appChallenge,
+        uint256 defaultTimeout
+    )
+        public
+        view
+        returns (bool)
+    {
+        return isProgressable(appChallenge, defaultTimeout) || (
+                appChallenge.status == ChallengeStatus.IN_DISPUTE &&
                 !hasPassed(appChallenge.finalizesAt)
             );
     }

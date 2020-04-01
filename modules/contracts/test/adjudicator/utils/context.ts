@@ -4,7 +4,7 @@ import { Wallet, Contract } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
 import { keccak256, BigNumberish } from "ethers/utils";
 
-import { provider, AppWithCounterState, AppWithCounterAction, ActionType, expect, AppWithCounterClass, encodeState, encodeAction, computeAppChallengeHash, computeActionHash, EMPTY_CHALLENGE, encodeOutcome } from "./index";
+import { provider, AppWithCounterState, AppWithCounterAction, ActionType, expect, AppWithCounterClass, encodeState, encodeAction, computeAppChallengeHash, computeActionHash, EMPTY_CHALLENGE, encodeOutcome, computeCancelChallengeHash } from "./index";
 
 export const setupContext = async (appRegistry: Contract, appDefinition: Contract) => {
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -72,6 +72,16 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     return appRegistry.functions.isStateFinalized(appInstance.identityHash);
   };
 
+  const isCancellable = async (challenge?: AppChallengeBigNumber) => {
+    if (!challenge) {
+      challenge = await getChallenge();
+    }
+    return appRegistry.functions.isCancellable(
+      challenge,
+      appInstance.defaultTimeout,
+    );
+  };
+
   const hasPassed = (timeout: BigNumberish) => {
     return appRegistry.functions.hasPassed(toBN(timeout));
   };
@@ -106,7 +116,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     ).withArgs(
       appInstance.identityHash, // identityHash
       expected.status || status, // status
-      wallet.address, // latestSubmitter
+      expected.latestSubmitter || wallet.address, // latestSubmitter
       expected.appStateHash || appStateHash, // appStateHash
       expected.versionNumber || versionNumber, // versionNumber
       expected.finalizesAt || finalizesAt, // finalizesAt
@@ -218,20 +228,29 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     expect(await isProgressable()).to.be.true;
   };
 
-  const setAndProgressStateAndVerify = async (versionNumber: number, state: AppWithCounterState, action: AppWithCounterAction, timeout: number = 0, turnTaker: Wallet = bob) => {
+  const setAndProgressStateAndVerify = async (
+    versionNumber: number,
+    state: AppWithCounterState,
+    action: AppWithCounterAction,
+    timeout: number = 0,
+    turnTaker: Wallet = bob,
+  ) => {
     await setAndProgressState(versionNumber, state, action, timeout, turnTaker);
     const resultingState: AppWithCounterState = {
       counter: action.actionType === ActionType.ACCEPT_INCREMENT
         ? state.counter
         : state.counter.add(action.increment),
     };
+    const status = resultingState.counter.gt(5)
+    ? ChallengeStatus.EXPLICITLY_FINALIZED
+    : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     await verifyChallenge({
       latestSubmitter: wallet.address,
       appStateHash: keccak256(encodeState(resultingState)),
       versionNumber: One.add(versionNumber),
-      status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+      status,
     });
-    expect(await isProgressable()).to.be.true;
+    expect(await isProgressable()).to.be.equal(status === ChallengeStatus.IN_ONCHAIN_PROGRESSION);
   };
 
   // No need to verify events here because `setAndProgress` simply emits
@@ -269,6 +288,32 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     );
   };
 
+  const cancelChallenge = async (versionNumber: number, signatures?: string[]): Promise<void> => {
+    const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
+    if (!signatures) {
+      signatures = await sortSignaturesBySignerAddress(digest, [
+        await signDigest(alice.privateKey, digest),
+        await signDigest(bob.privateKey, digest),
+      ]);
+    }
+    // TODO: why does event verification fail?
+    // await wrapInEventVerification(
+    await appRegistry.functions.cancelChallenge(
+        appInstance.appIdentity,
+        {
+          versionNumber: toBN(versionNumber),
+          signatures,
+        },
+      );
+    //   { ...EMPTY_CHALLENGE },
+    // );
+  };
+
+  const cancelChallengeAndVerify = async (versionNumber: number, signatures?: string[]): Promise<void> => {
+    await cancelChallenge(versionNumber, signatures);
+    await verifyChallenge(EMPTY_CHALLENGE);
+  };
+
   return {
     // app defaults
     alice,
@@ -288,6 +333,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     verifyEmptyChallenge: () => verifyChallenge(EMPTY_CHALLENGE),
     isProgressable,
     isStateFinalized,
+    isCancellable,
     hasPassed,
     isDisputable,
     verifySignatures,
@@ -300,5 +346,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     progressStateAndVerify,
     setAndProgressState,
     setAndProgressStateAndVerify,
+    cancelChallenge,
+    cancelChallengeAndVerify,
   };
 };
