@@ -49,10 +49,12 @@ export class CreateChannelController extends NodeController {
     }
     const multisigAddress = storedMultisig || await getCreate2MultisigAddress(
       owners,
-      { proxyFactory: networkContext.ProxyFactory, multisigMastercopy: networkContext.MinimumViableMultisig },
+      { 
+        proxyFactory: networkContext.ProxyFactory, 
+        multisigMastercopy: networkContext.MinimumViableMultisig,
+      },
       networkContext.provider,
     );
-
     // Check if the database has stored the relevant data for this state channel
     if (!storedMultisig) {
       await this.setupAndCreateChannel(multisigAddress, requestHandler, params);
