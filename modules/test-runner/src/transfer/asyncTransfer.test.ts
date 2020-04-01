@@ -62,7 +62,7 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it.only("happy case: client A transfers eth to client B through node with localstorage", async () => {
+  it("happy case: client A transfers eth to client B through node with localstorage", async () => {
     const localStore = new ConnextStore(StoreTypes.LocalStorage);
     const localStorageClient = await createClient({ store: localStore });
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };

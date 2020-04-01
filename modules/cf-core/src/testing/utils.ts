@@ -668,53 +668,53 @@ export async function collateralizeChannel(
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
-  return new Promise(async resolve => {
-    const sortedOwners = xkeysToSortedKthAddresses(
-      [nodeA.publicIdentifier, nodeB.publicIdentifier],
-      0,
-    );
-
-    nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-      assertNodeMessage(
-        msg,
-        {
-          from: nodeA.publicIdentifier,
-          type: EventNames.CREATE_CHANNEL_EVENT,
-          data: {
-            owners: sortedOwners,
-            counterpartyXpub: nodeA.publicIdentifier,
+  const sortedOwners = xkeysToSortedKthAddresses(
+    [nodeA.publicIdentifier, nodeB.publicIdentifier],
+    0,
+  );
+  const [multisigAddress]: any = await Promise.all([
+    new Promise(async resolve => {
+      nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
+        assertNodeMessage(
+          msg,
+          {
+            from: nodeA.publicIdentifier,
+            type: EventNames.CREATE_CHANNEL_EVENT,
+            data: {
+              owners: sortedOwners,
+              counterpartyXpub: nodeA.publicIdentifier,
+            },
           },
-        },
-        [`data.multisigAddress`],
-      );
-      expect(await getInstalledAppInstances(nodeB, msg.data.multisigAddress)).toEqual([]);
-      resolve(msg.data.multisigAddress);
-    });
-
-    nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
-      assertNodeMessage(
-        msg,
-        {
-          from: nodeA.publicIdentifier,
-          type: EventNames.CREATE_CHANNEL_EVENT,
-          data: {
-            owners: sortedOwners,
-            counterpartyXpub: nodeB.publicIdentifier,
+          [`data.multisigAddress`],
+        );
+        expect(await getInstalledAppInstances(nodeB, msg.data.multisigAddress)).toEqual([]);
+        resolve(msg.data.multisigAddress);
+      });
+    }),
+    new Promise(resolve => {
+      nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
+        assertNodeMessage(
+          msg,
+          {
+            from: nodeA.publicIdentifier,
+            type: EventNames.CREATE_CHANNEL_EVENT,
+            data: {
+              owners: sortedOwners,
+              counterpartyXpub: nodeB.publicIdentifier,
+            },
           },
-        },
-        [`data.multisigAddress`],
-      );
-    });
-
-    // trigger channel creation but only resolve with the multisig address
-    // as acknowledged by the node
-    const multisigAddress = await getMultisigCreationAddress(nodeA, [
+          [`data.multisigAddress`],
+        );
+        resolve(msg.data.multisigAddress);
+      });
+    }),
+    getMultisigCreationAddress(nodeA, [
       nodeA.publicIdentifier,
       nodeB.publicIdentifier,
-    ]);
-
-    expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
-  });
+    ]),
+  ]);
+  expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+  return multisigAddress;
 }
 
 // NOTE: Do not run this concurrently, it won't work

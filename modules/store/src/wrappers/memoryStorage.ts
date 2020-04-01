@@ -57,11 +57,13 @@ export class MemoryStorage implements IClientStore {
   }
 
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
-    return Promise.resolve(
-      [...this.channels.values()].find(
-        channel => channel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString(),
-      ),
+    const channel = [...this.channels.values()].find(
+      channel => channel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString(),
     );
+    if (!channel) {
+      return Promise.resolve(undefined);
+    }
+    return this.getStateChannel(channel.multisigAddress);
   }
 
   getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined> {
@@ -86,6 +88,9 @@ export class MemoryStorage implements IClientStore {
       this.proposedApps.set(identityHash, app);
     });
     this.freeBalances.set(stateChannel.multisigAddress, stateChannel.freeBalanceAppInstance);
+    console.log(`******* State channel created! ******\n` +
+      `******** multisig: ${stateChannel.multisigAddress}`
+    )
     return Promise.resolve();
   }
 
