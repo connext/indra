@@ -88,9 +88,6 @@ export class MemoryStorage implements IClientStore {
       this.proposedApps.set(identityHash, app);
     });
     this.freeBalances.set(stateChannel.multisigAddress, stateChannel.freeBalanceAppInstance);
-    console.log(`******* State channel created! ******\n` +
-      `******** multisig: ${stateChannel.multisigAddress}`
-    )
     return Promise.resolve();
   }
 
