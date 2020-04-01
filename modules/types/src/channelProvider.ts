@@ -16,6 +16,7 @@ export const ChannelMethods = enumify({
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
   chan_setStateChannel: "chan_setStateChannel",
+  chan_walletTransfer: "chan_walletTransfer",
 });
 export type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
 
@@ -55,6 +56,10 @@ export interface IChannelProvider extends ConnextEventEmitter {
   getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
   setUserWithdrawal(withdrawal: WithdrawalMonitorObject): Promise<void>;
   restoreState(state?: StateChannelJSON): Promise<void>;
+
+  ///////////////////////////////////
+  // TRANSFER METHODS
+  walletTransfer(params: WalletTransferParams): Promise<string>;
 }
 
 export type ChannelProviderConfig = {
@@ -88,6 +93,12 @@ export type JsonRpcRequest = {
 };
 
 export type KeyGen = (index: string) => Promise<string>;
+
+export type WalletTransferParams = {
+  amount: string;
+  assetId: string;
+  recipient: string;
+}
 
 export interface IRpcConnection extends ConnextEventEmitter {
   ////////////////////////////////////////

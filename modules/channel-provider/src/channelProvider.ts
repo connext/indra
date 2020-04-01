@@ -7,6 +7,7 @@ import {
   JsonRpcRequest,
   StateChannelJSON,
   WithdrawalMonitorObject,
+  WalletTransferParams,
 } from "@connext/types";
 
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
@@ -67,6 +68,9 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         break;
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
+        break;
+      case ChannelMethods.chan_walletTransfer:
+        result = await this.walletTransfer(params);
         break;
       default:
         result = await this._send(method, params);
@@ -132,6 +136,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   public signDigest = async (message: string): Promise<string> => {
     return this._send(ChannelMethods.chan_signDigest, { message });
   };
+
+  public walletTransfer = async (params: WalletTransferParams) => {
+    return this._send(ChannelMethods.chan_walletTransfer, params);
+  }
 
   /// ////////////////////////////////////////////
   /// // STORE METHODS

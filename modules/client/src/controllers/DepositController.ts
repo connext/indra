@@ -9,14 +9,8 @@ import { AbstractController } from "./AbstractController";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<DepositResponse> => {
-    const amount = toBN(params.amount)
     const { appInstanceId, multisigAddress } = await this.requestDepositRights({assetId: params.assetId})
-    if(params.assetId == AddressZero) {
-      // attempt to send Eth tx TODO
-    } else {
-      const erc20 = new Contract(params.assetId, ERC20.abi, this.ethProvider);
-      // attempt to send erc20 tx TODO
-    }
+    this.connext.channelProvider.walletTransfer({ recipient: multisigAddress, amount: params.amount.toString(), assetId: params.assetId })
     return this.rescindDepositRights({appInstanceId});
   };
 

@@ -19,7 +19,7 @@ import { MinimumViableMultisig } from "@connext/contracts";
 
 const { xpubToAddress } = utils;
 
-describe.only("Withdrawal", () => {
+describe("Withdrawal", () => {
   let client: IConnextClient;
   let tokenAddress: string;
 
