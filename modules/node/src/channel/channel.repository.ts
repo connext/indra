@@ -71,17 +71,23 @@ export class ChannelRepository extends Repository<Channel> {
   }
 
   async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
-    return this.findOne({
-      where: { multisigAddress },
-      relations: ["appInstances"],
-    });
+    return this.createQueryBuilder("channel")
+    .leftJoinAndSelect("channel.appInstances", "appInstance")
+    .where(
+      "channel.multisigAddress = :multisigAddress",
+      { multisigAddress },
+    )
+    .getOne();
   }
 
   async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
-    return this.findOne({
-      where: { userPublicIdentifier },
-      relations: ["appInstances"],
-    });
+    return this.createQueryBuilder("channel")
+    .leftJoinAndSelect("channel.appInstances", "appInstance")
+    .where(
+      "channel.userPublicIdentifier = :userPublicIdentifier",
+      { userPublicIdentifier },
+    )
+    .getOne();
   }
 
   async findByAppInstanceId(appInstanceId: string): Promise<Channel | undefined> {

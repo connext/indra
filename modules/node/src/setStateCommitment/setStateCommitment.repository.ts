@@ -2,6 +2,7 @@ import { SetStateCommitmentJSON } from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetStateCommitment } from "./setStateCommitment.entity";
+import { AppType } from "../appInstance/appInstance.entity";
 
 export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJSON => {
   return {
@@ -24,6 +25,15 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitment>
       .getOne();
   }
 
+  findByMultisigAddress(multisigAddress: string): Promise<SetStateCommitment[]> {
+    return this.createQueryBuilder("set_state")
+      .leftJoinAndSelect("set_state.app", "app")
+      .where(
+        "app.channel.multisigAddress = :multisigAddress", { multisigAddress },
+      )
+      .getMany();
+  }
+
   findByAppStateHash(appStateHash: string): Promise<SetStateCommitment | undefined> {
     return this.findOne({
       where: {
@@ -40,5 +50,19 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitment>
       return undefined;
     }
     return setStateToJson(commitment);
+  }
+
+  async findAllActiveCommitmentsByMultisig(multisigAddress: string): Promise<SetStateCommitment[]> {
+    return this.createQueryBuilder("set_state")
+      .leftJoinAndSelect("set_state.app", "app")
+      .where(
+        "app.type <> :rejected", { rejected: AppType.REJECTED },
+      )
+      .andWhere("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
+      .leftJoinAndSelect("app.channel", "channel")
+      .where(
+        "channel.multisigAddress = :multisigAddress", { multisigAddress },
+      )
+      .getMany();
   }
 }

@@ -506,15 +506,40 @@ export class ConnextClient implements IConnextClient {
       await this.channelProvider.send(ChannelMethods.chan_restoreState, {});
       this.log.info(`Found state to restore from store's backup`);
     } catch (e) {
-      const state = await this.node.restoreState(this.publicIdentifier);
-      if (!state) {
+      const { 
+        channel,
+        setupCommitment,
+        setStateCommitments,
+        conditionalCommitments,
+      } = await this.node.restoreState(this.publicIdentifier);
+      if (!channel) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
       this.log.debug(`Found state to restore from node`);
-      this.log.debug(`Restored state: ${stringify(state)}`);
+      this.log.debug(`Restored channel: ${stringify(channel)}`);
       await this.channelProvider.send(ChannelMethods.chan_setStateChannel, {
-        state,
+        state: channel,
       });
+      this.log.debug(`Restoring setup: ${stringify(setupCommitment)}`);
+      await this.channelProvider.send(ChannelMethods.chan_createSetupCommitment, {
+        multisigAddress: channel.multisigAddress,
+        commitment: setupCommitment,
+      });
+      this.log.debug(`Restoring ${setStateCommitments.length} set state commitments`);
+      for (const [appIdentityHash, commitment] of setStateCommitments) {
+        await this.channelProvider.send(ChannelMethods.chan_createSetStateCommitment, {
+          appIdentityHash,
+          commitment,
+        });
+      }
+
+      this.log.debug(`Restoring ${conditionalCommitments.length} conditional commitments`);
+      for (const [appIdentityHash, commitment] of conditionalCommitments) {
+        await this.channelProvider.send(ChannelMethods.chan_createConditionalCommitment, {
+          appIdentityHash,
+          commitment,
+        });
+      }
     }
     await this.restart();
   };

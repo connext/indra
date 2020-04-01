@@ -3,7 +3,6 @@ import { bigNumberify } from "ethers/utils";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetupCommitment } from "./setupCommitment.entity";
-import { Channel } from "../channel/channel.entity";
 
 export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitment) => {
   return {

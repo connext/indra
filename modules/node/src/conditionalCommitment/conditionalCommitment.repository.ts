@@ -1,6 +1,7 @@
 import { EntityRepository, Repository } from "typeorm";
 import { ConditionalTransactionCommitment } from "./conditionalCommitment.entity";
 import { ConditionalTransactionCommitmentJSON, ContractAddresses } from "@connext/types";
+import { AppType } from "../appInstance/appInstance.entity";
 
 export const convertConditionalCommitmentToJson = (
   commitment: ConditionalTransactionCommitment,
@@ -37,5 +38,21 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
         multisigAddress,
       },
     });
+  }
+
+  async findAllActiveCommitmentsByMultisig(
+    multisigAddress: string,
+  ): Promise<ConditionalTransactionCommitment[]> {
+    return this.createQueryBuilder("conditional")
+      .leftJoinAndSelect("conditional.app", "app")
+      .where(
+        "app.type <> :rejected", { rejected: AppType.REJECTED },
+      )
+      .andWhere("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
+      .leftJoinAndSelect("app.channel", "channel")
+      .where(
+        "channel.multisigAddress = :multisigAddress", { multisigAddress },
+      )
+      .getMany();
   }
 }
