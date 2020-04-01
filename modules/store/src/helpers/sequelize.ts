@@ -10,10 +10,10 @@ export class ConnextClientData extends Model {
 
 export const ConnextClientDataInitParams = {
   key: {
-    type: new DataTypes.STRING(),
+    type: new DataTypes.STRING(1024),
     primaryKey: true,
   },
   value: {
-    type: new DataTypes.STRING(),
+    type: DataTypes.JSONB,
   },
 };

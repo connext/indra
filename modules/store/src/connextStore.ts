@@ -17,6 +17,7 @@ import {
   DEFAULT_STORE_SEPARATOR,
   IBackupServiceAPI,
   StoreFactoryOptions,
+  DEFAULT_POSTGRES_TABLE_NAME,
 } from "./helpers";
 import {
   FileStorage,
@@ -66,8 +67,16 @@ export class ConnextStore implements IClientStore {
 
       case StoreTypes.Postgres: {
         this.internalStore = new KeyValueStorage(
-          new WrappedPostgresStorage()
-        )
+          (opts.storage as WrappedPostgresStorage) ||
+            new WrappedPostgresStorage(
+              this.prefix,
+              this.separator,
+              DEFAULT_POSTGRES_TABLE_NAME,
+              opts.sequelize,
+              opts.postgresConnectionUri,
+              this.backupService,
+            ),
+        );
         break;
       }
 

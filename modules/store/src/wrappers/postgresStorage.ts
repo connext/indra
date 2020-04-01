@@ -12,32 +12,34 @@ import {
 } from "../helpers";
 
 export class WrappedPostgresStorage implements WrappedStorage {
-  private sequelize: Sequelize;
-
+  public sequelize: Sequelize;
   constructor(
-    private readonly connectionUri: string,
     private readonly prefix: string = DEFAULT_STORE_PREFIX,
     private readonly separator: string = DEFAULT_STORE_SEPARATOR,
     private readonly tableName: string = DEFAULT_POSTGRES_TABLE_NAME,
+    sequelize?: Sequelize,
+    private readonly connectionUri?: string,
     private readonly backupService?: IBackupServiceAPI,
   ) {
-    this.initSequelize(this.connectionUri);
-  }
-
-  initSequelize(connectionUri: string): void {
-    this.sequelize = new Sequelize(connectionUri);
+    if (sequelize) {
+      this.sequelize = sequelize;
+    } else if (this.connectionUri) {
+      this.sequelize = new Sequelize(this.connectionUri);
+    } else {
+      throw new Error(`Either sequelize instance or Postgres connection URI must be specified`);
+    }
     ConnextClientData.init(ConnextClientDataInitParams, {
       sequelize: this.sequelize,
       tableName: this.tableName,
     });
   }
 
-  async getItem(key: string): Promise<string | undefined> {
+  async getItem(key: string): Promise<any | undefined> {
     const item = await ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
     return item && item.value;
   }
 
-  async setItem(key: string, value: string): Promise<void> {
+  async setItem(key: string, value: any): Promise<void> {
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
       try {

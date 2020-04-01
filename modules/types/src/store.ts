@@ -1,3 +1,5 @@
+import { Sequelize } from "sequelize";
+
 import { StateChannelJSON } from "./state";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import {
@@ -37,8 +39,8 @@ export interface IAsyncStorage {
 }
 
 export interface WrappedStorage {
-  getItem(key: string): Promise<string | undefined>;
-  setItem(key: string, value: string): Promise<void>;
+  getItem<T = any>(key: string): Promise<T | undefined>;
+  setItem<T = any>(key: string, value: T): Promise<void>;
   removeItem(key: string): Promise<void>;
   getKeys(): Promise<string[]>;
   getEntries(): Promise<[string, any][]>;
@@ -59,6 +61,7 @@ export interface StoreFactoryOptions extends FileStorageOptions {
   separator?: string;
   asyncStorageKey?: string;
   postgresConnectionUri?: string;
+  sequelize?: Sequelize;
   backupService?: IBackupServiceAPI;
 }
 
