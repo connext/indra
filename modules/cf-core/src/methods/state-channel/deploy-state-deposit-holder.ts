@@ -157,7 +157,7 @@ async function sendMultisigDeployTx(
         continue;
       }
 
-      if (tryCount > 0) {
+      if (tryCount > 1) {
         log.debug(`Deploying multisig failed on first try, but succeeded on try #${tryCount}`);
       }
       return tx;
