@@ -17,6 +17,8 @@ mode="${MODE:-local}"
 
 cwd="`pwd`"
 
+registry="docker.io/connextproject"
+
 commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 name=${project}_contract_deployer
@@ -66,7 +68,7 @@ then
     ${project}_builder -c "cd modules/contracts && bash ops/entry.sh deploy"
 
 elif [[ "$mode" == "release" ]]
-then image="${project}_ethprovider:$release"
+then image="${registry}/${project}_ethprovider:$release"
 elif [[ "$mode" == "staging" ]]
 then image="${project}_ethprovider:$commit"
 fi
