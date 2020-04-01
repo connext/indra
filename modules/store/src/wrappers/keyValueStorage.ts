@@ -92,11 +92,10 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
     const item = await this.getItem(channelKey);
-    console.log('item: ', item);
     if (!item) {
       return undefined;
     }
-    return properlyConvertChannelNullVals(item);
+    return item && properlyConvertChannelNullVals(item);
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
@@ -268,7 +267,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
-    return this.getItem(setupCommitmentKey);
+    const item = await this.getItem(setupCommitmentKey);
+    if (!item) {
+      return undefined;
+    }
+    return item;
   }
 
   async createSetupCommitment(
@@ -286,7 +289,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
   ): Promise<SetStateCommitmentJSON | undefined> {
     const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
-    return this.getItem(setStateKey);
+    const item = await this.getItem(setStateKey);
+    if (!item) {
+      return undefined;
+    }
+    return item;
   }
 
   async createSetStateCommitment(
@@ -315,7 +322,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
     const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
-    return this.getItem(conditionalCommitmentKey);
+    const item = await this.getItem(conditionalCommitmentKey);
+    if (!item) {
+      return undefined;
+    }
+    return item;
   }
 
   async createConditionalTransactionCommitment(
@@ -342,7 +353,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    return this.getItem(withdrawalKey);
+    const item = await this.getItem(withdrawalKey);
+    if (!item) {
+      return undefined;
+    }
+    return item;
   }
 
   async createWithdrawalCommitment(
@@ -369,7 +384,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    return this.getItem(withdrawalKey);
+    const item = await this.getItem(withdrawalKey);
+    if (!item) {
+      return undefined;
+    }
+    return item;
   }
 
   async createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {

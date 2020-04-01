@@ -48,11 +48,10 @@ export class WrappedPostgresStorage implements WrappedStorage {
         console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
       }
     }
-    const item = ConnextClientData.build({
+    await ConnextClientData.upsert({
       key: `${this.prefix}${this.separator}${key}`,
       value,
     });
-    return item.save();
   }
 
   async removeItem(key: string): Promise<void> {
