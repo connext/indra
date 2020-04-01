@@ -1,6 +1,5 @@
 import {
   ChannelAppSequences,
-  CoinBalanceRefundAppName,
   maxBN,
   MethodParams,
   MethodResults,
@@ -12,9 +11,8 @@ import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { TransactionResponse } from "ethers/providers";
+import { TransactionResponse, TransactionReceipt } from "ethers/providers";
 import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
-import tokenAbi from "human-standard-token-abi";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -28,6 +26,7 @@ import { CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
+import { DepositService } from "src/deposit/deposit.service";
 
 type RebalancingTargetsResponse<T = string> = {
   assetId: string;
@@ -51,6 +50,7 @@ export class ChannelService {
     private readonly withdrawService: WithdrawService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
+    private readonly depositService: DepositService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
   ) {
@@ -129,16 +129,12 @@ export class ChannelService {
         upperBoundCollateralize,
         minimumRequiredCollateral,
       ]);
-      const res = await this.collateralizeIfNecessary(
+      await this.collateralizeIfNecessary(
         channel,
         assetId,
         collateralNeeded,
         lowerBoundCollateralize,
       );
-      let txResponse: TransactionResponse;
-      if (res) {
-        txResponse = await this.configService.getEthProvider().getTransaction(res.transactionHash);
-      }
     } else if (rebalanceType === RebalanceType.RECLAIM) {
       await this.reclaimIfNecessary(channel, assetId, upperBoundReclaim, lowerBoundReclaim);
     } else {
@@ -151,7 +147,7 @@ export class ChannelService {
     assetId: string,
     collateralNeeded: BigNumber,
     lowerBoundCollateral: BigNumber,
-  ) {
+  ): Promise<TransactionReceipt> {
     if (channel.collateralizationInFlight) {
       this.log.warn(
         `Collateral request is in flight, try request again for user ${channel.userPublicIdentifier} later`,
@@ -180,17 +176,16 @@ export class ChannelService {
 
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);
-    const result = this.depositService.deposit(channel.multisigAddress, amountDeposit, assetId)
-      .then(async (res: MethodResults.Deposit) => {
-        this.log.info(`Channel ${channel.multisigAddress} successfully collateralized`);
-        this.log.debug(`Collateralization result: ${stringify(res)}`);
-        return res;
-      })
-      .catch(async (e: any) => {
-        await this.clearCollateralizationInFlight(channel.multisigAddress);
-        throw e;
-      });
-    return result;
+    let receipt;
+    try {
+      receipt = await this.depositService.deposit(channel, amountDeposit, assetId)
+      this.log.info(`Channel ${channel.multisigAddress} successfully collateralized`);
+      this.log.debug(`Collateralization result: ${stringify(receipt)}`);
+    } catch (e) {
+      throw e;
+    }
+    await this.clearCollateralizationInFlight(channel.multisigAddress);
+    return receipt;
   }
 
   // collateral is reclaimed if it is above the upper bound
@@ -199,7 +194,7 @@ export class ChannelService {
     assetId: string,
     upperBoundReclaim: BigNumber,
     lowerBoundReclaim: BigNumber,
-  ): Promise<void> {
+  ): Promise<TransactionResponse> {
     if (upperBoundReclaim.isZero() && lowerBoundReclaim.isZero()) {
       this.log.info(
         `Collateral for channel ${channel.multisigAddress} is within bounds, nothing to reclaim.`,

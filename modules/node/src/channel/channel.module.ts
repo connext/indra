@@ -10,6 +10,7 @@ import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { WithdrawModule } from "../withdraw/withdraw.module";
 import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
+import { DepositModule } from "../deposit/deposit.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { RebalanceProfileRepository } from "../rebalanceProfile/rebalanceProfile.repository";
 
@@ -29,6 +30,7 @@ import { ChannelService } from "./channel.service";
     LoggerModule,
     MessagingModule,
     OnchainTransactionModule,
+    DepositModule,
     TypeOrmModule.forFeature([
       AppRegistryRepository,
       ChannelRepository,
