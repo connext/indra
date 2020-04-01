@@ -1,9 +1,13 @@
 #!/bin/bash
 
+export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
+export ETH_PROVIDER_PATH="${ETH_PROVIDER_URL#*/}"
+
 echo "Proxy container launched in env:"
 echo "DOMAINNAME=$DOMAINNAME"
 echo "EMAIL=$EMAIL"
-echo "ETH_RPC_URL=$ETH_RPC_URL"
+echo "ETH_PROVIDER_HOST=$ETH_PROVIDER_HOST"
+echo "ETH_PROVIDER_PATH=$ETH_PROVIDER_PATH"
 echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
 echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
 echo "MODE=$MODE"
@@ -23,9 +27,9 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-echo "waiting for $ETH_RPC_URL..."
-bash wait_for.sh -t 60 $ETH_RPC_URL 2> /dev/null
-while ! curl -s $ETH_RPC_URL > /dev/null
+bash wait_for.sh -t 60 $ETH_PROVIDER_HOST 2> /dev/null
+echo "waiting for $ETH_PROVIDER_HOST..."
+while ! curl -s $ETH_PROVIDER_HOST > /dev/null
 do sleep 2
 done
 
