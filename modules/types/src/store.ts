@@ -14,6 +14,7 @@ export const StoreTypes = enumify({
   AsyncStorage: "AsyncStorage",
   File: "File",
   LocalStorage: "LocalStorage",
+  Postgres: "Postgres",
   Memory: "Memory",
 });
 export type StoreTypes = typeof StoreTypes[keyof typeof StoreTypes];
@@ -57,6 +58,7 @@ export interface StoreFactoryOptions extends FileStorageOptions {
   prefix?: string;
   separator?: string;
   asyncStorageKey?: string;
+  postgresConnectionUri?: string;
   backupService?: IBackupServiceAPI;
 }
 

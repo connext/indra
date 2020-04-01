@@ -25,6 +25,7 @@ import {
   WrappedAsyncStorage,
   WrappedLocalStorage,
 } from "./wrappers";
+import { WrappedPostgresStorage } from "./wrappers/postgresStorage";
 
 export class ConnextStore implements IClientStore {
   private internalStore: IClientStore;
@@ -40,13 +41,14 @@ export class ConnextStore implements IClientStore {
 
     // set internal storage
     switch (storageType) {
-      case StoreTypes.LocalStorage:
+      case StoreTypes.LocalStorage: {
         this.internalStore = new KeyValueStorage(
           new WrappedLocalStorage(this.prefix, this.separator, this.backupService),
         );
         break;
+      }
 
-      case StoreTypes.AsyncStorage:
+      case StoreTypes.AsyncStorage: {
         if (!opts.storage) {
           throw new Error(`Must pass in a reference to an 'IAsyncStorage' interface`);
         }
@@ -60,8 +62,16 @@ export class ConnextStore implements IClientStore {
           ),
         );
         break;
+      }
 
-      case StoreTypes.File:
+      case StoreTypes.Postgres: {
+        this.internalStore = new KeyValueStorage(
+          new WrappedPostgresStorage()
+        )
+        break;
+      }
+
+      case StoreTypes.File: {
         this.internalStore = new KeyValueStorage(
           new FileStorage(
             this.prefix,
@@ -72,18 +82,21 @@ export class ConnextStore implements IClientStore {
           ),
         );
         break;
+      }
 
-      case StoreTypes.Memory:
+      case StoreTypes.Memory: {
         this.internalStore = new MemoryStorage();
         break;
+      }
 
-      default:
+      default: {
         if (!opts.storage) {
           throw new Error(
             `Missing reference to a WrappedStorage interface, cannot create store of type: ${storageType}`,
           );
         }
         this.internalStore = new KeyValueStorage(opts.storage as WrappedStorage);
+      }
     }
   }
 

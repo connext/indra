@@ -12,6 +12,7 @@ import {
   TEST_STORE_PAIR,
   createArray,
 } from "../util";
+import { storeTypesNoPostgres } from "./store.test";
 
 describe("KeyValueStorage", () => {
   const length = 10;
@@ -20,7 +21,7 @@ describe("KeyValueStorage", () => {
   const testValue = "something";
 
   describe("happy case: instantiate", () => {
-    for (const type of Object.keys(StoreTypes)) {
+    for (const type of storeTypesNoPostgres) {
       if (type === StoreTypes.Memory) {
         continue;
       }
@@ -42,7 +43,7 @@ describe("KeyValueStorage", () => {
   });
 
   describe("happy case: should be able to remove an item", async () => {
-    for (const type of Object.keys(StoreTypes)) {
+    for (const type of storeTypesNoPostgres) {
       if (type === StoreTypes.Memory) {
         continue;
       }
@@ -151,7 +152,7 @@ describe("KeyValueStorage", () => {
   });
 
   describe("happy case: set & get the same path consecutively", async () => {
-    for (const type of Object.keys(StoreTypes)) {
+    for (const type of storeTypesNoPostgres) {
       if (type === StoreTypes.Memory) {
         continue;
       }
@@ -163,7 +164,7 @@ describe("KeyValueStorage", () => {
   });
 
   describe("happy case: should join strings correctly", () => {
-    for (const type of Object.keys(StoreTypes)) {
+    for (const type of storeTypesNoPostgres) {
       if (type === StoreTypes.Memory) {
         continue;
       }

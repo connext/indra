@@ -67,12 +67,7 @@ export class WrappedLocalStorage implements WrappedStorage {
   }
 
   getKey(...args: string[]) {
-    let str = "";
-    args.forEach(arg => {
-      // dont add separator to last one
-      str = str.concat(arg, args.indexOf(arg) === args.length - 1 ? "" : this.separator);
-    });
-    return str;
+    return args.join(this.separator);
   }
 }
 
