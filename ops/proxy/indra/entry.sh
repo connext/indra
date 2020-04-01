@@ -1,11 +1,27 @@
 #!/bin/bash
 
+if [[ "${ETH_PROVIDER_URL%%://*}" == "https" ]]
+then export ETH_PROVIDER_PROTOCOL="ssl"
+else export ETH_PROVIDER_PROTOCOL=""
+fi
+
+ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
+
+export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
+if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
+then export ETH_PROVIDER_PATH="${ETH_PROVIDER_URL#*/}"
+else export ETH_PROVIDER_PATH=""
+fi
+
 echo "Proxy container launched in env:"
 echo "DOMAINNAME=$DOMAINNAME"
 echo "EMAIL=$EMAIL"
-echo "ETH_RPC_URL=$ETH_RPC_URL"
-echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
+echo "ETH_PROVIDER_PROTOCOL=$ETH_PROVIDER_PROTOCOL"
+echo "ETH_PROVIDER_HOST=$ETH_PROVIDER_HOST"
+echo "ETH_PROVIDER_PATH=$ETH_PROVIDER_PATH"
+echo "ETH_PROVIDER_URL=$ETH_PROVIDER_URL"
 echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
+echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
 echo "MODE=$MODE"
 echo "NODE_URL=$NODE_URL"
 echo "WEBSERVER_URL=$WEBSERVER_URL"
@@ -23,9 +39,9 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-echo "waiting for $ETH_RPC_URL..."
-bash wait_for.sh -t 60 $ETH_RPC_URL 2> /dev/null
-while ! curl -s $ETH_RPC_URL > /dev/null
+bash wait_for.sh -t 60 $ETH_PROVIDER_HOST 2> /dev/null
+echo "waiting for $ETH_PROVIDER_HOST..."
+while ! curl -s $ETH_PROVIDER_HOST > /dev/null
 do sleep 2
 done
 

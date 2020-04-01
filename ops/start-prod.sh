@@ -211,7 +211,7 @@ services:
     environment:
       DOMAINNAME: '$INDRA_DOMAINNAME'
       EMAIL: '$INDRA_EMAIL'
-      ETH_RPC_URL: '${INDRA_ETH_PROVIDER#*://}'
+      ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
       MESSAGING_TCP_URL: 'nats:4222'
       MESSAGING_WS_URL: 'nats:4221'
       MODE: 'prod'
