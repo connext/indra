@@ -1,4 +1,5 @@
 import { EventNames, EventPayloads } from "./events";
+import { DecString } from "./basic";
 import { ILoggerService } from "./logger";
 import {
   MethodName,
@@ -136,6 +137,24 @@ export interface CreateChannelMessage extends NodeMessage {
   data: MethodResults.CreateChannel;
 }
 
+export interface DepositConfirmationMessage extends NodeMessage {
+  data: MethodParams.Deposit;
+}
+
+export interface DepositFailedMessage extends NodeMessage {
+  data: {
+    params: MethodParams.Deposit;
+    errors: string[];
+  };
+}
+
+export interface DepositStartedMessage extends NodeMessage {
+  data: {
+    value: DecString;
+    txHash: string;
+  };
+}
+
 export interface InstallMessage extends NodeMessage {
   data: {
     params: MethodParams.Install;
@@ -169,5 +188,8 @@ export type EventEmittedMessage =
   | UpdateStateMessage
   | InstallMessage
   | ProposeMessage
+  | DepositConfirmationMessage
+  | DepositStartedMessage
+  | DepositFailedMessage
   | CreateChannelMessage
   | NodeMessageWrappedProtocolMessage;

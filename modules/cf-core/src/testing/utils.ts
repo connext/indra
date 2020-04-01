@@ -29,6 +29,8 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { AppInstance, StateChannel } from "../models";
 import { computeRandomExtendedPrvKey, xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
 import {
+  DepositConfirmationMessage,
+  DepositStartedMessage,
   EventEmittedMessage,
 } from "../types";
 
@@ -398,6 +400,71 @@ export async function getProposeCoinBalanceRefundAppParams(
   };
 }
 
+export async function deposit(
+  node: Node,
+  multisigAddress: string,
+  amount: BigNumber = One,
+  proposedToNode: Node,
+  tokenAddress?: string,
+) {
+  const proposeParams = await getProposeCoinBalanceRefundAppParams(
+    multisigAddress,
+    node.publicIdentifier,
+    proposedToNode.publicIdentifier,
+    tokenAddress,
+  );
+  await new Promise(async resolve => {
+    proposedToNode.once(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {
+      // TODO: assert this?
+      // assertNodeMessage(msg, {
+      //   from: node.publicIdentifier,
+      //   type: "PROPOSE_INSTALL_EVENT",
+      //   data: proposeParams
+      // });
+      resolve();
+    });
+
+    node.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: MethodNames.chan_proposeInstall,
+      parameters: proposeParams,
+    });
+  });
+  const depositReq = constructDepositRpc(multisigAddress, amount, tokenAddress);
+
+  return new Promise(async resolve => {
+    node.once(`DEPOSIT_CONFIRMED_EVENT`, (msg: DepositConfirmationMessage) => {
+      assertNodeMessage(msg, {
+        from: node.publicIdentifier,
+        type: `DEPOSIT_CONFIRMED_EVENT`,
+        data: {
+          multisigAddress,
+          amount,
+          tokenAddress: tokenAddress || AddressZero,
+        },
+      });
+      resolve();
+    });
+
+    node.once(`DEPOSIT_STARTED_EVENT`, (msg: DepositStartedMessage) => {
+      assertNodeMessage(
+        msg,
+        {
+          from: node.publicIdentifier,
+          type: `DEPOSIT_STARTED_EVENT`,
+          data: {
+            value: amount,
+          },
+        },
+        [`data.txHash`],
+      );
+    });
+
+    // TODO: how to test deposit failed events?
+    await node.rpcRouter.dispatch(depositReq);
+  });
+}
+
 export async function deployStateDepositHolder(node: Node, multisigAddress: string) {
   const response = await node.rpcRouter.dispatch({
     methodName: MethodNames.chan_deployStateDepositHolder,
@@ -548,6 +615,20 @@ export function constructUninstallRpc(appInstanceId: string): Rpc {
     id: Date.now(),
     methodName: MethodNames.chan_uninstall,
   };
+}
+
+export async function collateralizeChannel(
+  multisigAddress: string,
+  node1: Node,
+  node2: Node,
+  amount: BigNumber = One,
+  tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  collateralizeNode2: boolean = true,
+): Promise<void> {
+  await deposit(node1, multisigAddress, amount, node2, tokenAddress);
+  if (collateralizeNode2) {
+    await deposit(node2, multisigAddress, amount, node1, tokenAddress);
+  }
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
