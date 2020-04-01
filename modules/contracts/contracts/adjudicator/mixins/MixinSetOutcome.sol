@@ -28,6 +28,11 @@ contract MixinSetOutcome is LibStateChannelApp, LibAppCaller, MChallengeRegistry
         );
 
         require(
+            !isOutcomeSet(challenge),
+            "setOutcome called on challenge with outcome already set"
+        );
+
+        require(
             keccak256(finalState) == challenge.appStateHash,
             "setOutcome called with incorrect witness data of finalState"
         );
@@ -37,7 +42,6 @@ contract MixinSetOutcome is LibStateChannelApp, LibAppCaller, MChallengeRegistry
             finalState
         );
         challenge.status = ChallengeStatus.OUTCOME_SET;
-        challenge.latestSubmitter = msg.sender;
 
         emit ChallengeUpdated(
             identityHash,

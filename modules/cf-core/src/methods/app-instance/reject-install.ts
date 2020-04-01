@@ -6,6 +6,7 @@ import {
   RejectProposalMessage,
 } from "../../types";
 import { NodeController } from "../controller";
+import { NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID, NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../../errors";
 
 export class RejectInstallController extends NodeController {
   protected async getRequiredLockNames(
@@ -26,11 +27,17 @@ export class RejectInstallController extends NodeController {
 
     const { appInstanceId } = params;
 
-    const appInstanceProposal = await store.getAppInstanceProposal(appInstanceId);
+    const appInstanceProposal = await store.getAppProposal(appInstanceId);
+    if (!appInstanceProposal) {
+      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId));
+    }
 
-    const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
-
-    await store.removeAppProposal(stateChannel.removeProposal(appInstanceId), appInstanceProposal);
+    const stateChannel = await store.getStateChannelByAppInstanceId(appInstanceId);
+    if (!stateChannel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+    }
+    
+    await store.removeAppProposal(stateChannel.multisigAddress, appInstanceId);
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,

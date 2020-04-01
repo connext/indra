@@ -1,24 +1,29 @@
-import { CommitmentTypes, PersistAppType, ProtocolNames, ProtocolParams, ILoggerService } from "@connext/types";
+import { ProtocolNames, ProtocolParams, ILoggerService } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { StateChannel, AppInstance } from "../models";
-import { Store } from "../store";
 import {
   Context,
   Opcode,
   ProtocolExecutionFlow,
   ProtocolMessage,
+  PersistAppType,
+  PersistCommitmentType,
 } from "../types";
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature, computeTokenIndexedFreeBalanceIncrements } from "./utils";
+import {
+  assertIsValidSignature,
+  computeTokenIndexedFreeBalanceIncrements,
+  stateChannelClassFromStoreByMultisig,
+} from "./utils";
+import { StateChannel } from "..";
+import { AppInstance } from "../models/app-instance";
 
 const protocol = ProtocolNames.uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-const { SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -35,10 +40,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
     const { responderXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
-    // 6ms
-    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
-
-    // 1ms
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     // 47ms
@@ -59,10 +64,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
     const uninstallCommitmentHash = uninstallCommitment.hashToSign();
 
-    let checkpoint = Date.now(); 
+    let checkpoint = Date.now();
     // 4ms
     const signature = yield [OP_SIGN, uninstallCommitmentHash, appToUninstall.appSeqNo];
-    logTime(log, checkpoint, `Signed uninstall commitment initiator`)
+    logTime(log, checkpoint, `Signed uninstall commitment initiator`);
 
     // 94ms
     const {
@@ -78,21 +83,29 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
       } as ProtocolMessage,
     ];
-  
-    checkpoint = Date.now(); 
+
+    checkpoint = Date.now();
     // 6ms
-    await assertIsValidSignature(responderEphemeralKey, uninstallCommitmentHash, responderSignature);
-    logTime(log, checkpoint, `Asserted valid signature in initiating uninstall`)
+    await assertIsValidSignature(
+      responderEphemeralKey,
+      uninstallCommitmentHash,
+      responderSignature,
+    );
+    logTime(log, checkpoint, `Asserted valid signature in initiating uninstall`);
 
     uninstallCommitment.signatures = [signature, responderSignature];
 
-    // 5ms
-    yield [PERSIST_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      uninstallCommitment,
+      postProtocolStateChannel.freeBalance.identityHash,
+    ];
 
     // 24ms
     yield [
       PERSIST_APP_INSTANCE,
-      PersistAppType.Uninstall,
+      PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
     ];
@@ -110,10 +123,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
     const { initiatorXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
 
-    // 9ms
-    const preProtocolStateChannel = (await store.getStateChannel(multisigAddress)) as StateChannel;
-
-    // 0ms
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
     // 40ms
@@ -138,23 +151,31 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     let checkpoint = Date.now();
     // 15ms
-    await assertIsValidSignature(initiatorEphemeralKey, uninstallCommitmentHash, initiatorSignature);
-    logTime(log, checkpoint, `Asserted valid signature in responding uninstall`)
+    await assertIsValidSignature(
+      initiatorEphemeralKey,
+      uninstallCommitmentHash,
+      initiatorSignature,
+    );
+    logTime(log, checkpoint, `Asserted valid signature in responding uninstall`);
     checkpoint = Date.now();
 
     // 10ms
     const responderSignature = yield [OP_SIGN, uninstallCommitmentHash, appToUninstall.appSeqNo];
-    logTime(log, checkpoint, `Signed commitment in responding uninstall`)
+    logTime(log, checkpoint, `Signed commitment in responding uninstall`);
 
     uninstallCommitment.signatures = [responderSignature, initiatorSignature];
 
-    // 13ms
-    yield [PERSIST_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      uninstallCommitment,
+      postProtocolStateChannel.freeBalance.identityHash,
+    ];
 
     // 59ms
     yield [
       PERSIST_APP_INSTANCE,
-      PersistAppType.Uninstall,
+      PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
     ];
@@ -193,7 +214,7 @@ async function computeStateTransition(
       provider,
       undefined,
       blockNumberToUseIfNecessary,
-      log
+      log,
     ),
   );
 }

@@ -3,7 +3,6 @@ import { bigNumberify } from "ethers/utils";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetupCommitment } from "./setupCommitment.entity";
-import { Channel } from "../channel/channel.entity";
 
 export const convertSetupEntityToMinimalTransaction = (commitment: SetupCommitment) => {
   return {
@@ -22,6 +21,14 @@ export class SetupCommitmentRepository extends Repository<SetupCommitment> {
     });
   }
 
+  async findByMultisigAddressOrThrow(multisigAddress: string): Promise<SetupCommitment> {
+    const setupCommitment = await this.findByMultisigAddress(multisigAddress);
+    if (!setupCommitment) {
+      throw new Error(`Could not find setup commitment for ${multisigAddress}`);
+    }
+    return setupCommitment;
+  }
+
   async getCommitment(multisigAddress: string): Promise<MinimalTransaction> {
     const setup = await this.findByMultisigAddress(multisigAddress);
     if (!setup) {
@@ -30,17 +37,12 @@ export class SetupCommitmentRepository extends Repository<SetupCommitment> {
     return convertSetupEntityToMinimalTransaction(setup);
   }
 
-  async saveCommitment(
+  async createCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
-    channel?: Channel,
   ): Promise<SetupCommitment> {
-    let commitmentEnt = await this.findByMultisigAddress(multisigAddress);
-    if (!commitmentEnt) {
-      commitmentEnt = new SetupCommitment();
-      commitmentEnt.multisigAddress = multisigAddress;
-    }
-    commitmentEnt.channel = channel;
+    const commitmentEnt = new SetupCommitment();
+    commitmentEnt.multisigAddress = multisigAddress;
     commitmentEnt.to = commitment.to;
     commitmentEnt.value = bigNumberify(commitment.value);
     commitmentEnt.data = commitment.data;

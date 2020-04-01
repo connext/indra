@@ -29,6 +29,12 @@ contract MixinChallengeRegistryCore is MChallengeRegistryCore {
         view
         returns (bytes memory)
     {
+        AppChallenge storage challenge = appChallenges[identityHash];
+        require(
+            isOutcomeSet(challenge),
+            "Outcome hasn't been set yet"
+        );
+
         return appOutcomes[identityHash];
     }
 

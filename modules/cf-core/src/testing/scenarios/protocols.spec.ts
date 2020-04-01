@@ -1,4 +1,4 @@
-import { OutcomeType, ProtocolNames } from "@connext/types";
+import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { bigNumberify } from "ethers/utils";
 
@@ -8,6 +8,7 @@ import { xkeyKthAddress } from "../../xkeys";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { AppWithAction } from "../contracts";
 import { TestRunner } from "../test-runner";
+import { StateChannel } from "../../models";
 
 let wallet: Wallet;
 let appWithAction: Contract;
@@ -36,36 +37,63 @@ describe("Three mininodes", () => {
 
     await tr.setup();
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
+    const proposalParams: ProtocolParams.Propose = {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeB.xpub,
-      defaultTimeout: 100,
-      appInterface: {
-        addr: appWithAction.address,
+      timeout: bigNumberify(100),
+      appDefinition: appWithAction.address,
+      abiEncodings: {
         stateEncoding: "tuple(uint256 counter)",
         actionEncoding: "tuple(uint8 actionType, uint256 increment)",
       },
       initialState: {
         counter: 0,
       },
-      appSeqNo: 1,
-      initiatorBalanceDecrement: bigNumberify(0),
-      responderBalanceDecrement: bigNumberify(0),
+      initiatorDeposit: bigNumberify(0),
+      responderDeposit: bigNumberify(0),
       initiatorDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       responderDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      participants: [
-        xkeyKthAddress(tr.mininodeA.xpub, 1),
-        xkeyKthAddress(tr.mininodeB.xpub, 1),
-      ].sort(),
       multisigAddress: tr.multisigAB,
+    };
+
+    await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.propose, proposalParams);
+
+    const postProposalStateChannel = await tr.mininodeA.store.getStateChannel(tr.multisigAB);
+    expect(postProposalStateChannel).toBeDefined;
+
+    const [proposal] = [...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values()];
+    expect(proposal).toBeTruthy();
+
+    const installParams: ProtocolParams.Install = {
+      initiatorXpub: tr.mininodeA.xpub,
+      responderXpub: tr.mininodeB.xpub,
+      initiatorDepositTokenAddress: proposal.initiatorDepositTokenAddress,
+      responderDepositTokenAddress: proposal.responderDepositTokenAddress,
+      multisigAddress: tr.multisigAB,
+      initiatorBalanceDecrement: bigNumberify(0),
+      responderBalanceDecrement: bigNumberify(0),
+      participants: [
+        xkeyKthAddress(tr.mininodeA.xpub, proposal.appSeqNo),
+        xkeyKthAddress(tr.mininodeB.xpub, proposal.appSeqNo),
+      ].sort(),
+      initialState: proposal.initialState,
+      appInterface: {
+        addr: proposal.appDefinition,
+        stateEncoding: proposal.abiEncodings.stateEncoding,
+        actionEncoding: proposal.abiEncodings.actionEncoding,
+      },
+      defaultTimeout: 100,
+      appSeqNo: proposal.appSeqNo,
+      outcomeType: proposal.outcomeType,
       disableLimit: false,
-    });
+    };
+    await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, installParams);
 
     const postInstallChannel = await tr.mininodeA.store.getStateChannel(tr.multisigAB);
     expect(postInstallChannel).toBeDefined;
 
-    const [appInstance] = [...postInstallChannel.appInstances.values()];
+    const [appInstance] = [...StateChannel.fromJson(postInstallChannel!).appInstances.values()];
 
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.update, {
       initiatorXpub: tr.mininodeA.xpub,

@@ -3,16 +3,15 @@ import {
   EthereumCommitment,
   NetworkContext,
   nullLogger,
-  PersistAppType,
+  IStoreService,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { HDNode } from "ethers/utils/hdnode";
 import { signDigest } from "@connext/crypto";
 
-import { Opcode } from "../types";
+import { Opcode, PersistAppType } from "../types";
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
-import { Store } from "../store";
 
 import { getRandomHDNodes } from "./random-signing-keys";
 
@@ -41,7 +40,7 @@ export class MiniNode {
   constructor(
     readonly networkContext: NetworkContext,
     readonly provider: JsonRpcProvider,
-    readonly store: Store,
+    readonly store: IStoreService,
   ) {
     [this.hdNode] = getRandomHDNodes(1);
     this.xpub = this.hdNode.neuter().extendedKey;
@@ -52,39 +51,65 @@ export class MiniNode {
     this.protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
       const [stateChannels] = args;
       for (const stateChannel of stateChannels) {
-        await this.store.saveStateChannel(stateChannel);
+        await this.store.createStateChannel(stateChannel.toJson());
       }
     });
     this.protocolRunner.register(
       Opcode.PERSIST_APP_INSTANCE,
       async (args: [PersistAppType, StateChannel, AppInstance | AppInstanceProposal]) => {
         const [type, postProtocolChannel, app] = args;
-
-        // always persist the free balance
-        // this will error if channel does not exist
-        await this.store.saveFreeBalance(postProtocolChannel);
+        const { multisigAddress, numProposedApps, freeBalance } = postProtocolChannel;
+        const { identityHash } = app;
 
         switch (type) {
-          case PersistAppType.Proposal:
-            await this.store.saveAppProposal(postProtocolChannel, app as AppInstanceProposal);
+          case PersistAppType.CreateProposal: {
+            await this.store.createAppProposal(
+              multisigAddress,
+              app as AppInstanceProposal,
+              numProposedApps,
+            );
             break;
-          case PersistAppType.Reject:
-            await this.store.removeAppProposal(postProtocolChannel, app as AppInstanceProposal);
-            break;
+          }
 
-          case PersistAppType.Instance:
-            if (app.identityHash === postProtocolChannel.freeBalance.identityHash) {
-              break;
-            }
-            await this.store.saveAppInstance(postProtocolChannel, app as AppInstance);
+          case PersistAppType.RemoveProposal: {
+            await this.store.removeAppProposal(multisigAddress, identityHash);
             break;
+          }
 
-          case PersistAppType.Uninstall:
-            await this.store.removeAppInstance(postProtocolChannel, app as AppInstance);
+          case PersistAppType.CreateInstance: {
+            await this.store.createAppInstance(
+              multisigAddress,
+              (app as AppInstance).toJson(),
+              freeBalance.toJson(),
+            );
             break;
+          }
 
-          default:
+          case PersistAppType.UpdateInstance: {
+            await this.store.updateAppInstance(
+              multisigAddress,
+              (app as AppInstance).toJson(),
+            );
+            break;
+          }
+
+          case PersistAppType.RemoveInstance: {
+            await this.store.removeAppInstance(
+              multisigAddress,
+              identityHash,
+              freeBalance.toJson(),
+            );
+            break;
+          }
+
+          case PersistAppType.Reject: {
+            await this.store.removeAppProposal(multisigAddress, identityHash);
+            break;
+          }
+
+          default: {
             throw new Error(`Unrecognized app persistence call: ${type}`);
+          }
         }
       },
     );
