@@ -120,7 +120,6 @@ async function sendMultisigDeployTx(
   }
 
   const signerAddress = await signer.getAddress();
-  const nonce = await provider.getTransactionCount(signerAddress);
 
   let error;
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
@@ -134,7 +133,7 @@ async function sendMultisigDeployTx(
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,
           gasPrice: provider.getGasPrice(),
-          nonce,
+          nonce: await provider.getTransactionCount(signerAddress),
         },
       );
 
@@ -158,7 +157,7 @@ async function sendMultisigDeployTx(
         continue;
       }
 
-      if (tryCount > 0) {
+      if (tryCount > 1) {
         log.debug(`Deploying multisig failed on first try, but succeeded on try #${tryCount}`);
       }
       return tx;
