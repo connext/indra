@@ -55,7 +55,7 @@ export type DepositParameters = {
 };
 
 export type RequestDepositRightsParameters = {
-  assetId: Address;
+  assetId?: Address;
 }
 
 export type RequestDepositRightsResponse = MethodResults.RequestDepositRights;

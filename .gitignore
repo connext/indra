@@ -20,6 +20,7 @@ ops/database/snapshots
 build/
 dist/
 node_modules/
+.flags
 .makeflags
 modules/test-runner/*.0x/
 

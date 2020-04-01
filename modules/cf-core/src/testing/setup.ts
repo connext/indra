@@ -28,20 +28,6 @@ export interface SetupContext {
   [nodeName: string]: NodeContext;
 }
 
-export async function setupWithMemoryMessagingAndStore(
-  global: any,
-  nodeCPresent: boolean = false,
-  newExtendedPrvKeys: boolean = false,
-): Promise<SetupContext> {
-  return setup(
-    global,
-    nodeCPresent,
-    newExtendedPrvKeys,
-    new MemoryMessagingService(),
-    new MemoryStoreServiceFactory(),
-  );
-}
-
 export async function setup(
   global: any,
   nodeCPresent: boolean = false,

@@ -23,7 +23,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
 
   async connectRequestReponse(
     pattern: string,
-    processor: (subject: string, data: any) => any,
+    processor: (subject: string, data: any) => Promise<any>,
   ): Promise<void> {
     // TODO: timeout
     await this.messaging.subscribe(pattern, async (msg: any) => {

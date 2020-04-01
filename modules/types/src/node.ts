@@ -8,12 +8,13 @@ import {
   LinkedTransferStatus,
   NetworkContext,
   ResolveFastSignedTransferResponse,
-  ResolveHashLockTransferResponse,
   ResolveLinkedTransferResponse,
 } from "./contracts";
 import { ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { MethodResults } from "./methods";
+import { StateChannelJSON } from "./state";
+import { MinimalTransaction, SetStateCommitmentJSON, ConditionalTransactionCommitmentJSON } from "./commitments";
 
 ////////////////////////////////////
 // Misc
@@ -92,8 +93,15 @@ export type CreateChannelResponse = {
   transactionHash: string;
 };
 
-// TODO: why was this changed?
 export type RequestCollateralResponse = MethodResults.Deposit | undefined;
+
+// returned by the node when client calls channel.restore
+export type ChannelRestoreResponse = {
+  channel: StateChannelJSON;
+  setupCommitment: MinimalTransaction | undefined;
+  setStateCommitments: [string, SetStateCommitmentJSON][]; // appId, commitment
+  conditionalCommitments: [string, ConditionalTransactionCommitmentJSON][]; // appId, commitment
+};
 
 ////////////////////////////////////
 // NODE API CLIENT
@@ -173,7 +181,6 @@ export interface INodeApiClient {
   fetchSignedTransfer(paymentId: string): Promise<GetSignedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
   resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
-  resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
   resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;

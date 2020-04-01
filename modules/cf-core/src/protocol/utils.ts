@@ -1,4 +1,4 @@
-import { delay, ILoggerService } from "@connext/types";
+import { delay, IStoreService, ILoggerService } from "@connext/types";
 import { recoverAddress } from "@connext/crypto";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
@@ -8,6 +8,7 @@ import {
   CoinTransfer,
   convertCoinTransfersToCoinTransfersMap,
   TokenIndexedCoinTransferMap,
+  StateChannel,
 } from "../models";
 import {
   CoinBalanceRefundAppState,
@@ -18,6 +19,7 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 import { logTime } from "../utils";
 
 export async function assertIsValidSignature(
@@ -40,6 +42,17 @@ export async function assertIsValidSignature(
   }
 }
 
+export async function stateChannelClassFromStoreByMultisig(
+  multisigAddress: string,
+  store: IStoreService,
+) {
+  const json = await store.getStateChannel(multisigAddress);
+  if (!json) {
+    throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+  }
+  return StateChannel.fromJson(json);
+}
+
 /**
  * Get the outcome of the app instance given, decode it according
  * to the outcome type stored in the app instance model, and return
@@ -59,8 +72,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   const encodedOutcome =
     encodedOutcomeOverride || (await appInstance.computeOutcomeWithCurrentState(provider));
 
-  if(log)
-    logTime(log, checkpoint, `Computed outcome with current state`)
+  if (log) logTime(log, checkpoint, `Computed outcome with current state`);
 
   // FIXME: This is a very sketchy way of handling this edge-case
   if (appInstance.state["threshold"] !== undefined) {
@@ -83,7 +95,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
       return handleSingleAssetTwoPartyCoinTransfer(
         encodedOutcome,
         appInstance.singleAssetTwoPartyCoinTransferInterpreterParams,
-        log
+        log,
       );
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {

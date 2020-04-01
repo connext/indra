@@ -1,0 +1,89 @@
+sequenceDiagram
+  participant Sender
+  participant Contracts
+  participant Node
+  participant Receiver
+
+  autonumber
+
+  Note right of Receiver: Disputes state n
+
+  alt 0 timeout
+    Receiver->>Contracts: `setAndProgressState`
+
+  else nonzero timeout
+    Receiver->>Contracts: `setState`
+
+  end
+
+  Note over Receiver,Contracts: Emit SetStateEvent
+  
+  alt receiver app uninstalled
+    Node->>Contracts: begin free balance dispute
+
+  else has preimage + nonzero timeout
+    Node->>Node: wait out timeout
+
+  else does not have preimage
+    Node->>Node: wait out timeout
+
+  end
+
+  alt sender app installed, no preimage
+    Node->>Contracts: `setState`
+    Note over Sender,Node: Emit SetStateEvent
+    Sender->>Sender: wait out timeout
+
+  else sender app installed, preimage, 0 timeout
+    Node->>Contracts: `setAndProgressState`
+    Note over Sender,Node: Emit SetStateEvent
+    Sender->>Sender: wait out timeout
+
+  end
+
+  alt receiver has preimage, node does not
+    Receiver->>Contracts: `progressState`
+    Note over Receiver,Contracts: Emit SetStateEvent
+
+    Node->>Contracts: `progressState`
+    Note over Sender,Node: Emit SetStateEvent
+
+  else node has preimage
+    Node->>Contracts: `progressState`
+    Note over Receiver,Contracts: Emit SetStateEvent
+
+    Node->>Contracts: `progressState`
+    Note over Sender,Node: Emit SetStateEvent
+
+  else sender has preimage
+    Sender->>Contracts: `progressState`
+    Note over Sender,Node: Emit SetStateEvent
+
+    Node->>Contracts: `progressState`
+    Note over Receiver,Contracts: Emit SetStateEvent
+
+  end
+
+  loop Free balance disputes
+    Note over Sender,Receiver: Free balance disputed to determine the funded applications over all disputed channels
+  end
+
+  Note right of Receiver: Wants to claim funds
+  Receiver->>Contracts: `setOutcome` free balance
+  Receiver->>Contracts: `setOutcome` app
+  Receiver->>Contracts: `conditionalTransaction`
+  
+  Contracts->>Contracts: interpret outcome
+  Note over Receiver,Contracts: Emit DisputeFinal
+  Contracts->>Receiver: disburse app funds at state k
+  Contracts->>Node: disburse app funds at state k
+
+  Note over Node: Wants to claim funds
+  Node->>Contracts: `setOutcome` free balance
+  Node->>Contracts: `setOutcome` app
+  Node->>Contracts: `conditionalTransaction`
+  
+  Contracts->>Contracts: interpret outcome
+  Note over Sender,Node: Emit DisputeFinal
+  Contracts->>Sender: disburse app funds at state k
+  Contracts->>Node: disburse app funds at state k

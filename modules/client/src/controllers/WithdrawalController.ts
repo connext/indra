@@ -1,6 +1,5 @@
 import {
-  WithdrawERC20Commitment,
-  WithdrawETHCommitment,
+  WithdrawCommitment
 } from "@connext/apps";
 import {
   AppInstanceJson,
@@ -110,23 +109,16 @@ export class WithdrawalController extends AbstractController {
 
   private async createWithdrawCommitment(
     params: WithdrawParameters,
-  ): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
+  ): Promise<WithdrawCommitment> {
     const { assetId, amount, recipient } = params;
     const channel = await this.connext.getStateChannel();
-    if (assetId === AddressZero) {
-      return new WithdrawETHCommitment(
-        channel.data.multisigAddress,
-        channel.data.freeBalanceAppInstance.participants,
-        recipient,
-        amount,
-      );
-    }
-    return new WithdrawERC20Commitment(
+    return new WithdrawCommitment(
+      this.connext.config.contractAddresses,
       channel.data.multisigAddress,
       channel.data.freeBalanceAppInstance.participants,
       recipient,
-      amount,
       assetId,
+      amount,
     );
   }
 

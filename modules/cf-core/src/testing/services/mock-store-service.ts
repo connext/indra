@@ -13,7 +13,7 @@ export class MockStoreService implements IStoreService {
   getSchemaVersion(): Promise<number> {
     return Promise.resolve(STORE_SCHEMA_VERSION);
   }
-  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+  updateSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
     return Promise.resolve();
   }
   getAllChannels(): Promise<StateChannelJSON[]> {
@@ -29,13 +29,16 @@ export class MockStoreService implements IStoreService {
   getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined> {
     return Promise.resolve(undefined);
   }
-  saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+  createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     return Promise.resolve();
   }
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
     return Promise.resolve(undefined);
   }
-  saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+  createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    return Promise.resolve();
+  }
+  updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
   removeAppInstance(multisigAddress: string, appId: string): Promise<void> {
@@ -44,7 +47,7 @@ export class MockStoreService implements IStoreService {
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
     return Promise.resolve(undefined);
   }
-  saveAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
+  createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
     return Promise.resolve();
   }
   removeAppProposal(multisigAddress: string, appId: string): Promise<void> {
@@ -53,22 +56,31 @@ export class MockStoreService implements IStoreService {
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
     return Promise.resolve(undefined);
   }
-  saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+  createFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    return Promise.resolve();
+  }
+  updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return Promise.resolve(undefined);
   }
-  saveSetupCommitment(
+  createSetupCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void> {
     return Promise.resolve();
   }
-  getLatestSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {
+  getSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {
     return Promise.resolve(undefined);
   }
-  saveLatestSetStateCommitment(
+  createSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+  updateSetStateCommitment(
     appInstanceId: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -79,8 +91,13 @@ export class MockStoreService implements IStoreService {
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
     return Promise.resolve(undefined);
   }
-
-  async saveConditionalTransactionCommitment(
+  createConditionalTransactionCommitment(
+    appInstanceId: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+  updateConditionalTransactionCommitment(
     appInstanceId: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
@@ -91,16 +108,16 @@ export class MockStoreService implements IStoreService {
   ): Promise<MinimalTransaction | undefined> {
     return Promise.resolve(undefined);
   }
-  saveWithdrawalCommitment(
+  createWithdrawalCommitment(
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void> {
     return Promise.resolve();
   }
-  getExtendedPrvKey(): Promise<string> {
-    return Promise.resolve("");
-  }
-  saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
+  updateWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
     return Promise.resolve();
   }
   clear(): Promise<void> {

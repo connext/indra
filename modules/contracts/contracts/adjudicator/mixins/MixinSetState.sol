@@ -2,17 +2,14 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
+import "../libs/LibDispute.sol";
 import "./MChallengeRegistryCore.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
 
-    struct SignedAppChallengeUpdate {
-        bytes32 appStateHash;
-        uint256 versionNumber;
-        uint256 timeout;
-        bytes[] signatures;
-    }
+    using SafeMath for uint256;
 
     /// @notice Set the instance state/AppChallenge to a given value.
     /// This value must have been signed off by all parties to the channel, that is,
@@ -30,16 +27,15 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
         public
     {
         bytes32 identityHash = appIdentityToHash(appIdentity);
-
         AppChallenge storage challenge = appChallenges[identityHash];
 
+        if (challenge.status == ChallengeStatus.NO_CHALLENGE) {
+            appTimeouts[identityHash] = appIdentity.defaultTimeout;
+        }
+
         require(
-            challenge.status == ChallengeStatus.NO_CHALLENGE ||
-            (
-                challenge.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE &&
-                challenge.finalizesAt >= block.number
-            ),
-            "setState was called on an app that has already been finalized"
+            isDisputable(challenge),
+            "setState was called on an app that cannot be disputed anymore"
         );
 
         require(
@@ -53,21 +49,24 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
 
         require(
             req.versionNumber > challenge.versionNumber,
-            "Tried to call setState with an outdated versionNumber version"
+            "setState was called with outdated state"
         );
 
-        uint248 finalizesAt = uint248(block.number + req.timeout);
-        require(finalizesAt >= req.timeout, "uint248 addition overflow");
-
-        challenge.status = req.timeout > 0 ?
-            ChallengeStatus.FINALIZES_AFTER_DEADLINE :
-            ChallengeStatus.EXPLICITLY_FINALIZED;
-
-        challenge.appStateHash = req.appStateHash;
-        challenge.versionNumber = uint128(req.versionNumber);
-        challenge.finalizesAt = finalizesAt;
-        challenge.challengeCounter += 1;
+        // Update challenge
+        challenge.status = ChallengeStatus.IN_DISPUTE;
         challenge.latestSubmitter = msg.sender;
+        challenge.appStateHash = req.appStateHash;
+        challenge.versionNumber = req.versionNumber;
+        challenge.finalizesAt = block.number.add(req.timeout);
+
+        emit ChallengeUpdated(
+            identityHash,
+            challenge.status,
+            challenge.latestSubmitter,
+            challenge.appStateHash,
+            challenge.versionNumber,
+            challenge.finalizesAt
+        );
     }
 
     function correctKeysSignedAppChallengeUpdate(
