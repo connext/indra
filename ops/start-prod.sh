@@ -17,6 +17,7 @@ INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-release}" # One of: release, staging, test-staging, or test-release
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-}" # pass this in through CI
 INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-}" # pass this in through CI
+INDRA_LOG_LEVEL="${LOG_LEVEL:-3}"
 
 # load dev-mode hardcoded jwt keys if nothing provided by env vars
 if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -f .env ]]
@@ -42,7 +43,6 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 ganache_chain_id="4447"
-log_level="3" # set to 5 for all logs or to 0 for none
 node_port="8080"
 number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 
@@ -241,7 +241,7 @@ services:
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
       INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
-      INDRA_LOG_LEVEL: '$log_level'
+      INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_CLUSTER_ID: abc123
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
