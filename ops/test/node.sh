@@ -25,7 +25,10 @@ eth_network="ganache"
 
 ethprovider_host="${project}_ethprovider_$suffix"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
 eth_rpc_url="http://$ethprovider_host:8545"
 
 postgres_db="${project}_$suffix"

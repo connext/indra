@@ -57,7 +57,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       assetId: latestState.assetId,
       createdAt: senderApp.createdAt,
       paymentId: latestState.paymentId,
-      senderPublicIdentifier: senderApp.channel.userPublicIdentifier,
+      senderPublicIdentifier: senderApp.proposedByIdentifier,
       status,
       encryptedPreImage: encryptedPreImage,
       receiverPublicIdentifier: recipient,

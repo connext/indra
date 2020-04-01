@@ -1,4 +1,4 @@
-import { CommitmentTypes, ProtocolNames, ProtocolParams } from "@connext/types";
+import { ProtocolNames, ProtocolParams } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -16,11 +16,12 @@ import {
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
+  PersistCommitmentType,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
-import { assertIsValidSignature } from "./utils";
+import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.install;
 const {
@@ -30,7 +31,6 @@ const {
   PERSIST_APP_INSTANCE,
   PERSIST_COMMITMENT,
 } = Opcode;
-const { Conditional, SetState } = CommitmentTypes;
 
 /**
  * @description This exchange is described at the following URL:
@@ -68,7 +68,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorXpub,
     } = params as ProtocolParams.Install;
 
-    const stateChannelBefore = await store.getStateChannel(multisigAddress);
+    const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
@@ -143,7 +143,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 12ms
     yield [
       PERSIST_COMMITMENT,
-      Conditional,
+      PersistCommitmentType.CreateConditional,
       conditionalTxCommitment,
       newAppInstance.identityHash,
     ];
@@ -172,12 +172,19 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 10ms
     yield [
       PERSIST_COMMITMENT,
-      SetState,
+      PersistCommitmentType.UpdateSetState,
       freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.RemoveProposal,
+      stateChannelAfter,
+      stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
+    ];
 
     // 51ms
     yield [
@@ -232,7 +239,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress,
     } = params as ProtocolParams.Install;
 
-    const stateChannelBefore = await store.getStateChannel(multisigAddress);
+    const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
 
     // 1ms
     assertSufficientFundsWithinFreeBalance(
@@ -285,7 +292,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 12ms
     yield [
       PERSIST_COMMITMENT,
-      Conditional,
+      PersistCommitmentType.CreateConditional,
       conditionalTxCommitment,
       newAppInstance.identityHash,
     ];
@@ -330,12 +337,19 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 13ms
     yield [
       PERSIST_COMMITMENT,
-      SetState,
+      PersistCommitmentType.UpdateSetState,
       freeBalanceUpdateData,
       stateChannelAfter.freeBalance.identityHash,
     ];
 
-    yield [PERSIST_APP_INSTANCE, PersistAppType.Instance, stateChannelAfter, newAppInstance];
+    yield [PERSIST_APP_INSTANCE, PersistAppType.CreateInstance, stateChannelAfter, newAppInstance];
+
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.RemoveProposal,
+      stateChannelAfter,
+      stateChannelBefore.proposedAppInstances.get(newAppInstance.identityHash),
+    ];
 
     const m4 = {
       processID,

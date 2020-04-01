@@ -1,4 +1,4 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -6,13 +6,15 @@ import {
   IMPROPERLY_FORMATTED_STRUCT,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE,
+  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+  NO_APP_INSTANCE_FOR_GIVEN_ID,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import { Store } from "../../store";
 import { SolidityValueType } from "../../types";
 import { getFirstElementInListNotEqualTo } from "../../utils";
 import { NodeController } from "../controller";
+import { AppInstance } from "../../models";
 
 export class UpdateStateController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_updateState)
@@ -36,7 +38,11 @@ export class UpdateStateController extends NodeController {
       throw new Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
     }
 
-    const appInstance = await store.getAppInstance(appInstanceId);
+    const appJson = await store.getAppInstance(appInstanceId);
+    if (!appJson) {
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+    }
+    const appInstance = AppInstance.fromJson(appJson);
 
     try {
       appInstance.encodeState(newState);
@@ -55,7 +61,10 @@ export class UpdateStateController extends NodeController {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, newState } = params;
 
-    const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
+    const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
+    if (!sc) {
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+    }
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
@@ -77,13 +86,16 @@ export class UpdateStateController extends NodeController {
 
 async function runUpdateStateProtocol(
   appIdentityHash: string,
-  store: Store,
+  store: IStoreService,
   protocolRunner: ProtocolRunner,
   initiatorXpub: string,
   responderXpub: string,
   newState: SolidityValueType,
 ) {
-  const stateChannel = await store.getStateChannelFromAppInstanceID(appIdentityHash);
+  const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
+  if (!stateChannel) {
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+  }
 
   await protocolRunner.initiateProtocol(ProtocolNames.update, {
     initiatorXpub,

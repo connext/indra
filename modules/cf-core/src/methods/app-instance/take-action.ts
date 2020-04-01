@@ -1,4 +1,4 @@
-import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames } from "@connext/types";
+import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -7,14 +7,16 @@ import {
   INVALID_ACTION,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE,
+  NO_APP_INSTANCE_FOR_GIVEN_ID,
+  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import { Store } from "../../store";
 import { SolidityValueType, UpdateStateMessage } from "../../types";
 import { getFirstElementInListNotEqualTo } from "../../utils";
 
 import { NodeController } from "../controller";
+import { AppInstance } from "../../models";
 
 export class TakeActionController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_takeAction)
@@ -24,10 +26,13 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
   ): Promise<string[]> {
-    const multisigAddress = await requestHandler.store.getMultisigAddressFromAppInstance(
+    const app = await requestHandler.store.getAppInstance(
       params.appInstanceId,
     );
-    return [multisigAddress, params.appInstanceId];
+    if (!app) {
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+    }
+    return [app.multisigAddress, params.appInstanceId];
   }
 
   protected async beforeExecution(
@@ -41,7 +46,11 @@ export class TakeActionController extends NodeController {
       throw new Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
     }
 
-    const appInstance = await store.getAppInstance(appInstanceId);
+    const json = await store.getAppInstance(appInstanceId);
+    if (!json) {
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+    }
+    const appInstance = AppInstance.fromJson(json);
 
     try {
       appInstance.encodeAction(action);
@@ -60,7 +69,10 @@ export class TakeActionController extends NodeController {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, action } = params;
 
-    const sc = await store.getStateChannelFromAppInstanceID(appInstanceId);
+    const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
+    if (!sc) {
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+    }
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
@@ -77,8 +89,11 @@ export class TakeActionController extends NodeController {
     );
 
     const appInstance = await store.getAppInstance(appInstanceId);
+    if (!appInstance) {
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+    }
 
-    return { newState: appInstance.state };
+    return { newState: AppInstance.fromJson(appInstance).state };
   }
 
   protected async afterExecution(
@@ -89,11 +104,14 @@ export class TakeActionController extends NodeController {
     const { appInstanceId, action } = params;
 
     const appInstance = await store.getAppInstance(appInstanceId);
+    if (!appInstance) {
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+    }
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.UPDATE_STATE_EVENT,
-      data: { appInstanceId, action, newState: appInstance.state },
+      data: { appInstanceId, action, newState: AppInstance.fromJson(appInstance).state },
     } as UpdateStateMessage;
 
     await router.emit(msg.type, msg, `outgoing`);
@@ -102,13 +120,16 @@ export class TakeActionController extends NodeController {
 
 async function runTakeActionProtocol(
   appIdentityHash: string,
-  store: Store,
+  store: IStoreService,
   protocolRunner: ProtocolRunner,
   initiatorXpub: string,
   responderXpub: string,
   action: SolidityValueType,
 ) {
-  const stateChannel = await store.getStateChannelFromAppInstanceID(appIdentityHash);
+  const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
+    if (!stateChannel) {
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+    }
 
   try {
     await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {

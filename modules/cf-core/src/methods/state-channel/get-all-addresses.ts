@@ -13,7 +13,7 @@ export class GetAllChannelAddressesController extends NodeController {
   ): Promise<MethodResults.GetChannelAddresses> {
     const allChannels = await requestHandler.store.getAllChannels();
     return {
-      multisigAddresses: Array.from(allChannels.map(sc => sc.multisigAddress)),
+      multisigAddresses: allChannels.map(sc => sc.multisigAddress),
     };
   }
 }

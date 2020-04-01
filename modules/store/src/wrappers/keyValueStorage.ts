@@ -44,7 +44,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return parseInt(strVal || "0", 10);
   }
 
-  setSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
+  updateSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
     if (STORE_SCHEMA_VERSION < version) {
       throw new Error(`Unrecognized store version: ${version}`);
     }
@@ -82,6 +82,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   getKey(...args: string[]): string {
     return this.storage.getKey(...args);
   }
+
   async getAllChannels(): Promise<StateChannelJSON[]> {
     const channelKeys = (await this.getKeys()).filter(key => key.includes(CHANNEL_KEY));
     const channels = [];
@@ -90,6 +91,16 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       channels.push(properlyConvertChannelNullVals(record));
     }
     return channels.filter(x => !!x);
+  }
+
+  async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
+    const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
+    const item = await this.getItem(channelKey);
+    const chan = safeJsonParse(item);
+    if (!chan) {
+      return undefined;
+    }
+    return properlyConvertChannelNullVals(chan);
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
@@ -112,17 +123,282 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     });
   }
 
-  async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
-    const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
-    const item = await this.getItem(channelKey);
-    const chan = safeJsonParse(item);
-    if (!chan) {
-      return undefined;
-    }
-    return properlyConvertChannelNullVals(chan);
+  async createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+    return this.saveStateChannel(stateChannel);
   }
 
-  async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+  async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
+    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
+    if (!channel) {
+      return undefined;
+    }
+    if (!this.hasAppHash(appInstanceId, channel.appInstances)) {
+      return undefined;
+    }
+    const [, app] = channel.appInstances.find(([id]) => id === appInstanceId);
+    return app;
+  }
+
+  async createAppInstance(
+    multisigAddress: string,
+    appInstance: AppInstanceJson,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(`Can't save app instance without channel`);
+    }
+    if (this.hasAppHash(appInstance.identityHash, channel.appInstances)) {
+      throw new Error(`App instance with hash ${appInstance.identityHash} already exists`);
+    }
+    channel.appInstances.push([appInstance.identityHash, appInstance]);
+    return this.saveStateChannel({
+      ...channel,
+      freeBalanceAppInstance,
+    });
+  }
+
+  async updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(`Can't save app instance without channel`);
+    }
+    if (!this.hasAppHash(appInstance.identityHash, channel.appInstances)) {
+      throw new Error(`Could not find app instance with hash ${appInstance.identityHash}`);
+    }
+    const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
+    channel.appInstances[idx] = [appInstance.identityHash, appInstance];
+    return this.saveStateChannel(channel);
+  }
+
+  async removeAppInstance(
+    multisigAddress: string,
+    appInstanceId: string,
+    freeBalanceAppInstance: AppInstanceJson,
+  ): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      return;
+    }
+    if (!this.hasAppHash(appInstanceId, channel.appInstances)) {
+      // does not exist
+      return;
+    }
+    const idx = channel.appInstances.findIndex(([app]) => app === appInstanceId);
+    channel.appInstances.splice(idx, 1);
+
+    return this.saveStateChannel({
+      ...channel,
+      freeBalanceAppInstance,
+    });
+  }
+
+  async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
+    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
+    if (!channel) {
+      return undefined;
+    }
+    if (!this.hasAppHash(appInstanceId, channel.proposedAppInstances)) {
+      return undefined;
+    }
+    const [_, proposal] = channel.proposedAppInstances.find(([id]) => id === appInstanceId);
+    return proposal;
+  }
+
+  async createAppProposal(
+    multisigAddress: string,
+    appInstance: AppInstanceProposal,
+    monotonicNumProposedApps: number,
+  ): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(`Can't save app proposal without channel`);
+    }
+    if (this.hasAppHash(appInstance.identityHash, channel.proposedAppInstances)) {
+      throw new Error(`App proposal with hash ${appInstance.identityHash} already exists`);
+    }
+    channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
+    return this.saveStateChannel({ ...channel, monotonicNumProposedApps });
+  }
+
+  async updateAppProposal(
+    multisigAddress: string,
+    appInstance: AppInstanceProposal,
+  ): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(`Can't save app proposal without channel`);
+    }
+    if (!this.hasAppHash(appInstance.identityHash, channel.proposedAppInstances)) {
+      throw new Error(
+        `Could not find app proposal with hash ${appInstance.identityHash} already exists`,
+      );
+    }
+    const idx = channel.proposedAppInstances.findIndex(([app]) => app === appInstance.identityHash);
+    channel.proposedAppInstances[idx] = [appInstance.identityHash, appInstance];
+
+    return this.saveStateChannel(channel);
+  }
+
+  async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      return;
+    }
+    if (!this.hasAppHash(appInstanceId, channel.proposedAppInstances)) {
+      return;
+    }
+    const idx = channel.proposedAppInstances.findIndex(([app]) => app === appInstanceId);
+    channel.proposedAppInstances.splice(idx, 1);
+
+    return this.saveStateChannel(channel);
+  }
+
+  async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel || !channel.freeBalanceAppInstance) {
+      return undefined;
+    }
+    return channel.freeBalanceAppInstance;
+  }
+
+  async updateFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
+    const channel = await this.getStateChannel(multisigAddress);
+    if (!channel) {
+      throw new Error(`Cannot update free balance without channel: ${multisigAddress}`);
+    }
+    return this.saveStateChannel({ ...channel, freeBalanceAppInstance: freeBalance });
+  }
+
+  async getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
+    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    return safeJsonParse(await this.getItem(setupCommitmentKey));
+  }
+
+  async createSetupCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
+    if (await this.getItem(setupCommitmentKey)) {
+      throw new Error(`Found existing setup commitment for ${multisigAddress}`);
+    }
+    return this.setItem(setupCommitmentKey, safeJsonStringify(commitment));
+  }
+
+  async getSetStateCommitment(
+    appIdentityHash: string,
+  ): Promise<SetStateCommitmentJSON | undefined> {
+    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    return safeJsonParse(await this.getItem(setStateKey));
+  }
+
+  async createSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    if (await this.getItem(setStateKey)) {
+      throw new Error(`Found existing set state commitment for ${appIdentityHash}`);
+    }
+    return this.setItem(setStateKey, safeJsonStringify(commitment));
+  }
+
+  async updateSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    if (!(await this.getItem(setStateKey))) {
+      throw new Error(`Cannot find set state commitment to update for ${appIdentityHash}`);
+    }
+    return this.setItem(setStateKey, safeJsonStringify(commitment));
+  }
+
+  async getConditionalTransactionCommitment(
+    appIdentityHash: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
+    return safeJsonParse(await this.getItem(conditionalCommitmentKey));
+  }
+
+  async createConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
+    if (await this.getItem(conditionalCommitmentKey)) {
+      throw new Error(`Found conditional commitment to update for ${appIdentityHash}`);
+    }
+    return this.setItem(conditionalCommitmentKey, safeJsonStringify(commitment));
+  }
+
+  async updateConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
+    if (!(await this.getItem(conditionalCommitmentKey))) {
+      throw new Error(`Cannot find conditional commitment to update for ${appIdentityHash}`);
+    }
+    return this.setItem(conditionalCommitmentKey, safeJsonStringify(commitment));
+  }
+
+  async getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
+    return safeJsonParse(await this.getItem(withdrawalKey));
+  }
+
+  async createWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
+    if (await this.getItem(withdrawalKey)) {
+      throw new Error(`Found existing withdrawal commitment for ${withdrawalKey}`);
+    }
+    return this.setItem(withdrawalKey, safeJsonStringify(commitment));
+  }
+
+  async updateWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> {
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
+    if (!(await this.getItem(withdrawalKey))) {
+      throw new Error(`Could not find existing withdrawal commitment for ${withdrawalKey}`);
+    }
+    return this.setItem(withdrawalKey, safeJsonStringify(commitment));
+  }
+
+  async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    return safeJsonParse(await this.getItem(withdrawalKey));
+  }
+
+  async createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    if (await this.getItem(withdrawalKey)) {
+      throw new Error(`Could not find existing withdrawal commitment for ${withdrawalKey}`);
+    }
+    return this.setItem(withdrawalKey, safeJsonStringify(withdrawalObject));
+  }
+
+  async updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    if (!(await this.getItem(withdrawalKey))) {
+      throw new Error(`Could not find existing withdrawal commitment for ${withdrawalKey}`);
+    }
+    return this.setItem(withdrawalKey, safeJsonStringify(withdrawalObject));
+  }
+
+  async removeUserWithdrawal(): Promise<void> {
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    return this.removeItem(withdrawalKey);
+  }
+
+  ////// Helper methods
+  private async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     const channelKey = this.getKey(CHANNEL_KEY, stateChannel.multisigAddress);
     await this.setItem(
       channelKey,
@@ -137,170 +413,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     );
   }
 
-  async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
-    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
-    if (!channel) {
-      return undefined;
-    }
-    const entry = channel.appInstances.find(([id]) => id === appInstanceId);
-    return entry ? entry[1] : undefined;
-  }
-
-  async saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel) {
-      throw new Error(`Can't save app instance without channel`);
-    }
-    const existsIndex = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
-
-    if (existsIndex >= 0) {
-      channel.appInstances[existsIndex] = [appInstance.identityHash, appInstance];
-    } else {
-      channel.appInstances.push([appInstance.identityHash, appInstance]);
-    }
-
-    return this.saveStateChannel(channel);
-  }
-
-  async removeAppInstance(multisigAddress: string, appInstanceId: string): Promise<void> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel) {
-      return;
-    }
-    const existsIndex = channel.appInstances.findIndex(([app]) => app === appInstanceId);
-    if (existsIndex < 0) {
-      return;
-    }
-    channel.appInstances.splice(existsIndex, 1);
-
-    return this.saveStateChannel(channel);
-  }
-
-  async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
-    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
-    if (!channel) {
-      return undefined;
-    }
-    const entry = channel.proposedAppInstances.find(([id]) => id === appInstanceId);
-    return entry ? entry[1] : undefined;
-  }
-
-  async saveAppProposal(multisigAddress: string, appInstance: AppInstanceProposal): Promise<void> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel) {
-      throw new Error(`Can't save app proposal without channel`);
-    }
-    const existsIndex = channel.proposedAppInstances.findIndex(
-      ([app]) => app === appInstance.identityHash,
-    );
-
-    if (existsIndex >= 0) {
-      channel.proposedAppInstances[existsIndex] = [appInstance.identityHash, appInstance];
-    } else {
-      channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
-    }
-
-    return this.saveStateChannel(channel);
-  }
-
-  async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel) {
-      return;
-    }
-    const existsIndex = channel.proposedAppInstances.findIndex(([app]) => app === appInstanceId);
-    if (existsIndex < 0) {
-      return;
-    }
-    channel.proposedAppInstances.splice(existsIndex, 1);
-
-    return this.saveStateChannel(channel);
-  }
-
-  async getLatestSetStateCommitment(
-    appIdentityHash: string,
-  ): Promise<SetStateCommitmentJSON | undefined> {
-    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
-    return safeJsonParse(await this.getItem(setStateKey));
-  }
-
-  async saveLatestSetStateCommitment(
-    appIdentityHash: string,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
-    return this.setItem(setStateKey, safeJsonStringify(commitment));
-  }
-
-  async getWithdrawalCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    return safeJsonParse(await this.getItem(withdrawalKey));
-  }
-
-  async saveWithdrawalCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    return this.setItem(withdrawalKey, safeJsonStringify(commitment));
-  }
-
-  async getConditionalTransactionCommitment(
-    appIdentityHash: string,
-  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
-    return safeJsonParse(await this.getItem(conditionalCommitmentKey));
-  }
-
-  async saveConditionalTransactionCommitment(
-    appIdentityHash: string,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<void> {
-    const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
-    return this.setItem(conditionalCommitmentKey, safeJsonStringify(commitment));
-  }
-
-  async getSetupCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
-    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
-    return safeJsonParse(await this.getItem(setupCommitmentKey));
-  }
-
-  saveSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
-    const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
-    return this.setItem(setupCommitmentKey, safeJsonStringify(commitment));
-  }
-
-  async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    return safeJsonParse(await this.getItem(withdrawalKey));
-  }
-
-  async setUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    return this.setItem(withdrawalKey, safeJsonStringify(withdrawalObject));
-  }
-
-  async getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel || !channel.freeBalanceAppInstance) {
-      return undefined;
-    }
-    return channel.freeBalanceAppInstance;
-  }
-
-  async saveFreeBalance(multisigAddress: string, freeBalance: AppInstanceJson): Promise<void> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel) {
-      throw new Error(`Cannot save free balance without channel: ${multisigAddress}`);
-    }
-    return this.saveStateChannel({ ...channel, freeBalanceAppInstance: freeBalance });
+  private hasAppHash(
+    hash: string,
+    toSearch: [string, AppInstanceJson][] | [string, AppInstanceProposal][],
+  ) {
+    const existsIndex = toSearch.findIndex(([idHash, app]) => idHash === hash);
+    return existsIndex >= 0;
   }
 }
 
