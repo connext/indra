@@ -1,7 +1,7 @@
 import { EntityRepository, Repository } from "typeorm";
 import { ConditionalTransactionCommitment } from "./conditionalCommitment.entity";
 import { ConditionalTransactionCommitmentJSON, ContractAddresses } from "@connext/types";
-import { AppInstance } from "../appInstance/appInstance.entity";
+import { AppType } from "../appInstance/appInstance.entity";
 
 export const convertConditionalCommitmentToJson = (
   commitment: ConditionalTransactionCommitment,
@@ -40,31 +40,19 @@ export class ConditionalTransactionCommitmentRepository extends Repository<
     });
   }
 
-  async getConditionalTransactionCommitment(
-    appIdentityHash: string,
-  ): Promise<ConditionalTransactionCommitment | undefined> {
-    const commitment = await this.findByAppIdentityHash(appIdentityHash);
-    if (!commitment) {
-      return undefined;
-    }
-    return commitment;
-  }
-
-  async saveConditionalTransactionCommitment(
-    app: AppInstance,
-    commitment: ConditionalTransactionCommitmentJSON,
-  ): Promise<ConditionalTransactionCommitment> {
-    let commitmentEntity = await this.findByAppIdentityHash(app.identityHash);
-    if (!commitmentEntity) {
-      commitmentEntity = new ConditionalTransactionCommitment();
-      commitmentEntity.app = app;
-      commitmentEntity.freeBalanceAppIdentityHash = commitment.freeBalanceAppIdentityHash;
-      commitmentEntity.multisigAddress = commitment.multisigAddress;
-      commitmentEntity.multisigOwners = commitment.multisigOwners;
-      commitmentEntity.interpreterAddr = commitment.interpreterAddr;
-    }
-    commitmentEntity.interpreterParams = commitment.interpreterParams;
-    commitmentEntity.signatures = commitment.signatures;
-    return this.save(commitmentEntity);
+  async findAllActiveCommitmentsByMultisig(
+    multisigAddress: string,
+  ): Promise<ConditionalTransactionCommitment[]> {
+    return this.createQueryBuilder("conditional")
+      .leftJoinAndSelect("conditional.app", "app")
+      .where(
+        "app.type <> :rejected", { rejected: AppType.REJECTED },
+      )
+      .andWhere("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
+      .leftJoinAndSelect("app.channel", "channel")
+      .where(
+        "channel.multisigAddress = :multisigAddress", { multisigAddress },
+      )
+      .getMany();
   }
 }

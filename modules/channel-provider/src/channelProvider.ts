@@ -7,6 +7,9 @@ import {
   JsonRpcRequest,
   StateChannelJSON,
   WithdrawalMonitorObject,
+  ConditionalTransactionCommitmentJSON,
+  SetStateCommitmentJSON,
+  MinimalTransaction,
 } from "@connext/types";
 
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
@@ -68,6 +71,19 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
+
+      case ChannelMethods.chan_createSetupCommitment:
+        result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
+        break;
+
+      case ChannelMethods.chan_createSetStateCommitment:
+        result = await this.createSetStateCommitment(params.appIdentityHash,params.commitment);
+        break;
+      
+      case ChannelMethods.chan_createConditionalCommitment:
+        result = await this.createConditionalCommitment(params.appIdentityHash,params.commitment);
+        break;
+
       default:
         result = await this._send(method, params);
         break;
@@ -152,6 +168,36 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   public setStateChannel = async (state: StateChannelJSON): Promise<void> => {
     return this._send(ChannelMethods.chan_setStateChannel, { state });
+  };
+
+  public createSetupCommitment = async (
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> => {
+    return this._send(ChannelMethods.chan_createSetupCommitment, {
+      multisigAddress,
+      commitment,
+    });
+  };
+
+  public createSetStateCommitment = async (
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> => {
+    return this._send(ChannelMethods.chan_createSetStateCommitment, {
+      appIdentityHash,
+      commitment,
+    });
+  };
+
+  public createConditionalCommitment = async (
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> => {
+    return this._send(ChannelMethods.chan_createConditionalCommitment, {
+      appIdentityHash,
+      commitment,
+    });
   };
 
   /// ////////////////////////////////////////////

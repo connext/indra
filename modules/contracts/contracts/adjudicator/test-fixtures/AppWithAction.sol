@@ -78,7 +78,7 @@ contract AppWithAction is CounterfactualApp {
         returns (bool)
     {
         State memory state = abi.decode(encodedState, (State));
-        return state.counter > 0;
+        return state.counter > 5;
     }
 
 }

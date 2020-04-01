@@ -1,5 +1,4 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
-import localStorage from "localStorage";
 
 import {
   DEFAULT_STORE_PREFIX,

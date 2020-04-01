@@ -9,12 +9,11 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
 
     /// @notice Unanimously agree to cancel a challenge
     /// @param appIdentity an AppIdentity object pointing to the app being cancelled
-    /// @param signatures Signatures by all participants of the currently latest challenged
-    /// state; an indication of agreement of this state and valid to cancel a challenge
-    /// @dev Note this function is only callable when the application has an open challenge
+    /// @param req Cancel request, includes signatures on app state hash + current challenge status
+    /// @dev Note this function is only callable when the application has an open + progressable challenge
     function cancelChallenge(
         AppIdentity memory appIdentity,
-        bytes[] memory signatures
+        SignedCancelChallengeRequest memory req
     )
         // TODO: Uncomment when ABIEncoderV2 supports `external`
         //       ref: https://github.com/ethereum/solidity/issues/3199
@@ -22,30 +21,63 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
         public
     {
         bytes32 identityHash = appIdentityToHash(appIdentity);
-
         AppChallenge storage challenge = appChallenges[identityHash];
 
         require(
-            (
-                challenge.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE
-            ) && challenge.finalizesAt >= block.number,
-            "cancelChallenge called on app not in FINALIZES_AFTER_DEADLINE state"
-        );
-
-        bytes32 stateHash = computeAppChallengeHash(
-            identityHash,
-            challenge.appStateHash,
-            challenge.versionNumber,
-            appIdentity.defaultTimeout
+            isCancellable(challenge, appIdentity.defaultTimeout),
+            "cancelChallenge called on challenge that cannot be cancelled"
         );
 
         require(
-            verifySignatures(signatures, stateHash, appIdentity.participants),
-            "Invalid signatures"
+            correctKeysSignedCancelChallengeRequest(
+                identityHash,
+                appIdentity.participants,
+                req
+            ),
+            "Call to cancelChallenge included incorrectly signed request"
         );
 
-        challenge.finalizesAt = 0;
+        require(
+            req.versionNumber == challenge.versionNumber,
+            "cancelChallenge was called with wrong version number"
+        );
+
+        // Clear challenge
         challenge.status = ChallengeStatus.NO_CHALLENGE;
-        challenge.latestSubmitter = msg.sender;
+        challenge.latestSubmitter = address(0x0);
+        challenge.appStateHash = 0;
+        challenge.versionNumber = 0;
+        challenge.finalizesAt = 0;
+
+        emit ChallengeUpdated(
+            identityHash,
+            challenge.status,
+            challenge.latestSubmitter,
+            challenge.appStateHash,
+            challenge.versionNumber,
+            challenge.finalizesAt
+        );
     }
+
+    function correctKeysSignedCancelChallengeRequest(
+        bytes32 identityHash,
+        address[] memory participants,
+        SignedCancelChallengeRequest memory req
+    )
+        private
+        pure
+        returns (bool)
+    {
+        bytes32 digest = computeCancelChallengeHash(
+            identityHash,
+            req.versionNumber
+        );
+
+        return verifySignatures(
+            req.signatures,
+            digest,
+            participants
+        );
+    }
+
 }

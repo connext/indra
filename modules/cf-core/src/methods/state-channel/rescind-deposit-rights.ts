@@ -10,6 +10,8 @@ import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 
 import { uninstallBalanceRefundApp } from "./deposit";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
+import { StateChannel } from "../../models";
 
 export class RescindDepositRightsController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_rescindDepositRights)
@@ -43,7 +45,11 @@ export class RescindDepositRightsController extends NodeController {
       multisigBalance = await erc20Contract.balanceOf(multisigAddress);
     }
 
-    const channel = await store.getStateChannel(multisigAddress);
+    const json = await store.getStateChannel(multisigAddress);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+    const channel = StateChannel.fromJson(json);
     if (!channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
       return {
         multisigBalance,

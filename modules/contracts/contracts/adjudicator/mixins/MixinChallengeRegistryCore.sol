@@ -16,32 +16,9 @@ contract MixinChallengeRegistryCore is MChallengeRegistryCore {
     function getAppChallenge(bytes32 identityHash)
         external
         view
-        returns (LibStateChannelApp.AppChallenge memory)
+        returns (AppChallenge memory)
     {
         return appChallenges[identityHash];
-    }
-
-    /// @notice Checks if an application's state has been finalized by challenge
-    /// @param identityHash The unique hash of an `AppIdentity`
-    /// @return A boolean indicator
-    function isStateFinalized(bytes32 identityHash)
-        external
-        view
-        returns (bool)
-    {
-        return (
-          (
-              appChallenges[identityHash].status ==
-              LibStateChannelApp.ChallengeStatus.EXPLICITLY_FINALIZED
-          ) ||
-          (
-              (
-                  appChallenges[identityHash].status ==
-                  LibStateChannelApp.ChallengeStatus.FINALIZES_AFTER_DEADLINE
-              ) &&
-              appChallenges[identityHash].finalizesAt <= block.number
-          )
-        );
     }
 
     /// @notice A getter function for the outcome if one is set
@@ -52,6 +29,12 @@ contract MixinChallengeRegistryCore is MChallengeRegistryCore {
         view
         returns (bytes memory)
     {
+        AppChallenge storage challenge = appChallenges[identityHash];
+        require(
+            isOutcomeSet(challenge),
+            "Outcome hasn't been set yet"
+        );
+
         return appOutcomes[identityHash];
     }
 

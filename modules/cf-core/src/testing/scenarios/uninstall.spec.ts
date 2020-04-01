@@ -20,6 +20,7 @@ import {
   getApps,
   requestDepositRights,
 } from "../utils";
+import { isHexString } from "ethers/utils";
 
 expect.extend({ toBeEq });
 
@@ -50,18 +51,20 @@ describe("Uninstalling coin balance refund app", () => {
     return appsA.map((app: AppInstanceJson) => app.identityHash);
   };
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const context: SetupContext = await setup(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
 
     multisigAddress = await createChannel(nodeA, nodeB);
+    expect(multisigAddress).toBeDefined();
+    expect(isHexString(multisigAddress)).toBeTruthy();
 
-    await requestDepositRights(nodeA, multisigAddress);
-    [coinBalanceAppId] = await assertAppsPresent(1);
+    await requestDepositRights(nodeA, nodeB, multisigAddress);
+    coinBalanceAppId = (await assertAppsPresent(1))[0];
+    expect(coinBalanceAppId).toBeDefined();
   });
 
-  // will timeout if it goes through this path, params are incorrect
   it("should fail if you try to uninstall coin balance refund app", async () => {
     await expect(
       nodeB.rpcRouter.dispatch(constructUninstallRpc(coinBalanceAppId)),
