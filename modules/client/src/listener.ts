@@ -31,9 +31,6 @@ import {
   CreateChannelMessage,
   ConnextEventEmitter,
   DefaultApp,
-  DepositConfirmationMessage,
-  DepositFailedMessage,
-  DepositStartedMessage,
   IChannelProvider,
   InstallMessage,
   NodeMessageWrappedProtocolMessage,
@@ -79,14 +76,13 @@ export class ConnextListener extends ConnextEventEmitter {
     CREATE_TRANSFER: (): void => {
       this.emitAndLog(CREATE_TRANSFER, {});
     },
-    DEPOSIT_CONFIRMED_EVENT: async (msg: DepositConfirmationMessage): Promise<void> => {
+    DEPOSIT_CONFIRMED_EVENT: async (msg: UninstallMessage): Promise<void> => {
       this.emitAndLog(DEPOSIT_CONFIRMED_EVENT, msg.data);
     },
-    DEPOSIT_FAILED_EVENT: (msg: DepositFailedMessage): void => {
+    DEPOSIT_FAILED_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog(DEPOSIT_FAILED_EVENT, msg.data);
     },
-    DEPOSIT_STARTED_EVENT: (msg: DepositStartedMessage): void => {
-      this.log.info(`Deposit transaction: ${msg.data.txHash}`);
+    DEPOSIT_STARTED_EVENT: (msg: InstallMessage): void => {
       this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
     INSTALL_EVENT: (msg: InstallMessage): void => {
