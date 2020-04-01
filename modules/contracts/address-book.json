@@ -426,9 +426,9 @@
     },
     "MinimumViableMultisig": {
       "address": "0x2C2B9C9a4a25e24B174f26114e8926a9f2128FE4",
-      "creationCodeHash": "0x969544b293056bceda14e035d4e7eda29ebeb8207865fa0cd625c2b3e30ee9d1",
-      "runtimeCodeHash": "0x0aaddc2bf0bbdc4eb4b45c12b8b4ef2acc2ee5839d01f74ae0e465df30b325c3",
-      "txHash": "0x62ebe331d315ca3b4fbd18a458f02319a4d5d61916ac73e499b9861a6dbbf6eb"
+      "creationCodeHash": "0x7e202423dc8ba5f1985f8b1846fdf9ca514a3552b08cd8356903ad6173c2423e",
+      "runtimeCodeHash": "0x5490fc81aa0de2a2f66b232c1b84b2eb8a3897d7d94ca43a2da278104fbc4ad9",
+      "txHash": "0x84e11d29a97073bfb9572f6a58e60ae66aebd022ec1e5bce34d33671a3ad05ed"
     },
     "ProxyFactory": {
       "address": "0xFB88dE099e13c3ED21F80a7a1E49f8CAEcF10df6",
