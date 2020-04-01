@@ -5,7 +5,7 @@ import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWith
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
-import { BigNumberish, Interface } from "ethers/utils";
+import { BigNumberish } from "ethers/utils";
 import { AppChallengeBigNumber, ChallengeStatus, toBN } from "@connext/types";
 
 describe("LibStateChannelApp", () => {

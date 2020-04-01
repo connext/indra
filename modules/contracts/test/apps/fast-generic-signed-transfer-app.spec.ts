@@ -1,5 +1,3 @@
-import { solidity, deployContract } from "ethereum-waffle";
-import { waffle } from "@nomiclabs/buidler";
 import { Contract, ContractFactory } from "ethers";
 import { defaultAbiCoder, bigNumberify } from "ethers/utils";
 
