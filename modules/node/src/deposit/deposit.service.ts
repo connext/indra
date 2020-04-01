@@ -1,35 +1,27 @@
-import { signDigest } from "@connext/crypto";
 import {
-  AppInstanceJson,
   BigNumber,
-  CoinTransfer,
   MinimalTransaction,
-  stringify,
-  TransactionResponse,
-  toBN,
   Contract,
-  CheckDepositRightsResponse,
   DepositAppState,
   DepositAppName,
-  MethodParams,
-  AppInstanceInfo,
-  ABIEncoding,
-  AppABIEncodings
+  TransactionResponse,
+  TransactionReceipt,
 } from "@connext/types";
+import { MinimumViableMultisig } from "@connext/contracts";
 import { Injectable } from "@nestjs/common";
-import { HashZero, Zero, AddressZero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { Zero, AddressZero } from "ethers/constants";
+import tokenAbi from "human-standard-token-abi";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { xkeyKthAddress } from "../util";
 import { AppInstance } from "@connext/cf-core/dist/models";
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 
 @Injectable()
 export class DepositService {
@@ -39,13 +31,13 @@ export class DepositService {
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
-    private readonly withdrawRepository: WithdrawRepository,
     private readonly channelRepository: ChannelRepository,
+    private readonly appRegistryRepository: AppRegistryRepository
   ) {
-    this.log.setContext("ChannelService");
+    this.log.setContext("DepositService");
   }
 
-  async deposit(channel: Channel, amount: BigNumber, assetId: string ): Promise<void> {
+  async deposit(channel: Channel, amount: BigNumber, assetId: string ): Promise<TransactionReceipt> {
     // don't allow deposit if user's balance refund app is installed
     const depositApp: AppInstance = await this.getDepositApp(
         channel,
@@ -60,18 +52,21 @@ export class DepositService {
         );
     }
 
-    let appInstanceId, multisigAddress
+    let appInstanceId
     if (!depositApp) {
         this.log.info(`Requesting deposit rights before depositing`);
         appInstanceId = await this.requestDepositRights(channel, assetId)
+        if(!appInstanceId) this.log.error(`Failed to install deposit app!`)
     }
-    await this.sendDepositToChain(channel, amount, assetId);
-    return this.rescindDepositRights(appInstanceId);
+    const tx = await this.sendDepositToChain(channel, amount, assetId);
+    const receipt = await tx.wait();
+    await this.rescindDepositRights(appInstanceId);
+    return receipt;
   }
 
-  async requestDepositRights(channel: Channel, assetIdParam: string): Promise<string> {
+  async requestDepositRights(channel: Channel, assetIdParam: string): Promise<string | undefined> {
     let assetId = assetIdParam ? assetIdParam : AddressZero;
-    const appInstanceId = await this.proposeDepositInstall(assetId)
+    const appInstanceId = await this.proposeDepositInstall(channel, assetId)
     return appInstanceId;
   }
 
@@ -90,19 +85,24 @@ export class DepositService {
       channel: Channel,
       amount: BigNumber,
       assetId: string
-  ): Promise<void> {
-    //TODO
-    const depositTx = await this.configService.getEthProvider().getTransaction(res.transactionHash);
-    await this.onchainTransactionRepository.addCollateralization(depositTx, channel);
+  ): Promise<TransactionResponse> {
+    const tx: MinimalTransaction = {
+        to: channel.multisigAddress,
+        value: amount,
+        data: "",
+    }
+    return this.onchainTransactionService.sendDeposit(channel, tx, assetId);
   }
 
   private async proposeDepositInstall (
+    channel: Channel,
     assetId: string,
-  ): Promise<string> {
-    const token = new Contract(assetId!, tokenAbi, this.ethProvider);
+  ): Promise<string | undefined> {
+    const ethProvider = this.configService.getEthProvider();
+    const token = new Contract(assetId!, tokenAbi, ethProvider);
 
     // generate initial totalAmountWithdrawn
-    const multisig = new Contract(this.connext.multisigAddress, MinimumViableMultisig.abi, this.ethProvider);
+    const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
     const startingTotalAmountWithdrawn = multisig
     ? await multisig.functions.totalAmountWithdrawn(assetId)
     : Zero;
@@ -110,51 +110,36 @@ export class DepositService {
     // generate starting multisig balance
     const startingMultisigBalance =
       assetId === AddressZero
-        ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await token.functions.balanceOf(this.connext.multisigAddress);
+        ? await ethProvider.getBalance(channel.multisigAddress)
+        : await token.functions.balanceOf(channel.multisigAddress);
 
     const initialState: DepositAppState = {
       transfers: [
         {
           amount: Zero,
-          to: this.connext.freeBalanceAddress,
+          to: xkeyKthAddress(channel.userPublicIdentifier),
         },
         {
           amount: Zero,
-          to: this.connext.nodeFreeBalanceAddress,
+          to: xkeyKthAddress(this.configService.getPublicIdentifier()),
         },
       ],
-      multisigAddress: this.connext.multisigAddress,
+      multisigAddress: channel.multisigAddress,
       assetId,
       startingTotalAmountWithdrawn, 
       startingMultisigBalance
     }
 
-    const {
-      actionEncoding,
-      appDefinitionAddress: appDefinition,
-      stateEncoding,
-      outcomeType,
-    } = this.connext.getRegisteredAppDetails(DepositAppName);
-
-    const params: MethodParams.ProposeInstall = {
-      abiEncodings: {
-        actionEncoding,
-        stateEncoding,
-      },
-      appDefinition,
-      initialState,
-      initiatorDeposit: Zero,
-      initiatorDepositTokenAddress: assetId,
-      outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
-      responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
-      timeout: Zero,
-    };
-
-    const appId = await this.proposeAndInstallLedgerApp(params);
-    return appId;
+    const res = await this.cfCoreService.proposeAndWaitForInstallApp(
+        channel,
+        initialState,
+        Zero,
+        assetId,
+        Zero,
+        assetId,
+        DepositAppName
+    );
+    return res ? res.appInstanceId : undefined
   };
 
 }
