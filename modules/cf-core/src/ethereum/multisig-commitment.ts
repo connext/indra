@@ -1,5 +1,5 @@
 import { EthereumCommitment, MinimalTransaction, MultisigTransaction  } from "@connext/types";
-import { Interface, keccak256, solidityPack } from "ethers/utils";
+import { defaultAbiCoder, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
 import { sortSignaturesBySignerAddress } from "@connext/types";
 
 import { MinimumViableMultisig } from "../contracts";
@@ -46,9 +46,9 @@ export abstract class MultisigCommitment implements EthereumCommitment {
 
   public encode(): string {
     const { to, value, data, operation } = this.getTransactionDetails();
-    return solidityPack(
-      ["bytes1", "address[]", "address", "uint256", "uint8", "bytes"],
-      ["0x19", this.multisigOwners, to, value, operation, data],
+    return defaultAbiCoder.encode(
+      ["bytes1", "address[]", "address", "uint256", "bytes32", "uint8"],
+      ["0x19", this.multisigOwners, to, value, solidityKeccak256(["bytes"], [data]), operation],
     );
   }
 

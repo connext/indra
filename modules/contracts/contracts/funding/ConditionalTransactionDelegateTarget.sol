@@ -1,16 +1,16 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
+import "./state-deposit-holders/MultisigTransfer.sol";
 import "../adjudicator/ChallengeRegistry.sol";
 import "./libs/LibOutcome.sol";
 
 
 /// @title ConditionalTransactionDelegateTarget
 /// @author Liam Horne - <liam@l4v.io>
-contract ConditionalTransactionDelegateTarget {
+contract ConditionalTransactionDelegateTarget is MultisigTransfer {
 
     uint256 constant MAX_UINT256 = 2 ** 256 - 1;
-    address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
 
     struct FreeBalanceAppState {
         address[] tokenAddresses;
@@ -24,6 +24,16 @@ contract ConditionalTransactionDelegateTarget {
     struct MultiAssetMultiPartyCoinTransferInterpreterParams {
         uint256[] limit;
         address[] tokenAddresses;
+    }
+
+    function withdrawWrapper(
+        address payable recipient,
+        address assetId,
+        uint256 amount
+    )
+        public
+    {
+        multisigTransfer(recipient, assetId, amount);
     }
 
     function executeEffectOfFreeBalance(
@@ -118,5 +128,4 @@ contract ConditionalTransactionDelegateTarget {
             "Execution of executeEffectOfInterpretedAppOutcome failed"
         );
     }
-
 }
