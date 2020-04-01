@@ -2,6 +2,8 @@ import { Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 
 import { createClient, expect, sendOnchainValue } from "../util";
+import { ConnextStore } from "@connext/store";
+import { StoreTypes, ClientOptions } from "@connext/types";
 
 describe("Client Connect", () => {
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {
@@ -29,7 +31,8 @@ describe("Client Connect", () => {
 
   it("Client should wait for transfers and rescind deposit rights if it's offline", async () => {
     const mnemonic = Wallet.createRandom().mnemonic;
-    let client = await createClient({ mnemonic });
+    const store = new ConnextStore(StoreTypes.Memory);
+    let client = await createClient({ mnemonic, store } as Partial<ClientOptions>);
     await client.requestDepositRights({ assetId: AddressZero });
     await client.requestDepositRights({ assetId: client.config.contractAddresses.Token });
     let apps = await client.getAppInstances();
@@ -42,7 +45,7 @@ describe("Client Connect", () => {
     await sendOnchainValue(client.multisigAddress, One);
     await sendOnchainValue(client.multisigAddress, One, client.config.contractAddresses.Token);
 
-    client = await createClient({ mnemonic });
+    client = await createClient({ mnemonic, store });
     apps = await client.getAppInstances();
     coinBalanceRefunds = apps.filter(
       app => app.appInterface.addr === client.config.contractAddresses.CoinBalanceRefundApp,

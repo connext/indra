@@ -27,6 +27,7 @@ import {
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
   NOT_YOUR_BALANCE_REFUND_APP,
+  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
 } from "../../errors";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { ERC20 } from "../../contracts";
@@ -75,7 +76,11 @@ export class DepositController extends NodeController {
 
     const tokenAddress = tokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
-    const channel = await store.getStateChannel(multisigAddress);
+    const json = await store.getStateChannel(multisigAddress);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+    const channel = StateChannel.fromJson(json);
 
     if (!channel.addresses.proxyFactory) {
       throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
@@ -230,7 +235,11 @@ export async function uninstallBalanceRefundApp(
     multisigAddress,
   );
 
-  const stateChannel = await store.getStateChannel(params.multisigAddress);
+  const json = await store.getStateChannel(multisigAddress);
+  if (!json) {
+    throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+  }
+  const stateChannel = StateChannel.fromJson(json);
 
   let refundApp;
   try {
@@ -273,7 +282,11 @@ export async function installBalanceRefundApp(
     multisigAddress,
   );
 
-  const stateChannel = await store.getStateChannel(multisigAddress);
+  const json = await store.getStateChannel(multisigAddress);
+  if (!json) {
+    throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+  }
+  const stateChannel = StateChannel.fromJson(json);
 
   const depositContext = await getDepositContext(
     params,

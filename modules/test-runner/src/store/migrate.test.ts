@@ -42,7 +42,7 @@ const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
     schemaVersion: STORE_SCHEMA_VERSION,
     monotonicNumProposedApps: oldChannel.monotonicNumProposedApps,
     multisigAddress: oldChannel.multisigAddress,
-    userNeuteredExtendedKeys: oldChannel.userNeuteredExtendedKeys,
+    userNeuteredExtendedKeys: oldChannel.userNeuteredExtendedKeys.sort(),
     proposedAppInstances: oldChannel.proposedAppInstances || [],
     appInstances: oldChannel.appInstances
       ? oldChannel.appInstances.map(([id, appJson]) => [

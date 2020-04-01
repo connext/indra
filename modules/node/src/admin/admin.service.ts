@@ -2,6 +2,7 @@ import {
   ConnextNodeStorePrefix,
   CriticalStateChannelAddresses,
   StateChannelJSON,
+  OutcomeType,
 } from "@connext/types";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 import { HashZero, AddressZero, Zero } from "ethers/constants";
@@ -13,10 +14,9 @@ import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
-import { ChannelRepository } from "../channel/channel.repository";
+import { ChannelRepository, convertChannelToJSON } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
-import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 export interface RepairCriticalAddressesResponse {
@@ -50,14 +50,12 @@ export class AdminService implements OnApplicationBootstrap {
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
     );
-    const res = await this.cfCoreService.getStateChannel(channel.multisigAddress);
-    return res.data;
+    return convertChannelToJSON(channel);
   }
 
   /**  Get channels by multisig */
   async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
-    const res = await this.cfCoreService.getStateChannel(multisigAddress);
-    return res.data;
+    return this.cfCoreStore.getStateChannel(multisigAddress);
   }
 
   /** Get all channels */
@@ -249,42 +247,72 @@ export class AdminService implements OnApplicationBootstrap {
       try {
         this.log.log(`Found channel to migrate: ${channelJSON.multisigAddress}`);
         // create blank setup commitment
-        const setup = new SetupCommitment();
-        setup.multisigAddress = channelJSON.multisigAddress;
-        setup.to = AddressZero;
-        setup.value = Zero;
-        setup.data = HashZero;
-        await this.setupCommitment.save(setup);
+        await this.cfCoreStore.createSetupCommitment(channelJSON.multisigAddress, {
+          data: HashZero,
+          to: AddressZero,
+          value: Zero,
+        });
 
         // check if channel exists
         const channel = await this.channelRepository.findByMultisigAddress(
           channelJSON.multisigAddress,
         );
         if (channel) {
-          // update the addresses
-          channel.addresses = channelJSON.addresses || {
-            proxyFactory: "",
-            multisigMastercopy: "",
-          }; // dummy value for extra old channels
-          // update the store version
-          channel.schemaVersion = await this.cfCoreStore.getSchemaVersion();
-          await this.channelRepository.save(channel);
+          this.log.log(
+            `Channel exists, removing first: ${channelJSON.multisigAddress}`,
+          );
+          await this.channelRepository.remove(channel);
+        } else {
+          this.log.log(`Channel does not exist, building new: ${channelJSON.multisigAddress}`);
         }
-        // otherwise, save channel and new channel will have schema
-        await this.cfCoreStore.saveStateChannel(channelJSON);
-
-        const savedChannel = await this.channelRepository.findByMultisigAddress(
-          channelJSON.multisigAddress,
-        );
+        await this.cfCoreStore.createStateChannel(channelJSON);
         for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
-          await this.cfCoreStore.saveAppProposal(channelJSON.multisigAddress, proposedApp);
+          await this.cfCoreStore.createAppProposal(
+            channelJSON.multisigAddress,
+            proposedApp,
+            channelJSON.monotonicNumProposedApps,
+          );
         }
 
         for (const [, appInstance] of channelJSON.appInstances || []) {
-          await this.appInstanceRepository.saveAppInstance(savedChannel, appInstance, true);
+          const existing = await this.cfCoreStore.getAppInstance(appInstance.identityHash);
+          if (existing) {
+            await this.cfCoreStore.updateAppInstance(appInstance.identityHash, appInstance);
+          } else {
+            await this.cfCoreStore.createAppProposal(
+              channelJSON.multisigAddress,
+              {
+                abiEncodings: {
+                  actionEncoding: appInstance.appInterface.actionEncoding,
+                  stateEncoding: appInstance.appInterface.stateEncoding,
+                },
+                appDefinition: appInstance.appInterface.addr,
+                appSeqNo: appInstance.appSeqNo,
+                identityHash: appInstance.identityHash,
+                initialState: appInstance.latestState,
+                initiatorDeposit: "0",
+                initiatorDepositTokenAddress: AddressZero,
+                outcomeType: appInstance.outcomeType as OutcomeType,
+                proposedByIdentifier: channelJSON.userNeuteredExtendedKeys[0],
+                proposedToIdentifier: channelJSON.userNeuteredExtendedKeys[1],
+                responderDeposit: "0",
+                responderDepositTokenAddress: AddressZero,
+                timeout: appInstance.latestTimeout.toString(),
+                meta: appInstance.meta,
+                multiAssetMultiPartyCoinTransferInterpreterParams: appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
+                singleAssetTwoPartyCoinTransferInterpreterParams: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams as any,
+                twoPartyOutcomeInterpreterParams: appInstance.twoPartyOutcomeInterpreterParams as any,
+              },
+              channelJSON.monotonicNumProposedApps,
+            );
+            await this.cfCoreStore.createAppInstance(
+              channelJSON.multisigAddress,
+              appInstance,
+              channelJSON.freeBalanceAppInstance,
+            );
+          }
         }
-
-        await this.cfCoreStore.saveFreeBalance(
+        await this.cfCoreStore.updateFreeBalance(
           channelJSON.multisigAddress,
           channelJSON.freeBalanceAppInstance,
         );
@@ -296,7 +324,9 @@ export class AdminService implements OnApplicationBootstrap {
         });
         this.log.log(`Removed ${removed.affected} old records after migrating`);
       } catch (e) {
-        this.log.error(`Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()}`);
+        this.log.error(
+          `Error migrating channel ${channelJSON.multisigAddress}: ${e.toString()} ${e.stack}`,
+        );
       }
     }
     return true;

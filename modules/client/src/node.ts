@@ -6,7 +6,7 @@ import {
   GetPendingAsyncTransfersResponse,
   ILoggerService,
   ResolveFastSignedTransferResponse,
-  ResolveHashLockTransferResponse,
+  ChannelRestoreResponse,
   ResolveSignedTransferResponse,
   stringify,
 } from "@connext/types";
@@ -244,9 +244,8 @@ export class NodeApiClient implements INodeApiClient {
     await this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
-  // TODO: type
-  public async restoreState(): Promise<any> {
-    return this.send(`${this.userPublicIdentifier}.channel.restore-states`);
+  public async restoreState(): Promise<ChannelRestoreResponse> {
+    return this.send(`${this.userPublicIdentifier}.channel.restore`);
   }
 
   public async getLatestWithdrawal(): Promise<Transaction> {

@@ -16,18 +16,9 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParamsJson,
 } from "./contracts";
-import { enumify } from "./utils";
 
 ////////////////////////////////////
 // App Instances
-
-export const PersistAppType = enumify({
-  Proposal: "Proposal",
-  Instance: "Instance", // install / update
-  Reject: "Reject",
-  Uninstall: "Uninstall",
-});
-export type PersistAppType = (typeof PersistAppType)[keyof typeof PersistAppType];
 
 export type AppInterface = {
   addr: Address;

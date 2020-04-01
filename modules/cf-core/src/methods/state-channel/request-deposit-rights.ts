@@ -8,6 +8,7 @@ import {
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
   INCORRECT_MULTISIG_ADDRESS,
+  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
 } from "../../errors";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { ERC20 } from "../../contracts";
@@ -18,6 +19,7 @@ import { xkeyKthAddress } from "../../xkeys";
 import { NodeController } from "../controller";
 
 import { installBalanceRefundApp, uninstallBalanceRefundApp } from "./deposit";
+import { StateChannel } from "../../models";
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export class RequestDepositRightsController extends NodeController {
@@ -38,7 +40,11 @@ export class RequestDepositRightsController extends NodeController {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
 
-    const channel = await store.getStateChannel(multisigAddress);
+    const json = await store.getStateChannel(multisigAddress);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+    const channel = StateChannel.fromJson(json);
 
     if (!channel.addresses.proxyFactory) {
       throw new Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
@@ -70,7 +76,11 @@ export class RequestDepositRightsController extends NodeController {
 
     const freeBalanceAddress = xkeyKthAddress(publicIdentifier, 0);
 
-    const channel = await store.getStateChannel(multisigAddress);
+    const json = await store.getStateChannel(multisigAddress);
+    if (!json) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
+    }
+    const channel = StateChannel.fromJson(json);
     let multisigBalance: BigNumber;
     if (params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
       multisigBalance = await provider.getBalance(multisigAddress);
