@@ -1,3 +1,4 @@
+/* global before */
 import { signDigest } from "@connext/crypto";
 
 import {
@@ -8,7 +9,7 @@ import {
   WithdrawAppState,
   WithdrawAppStateEncoding,
 } from "@connext/types";
-import { Wallet, ContractFactory } from "ethers";
+import { Wallet, ContractFactory, Contract } from "ethers";
 import { BigNumber, defaultAbiCoder, SigningKey } from "ethers/utils";
 
 import WithdrawApp from "../../build/WithdrawApp.json";
@@ -39,20 +40,27 @@ const encodeAppAction = (state: WithdrawAppAction): string => {
 };
 
 describe("WithdrawApp", async () => {
-  const wallet = (await provider.getWallets())[0];
-  const withdrawApp = await new ContractFactory(
-    WithdrawApp.abi,
-    WithdrawApp.bytecode,
-    wallet,
-  ).deploy();
-  let withdrawerWallet = Wallet.createRandom();
-  let counterpartyWallet = Wallet.createRandom();
+  let wallet: Wallet;
+  let withdrawApp: Contract;
 
+  // test constants
+  const withdrawerWallet = Wallet.createRandom();
+  const counterpartyWallet = Wallet.createRandom();
   const amount = new BigNumber(10000);
   const data = mkHash("0xa"); // TODO: test this with real withdrawal commitment hash?
   const withdrawerSigningKey = new SigningKey(withdrawerWallet.privateKey);
   const counterpartySigningKey = new SigningKey(counterpartyWallet.privateKey);
 
+  before(async () => {
+    wallet = (await provider.getWallets())[2];
+    withdrawApp = await new ContractFactory(
+      WithdrawApp.abi,
+      WithdrawApp.bytecode,
+      wallet,
+    ).deploy();
+  });
+
+  // helpers
   const computeOutcome = async (state: WithdrawAppState): Promise<string> => {
     return await withdrawApp.functions.computeOutcome(encodeAppState(state));
   };
@@ -88,8 +96,6 @@ describe("WithdrawApp", async () => {
       signature: await signDigest(counterpartySigningKey.privateKey, data),
     };
   };
-
-  beforeEach(async () => {});
 
   it("It zeroes withdrawer balance if state is finalized (w/ valid signatures)", async () => {
     let initialState = await createInitialState();

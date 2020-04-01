@@ -85,7 +85,7 @@ describe("UnidirectionalTransferApp", () => {
     ).deploy();
   });
 
-  describe("The applyAction function", async () => {
+  describe("The applyAction function", () => {
     const initialState: UnidirectionalTransferAppState = {
       stage: AppStage.POST_FUND,
       transfers: [
@@ -96,7 +96,7 @@ describe("UnidirectionalTransferApp", () => {
       finalized: false,
     };
 
-    describe("A valid SEND_MONEY action", async () => {
+    describe("A valid SEND_MONEY action", () => {
       let newState: UnidirectionalTransferAppState;
 
       before(async () => {
