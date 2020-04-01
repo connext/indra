@@ -1,45 +1,31 @@
-import { MultisigTransaction, MultisigOperation } from "@connext/types";
+import { MultisigTransaction, MultisigOperation, NetworkContext, ContractAddresses } from "@connext/types";
 import { MultisigCommitment } from "@connext/cf-core";
-import { ERC20 } from "@connext/contracts";
-import { BigNumberish, bigNumberify, Interface } from "ethers/utils";
+import { ConditionalTransactionDelegateTarget } from "@connext/contracts";
+import { BigNumberish, Interface } from "ethers/utils";
 
-export class WithdrawETHCommitment extends MultisigCommitment {
+const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
+export class WithdrawCommitment extends MultisigCommitment {
   public constructor(
+    public readonly networkContext: NetworkContext | ContractAddresses,
     public readonly multisigAddress: string,
     public readonly multisigOwners: string[],
-    public readonly to: string,
-    public readonly value: BigNumberish,
+    public readonly recipient: string,
+    public readonly assetId: string,
+    public readonly amount: BigNumberish,
   ) {
     super(multisigAddress, multisigOwners);
   }
 
   public getTransactionDetails(): MultisigTransaction {
     return {
-      data: "0x",
-      operation: MultisigOperation.Call,
-      to: this.to,
-      value: bigNumberify(this.value),
-    };
-  }
-}
-
-export class WithdrawERC20Commitment extends MultisigCommitment {
-  public constructor(
-    public readonly multisigAddress: string,
-    public readonly multisigOwners: string[],
-    public readonly to: string,
-    public readonly value: BigNumberish,
-    public readonly tokenAddress: string,
-  ) {
-    super(multisigAddress, multisigOwners);
-  }
-
-  public getTransactionDetails(): MultisigTransaction {
-    return {
-      data: new Interface(ERC20.abi).functions.transfer.encode([this.to, this.value]),
-      operation: MultisigOperation.Call,
-      to: this.tokenAddress,
+      to: this.networkContext.ConditionalTransactionDelegateTarget,
       value: 0,
+      data: iface.functions.withdrawWrapper.encode([
+        this.recipient,
+        this.assetId,
+        this.amount,
+      ]),
+      operation: MultisigOperation.DelegateCall,
     };
   }
 }

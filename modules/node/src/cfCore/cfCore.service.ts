@@ -1,8 +1,7 @@
 import { MessagingService } from "@connext/messaging";
 import {
   SupportedApplications,
-  WithdrawERC20Commitment,
-  WithdrawETHCommitment,
+  WithdrawCommitment
 } from "@connext/apps";
 import {
   AppAction,
@@ -166,24 +165,18 @@ export class CFCoreService {
   async createWithdrawCommitment(
     params: WithdrawParameters,
     multisigAddress: string,
-  ): Promise<WithdrawETHCommitment | WithdrawERC20Commitment> {
+  ): Promise<WithdrawCommitment> {
     const amount = toBN(params.amount);
     const { assetId, recipient } = params;
     const channel = await this.getStateChannel(multisigAddress);
-    if (assetId === AddressZero) {
-      return new WithdrawETHCommitment(
-        channel.data.multisigAddress,
-        channel.data.freeBalanceAppInstance.participants,
-        recipient,
-        amount,
-      );
-    }
-    return new WithdrawERC20Commitment(
+    const contractAddresses = await this.configService.getContractAddresses((await this.configService.getEthNetwork()).chainId.toString())
+    return new WithdrawCommitment(
+      contractAddresses,
       channel.data.multisigAddress,
       channel.data.freeBalanceAppInstance.participants,
       recipient,
-      amount,
       assetId,
+      amount,
     );
   }
 
