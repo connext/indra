@@ -15,10 +15,10 @@ export class WithdrawETHCommitment extends MultisigCommitment {
 
   public getTransactionDetails(): MultisigTransaction {
     return {
-      to: this.to,
-      value: bigNumberify(this.value),
       data: "0x",
       operation: MultisigOperation.Call,
+      to: this.to,
+      value: bigNumberify(this.value),
     };
   }
 }
