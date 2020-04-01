@@ -54,13 +54,17 @@ export class AuthService {
     const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
     this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
 
+    if (!this.nonces[userPublicIdentifier]) {
+      throw new Error(`User hasn't requested a nonce yet`);
+    }
+
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
     const addr = await recoverAddressWithEthers(nonce, signedNonce);
     if (addr !== xpubAddress) {
-      throw new Error(`verification failed`);
+      throw new Error(`Verification failed`);
     }
     if (Date.now() > expiry) {
-      throw new Error(`verification failed... nonce expired for xpub: ${userPublicIdentifier}`);
+      throw new Error(`Verification failed... nonce expired for xpub: ${userPublicIdentifier}`);
     }
 
     const network = await this.configService.getEthNetwork();
