@@ -89,7 +89,7 @@ then
 fi
 
 echo "Using certs for $DOMAINNAME"
-cat $certsdir/fullchain.pem $certsdir/privkey.pem > /root/$DOMAINNAME.pem
+cat $certsdir/fullchain.pem $certsdir/privkey.pem > $DOMAINNAME.pem
 
 export CERTBOT_PORT=31820
 
@@ -103,7 +103,7 @@ function renewcerts {
     then
       echo -n "Found certs to renew for $DOMAINNAME... "
       certbot renew -n --standalone --http-01-port=$CERTBOT_PORT
-      cat $certsdir/fullchain.pem $certsdir/privkey.pem > /root/$DOMAINNAME.pem
+      cat $certsdir/fullchain.pem $certsdir/privkey.pem > $DOMAINNAME.pem
       echo "Done!"
     fi
     sleep 48h
@@ -113,6 +113,8 @@ function renewcerts {
 if [[ "$DOMAINNAME" != "localhost" ]]
 then renewcerts &
 fi
+
+cp /etc/ssl/cert.pem ca-certs.pem
 
 echo "Entrypoint finished, executing haproxy..."; echo
 exec haproxy -db -f $MODE.cfg
