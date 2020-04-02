@@ -3,7 +3,8 @@ import { toBN } from "@connext/types";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { use } from "chai";
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { BigNumber, BigNumberish, parseEther } from "ethers/utils";
+import { Wallet } from "ethers";
 
 export function mkXpub(prefix: string = "xpub"): string {
   return prefix.padEnd(111, "0");
@@ -47,3 +48,34 @@ export const moveToBlock = async (blockNumber: BigNumberish) => {
 use(require("chai-subset"));
 use(solidity);
 export const expect = chai.use(solidity).expect;
+
+// funds recipient with a given amount of eth from other provider accounts
+export const fund = async (amount: BigNumber, recipient: Wallet) => {
+  for (const wallet of await provider.getWallets()) {
+    if (wallet.address === recipient.address) {
+      continue;
+    }
+    const current = await provider.getBalance(recipient.address);
+    const diff = amount.sub(current);
+    if (diff.lte(0)) {
+      // account has max int, done
+      return;
+    }
+    const funderBalance = await provider.getBalance(wallet.address);
+    // leave 1 eth in account for gas or w.e
+    const fundAmount = funderBalance.sub(parseEther("1"));
+    if (fundAmount.lte(0)) {
+      // funder has insufficient funds, move on
+      continue;
+    }
+    // send transaction
+    await wallet.sendTransaction({
+      to: recipient.address,
+      value: fundAmount.gt(diff) ? diff : fundAmount,
+    });
+  }
+  const final = await provider.getBalance(recipient.address);
+  if (final.lt(amount)) {
+    throw new Error(`Insufficient funds after funding to max. Off by: ${final.sub(amount).abs().toString()}`);
+  }
+};
