@@ -1,3 +1,4 @@
+import { MinimumViableMultisig } from "@connext/contracts";
 import {
   BigNumber,
   MinimalTransaction,
@@ -6,8 +7,8 @@ import {
   DepositAppName,
   TransactionResponse,
   TransactionReceipt,
+  MIN_DEPOSIT_TIMEOOUT_BLOCKS,
 } from "@connext/types";
-import { MinimumViableMultisig } from "@connext/contracts";
 import { Injectable } from "@nestjs/common";
 import { Zero, AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
@@ -133,6 +134,10 @@ export class DepositService {
         ? await ethProvider.getBalance(channel.multisigAddress)
         : await token.functions.balanceOf(channel.multisigAddress);
 
+    const timelock: BigNumber = MIN_DEPOSIT_TIMEOOUT_BLOCKS.add(
+      await ethProvider.getBlockNumber(),
+    );
+
     const initialState: DepositAppState = {
       transfers: [
         {
@@ -148,6 +153,8 @@ export class DepositService {
       assetId,
       startingTotalAmountWithdrawn, 
       startingMultisigBalance,
+      finalized: false,
+      timelock,
     };
 
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(

@@ -3,6 +3,7 @@ import {
   MethodParams,
   DepositAppState,
   stringify,
+  MIN_DEPOSIT_TIMEOOUT_BLOCKS,
 } from "@connext/types";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
@@ -77,8 +78,10 @@ export const validateDepositApp = async (
     throw new Error(`Cannot install a deposit app with finalized state`);
   }
 
-  if (initialState.timelock.lte(await provider.getBlockNumber())) {
-    throw new Error(`Cannot install a deposit app with an expired timeout`);
+  const minTimelock = MIN_DEPOSIT_TIMEOOUT_BLOCKS.add(await provider.getBlockNumber());
+  if (
+    initialState.timelock.lt(minTimelock)) {
+    throw new Error(`Cannot install a deposit app with timelock within ${MIN_DEPOSIT_TIMEOOUT_BLOCKS} of now (${await provider.getBlockNumber()})`);
   }
 
   const startingMultisigBalance = initialState.assetId === AddressZero

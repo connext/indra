@@ -1,4 +1,15 @@
-import { MethodParams, DepositParameters, DepositResponse, RequestDepositRightsParameters, RequestDepositRightsResponse, RescindDepositRightsResponse, RescindDepositRightsParameters, CheckDepositRightsParameters, CheckDepositRightsResponse } from "@connext/types";
+import { 
+  MethodParams,
+  DepositParameters,
+  DepositResponse,
+  RequestDepositRightsParameters,
+  RequestDepositRightsResponse,
+  RescindDepositRightsResponse,
+  RescindDepositRightsParameters,
+  CheckDepositRightsParameters,
+  CheckDepositRightsResponse,
+  MIN_DEPOSIT_TIMEOOUT_BLOCKS,
+} from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
 import { DepositAppName, DepositAppState } from "@connext/types";
 import { Contract } from "ethers";
@@ -104,6 +115,7 @@ export class DepositController extends AbstractController {
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
         : await token.functions.balanceOf(this.connext.multisigAddress);
 
+    const timelock = MIN_DEPOSIT_TIMEOOUT_BLOCKS.add(await this.ethProvider.getBlockNumber());
     const initialState: DepositAppState = {
       transfers: [
         {
@@ -119,6 +131,8 @@ export class DepositController extends AbstractController {
       assetId,
       startingTotalAmountWithdrawn, 
       startingMultisigBalance,
+      finalized: false,
+      timelock,
     };
 
     const {
