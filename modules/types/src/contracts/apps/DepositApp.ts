@@ -19,15 +19,24 @@ export type DepositAppState = {
   assetId: Address;
   startingTotalAmountWithdrawn: BigNumber;
   startingMultisigBalance: BigNumber;
+  timelock: BigNumber;
+  finalized: boolean;
 };
+
+export type DepositAppAction = {
+}
 
 export const DepositAppStateEncoding = tidy(`tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} transfers,
   address multisigAddress,
   address assetId,
   uint256 startingTotalAmountWithdrawn,
-  uint256 startingMultisigBalance
+  uint256 startingMultisigBalance,
+  uint256 timelock,
+  bool finalized
 )`);
+
+export const DepositAppActionEncoding = tidy(`tuple()`);
 
 ////////////////////////////////////////
 // Off-chain app types
