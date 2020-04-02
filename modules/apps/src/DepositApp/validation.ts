@@ -4,6 +4,7 @@ import {
   DepositAppState,
   CoinTransfer,
   stringify,
+  toBN,
 } from "@connext/types";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts"
 
@@ -49,6 +50,14 @@ export const validateDepositApp = async (
 
   if (initialState.assetId != params.initiatorDepositTokenAddress || initialState.assetId != params.responderDepositTokenAddress) {
       throw new Error(`Cannot install deposit app with invalid token address. Expected ${params.initiatorDepositTokenAddress}, got ${initialState.assetId}`)
+  }
+
+  if (initialState.finalized) {
+      throw new Error(`Cannot install a deposit app with finalized state`)
+  }
+
+  if (initialState.timelock <= toBN(await provider.getBlockNumber())) {
+      throw new Error(`Cannot install a deposit app with an expired timeout`)
   }
 
   const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider)
