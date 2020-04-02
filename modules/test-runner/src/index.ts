@@ -17,7 +17,6 @@ import "./restoreState/restoreState.test";
 import "./store/migrate.test";
 import "./store/storage.test";
 import "./store/store.test";
-import "./store/postgresStore.test";
 import "./swap/swap.test";
 import "./swap/swapOffline.test";
 import "./transfer/asyncTransfer.test";

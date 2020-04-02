@@ -53,7 +53,8 @@ export class FileStorage implements WrappedStorage {
 
   async getItem(key: string): Promise<any | undefined> {
     const filePath = await this.getFilePath(key);
-    return safeJsonParse(safeFsRead(filePath))|| undefined;
+    const item = await safeFsRead(filePath);
+    return safeJsonParse(item);
   }
 
   async setItem(key: string, data: any): Promise<void> {

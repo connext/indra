@@ -14,7 +14,6 @@ import {
 import {
   CHANNEL_KEY,
   CONDITIONAL_COMMITMENT_KEY,
-  safeJsonParse,
   SET_STATE_COMMITMENT_KEY,
   SETUP_COMMITMENT_KEY,
   WITHDRAWAL_COMMITMENT_KEY,
@@ -24,8 +23,10 @@ import {
 function properlyConvertChannelNullVals(json: any): StateChannelJSON {
   return {
     ...json,
-    proposedAppInstances: (json.proposedAppInstances || []).map(([id, proposal]) => [id, proposal]),
-    appInstances: (json.appInstances || []).map(([id, app]) => [id, app]),
+    proposedAppInstances:
+      json.proposedAppInstances &&
+      json.proposedAppInstances.map(([id, proposal]) => [id, proposal]),
+    appInstances: json.appInstances && json.appInstances.map(([id, app]) => [id, app]),
   };
 }
 
@@ -51,8 +52,12 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.storage.getKeys();
   }
 
-  getItem<T = any>(key: string): Promise<T | undefined> {
-    return this.storage.getItem(key);
+  async getItem<T = any>(key: string): Promise<T | undefined> {
+    const item = await this.storage.getItem(key);
+    if (!item || Object.values(item).length === 0) {
+      return undefined;
+    }
+    return item;
   }
 
   setItem<T = any>(key: string, value: T): Promise<void> {
@@ -92,9 +97,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
     const item = await this.getItem(channelKey);
-    if (!item) {
-      return undefined;
-    }
     return item && properlyConvertChannelNullVals(item);
   }
 
@@ -196,7 +198,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!this.hasAppHash(appInstanceId, channel.proposedAppInstances)) {
       return undefined;
     }
-    const [_, proposal] = channel.proposedAppInstances.find(([id]) => id === appInstanceId);
+    const [, proposal] = channel.proposedAppInstances.find(([id]) => id === appInstanceId);
     return proposal;
   }
 

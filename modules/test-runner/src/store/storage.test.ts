@@ -12,7 +12,7 @@ import {
   TEST_STORE_PAIR,
   createArray,
 } from "../util";
-import { storeTypesNoPostgres } from "./store.test";
+import { storeTypes } from "./store.test";
 
 describe("KeyValueStorage", () => {
   const length = 10;
@@ -21,8 +21,8 @@ describe("KeyValueStorage", () => {
   const testValue = "something";
 
   describe("happy case: instantiate", () => {
-    for (const type of storeTypesNoPostgres) {
-      if (type === StoreTypes.Memory) {
+    for (const type of storeTypes) {
+      if (type === StoreTypes.Memory || type === StoreTypes.Postgres) {
         continue;
       }
       it(`should work for ${type}`, async () => {
@@ -43,8 +43,8 @@ describe("KeyValueStorage", () => {
   });
 
   describe("happy case: should be able to remove an item", async () => {
-    for (const type of storeTypesNoPostgres) {
-      if (type === StoreTypes.Memory) {
+    for (const type of storeTypes) {
+      if (type === StoreTypes.Memory || type === StoreTypes.Postgres) {
         continue;
       }
       it(`should work for ${type}`, async () => {
@@ -152,8 +152,8 @@ describe("KeyValueStorage", () => {
   });
 
   describe("happy case: set & get the same path consecutively", async () => {
-    for (const type of storeTypesNoPostgres) {
-      if (type === StoreTypes.Memory) {
+    for (const type of storeTypes) {
+      if (type === StoreTypes.Memory || type === StoreTypes.Postgres) {
         continue;
       }
       it(`${type} should work`, async () => {
@@ -164,8 +164,8 @@ describe("KeyValueStorage", () => {
   });
 
   describe("happy case: should join strings correctly", () => {
-    for (const type of storeTypesNoPostgres) {
-      if (type === StoreTypes.Memory) {
+    for (const type of storeTypes) {
+      if (type === StoreTypes.Memory || type === StoreTypes.Postgres) {
         continue;
       }
       it(`${type} should work`, async () => {

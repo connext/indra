@@ -122,7 +122,7 @@ export class ConnextStore implements IClientStore {
   }
 
   getAllChannels(): Promise<StateChannelJSON[]> {
-    throw this.internalStore.getAllChannels();
+    return this.internalStore.getAllChannels();
   }
 
   getStateChannel(multisigAddress: string): Promise<StateChannelJSON> {

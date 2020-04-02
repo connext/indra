@@ -4,6 +4,7 @@ import {
   WrappedLocalStorage,
   FileStorage,
   WrappedAsyncStorage,
+  WrappedPostgresStorage,
 } from "@connext/store";
 import {
   StoreFactoryOptions,
@@ -24,7 +25,7 @@ import { BigNumber } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
 
-import { expect } from "../";
+import { expect, env } from "../";
 import { One, AddressZero } from "ethers/constants";
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
@@ -148,9 +149,26 @@ export function createKeyValueStore(type: StoreTypes, opts: StoreFactoryOptions 
   }
 }
 
-export function createConnextStore(type: StoreTypes, opts: StoreFactoryOptions = {}): ConnextStore {
+export async function createConnextStore(
+  type: StoreTypes,
+  opts: StoreFactoryOptions = {},
+): Promise<ConnextStore> {
   if (!Object.values(StoreTypes).includes(type)) {
     throw new Error(`Unrecognized type: ${type}`);
+  }
+
+  if (type === StoreTypes.Postgres) {
+    const wrappedStore = new WrappedPostgresStorage(
+      "test",
+      "/",
+      undefined,
+      undefined,
+      `postgres://${env.dbConfig.user}:${env.dbConfig.password}@${env.dbConfig.host}:${env.dbConfig.port}/${env.dbConfig.database}`,
+      opts.backupService,
+    );
+    opts.storage = wrappedStore;
+    await wrappedStore.sequelize.authenticate();
+    await wrappedStore.sequelize.sync({ force: true });
   }
 
   if (type === StoreTypes.AsyncStorage) {
@@ -159,6 +177,8 @@ export function createConnextStore(type: StoreTypes, opts: StoreFactoryOptions =
 
   const store = new ConnextStore(type, opts);
   expect(store).to.be.instanceOf(ConnextStore);
+
+  await store.clear();
 
   return store;
 }
