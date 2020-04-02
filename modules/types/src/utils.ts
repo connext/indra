@@ -58,12 +58,13 @@ export async function signDigestWithEthers(privateKey: string, digest: string) {
 export async function sortSignaturesBySignerAddress(
   digest: string,
   signatures: string[],
+  recoverAddressFn: any = recoverAddressWithEthers,
 ): Promise<string[]> {
   return (
     await Promise.all(
       signatures
         .slice()
-        .map(async sig => ({ sig, addr: await recoverAddressWithEthers(digest, sig) })),
+        .map(async sig => ({ sig, addr: await recoverAddressFn(digest, sig) })),
     )
   )
     .sort((A, B) => {

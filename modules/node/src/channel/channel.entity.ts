@@ -26,7 +26,7 @@ export class Channel {
   @Column("integer", { default: 0 })
   schemaVersion!: number;
 
-  @Column("json", { nullable: true })
+  @Column("jsonb", { nullable: true })
   addresses!: CriticalStateChannelAddresses;
 
   @Column("text")

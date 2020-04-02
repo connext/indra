@@ -35,6 +35,7 @@
     "mocha": "7.0.1",
     "mock-async-storage": "2.2.0",
     "pg": "7.18.2",
+    "sequelize": "^5.21.5",
     "sql-template-strings": "2.2.2",
     "ts-mocha": "6.0.0",
     "ts-nats": "1.2.4",
