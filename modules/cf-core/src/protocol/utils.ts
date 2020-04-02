@@ -69,8 +69,14 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   const { outcomeType } = appInstance;
 
   let checkpoint = Date.now();
-  const encodedOutcome =
-    encodedOutcomeOverride || (await appInstance.computeOutcomeWithCurrentState(provider));
+  if (!encodedOutcomeOverride || encodedOutcomeOverride === "") {
+    try {
+      encodedOutcomeOverride = await appInstance.computeOutcomeWithCurrentState(provider);
+    } catch (e) {
+      throw new Error(`Unable to compute outcome: ${e.stack || e.message}`);
+    }
+  };
+  const encodedOutcome = encodedOutcomeOverride;
 
   if (log) logTime(log, checkpoint, `Computed outcome with current state`);
 

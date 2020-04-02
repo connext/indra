@@ -12,6 +12,7 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
   ConditionalTransactionCommitmentJSON,
+  toBN,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { signChannelMessage, signDigest } from "@connext/crypto";
@@ -158,12 +159,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     if (params.assetId === AddressZero) {
       const tx = await this.wallet.sendTransaction({
         to: params.recipient,
-        value: params.amount,
+        value: toBN(params.amount),
       });
       hash = tx.hash;
     } else {
       const erc20 = new Contract(params.assetId, tokenAbi, this.wallet.provider);
-      const tx = await erc20.transfer(params.recipient, params.amount);
+      const tx = await erc20.transfer(params.recipient, toBN(params.amount));
       hash = tx.txhash;
     }
     return hash;

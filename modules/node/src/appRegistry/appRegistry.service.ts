@@ -166,8 +166,9 @@ export class AppRegistryService implements OnModuleInit {
           from,
           this.cfCoreService.cfCore.publicIdentifier,
           (await this.channelRepository.findByUserPublicIdentifierOrThrow(from)).multisigAddress,
-          this.configService.getEthProvider()
+          this.configService.getEthProvider(),
         );
+        break;
       }
       case HashLockTransferAppName: {
         const blockNumber = await this.configService.getEthProvider().getBlockNumber();

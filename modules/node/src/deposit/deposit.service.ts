@@ -18,7 +18,7 @@ import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { xkeyKthAddress } from "../util";
-import { AppInstance } from "@connext/cf-core/dist/models";
+import { AppInstance } from "../appInstance/appInstance.entity";
 
 @Injectable()
 export class DepositService {
@@ -34,23 +34,25 @@ export class DepositService {
   async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<TransactionReceipt> {
     // don't allow deposit if user's balance refund app is installed
     const depositApp: AppInstance = await this.getDepositApp(
-        channel,
-        assetId,
+      channel,
+      assetId,
     );
     if (
-        depositApp &&
-        depositApp.latestState.transfers[0].to === xkeyKthAddress(channel.userPublicIdentifier)
+      depositApp &&
+      depositApp.latestState.transfers[0].to === xkeyKthAddress(channel.userPublicIdentifier)
     ) {
-        throw new Error(
-            `Cannot deposit, user's depositApp ${channel.userPublicIdentifier}, assetId: ${assetId}`,
-        );
+      throw new Error(
+        `Cannot deposit, user's depositApp ${channel.userPublicIdentifier}, assetId: ${assetId}`,
+      );
     }
 
     let appInstanceId;
     if (!depositApp) {
-        this.log.info(`Requesting deposit rights before depositing`);
-        appInstanceId = await this.requestDepositRights(channel, assetId);
-        if(!appInstanceId) this.log.error(`Failed to install deposit app!`);
+      this.log.info(`Requesting deposit rights before depositing`);
+      appInstanceId = await this.requestDepositRights(channel, assetId);
+      if (!appInstanceId) {
+        throw new Error(`Failed to install deposit app`);
+      }
     }
     const tx = await this.sendDepositToChain(channel, amount, assetId);
     const receipt = await tx.wait();
@@ -112,9 +114,18 @@ export class DepositService {
 
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
-    const startingTotalAmountWithdrawn = multisig
-    ? await multisig.functions.totalAmountWithdrawn(assetId)
-    : Zero;
+    let startingTotalAmountWithdrawn: BigNumber;
+    try {
+      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(assetId);
+    } catch (e) {
+      const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${channel.multisigAddress}"`;
+      if (!e.message.includes(NOT_DEPLOYED_ERR)) {
+        throw new Error(e);
+      }
+      // multisig is deployed on withdrawal, if not
+      // deployed withdrawal amount is 0
+      startingTotalAmountWithdrawn = Zero;
+    }
 
     // generate starting multisig balance
     const startingMultisigBalance =
@@ -126,11 +137,11 @@ export class DepositService {
       transfers: [
         {
           amount: Zero,
-          to: xkeyKthAddress(channel.userPublicIdentifier),
+          to: xkeyKthAddress(this.configService.getPublicIdentifier()),
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(this.configService.getPublicIdentifier()),
+          to: xkeyKthAddress(channel.userPublicIdentifier),
         },
       ],
       multisigAddress: channel.multisigAddress,

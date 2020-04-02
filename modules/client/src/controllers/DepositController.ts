@@ -1,54 +1,73 @@
-import { MethodParams, toBN, DepositParameters, DepositResponse, RequestDepositRightsParameters, RequestDepositRightsResponse, RescindDepositRightsResponse, RescindDepositRightsParameters, CheckDepositRightsParameters, CheckDepositRightsResponse } from "@connext/types";
-import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
+import { MethodParams, DepositParameters, DepositResponse, RequestDepositRightsParameters, RequestDepositRightsResponse, RescindDepositRightsResponse, RescindDepositRightsParameters, CheckDepositRightsParameters, CheckDepositRightsResponse } from "@connext/types";
+import { MinimumViableMultisig } from "@connext/contracts";
 import { DepositAppName, DepositAppState } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
+import { BigNumber } from "ethers/utils";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<DepositResponse> => {
-    const { appInstanceId, multisigAddress } = await this.requestDepositRights({assetId: params.assetId})
-    this.connext.channelProvider.walletTransfer({ recipient: multisigAddress, amount: params.amount.toString(), assetId: params.assetId })
-    return this.rescindDepositRights({appInstanceId});
+    const { 
+      appInstanceId, 
+      multisigAddress, 
+    } = await this.requestDepositRights({ assetId: params.assetId });
+    const hash = await this.connext.channelProvider.walletTransfer({
+      recipient: multisigAddress, 
+      amount: params.amount.toString(),
+      assetId: params.assetId, 
+    });
+    this.log.debug(`Sent deposit transaction to chain: ${hash}`);
+    return this.rescindDepositRights({ appInstanceId, assetId: params.assetId });
   };
 
-  public requestDepositRights = async (params: RequestDepositRightsParameters): Promise<RequestDepositRightsResponse> => {
+  public requestDepositRights = async (
+    params: RequestDepositRightsParameters,
+  ): Promise<RequestDepositRightsResponse> => {
     params.assetId = params.assetId ? params.assetId : AddressZero;
 
-    const appInstanceId = await this.proposeDepositInstall(params.assetId)
+    const appInstanceId = await this.proposeDepositInstall(params.assetId);
   
     return {
       appInstanceId,
-      multisigAddress: this.connext.multisigAddress
-    }
+      multisigAddress: this.connext.multisigAddress,
+    };
   }
 
-  public rescindDepositRights = async (params: RescindDepositRightsParameters): Promise<RescindDepositRightsResponse> => {
-    let appInstanceId
+  public rescindDepositRights = async (
+    params: RescindDepositRightsParameters,
+  ): Promise<RescindDepositRightsResponse> => {
+    let appInstanceId;
     if (!params.appInstanceId) {
       params.assetId = params.assetId ? params.assetId : AddressZero;
 
-      appInstanceId = this.getDepositApp({assetId: params.assetId});
+      appInstanceId = this.getDepositApp({ assetId: params.assetId });
       if(!appInstanceId) {
-        throw new Error(`No existing deposit app found for this tokenAddress: ${params.assetId}`)
+        throw new Error(`No existing deposit app found for this tokenAddress: ${params.assetId}`);
       }
     } else {
       appInstanceId = params.appInstanceId;
     }
 
-    this.log.debug(`Uninstalling deposit app`)
+    this.log.debug(`Uninstalling deposit app: ${appInstanceId}`);
     await this.connext.uninstallApp(appInstanceId);
     const freeBalance = await this.connext.getFreeBalance();
     return { freeBalance };
   }
 
-  public getDepositApp = async (params: CheckDepositRightsParameters): Promise<CheckDepositRightsResponse> => {
-    const appInstances = await this.connext.getAppInstances()
-    return { appInstanceId: appInstances.filter((appInstance) => {
-      appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress == params.assetId
-    })[0].identityHash };
+  public getDepositApp = async (
+    params: CheckDepositRightsParameters,
+  ): Promise<CheckDepositRightsResponse> => {
+    const appInstances = await this.connext.getAppInstances();
+    return { 
+      appInstanceId: appInstances.filter(
+        (appInstance) => 
+          appInstance
+            .singleAssetTwoPartyCoinTransferInterpreterParams
+            .tokenAddress === params.assetId,
+    )[0].identityHash };
   }
 
   /////////////////////////////////
@@ -60,10 +79,24 @@ export class DepositController extends AbstractController {
     const token = new Contract(assetId!, tokenAbi, this.ethProvider);
 
     // generate initial totalAmountWithdrawn
-    const multisig = new Contract(this.connext.multisigAddress, MinimumViableMultisig.abi, this.ethProvider);
-    const startingTotalAmountWithdrawn = multisig
-    ? await multisig.functions.totalAmountWithdrawn(assetId)
-    : Zero;
+    const multisig = new Contract(
+      this.connext.multisigAddress,
+      MinimumViableMultisig.abi,
+      this.ethProvider,
+    );
+
+    let startingTotalAmountWithdrawn: BigNumber;
+    try {
+      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(assetId);
+    } catch (e) {
+      const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${this.connext.multisigAddress}"`;
+      if (!e.message.includes(NOT_DEPLOYED_ERR)) {
+        throw new Error(e);
+      }
+      // multisig is deployed on withdrawal, if not
+      // deployed withdrawal amount is 0
+      startingTotalAmountWithdrawn = Zero;
+    }
 
     // generate starting multisig balance
     const startingMultisigBalance =
@@ -85,8 +118,8 @@ export class DepositController extends AbstractController {
       multisigAddress: this.connext.multisigAddress,
       assetId,
       startingTotalAmountWithdrawn, 
-      startingMultisigBalance
-    }
+      startingMultisigBalance,
+    };
 
     const {
       actionEncoding,

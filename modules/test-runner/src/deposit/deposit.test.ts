@@ -6,7 +6,7 @@ import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance } from "../util/ethprovider";
 
-describe("Deposits", () => {
+describe.only("Deposits", () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
@@ -38,7 +38,7 @@ describe("Deposits", () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should deposit ETH", async () => {
+  it.only("happy case: client should deposit ETH", async () => {
     const expected = {
       node: Zero,
       client: ONE,

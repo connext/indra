@@ -31,6 +31,9 @@ contract DepositApp is CounterfactualApp {
     {
         AppState memory state = abi.decode(encodedState, (AppState));
 
+        // TODO: if the following call fails (ie because multisig is not deployed yet)
+        // then the `computeOutcome` call will revert. Need to prevent the revert,
+        // and return 0 if the multisig has not been deployed (nothing withdrawn)
         uint256 endingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
         uint256 endingMultisigBalance;
 

@@ -319,7 +319,14 @@ export class ConnextListener extends ConnextEventEmitter {
           break;
         }
         case DepositAppName: {
-          validateDepositApp(params, from, this.connext.publicIdentifier, this.connext.multisigAddress, this.connext.ethProvider);
+          await validateDepositApp(
+            params, 
+            from, 
+            this.connext.publicIdentifier, 
+            this.connext.multisigAddress, 
+            this.connext.ethProvider,
+          );
+          break;
         }
         default: {
           throw new Error(
@@ -331,7 +338,7 @@ export class ConnextListener extends ConnextEventEmitter {
       // the proposal is automatically removed from the store
       await this.connext.installApp(appInstanceId);
     } catch (e) {
-      this.log.error(`Caught error: ${e.message}`);
+      console.error(`Caught error: ${e.message}`);
       await this.connext.rejectInstallApp(appInstanceId);
       throw e;
     }
