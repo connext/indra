@@ -45,10 +45,10 @@ export class AppInstance<T extends AppState = any> {
   @IsKeccak256Hash()
   identityHash!: string;
 
-  @Column("json")
+  @Column("jsonb")
   initialState!: T;
 
-  @Column("json")
+  @Column("jsonb")
   latestState!: T;
 
   @Column("integer")
@@ -105,11 +105,11 @@ export class AppInstance<T extends AppState = any> {
   @IsEthAddress()
   nodeParticipantAddress?: string;
 
-  @Column("json", { nullable: true })
+  @Column("jsonb", { nullable: true })
   meta?: object;
 
   // Interpreter-related Fields
-  @Column("json", { nullable: true })
+  @Column("jsonb", { nullable: true })
   outcomeInterpreterParameters?: any;
 
   @ManyToOne(
