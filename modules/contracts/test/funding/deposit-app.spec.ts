@@ -4,9 +4,11 @@ import {
   singleAssetTwoPartyCoinTransferEncoding,
   DepositAppState,
   DepositAppStateEncoding,
+  DepositAppActionEncoding,
+  DepositAppAction
 } from "@connext/types";
 import { Wallet, ContractFactory, Contract } from "ethers";
-import { BigNumber, defaultAbiCoder, parseEther } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, parseEther, bigNumberify } from "ethers/utils";
 
 import DepositApp from "../../build/DepositApp.json";
 import DelegateProxy from "../../build/DelegateProxy.json";
@@ -20,6 +22,9 @@ const MAX_INT = new BigNumber(2).pow(256).sub(1);
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
 
+const decodeState = (encodedState: string): DepositAppState =>
+  defaultAbiCoder.decode([DepositAppStateEncoding], encodedState)[0];
+
 const encodeAppState = (
   state: DepositAppState,
   onlyCoinTransfers: boolean = false,
@@ -28,6 +33,13 @@ const encodeAppState = (
     return defaultAbiCoder.encode([DepositAppStateEncoding], [state]);
   }
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
+};
+
+const encodeAppAction = (
+  action: DepositAppAction,
+): string => {
+  const ret = defaultAbiCoder.encode([DepositAppActionEncoding], [action]);
+  return ret;
 };
 
 describe.only("DepositApp", () => {
@@ -67,6 +79,12 @@ describe.only("DepositApp", () => {
     return await depositApp.functions.computeOutcome(encodeAppState(state));
   };
 
+  const takeAction = async (state: DepositAppState): Promise<DepositAppState> => {
+    const action: DepositAppAction = {}
+    const returnedState = await depositApp.functions.takeAction(encodeAppState(state), encodeAppAction(action));
+    return decodeState(returnedState);
+  };
+
   const createInitialState = async (assetId: string): Promise<DepositAppState> => {
     return {
       transfers: [
@@ -83,6 +101,8 @@ describe.only("DepositApp", () => {
       assetId,
       startingTotalAmountWithdrawn: await getTotalAmountWithdrawn(assetId), 
       startingMultisigBalance: await getMultisigBalance(assetId),
+      timelock: bigNumberify(await provider.getBlockNumber()).add(100),
+      finalized: false,
     };
   };
 
@@ -112,9 +132,7 @@ describe.only("DepositApp", () => {
   };
 
   const withdraw = async (assetId: string, amount: BigNumber): Promise<void> => {
-    const preWithdrawValue = await getTotalAmountWithdrawn(assetId);
-    await proxy.functions.withdraw(assetId, depositorWallet.address, amount);
-    expect(await getTotalAmountWithdrawn(assetId)).to.be.eq(preWithdrawValue.add(amount));
+    await proxy.functions.withdraw(assetId, wallet.address, amount);
   };
 
   const validateOutcomes = async (
@@ -149,12 +167,6 @@ describe.only("DepositApp", () => {
         .add(amountDeposited)
         .sub(amountWithdrawn),
       );
-
-    const totalAmountWithdrawn = await getTotalAmountWithdrawn(initialState.assetId);
-    console.log(`totalAmountWithdrawn: ${totalAmountWithdrawn.toString()}`);
-    expect(totalAmountWithdrawn).to.be.eq(
-      initialState.startingTotalAmountWithdrawn.add(amountWithdrawn),
-    );
   };
 
   it("Correctly calculates deposit amount for Eth", async () => {
@@ -164,7 +176,8 @@ describe.only("DepositApp", () => {
 
     await deposit(assetId, amount);
 
-    const outcome = await computeOutcome(initialState);
+    const updatedState = await takeAction(initialState)
+    const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount);
 
   });
@@ -175,8 +188,9 @@ describe.only("DepositApp", () => {
     const initialState = await createInitialState(assetId);
 
     await deposit(assetId, amount);
-
-    const outcome = await computeOutcome(initialState);
+    
+    const updatedState = await takeAction(initialState)
+    const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount);
   });
 
@@ -188,7 +202,8 @@ describe.only("DepositApp", () => {
     await deposit(assetId, amount);
     await withdraw(assetId, amount.div(2));
 
-    const outcome = await computeOutcome(initialState);
+    const updatedState = await takeAction(initialState)
+    const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount, amount.div(2));
   });
 
@@ -200,7 +215,8 @@ describe.only("DepositApp", () => {
     await deposit(assetId, amount);
     await withdraw(assetId, amount.div(2));
 
-    const outcome = await computeOutcome(initialState);
+    const updatedState = await takeAction(initialState)
+    const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount, amount.div(2));
   });
 
@@ -214,16 +230,19 @@ describe.only("DepositApp", () => {
     await deposit(erc20.address, amount);
     await withdraw(erc20.address, amount);
 
+    const updatedEthState = await takeAction(ethInitialState)
+    const updatedTokenState = await takeAction(tokenInitialState)
+
     await validateOutcomes([
       {
         assetId,
-        outcome: await computeOutcome(ethInitialState),
+        outcome: await computeOutcome(updatedEthState),
         initialState: ethInitialState,
         deposit: amount,
       },
       {
         assetId: erc20.address,
-        outcome: await computeOutcome(tokenInitialState),
+        outcome: await computeOutcome(updatedTokenState),
         initialState: tokenInitialState,
         deposit: amount,
         withdrawal: amount,
@@ -231,145 +250,115 @@ describe.only("DepositApp", () => {
     ]);
   });
 
-  it.only("Correctly calculates deposit amount for Eth with multisig balance calculation underflow", async () => {
-    const assetId = AddressZero;
-    const amount = parseEther("0.5");
-
-    // first make sure that the wallet has sufficient funds
-    await fund(MAX_INT, wallet);
-
-    const depositAmt = MAX_INT.sub(amount.div(2));
-    // setup initial balance to almost overflow
-    await deposit(assetId, depositAmt);
+  it("Correctly calculates deposit amount for token with token withdraw > deposit (should underflow)", async () => {
+    const assetId = erc20.address;
+    const amount = new BigNumber(10000);
+    // setup multisig with some initial balance
+    await deposit(assetId, amount)
 
     const initialState = await createInitialState(assetId);
-
-    // make sure wallet has sufficient funds to make deposit
-    await fund(parseEther("0.7"), wallet);
     await deposit(assetId, amount);
+    await withdraw(assetId, amount.mul(2));
 
-    const outcome = await computeOutcome(initialState);
-    await validateOutcome(outcome, initialState, amount);
+    const updatedState = await takeAction(initialState)
+    const outcome = await computeOutcome(updatedState);
+    await validateOutcome(outcome, initialState, amount, amount.mul(2));
   });
 
-  it.skip("Correctly calculates deposit amount for Eth with deposit amount overflow", async () => {
+  it("Correctly calculates deposit amount for token total withdraw overflow", async () => {
     const assetId = AddressZero;
     const amount = new BigNumber(10000);
-    // setup some initial balance
-    await deposit(assetId, amount);
+    // setup multisig with correct total withdraw
+    await deposit(assetId, MAX_INT.div(4))
+    await withdraw(assetId, MAX_INT.div(4));
+    await deposit(assetId, MAX_INT.div(4))
+    await withdraw(assetId, MAX_INT.div(4));
+    await deposit(assetId, MAX_INT.div(4).add(1000))
+    await withdraw(assetId, MAX_INT.div(4).add(1000));
+    await deposit(assetId, MAX_INT.div(4))
+
+    // check that one more will overflow
+    expect((await getTotalAmountWithdrawn(assetId)).gt(MAX_INT.sub(MAX_INT.div(4).sub(1))))
 
     const initialState = await createInitialState(assetId);
+    await withdraw(assetId, MAX_INT.div(4).sub(1)) // should overflow
+    await deposit(assetId, MAX_INT.div(4));
 
-    // then overflow
-    await deposit(assetId, (MAX_INT.sub(amount.div(2))));
-
-    const outcome = await computeOutcome(initialState);
-    await validateOutcome(outcome, initialState, (MAX_INT.sub(amount.div(2))));
+    const updatedState = await takeAction(initialState)
+    const outcome = await computeOutcome(updatedState);
+    await validateOutcome(outcome, initialState, MAX_INT.div(4), MAX_INT.div(4).sub(1));
+    await withdraw(assetId, MAX_INT.div(4)); // do this so we get funds back for next test
   });
 
-  it.skip("Correctly calculates deposit amount for Eth with withdraw calculation underflow", async () => {
+  it("Correctly calculates deposit amount for token total withdraw overflow AND expression underflow", async () => {
     const assetId = AddressZero;
     const amount = new BigNumber(10000);
-    let depositAmount = MAX_INT.sub(amount.sub(1));
-    let withdrawAmount = MAX_INT.sub(amount.div(2));
-    await deposit(assetId, depositAmount);
-    await withdraw(assetId, withdrawAmount);
-    
+    // setup multisig with correct total withdraw
+    await deposit(assetId, MAX_INT.div(4))
+    await withdraw(assetId, MAX_INT.div(4));
+    await deposit(assetId, MAX_INT.div(4))
+    await withdraw(assetId, MAX_INT.div(4));
+    await deposit(assetId, MAX_INT.div(4).add(1000))
+    await withdraw(assetId, MAX_INT.div(4).add(1000));
+    await deposit(assetId, MAX_INT.div(4))
+
+    // check that one more will overflow
+    expect((await getTotalAmountWithdrawn(assetId)).gt(MAX_INT.sub(MAX_INT.div(4))))
+
     const initialState = await createInitialState(assetId);
+    await withdraw(assetId, MAX_INT.div(4)) // should overflow
+    await deposit(assetId, amount);
 
-    await deposit(assetId, amount.mul(2));
-    await withdraw(assetId, amount);
+    const updatedState = await takeAction(initialState) // should underflow
+    const outcome = await computeOutcome(updatedState);
+    await validateOutcome(outcome, initialState, amount, MAX_INT.div(4));
+    await withdraw(assetId, MAX_INT.div(4)); // do this so we get funds back for next test
 
-    const outcome = await computeOutcome(initialState);
-    await validateOutcome(outcome, initialState, amount.mul(2), amount);
   });
 
-  it.skip("Correctly calculates deposit amount for Eth with withdraw amount overflow", async () => {
+  it("reverts takeAction if state is finalized", async () => {
     const assetId = AddressZero;
     const amount = new BigNumber(10000);
-    await deposit(assetId, amount);
-    await withdraw(assetId, amount);
-    
     const initialState = await createInitialState(assetId);
 
-    await deposit(assetId, MAX_INT.sub(amount.sub(1)));
-    await withdraw(assetId, MAX_INT.sub(amount.div(2)));
+    await deposit(assetId, amount);
 
-    const outcome = await computeOutcome(initialState);
-    await validateOutcome(
-      outcome, 
-      initialState, 
-      MAX_INT.sub(amount.sub(1)), 
-      MAX_INT.sub(amount.div(2)),
-    );
+    const updatedState = await takeAction(initialState)
+    expect(takeAction(updatedState)).to.be.revertedWith("cannot take action on a finalized state");
   });
 
-  it.skip("Correctly calculates deposit amount for both withdraw/deposit underflow", async () => {
+  it("reverts computeOutcome if timelock has not expired and state isn't finalized", async () => {
     const assetId = AddressZero;
     const amount = new BigNumber(10000);
-    await deposit(assetId, MAX_INT.sub(amount.div(2)));
-    await withdraw(assetId, (MAX_INT.sub(amount.div(2))));
-    await deposit(assetId, MAX_INT.sub(amount.sub(1)));
-    
     const initialState = await createInitialState(assetId);
 
     await deposit(assetId, amount);
-    await withdraw(assetId, amount);
 
-    const outcome = await computeOutcome(initialState);
-    await validateOutcome(outcome, initialState, amount, amount);
+    // no takeAction
+    expect(computeOutcome(initialState)).to.be.revertedWith("Cannot uninstall unfinalized deposit unless timelock has expired");
   });
 
-  it.skip("Correctly calculates deposit amount for both withdraw/deposit overflow", async () => {
+  it("Uninstalls with no balance update if timelock has expired but state isn't finalized", async () => {
     const assetId = AddressZero;
     const amount = new BigNumber(10000);
-    await deposit(assetId, amount);
-    await withdraw(assetId, amount);
-    await deposit(assetId, amount);
-    
     const initialState = await createInitialState(assetId);
-
-    await deposit(assetId, MAX_INT.sub(amount.div(2)));
-    await withdraw(assetId, MAX_INT.sub(amount.div(2)));
-
-    const outcome = await computeOutcome(initialState);
-    await validateOutcome(
-      outcome,
-      initialState,
-      MAX_INT.sub(amount.div(2)),
-      MAX_INT.sub(amount.div(2)),
-    );
-  });
-
-  it.skip("Correctly calculates deposit amount for withdraw underflow and deposit overflow", async () => {
-    const assetId = AddressZero;
-    const amount = new BigNumber(10000);
-    await deposit(assetId, MAX_INT.sub(amount.div(2)));
-    await withdraw(assetId, MAX_INT.sub(amount.div(2)));
-    await deposit(assetId, amount);
-    
-    const initialState = await createInitialState(assetId);
-
-    await deposit(assetId, MAX_INT.sub(amount.div(2)));
-    await withdraw(assetId, amount);
-
-    const outcome = await computeOutcome(initialState);
-    await validateOutcome(outcome, initialState, MAX_INT.sub(amount.div(2)), amount);
-  });
-
-  it.skip("Correctly calculates deposit amount for withdraw overflow and deposit underflow", async () => {
-    const assetId = AddressZero;
-    const amount = new BigNumber(10000);
-    await deposit(assetId, amount);
-    await withdraw(assetId, amount);
-    await deposit(assetId, MAX_INT.sub(amount.div(2)));
-    
-    const initialState = await createInitialState(assetId);
+    initialState.timelock = bigNumberify(await provider.getBlockNumber());
 
     await deposit(assetId, amount);
-    await withdraw(assetId, MAX_INT.sub(amount.div(2)));
 
+    // no takeAction
     const outcome = await computeOutcome(initialState);
-    await validateOutcome(outcome, initialState, amount, MAX_INT.sub(amount.div(2)));
+
+    // cant call helper fn because multisig balance should mismatch outcome
+    const decoded = decodeTransfers(outcome);
+    expect(decoded[0].to).eq(initialState.transfers[0].to);
+    expect(decoded[0].amount).eq(Zero);
+    expect(decoded[1].to).eq(initialState.transfers[1].to);
+    expect(decoded[1].amount).eq(Zero);
+    const multisigBalance = await getMultisigBalance(initialState.assetId);
+    expect(multisigBalance).to.be.eq(
+      initialState.startingMultisigBalance
+        .add(amount)
+      );
   });
 });
