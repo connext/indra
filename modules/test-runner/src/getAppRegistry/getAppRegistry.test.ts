@@ -35,7 +35,7 @@ describe("Get App Registry", () => {
     client = await createClient();
     const appRegistry = await client.getAppRegistry({
       chainId: 4447,
-      name: "CoinBalanceRefundApp",
+      name: "WithdrawApp",
     });
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });
@@ -43,7 +43,7 @@ describe("Get App Registry", () => {
   it("Happy case: user receives registry information for specific app using address", async () => {
     client = await createClient();
     const appRegistry = await client.getAppRegistry({
-      appDefinitionAddress: expectedAddresses.CoinBalanceRefundApp.address,
+      appDefinitionAddress: expectedAddresses.WithdrawApp.address,
     });
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });
