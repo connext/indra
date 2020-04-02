@@ -48,17 +48,10 @@ export class OnchainTransactionService {
   async sendDeposit(
     channel: Channel,
     transaction: MinimalTransaction,
-    assetId: string,
   ): Promise<TransactionResponse> {
-    let tx;
-    if (assetId == AddressZero) {
-      tx = await this.sendTransaction(transaction);
-    } else {
-      const token = new Contract(assetId!, tokenAbi, this.configService.getEthProvider());
-      tx = await token.functions.transfer(transaction.to, transaction.value);
-    }
+    const tx = await this.sendTransaction(transaction);
     await this.onchainTransactionRepository.addCollateralization(tx, channel);
-    return tx
+    return tx;
   }
 
   private async sendTransaction(

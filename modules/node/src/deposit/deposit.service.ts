@@ -32,7 +32,7 @@ export class DepositService {
     private readonly log: LoggerService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly appRegistryRepository: AppRegistryRepository
+    private readonly appRegistryRepository: AppRegistryRepository,
   ) {
     this.log.setContext("DepositService");
   }
@@ -52,11 +52,11 @@ export class DepositService {
         );
     }
 
-    let appInstanceId
+    let appInstanceId;
     if (!depositApp) {
         this.log.info(`Requesting deposit rights before depositing`);
-        appInstanceId = await this.requestDepositRights(channel, assetId)
-        if(!appInstanceId) this.log.error(`Failed to install deposit app!`)
+        appInstanceId = await this.requestDepositRights(channel, assetId);
+        if(!appInstanceId) this.log.error(`Failed to install deposit app!`);
     }
     const tx = await this.sendDepositToChain(channel, amount, assetId);
     const receipt = await tx.wait();
@@ -66,32 +66,47 @@ export class DepositService {
 
   async requestDepositRights(channel: Channel, assetIdParam: string): Promise<string | undefined> {
     let assetId = assetIdParam ? assetIdParam : AddressZero;
-    const appInstanceId = await this.proposeDepositInstall(channel, assetId)
+    const appInstanceId = await this.proposeDepositInstall(channel, assetId);
     return appInstanceId;
   }
 
   async rescindDepositRights(appInstanceId: string): Promise<void> {
-    this.log.debug(`Uninstalling deposit app`)
+    this.log.debug(`Uninstalling deposit app`);
     await this.cfCoreService.uninstallApp(appInstanceId);
   }
 
   async getDepositApp(channel: Channel, assetId: string): Promise<any> {
     return channel.appInstances.filter((appInstance) => {
-      appInstance.initiatorDepositTokenAddress == assetId
+      appInstance.initiatorDepositTokenAddress === assetId;
     })[0];
   }
 
   private async sendDepositToChain(
       channel: Channel,
       amount: BigNumber,
-      assetId: string
+      assetId: string,
   ): Promise<TransactionResponse> {
-    const tx: MinimalTransaction = {
+    // derive the proper minimal transaction for the 
+    // onchain transaction service
+    let tx: MinimalTransaction;
+    if (assetId === AddressZero) {
+      tx = {
         to: channel.multisigAddress,
         value: amount,
-        data: "",
+        data: "0x",
+      };
+    } else {
+      const token = new Contract(assetId, tokenAbi, this.configService.getEthProvider());
+      tx = {
+        to: token.address,
+        value: 0,
+        data: await token.interface.functions.transfer.encode([
+          channel.multisigAddress,
+          amount,
+        ]),
+      };
     }
-    return this.onchainTransactionService.sendDeposit(channel, tx, assetId);
+    return this.onchainTransactionService.sendDeposit(channel, tx);
   }
 
   private async proposeDepositInstall (
@@ -127,8 +142,8 @@ export class DepositService {
       multisigAddress: channel.multisigAddress,
       assetId,
       startingTotalAmountWithdrawn, 
-      startingMultisigBalance
-    }
+      startingMultisigBalance,
+    };
 
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(
         channel,
@@ -137,9 +152,9 @@ export class DepositService {
         assetId,
         Zero,
         assetId,
-        DepositAppName
+        DepositAppName,
     );
-    return res ? res.appInstanceId : undefined
+    return res ? res.appInstanceId : undefined;
   };
 
 }
