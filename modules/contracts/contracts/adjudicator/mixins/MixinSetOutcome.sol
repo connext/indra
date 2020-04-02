@@ -20,22 +20,36 @@ contract MixinSetOutcome is LibStateChannelApp, LibAppCaller, MChallengeRegistry
     {
         bytes32 identityHash = appIdentityToHash(appIdentity);
 
-        AppChallenge storage app = appChallenges[identityHash];
+        AppChallenge storage challenge = appChallenges[identityHash];
 
         require(
-            app.status == ChallengeStatus.EXPLICITLY_FINALIZED ||
-            (app.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number > app.finalizesAt),
+            isStateFinalized(identityHash),
             "setOutcome can only be called after a challenge has been finalized"
         );
 
         require(
-            keccak256(finalState) == app.appStateHash,
+            !isOutcomeSet(challenge),
+            "setOutcome called on challenge with outcome already set"
+        );
+
+        require(
+            keccak256(finalState) == challenge.appStateHash,
             "setOutcome called with incorrect witness data of finalState"
         );
 
         appOutcomes[identityHash] = LibAppCaller.computeOutcome(
             appIdentity.appDefinition,
             finalState
+        );
+        challenge.status = ChallengeStatus.OUTCOME_SET;
+
+        emit ChallengeUpdated(
+            identityHash,
+            challenge.status,
+            challenge.latestSubmitter,
+            challenge.appStateHash,
+            challenge.versionNumber,
+            challenge.finalizesAt
         );
     }
 

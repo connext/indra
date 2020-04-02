@@ -17,6 +17,7 @@ INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-release}" # One of: release, staging, test-staging, or test-release
 INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-}" # pass this in through CI
 INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-}" # pass this in through CI
+INDRA_LOG_LEVEL="${LOG_LEVEL:-3}"
 
 # load dev-mode hardcoded jwt keys if nothing provided by env vars
 if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -f .env ]]
@@ -42,9 +43,8 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 ganache_chain_id="4447"
-log_level="3" # set to 5 for all logs or to 0 for none
 node_port="8080"
-number_of_services="6" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 
 ####################
 # Helper Functions
@@ -120,20 +120,20 @@ else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" &
 fi
 
 database_image="$registry${project}_database:$version"
-ethprovider_image="$registry${project}_ethprovider:$version"
 logdna_image="logdna/logspout:v1.2.0"
 nats_image="provide/nats-server:indra"
 node_image="$registry${project}_node:$version"
 proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
+webserver_image="$registry${project}_webserver:$version"
 
 pull_if_unavailable "$database_image"
-pull_if_unavailable "$ethprovider_image"
 pull_if_unavailable "$logdna_image"
 pull_if_unavailable "$nats_image"
 pull_if_unavailable "$node_image"
 pull_if_unavailable "$proxy_image"
 pull_if_unavailable "$redis_image"
+pull_if_unavailable "$webserver_image"
 
 ########################################
 ## Ethereum Config
@@ -159,6 +159,8 @@ token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.addre
 
 if [[ "$chainId" == "$ganache_chain_id" ]]
 then
+  ethprovider_image="$registry${project}_ethprovider:$version"
+  pull_if_unavailable "$ethprovider_image"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
@@ -175,7 +177,6 @@ then
       - '$eth_volume/data'
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
-  pull_if_unavailable "$ethprovider_image"
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
 fi
 
@@ -184,7 +185,7 @@ allowed_swaps='[{"from":"'"$token_address"'","to":"0x000000000000000000000000000
 ########################################
 ## Deploy according to configuration
 
-echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
+echo "Deploying $number_of_services services eg node=$node_image to $INDRA_DOMAINNAME"
 
 mkdir -p `pwd`/ops/database/snapshots
 mkdir -p /tmp/$project
@@ -210,19 +211,26 @@ services:
     environment:
       DOMAINNAME: '$INDRA_DOMAINNAME'
       EMAIL: '$INDRA_EMAIL'
-      ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
-      MESSAGING_URL: 'http://nats:4221'
-      NODE_URL: 'http://node:8080'
+      ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
+      MESSAGING_TCP_URL: 'nats:4222'
+      MESSAGING_WS_URL: 'nats:4221'
       MODE: 'prod'
+      NODE_URL: 'node:8080'
+      WEBSERVER_URL: 'webserver:80'
     logging:
       driver: 'json-file'
       options:
-          max-size: 100m
+          max-size: '100m'
     ports:
       - '80:80'
       - '443:443'
+      - '4221:4221'
+      - '4222:4222'
     volumes:
       - 'certs:/etc/letsencrypt'
+
+  webserver:
+    image: '$webserver_image'
 
   node:
     image: '$node_image'
@@ -233,7 +241,7 @@ services:
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
       INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
-      INDRA_LOG_LEVEL: '$log_level'
+      INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_CLUSTER_ID: abc123
       INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
@@ -251,7 +259,7 @@ services:
     logging:
       driver: 'json-file'
       options:
-          max-size: 100m
+          max-size: '100m'
     secrets:
       - '$db_secret'
       - '$eth_mnemonic_name'
@@ -282,15 +290,10 @@ services:
     logging:
       driver: 'json-file'
       options:
-          max-size: 100m
-    ports:
-      - '$nats_port:$nats_port'
-      - '$nats_ws_port:$nats_ws_port'
+          max-size: '100m'
 
   redis:
     image: '$redis_image'
-    ports:
-      - '6379:6379'
 
   logdna:
     image: '$logdna_image'

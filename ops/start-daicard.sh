@@ -27,15 +27,17 @@ volumes:
 
 services:
   proxy:
-    image: $proxy_image
+    image: '$proxy_image'
     environment:
-      DOMAINNAME: $domainname
-      INDRA_URL: $indra_url
+      DOMAINNAME: '$domainname'
+      EMAIL: 'noreply@gmail.com'
+      INDRA_URL: '$indra_url'
+      MODE: 'prod'
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
-      - certs:/etc/letsencrypt
+      - 'certs:/etc/letsencrypt'
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

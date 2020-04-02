@@ -17,6 +17,7 @@ import {
   ProtocolParams,
   SolidityValueType,
   UninstallMessage,
+  DepositFailedMessage,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -116,11 +117,22 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
 }
 
 export async function requestDepositRights(
-  node: Node,
+  depositor: Node,
+  counterparty: Node,
   multisigAddress: string,
   tokenAddress: string = AddressZero,
 ) {
-  return await node.rpcRouter.dispatch({
+  const parameters = await getProposeCoinBalanceRefundAppParams(multisigAddress, depositor.publicIdentifier, counterparty.publicIdentifier, tokenAddress);
+  await new Promise(async (resolve, reject) => {
+    counterparty.once("PROPOSE_INSTALL_EVENT", resolve);
+    counterparty.once("REJECT_INSTALL_EVENT", reject);
+    await depositor.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: MethodNames.chan_proposeInstall,
+      parameters,
+    });
+  });
+  return await depositor.rpcRouter.dispatch({
     id: Date.now(),
     methodName: MethodNames.chan_requestDepositRights,
     parameters: {
@@ -424,7 +436,7 @@ export async function deposit(
       resolve();
     });
 
-    node.rpcRouter.dispatch({
+  await node.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_proposeInstall,
       parameters: proposeParams,
@@ -432,7 +444,7 @@ export async function deposit(
   });
   const depositReq = constructDepositRpc(multisigAddress, amount, tokenAddress);
 
-  return new Promise(async resolve => {
+  return new Promise(async (resolve, reject) => {
     node.once(`DEPOSIT_CONFIRMED_EVENT`, (msg: DepositConfirmationMessage) => {
       assertNodeMessage(msg, {
         from: node.publicIdentifier,
@@ -460,7 +472,21 @@ export async function deposit(
       );
     });
 
-    // TODO: how to test deposit failed events?
+    node.once(`DEPOSIT_FAILED_EVENT`, (msg: DepositFailedMessage) => {
+      assertNodeMessage(
+        msg,
+        {
+          from: node.publicIdentifier,
+          type: `DEPOSIT_STARTED_EVENT`,
+          data: {
+            params: depositReq.parameters,
+          },
+        },
+        [`data.errors`],
+      );
+      reject(msg.data.errors.toString());
+    });
+
     await node.rpcRouter.dispatch(depositReq);
   });
 }
@@ -588,6 +614,16 @@ export function constructGetStateRpc(appInstanceId: string): Rpc {
   };
 }
 
+export function constructGetStateChannelRpc(multisigAddress: string): Rpc {
+  return {
+    parameters: {
+      multisigAddress,
+    },
+    id: Date.now(),
+    methodName: MethodNames.chan_getStateChannel,
+  };
+}
+
 export function constructTakeActionRpc(appInstanceId: string, action: any): Rpc {
   return {
     parameters: deBigNumberifyJson({
@@ -632,53 +668,53 @@ export async function collateralizeChannel(
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
-  return new Promise(async resolve => {
-    const sortedOwners = xkeysToSortedKthAddresses(
-      [nodeA.publicIdentifier, nodeB.publicIdentifier],
-      0,
-    );
-
-    nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-      assertNodeMessage(
-        msg,
-        {
-          from: nodeA.publicIdentifier,
-          type: EventNames.CREATE_CHANNEL_EVENT,
-          data: {
-            owners: sortedOwners,
-            counterpartyXpub: nodeA.publicIdentifier,
+  const sortedOwners = xkeysToSortedKthAddresses(
+    [nodeA.publicIdentifier, nodeB.publicIdentifier],
+    0,
+  );
+  const [multisigAddress]: any = await Promise.all([
+    new Promise(async resolve => {
+      nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
+        assertNodeMessage(
+          msg,
+          {
+            from: nodeA.publicIdentifier,
+            type: EventNames.CREATE_CHANNEL_EVENT,
+            data: {
+              owners: sortedOwners,
+              counterpartyXpub: nodeA.publicIdentifier,
+            },
           },
-        },
-        [`data.multisigAddress`],
-      );
-      expect(await getInstalledAppInstances(nodeB, msg.data.multisigAddress)).toEqual([]);
-      resolve(msg.data.multisigAddress);
-    });
-
-    nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
-      assertNodeMessage(
-        msg,
-        {
-          from: nodeA.publicIdentifier,
-          type: EventNames.CREATE_CHANNEL_EVENT,
-          data: {
-            owners: sortedOwners,
-            counterpartyXpub: nodeB.publicIdentifier,
+          [`data.multisigAddress`],
+        );
+        expect(await getInstalledAppInstances(nodeB, msg.data.multisigAddress)).toEqual([]);
+        resolve(msg.data.multisigAddress);
+      });
+    }),
+    new Promise(resolve => {
+      nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
+        assertNodeMessage(
+          msg,
+          {
+            from: nodeA.publicIdentifier,
+            type: EventNames.CREATE_CHANNEL_EVENT,
+            data: {
+              owners: sortedOwners,
+              counterpartyXpub: nodeB.publicIdentifier,
+            },
           },
-        },
-        [`data.multisigAddress`],
-      );
-    });
-
-    // trigger channel creation but only resolve with the multisig address
-    // as acknowledged by the node
-    const multisigAddress = await getMultisigCreationAddress(nodeA, [
+          [`data.multisigAddress`],
+        );
+        resolve(msg.data.multisigAddress);
+      });
+    }),
+    getMultisigCreationAddress(nodeA, [
       nodeA.publicIdentifier,
       nodeB.publicIdentifier,
-    ]);
-
-    expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
-  });
+    ]),
+  ]);
+  expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
+  return multisigAddress;
 }
 
 // NOTE: Do not run this concurrently, it won't work

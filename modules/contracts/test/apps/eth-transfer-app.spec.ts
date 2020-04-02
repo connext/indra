@@ -1,13 +1,11 @@
 /* global before */
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
 
 import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.json";
 
-const { expect } = chai.use(waffle.solidity);
+import { expect, provider } from "../utils";
 
 type CoinTransfer = {
   to: string;
@@ -78,9 +76,12 @@ describe("UnidirectionalTransferApp", () => {
     unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const provider = waffle.createMockProvider();
-    const wallet = waffle.getWallets(provider)[0];
-    unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
+    const wallet = (await provider.getWallets())[0];
+    unidirectionalTransferApp = await new ContractFactory(
+      UnidirectionalTransferApp.abi,
+      UnidirectionalTransferApp.bytecode,
+      wallet,
+    ).deploy();
   });
 
   it("can make transfers", async () => {

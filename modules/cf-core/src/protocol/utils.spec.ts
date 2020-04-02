@@ -1,5 +1,5 @@
-import { signDigest } from "@connext/crypto";
-import { EthereumCommitment, recoverAddressWithEthers, createRandom32ByteHexString } from "@connext/types";
+import { signDigest, recoverAddress } from "@connext/crypto";
+import { EthereumCommitment, createRandom32ByteHexString } from "@connext/types";
 import { HashZero } from "ethers/constants";
 import { SigningKey, hashMessage } from "ethers/utils";
 
@@ -43,7 +43,7 @@ describe("Signature Validator Helper", () => {
     const rightHash = commitment.hashToSign();
     const wrongHash = HashZero.replace("00", "11"); // 0x11000...
     const signature = await signDigest(signer.privateKey, wrongHash);
-    const wrongSigner = await recoverAddressWithEthers(rightHash, signature);
+    const wrongSigner = await recoverAddress(rightHash, signature);
     await expect(assertIsValidSignature(signer.address, commitmentHash, signature)).rejects.toThrow(
       `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}.`,
     );

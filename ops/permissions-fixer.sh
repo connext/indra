@@ -11,7 +11,7 @@ finish() {
     then echo "Same user, skipping permission fix"
     else
       echo "Fixing permissions for $user"
-      find $cwd -user `id -u` -exec chown -R $user {} \;
+      find $cwd -not -name "*.swp" -user `id -u` -exec chown -R $user {} \;
     fi
 }
 trap finish EXIT

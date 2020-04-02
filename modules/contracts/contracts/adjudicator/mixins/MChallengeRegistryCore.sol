@@ -2,22 +2,42 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
+import "../libs/LibAppCaller.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MChallengeRegistryCore {
+contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
+
+    using SafeMath for uint256;
+
+    // A mapping of appIdentityHash to timeouts
+    mapping (bytes32 => uint256) public appTimeouts;
 
     // A mapping of appIdentityHash to AppChallenge structs which represents
     // the current on-chain status of some particular application's state.
-    mapping (bytes32 => LibStateChannelApp.AppChallenge) public appChallenges;
+    mapping (bytes32 => AppChallenge) public appChallenges;
 
     // A mapping of appIdentityHash to outcomes
     mapping (bytes32 => bytes) public appOutcomes;
+
+    /// @notice Compute a hash of an application's state
+    /// @param appState The ABI encoded state
+    /// @return A bytes32 hash of the state
+    function appStateToHash(
+        bytes memory appState
+    )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(appState);
+    }
 
     /// @notice Compute a unique hash for a single instance of an App
     /// @param appIdentity An `AppIdentity` struct that encodes all unique info for an App
     /// @return A bytes32 hash of the AppIdentity
     function appIdentityToHash(
-        LibStateChannelApp.AppIdentity memory appIdentity
+        AppIdentity memory appIdentity
     )
         internal
         pure
@@ -79,6 +99,52 @@ contract MChallengeRegistryCore {
                 action,
                 versionNumber
             )
+        );
+    }
+
+    /// @notice Compute a unique hash for the state of a channelized app instance
+    /// @param identityHash The unique hash of an `AppIdentity`
+    /// @param versionNumber The versionNumber corresponding to the version of the state
+    /// @return A bytes32 hash of the RLP encoded arguments
+    function computeCancelChallengeHash(
+        bytes32 identityHash,
+        uint256 versionNumber
+    )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                byte(0x19),
+                identityHash,
+                versionNumber
+            )
+        );
+    }
+
+    /// @notice Checks if an application's state has been finalized by challenge
+    /// @param identityHash The unique hash of an `AppIdentity`
+    /// @return A boolean indicator
+    function isStateFinalized(bytes32 identityHash)
+        public
+        view
+        returns (bool)
+    {
+        AppChallenge storage appChallenge = appChallenges[identityHash];
+
+        return (
+          (
+              appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+              hasPassed(appChallenge.finalizesAt.add(appTimeouts[identityHash]))
+          ) ||
+          (
+              appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
+              hasPassed(appChallenge.finalizesAt)
+          ) ||
+          (
+              appChallenge.status == ChallengeStatus.EXPLICITLY_FINALIZED
+          )
         );
     }
 

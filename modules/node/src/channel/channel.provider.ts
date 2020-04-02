@@ -2,7 +2,7 @@ import {
   MethodResults,
   ChannelAppSequences,
   GetChannelResponse,
-  StateChannelJSON,
+  ChannelRestoreResponse,
 } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
@@ -10,12 +10,17 @@ import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
+import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+
+import { setStateToJson, SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
+import { convertConditionalCommitmentToJson, ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
+import { convertSetupEntityToMinimalTransaction, SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -26,33 +31,29 @@ class ChannelMessaging extends AbstractMessagingProvider {
     log: LoggerService,
     messaging: MessagingService,
     private readonly channelService: ChannelService,
+    private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
+    private readonly setupCommitmentRepository: SetupCommitmentRepository,
+    private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
   ) {
     super(log, messaging);
   }
 
   async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse | undefined> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(pubId);
-    return !channel ? undefined : ({
-      id: channel.id,
-      available: channel.available,
-      collateralizationInFlight: channel.collateralizationInFlight,
-      multisigAddress: channel.multisigAddress,
-      nodePublicIdentifier: channel.nodePublicIdentifier,
-      userPublicIdentifier: channel.userPublicIdentifier,
-    });
+    return this.channelService.getByUserPublicIdentifier(pubId);
   }
 
   async createChannel(pubId: string): Promise<MethodResults.CreateChannel> {
-    return await this.channelService.create(pubId);
+    return this.channelService.create(pubId);
   }
 
   async verifyAppSequenceNumber(
     pubId: string,
     data: { userAppSequenceNumber: number },
   ): Promise<ChannelAppSequences> {
-    return await this.channelService.verifyAppSequenceNumber(pubId, data.userAppSequenceNumber);
+    return this.channelService.verifyAppSequenceNumber(pubId, data.userAppSequenceNumber);
   }
 
   async requestCollateral(
@@ -86,8 +87,35 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(pubId);
   }
 
-  async getChannelStateForRestore(pubId: string): Promise<StateChannelJSON> {
-    return await this.channelService.getStateChannel(pubId);
+  async getChannelInformationForRestore(pubId: string): Promise<ChannelRestoreResponse> {
+    const channel = await this.channelService.getStateChannel(pubId);
+    if (!channel) {
+      throw new Error(`No channel found for user: ${pubId}`);
+    }
+    // get setup commitment
+    const setupCommitment = await this.setupCommitmentRepository
+      .findByMultisigAddress(channel.multisigAddress);
+    if (!setupCommitment) {
+      throw new Error(`Found channel, but no setup commitment. This should not happen.`);
+    }
+    // get active app set state commitments
+    const setStateCommitments = await this.setStateCommitmentRepository
+      .findAllActiveCommitmentsByMultisig(channel.multisigAddress);
+    
+    // get active app conditional transaction commitments
+    const conditionalCommitments = await this
+      .conditionalTransactionCommitmentRepository
+      .findAllActiveCommitmentsByMultisig(channel.multisigAddress);
+    const network = await this.configService.getContractAddresses();
+    return {
+      channel,
+      setupCommitment: 
+        convertSetupEntityToMinimalTransaction(setupCommitment), 
+      setStateCommitments:
+        setStateCommitments.map(s => [s.app.identityHash, setStateToJson(s)]),
+      conditionalCommitments: conditionalCommitments
+        .map(c => [c.app.identityHash, convertConditionalCommitmentToJson(c, network)]),
+    };
   }
 
   async setupSubscriptions(): Promise<void> {
@@ -112,8 +140,8 @@ class ChannelMessaging extends AbstractMessagingProvider {
       this.authService.parseXpub(this.verifyAppSequenceNumber.bind(this)),
     );
     await super.connectRequestReponse(
-      "*.channel.restore-states",
-      this.authService.parseXpub(this.getChannelStateForRestore.bind(this)),
+      "*.channel.restore",
+      this.authService.parseXpub(this.getChannelInformationForRestore.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.latestWithdrawal",
@@ -128,8 +156,12 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     LoggerService,
     MessagingProviderId,
     ChannelService,
+    ConfigService,
     ChannelRepository,
     OnchainTransactionRepository,
+    SetupCommitmentRepository,
+    SetStateCommitmentRepository,
+    ConditionalTransactionCommitmentRepository,
   ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
@@ -137,16 +169,24 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     log: LoggerService,
     messaging: MessagingService,
     channelService: ChannelService,
+    config: ConfigService,
     channelRepo: ChannelRepository,
     onchain: OnchainTransactionRepository,
+    setup: SetupCommitmentRepository,
+    setState: SetStateCommitmentRepository,
+    conditional: ConditionalTransactionCommitmentRepository,
   ): Promise<void> => {
     const channel = new ChannelMessaging(
       authService,
       log,
       messaging,
       channelService,
+      config,
       channelRepo,
       onchain,
+      setup,
+      setState,
+      conditional,
     );
     await channel.setupSubscriptions();
   },

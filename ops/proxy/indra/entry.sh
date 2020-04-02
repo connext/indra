@@ -1,20 +1,35 @@
 #!/bin/bash
 
-# Set default email & domain name
-domain="${DOMAINNAME:-localhost}"
-email="${EMAIL:-noreply@gmail.com}"
-eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
-messaging_url="${MESSAGING_URL:-http://nats:4221}"
-node_url="${NODE_URL:-http://node:8080}"
-mode="${MODE:-dev}"
-ui_url="${UI_URL:-$messaging_url}"
+if [[ "${ETH_PROVIDER_URL%%://*}" == "https" ]]
+then export ETH_PROVIDER_PROTOCOL="ssl"
+else export ETH_PROVIDER_PROTOCOL=""
+fi
 
-echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url ui=$ui_url mode=$mode node_url=$node_url"
+ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
+
+export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
+if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
+then export ETH_PROVIDER_PATH="${ETH_PROVIDER_URL#*/}"
+else export ETH_PROVIDER_PATH=""
+fi
+
+echo "Proxy container launched in env:"
+echo "DOMAINNAME=$DOMAINNAME"
+echo "EMAIL=$EMAIL"
+echo "ETH_PROVIDER_PROTOCOL=$ETH_PROVIDER_PROTOCOL"
+echo "ETH_PROVIDER_HOST=$ETH_PROVIDER_HOST"
+echo "ETH_PROVIDER_PATH=$ETH_PROVIDER_PATH"
+echo "ETH_PROVIDER_URL=$ETH_PROVIDER_URL"
+echo "MESSAGING_TCP_URL=$MESSAGING_TCP_URL"
+echo "MESSAGING_WS_URL=$MESSAGING_WS_URL"
+echo "MODE=$MODE"
+echo "NODE_URL=$NODE_URL"
+echo "WEBSERVER_URL=$WEBSERVER_URL"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
   while true # unix.stackexchange.com/a/37762
-  do echo 'Waiting for the rest of the app to wake up..' | nc -lk -p 80
+  do echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nWaiting for Indra to wake up" | nc -lk -p 80
   done > /dev/null
 }
 loading_msg &
@@ -24,30 +39,29 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-echo "waiting for ${eth_rpc_url#*://}..."
-bash wait_for.sh -t 60 ${eth_rpc_url#*://} 2> /dev/null
-while ! curl -s $eth_rpc_url > /dev/null
+bash wait_for.sh -t 60 $ETH_PROVIDER_HOST 2> /dev/null
+echo "waiting for $ETH_PROVIDER_HOST..."
+while ! curl -s $ETH_PROVIDER_HOST > /dev/null
 do sleep 2
 done
 
-echo "waiting for ${messaging_url#*://}..."
-bash wait_for.sh -t 60 ${messaging_url#*://} 2> /dev/null
+echo "waiting for $MESSAGING_WS_URL..."
+bash wait_for.sh -t 60 $MESSAGING_WS_URL 2> /dev/null
 
-echo "waiting for ${node_url#*://}..."
-bash wait_for.sh -t 60 ${node_url#*://} 2> /dev/null
-while ! curl -s $node_url > /dev/null
+echo "waiting for $MESSAGING_TCP_URL..."
+bash wait_for.sh -t 60 $MESSAGING_TCP_URL 2> /dev/null
+
+echo "waiting for $NODE_URL..."
+bash wait_for.sh -t 60 $NODE_URL 2> /dev/null
+while ! curl -s $NODE_URL > /dev/null
 do sleep 2
 done
 
-if [[ "$mode" == "dev" ]]
-then
-  echo "waiting for ${ui_url#*://}..."
-  bash wait_for.sh -t 60 ${ui_url#*://} 2> /dev/null
-  # Do a more thorough check to ensure the dashboard is online
-  while ! curl -s $ui_url > /dev/null
-  do sleep 2
-  done
-fi
+echo "waiting for $WEBSERVER_URL..."
+bash wait_for.sh -t 60 $WEBSERVER_URL 2> /dev/null
+while ! curl -s $WEBSERVER_URL > /dev/null
+do sleep 2
+done
 
 # Kill the loading message server
 kill "$loading_pid" && pkill nc
@@ -56,55 +70,49 @@ kill "$loading_pid" && pkill nc
 # Setup SSL Certs
 
 letsencrypt=/etc/letsencrypt/live
-devcerts=$letsencrypt/localhost
-mkdir -p $devcerts
-mkdir -p /etc/certs
+certsdir=$letsencrypt/$DOMAINNAME
+mkdir -p $certsdir
+mkdir -p /etc/haproxy/certs
 mkdir -p /var/www/letsencrypt
 
-if [[ "$domain" == "localhost" && ! -f "$devcerts/privkey.pem" ]]
+if [[ "$DOMAINNAME" == "localhost" && ! -f "$certsdir/privkey.pem" ]]
 then
   echo "Developing locally, generating self-signed certs"
-  openssl req -x509 -newkey rsa:4096 -keyout $devcerts/privkey.pem -out $devcerts/fullchain.pem -days 365 -nodes -subj '/CN=localhost'
+  openssl req -x509 -newkey rsa:4096 -keyout $certsdir/privkey.pem -out $certsdir/fullchain.pem -days 365 -nodes -subj '/CN=localhost'
 fi
 
-if [[ ! -f "$letsencrypt/$domain/privkey.pem" ]]
+if [[ ! -f "$certsdir/privkey.pem" ]]
 then
-  echo "Couldn't find certs for $domain, using certbot to initialize those now.."
-  certbot certonly --standalone -m $email --agree-tos --no-eff-email -d $domain -n
+  echo "Couldn't find certs for $DOMAINNAME, using certbot to initialize those now.."
+  certbot certonly --standalone -m $EMAIL --agree-tos --no-eff-email -d $DOMAINNAME -n
   [[ $? -eq 0 ]] || sleep 9999 # FREEZE! Don't pester eff & get throttled
 fi
 
-echo "Using certs for $domain"
-ln -sf $letsencrypt/$domain/privkey.pem /etc/certs/privkey.pem
-ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
+echo "Using certs for $DOMAINNAME"
+cat $certsdir/fullchain.pem $certsdir/privkey.pem > /root/$DOMAINNAME.pem
 
-# Hack way to implement variables in the nginx.conf file
-sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$UI_URL|'"$ui_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$ETH_RPC_URL|'"$eth_rpc_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$MESSAGING_URL|'"$messaging_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$NODE_URL|'"$node_url"'|' /etc/nginx/nginx.conf
+export CERTBOT_PORT=31820
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
+  sleep 3 # give proxy a sec to wake up before attempting first renewal
   while true
   do
     echo -n "Preparing to renew certs... "
-    if [[ -d "/etc/letsencrypt/live/$domain" ]]
+    if [[ -d "$certsdir" ]]
     then
-      echo -n "Found certs to renew for $domain... "
-      certbot renew --webroot -w /var/www/letsencrypt/ -n
+      echo -n "Found certs to renew for $DOMAINNAME... "
+      certbot renew -n --standalone --http-01-port=$CERTBOT_PORT
+      cat $certsdir/fullchain.pem $certsdir/privkey.pem > /root/$DOMAINNAME.pem
       echo "Done!"
     fi
     sleep 48h
   done
 }
 
-if [[ "$domain" != "localhost" ]]
+if [[ "$DOMAINNAME" != "localhost" ]]
 then renewcerts &
 fi
 
-sleep 3 # give renewcerts a sec to do it's first check
-
-echo "Entrypoint finished, executing nginx..."; echo
-exec nginx
+echo "Entrypoint finished, executing haproxy..."; echo
+exec haproxy -db -f $MODE.cfg

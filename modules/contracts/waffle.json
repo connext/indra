@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "evmVersion": "constantinople"
-  },
-  "compilerType": "native",
-  "nodeModulesDirectory": "../../node_modules",
-  "sourceDirectory": "./contracts"
-}

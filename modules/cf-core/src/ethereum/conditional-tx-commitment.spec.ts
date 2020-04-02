@@ -14,7 +14,6 @@ import { createAppInstanceForTest } from "../testing/utils";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { FreeBalanceClass, StateChannel } from "../models";
-import { Store } from "../store";
 import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
@@ -80,8 +79,8 @@ describe("ConditionalTransactionCommitment", () => {
 
   describe("storage", () => {
     it("should be stored correctly", async () => {
-      const store = new Store(new MemoryStoreService());
-      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
+      const store = new MemoryStoreService();
+      await store.createConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
       const hash = createRandom32ByteHexString();
@@ -89,7 +88,7 @@ describe("ConditionalTransactionCommitment", () => {
         await signDigest(hdNodes[0].privateKey, hash),
         await signDigest(hdNodes[1].privateKey, hash),
       ];
-      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
+      await store.updateConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(signed).toMatchObject(commitment);
     });

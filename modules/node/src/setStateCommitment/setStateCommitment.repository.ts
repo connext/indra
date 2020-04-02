@@ -2,7 +2,7 @@ import { SetStateCommitmentJSON } from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
 
 import { SetStateCommitment } from "./setStateCommitment.entity";
-import { AppInstance } from "../appInstance/appInstance.entity";
+import { AppType } from "../appInstance/appInstance.entity";
 
 export const setStateToJson = (entity: SetStateCommitment): SetStateCommitmentJSON => {
   return {
@@ -25,6 +25,15 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitment>
       .getOne();
   }
 
+  findByMultisigAddress(multisigAddress: string): Promise<SetStateCommitment[]> {
+    return this.createQueryBuilder("set_state")
+      .leftJoinAndSelect("set_state.app", "app")
+      .where(
+        "app.channel.multisigAddress = :multisigAddress", { multisigAddress },
+      )
+      .getMany();
+  }
+
   findByAppStateHash(appStateHash: string): Promise<SetStateCommitment | undefined> {
     return this.findOne({
       where: {
@@ -43,21 +52,17 @@ export class SetStateCommitmentRepository extends Repository<SetStateCommitment>
     return setStateToJson(commitment);
   }
 
-  async saveLatestSetStateCommitment(
-    app: AppInstance,
-    commitment: SetStateCommitmentJSON,
-  ): Promise<void> {
-    let entity = await this.findByAppIdentityHash(app.identityHash);
-    if (!entity) {
-      entity = new SetStateCommitment();
-      entity.app = app;
-      entity.appIdentity = commitment.appIdentity;
-    }
-    entity.appStateHash = commitment.appStateHash;
-    entity.challengeRegistryAddress = commitment.challengeRegistryAddress;
-    entity.signatures = commitment.signatures;
-    entity.timeout = commitment.timeout;
-    entity.versionNumber = commitment.versionNumber;
-    this.save(entity);
+  async findAllActiveCommitmentsByMultisig(multisigAddress: string): Promise<SetStateCommitment[]> {
+    return this.createQueryBuilder("set_state")
+      .leftJoinAndSelect("set_state.app", "app")
+      .where(
+        "app.type <> :rejected", { rejected: AppType.REJECTED },
+      )
+      .andWhere("app.type <> :uninstalled", { uninstalled: AppType.UNINSTALLED })
+      .leftJoinAndSelect("app.channel", "channel")
+      .where(
+        "channel.multisigAddress = :multisigAddress", { multisigAddress },
+      )
+      .getMany();
   }
 }

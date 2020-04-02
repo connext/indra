@@ -3,6 +3,7 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
+import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 
 export class GetStateChannelController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_getStateChannel)
@@ -12,8 +13,10 @@ export class GetStateChannelController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.GetStateChannel,
   ): Promise<MethodResults.GetStateChannel> {
-    return {
-      data: (await requestHandler.store.getStateChannel(params.multisigAddress)).toJson(),
-    };
+    const data = await requestHandler.store.getStateChannel(params.multisigAddress);
+    if (!data) {
+      throw new Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(params.multisigAddress));
+    }
+    return { data };
   }
 }

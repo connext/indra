@@ -8,10 +8,8 @@ import { setup, SetupContext } from "../setup";
 import {
   assertNodeMessage,
   collateralizeChannel,
-  confirmProposedAppInstance,
   constructRejectInstallRpc,
   createChannel,
-  getAppInstanceProposal,
   getInstalledAppInstances,
   getProposedAppInstances,
   makeAndSendProposeCall,
@@ -61,13 +59,9 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeB.rpcRouter.dispatch(rejectReq);
       });
 
-      const { params, appInstanceId } = await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
-
-      confirmProposedAppInstance(
-        params,
-        await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
-      );
+      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
     });
+
     it("Node A installs, node a rejects", async done => {
       const multisigAddress = await createChannel(nodeA, nodeB);
 
@@ -99,12 +93,7 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeA.rpcRouter.dispatch(rejectReq);
       });
 
-      const { params, appInstanceId } = await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
-
-      confirmProposedAppInstance(
-        params,
-        await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
-      );
+      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
     });
   });
 });

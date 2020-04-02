@@ -8,7 +8,7 @@ module.exports = {
     "no-undef": ["error"],
     "no-var": ["error"],
     "object-curly-spacing": ["error", "always"],
-    "quotes": ["error", "double", { allowTemplateLiterals: true }],
+    "quotes": ["error", "double", { allowTemplateLiterals: true, avoidEscape: true }],
     "semi": ["error", "always"],
     "spaced-comment": ["off"],
     "no-prototype-builtins": ["off"],
