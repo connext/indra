@@ -17,6 +17,7 @@ const coreContracts = [
 ];
 
 const appContracts = [
+  "DepositApp",
   "FastSignedTransferApp",
   "HashLockTransferApp",
   "SimpleLinkedTransferApp",

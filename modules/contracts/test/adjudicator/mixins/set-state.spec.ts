@@ -5,7 +5,7 @@ import {
   toBN,
   sortSignaturesBySignerAddress,
 } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signDigest, recoverAddress } from "@connext/crypto";
 import { One } from "ethers/constants";
 import { Contract, Wallet, ContractFactory } from "ethers";
 
@@ -150,10 +150,14 @@ describe("setState", () => {
         versionNumber: One,
         appStateHash: appStateToHash(state),
         timeout: ONCHAIN_CHALLENGE_TIMEOUT,
-        signatures: await sortSignaturesBySignerAddress(thingToSign, [
-          await signDigest(wallet.privateKey, thingToSign),
-          await signDigest(bob.privateKey, thingToSign),
-        ]),
+        signatures: await sortSignaturesBySignerAddress(
+          thingToSign,
+          [
+            await signDigest(wallet.privateKey, thingToSign),
+            await signDigest(bob.privateKey, thingToSign),
+          ],
+          recoverAddress,
+        ),
       })).to.be.revertedWith(`Invalid signature`);
     });
 

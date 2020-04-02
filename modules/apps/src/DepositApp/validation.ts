@@ -2,6 +2,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import {
   MethodParams,
   DepositAppState,
+  stringify,
 } from "@connext/types";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
@@ -38,7 +39,11 @@ export const validateDepositApp = async (
   }
 
   if (responderFreeBalanceAddress !== responderTransfer.to) {
-    throw new Error(`Cannot install deposit app with incorrect responder transfer to address: Expected ${initiatorFreeBalanceAddress}, got ${initiatorTransfer.to}`);
+    throw new Error(`Cannot install deposit app with incorrect responder transfer to address: Expected ${responderFreeBalanceAddress}, got ${responderTransfer.to}`);
+  }
+
+  if (initialState.transfers[0].amount.isZero() || initialState.transfers[1].amount.isZero()) {
+    throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`);
   }
 
   if (initialState.multisigAddress !== multisigAddress) {
@@ -66,6 +71,14 @@ export const validateDepositApp = async (
     // multisig is deployed on withdrawal, if not
     // deployed withdrawal amount is 0
     startingTotalAmountWithdrawn = Zero;
+  }
+
+  if (initialState.finalized) {
+    throw new Error(`Cannot install a deposit app with finalized state`);
+  }
+
+  if (initialState.timelock.lte(await provider.getBlockNumber())) {
+    throw new Error(`Cannot install a deposit app with an expired timeout`);
   }
 
   const startingMultisigBalance = initialState.assetId === AddressZero
