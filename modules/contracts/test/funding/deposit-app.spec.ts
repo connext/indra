@@ -5,7 +5,7 @@ import {
   DepositAppState,
   DepositAppStateEncoding,
   DepositAppActionEncoding,
-  DepositAppAction
+  DepositAppAction,
 } from "@connext/types";
 import { Wallet, ContractFactory, Contract } from "ethers";
 import { BigNumber, defaultAbiCoder, parseEther, bigNumberify } from "ethers/utils";
@@ -42,7 +42,7 @@ const encodeAppAction = (
   return ret;
 };
 
-describe.only("DepositApp", () => {
+describe("DepositApp", () => {
 
   let wallet: Wallet;
   let depositApp: Contract;
@@ -80,7 +80,7 @@ describe.only("DepositApp", () => {
   };
 
   const takeAction = async (state: DepositAppState): Promise<DepositAppState> => {
-    const action: DepositAppAction = {}
+    const action: DepositAppAction = {};
     const returnedState = await depositApp.functions.takeAction(encodeAppState(state), encodeAppAction(action));
     return decodeState(returnedState);
   };
@@ -176,7 +176,7 @@ describe.only("DepositApp", () => {
 
     await deposit(assetId, amount);
 
-    const updatedState = await takeAction(initialState)
+    const updatedState = await takeAction(initialState);
     const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount);
 
@@ -189,7 +189,7 @@ describe.only("DepositApp", () => {
 
     await deposit(assetId, amount);
     
-    const updatedState = await takeAction(initialState)
+    const updatedState = await takeAction(initialState);
     const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount);
   });
@@ -202,7 +202,7 @@ describe.only("DepositApp", () => {
     await deposit(assetId, amount);
     await withdraw(assetId, amount.div(2));
 
-    const updatedState = await takeAction(initialState)
+    const updatedState = await takeAction(initialState);
     const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount, amount.div(2));
   });
@@ -215,7 +215,7 @@ describe.only("DepositApp", () => {
     await deposit(assetId, amount);
     await withdraw(assetId, amount.div(2));
 
-    const updatedState = await takeAction(initialState)
+    const updatedState = await takeAction(initialState);
     const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount, amount.div(2));
   });
@@ -230,8 +230,8 @@ describe.only("DepositApp", () => {
     await deposit(erc20.address, amount);
     await withdraw(erc20.address, amount);
 
-    const updatedEthState = await takeAction(ethInitialState)
-    const updatedTokenState = await takeAction(tokenInitialState)
+    const updatedEthState = await takeAction(ethInitialState);
+    const updatedTokenState = await takeAction(tokenInitialState);
 
     await validateOutcomes([
       {
@@ -254,13 +254,13 @@ describe.only("DepositApp", () => {
     const assetId = erc20.address;
     const amount = new BigNumber(10000);
     // setup multisig with some initial balance
-    await deposit(assetId, amount)
+    await deposit(assetId, amount);
 
     const initialState = await createInitialState(assetId);
     await deposit(assetId, amount);
     await withdraw(assetId, amount.mul(2));
 
-    const updatedState = await takeAction(initialState)
+    const updatedState = await takeAction(initialState);
     const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount, amount.mul(2));
   });
@@ -269,22 +269,22 @@ describe.only("DepositApp", () => {
     const assetId = AddressZero;
     const amount = new BigNumber(10000);
     // setup multisig with correct total withdraw
-    await deposit(assetId, MAX_INT.div(4))
+    await deposit(assetId, MAX_INT.div(4));
     await withdraw(assetId, MAX_INT.div(4));
-    await deposit(assetId, MAX_INT.div(4))
+    await deposit(assetId, MAX_INT.div(4));
     await withdraw(assetId, MAX_INT.div(4));
-    await deposit(assetId, MAX_INT.div(4).add(1000))
+    await deposit(assetId, MAX_INT.div(4).add(1000));
     await withdraw(assetId, MAX_INT.div(4).add(1000));
-    await deposit(assetId, MAX_INT.div(4))
-
-    // check that one more will overflow
-    expect((await getTotalAmountWithdrawn(assetId)).gt(MAX_INT.sub(MAX_INT.div(4).sub(1))))
-
-    const initialState = await createInitialState(assetId);
-    await withdraw(assetId, MAX_INT.div(4).sub(1)) // should overflow
     await deposit(assetId, MAX_INT.div(4));
 
-    const updatedState = await takeAction(initialState)
+    // check that one more will overflow
+    expect((await getTotalAmountWithdrawn(assetId)).gt(MAX_INT.sub(MAX_INT.div(4).sub(1))));
+
+    const initialState = await createInitialState(assetId);
+    await withdraw(assetId, MAX_INT.div(4).sub(1)); // should overflow
+    await deposit(assetId, MAX_INT.div(4));
+
+    const updatedState = await takeAction(initialState);
     const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, MAX_INT.div(4), MAX_INT.div(4).sub(1));
     await withdraw(assetId, MAX_INT.div(4)); // do this so we get funds back for next test
@@ -294,22 +294,22 @@ describe.only("DepositApp", () => {
     const assetId = AddressZero;
     const amount = new BigNumber(10000);
     // setup multisig with correct total withdraw
-    await deposit(assetId, MAX_INT.div(4))
+    await deposit(assetId, MAX_INT.div(4));
     await withdraw(assetId, MAX_INT.div(4));
-    await deposit(assetId, MAX_INT.div(4))
+    await deposit(assetId, MAX_INT.div(4));
     await withdraw(assetId, MAX_INT.div(4));
-    await deposit(assetId, MAX_INT.div(4).add(1000))
+    await deposit(assetId, MAX_INT.div(4).add(1000));
     await withdraw(assetId, MAX_INT.div(4).add(1000));
-    await deposit(assetId, MAX_INT.div(4))
+    await deposit(assetId, MAX_INT.div(4));
 
     // check that one more will overflow
-    expect((await getTotalAmountWithdrawn(assetId)).gt(MAX_INT.sub(MAX_INT.div(4))))
+    expect((await getTotalAmountWithdrawn(assetId)).gt(MAX_INT.sub(MAX_INT.div(4))));
 
     const initialState = await createInitialState(assetId);
-    await withdraw(assetId, MAX_INT.div(4)) // should overflow
+    await withdraw(assetId, MAX_INT.div(4)); // should overflow
     await deposit(assetId, amount);
 
-    const updatedState = await takeAction(initialState) // should underflow
+    const updatedState = await takeAction(initialState); // should underflow
     const outcome = await computeOutcome(updatedState);
     await validateOutcome(outcome, initialState, amount, MAX_INT.div(4));
     await withdraw(assetId, MAX_INT.div(4)); // do this so we get funds back for next test
@@ -323,7 +323,7 @@ describe.only("DepositApp", () => {
 
     await deposit(assetId, amount);
 
-    const updatedState = await takeAction(initialState)
+    const updatedState = await takeAction(initialState);
     expect(takeAction(updatedState)).to.be.revertedWith("cannot take action on a finalized state");
   });
 
@@ -358,7 +358,7 @@ describe.only("DepositApp", () => {
     const multisigBalance = await getMultisigBalance(initialState.assetId);
     expect(multisigBalance).to.be.eq(
       initialState.startingMultisigBalance
-        .add(amount)
+        .add(amount),
       );
   });
 });
