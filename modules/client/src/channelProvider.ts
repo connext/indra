@@ -8,7 +8,7 @@ import {
   StateChannelJSON,
   WithdrawalMonitorObject,
   deBigNumberifyJson,
-  WalletTransferParams
+  WalletTransferParams,
   SetStateCommitmentJSON,
   MinimalTransaction,
   ConditionalTransactionCommitmentJSON,
@@ -57,7 +57,7 @@ export const createCFChannelProvider = async ({
     signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
-  const wallet = new Wallet(await keyGen("0")).connect(ethProvider)
+  const wallet = new Wallet(await keyGen("0")).connect(ethProvider);
   const connection = new CFCoreRpcConnection(cfCore, store, wallet);
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
   return channelProvider;
@@ -154,19 +154,19 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private walletTransfer = async (params: WalletTransferParams): Promise<string> => {
-    let result
+    let hash;
     if (params.assetId === AddressZero) {
       const tx = await this.wallet.sendTransaction({
         to: params.recipient,
-        value: params.amount
-      })
-      result = tx.hash
+        value: params.amount,
+      });
+      hash = tx.hash;
     } else {
-      const erc20 = new Contract(params.assetId, tokenAbi, this.wallet.provider)
-      const tx = await erc20.transfer(params.recipient, params.amount)
-      result = tx.txhash
+      const erc20 = new Contract(params.assetId, tokenAbi, this.wallet.provider);
+      const tx = await erc20.transfer(params.recipient, params.amount);
+      hash = tx.txhash;
     }
-    return result
+    return hash;
   }
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
