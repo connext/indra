@@ -7,7 +7,11 @@ fi
 
 ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
 
-export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
+if [[ "$ETH_PROVIDER_PATH" == "ssl" ]]
+then export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}:443"
+else export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
+fi
+
 if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
 then export ETH_PROVIDER_PATH="${ETH_PROVIDER_URL#*/}"
 else export ETH_PROVIDER_PATH=""
