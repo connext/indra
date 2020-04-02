@@ -8,7 +8,7 @@ export class SetStateCommitment {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("json")
+  @Column("jsonb")
   appIdentity!: AppIdentity;
 
   @Column("text")
@@ -19,7 +19,7 @@ export class SetStateCommitment {
   @IsEthAddress()
   challengeRegistryAddress!: string;
 
-  @Column("json", { nullable: true })
+  @Column("jsonb", { nullable: true })
   signatures!: string[];
 
   @Column("integer")

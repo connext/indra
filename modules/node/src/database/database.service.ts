@@ -40,6 +40,7 @@ import { cfCoreStoreUpdate1584633495374 } from "../../migrations/1584633495374-c
 import { createdUpdated1584722683650 } from "../../migrations/1584722683650-created-updated";
 import { meta1584732939683 } from "../../migrations/1584732939683-meta";
 import { removeStore1585640540983 } from "../../migrations/1585640540983-remove-store";
+import { jsonb1585828108215 } from "../../migrations/1585828108215-jsonb";
 
 export const entities = [
   AppInstance,
@@ -78,6 +79,7 @@ export const migrations = [
   createdUpdated1584722683650,
   meta1584732939683,
   removeStore1585640540983,
+  jsonb1585828108215,
 ];
 
 @Injectable()

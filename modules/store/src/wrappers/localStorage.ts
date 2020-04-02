@@ -5,6 +5,8 @@ import {
   DEFAULT_STORE_SEPARATOR,
   CHANNEL_KEY,
   COMMITMENT_KEY,
+  safeJsonParse,
+  safeJsonStringify,
 } from "../helpers";
 
 // @ts-ignore
@@ -18,12 +20,12 @@ export class WrappedLocalStorage implements WrappedStorage {
     private readonly backupService?: IBackupServiceAPI,
   ) {}
 
-  async getItem(key: string): Promise<string | undefined> {
+  async getItem<T>(key: string): Promise<T | undefined> {
     const item = this.localStorage.getItem(`${this.prefix}${this.separator}${key}`);
-    return item || undefined;
+    return safeJsonParse(item);
   }
 
-  async setItem(key: string, value: string): Promise<void> {
+  async setItem<T>(key: string, value: T): Promise<void> {
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
       try {
@@ -32,7 +34,7 @@ export class WrappedLocalStorage implements WrappedStorage {
         console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
       }
     }
-    this.localStorage.setItem(`${this.prefix}${this.separator}${key}`, value);
+    this.localStorage.setItem(`${this.prefix}${this.separator}${key}`, safeJsonStringify(value));
   }
 
   async removeItem(key: string): Promise<void> {
@@ -47,7 +49,7 @@ export class WrappedLocalStorage implements WrappedStorage {
   async getEntries(): Promise<[string, any][]> {
     return Object.entries(this.localStorage)
       .filter(([name, _]) => name.startsWith(this.prefix))
-      .map(([name, value]) => [name.replace(`${this.prefix}${this.separator}`, ""), value]);
+      .map(([name, value]) => [name.replace(`${this.prefix}${this.separator}`, ""), safeJsonParse(value)]);
   }
 
   async clear(): Promise<void> {
@@ -67,12 +69,7 @@ export class WrappedLocalStorage implements WrappedStorage {
   }
 
   getKey(...args: string[]) {
-    let str = "";
-    args.forEach(arg => {
-      // dont add separator to last one
-      str = str.concat(arg, args.indexOf(arg) === args.length - 1 ? "" : this.separator);
-    });
-    return str;
+    return args.join(this.separator);
   }
 }
 

@@ -43,13 +43,7 @@ export class FastSignedTransferController extends AbstractController {
 
     const amount = toBN(params.amount);
     const maxAllocation = toBN(params.maxAllocation);
-    const {
-      assetId,
-      paymentId,
-      recipient,
-      meta,
-      signer,
-    } = params;
+    const { assetId, paymentId, recipient, meta, signer } = params;
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -68,7 +62,7 @@ export class FastSignedTransferController extends AbstractController {
       this.connext.config.contractAddresses.FastSignedTransferApp,
     );
 
-    let transferAppInstanceId: string;
+    let appId: string;
 
     let needsInstall: boolean = true;
     let needsUninstall: string = "";
@@ -76,12 +70,11 @@ export class FastSignedTransferController extends AbstractController {
     if (installedTransferApp) {
       if (
         bigNumberify(
-          (installedTransferApp.latestState as FastSignedTransferAppState)
-            .coinTransfers[0][1],
+          (installedTransferApp.latestState as FastSignedTransferAppState).coinTransfers[0][1],
         ).gte(amount)
       ) {
         needsInstall = false;
-        transferAppInstanceId = installedTransferApp.identityHash;
+        appId = installedTransferApp.identityHash;
       } else {
         // no room in app for transfer, uninstall at the end
         needsUninstall = installedTransferApp.identityHash;
@@ -134,12 +127,12 @@ export class FastSignedTransferController extends AbstractController {
         meta,
       } as MethodParams.ProposeInstall;
 
-      transferAppInstanceId = await this.proposeAndInstallLedgerApp(installParams);
+      appId = await this.proposeAndInstallLedgerApp(installParams);
     }
 
     // always take action to create payment
     // if previous payment has not been resolved, this will error
-    await this.connext.takeAction(transferAppInstanceId, {
+    await this.connext.takeAction(appId, {
       actionType: FastSignedTransferActionType.CREATE,
       paymentId,
       amount,
@@ -166,6 +159,6 @@ export class FastSignedTransferController extends AbstractController {
     }) as EventPayloads.CreateFastTransfer;
     this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
 
-    return { transferAppInstanceId };
+    return { appId };
   };
 }

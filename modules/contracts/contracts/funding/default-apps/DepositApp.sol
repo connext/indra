@@ -22,6 +22,55 @@ contract DepositApp is CounterfactualApp {
         address assetId;
         uint256 startingTotalAmountWithdrawn;
         uint256 startingMultisigBalance;
+        uint256 timelock;
+        bool finalized;
+    }
+
+    function getTurnTaker(
+        bytes calldata encodedState,
+        address[] calldata participants
+    )
+        external
+        view
+        returns (address)
+    {
+        return participants[0];
+    }
+
+    function takeAction(
+        bytes calldata encodedState,
+        bytes calldata encodedAction
+    )
+        external
+        view
+        returns (bytes memory)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
+
+        require(!state.finalized, "cannot take action on a finalized state");
+
+        uint256 endingTotalAmountWithdrawn;
+        uint256 endingMultisigBalance;
+
+        if (isDeployed(state.multisigAddress)) {
+            endingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
+        } else {
+            endingTotalAmountWithdrawn = 0;
+        }
+
+        if (state.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
+            endingMultisigBalance = state.multisigAddress.balance;
+        } else {
+            endingMultisigBalance = ERC20(state.assetId).balanceOf(state.multisigAddress);
+        }
+
+        // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
+        state.transfers[0].amount = (endingMultisigBalance - state.startingMultisigBalance) +
+                            (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn);
+        state.transfers[1].amount = 0;
+        state.finalized = true;
+
+        return abi.encode(state);
     }
 
     function computeOutcome(bytes calldata encodedState)
@@ -30,32 +79,21 @@ contract DepositApp is CounterfactualApp {
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
-
-        // TODO: if the following call fails (ie because multisig is not deployed yet)
-        // then the `computeOutcome` call will revert. Need to prevent the revert,
-        // and return 0 if the multisig has not been deployed (nothing withdrawn)
-        uint256 endingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
-        uint256 endingMultisigBalance;
-
-        if (state.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
-            endingMultisigBalance = state.multisigAddress.balance;
-        } else {
-            endingMultisigBalance = ERC20(state.assetId).balanceOf(state.multisigAddress);
+        if (!state.finalized) {
+            require(block.number >= state.timelock, "Cannot uninstall unfinalized deposit unless timelock has expired");
         }
+        return abi.encode(state.transfers);
+    }
 
-        return abi.encode(
-            LibOutcome.CoinTransfer[2]([
-                LibOutcome.CoinTransfer(
-                    state.transfers[0].to,
-                    // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
-                    (endingMultisigBalance - state.startingMultisigBalance) +
-                    (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn)
-                ),
-                LibOutcome.CoinTransfer(
-                    state.transfers[1].to,
-                    0
-                )
-            ])
-        );
+    function isDeployed(address _addr)
+        internal
+        view
+    returns (bool)
+    {
+        uint32 size;
+        assembly {
+            size := extcodesize(_addr)
+        }
+        return (size > 0);
     }
 }

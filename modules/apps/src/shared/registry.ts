@@ -19,7 +19,7 @@ export const SupportedApplications = enumify({
   [FastSignedTransferAppName]: FastSignedTransferAppName,
   [WithdrawAppName]: WithdrawAppName,
   [HashLockTransferAppName]: HashLockTransferAppName,
-  [DepositAppName]: DepositAppName
+  [DepositAppName]: DepositAppName,
 });
 
 export type SupportedApplications =

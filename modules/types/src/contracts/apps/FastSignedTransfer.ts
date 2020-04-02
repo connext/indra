@@ -89,7 +89,7 @@ export type FastSignedTransferParameters = {
 };
 
 export type FastSignedTransferResponse = {
-  transferAppInstanceId: string;
+  appId: string;
 };
 
 export type ResolveFastSignedTransferParameters = {
