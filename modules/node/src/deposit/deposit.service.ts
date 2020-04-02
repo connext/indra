@@ -14,14 +14,11 @@ import tokenAbi from "human-standard-token-abi";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
-import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { xkeyKthAddress } from "../util";
 import { AppInstance } from "@connext/cf-core/dist/models";
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 
 @Injectable()
 export class DepositService {
@@ -30,14 +27,11 @@ export class DepositService {
     private readonly configService: ConfigService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
-    private readonly onchainTransactionRepository: OnchainTransactionRepository,
-    private readonly channelRepository: ChannelRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
   ) {
     this.log.setContext("DepositService");
   }
 
-  async deposit(channel: Channel, amount: BigNumber, assetId: string ): Promise<TransactionReceipt> {
+  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<TransactionReceipt> {
     // don't allow deposit if user's balance refund app is installed
     const depositApp: AppInstance = await this.getDepositApp(
         channel,
