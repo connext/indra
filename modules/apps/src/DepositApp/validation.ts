@@ -40,7 +40,7 @@ export const validateDepositApp = async (
       throw new Error(`Cannot install deposit app with incorrect initiator transfer to address: Expected ${initiatorFreeBalanceAddress}, got ${initiatorTransfer.to}`)
   }
 
-  if (initialState.transfers[0].amount != Zero || initialState.transfers[1].amount != Zero) {
+  if (initialState.transfers[0].amount === Zero || initialState.transfers[1].amount === Zero) {
       throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`)
   }
 
