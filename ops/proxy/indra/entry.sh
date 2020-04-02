@@ -13,8 +13,8 @@ else export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
 fi
 
 if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
-then export ETH_PROVIDER_PATH="${ETH_PROVIDER_URL#*/}"
-else export ETH_PROVIDER_PATH=""
+then export ETH_PROVIDER_PATH="/${ETH_PROVIDER_URL#*/}"
+else export ETH_PROVIDER_PATH="/"
 fi
 
 echo "Proxy container launched in env:"
