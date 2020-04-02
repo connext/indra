@@ -11,7 +11,7 @@ import {
   DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "../helpers";
 
-export class WrappedDatabaseStorage implements WrappedStorage {
+export class WrappedPostgresStorage implements WrappedStorage {
   public sequelize: Sequelize;
   constructor(
     private readonly prefix: string = DEFAULT_STORE_PREFIX,
@@ -34,7 +34,7 @@ export class WrappedDatabaseStorage implements WrappedStorage {
     });
   }
 
-  async getItem(key: string): Promise<any | undefined> {
+  async getItem<T>(key: string): Promise<T | undefined> {
     const item = await ConnextClientData.findByPk(`${this.prefix}${this.separator}${key}`);
     return item && item.value;
   }
@@ -95,6 +95,10 @@ export class WrappedDatabaseStorage implements WrappedStorage {
         },
       },
     });
+  }
+
+  async syncModels(force: boolean = false): Promise<void> {
+    await this.sequelize.sync({ force });
   }
 
   // NOTE: the backup service should store only the key without prefix.

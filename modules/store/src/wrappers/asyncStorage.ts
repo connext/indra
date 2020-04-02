@@ -58,13 +58,13 @@ export class WrappedAsyncStorage implements WrappedStorage {
     }
   }
 
-  async getItem<T = any>(key: string): Promise<T | undefined> {
+  async getItem<T>(key: string): Promise<T | undefined> {
     await this.loadData();
     const result = this.data[`${this.prefix}${this.separator}${key}`] || undefined;
     return safeJsonParse(result);
   }
 
-  async setItem<T = any>(key: string, value: T): Promise<void> {
+  async setItem<T>(key: string, value: T): Promise<void> {
     await this.loadData();
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {

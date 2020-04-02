@@ -4,7 +4,7 @@ import {
   WrappedLocalStorage,
   FileStorage,
   WrappedAsyncStorage,
-  WrappedDatabaseStorage,
+  WrappedPostgresStorage,
 } from "@connext/store";
 import {
   StoreFactoryOptions,
@@ -157,8 +157,8 @@ export async function createConnextStore(
     throw new Error(`Unrecognized type: ${type}`);
   }
 
-  if (type === StoreTypes.Database) {
-    const wrappedStore = new WrappedDatabaseStorage(
+  if (type === StoreTypes.Postgres) {
+    const wrappedStore = new WrappedPostgresStorage(
       "test",
       "/",
       undefined,
@@ -168,7 +168,7 @@ export async function createConnextStore(
     );
     opts.storage = wrappedStore;
     await wrappedStore.sequelize.authenticate();
-    await wrappedStore.sequelize.sync({ force: true });
+    await wrappedStore.syncModels(true);
   }
 
   if (type === StoreTypes.AsyncStorage) {

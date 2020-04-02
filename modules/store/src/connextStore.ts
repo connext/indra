@@ -26,7 +26,7 @@ import {
   WrappedAsyncStorage,
   WrappedLocalStorage,
 } from "./wrappers";
-import { WrappedDatabaseStorage } from "./wrappers/databaseStorage";
+import { WrappedPostgresStorage } from "./wrappers/postgresStorage";
 
 export class ConnextStore implements IClientStore {
   private internalStore: IClientStore;
@@ -65,10 +65,10 @@ export class ConnextStore implements IClientStore {
         break;
       }
 
-      case StoreTypes.Database: {
+      case StoreTypes.Postgres: {
         this.internalStore = new KeyValueStorage(
-          (opts.storage as WrappedDatabaseStorage) ||
-            new WrappedDatabaseStorage(
+          (opts.storage as WrappedPostgresStorage) ||
+            new WrappedPostgresStorage(
               this.prefix,
               this.separator,
               DEFAULT_DATABASE_STORAGE_TABLE_NAME,

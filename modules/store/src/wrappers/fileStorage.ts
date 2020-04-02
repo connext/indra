@@ -51,23 +51,23 @@ export class FileStorage implements WrappedStorage {
     return path.join(this.fileDir, fileName);
   }
 
-  async getItem(key: string): Promise<any | undefined> {
+  async getItem<T>(key: string): Promise<T | undefined> {
     const filePath = await this.getFilePath(key);
     const item = await safeFsRead(filePath);
     return safeJsonParse(item);
   }
 
-  async setItem(key: string, data: any): Promise<void> {
+  async setItem<T>(key: string, value: T): Promise<void> {
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
       try {
-        await this.backupService.backup({ path: key, value: data });
+        await this.backupService.backup({ path: key, value: value });
       } catch (e) {
         console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
       }
     }
     const filePath = await this.getFilePath(key);
-    return fsWrite(filePath, safeJsonStringify(data));
+    return fsWrite(filePath, safeJsonStringify(value));
   }
 
   async removeItem(key: string): Promise<void> {

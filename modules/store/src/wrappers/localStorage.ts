@@ -20,12 +20,12 @@ export class WrappedLocalStorage implements WrappedStorage {
     private readonly backupService?: IBackupServiceAPI,
   ) {}
 
-  async getItem(key: string): Promise<any | undefined> {
+  async getItem<T>(key: string): Promise<T | undefined> {
     const item = this.localStorage.getItem(`${this.prefix}${this.separator}${key}`);
     return safeJsonParse(item);
   }
 
-  async setItem(key: string, value: any): Promise<void> {
+  async setItem<T>(key: string, value: T): Promise<void> {
     const shouldBackup = key.includes(CHANNEL_KEY) || key.includes(COMMITMENT_KEY);
     if (this.backupService && shouldBackup) {
       try {

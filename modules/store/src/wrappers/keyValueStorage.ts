@@ -37,22 +37,22 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   constructor(private readonly storage: WrappedStorage) {}
 
   async getSchemaVersion(): Promise<number> {
-    const version = await this.storage.getItem(STORE_SCHEMA_VERSION_KEY);
-    return parseInt(version?.version || "0", 10);
+    const version = await this.storage.getItem<{ version: number }>(STORE_SCHEMA_VERSION_KEY);
+    return version?.version || 1;
   }
 
   updateSchemaVersion(version: number = STORE_SCHEMA_VERSION): Promise<void> {
     if (STORE_SCHEMA_VERSION < version) {
       throw new Error(`Unrecognized store version: ${version}`);
     }
-    return this.storage.setItem(STORE_SCHEMA_VERSION_KEY, { version });
+    return this.storage.setItem<{ version: number }>(STORE_SCHEMA_VERSION_KEY, { version });
   }
 
   getKeys(): Promise<string[]> {
     return this.storage.getKeys();
   }
 
-  async getItem<T = any>(key: string): Promise<T | undefined> {
+  async getItem<T>(key: string): Promise<T | undefined> {
     const item = await this.storage.getItem(key);
     if (!item || Object.values(item).length === 0) {
       return undefined;
@@ -60,8 +60,8 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return item;
   }
 
-  setItem<T = any>(key: string, value: T): Promise<void> {
-    return this.storage.setItem(key, value);
+  setItem<T>(key: string, value: T): Promise<void> {
+    return this.storage.setItem<T>(key, value);
   }
 
   removeItem(key: string): Promise<void> {
@@ -88,7 +88,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const channelKeys = (await this.getKeys()).filter(key => key.includes(CHANNEL_KEY));
     const channels = [];
     for (const key of channelKeys) {
-      const record = await this.getItem(key);
+      const record = await this.getItem<StateChannelJSON>(key);
       channels.push(properlyConvertChannelNullVals(record));
     }
     return channels.filter(x => !!x);
@@ -96,7 +96,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channelKey = this.getKey(CHANNEL_KEY, multisigAddress);
-    const item = await this.getItem(channelKey);
+    const item = await this.getItem<StateChannelJSON>(channelKey);
     return item && properlyConvertChannelNullVals(item);
   }
 
@@ -269,7 +269,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     const setupCommitmentKey = this.getKey(SETUP_COMMITMENT_KEY, multisigAddress);
-    const item = await this.getItem(setupCommitmentKey);
+    const item = await this.getItem<MinimalTransaction>(setupCommitmentKey);
     if (!item) {
       return undefined;
     }
@@ -291,7 +291,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
   ): Promise<SetStateCommitmentJSON | undefined> {
     const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
-    const item = await this.getItem(setStateKey);
+    const item = await this.getItem<SetStateCommitmentJSON>(setStateKey);
     if (!item) {
       return undefined;
     }
@@ -324,7 +324,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
     const conditionalCommitmentKey = this.getKey(CONDITIONAL_COMMITMENT_KEY, appIdentityHash);
-    const item = await this.getItem(conditionalCommitmentKey);
+    const item = await this.getItem<ConditionalTransactionCommitmentJSON>(conditionalCommitmentKey);
     if (!item) {
       return undefined;
     }
@@ -355,7 +355,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    const item = await this.getItem(withdrawalKey);
+    const item = await this.getItem<MinimalTransaction>(withdrawalKey);
     if (!item) {
       return undefined;
     }
@@ -367,7 +367,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     commitment: MinimalTransaction,
   ): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    if (await this.getItem(withdrawalKey)) {
+    if (await this.getItem<MinimalTransaction>(withdrawalKey)) {
       throw new Error(`Found existing withdrawal commitment for ${withdrawalKey}`);
     }
     return this.setItem(withdrawalKey, commitment);
@@ -378,7 +378,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     commitment: MinimalTransaction,
   ): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, multisigAddress);
-    if (!(await this.getItem(withdrawalKey))) {
+    if (!(await this.getItem<MinimalTransaction>(withdrawalKey))) {
       throw new Error(`Could not find existing withdrawal commitment for ${withdrawalKey}`);
     }
     return this.setItem(withdrawalKey, commitment);
@@ -386,7 +386,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    const item = await this.getItem(withdrawalKey);
+    const item = await this.getItem<WithdrawalMonitorObject>(withdrawalKey);
     if (!item) {
       return undefined;
     }

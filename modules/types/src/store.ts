@@ -16,7 +16,7 @@ export const StoreTypes = enumify({
   AsyncStorage: "AsyncStorage",
   File: "File",
   LocalStorage: "LocalStorage",
-  Database: "Database",
+  Postgres: "Postgres",
   Memory: "Memory",
 });
 export type StoreTypes = typeof StoreTypes[keyof typeof StoreTypes];
