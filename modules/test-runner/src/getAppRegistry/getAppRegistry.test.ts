@@ -1,3 +1,4 @@
+import { SupportedApplications } from "@connext/apps";
 import { addressBook } from "@connext/contracts";
 import { DefaultApp, IConnextClient } from "@connext/types";
 
@@ -26,7 +27,7 @@ describe("Get App Registry", () => {
     client = await createClient();
     expect(client.multisigAddress).to.exist;
     const appRegistry = await client.getAppRegistry();
-    expect(appRegistry.length).to.equal(7);
+    expect(appRegistry.length).to.equal(Object.keys(SupportedApplications).length);
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });
 
