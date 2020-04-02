@@ -41,7 +41,7 @@ describe.skip("Fast Signed Transfer", () => {
     const transferAmount = One;
 
     await fundChannel(clientA, initialChannelBalance);
-    const { transferAppInstanceId } = (await clientA.conditionalTransfer({
+    const { appId } = (await clientA.conditionalTransfer({
       amount: transferAmount.toString(),
       conditionType: ConditionalTransferTypes.FastSignedTransfer,
       paymentId,
@@ -51,7 +51,7 @@ describe.skip("Fast Signed Transfer", () => {
       meta: { foo: "bar" },
     } as FastSignedTransferParameters)) as FastSignedTransferResponse;
 
-    let transferApp = await clientA.getAppInstanceDetails(transferAppInstanceId);
+    let transferApp = await clientA.getAppInstanceDetails(appId);
     expect(transferApp).to.be.ok;
     let transferAppState = transferApp.appInstance
       .latestState as FastSignedTransferAppState;
@@ -112,7 +112,7 @@ describe.skip("Fast Signed Transfer", () => {
     const n = 5;
     for (let i = 0; i < n; i++) {
       const paymentId = createRandom32ByteHexString();
-      const { transferAppInstanceId } = (await clientA.conditionalTransfer({
+      const { appId } = (await clientA.conditionalTransfer({
         amount: transferAmount.toString(),
         conditionType: ConditionalTransferTypes.FastSignedTransfer,
         paymentId,
@@ -122,9 +122,9 @@ describe.skip("Fast Signed Transfer", () => {
         meta: { foo: "bar" },
       } as FastSignedTransferParameters)) as FastSignedTransferResponse;
       if (i === 0) {
-        initialSenderAppInstanceId = transferAppInstanceId;
+        initialSenderAppInstanceId = appId;
       }
-      expect(transferAppInstanceId).to.eq(initialSenderAppInstanceId);
+      expect(appId).to.eq(initialSenderAppInstanceId);
 
       const data = createRandom32ByteHexString();
 

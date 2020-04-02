@@ -7,7 +7,11 @@ fi
 
 ETH_PROVIDER_URL=${ETH_PROVIDER_URL#*://}
 
-export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
+if [[ "$ETH_PROVIDER_PATH" == "ssl" ]]
+then export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}:443"
+else export ETH_PROVIDER_HOST="${ETH_PROVIDER_URL%%/*}"
+fi
+
 if [[ "$ETH_PROVIDER_URL" == *"/"* ]]
 then export ETH_PROVIDER_PATH="${ETH_PROVIDER_URL#*/}"
 else export ETH_PROVIDER_PATH=""
@@ -89,7 +93,7 @@ then
 fi
 
 echo "Using certs for $DOMAINNAME"
-cat $certsdir/fullchain.pem $certsdir/privkey.pem > /root/$DOMAINNAME.pem
+cat $certsdir/fullchain.pem $certsdir/privkey.pem > $DOMAINNAME.pem
 
 export CERTBOT_PORT=31820
 
@@ -103,7 +107,7 @@ function renewcerts {
     then
       echo -n "Found certs to renew for $DOMAINNAME... "
       certbot renew -n --standalone --http-01-port=$CERTBOT_PORT
-      cat $certsdir/fullchain.pem $certsdir/privkey.pem > /root/$DOMAINNAME.pem
+      cat $certsdir/fullchain.pem $certsdir/privkey.pem > $DOMAINNAME.pem
       echo "Done!"
     fi
     sleep 48h
@@ -113,6 +117,8 @@ function renewcerts {
 if [[ "$DOMAINNAME" != "localhost" ]]
 then renewcerts &
 fi
+
+cp /etc/ssl/cert.pem ca-certs.pem
 
 echo "Entrypoint finished, executing haproxy..."; echo
 exec haproxy -db -f $MODE.cfg
