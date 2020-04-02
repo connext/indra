@@ -31,8 +31,14 @@ contract DepositApp is CounterfactualApp {
     {
         AppState memory state = abi.decode(encodedState, (AppState));
 
-        uint256 endingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
+        uint256 endingTotalAmountWithdrawn;
         uint256 endingMultisigBalance;
+
+        if (isDeployed(state.multisigAddress)) {
+            endingTotalAmountWithdrawn = MinimumViableMultisig(state.multisigAddress).totalAmountWithdrawn(state.assetId);
+        } else {
+            endingTotalAmountWithdrawn = 0;
+        }
 
         if (state.assetId == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
             endingMultisigBalance = state.multisigAddress.balance;
@@ -54,5 +60,17 @@ contract DepositApp is CounterfactualApp {
                 )
             ])
         );
+    }
+
+    function isDeployed(address _addr)
+        internal
+        view
+    returns (bool)
+    {
+        uint32 size;
+        assembly {
+            size := extcodesize(_addr)
+        }
+        return (size > 0);
     }
 }
