@@ -27,11 +27,11 @@ class LockMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    super.connectRequestReponse(
+    await super.connectRequestReponse(
       "*.lock.acquire.>",
       this.authService.parseLock(this.acquireLock.bind(this)),
     );
-    super.connectRequestReponse(
+    await super.connectRequestReponse(
       "*.lock.release.>",
       this.authService.parseLock(this.releaseLock.bind(this)),
     );
