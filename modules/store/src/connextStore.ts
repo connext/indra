@@ -17,7 +17,7 @@ import {
   DEFAULT_STORE_SEPARATOR,
   IBackupServiceAPI,
   StoreFactoryOptions,
-  DEFAULT_POSTGRES_TABLE_NAME,
+  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "./helpers";
 import {
   FileStorage,
@@ -26,7 +26,7 @@ import {
   WrappedAsyncStorage,
   WrappedLocalStorage,
 } from "./wrappers";
-import { WrappedPostgresStorage } from "./wrappers/postgresStorage";
+import { WrappedDatabaseStorage } from "./wrappers/databaseStorage";
 
 export class ConnextStore implements IClientStore {
   private internalStore: IClientStore;
@@ -65,13 +65,13 @@ export class ConnextStore implements IClientStore {
         break;
       }
 
-      case StoreTypes.Postgres: {
+      case StoreTypes.Database: {
         this.internalStore = new KeyValueStorage(
-          (opts.storage as WrappedPostgresStorage) ||
-            new WrappedPostgresStorage(
+          (opts.storage as WrappedDatabaseStorage) ||
+            new WrappedDatabaseStorage(
               this.prefix,
               this.separator,
-              DEFAULT_POSTGRES_TABLE_NAME,
+              DEFAULT_DATABASE_STORAGE_TABLE_NAME,
               opts.sequelize,
               opts.postgresConnectionUri,
               this.backupService,

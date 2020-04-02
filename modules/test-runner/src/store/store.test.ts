@@ -14,7 +14,7 @@ import {
 
 export const storeTypes = Object.keys(StoreTypes);
 
-describe("ConnextStore", () => {
+describe.only("ConnextStore", () => {
   const fileDir = env.storeDir;
 
   describe("getSchemaVersion", () => {

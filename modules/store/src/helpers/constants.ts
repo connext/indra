@@ -5,7 +5,7 @@ export const DEFAULT_STORE_PREFIX = "INDRA_CLIENT_CF_CORE";
 export const DEFAULT_STORE_SEPARATOR = "/";
 export const DEFAULT_FILE_STORAGE_EXT = ".json";
 export const DEFAULT_FILE_STORAGE_DIR = "./connext-store";
-export const DEFAULT_POSTGRES_TABLE_NAME = "connext_client_data";
+export const DEFAULT_DATABASE_STORAGE_TABLE_NAME = "connext_client_data";
 
 export const PATH_CHANNEL = "channel";
 export const PATH_PROPOSED_APP_INSTANCE_ID = "appInstanceIdToProposedAppInstance";

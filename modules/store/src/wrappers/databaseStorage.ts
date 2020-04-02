@@ -8,15 +8,15 @@ import {
   COMMITMENT_KEY,
   ConnextClientData,
   ConnextClientDataInitParams,
-  DEFAULT_POSTGRES_TABLE_NAME,
+  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "../helpers";
 
-export class WrappedPostgresStorage implements WrappedStorage {
+export class WrappedDatabaseStorage implements WrappedStorage {
   public sequelize: Sequelize;
   constructor(
     private readonly prefix: string = DEFAULT_STORE_PREFIX,
     private readonly separator: string = DEFAULT_STORE_SEPARATOR,
-    private readonly tableName: string = DEFAULT_POSTGRES_TABLE_NAME,
+    private readonly tableName: string = DEFAULT_DATABASE_STORAGE_TABLE_NAME,
     sequelize?: Sequelize,
     private readonly connectionUri?: string,
     private readonly backupService?: IBackupServiceAPI,
