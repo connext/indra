@@ -6,6 +6,8 @@ import { CreateChannelMessage } from "../../types";
 import { xkeysToSortedKthAddresses } from "../../xkeys";
 
 import { NodeController } from "../controller";
+import { getCreate2MultisigAddress } from "../../utils";
+import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
@@ -41,15 +43,20 @@ export class CreateChannelController extends NodeController {
     // channels. also because the `getMultisigAddressWithCounterparty` function
     // will default to using any existing multisig address for the provided
     // owners before creating one
-    const multisigAddress = await store.getMultisigAddressWithCounterparty(
+    const { multisigAddress: storedMultisig } = await store.getStateChannelByOwners(owners) || { multisigAddress: undefined };
+    if (!networkContext.provider && !storedMultisig) {
+      throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
+    }
+    const multisigAddress = storedMultisig || await getCreate2MultisigAddress(
       owners,
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
+      { 
+        proxyFactory: networkContext.ProxyFactory, 
+        multisigMastercopy: networkContext.MinimumViableMultisig,
+      },
       networkContext.provider,
     );
-
     // Check if the database has stored the relevant data for this state channel
-    if (!(await store.hasStateChannel(multisigAddress))) {
+    if (!storedMultisig) {
       await this.setupAndCreateChannel(multisigAddress, requestHandler, params);
     }
 

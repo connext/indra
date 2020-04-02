@@ -6,6 +6,7 @@ import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
 import { ILockService } from "./lock";
 import { enumify } from "./utils";
+import { ConditionalTransactionCommitmentJSON, SetStateCommitmentJSON, MinimalTransaction } from "./commitments";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -17,6 +18,9 @@ export const ChannelMethods = enumify({
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
   chan_setStateChannel: "chan_setStateChannel",
   chan_walletTransfer: "chan_walletTransfer",
+  chan_createSetupCommitment: "chan_createSetupCommitment",
+  chan_createSetStateCommitment: "chan_createSetStateCommitment",
+  chan_createConditionalCommitment: "chan_createConditionalCommitment",
 });
 export type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
 
@@ -60,6 +64,10 @@ export interface IChannelProvider extends ConnextEventEmitter {
   ///////////////////////////////////
   // TRANSFER METHODS
   walletTransfer(params: WalletTransferParams): Promise<string>;
+  setStateChannel(state: StateChannelJSON): Promise<void>;
+  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
+  createSetStateCommitment(appIdentityHash: string, commitment: SetStateCommitmentJSON): Promise<void>;
+  createConditionalCommitment(appIdentityHash: string, commitment: ConditionalTransactionCommitmentJSON): Promise<void>;
 }
 
 export type ChannelProviderConfig = {

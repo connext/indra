@@ -23,10 +23,10 @@ export type DepositAppState = {
 
 export const DepositAppStateEncoding = tidy(`tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} transfers,
-  address payable multisigAddress,
+  address multisigAddress,
   address assetId,
   uint256 startingTotalAmountWithdrawn,
-  uint256 startingMultisigBalance,
+  uint256 startingMultisigBalance
 )`);
 
 ////////////////////////////////////////

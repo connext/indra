@@ -5,6 +5,7 @@ import {
   NetworkContext,
   nullLogger,
   ProtocolNames,
+  IStoreService,
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -20,7 +21,6 @@ import {
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models";
-import { Store } from "../../store";
 import { xkeysToSortedKthAddresses } from "../../xkeys";
 
 import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
@@ -37,12 +37,12 @@ const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK
 );
 
 describe("Can handle correct & incorrect installs", () => {
-  let store: Store;
+  let store: IStoreService;
   let protocolRunner: ProtocolRunner;
   let initiatorIdentifier: string;
 
   beforeAll(() => {
-    store = new Store(new MemoryStoreService());
+    store = new MemoryStoreService();
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as JsonRpcProvider,
@@ -73,14 +73,14 @@ describe("Can handle correct & incorrect installs", () => {
   it("fails to install without the AppInstanceId being in a channel", async () => {
     expect.hasAssertions();
 
-    const mockedStore = mock(Store);
+    const mockedStore = mock(MemoryStoreService);
 
     const appInstanceId = createRandom32ByteHexString();
     const appInstanceProposal = createAppInstanceProposalForTest(appInstanceId);
 
-    when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
+    when(mockedStore.getAppProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getStateChannelFromAppInstanceID(appInstanceId)).thenThrow(
+    when(mockedStore.getStateChannelByAppInstanceId(appInstanceId)).thenThrow(
       Error(NO_MULTISIG_FOR_APP_INSTANCE_ID),
     );
 
@@ -93,7 +93,7 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedProtocolRunner = mock(ProtocolRunner);
     const protocolRunner = instance(mockedProtocolRunner);
 
-    const mockedStore = mock(Store);
+    const mockedStore = mock(MemoryStoreService);
     const store = instance(mockedStore);
 
     const appInstanceId = createRandom32ByteHexString();
@@ -119,13 +119,13 @@ describe("Can handle correct & incorrect installs", () => {
         .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[1]),
     ).toEqual(Zero);
 
-    await store.saveStateChannel(stateChannel);
+    await store.createStateChannel(stateChannel.toJson());
 
     const appInstanceProposal = createAppInstanceProposalForTest(appInstanceId);
 
-    when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
+    when(mockedStore.getAppProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getStateChannelFromAppInstanceID(appInstanceId)).thenResolve(stateChannel);
+    when(mockedStore.getStateChannelByAppInstanceId(appInstanceId)).thenResolve(stateChannel.toJson());
 
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the

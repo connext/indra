@@ -40,7 +40,7 @@ export class WithdrawService {
     private readonly withdrawRepository: WithdrawRepository,
     private readonly channelRepository: ChannelRepository,
   ) {
-    this.log.setContext("ChannelService");
+    this.log.setContext("WithdrawService");
   }
 
   /*

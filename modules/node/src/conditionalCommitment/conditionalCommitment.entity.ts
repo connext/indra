@@ -1,7 +1,6 @@
 import { IsEthAddress, IsKeccak256Hash } from "../util";
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OneToOne, JoinColumn, PrimaryGeneratedColumn, Entity, Column } from "typeorm";
-import { Signature } from "ethers/utils";
 
 @Entity()
 export class ConditionalTransactionCommitment {
@@ -26,7 +25,7 @@ export class ConditionalTransactionCommitment {
   @Column("text", { array: true })
   multisigOwners!: string[];
 
-  @Column("json", { nullable: true })
+  @Column("text", { array: true, nullable: true })
   signatures!: string[];
 
   @OneToOne((type: any) => AppInstance)

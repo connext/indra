@@ -4,6 +4,7 @@ import {
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
+  IStoreService,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { v4 as uuid } from "uuid";
@@ -18,7 +19,6 @@ import {
 } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
-import { Store } from "../store";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
@@ -33,7 +33,7 @@ export class ProtocolRunner {
   constructor(
     public readonly network: NetworkContext,
     public readonly provider: JsonRpcProvider,
-    public readonly store: Store,
+    public readonly store: IStoreService,
     public readonly log: ILoggerService,
   ) {
     this.network.provider = network.provider || provider;

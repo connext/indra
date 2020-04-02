@@ -31,19 +31,17 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
       .filter(app => app.type === AppType.PROPOSAL)
       .map(app => [app.identityHash, convertAppToProposedInstanceJSON(app)]),
     schemaVersion: channel.schemaVersion,
-    userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier],
+    userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier].sort(),
   };
   return json;
 };
 
 @EntityRepository(Channel)
 export class ChannelRepository extends Repository<Channel> {
+  // CF-CORE STORE METHODS
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channel = await this.findByMultisigAddress(multisigAddress);
-    if (!channel) {
-      return undefined;
-    }
-    return convertChannelToJSON(channel);
+    return channel && convertChannelToJSON(channel);
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
@@ -66,22 +64,30 @@ export class ChannelRepository extends Repository<Channel> {
     return convertChannelToJSON(channel);
   }
 
+  // NODE-SPECIFIC METHODS
+
   async findAll(available: boolean = true): Promise<Channel[]> {
     return this.find({ where: { available } });
   }
 
   async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
-    return this.findOne({
-      where: { multisigAddress },
-      relations: ["appInstances"],
-    });
+    return this.createQueryBuilder("channel")
+    .leftJoinAndSelect("channel.appInstances", "appInstance")
+    .where(
+      "channel.multisigAddress = :multisigAddress",
+      { multisigAddress },
+    )
+    .getOne();
   }
 
   async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
-    return this.findOne({
-      where: { userPublicIdentifier },
-      relations: ["appInstances"],
-    });
+    return this.createQueryBuilder("channel")
+    .leftJoinAndSelect("channel.appInstances", "appInstance")
+    .where(
+      "channel.userPublicIdentifier = :userPublicIdentifier",
+      { userPublicIdentifier },
+    )
+    .getOne();
   }
 
   async findByAppInstanceId(appInstanceId: string): Promise<Channel | undefined> {

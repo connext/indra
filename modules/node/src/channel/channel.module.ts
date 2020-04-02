@@ -17,6 +17,10 @@ import { RebalanceProfileRepository } from "../rebalanceProfile/rebalanceProfile
 import { channelProviderFactory } from "./channel.provider";
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
+import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
+import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
+import { ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
+import { ConfigService } from "../config/config.service";
 
 @Module({
   controllers: [],
@@ -37,8 +41,11 @@ import { ChannelService } from "./channel.service";
       RebalanceProfileRepository,
       CFCoreRecordRepository,
       OnchainTransactionRepository,
+      SetupCommitmentRepository,
+      SetStateCommitmentRepository,
+      ConditionalTransactionCommitmentRepository,
     ]),
   ],
-  providers: [ChannelService, channelProviderFactory],
+  providers: [ConfigService, ChannelService, channelProviderFactory],
 })
 export class ChannelModule {}

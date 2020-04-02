@@ -5,6 +5,7 @@ import {
   MethodResults,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
+  GetChannelResponse,
   stringify,
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
@@ -63,6 +64,22 @@ export class ChannelService {
    */
   async findAll(available: boolean = true): Promise<Channel[]> {
     return await this.channelRepository.findAll(available);
+  }
+
+  // NOTE: this is used by the `channel.provider`. if you use the
+  // repository at that level, there is some ordering weirdness
+  // where an empty array is returned from the query call, then
+  // the provider method returns, and the query is *ACTUALLY* executed
+  async getByUserPublicIdentifier(userPublicIdentifier: string): Promise<GetChannelResponse | undefined> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    return (!channel || !channel.id) ? undefined : ({
+      id: channel.id,
+      available: channel.available,
+      collateralizationInFlight: channel.collateralizationInFlight,
+      multisigAddress: channel.multisigAddress,
+      nodePublicIdentifier: channel.nodePublicIdentifier,
+      userPublicIdentifier: channel.userPublicIdentifier,
+    });
   }
 
   /**

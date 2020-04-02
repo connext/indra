@@ -102,12 +102,12 @@ contract MinimumViableMultisig is MultisigData {
         returns (bytes32)
     {
         return keccak256(
-            abi.encodePacked(
-                byte(0x19),
+            abi.encode(
+                bytes1(0x19),
                 _owners,
                 to,
                 value,
-                data,
+                keccak256(abi.encodePacked(data)),
                 uint8(operation)
             )
         );

@@ -37,7 +37,7 @@ const SETSTATE_COMMITMENT_GAS = 6e9;
 /**
  * @summary Setup a StateChannel then set state on ETH Free Balance
  */
-describe("Scenario: Setup, set state on free balance, go on chain", () => {
+describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
   let context: Context;
   let provider: JsonRpcProvider;
   let wallet: Wallet;
