@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "6.0.0-alpha.5",
+  "version": "6.0.0-alpha.6",
   "description": "Client for Connext Network",
   "main": "dist/index.js",
   "files": [
@@ -17,13 +17,13 @@
   },
   "dependencies": {
     "axios": "0.19.2",
-    "@connext/apps": "6.0.0-alpha.5",
-    "@connext/cf-core": "6.0.0-alpha.5",
-    "@connext/channel-provider": "6.0.0-alpha.5",
-    "@connext/crypto": "6.0.0-alpha.5",
-    "@connext/messaging": "6.0.0-alpha.5",
-    "@connext/store": "6.0.0-alpha.5",
-    "@connext/types": "6.0.0-alpha.5",
+    "@connext/apps": "6.0.0-alpha.6",
+    "@connext/cf-core": "6.0.0-alpha.6",
+    "@connext/channel-provider": "6.0.0-alpha.6",
+    "@connext/crypto": "6.0.0-alpha.6",
+    "@connext/messaging": "6.0.0-alpha.6",
+    "@connext/store": "6.0.0-alpha.6",
+    "@connext/types": "6.0.0-alpha.6",
     "core-js": "3.6.4",
     "ethers": "4.0.46",
     "human-standard-token-abi": "2.0.0",
