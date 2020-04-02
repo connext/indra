@@ -1,4 +1,4 @@
-import { signDigest } from "@connext/crypto";
+import { signDigest, recoverAddress } from "@connext/crypto";
 import { AppChallengeBigNumber, toBN, ChallengeStatus, sortSignaturesBySignerAddress, createRandom32ByteHexString, ChallengeEvents } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
@@ -92,10 +92,14 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
     signers?: string[],
   ) => {
     if (!signatures) {
-      signatures = await sortSignaturesBySignerAddress(digest, [
-        await signDigest(bob.privateKey, digest),
-        await signDigest(alice.privateKey, digest),
-      ]);
+      signatures = await sortSignaturesBySignerAddress(
+        digest,
+        [
+          await signDigest(bob.privateKey, digest),
+          await signDigest(alice.privateKey, digest),
+        ],
+        recoverAddress,
+      );
     }
 
     if (!signers) {
@@ -150,10 +154,14 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
       versionNumber,
       appStateHash: stateHash,
       timeout,
-      signatures: await sortSignaturesBySignerAddress(digest, [
-        await signDigest(alice.privateKey, digest),
-        await signDigest(bob.privateKey, digest),
-      ]),
+      signatures: await sortSignaturesBySignerAddress(
+        digest,
+        [
+          await signDigest(alice.privateKey, digest),
+          await signDigest(bob.privateKey, digest),
+        ],
+        recoverAddress,
+      ),
     });
     await wrapInEventVerification(call, {
       status: ChallengeStatus.IN_DISPUTE,
@@ -275,10 +283,14 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
         versionNumber,
         appStateHash: stateHash,
         timeout,
-        signatures: await sortSignaturesBySignerAddress(stateDigest, [
-          await signDigest(alice.privateKey, stateDigest),
-          await signDigest(bob.privateKey, stateDigest),
-        ]),
+        signatures: await sortSignaturesBySignerAddress(
+          stateDigest,
+          [
+            await signDigest(alice.privateKey, stateDigest),
+            await signDigest(bob.privateKey, stateDigest),
+          ],
+          recoverAddress,
+        ),
       },
       encodeState(state),
       {
@@ -291,10 +303,14 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
   const cancelChallenge = async (versionNumber: number, signatures?: string[]): Promise<void> => {
     const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
     if (!signatures) {
-      signatures = await sortSignaturesBySignerAddress(digest, [
-        await signDigest(alice.privateKey, digest),
-        await signDigest(bob.privateKey, digest),
-      ]);
+      signatures = await sortSignaturesBySignerAddress(
+        digest,
+        [
+          await signDigest(alice.privateKey, digest),
+          await signDigest(bob.privateKey, digest),
+        ],
+        recoverAddress,
+      );
     }
     // TODO: why does event verification fail?
     // await wrapInEventVerification(

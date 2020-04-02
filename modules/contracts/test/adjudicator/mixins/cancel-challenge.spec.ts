@@ -7,7 +7,7 @@ import { expect, restore, snapshot, setupContext, provider, AppWithCounterState,
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 import { sortSignaturesBySignerAddress, toBN } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signDigest, recoverAddress } from "@connext/crypto";
 
 describe("cancelChallenge", () => {
 
@@ -98,10 +98,14 @@ describe("cancelChallenge", () => {
     await setState(versionNumber);
 
     const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
-    const signatures = await sortSignaturesBySignerAddress(digest, [
-      await signDigest(wallet.privateKey, digest),
-      await signDigest(bob.privateKey, digest),
-    ]);
+    const signatures = await sortSignaturesBySignerAddress(
+      digest,
+      [
+        await signDigest(wallet.privateKey, digest),
+        await signDigest(bob.privateKey, digest),
+      ],
+      recoverAddress,
+    );
     await expect(cancelChallenge(versionNumber, signatures)).to.be.revertedWith("Invalid signature");
   });
 
