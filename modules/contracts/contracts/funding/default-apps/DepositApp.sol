@@ -22,32 +22,14 @@ contract DepositApp is CounterfactualApp {
         address assetId;
         uint256 startingTotalAmountWithdrawn;
         uint256 startingMultisigBalance;
-        uint256 timelock;
-        bool finalized;
     }
 
-    function getTurnTaker(
-        bytes calldata encodedState,
-        address[] calldata participants
-    )
-        external
-        view
-        returns (address)
-    {
-        return participants[0];
-    }
-
-    function applyAction(
-        bytes calldata encodedState,
-        bytes calldata encodedAction
-    )
+    function computeOutcome(bytes calldata encodedState)
         external
         view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
-
-        require(!state.finalized, "cannot take action on a finalized state");
 
         uint256 endingTotalAmountWithdrawn;
         uint256 endingMultisigBalance;
@@ -64,25 +46,19 @@ contract DepositApp is CounterfactualApp {
             endingMultisigBalance = ERC20(state.assetId).balanceOf(state.multisigAddress);
         }
 
-        // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
-        state.transfers[0].amount = (endingMultisigBalance - state.startingMultisigBalance) +
-            (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn);
-        state.transfers[1].amount = 0;
-        state.finalized = true;
-
-        return abi.encode(state);
-    }
-
-    function computeOutcome(bytes calldata encodedState)
-        external
-        view
-        returns (bytes memory)
-    {
-        AppState memory state = abi.decode(encodedState, (AppState));
-        if (!state.finalized) {
-            require(block.number >= state.timelock, "Cannot uninstall unfinalized deposit unless timelock has expired");
-        }
-        return abi.encode(state.transfers);
+        return abi.encode(LibOutcome.CoinTransfer[2]([
+            LibOutcome.CoinTransfer(
+                state.transfers[0].to,
+                // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
+                (endingMultisigBalance - state.startingMultisigBalance) +
+                        (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn)
+            ),
+            LibOutcome.CoinTransfer(
+                state.transfers[1].to,
+                /* should always be 0 */
+                0
+            )
+        ]));
     }
 
     function isDeployed(address _addr)
