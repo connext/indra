@@ -1,4 +1,3 @@
-import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
@@ -6,7 +5,12 @@ import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
 import { ILockService } from "./lock";
 import { enumify } from "./utils";
-import { ConditionalTransactionCommitmentJSON, SetStateCommitmentJSON, MinimalTransaction } from "./commitments";
+import {
+  ConditionalTransactionCommitmentJSON,
+  SetStateCommitmentJSON,
+  MinimalTransaction,
+} from "./commitments";
+import { ContractAddresses } from "./node";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -86,7 +90,7 @@ export interface CFChannelProviderOptions {
   lockService?: ILockService;
   logger?: ILoggerService;
   messaging: any;
-  networkContext: NetworkContext;
+  contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
   xpub: string;

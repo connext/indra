@@ -1,3 +1,4 @@
+import { generateValidationMiddleware } from "@connext/apps";
 import {
   ChannelMethods,
   ConnextEventEmitter,
@@ -13,6 +14,7 @@ import {
   MinimalTransaction,
   ConditionalTransactionCommitmentJSON,
   toBN,
+  Opcode,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { signChannelMessage, signDigest } from "@connext/crypto";
@@ -33,7 +35,7 @@ export const createCFChannelProvider = async ({
   keyGen,
   lockService,
   messaging,
-  networkContext,
+  contractAddresses,
   nodeConfig,
   nodeUrl,
   store,
@@ -43,7 +45,7 @@ export const createCFChannelProvider = async ({
   const cfCore = await CFCore.create(
     messaging,
     store,
-    networkContext,
+    contractAddresses,
     nodeConfig,
     ethProvider,
     lockService,
@@ -52,6 +54,16 @@ export const createCFChannelProvider = async ({
     undefined,
     logger,
   );
+
+  // register any default middlewares
+  cfCore.injectMiddleware(
+    Opcode.OP_VALIDATE,
+    await generateValidationMiddleware({
+      ...contractAddresses,
+      provider: ethProvider,
+    }),
+  );
+
   const channelProviderConfig: ChannelProviderConfig = {
     freeBalanceAddress: xpubToAddress(xpub),
     nodeUrl,

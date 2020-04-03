@@ -234,7 +234,7 @@ export class ConnextClient implements IConnextClient {
       keyGen: this.keyGen,
       lockService: { acquireLock: this.node.acquireLock.bind(this.node) },
       messaging: this.messaging as any,
-      networkContext: this.config.contractAddresses,
+      contractAddresses: this.config.contractAddresses,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl: this.channelProvider.config.nodeUrl,
       store: this.store,

@@ -101,11 +101,9 @@ export const uninstallDepositMiddleware = async (
   const latestState = appInstance.latestState as DepositAppState;
   const currentMultisigBalance = latestState.assetId === AddressZero
     ? await provider.getBalance(stateChannel.multisigAddress)
-    : await new Contract(
-        latestState.assetId,
-        ERC20.abi,
-        provider,
-      ).functions.balanceOf(stateChannel.multisigAddress);
+    : await new Contract(latestState.assetId, ERC20.abi as any, provider)
+        .functions
+        .balanceOf(stateChannel.multisigAddress);
 
   if (currentMultisigBalance.lte(latestState.startingMultisigBalance)) {
     throw new Error(`Refusing to uninstall, no deposit has occurred.`);
