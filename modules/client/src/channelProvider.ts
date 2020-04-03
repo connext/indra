@@ -13,7 +13,7 @@ import {
   ConditionalTransactionCommitmentJSON,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signChannelMessage, signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import { CFCore, xpubToAddress } from "./lib";
 import {
@@ -86,9 +86,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
-      case ChannelMethods.chan_signDigest:
-        result = await this.signDigest(params.message);
-        break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
         break;
@@ -139,10 +136,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///// PRIVATE METHODS
   private signMessage = async (message: string): Promise<string> => {
     return signChannelMessage(this.authKey, message);
-  };
-
-  private signDigest = async (message: string): Promise<string> => {
-    return signDigest(this.authKey, message);
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
