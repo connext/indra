@@ -122,6 +122,6 @@ export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
 }
 
 export function removeUndefinedFields<T>(obj: T): T {
-  Object.keys(obj).forEach(key => obj[key] === undefined && delete obj[key]);
+  Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
   return obj;
 }
