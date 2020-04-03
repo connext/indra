@@ -149,7 +149,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     const hdNode = fromMnemonic(this.options.mnemonic).derivePath(CF_PATH);
     const getSignature = async (message: string) => {
       const { privateKey } = hdNode.derivePath("0");
-      const sig = signDigest(privateKey, message);
+      const sig = await signDigest(privateKey, message);
       return sig;
     };
     const xpub = hdNode.neuter().extendedKey;
