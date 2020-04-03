@@ -127,7 +127,7 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const sig = signDigest(await keyGen("0"), message);
+      const sig = await signDigest(await keyGen("0"), message);
       return sig;
     };
 
