@@ -7,6 +7,7 @@ import {
   DepositAppName,
   TransactionResponse,
   TransactionReceipt,
+  stringify,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero, AddressZero } from "ethers/constants";
@@ -18,10 +19,7 @@ import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { xkeyKthAddress } from "../util";
-import { AppInstance } from "../appInstance/appInstance.entity";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
-import { ChannelRepository } from "../channel/channel.repository";
 
 @Injectable()
 export class DepositService {
@@ -30,9 +28,7 @@ export class DepositService {
     private readonly configService: ConfigService,
     private readonly onchainTransactionService: OnchainTransactionService,
     private readonly log: LoggerService,
-    private readonly appInstanceRepository: AppInstanceRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly channelRepository: ChannelRepository,
   ) {
     this.log.setContext("DepositService");
   }
@@ -44,14 +40,11 @@ export class DepositService {
         DepositAppName,
         (await this.configService.getEthNetwork()).chainId,
       );
-    const installedDepositApps = await this.appInstanceRepository
-      .findInstalledAppsByAppDefinition(
-        channel.multisigAddress,
-        depositRegistry.appDefinitionAddress,
-      );
-    const depositApp: AppInstance = installedDepositApps.filter(
-      app => app.latestState.assetId === assetId,
+    const depositApp = channel.appInstances.filter(
+      app => app.appDefinition === depositRegistry.appDefinitionAddress
+        && app.latestState.assetId === assetId,
     )[0];
+    this.log.debug(`Found deposit app: ${stringify(depositApp, 2)}`);
     if (
       depositApp && 
       depositApp.latestState.transfers[0].to === xkeyKthAddress(channel.userPublicIdentifier)
@@ -63,9 +56,11 @@ export class DepositService {
 
     let appInstanceId;
     if (!depositApp) {
-      this.log.debug(`Requesting deposit rights before depositing`);
+      this.log.info(`Requesting deposit rights before depositing`);
       appInstanceId = await this.requestDepositRights(channel, assetId);
     }
+    // deposit app for asset id with node as initiator is already installed
+    // send deposit to chain
     const tx = await this.sendDepositToChain(channel, amount, assetId);
     const receipt = await tx.wait();
     await this.rescindDepositRights(appInstanceId || depositApp.identityHash);
@@ -81,65 +76,9 @@ export class DepositService {
     return appInstanceId;
   }
 
-  async handleDepositAppsOnCheckIn(userPublicIdentifier: string): Promise<void> {
-    const channel = await this.channelRepository
-      .findByUserPublicIdentifierOrThrow(userPublicIdentifier);
-    const depositRegistry = await this.appRegistryRepository
-      .findByNameAndNetwork(
-        DepositAppName,
-        (await this.configService.getEthNetwork()).chainId,
-      );
-    const installedDepositApps = await this.appInstanceRepository
-      .findInstalledAppsByAppDefinition(
-        channel.multisigAddress,
-        depositRegistry.appDefinitionAddress,
-      );
-    if (installedDepositApps.length === 0) {
-      this.log.debug(`Found no deposit apps for ${userPublicIdentifier}`);
-      return;
-    }
-    for (const depositApp of installedDepositApps) {
-      try {
-        // will finalize and uninstall. Will throw if it is a user deposit
-        // which is okay, so catch and continue
-        await this.rescindDepositRights(depositApp.identityHash);
-      } catch (e) {
-        this.log.error(`Caught error trying to rescind deposit rights in channel ${channel.multisigAddress}. Deposit app: ${depositApp.identityHash}, error: ${e.stack || e.message} `);
-      }
-    }
-  }
-
   async rescindDepositRights(appInstanceId: string): Promise<void> {
-    const ethProvider = this.configService.getEthProvider();
-    const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appInstanceId);
-    const latestState = app.latestState as DepositAppState;
-    const initiatorTransfer = latestState.transfers[0];
-
-    if (initiatorTransfer.to !== xkeyKthAddress(this.configService.getPublicIdentifier())) {
-      throw new Error(`User has active deposit app, cannot uninstall`);
-    }
-
-    // our deposit app, taking action
-    const currentMultisigBalance = latestState.assetId === AddressZero
-        ? await ethProvider.getBalance(app.channel.multisigAddress)
-        : await new Contract(
-            app.channel.multisigAddress,
-            tokenAbi,
-            ethProvider,
-          ).functions.balanceOf(app.channel.multisigAddress);
-
-    if (currentMultisigBalance.lte(latestState.startingMultisigBalance)) {
-      throw new Error(`Deposit has not occurred yet, not uninstallling.`);
-    }
-
     this.log.debug(`Uninstalling deposit app`);
     await this.cfCoreService.uninstallApp(appInstanceId);
-  }
-
-  async getDepositApp(channel: Channel, assetId: string): Promise<any> {
-    return channel.appInstances.filter((appInstance) => {
-      appInstance.initiatorDepositTokenAddress === assetId;
-    })[0];
   }
 
   private async sendDepositToChain(

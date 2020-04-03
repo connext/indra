@@ -6,7 +6,6 @@ import {
   tidy,
 } from "../misc";
 import { Address } from "../../basic";
-import { toBN } from "../../math";
 
 export const DepositAppName = "DepositApp";
 

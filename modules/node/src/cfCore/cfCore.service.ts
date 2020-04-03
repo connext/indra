@@ -360,23 +360,6 @@ export class CFCoreService {
     return uninstallResponse.result.result as MethodResults.Uninstall;
   }
 
-  // async rescindDepositRights(
-  //   multisigAddress: string,
-  //   tokenAddress: string = AddressZero,
-  // ): Promise<MethodResults.Deposit> {
-  //   // check the app is actually installed
-  //   this.log.info(`Calling rescindDepositRights`);
-  //   const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
-  //     id: Date.now(),
-  //     methodName: MethodNames.chan_rescindDepositRights,
-  //     parameters: { multisigAddress, tokenAddress } as MethodParams.RescindDepositRights,
-  //   });
-
-  //   this.log.info(`rescindDepositRights succeeded for multisig ${multisigAddress}`);
-  //   this.log.debug(`rescindDepositRights result: ${stringify(uninstallResponse.result.result)}`);
-  //   return uninstallResponse.result.result as MethodResults.Deposit;
-  // }
-
   async getAppInstances(multisigAddress: string): Promise<AppInstanceJson[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
@@ -393,32 +376,6 @@ export class CFCoreService {
     */
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
-
-  // async getCoinBalanceRefundApp(
-  //   multisigAddress: string,
-  //   tokenAddress: string = AddressZero,
-  // ): Promise<AppInstanceJson | undefined> {
-  //   const appInstances = await this.getAppInstances(multisigAddress);
-  //   const contractAddresses = await this.configService.getContractAddresses();
-  //   const coinBalanceRefundAppArray = appInstances.filter(
-  //     (app: AppInstanceJson) =>
-  //       app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
-  //       app.latestState[`tokenAddress`] === tokenAddress,
-  //   );
-  //   this.log.info(
-  //     `Got ${coinBalanceRefundAppArray.length} coinBalanceRefundApps for multisig ${multisigAddress}`,
-  //   );
-  //   this.log.debug(`CoinBalanceRefundApps result: ${stringify(coinBalanceRefundAppArray)}`);
-  //   if (coinBalanceRefundAppArray.length > 1) {
-  //     throw new Error(
-  //       `More than 1 instance of CoinBalanceRefundApp installed for asset! This should never happen.`,
-  //     );
-  //   }
-  //   if (coinBalanceRefundAppArray.length === 0) {
-  //     return undefined;
-  //   }
-  //   return coinBalanceRefundAppArray[0];
-  // }
 
   async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({

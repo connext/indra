@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { delay, EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
+import { EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 

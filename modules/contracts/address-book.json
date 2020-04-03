@@ -510,9 +510,9 @@
     },
     "DepositApp": {
       "address": "0xf25186B5081Ff5cE73482AD761DB0eB0d25abfBF",
-      "creationCodeHash": "0x2c7cd6e478f6cd5321c2648f5a577f479baba07b390511c46628660c027ccbab",
-      "runtimeCodeHash": "0xd03a6a919b2558f776de769429f4006cf80bad0bee6bdf364524ef169d339f37",
-      "txHash": "0xd72a97fac4c44c3acfc84725094d05061bfc5d04e38d76013074a1ea8247a331"
+      "creationCodeHash": "0x054187757ca7df29647010148ae815730476fa3d47f68f9f211661f1f38b9905",
+      "runtimeCodeHash": "0x3890fa50685c1888149e1f67784376b724cc67a53c2f4932d75db6df9042895f",
+      "txHash": "0x31872af0d0712fcd79ed47b4e8a43d0d00433699d0ddc2c54091850e23beca3d"
     }
   }
 }

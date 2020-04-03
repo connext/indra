@@ -170,12 +170,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     appDefinition: string,
   ): Promise<AppInstance[]> {
     return this.createQueryBuilder("app_instances")
-      .leftJoinAndSelect(
-        "app_instances.channel",
-        "channel",
-        "channel.multisigAddress = :multisigAddress",
-        { multisigAddress },
-      )
+      .leftJoinAndSelect("app_instances.channel", "channel")
+      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
       .where("app_instances.type = :type", { type: AppType.INSTANCE })
       .andWhere("app_instances.appDefinition = :appDefinition", { appDefinition })
       .getMany();

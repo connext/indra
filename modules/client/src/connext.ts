@@ -279,8 +279,21 @@ export class ConnextClient implements IConnextClient {
           chainId: number;
         }
       | { appDefinitionAddress: string },
-  ): Promise<AppRegistry> => {
-    return await this.node.appRegistry(appDetails);
+  ): Promise<AppRegistry | DefaultApp | undefined> => {
+    const registry = await this.node.appRegistry();
+    if (!appDetails) {
+      return registry;
+    }
+    const { name, chainId, appDefinitionAddress } = appDetails as any;
+    if (name) {
+      return registry.filter(app => 
+        app.name === name &&
+        app.chainId === chainId,
+      )[0];
+    }
+    return registry.filter(app =>
+      app.appDefinitionAddress === appDefinitionAddress,
+    )[0];
   };
 
   public createChannel = async (): Promise<CreateChannelResponse> => {
@@ -860,7 +873,11 @@ export class ConnextClient implements IConnextClient {
     );
     // remove from `proposedAppInstances`
     for (const hanging of hangingProposals) {
-      await this.rejectInstallApp(hanging.identityHash);
+      try {
+        await this.rejectInstallApp(hanging.identityHash);
+      } catch (e) {
+        this.log.error(`Could not remove proposal: ${hanging.identityHash}. Error: ${e.stack || e.message}`);
+      }
     }
   };
 
@@ -871,9 +888,13 @@ export class ConnextClient implements IConnextClient {
     const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
       appDefinitions.includes(app.appInterface.addr),
     );
-    //TODO ARJUN there is an edgecase where this will cancel withdrawal
+    // TODO: ARJUN there is an edgecase where this will cancel withdrawal
     for (const app of apps) {
-      await this.uninstallApp(app.identityHash);
+      try {
+        await this.uninstallApp(app.identityHash);
+      } catch (e) {
+        this.log.error(`Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`);
+      }
     }
   };
 
@@ -905,7 +926,7 @@ export class ConnextClient implements IConnextClient {
       }
 
       // handle errors
-      if (!error.message.includes("Deposit has not yet completed")) {
+      if (!error.message.includes("no deposit has occurred")) {
         this.log.error(`Could not uninstall deposit app ${appInstanceId}. Error: ${error.stack || error.message}`);
         continue;
       }

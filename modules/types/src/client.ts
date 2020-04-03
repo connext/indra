@@ -160,7 +160,7 @@ export interface IConnextClient {
           chainId: number;
         }
       | { appDefinitionAddress: string },
-  ): Promise<AppRegistry>;
+  ): Promise<AppRegistry | DefaultApp | undefined>;
   getRegisteredAppDetails(appName: string): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;

@@ -27,7 +27,7 @@ export type ProposeMiddlewareContext = {
 };
 export type InstallMiddlewareContext = {
   role: ProtocolRole;
-  params: ProtocolParams.Propose;
+  params: ProtocolParams.Install;
   appInstance: AppInstanceJson;
   stateChannel: StateChannelJSON;
 };

@@ -8,7 +8,7 @@ import {
   RescindDepositRightsParameters,
   CheckDepositRightsParameters,
   AppInstanceJson,
-  bigNumberifyJson,
+  DefaultApp,
 } from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
 import { DepositAppName, DepositAppState } from "@connext/types";
@@ -67,46 +67,20 @@ export class DepositController extends AbstractController {
   public rescindDepositRights = async (
     params: RescindDepositRightsParameters,
   ): Promise<RescindDepositRightsResponse> => {
-    const { assetId } = params;
+    const assetId = params.assetId || AddressZero;
     // get the app instance
-    const app = await this.getDepositApp({ assetId: assetId || AddressZero });
+    const app = await this.getDepositApp({ assetId });
     if (!app) {
-      throw new Error(`No deposit app found for assset: ${assetId || AddressZero}`);
-    }
-
-    const uninstallGetFreeBalance = async () => {
-      // state has expired, uninstall
-      await this.connext.uninstallApp(app.identityHash);
-      const freeBalance = await this.connext.getFreeBalance(assetId || AddressZero);
+      this.log.debug(`No deposit app found for assset: ${assetId}`);
+      const freeBalance = await this.connext.getFreeBalance(assetId);
       return { freeBalance };
-    };
-
-    const latestState = bigNumberifyJson(app.latestState) as DepositAppState;
-
-    // check if you are the initiator;
-    const initiatorTransfer = latestState.transfers[0];
-    if (initiatorTransfer.to !== this.connext.freeBalanceAddress) {
-      throw new Error(`Node has unfinalized deposit, cannot rescind rights for ${assetId || AddressZero}`);
     }
-
-    // make sure the deposit has gone through
-    // NOTE: this function has no context into the *amount* that was deposited
-    // this is fine, because the node can always leave the users deposit app
-    // installed, then collateralize/pay the user by sending funds directly
-    // to the multisig
-    const token = new Contract(assetId!, tokenAbi, this.ethProvider);
-    const endingMultisigBalance =
-      assetId === AddressZero
-        ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await token.functions.balanceOf(this.connext.multisigAddress);
-
-    if (endingMultisigBalance.lte(latestState.startingMultisigBalance)) {
-      throw new Error(`Deposit has not yet completed, cannot rescind deposit rights`);
-    }
-
   
     this.log.debug(`Uninstalling ${app.identityHash}`);
-    return uninstallGetFreeBalance();
+    await this.connext.uninstallApp(app.identityHash);
+    this.log.debug(`Uninstalled deposit app`);
+    const freeBalance = await this.connext.getFreeBalance(assetId);
+    return { freeBalance };
   }
 
   public getDepositApp = async (
@@ -116,13 +90,11 @@ export class DepositController extends AbstractController {
     const depositAppInfo = await this.connext.getAppRegistry({
       name: DepositAppName,
       chainId: this.ethProvider.network.chainId,
-    });
+    }) as DefaultApp;
     const depositApp = appInstances.find(
       (appInstance) =>
-        appInstance.appInterface.addr === depositAppInfo[0].appDefinitionAddress &&
-        appInstance
-          .singleAssetTwoPartyCoinTransferInterpreterParams
-          .tokenAddress === params.assetId,
+        appInstance.appInterface.addr === depositAppInfo.appDefinitionAddress &&
+        (appInstance.latestState as DepositAppState).assetId === params.assetId,
     );
 
     if (!depositApp) {

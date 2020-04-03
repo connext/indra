@@ -7,7 +7,6 @@ import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
-import { DepositService } from "../deposit/deposit.service";
 
 export class TransferMessaging extends AbstractMessagingProvider {
   constructor(
@@ -15,7 +14,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
     log: LoggerService,
     messaging: MessagingService,
     private readonly linkedTransferService: LinkedTransferService,
-    private readonly depositService: DepositService,
   ) {
     super(log, messaging);
     this.log.setContext("TransferMessaging");
@@ -33,10 +31,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
     // reclaim collateral from redeemed transfers
     await this.linkedTransferService
       .unlockLinkedTransfersFromUser(userPublicIdentifier);
-
-    // handle any installed deposit apps
-    // TODO: refactor checkin message
-    await this.depositService.handleDepositAppsOnCheckIn(userPublicIdentifier);
   }
 
   async setupSubscriptions(): Promise<void> {
@@ -53,21 +47,19 @@ export class TransferMessaging extends AbstractMessagingProvider {
 }
 
 export const transferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AuthService, LoggerService, MessagingProviderId, LinkedTransferService, DepositService],
+  inject: [AuthService, LoggerService, MessagingProviderId, LinkedTransferService],
   provide: TransferProviderId,
   useFactory: async (
     authService: AuthService,
     logging: LoggerService,
     messaging: MessagingService,
     linkedTransferService: LinkedTransferService,
-    depositService: DepositService,
   ): Promise<void> => {
     const transfer = new TransferMessaging(
       authService,
       logging,
       messaging,
       linkedTransferService,
-      depositService,
     );
     await transfer.setupSubscriptions();
   },

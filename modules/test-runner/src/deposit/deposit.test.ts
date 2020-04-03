@@ -14,7 +14,7 @@ describe.only("Deposits", () => {
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
 
-  const assertFreeBalanceVersion = async (
+  const assertClientFreeBalance = async (
     client: IConnextClient,
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
@@ -28,18 +28,20 @@ describe.only("Deposits", () => {
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
     await client.restoreState();
-    await assertFreeBalanceVersion(client, expected);
+    await assertClientFreeBalance(client, expected);
   };
 
   const assertOnchainBalance = async (
     client: IConnextClient,
     expected: {node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
-    const onchainBalance: BigNumber = expected.assetId == AddressZero ?
+    const onchainBalance: BigNumber = expected.assetId === AddressZero ?
       await ethProvider.getBalance(client.multisigAddress) :
-      await (new Contract(expected.assetId!, tokenAbi, ethProvider)).functions.balanceOf(client.multisigAddress);
+      await new Contract(expected.assetId!, tokenAbi, ethProvider)
+        .functions
+        .balanceOf(client.multisigAddress);
     expect(onchainBalance.eq(toBN(expected.node).add(toBN(expected.client))));
-  }
+  };
 
   beforeEach(async () => {
     client = await createClient();
@@ -59,8 +61,8 @@ describe.only("Deposits", () => {
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
     await assertOnchainBalance(client, expected);
-    // await assertFreeBalanceVersion(client, expected);
-    // await assertNodeFreeBalance(client, expected);
+    await assertClientFreeBalance(client, expected);
+    await assertNodeFreeBalance(client, expected);
   });
 
   it("happy case: client should deposit tokens", async () => {
@@ -70,7 +72,7 @@ describe.only("Deposits", () => {
       assetId: tokenAddress,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
-    await assertFreeBalanceVersion(client, expected);
+    await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });
 
@@ -104,7 +106,7 @@ describe.only("Deposits", () => {
     };
     await client.requestDepositRights({ assetId: expected.assetId });
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
-    await assertFreeBalanceVersion(client, expected);
+    await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
     await expect(
       client.checkDepositRights({ assetId: client.config.contractAddresses.Token }),
@@ -134,7 +136,7 @@ describe.only("Deposits", () => {
     await client.deposit({ amount: TWO, assetId: expected.assetId });
     await client.withdraw({ amount: TWO, assetId: expected.assetId });
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
-    await assertFreeBalanceVersion(client, expected);
+    await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });
 
@@ -152,8 +154,8 @@ describe.only("Deposits", () => {
     await client.deposit({ amount: TWO, assetId: ethExpected.assetId });
     await client.withdraw({ amount: TWO, assetId: ethExpected.assetId });
     await client.deposit({ amount: tokenExpected.client, assetId: tokenExpected.assetId });
-    await assertFreeBalanceVersion(client, ethExpected);
-    await assertFreeBalanceVersion(client, tokenExpected);
+    await assertClientFreeBalance(client, ethExpected);
+    await assertClientFreeBalance(client, tokenExpected);
     await assertNodeFreeBalance(client, ethExpected);
     await assertNodeFreeBalance(client, tokenExpected);
   });
