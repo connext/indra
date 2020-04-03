@@ -1,4 +1,4 @@
-import { ProtocolParams, ProtocolNames } from "@connext/types";
+import { ProtocolNames, ProtocolParams, ProtocolRoles, ProposeMiddlewareContext } from "@connext/types";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
@@ -18,7 +18,14 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.propose;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_COMMITMENT, PERSIST_APP_INSTANCE } = Opcode;
+const {
+  OP_SIGN,
+  OP_VALIDATE,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_APP_INSTANCE,
+  PERSIST_COMMITMENT,
+} = Opcode;
 
 /**
  * @description This exchange is described at the following URL:
@@ -81,6 +88,15 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       meta,
     };
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        proposal: appInstanceProposal,
+        params, role: ProtocolRoles.initiator,
+      } as ProposeMiddlewareContext,
+    ];
 
     // 0 ms
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
@@ -232,6 +248,15 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDepositTokenAddress:
         initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     };
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        proposal: appInstanceProposal,
+        params, role: ProtocolRoles.responder,
+      } as ProposeMiddlewareContext,
+    ];
 
     const proposedAppInstance = {
       identity: {
