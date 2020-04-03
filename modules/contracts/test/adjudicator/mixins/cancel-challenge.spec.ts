@@ -1,6 +1,5 @@
 /* global before */
-import * as waffle from "ethereum-waffle";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { expect, restore, snapshot, setupContext, provider, AppWithCounterState, computeCancelChallengeHash, AppWithCounterClass } from "../utils";
 
@@ -40,8 +39,16 @@ describe("cancelChallenge", () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+    appRegistry = await new ContractFactory(
+      ChallengeRegistry.abi as any,
+      ChallengeRegistry.bytecode,
+      wallet,
+    ).deploy();
+    appDefinition = await new ContractFactory(
+      AppWithAction.abi as any,
+      AppWithAction.bytecode,
+      wallet,
+    ).deploy();
   });
 
   beforeEach(async () => {
@@ -77,14 +84,11 @@ describe("cancelChallenge", () => {
   it("works", async () => {
     // when in set state phase
     await setState(1);
-    console.log(`set state!`);
     expect(await isDisputable()).to.be.true;
     await cancelChallengeAndVerify(1);
-    console.log(`cancelled challenge`);
 
     // when in progress state phase
     await setAndProgressState(1);
-    console.log(`set + progressed state!`);
     expect(await isProgressable()).to.be.true;
     await cancelChallengeAndVerify(2);
   });

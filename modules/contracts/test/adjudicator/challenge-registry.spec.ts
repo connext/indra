@@ -1,6 +1,5 @@
 /* global before */
-import * as waffle from "ethereum-waffle";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { expect, provider, restore, setupContext, snapshot, AppWithCounterState, AppWithCounterAction, encodeState, encodeAction, computeActionHash, moveToBlock } from "./utils";
 
@@ -54,16 +53,29 @@ describe("ChallengeRegistry", () => {
   let isProgressable: () => Promise<boolean>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
-    await wallet.getTransactionCount();
+    // TODO: sometimes using the [0] indexed wallet will fail to deploy the
+    // contracts in the first test suite (almost like a promised tx isnt
+    // completed). Hacky fix -- use a different wallet
+    wallet = (await provider.getWallets())[2];
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+    appRegistry = await new ContractFactory(
+      ChallengeRegistry.abi as any,
+      ChallengeRegistry.bytecode,
+      wallet,
+    ).deploy();
+    appRegistry = await appRegistry.deployed();
+
+    appDefinition = await new ContractFactory(
+      AppWithAction.abi as any,
+      AppWithAction.bytecode,
+      wallet,
+    ).deploy();
+    appDefinition = await appDefinition.deployed();
   });
 
   beforeEach(async () => {
     snapshotId = await snapshot();
-    const context = await setupContext(appRegistry, appDefinition);
+    const context = await setupContext(appRegistry, appDefinition, wallet);
 
     // apps / constants
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];

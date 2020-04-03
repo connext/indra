@@ -1,16 +1,12 @@
 /* global before */
 import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { HashZero } from "ethers/constants";
 import { defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
 import HighRollerApp from "../../build/HighRollerApp.json";
 
-chai.use(waffle.solidity);
-
-const { expect } = chai;
+import { expect, provider } from "../utils";
 
 /// Returns the commit hash that can be used to commit to chosenNumber
 /// using appSalt
@@ -94,9 +90,12 @@ describe("HighRollerApp", () => {
   }
 
   before(async () => {
-    const provider = waffle.createMockProvider();
-    const wallet = (await waffle.getWallets(provider))[0];
-    highRollerApp = await waffle.deployContract(wallet, HighRollerApp);
+    const wallet = (await provider.getWallets())[0];
+    highRollerApp = await new ContractFactory(
+      HighRollerApp.abi,
+      HighRollerApp.bytecode,
+      wallet,
+    ).deploy();
   });
 
   describe("normal state transition path", () => {

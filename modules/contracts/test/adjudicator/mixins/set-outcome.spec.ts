@@ -1,6 +1,5 @@
 /* global before */
-import * as waffle from "ethereum-waffle";
-import { Contract, Wallet } from "ethers";
+import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { setupContext, snapshot, provider, restore, AppWithCounterState, moveToBlock, expect, encodeState } from "../utils";
 
@@ -31,8 +30,16 @@ describe("setOutcome", () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+    appRegistry = await new ContractFactory(
+      ChallengeRegistry.abi as any,
+      ChallengeRegistry.bytecode,
+      wallet,
+    ).deploy();
+    appDefinition = await new ContractFactory(
+      AppWithAction.abi as any,
+      AppWithAction.bytecode,
+      wallet,
+    ).deploy();
   });
 
   beforeEach(async () => {
@@ -94,7 +101,11 @@ describe("setOutcome", () => {
   });
 
   it("fails if compute outcome fails", async () => {
-    const failingApp = await waffle.deployContract(wallet, AppComputeOutcomeFails);
+    const failingApp = await new ContractFactory(
+      AppComputeOutcomeFails.abi,
+      AppComputeOutcomeFails.bytecode,
+      wallet,
+    ).deploy();
     const context = await setupContext(appRegistry, failingApp);
 
     await context["setAndProgressStateAndVerify"](

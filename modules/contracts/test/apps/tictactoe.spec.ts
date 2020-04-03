@@ -1,15 +1,11 @@
 /* global before */
 import { SolidityValueType } from "@connext/types";
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { defaultAbiCoder } from "ethers/utils";
 
 import TicTacToeApp from "../../build/TicTacToeApp.json";
 
-chai.use(waffle.solidity);
-
-const { expect } = chai;
+import { expect, provider } from "../utils";
 
 type TicTacToeAppState = {
   versionNumber: number;
@@ -70,9 +66,12 @@ describe("TicTacToeApp", () => {
   }
 
   before(async () => {
-    const provider = waffle.createMockProvider();
-    const wallet = waffle.getWallets(provider)[0];
-    ticTacToe = await waffle.deployContract(wallet, TicTacToeApp);
+    const wallet = (await provider.getWallets())[0];
+    ticTacToe = await new ContractFactory(
+      TicTacToeApp.abi,
+      TicTacToeApp.bytecode,
+      wallet,
+    ).deploy();
   });
 
   describe("applyAction", () => {
