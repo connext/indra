@@ -1,4 +1,5 @@
 import { MessagingService } from "@connext/messaging";
+import { signDigest } from "@connext/crypto";
 import {
   CF_PATH,
   ConnextEventEmitter,
@@ -15,7 +16,6 @@ import { fromMnemonic } from "ethers/utils/hdnode";
 import { Logger } from "./logger";
 
 import axios, { AxiosResponse } from "axios";
-import { SigningKey, joinSignature } from "ethers/utils";
 
 const log = new Logger("Messaging", env.logLevel);
 
@@ -148,8 +148,8 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
     const hdNode = fromMnemonic(this.options.mnemonic).derivePath(CF_PATH);
     const getSignature = async (message: string) => {
-      const signingKey = new SigningKey(hdNode.derivePath("0").privateKey);
-      const sig = joinSignature(signingKey.signDigest(message));
+      const { privateKey } = hdNode.derivePath("0");
+      const sig = await signDigest(privateKey, message);
       return sig;
     };
     const xpub = hdNode.neuter().extendedKey;
@@ -228,10 +228,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   ////////////////////////////////////////
   // IMessagingService Methods
-  async onReceive(
-    subject: string,
-    callback: (msg: NodeMessage) => void,
-  ): Promise<void> {
+  async onReceive(subject: string, callback: (msg: NodeMessage) => void): Promise<void> {
     // return connection callback
     return await this.connection.onReceive(subject, async (msg: NodeMessage) => {
       this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
@@ -370,10 +367,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     return await this.connection.request(subject, timeout, data);
   }
 
-  async subscribe(
-    subject: string,
-    callback: (msg: NodeMessage) => void,
-  ): Promise<void> {
+  async subscribe(subject: string, callback: (msg: NodeMessage) => void): Promise<void> {
     return await this.connection.subscribe(subject, callback);
   }
 

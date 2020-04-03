@@ -1,7 +1,7 @@
-import { EthereumCommitment, MinimalTransaction, MultisigTransaction  } from "@connext/types";
+import { EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
 import { defaultAbiCoder, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
 import { sortSignaturesBySignerAddress } from "@connext/types";
-import { recoverAddress } from '@connext/crypto'
+import { recoverAddress } from "@connext/crypto";
 
 import { MinimumViableMultisig } from "../contracts";
 
@@ -32,7 +32,11 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
     const hash = this.hashToSign();
-    const signaturesList = await sortSignaturesBySignerAddress(hash, this.signatures, recoverAddress);
+    const signaturesList = await sortSignaturesBySignerAddress(
+      hash,
+      this.signatures,
+      recoverAddress,
+    );
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,

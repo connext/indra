@@ -9,9 +9,10 @@ import {
   SignedTransferStatus,
   SignedTransfer,
 } from "@connext/types";
+import { signDigest } from "@connext/crypto";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
-import { hexlify, randomBytes, SigningKey, solidityKeccak256, joinSignature } from "ethers/utils";
+import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { providers, Wallet } from "ethers";
 
 import {
@@ -80,9 +81,8 @@ describe("Signed Transfers", () => {
     expect(nodePostTransferBal).to.eq(0);
 
     const data = hexlify(randomBytes(32));
-    const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
+    const signature = await signDigest(signerWallet.privateKey, digest);
 
     await new Promise(async res => {
       clientA.on("UNINSTALL_EVENT", async data => {
@@ -131,9 +131,8 @@ describe("Signed Transfers", () => {
     expect(nodePostTransferBal).to.eq(0);
 
     const data = hexlify(randomBytes(32));
-    const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
+    const signature = await signDigest(signerWallet.privateKey, digest);
 
     await new Promise(async res => {
       clientA.on("UNINSTALL_EVENT", async data => {
@@ -204,9 +203,8 @@ describe("Signed Transfers", () => {
     await clientA.messaging.disconnect();
 
     const data = hexlify(randomBytes(32));
-    const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
+    const signature = await signDigest(signerWallet.privateKey, digest);
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
@@ -275,12 +273,10 @@ describe("Signed Transfers", () => {
         [clientA.freeBalanceAddress]: clientAPreBal,
         [clientA.nodeFreeBalanceAddress]: nodeAPreBal,
       } = await clientA.getFreeBalance(transfer.assetId);
-      const { 
+      const {
         [clientB.freeBalanceAddress]: clientBPreBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPreBal, 
-      } = await clientB.getFreeBalance(
-        transfer.assetId,
-      );
+        [clientB.nodeFreeBalanceAddress]: nodeBPreBal,
+      } = await clientB.getFreeBalance(transfer.assetId);
       const data = hexlify(randomBytes(32));
       const paymentId = hexlify(randomBytes(32));
 
@@ -295,12 +291,11 @@ describe("Signed Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
       } as SignedTransferParameters);
-  
+
       // Including recipient signing in test to match real conditions
-      const withdrawerSigningKey = new SigningKey(signerWallet.privateKey);
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = joinSignature(withdrawerSigningKey.signDigest(digest));
-  
+      const signature = await signDigest(signerWallet.privateKey, digest);
+
       await new Promise(async res => {
         clientA.once("UNINSTALL_EVENT", async data => {
           res();
@@ -315,24 +310,22 @@ describe("Signed Transfers", () => {
 
       // Stop timer and add to sum
       runTime[i] = Date.now() - start;
-      console.log(`Run: ${i}, Runtime: ${runTime[i]}`)
+      console.log(`Run: ${i}, Runtime: ${runTime[i]}`);
       sum = sum + runTime[i];
 
       const {
         [clientA.freeBalanceAddress]: clientAPostBal,
         [clientA.nodeFreeBalanceAddress]: nodeAPostBal,
       } = await clientA.getFreeBalance(transfer.assetId);
-      const { 
+      const {
         [clientB.freeBalanceAddress]: clientBPostBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPostBal, 
-      } = await clientB.getFreeBalance(
-        transfer.assetId,
-      );
+        [clientB.nodeFreeBalanceAddress]: nodeBPostBal,
+      } = await clientB.getFreeBalance(transfer.assetId);
       expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
       expect(nodeAPostBal).to.eq(nodeAPreBal.add(transfer.amount));
       expect(nodeBPostBal).to.eq(nodeBPreBal.sub(transfer.amount));
       expect(clientBPostBal).to.eq(clientBPreBal.add(transfer.amount));
     }
-    console.log(`Average = ${sum/numberOfRuns} ms`)
+    console.log(`Average = ${sum / numberOfRuns} ms`);
   });
 });
