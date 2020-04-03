@@ -1,4 +1,5 @@
 import {
+  GenericMiddleware,
   ILoggerService,
   ProtocolName,
   ProtocolNames,
@@ -12,7 +13,6 @@ import { v4 as uuid } from "uuid";
 import { getProtocolFromName } from "../protocol";
 import {
   Context,
-  Middleware,
   NetworkContext,
   Opcode,
   ProtocolMessage,
@@ -40,7 +40,7 @@ export class ProtocolRunner {
     this.middlewares = new MiddlewareContainer();
   }
 
-  public register(scope: Opcode, method: Middleware) {
+  public register(scope: Opcode, method: GenericMiddleware) {
     this.middlewares.add(scope, method);
   }
 

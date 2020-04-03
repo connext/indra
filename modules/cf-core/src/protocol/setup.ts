@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams } from "@connext/types";
+import { ProtocolNames, ProtocolParams, ProtocolRoles, SetupMiddlewareContext, } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
@@ -18,7 +18,14 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature } from "./utils";
 
 const protocol = ProtocolNames.setup;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, PERSIST_COMMITMENT } = Opcode;
+const {
+  OP_SIGN,
+  OP_VALIDATE,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_COMMITMENT,
+  PERSIST_STATE_CHANNEL,
+} = Opcode;
 const { CreateSetup } = PersistCommitmentType;
 
 /**
@@ -37,6 +44,12 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const { processID, params } = message;
 
     const { multisigAddress, responderXpub, initiatorXpub } = params as ProtocolParams.Setup;
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      { params, role: ProtocolRoles.initiator } as SetupMiddlewareContext,
+    ];
 
     // 56 ms
     const stateChannel = StateChannel.setupChannel(
@@ -140,6 +153,12 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     } = message;
 
     const { multisigAddress, initiatorXpub, responderXpub } = params as ProtocolParams.Setup;
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      { params, role: ProtocolRoles.responder } as SetupMiddlewareContext,
+    ];
 
     // 73 ms
     const stateChannel = StateChannel.setupChannel(

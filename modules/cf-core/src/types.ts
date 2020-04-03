@@ -34,6 +34,9 @@ export enum Opcode {
   PERSIST_COMMITMENT,
   // Middleware hook to write the state channel to store. Used to lock channel between protocols.
   PERSIST_STATE_CHANNEL,
+  // Middleware hook to validate state transitions in protocol. Called before
+  // `computeStateTransition` and registered using `injectMiddleware`
+  OP_VALIDATE,
 }
 
 export interface IPrivateKeyGenerator {
@@ -42,10 +45,6 @@ export interface IPrivateKeyGenerator {
 
 export type ProtocolExecutionFlow = {
   [x: number]: (context: Context) => AsyncIterableIterator<any[]>;
-};
-
-export type Middleware = {
-  (args: any): any;
 };
 
 export type Instruction = Function | Opcode;

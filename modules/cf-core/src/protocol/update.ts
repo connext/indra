@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams } from "@connext/types";
+import { ProtocolNames, ProtocolParams, UpdateMiddlewareContext, ProtocolRoles } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -17,8 +17,14 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.update;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-
+const {
+  OP_SIGN,
+  OP_VALIDATE,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_APP_INSTANCE,
+  PERSIST_COMMITMENT,
+} = Opcode;
 /**
  * @description This exchange is described at the following URL:
  *
@@ -47,6 +53,17 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
     const preProtocolAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        appInstance: preProtocolAppInstance.toJson(),
+        role: ProtocolRoles.initiator,
+      } as UpdateMiddlewareContext,
+    ];
+
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preProtocolAppInstance,
@@ -134,6 +151,16 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
     const preProtocolAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        appInstance: preProtocolAppInstance.toJson(),
+        role: ProtocolRoles.responder,
+      } as UpdateMiddlewareContext,
+    ];
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preProtocolAppInstance,

@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams } from "@connext/types";
+import { ProtocolNames, ProtocolParams, ProtocolRoles, InstallMiddlewareContext } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -26,6 +26,7 @@ import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./
 const protocol = ProtocolNames.install;
 const {
   OP_SIGN,
+  OP_VALIDATE,
   IO_SEND,
   IO_SEND_AND_WAIT,
   PERSIST_APP_INSTANCE,
@@ -92,6 +93,18 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
+
+    // safe to do here, nothing is signed or written to store
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        stateChannel: stateChannelBefore.toJson(),
+        appInstance: newAppInstance.toJson(),
+        role: ProtocolRoles.initiator,
+      } as InstallMiddlewareContext,
+    ];
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
       context,
@@ -266,6 +279,18 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorXpub, 0);
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
+
+    // safe to do here, nothing is signed or written to store
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        stateChannel: stateChannelBefore.toJson(),
+        appInstance: newAppInstance.toJson(),
+        role: ProtocolRoles.responder,
+      } as InstallMiddlewareContext,
+    ];
 
     const conditionalTxCommitment = getConditionalTransactionCommitment(
       context,

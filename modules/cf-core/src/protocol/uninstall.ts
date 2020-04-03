@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams, ILoggerService } from "@connext/types";
+import { ProtocolNames, ProtocolParams, ILoggerService, ProtocolRoles, UninstallMiddlewareContext } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -23,8 +23,14 @@ import { StateChannel } from "..";
 import { AppInstance } from "../models/app-instance";
 
 const protocol = ProtocolNames.uninstall;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-
+const {
+  OP_SIGN,
+  OP_VALIDATE,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_APP_INSTANCE,
+  PERSIST_COMMITMENT,
+} = Opcode;
 /**
  * @description This exchange is described at the following URL:
  *
@@ -45,6 +51,17 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        appInstance: appToUninstall.toJson(),
+        role: ProtocolRoles.initiator,
+        stateChannel: preProtocolStateChannel.toJson(),
+      } as UninstallMiddlewareContext,
+    ];
 
     // 47ms
     const postProtocolStateChannel = await computeStateTransition(
@@ -128,6 +145,17 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       store,
     );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        appInstance: appToUninstall.toJson(),
+        role: ProtocolRoles.responder,
+        stateChannel: preProtocolStateChannel.toJson(),
+      } as UninstallMiddlewareContext,
+    ];
 
     // 40ms
     const postProtocolStateChannel = await computeStateTransition(
