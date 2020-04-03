@@ -9,7 +9,6 @@ import {
   CheckDepositRightsParameters,
   MIN_DEPOSIT_TIMEOOUT_BLOCKS,
   AppInstanceJson,
-  DepositAppAction,
   toBN,
   bigNumberifyJson,
 } from "@connext/types";
@@ -129,7 +128,7 @@ export class DepositController extends AbstractController {
 
     // first take action to finalize the state
     this.log.debug(`Taking action to finalize deposit app ${app.identityHash}`);
-    const action: DepositAppAction = {};
+    const action = {};
     await this.connext.takeAction(app.identityHash, action);
   
     this.log.debug(`Deposit app finalized, uninstalling ${app.identityHash}`);
