@@ -1,7 +1,7 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "../../shared/libs/LibChannelCrypto.sol"
+import "../../shared/libs/LibChannelCrypto.sol";
 import "../../adjudicator/interfaces/CounterfactualApp.sol";
 import "../libs/LibOutcome.sol";
 
