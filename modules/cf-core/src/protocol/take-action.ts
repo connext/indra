@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams } from "@connext/types";
+import { ProtocolNames, ProtocolParams, ProtocolRoles, TakeActionMiddlewareContext } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -16,8 +16,14 @@ import { xkeyKthAddress } from "../xkeys";
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
 const protocol = ProtocolNames.takeAction;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_APP_INSTANCE, PERSIST_COMMITMENT } = Opcode;
-
+const {
+  OP_SIGN,
+  OP_VALIDATE,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_APP_INSTANCE,
+  PERSIST_COMMITMENT,
+} = Opcode;
 /**
  * @description This exchange is described at the following URL:
  *
@@ -46,6 +52,16 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     );
     // 8ms
     const preAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        appInstance: preAppInstance.toJson(),
+        role: ProtocolRoles.initiator,
+      } as TakeActionMiddlewareContext,
+    ];
 
     // 40ms
     let substart = Date.now();
@@ -110,7 +126,6 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
-    let substart = start;
     log.debug(`Response started for takeAction`);
 
     const {
@@ -133,6 +148,17 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     // 9ms
     const preAppInstance = preProtocolStateChannel.getAppInstance(appIdentityHash);
+
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        appInstance: preAppInstance.toJson(),
+        role: ProtocolRoles.responder,
+      } as TakeActionMiddlewareContext,
+    ];
+
     // 48ms
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
