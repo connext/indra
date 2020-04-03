@@ -1,6 +1,7 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
+import "../../shared/libs/LibChannelCrypto.sol";
 import "../libs/LibStateChannelApp.sol";
 import "./MChallengeRegistryCore.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -8,6 +9,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
 
+    using LibChannelCrypto for bytes32;
     using SafeMath for uint256;
 
     /// @notice Respond to a challenge with a valid action
@@ -102,7 +104,7 @@ contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
             versionNumber
         );
 
-        address signer = actionHash.recover(action.signature);
+        address signer = actionHash.verifyChannelMessage(action.signature);
 
         return turnTaker == signer;
     }
