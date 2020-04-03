@@ -11,7 +11,6 @@ import {
 } from "@connext/apps";
 import {
   AppInstanceJson,
-  CoinBalanceRefundAppName,
   FastSignedTransferAppName,
   HashLockTransferAppName,
   MethodParams,

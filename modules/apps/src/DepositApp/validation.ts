@@ -3,7 +3,7 @@ import {
   MethodParams,
   DepositAppState,
   stringify,
-  toBN,
+  MIN_DEPOSIT_TIMEOOUT_BLOCKS,
 } from "@connext/types";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
@@ -58,6 +58,24 @@ export const validateDepositApp = async (
     throw new Error(`Cannot install deposit app with invalid token address. Expected ${params.initiatorDepositTokenAddress}, got ${initialState.assetId}`);
   }
 
+  const minTimelock = MIN_DEPOSIT_TIMEOOUT_BLOCKS.add(await provider.getBlockNumber());
+
+  if (
+    initialState.timelock.lt(minTimelock)) {
+    throw new Error(`Cannot install a deposit app with timelock within ${MIN_DEPOSIT_TIMEOOUT_BLOCKS} of now (${await provider.getBlockNumber()})`);
+  }
+
+  if (initialState.finalized) {
+    throw new Error(`Cannot install a deposit app with finalized state`)
+  }
+
+  const startingMultisigBalance = initialState.assetId === AddressZero
+    ? await provider.getBalance(multisigAddress)
+    : await new Contract(initialState.assetId, ERC20.abi, provider)
+        .functions
+        .balanceOf(multisigAddress);
+
+
   const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
   let startingTotalAmountWithdrawn;
   try {
@@ -74,20 +92,6 @@ export const validateDepositApp = async (
     startingTotalAmountWithdrawn = Zero;
   }
 
-  const startingMultisigBalance = initialState.assetId === AddressZero
-    ? await provider.getBalance(multisigAddress)
-    : await new Contract(initialState.assetId, ERC20.abi, provider)
-        .functions
-        .balanceOf(multisigAddress);
-
-  if (initialState.finalized) {
-    throw new Error(`Cannot install a deposit app with finalized state`)
-  }
-
-  if (initialState.timelock <= toBN(await provider.getBlockNumber())) {
-    throw new Error(`Cannot install a deposit app with an expired timeout`)
-  }
-  
   if (!initialState.startingTotalAmountWithdrawn.eq(startingTotalAmountWithdrawn)) {
     throw new Error(`Cannot install deposit app with invalid totalAmountWithdrawn. Expected ${startingTotalAmountWithdrawn}, got ${initialState.startingTotalAmountWithdrawn}`);
   }

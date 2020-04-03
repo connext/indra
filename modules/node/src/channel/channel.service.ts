@@ -1,7 +1,6 @@
 import {
   ChannelAppSequences,
   maxBN,
-  MethodParams,
   MethodResults,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
@@ -10,18 +9,15 @@ import {
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { TransactionResponse, TransactionReceipt } from "ethers/providers";
+import { TransactionReceipt } from "ethers/providers";
 import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
-import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { xkeyKthAddress } from "../util";
 import { CreateChannelMessage } from "../util/cfCore";
@@ -49,11 +45,9 @@ export class ChannelService {
     private readonly channelRepository: ChannelRepository,
     private readonly configService: ConfigService,
     private readonly withdrawService: WithdrawService,
+    private readonly depositService: DepositService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
-    private readonly depositService: DepositService,
-    private readonly onchainTransactionRepository: OnchainTransactionRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
   ) {
     this.log.setContext("ChannelService");
   }
@@ -195,7 +189,7 @@ export class ChannelService {
     await this.channelRepository.setInflightCollateralization(channel, true);
     let receipt;
     try {
-      receipt = await this.depositService.deposit(channel, amountDeposit, assetId)
+      receipt = await this.depositService.deposit(channel, amountDeposit, assetId);
       this.log.info(`Channel ${channel.multisigAddress} successfully collateralized`);
       this.log.debug(`Collateralization result: ${stringify(receipt)}`);
     } catch (e) {

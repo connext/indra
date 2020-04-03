@@ -6,6 +6,7 @@ import {
   tidy,
 } from "../misc";
 import { Address } from "../../basic";
+import { toBN } from "../../math";
 
 export const DepositAppName = "DepositApp";
 
@@ -52,3 +53,7 @@ export type DepositResponse = {
     [s: string]: BigNumber;
   };
 };
+
+////////////////////////////////////////
+// DEFAULT VALUES
+export const MIN_DEPOSIT_TIMEOOUT_BLOCKS = toBN(10);

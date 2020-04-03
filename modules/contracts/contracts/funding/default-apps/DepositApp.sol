@@ -37,7 +37,7 @@ contract DepositApp is CounterfactualApp {
         return participants[0];
     }
 
-    function takeAction(
+    function applyAction(
         bytes calldata encodedState,
         bytes calldata encodedAction
     )
@@ -66,7 +66,7 @@ contract DepositApp is CounterfactualApp {
 
         // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
         state.transfers[0].amount = (endingMultisigBalance - state.startingMultisigBalance) +
-                            (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn);
+            (endingTotalAmountWithdrawn - state.startingTotalAmountWithdrawn);
         state.transfers[1].amount = 0;
         state.finalized = true;
 

@@ -10,20 +10,22 @@ import { OnchainTransactionRepository } from "../onchainTransactions/onchainTran
 import { ChannelRepository } from "../channel/channel.repository";
 
 import { DepositService } from "./deposit.service";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Module({
     controllers: [],
     exports: [DepositService],
     imports: [
-        CFCoreModule,
-        ConfigModule,
-        OnchainTransactionModule,
-        LoggerModule,
-        TypeOrmModule.forFeature([
+      CFCoreModule,
+      ConfigModule,
+      OnchainTransactionModule,
+      LoggerModule,
+      TypeOrmModule.forFeature([
         OnchainTransactionRepository,
+        AppInstanceRepository,
         AppRegistryRepository,
         ChannelRepository,
-        ]),
+      ]),
     ],
     providers: [DepositService],
 })
