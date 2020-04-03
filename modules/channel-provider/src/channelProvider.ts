@@ -59,9 +59,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
-      case ChannelMethods.chan_signDigest:
-        result = await this.signDigest(params.message);
-        break;
       case ChannelMethods.chan_config:
         result = this.config;
         break;
@@ -77,11 +74,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         break;
 
       case ChannelMethods.chan_createSetStateCommitment:
-        result = await this.createSetStateCommitment(params.appIdentityHash,params.commitment);
+        result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
         break;
-      
+
       case ChannelMethods.chan_createConditionalCommitment:
-        result = await this.createConditionalCommitment(params.appIdentityHash,params.commitment);
+        result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
 
       default:
@@ -144,10 +141,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   public signMessage(message: string): Promise<string> {
     return this._send(ChannelMethods.chan_signMessage, { message });
   }
-
-  public signDigest = async (message: string): Promise<string> => {
-    return this._send(ChannelMethods.chan_signDigest, { message });
-  };
 
   /// ////////////////////////////////////////////
   /// // STORE METHODS
