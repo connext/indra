@@ -7,8 +7,6 @@ import {
   DepositAppName,
   TransactionResponse,
   TransactionReceipt,
-  MIN_DEPOSIT_TIMEOOUT_BLOCKS,
-  toBN,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero, AddressZero } from "ethers/constants";
@@ -40,7 +38,6 @@ export class DepositService {
   }
 
   async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<TransactionReceipt> {
-    const ethProvider = this.configService.getEthProvider();
     // don't allow deposit if user's balance refund app is installed
     const depositRegistry = await this.appRegistryRepository
       .findByNameAndNetwork(
@@ -68,18 +65,6 @@ export class DepositService {
     if (!depositApp) {
       this.log.debug(`Requesting deposit rights before depositing`);
       appInstanceId = await this.requestDepositRights(channel, assetId);
-    } else {
-      const latestState = depositApp.latestState as DepositAppState;
-      // uninstall existing deposit app if it is finalized or timelock
-      // has passed
-      if (
-        toBN(latestState.timelock).lt(await ethProvider.getBlockNumber()) || latestState.finalized
-      ) {
-        this.log.debug(`Found existing deposit app with finalized state, uninstalling`);
-        await this.rescindDepositRights(depositApp.identityHash);
-        appInstanceId = await this.requestDepositRights(channel, assetId);
-      }
-      // otherwise the deposit app is valid
     }
     const tx = await this.sendDepositToChain(channel, amount, assetId);
     const receipt = await tx.wait();
@@ -130,15 +115,6 @@ export class DepositService {
     const latestState = app.latestState as DepositAppState;
     const initiatorTransfer = latestState.transfers[0];
 
-    // if the app is invalid, uninstall
-    if (
-      latestState.finalized || toBN(latestState.timelock).lt(await ethProvider.getBlockNumber())
-    ) {
-      this.log.debug(`App is already finalized, uninstalling`);
-      await this.cfCoreService.uninstallApp(appInstanceId);
-      return;
-    }
-
     if (initiatorTransfer.to !== xkeyKthAddress(this.configService.getPublicIdentifier())) {
       throw new Error(`User has active deposit app, cannot uninstall`);
     }
@@ -154,11 +130,6 @@ export class DepositService {
 
     if (currentMultisigBalance.lte(latestState.startingMultisigBalance)) {
       throw new Error(`Deposit has not occurred yet, not uninstallling.`);
-    }
-
-    if (!latestState.finalized) {
-      this.log.debug(`Finalizing deposit app state`);
-      await this.cfCoreService.takeAction(appInstanceId, {});
     }
 
     this.log.debug(`Uninstalling deposit app`);
@@ -227,10 +198,6 @@ export class DepositService {
         ? await ethProvider.getBalance(channel.multisigAddress)
         : await token.functions.balanceOf(channel.multisigAddress);
 
-    const timelock: BigNumber = MIN_DEPOSIT_TIMEOOUT_BLOCKS.add(
-      await ethProvider.getBlockNumber(),
-    );
-
     const initialState: DepositAppState = {
       transfers: [
         {
@@ -246,8 +213,6 @@ export class DepositService {
       assetId,
       startingTotalAmountWithdrawn, 
       startingMultisigBalance,
-      finalized: false,
-      timelock,
     };
 
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(

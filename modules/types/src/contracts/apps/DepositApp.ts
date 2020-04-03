@@ -44,7 +44,3 @@ export type DepositResponse = {
     [s: string]: BigNumber;
   };
 };
-
-////////////////////////////////////////
-// DEFAULT VALUES
-export const MIN_DEPOSIT_TIMEOOUT_BLOCKS = toBN(10);

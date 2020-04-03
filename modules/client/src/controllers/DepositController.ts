@@ -7,9 +7,7 @@ import {
   RescindDepositRightsResponse,
   RescindDepositRightsParameters,
   CheckDepositRightsParameters,
-  MIN_DEPOSIT_TIMEOOUT_BLOCKS,
   AppInstanceJson,
-  toBN,
   bigNumberifyJson,
 } from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
@@ -52,14 +50,6 @@ export class DepositController extends AbstractController {
 
     this.log.debug(`Found existing deposit app`);
     const latestState = depositApp.latestState as DepositAppState;
-    if (toBN(latestState.timelock).lt(await this.ethProvider.getBlockNumber())) {
-      throw new Error(`Found existing deposit app with expired timelock, please call "rescindDepositRights" for ${assetId}`);
-    }
-
-    // if the timelock has not expired, but the state is finalized, uninstall
-    if (latestState.finalized) {
-      throw new Error(`Found existing deposit app with finalized state, please call "rescindDepositRights" for ${assetId}`);
-    }
 
     // check if you are the initiator;
     const initiatorTransfer = latestState.transfers[0];
@@ -92,18 +82,6 @@ export class DepositController extends AbstractController {
     };
 
     const latestState = bigNumberifyJson(app.latestState) as DepositAppState;
-    // if the timelock has expired, uninstall the app regardless
-    // if you are the initiator, or if the state is finalized
-    if (toBN(latestState.timelock).lt(await this.ethProvider.getBlockNumber())) {
-      this.log.debug(`Deposit app timelock expired, uninstalling`);
-      return uninstallGetFreeBalance();
-    }
-
-    // if the timelock has not expired, but the state is finalized, uninstall
-    if (latestState.finalized) {
-      this.log.debug(`Deposit app state is finalized, uninstalling`);
-      return uninstallGetFreeBalance();
-    }
 
     // check if you are the initiator;
     const initiatorTransfer = latestState.transfers[0];
@@ -126,12 +104,8 @@ export class DepositController extends AbstractController {
       throw new Error(`Deposit has not yet completed, cannot rescind deposit rights`);
     }
 
-    // first take action to finalize the state
-    this.log.debug(`Taking action to finalize deposit app ${app.identityHash}`);
-    const action = {};
-    await this.connext.takeAction(app.identityHash, action);
   
-    this.log.debug(`Deposit app finalized, uninstalling ${app.identityHash}`);
+    this.log.debug(`Uninstalling ${app.identityHash}`);
     return uninstallGetFreeBalance();
   }
 
@@ -139,7 +113,10 @@ export class DepositController extends AbstractController {
     params: CheckDepositRightsParameters,
   ): Promise<AppInstanceJson | undefined> => {
     const appInstances = await this.connext.getAppInstances();
-    const depositAppInfo = await this.connext.getAppRegistry({name: DepositAppName, chainId: this.ethProvider.network.chainId})
+    const depositAppInfo = await this.connext.getAppRegistry({
+      name: DepositAppName,
+      chainId: this.ethProvider.network.chainId,
+    });
     const depositApp = appInstances.find(
       (appInstance) =>
         appInstance.appInterface.addr === depositAppInfo[0].appDefinitionAddress &&
@@ -189,7 +166,6 @@ export class DepositController extends AbstractController {
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
         : await token.functions.balanceOf(this.connext.multisigAddress);
 
-    const timelock = MIN_DEPOSIT_TIMEOOUT_BLOCKS.add(await this.ethProvider.getBlockNumber());
     const initialState: DepositAppState = {
       transfers: [
         {
@@ -205,8 +181,6 @@ export class DepositController extends AbstractController {
       assetId,
       startingTotalAmountWithdrawn, 
       startingMultisigBalance,
-      finalized: false,
-      timelock,
     };
 
     const {
