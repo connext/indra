@@ -1,11 +1,24 @@
 /* global before */
 import { AppChallengeBigNumber } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { Wallet, Contract } from "ethers";
 import { keccak256 } from "ethers/utils";
 import * as waffle from "ethereum-waffle";
 
-import { expect, computeActionHash, AppWithCounterState, AppWithCounterAction, snapshot, restore, moveToBlock, encodeState, encodeAction, setupContext, EMPTY_CHALLENGE, provider } from "../utils";
+import {
+  expect,
+  computeActionHash,
+  AppWithCounterState,
+  AppWithCounterAction,
+  snapshot,
+  restore,
+  moveToBlock,
+  encodeState,
+  encodeAction,
+  setupContext,
+  EMPTY_CHALLENGE,
+  provider,
+} from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import AppApplyActionFails from "../../../build/AppApplyActionFails.json";
@@ -27,10 +40,18 @@ describe("progressState", () => {
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
 
   let setState: (versionNumber: number, appState?: string, timeout?: number) => Promise<void>;
-  let progressState: (state: AppWithCounterState, action: AppWithCounterAction, actionSig: string) => Promise<void>;
+  let progressState: (
+    state: AppWithCounterState,
+    action: AppWithCounterAction,
+    actionSig: string,
+  ) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
-  let progressStateAndVerify: (state: AppWithCounterState, action: AppWithCounterAction, signer?: Wallet) => Promise<void>;
+  let progressStateAndVerify: (
+    state: AppWithCounterState,
+    action: AppWithCounterAction,
+    signer?: Wallet,
+  ) => Promise<void>;
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
@@ -70,7 +91,7 @@ describe("progressState", () => {
     await setState(1, encodeState(PRE_STATE));
 
     expect(await isProgressable()).to.be.false;
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
     expect(await isProgressable()).to.be.true;
 
     await progressStateAndVerify(PRE_STATE, ACTION);
@@ -80,7 +101,7 @@ describe("progressState", () => {
     await setState(1, encodeState(PRE_STATE));
 
     expect(await isProgressable()).to.be.false;
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
     await progressStateAndVerify(PRE_STATE, ACTION);
 
     const thingToSign2 = computeActionHash(
@@ -89,14 +110,14 @@ describe("progressState", () => {
       encodeAction(ACTION),
       2,
     );
-    const signature2 = await signDigest(ALICE.privateKey, thingToSign2);
+    const signature2 = await signChannelMessage(ALICE.privateKey, thingToSign2);
     await progressState(POST_STATE, ACTION, signature2);
   });
 
   it("Cannot call progressState with incorrect turn taker", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(PRE_STATE, ACTION, ALICE)).to.be.revertedWith(
       "progressState called with action signed by incorrect turn taker",
@@ -106,7 +127,7 @@ describe("progressState", () => {
   it("progressState should fail if incorrect state submitted", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(POST_STATE, ACTION)).to.be.revertedWith(
       "Tried to progress a challenge with non-agreed upon app",
@@ -122,7 +143,7 @@ describe("progressState", () => {
       encodeAction(ACTION),
       1,
     );
-    const signature = await signDigest(ALICE.privateKey, thingToSign);
+    const signature = await signChannelMessage(ALICE.privateKey, thingToSign);
 
     expect(await isProgressable()).to.be.false;
     await expect(progressState(POST_STATE, ACTION, signature)).to.be.revertedWith(
@@ -137,13 +158,11 @@ describe("progressState", () => {
 
     await context["setStateAndVerify"](1, encodeState(context["state0"]));
 
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
     expect(await context["isProgressable"]()).to.be.true;
 
-    await expect(context["progressStateAndVerify"](context["state0"], context["action"])).to.be.revertedWith(
-      "applyAction fails for this app",
-    );
-    
+    await expect(
+      context["progressStateAndVerify"](context["state0"], context["action"]),
+    ).to.be.revertedWith("applyAction fails for this app");
   });
-
 });

@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import {
   CoinTransfer,
   ConditionalTransferTypes,
@@ -53,8 +53,7 @@ describe.skip("Fast Signed Transfer", () => {
 
     let transferApp = await clientA.getAppInstanceDetails(appId);
     expect(transferApp).to.be.ok;
-    let transferAppState = transferApp.appInstance
-      .latestState as FastSignedTransferAppState;
+    let transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppState;
 
     let coinTransfers: CoinTransfer[] = transferAppState.coinTransfers;
     expect(coinTransfers[0][0]).eq(clientA.freeBalanceAddress);
@@ -72,7 +71,7 @@ describe.skip("Fast Signed Transfer", () => {
     const data = createRandom32ByteHexString();
 
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signDigest(signerWallet.privateKey, digest);
+    const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
     let resolveCondition: ResolveConditionResponse;
     await new Promise(async resolve => {
@@ -129,7 +128,7 @@ describe.skip("Fast Signed Transfer", () => {
       const data = createRandom32ByteHexString();
 
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = await signDigest(signerWallet.privateKey, digest);
+      const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
       const res = await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.FastSignedTransfer,
@@ -147,8 +146,7 @@ describe.skip("Fast Signed Transfer", () => {
 
     // locked payment can resolve
     const transferApp = await clientB.getAppInstanceDetails(initialReceiverAppInstanceId);
-    const transferAppState = transferApp.appInstance
-      .latestState as FastSignedTransferAppState;
+    const transferAppState = transferApp.appInstance.latestState as FastSignedTransferAppState;
     const coinTransfers = transferAppState.coinTransfers;
     expect(coinTransfers[0][0]).eq(xkeyKthAddress(clientB.nodePublicIdentifier));
     expect(coinTransfers[1][0]).eq(clientB.freeBalanceAddress);

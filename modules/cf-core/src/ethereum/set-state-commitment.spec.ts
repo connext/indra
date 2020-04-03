@@ -1,4 +1,4 @@
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { MinimalTransaction } from "@connext/types";
 import {
   bigNumberify,
@@ -34,14 +34,11 @@ describe("Set State Commitment", () => {
   const hdNodes = getRandomHDNodes(2);
 
   beforeAll(async () => {
-    commitment = getSetStateCommitment(
-      context,
-      appInstance,
-    );
+    commitment = getSetStateCommitment(context, appInstance);
     const commitmentHash = commitment.hashToSign();
     commitment.signatures = [
-      await signDigest(hdNodes[0].privateKey, commitmentHash),
-      await signDigest(hdNodes[1].privateKey, commitmentHash),
+      await signChannelMessage(hdNodes[0].privateKey, commitmentHash),
+      await signChannelMessage(hdNodes[1].privateKey, commitmentHash),
     ];
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent

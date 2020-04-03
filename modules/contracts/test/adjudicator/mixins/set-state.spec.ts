@@ -6,7 +6,7 @@ import {
   toBN,
   sortSignaturesBySignerAddress,
 } from "@connext/types";
-import { signDigest, recoverAddress } from "@connext/crypto";
+import { signChannelMessage, recoverAddress } from "@connext/crypto";
 import { One } from "ethers/constants";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
@@ -38,11 +38,7 @@ describe("setState", () => {
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
   let appInstance: AppWithCounterClass;
 
-  let setState: (
-    versionNumber: number,
-    appState?: string,
-    timeout?: number,
-  ) => Promise<void>;
+  let setState: (versionNumber: number, appState?: string, timeout?: number) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let verifyEmptyChallenge: () => Promise<void>;
 
@@ -84,7 +80,7 @@ describe("setState", () => {
         latestSubmitter: await wallet.getAddress(),
         appStateHash: appStateToHash(state),
         versionNumber: toBN(versionNumber),
-        finalizesAt: toBN(await provider.getBlockNumber() + timeout),
+        finalizesAt: toBN((await provider.getBlockNumber()) + timeout),
       });
     });
 
@@ -100,7 +96,7 @@ describe("setState", () => {
         latestSubmitter: await wallet.getAddress(),
         appStateHash: appStateToHash(state),
         versionNumber: toBN(versionNumber),
-        finalizesAt: toBN(await provider.getBlockNumber() + timeout),
+        finalizesAt: toBN((await provider.getBlockNumber()) + timeout),
       });
 
       const newVersionNumber = 10;
@@ -114,7 +110,7 @@ describe("setState", () => {
         latestSubmitter: await wallet.getAddress(),
         appStateHash: appStateToHash(newState),
         versionNumber: toBN(newVersionNumber),
-        finalizesAt: toBN(await provider.getBlockNumber() + newTimeout),
+        finalizesAt: toBN((await provider.getBlockNumber()) + newTimeout),
       });
     });
 
@@ -129,7 +125,9 @@ describe("setState", () => {
 
       await moveToBlock(100);
 
-      await expect(setState(2, randomState())).to.be.revertedWith("setState was called on an app that cannot be disputed anymore");
+      await expect(setState(2, randomState())).to.be.revertedWith(
+        "setState was called on an app that cannot be disputed anymore",
+      );
     });
 
     it("fails if incorrect signers", async () => {
@@ -140,19 +138,21 @@ describe("setState", () => {
         1, // version numner
         ONCHAIN_CHALLENGE_TIMEOUT, // timeout
       );
-      await expect(appRegistry.functions.setState(appInstance.appIdentity, {
-        versionNumber: One,
-        appStateHash: appStateToHash(state),
-        timeout: ONCHAIN_CHALLENGE_TIMEOUT,
-        signatures: await sortSignaturesBySignerAddress(
-          thingToSign,
-          [
-            await signDigest(wallet.privateKey, thingToSign),
-            await signDigest(bob.privateKey, thingToSign),
-          ],
-          recoverAddress,
-        ),
-      })).to.be.revertedWith(`Invalid signature`);
+      await expect(
+        appRegistry.functions.setState(appInstance.appIdentity, {
+          versionNumber: One,
+          appStateHash: appStateToHash(state),
+          timeout: ONCHAIN_CHALLENGE_TIMEOUT,
+          signatures: await sortSignaturesBySignerAddress(
+            thingToSign,
+            [
+              await signChannelMessage(wallet.privateKey, thingToSign),
+              await signChannelMessage(bob.privateKey, thingToSign),
+            ],
+            recoverAddress,
+          ),
+        }),
+      ).to.be.revertedWith(`Invalid signature`);
     });
 
     it("fails if called with the same versioned state", async () => {
@@ -164,7 +164,9 @@ describe("setState", () => {
         versionNumber: toBN(1),
       });
 
-      await expect(setState(1, state)).to.be.revertedWith("setState was called with outdated state");
+      await expect(setState(1, state)).to.be.revertedWith(
+        "setState was called with outdated state",
+      );
     });
 
     it("fails if called with a stale state", async () => {
@@ -176,7 +178,9 @@ describe("setState", () => {
         versionNumber: toBN(20),
       });
 
-      await expect(setState(1, state)).to.be.revertedWith("setState was called with outdated state");
+      await expect(setState(1, state)).to.be.revertedWith(
+        "setState was called with outdated state",
+      );
     });
   });
 });

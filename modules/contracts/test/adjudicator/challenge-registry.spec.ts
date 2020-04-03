@@ -2,13 +2,25 @@
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 
-import { expect, provider, restore, setupContext, snapshot, AppWithCounterState, AppWithCounterAction, encodeState, encodeAction, computeActionHash, moveToBlock } from "./utils";
+import {
+  expect,
+  provider,
+  restore,
+  setupContext,
+  snapshot,
+  AppWithCounterState,
+  AppWithCounterAction,
+  encodeState,
+  encodeAction,
+  computeActionHash,
+  moveToBlock,
+} from "./utils";
 
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 import { ChallengeStatus, toBN, AppChallengeBigNumber } from "@connext/types";
 import { keccak256 } from "ethers/utils";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 describe("ChallengeRegistry", () => {
   let appRegistry: Contract;
@@ -24,31 +36,24 @@ describe("ChallengeRegistry", () => {
   let state0: AppWithCounterState;
 
   // helpers
-  let setState: (
-    versionNumber: number, 
-    appState?: string, 
-    timeout?: number
-  ) => Promise<void>;
+  let setState: (versionNumber: number, appState?: string, timeout?: number) => Promise<void>;
   let setAndProgressState: (
-    versionNumber: number, 
-    state?: AppWithCounterState, 
-    turnTaker?: Wallet
+    versionNumber: number,
+    state?: AppWithCounterState,
+    turnTaker?: Wallet,
   ) => Promise<void>;
   let setOutcome: (finalState?: string) => Promise<void>;
   let progressState: (
     state: AppWithCounterState,
     action: AppWithCounterAction,
-    actionSig: string
+    actionSig: string,
   ) => Promise<void>;
   let progressStateAndVerify: (
     state: AppWithCounterState,
     action: AppWithCounterAction,
-    signer?: Wallet
+    signer?: Wallet,
   ) => Promise<void>;
-  let cancelChallengeAndVerify: (
-    versionNumber: number,
-    signatures?: string[],
-  ) => Promise<void>;
+  let cancelChallengeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
@@ -72,14 +77,17 @@ describe("ChallengeRegistry", () => {
     action = context["action"];
     state1 = context["state1"];
 
-
     // helpers
     setState = context["setStateAndVerify"];
     progressState = context["progressState"];
     progressStateAndVerify = context["progressStateAndVerify"];
     setOutcome = context["setOutcomeAndVerify"];
-    setAndProgressState = 
-      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressStateAndVerify"](
+    setAndProgressState = (
+      versionNumber: number,
+      state?: AppWithCounterState,
+      turnTaker?: Wallet,
+    ) =>
+      context["setAndProgressStateAndVerify"](
         versionNumber, // nonce
         state || state0, // state
         action, // action
@@ -108,7 +116,7 @@ describe("ChallengeRegistry", () => {
       encodeAction(finalizingAction),
       2, // version number after action applied
     );
-    const signature = await signDigest(alice.privateKey, thingToSign);
+    const signature = await signChannelMessage(alice.privateKey, thingToSign);
     await progressState(state1, finalizingAction, signature);
     // verify explicitly finalized
     const finalState = {
@@ -132,7 +140,7 @@ describe("ChallengeRegistry", () => {
 
     await setState(15, encodeState(state0));
 
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
 
     await setOutcome(encodeState(state0));
   });
@@ -144,19 +152,21 @@ describe("ChallengeRegistry", () => {
 
     await setState(15, encodeState(state0));
 
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 2);
     expect(await isProgressable()).to.be.true;
 
     await progressStateAndVerify(state0, action);
     await progressStateAndVerify(state1, action, alice);
 
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
     expect(await isProgressable()).to.be.false;
 
-    await setOutcome(encodeState({
-      ...state1,
-      counter: state1.counter.add(action.increment),
-    }));
+    await setOutcome(
+      encodeState({
+        ...state1,
+        counter: state1.counter.add(action.increment),
+      }),
+    );
   });
 
   it("Can cancel challenge at `setState` phase", async () => {
@@ -178,9 +188,11 @@ describe("ChallengeRegistry", () => {
   it("Cannot cancel challenge after outcome set", async () => {
     await setState(1, encodeState(state0));
 
-    await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
 
     await setOutcome(encodeState(state0));
-    await expect(cancelChallengeAndVerify(1)).to.be.revertedWith("cancelChallenge called on challenge that cannot be cancelled");
+    await expect(cancelChallengeAndVerify(1)).to.be.revertedWith(
+      "cancelChallenge called on challenge that cannot be cancelled",
+    );
   });
 });

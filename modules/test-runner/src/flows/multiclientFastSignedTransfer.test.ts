@@ -1,4 +1,4 @@
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import {
   ConditionalTransferTypes,
   createRandom32ByteHexString,
@@ -11,11 +11,7 @@ import {
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import {
-  bigNumberify,
-  solidityKeccak256,
-  SigningKey,
-} from "ethers/utils";
+import { bigNumberify, solidityKeccak256, SigningKey } from "ethers/utils";
 import { before } from "mocha";
 import { Client } from "ts-nats";
 
@@ -113,8 +109,7 @@ describe("Full Flow: Multi-client transfer", () => {
 
       gateway.on(
         EventNames.CREATE_TRANSFER,
-        async (eventData: EventPayloads.CreateFastTransfer,
-      ) => {
+        async (eventData: EventPayloads.CreateFastTransfer) => {
           let withdrawerSigningKey: SigningKey;
           let indexer: IConnextClient;
           let indexerTransfers: {
@@ -132,7 +127,7 @@ describe("Full Flow: Multi-client transfer", () => {
           }
           const data = createRandom32ByteHexString();
           const digest = solidityKeccak256(["bytes32", "bytes32"], [data, eventData.paymentId]);
-          const signature = await signDigest(withdrawerSigningKey!.privateKey, digest);
+          const signature = await signChannelMessage(withdrawerSigningKey!.privateKey, digest);
 
           await indexer!.resolveCondition({
             conditionType: ConditionalTransferTypes.FastSignedTransfer,

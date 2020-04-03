@@ -2,15 +2,23 @@
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 
-import { expect, restore, snapshot, setupContext, provider, AppWithCounterState, computeCancelChallengeHash, AppWithCounterClass } from "../utils";
+import {
+  expect,
+  restore,
+  snapshot,
+  setupContext,
+  provider,
+  AppWithCounterState,
+  computeCancelChallengeHash,
+  AppWithCounterClass,
+} from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 import { sortSignaturesBySignerAddress, toBN } from "@connext/types";
-import { signDigest, recoverAddress } from "@connext/crypto";
+import { signChannelMessage, recoverAddress } from "@connext/crypto";
 
 describe("cancelChallenge", () => {
-
   let appRegistry: Contract;
   let appDefinition: Contract;
   let wallet: Wallet;
@@ -24,16 +32,13 @@ describe("cancelChallenge", () => {
   let isDisputable: () => Promise<boolean>;
   let isProgressable: () => Promise<boolean>;
 
-  let setState: (
+  let setState: (versionNumber: number, appState?: string, timeout?: number) => Promise<void>;
+  let setAndProgressState: (
     versionNumber: number,
-    appState?: string,
-    timeout?: number,
+    state?: AppWithCounterState,
+    turnTaker?: Wallet,
   ) => Promise<void>;
-  let setAndProgressState: (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => Promise<void>;
-  let cancelChallenge: (
-    versionNumber: number, 
-    signatures?: string[]
-  ) => Promise<void>;
+  let cancelChallenge: (versionNumber: number, signatures?: string[]) => Promise<void>;
   let cancelChallengeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
   before(async () => {
@@ -57,8 +62,12 @@ describe("cancelChallenge", () => {
     isDisputable = context["isDisputable"];
 
     setState = context["setStateAndVerify"];
-    setAndProgressState = 
-      (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressStateAndVerify"](
+    setAndProgressState = (
+      versionNumber: number,
+      state?: AppWithCounterState,
+      turnTaker?: Wallet,
+    ) =>
+      context["setAndProgressStateAndVerify"](
         versionNumber, // nonce
         state || context["state0"], // state
         context["action"], // action
@@ -72,7 +81,6 @@ describe("cancelChallenge", () => {
   afterEach(async () => {
     await restore(snapshotId);
   });
-
 
   it("works", async () => {
     // when in set state phase
@@ -90,7 +98,9 @@ describe("cancelChallenge", () => {
   });
 
   it("fails if is not cancellable", async () => {
-    await expect(cancelChallenge(0)).to.be.revertedWith("cancelChallenge called on challenge that cannot be cancelled");
+    await expect(cancelChallenge(0)).to.be.revertedWith(
+      "cancelChallenge called on challenge that cannot be cancelled",
+    );
   });
 
   it("fails if incorrect sigs", async () => {
@@ -101,17 +111,21 @@ describe("cancelChallenge", () => {
     const signatures = await sortSignaturesBySignerAddress(
       digest,
       [
-        await signDigest(wallet.privateKey, digest),
-        await signDigest(bob.privateKey, digest),
+        await signChannelMessage(wallet.privateKey, digest),
+        await signChannelMessage(bob.privateKey, digest),
       ],
       recoverAddress,
     );
-    await expect(cancelChallenge(versionNumber, signatures)).to.be.revertedWith("Invalid signature");
+    await expect(cancelChallenge(versionNumber, signatures)).to.be.revertedWith(
+      "Invalid signature",
+    );
   });
 
   it("fails if wrong version number submitted", async () => {
     // when in set state phase
     await setState(1);
-    await expect(cancelChallenge(2)).to.be.revertedWith("cancelChallenge was called with wrong version number");
+    await expect(cancelChallenge(2)).to.be.revertedWith(
+      "cancelChallenge was called with wrong version number",
+    );
   });
 });

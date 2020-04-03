@@ -1,8 +1,5 @@
-import {
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  OutcomeType,
-} from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { MultiAssetMultiPartyCoinTransferInterpreterParams, OutcomeType } from "@connext/types";
+import { signChannelMessage } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -139,16 +136,13 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         },
       });
 
-      const setStateCommitment = getSetStateCommitment(
-        context,
-        identityAppInstance,
-      );
+      const setStateCommitment = getSetStateCommitment(context, identityAppInstance);
 
       const setStateCommitmentHash = setStateCommitment.hashToSign();
 
       setStateCommitment.signatures = [
-        await signDigest(uniqueAppSigningKeys[0].privateKey, setStateCommitmentHash),
-        await signDigest(uniqueAppSigningKeys[1].privateKey, setStateCommitmentHash),
+        await signChannelMessage(uniqueAppSigningKeys[0].privateKey, setStateCommitmentHash),
+        await signChannelMessage(uniqueAppSigningKeys[1].privateKey, setStateCommitmentHash),
       ];
 
       await wallet.sendTransaction({
@@ -162,8 +156,14 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       );
       const setStateCommitmentForFreeBalanceHash = setStateCommitmentForFreeBalance.hashToSign();
       setStateCommitmentForFreeBalance.signatures = [
-        await signDigest(multisigOwnerKeys[0].privateKey, setStateCommitmentForFreeBalanceHash),
-        await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentForFreeBalanceHash),
+        await signChannelMessage(
+          multisigOwnerKeys[0].privateKey,
+          setStateCommitmentForFreeBalanceHash,
+        ),
+        await signChannelMessage(
+          multisigOwnerKeys[1].privateKey,
+          setStateCommitmentForFreeBalanceHash,
+        ),
       ];
 
       await wallet.sendTransaction({
@@ -193,8 +193,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       );
       const conditionalTransactionHash = conditionalTransaction.hashToSign();
       conditionalTransaction.signatures = [
-        await signDigest(multisigOwnerKeys[0].privateKey, conditionalTransactionHash),
-        await signDigest(multisigOwnerKeys[1].privateKey, conditionalTransactionHash),
+        await signChannelMessage(multisigOwnerKeys[0].privateKey, conditionalTransactionHash),
+        await signChannelMessage(multisigOwnerKeys[1].privateKey, conditionalTransactionHash),
       ];
       const multisigDelegateCallTx = await conditionalTransaction.getSignedTransaction();
 
@@ -214,11 +214,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       expect(await wallet.provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
       expect(await wallet.provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(Zero);
 
-      const erc20Contract = new Contract(
-        erc20TokenAddress,
-        DolphinCoin.abi,
-        wallet.provider,
-      );
+      const erc20Contract = new Contract(erc20TokenAddress, DolphinCoin.abi, wallet.provider);
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
       expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[0].address)).toBeEq(Zero);
@@ -229,18 +225,17 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
 
       freeBalanceConditionalTransaction.signatures = [
-        await signDigest(
+        await signChannelMessage(
           multisigOwnerKeys[0].privateKey,
           freeBalanceConditionalTransaction.hashToSign(),
         ),
-        await signDigest(
+        await signChannelMessage(
           multisigOwnerKeys[1].privateKey,
           freeBalanceConditionalTransaction.hashToSign(),
         ),
       ];
 
-      const multisigDelegateCallTx2 =
-        await freeBalanceConditionalTransaction.getSignedTransaction();
+      const multisigDelegateCallTx2 = await freeBalanceConditionalTransaction.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...multisigDelegateCallTx2,

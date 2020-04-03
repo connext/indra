@@ -8,7 +8,7 @@ import {
   CoinBalanceRefundAppState,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { Contract, providers } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
@@ -80,7 +80,7 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      const sig = await channelProvider.send(ChannelMethods.chan_signDigest, { message });
+      const sig = await channelProvider.send(ChannelMethods.chan_signChannelMessage, { message });
       return sig;
     };
 
@@ -127,7 +127,7 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const sig = signDigest(await keyGen("0"), message);
+      const sig = signChannelMessage(await keyGen("0"), message);
       return sig;
     };
 
