@@ -2,7 +2,7 @@ import { MessagingAuthService } from "@connext/messaging";
 import { Injectable, Inject } from "@nestjs/common";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { createRandomBytesHexString } from "@connext/types";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
@@ -60,7 +60,7 @@ export class AuthService {
     }
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
-    const addr = await recoverAddress(nonce, signedNonce);
+    const addr = await verifyChannelMessage(nonce, signedNonce);
     if (addr !== xpubAddress) {
       throw new Error(`Verification failed`);
     }

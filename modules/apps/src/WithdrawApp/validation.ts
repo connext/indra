@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 import { bigNumberifyJson, MethodParams, WithdrawAppState } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 
@@ -51,7 +51,7 @@ export const validateWithdrawApp = async (
     );
   }
 
-  let recovered = await recoverAddress(initialState.data, initialState.signatures[0]);
+  let recovered = await verifyChannelMessage(initialState.data, initialState.signatures[0]);
 
   if (recovered !== initialState.signers[0]) {
     throw new Error(

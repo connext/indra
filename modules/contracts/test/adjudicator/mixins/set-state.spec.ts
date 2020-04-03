@@ -6,7 +6,7 @@ import {
   toBN,
   sortSignaturesBySignerAddress,
 } from "@connext/types";
-import { signChannelMessage, recoverAddress } from "@connext/crypto";
+import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
 import { One } from "ethers/constants";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
@@ -149,7 +149,7 @@ describe("setState", () => {
               await signChannelMessage(wallet.privateKey, thingToSign),
               await signChannelMessage(bob.privateKey, thingToSign),
             ],
-            recoverAddress,
+            verifyChannelMessage,
           ),
         }),
       ).to.be.revertedWith(`Invalid signature`);

@@ -1,4 +1,4 @@
-import { signChannelMessage, recoverAddress } from "@connext/crypto";
+import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
 import {
   AppChallengeBigNumber,
   toBN,
@@ -115,7 +115,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
           await signChannelMessage(bob.privateKey, digest),
           await signChannelMessage(alice.privateKey, digest),
         ],
-        recoverAddress,
+        verifyChannelMessage,
       );
     }
 
@@ -180,7 +180,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
           await signChannelMessage(alice.privateKey, digest),
           await signChannelMessage(bob.privateKey, digest),
         ],
-        recoverAddress,
+        verifyChannelMessage,
       ),
     });
     await wrapInEventVerification(call, {
@@ -326,7 +326,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
             await signChannelMessage(alice.privateKey, stateDigest),
             await signChannelMessage(bob.privateKey, stateDigest),
           ],
-          recoverAddress,
+          verifyChannelMessage,
         ),
       },
       encodeState(state),
@@ -346,7 +346,7 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
           await signChannelMessage(alice.privateKey, digest),
           await signChannelMessage(bob.privateKey, digest),
         ],
-        recoverAddress,
+        verifyChannelMessage,
       );
     }
     // TODO: why does event verification fail?
