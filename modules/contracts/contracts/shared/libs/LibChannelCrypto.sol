@@ -12,6 +12,6 @@ library LibChannelCrypto {
     function toChannelSignedMessage(bytes32 hash) internal pure returns (bytes32) {
         // 32 is the length in bytes of hash,
         // enforced by the type signature above
-        return keccak256(abi.encodePacked("\x18Ethereum Signed Message:\n32", hash));
+        return keccak256(abi.encodePacked("\x18Channel Signed Message:\n32", hash));
     }
 }
