@@ -65,11 +65,11 @@ export class DepositService {
     }
 
     let appInstanceId;
-    const latestState = depositApp.latestState as DepositAppState;
     if (!depositApp) {
       this.log.debug(`Requesting deposit rights before depositing`);
       appInstanceId = await this.requestDepositRights(channel, assetId);
     } else {
+      const latestState = depositApp.latestState as DepositAppState;
       // uninstall existing deposit app if it is finalized or timelock
       // has passed
       if (
