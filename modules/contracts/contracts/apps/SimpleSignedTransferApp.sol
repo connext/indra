@@ -2,7 +2,7 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "../../shared/libs/LibChannelCrypto.sol"
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
@@ -12,7 +12,7 @@ import "../funding/libs/LibOutcome.sol";
 ///         the application if the specified signed submits the correct
 ///         signature for the provided data
 contract SimpleSignedTransferApp is CounterfactualApp {
-    using ECDSA for bytes32;
+    using LibChannelCrypto for bytes32;
     using SafeMath for uint256;
 
     struct AppState {
@@ -40,7 +40,7 @@ contract SimpleSignedTransferApp is CounterfactualApp {
 
         require(!state.finalized, "Cannot take action on finalized state");
         bytes32 rawHash = keccak256(abi.encodePacked(action.data, state.paymentId));
-        require(state.signer == rawHash.recover(action.signature), "Incorrect signer recovered from signature");
+        require(state.signer == rawHash.verifyChannelMessage(action.signature), "Incorrect signer recovered from signature");
 
         state.coinTransfers[1].amount = state.coinTransfers[0].amount;
         state.coinTransfers[0].amount = 0;
