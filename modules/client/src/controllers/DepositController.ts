@@ -140,12 +140,14 @@ export class DepositController extends AbstractController {
     params: CheckDepositRightsParameters,
   ): Promise<AppInstanceJson | undefined> => {
     const appInstances = await this.connext.getAppInstances();
-    const depositApp = appInstances.filter(
-      (appInstance) => 
+    const depositAppInfo = await this.connext.getAppRegistry({name: DepositAppName, chainId: this.ethProvider.network.chainId})
+    const depositApp = appInstances.find(
+      (appInstance) =>
+        appInstance.appInterface.addr === depositAppInfo[0].appDefinitionAddress &&
         appInstance
           .singleAssetTwoPartyCoinTransferInterpreterParams
           .tokenAddress === params.assetId,
-    )[0];
+    );
 
     if (!depositApp) {
       return undefined;
