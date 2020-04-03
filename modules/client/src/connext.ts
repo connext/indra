@@ -30,6 +30,11 @@ import {
   TransactionResponse,
   WithdrawParameters,
   WithdrawResponse,
+  SimpleTwoPartySwapAppName,
+  SimpleLinkedTransferAppName,
+  WithdrawAppName,
+  DepositAppName,
+  DepositAppState,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import { Contract, providers } from "ethers";
@@ -48,7 +53,6 @@ import {
   AppInstanceJson,
   AppRegistry,
   ChannelProviderConfig,
-  ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
   ConnextClientStorePrefix,
@@ -325,7 +329,11 @@ export class ConnextClient implements IConnextClient {
   public checkDepositRights = async (
     params: CheckDepositRightsParameters,
   ): Promise<CheckDepositRightsResponse> => {
-    return this.depositController.getDepositApp({assetId: params.assetId});
+    const app = await this.depositController.getDepositApp(params);
+    if (!app) {
+      return { appInstanceId: undefined };
+    }
+    return { appInstanceId: app.identityHash };
   };
 
   public swap = async (params: SwapParameters): Promise<GetChannelResponse> => {
@@ -809,32 +817,40 @@ export class ConnextClient implements IConnextClient {
    */
   public cleanupRegistryApps = async (): Promise<void> => {
     const swapAppRegistryInfo = this.appRegistry.filter(
-      (app: DefaultApp) => app.name === "SimpleTwoPartySwapApp",
+      (app: DefaultApp) => app.name === SimpleTwoPartySwapAppName,
     )[0];
     const linkedRegistryInfo = this.appRegistry.filter(
-      (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
+      (app: DefaultApp) => app.name === SimpleLinkedTransferAppName,
     )[0];
     const withdrawRegistryInfo = this.appRegistry.filter(
-      (app: DefaultApp) => app.name === "WithdrawApp",
+      (app: DefaultApp) => app.name === WithdrawAppName,
+    )[0];
+    const depositRegistryInfo = this.appRegistry.filter(
+      (app: DefaultApp) => app.name === DepositAppName,
     )[0];
 
     await this.removeHangingProposalsByDefinition([
       swapAppRegistryInfo.appDefinitionAddress,
       linkedRegistryInfo.appDefinitionAddress,
       withdrawRegistryInfo.appDefinitionAddress,
+      depositRegistryInfo.appDefinitionAddress,
     ]);
 
-    // deal with any swap apps that are installed
+    // deal with any apps that are installed and can simply
+    // be uninstalled
     await this.uninstallAllAppsByDefintion([
       swapAppRegistryInfo.appDefinitionAddress,
       withdrawRegistryInfo.appDefinitionAddress,
     ]);
+
+    // handle any existing apps
+    await this.handleInstalledDepositApps();
   };
 
   /**
    * Removes all proposals of a give app definition type
    */
-  public removeHangingProposalsByDefinition = async (appDefinitions: string[]): Promise<void> => {
+  private removeHangingProposalsByDefinition = async (appDefinitions: string[]): Promise<void> => {
     // first get all proposed apps
     const { appInstances: proposed } = await this.getProposedAppInstances();
 
@@ -851,7 +867,7 @@ export class ConnextClient implements IConnextClient {
   /**
    * Removes all apps of a given app definition type
    */
-  public uninstallAllAppsByDefintion = async (appDefinitions: string[]): Promise<void> => {
+  private uninstallAllAppsByDefintion = async (appDefinitions: string[]): Promise<void> => {
     const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
       appDefinitions.includes(app.appInterface.addr),
     );
@@ -861,6 +877,70 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
+  private handleInstalledDepositApps = async () => {
+    const assetIds = this.config.supportedTokenAddresses;
+    for (const assetId of assetIds) {
+      const { appInstanceId } = await this.checkDepositRights({ assetId });
+      if (!appInstanceId) {
+        // no deposit app installed for asset, continue
+        continue;
+      }
+      // otherwise, handle installed app
+      const { appInstance } = await this.getAppInstanceDetails(appInstanceId);
+      if (!appInstance) {
+        this.log.error(`Could not find deposit app returned by checkDepositRights. App: ${appInstanceId}`);
+        continue;
+      }
+
+      let error;
+      try {
+        await this.rescindDepositRights({ assetId, appInstanceId });
+      } catch (e) {
+        error = e;
+      }
+  
+      // no errors, continue
+      if (!error) {
+        continue;
+      }
+
+      // handle errors
+      if (!error.message.includes("Deposit has not yet completed")) {
+        this.log.error(`Could not uninstall deposit app ${appInstanceId}. Error: ${error.stack || error.message}`);
+        continue;
+      }
+
+      // there is still an active deposit, setup a listener to
+      // rescind deposit rights when deposit is sent to multisig
+      const startingMultisigBalance = (
+        appInstance.latestState as DepositAppState
+      ).startingMultisigBalance;
+      if (assetId === AddressZero) {
+        this.ethProvider.on(
+          this.multisigAddress, 
+          async (balance: BigNumber) => {
+            if (balance.gt(startingMultisigBalance)) {
+              await this.rescindDepositRights({ assetId, appInstanceId });
+            }
+          },
+        );
+        continue;
+      }
+
+      new Contract(assetId, tokenAbi, this.ethProvider).once(
+        "Transfer",
+        async (sender: string, recipient: string, amount: BigNumber) => {
+          if (recipient === this.multisigAddress && amount.gt(0)) {
+            this.log.info("Multisig transfer was for our channel, uninstalling refund app");
+            await this.rescindDepositRights({ assetId, appInstanceId });
+          }
+        },
+      );
+      // move on to next asset
+    }
+  };
+
+  // TODO: delete
   public uninstallCoinBalanceIfNeeded = async (assetId: string = AddressZero): Promise<void> => {
     // check if there is a coin refund app installed
     const coinRefund = await this.getBalanceRefundApp(assetId);

@@ -290,6 +290,7 @@ export const connect = async (
   log.debug("Cleaning up registry apps");
   await client.cleanupRegistryApps();
 
+  // TODO: delete
   // check if there is a coin refund app installed for eth and tokens
   const apps = await client.getAppInstances();
   const coinBalanceRefundApps = apps.filter(

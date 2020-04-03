@@ -37,7 +37,7 @@ contract DepositApp is CounterfactualApp {
         return participants[0];
     }
 
-    function takeAction(
+    function applyAction(
         bytes calldata encodedState,
         bytes calldata encodedAction
     )

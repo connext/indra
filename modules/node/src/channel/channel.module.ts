@@ -9,7 +9,6 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { WithdrawModule } from "../withdraw/withdraw.module";
-import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
 import { DepositModule } from "../deposit/deposit.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { RebalanceProfileRepository } from "../rebalanceProfile/rebalanceProfile.repository";
@@ -20,7 +19,6 @@ import { ChannelService } from "./channel.service";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
 import { ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
-import { ConfigService } from "../config/config.service";
 
 @Module({
   controllers: [],
@@ -33,7 +31,6 @@ import { ConfigService } from "../config/config.service";
     WithdrawModule,
     LoggerModule,
     MessagingModule,
-    OnchainTransactionModule,
     DepositModule,
     TypeOrmModule.forFeature([
       AppRegistryRepository,
@@ -46,6 +43,6 @@ import { ConfigService } from "../config/config.service";
       ConditionalTransactionCommitmentRepository,
     ]),
   ],
-  providers: [ConfigService, ChannelService, channelProviderFactory],
+  providers: [ChannelService, channelProviderFactory],
 })
 export class ChannelModule {}

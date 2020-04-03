@@ -16,16 +16,16 @@ import { WithdrawService } from "./withdraw.service";
     controllers: [],
     exports: [WithdrawService],
     imports: [
-        CFCoreModule,
-        ConfigModule,
-        OnchainTransactionModule,
-        LoggerModule,
-        TypeOrmModule.forFeature([
+      CFCoreModule,
+      ConfigModule,
+      OnchainTransactionModule,
+      LoggerModule,
+      TypeOrmModule.forFeature([
         OnchainTransactionRepository,
         AppRegistryRepository,
         WithdrawRepository,
         ChannelRepository,
-        ]),
+      ]),
     ],
     providers: [WithdrawService],
 })

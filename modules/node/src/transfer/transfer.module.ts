@@ -14,6 +14,7 @@ import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransf
 
 import { transferProviderFactory } from "./transfer.provider";
 import { TransferService } from "./transfer.service";
+import { DepositModule } from "../deposit/deposit.module";
 
 @Module({
   controllers: [],
@@ -27,6 +28,7 @@ import { TransferService } from "./transfer.service";
     LoggerModule,
     LinkedTransferModule,
     MessagingModule,
+    DepositModule,
     TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository]),
   ],
   providers: [TransferService, transferProviderFactory],

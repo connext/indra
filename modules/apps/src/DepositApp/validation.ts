@@ -43,9 +43,9 @@ export const validateDepositApp = async (
     throw new Error(`Cannot install deposit app with incorrect responder transfer to address: Expected ${responderFreeBalanceAddress}, got ${responderTransfer.to}`);
   }
 
-  if (initialState.transfers[0].amount.isZero() || initialState.transfers[1].amount.isZero()) {
-    throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`);
-  }
+  // if (initialState.transfers[0].amount.isZero() || initialState.transfers[1].amount.isZero()) {
+  //   throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`);
+  // }
 
   if (initialState.multisigAddress !== multisigAddress) {
     throw new Error(`Cannot install deposit app with invalid multisig address. Expected ${multisigAddress}, got ${initialState.multisigAddress}`);
