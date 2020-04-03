@@ -1,4 +1,3 @@
-import { waffle as buidler } from "@nomiclabs/buidler";
 import {
   CoinTransfer,
   HashLockTransferAppAction,
@@ -8,17 +7,14 @@ import {
   singleAssetTwoPartyCoinTransferEncoding,
   SolidityValueType,
 } from "@connext/types";
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, soliditySha256, bigNumberify } from "ethers/utils";
 
 import LightningHTLCTransferApp from "../../build/HashLockTransferApp.json";
 
-const { expect } = chai;
+import { expect, provider } from "../utils";
 
-chai.use(waffle.solidity);
 
 function mkAddress(prefix: string = "0xa"): string {
   return prefix.padEnd(42, "0");
@@ -53,7 +49,6 @@ function createLockHash(preImage: string): string {
 
 describe("LightningHTLCTransferApp", () => {
   let lightningHTLCTransferApp: Contract;
-  let provider = buidler.provider;
   let senderAddr: string;
   let receiverAddr: string;
   let transferAmount: BigNumber;
@@ -87,7 +82,11 @@ describe("LightningHTLCTransferApp", () => {
 
   beforeEach(async () => {
     const wallet = (await provider.getWallets())[0];
-    lightningHTLCTransferApp = await waffle.deployContract(wallet, LightningHTLCTransferApp);
+    lightningHTLCTransferApp = await new ContractFactory(
+      LightningHTLCTransferApp.abi,
+      LightningHTLCTransferApp.bytecode,
+      wallet,
+    ).deploy();
 
     senderAddr = mkAddress("0xa");
     receiverAddr = mkAddress("0xB");

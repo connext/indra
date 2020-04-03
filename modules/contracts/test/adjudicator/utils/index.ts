@@ -1,7 +1,4 @@
-import { waffle as buidler } from "@nomiclabs/buidler";
-import { AppIdentity, toBN, ChallengeStatus } from "@connext/types";
-import * as chai from "chai";
-import { solidity } from "ethereum-waffle";
+import { AppIdentity, ChallengeStatus } from "@connext/types";
 import {
   BigNumberish,
   defaultAbiCoder,
@@ -12,36 +9,11 @@ import {
   BigNumber,
 } from "ethers/utils";
 
-import { use } from "chai";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 export * from "./context";
 
-// ETH helpers
-export const provider = buidler.provider;
-export const mineBlock = async () => await provider.send("evm_mine", []);
-export const snapshot = async () => await provider.send("evm_snapshot", []);
-export const restore = async (snapshotId: any) => await provider.send("evm_revert", [snapshotId]);
-
-// TODO: Not sure this works correctly/reliably...
-export const moveToBlock = async (blockNumber: BigNumberish) => {
-  const desired: BigNumber = toBN(blockNumber);
-  const current: BigNumber = toBN(await provider.getBlockNumber());
-  if (current.gt(desired)) {
-    throw new Error(`Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`);
-  }
-  if (current.eq(desired)) {
-    return;
-  }
-  for (const _ of Array(desired.sub(current).toNumber())) {
-    await mineBlock();
-  }
-  const final: BigNumber = toBN(await provider.getBlockNumber());
-  expect(final).to.be.eq(desired);
-};
-
-use(require("chai-subset"));
-use(solidity);
-export const expect = chai.use(solidity).expect;
+// include all top level utils
+export * from "../../utils";
 
 export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
 

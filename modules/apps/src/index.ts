@@ -1,5 +1,6 @@
 import { AppRegistryType } from "./shared";
 import { CoinBalanceRefundAppRegistryInfo } from "./CoinBalanceRefundApp";
+import { DepositAppRegistryInfo } from "./DepositApp";
 import { FastSignedTransferAppRegistryInfo } from "./FastSignedTransferApp";
 import { HashLockTransferAppRegistryInfo } from "./HashLockTransferApp";
 import { SimpleLinkedTransferAppRegistryInfo } from "./SimpleLinkedTransferApp";
@@ -15,6 +16,7 @@ export const AppRegistry: AppRegistryType = [
   CoinBalanceRefundAppRegistryInfo,
   WithdrawAppRegistryInfo,
   HashLockTransferAppRegistryInfo,
+  DepositAppRegistryInfo,
 ];
 
 export * from "./shared";
@@ -25,6 +27,7 @@ export * from "./SimpleLinkedTransferApp";
 export * from "./SimpleSignedTransferApp";
 export * from "./SimpleTwoPartySwapApp";
 export * from "./WithdrawApp";
+export * from "./DepositApp";
 
 export {
   FastSignedTransferAppRegistryInfo,
@@ -32,5 +35,6 @@ export {
   SimpleLinkedTransferAppRegistryInfo,
   SimpleSignedTransferAppRegistryInfo,
   SimpleTwoPartySwapAppRegistryInfo,
+  DepositAppRegistryInfo,
   CoinBalanceRefundAppRegistryInfo,
 };

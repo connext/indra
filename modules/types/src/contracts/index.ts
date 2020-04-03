@@ -1,5 +1,6 @@
 import { 
   CoinBalanceRefundAppState,
+  DepositAppState,
   FastSignedTransferAppAction,
   FastSignedTransferAppState,
   HashLockTransferAppAction,
@@ -27,6 +28,7 @@ export type AppAction =
 
 export type AppState = 
   | CoinBalanceRefundAppState
+  | DepositAppState
   | FastSignedTransferAppState
   | HashLockTransferAppState
   | SimpleLinkedTransferAppState

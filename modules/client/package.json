@@ -25,6 +25,7 @@
     "@connext/store": "6.0.0-alpha.7",
     "@connext/types": "6.0.0-alpha.7",
     "core-js": "3.6.4",
+    "eventemitter3": "4.0.0",
     "ethers": "4.0.46",
     "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.3",
