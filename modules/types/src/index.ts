@@ -25,6 +25,7 @@ export {
   ProtocolParam,
   ProtocolParams,
 } from "./protocol";
+export * from "./middleware";
 export * from "./state";
 export * from "./store";
 export * from "./utils";

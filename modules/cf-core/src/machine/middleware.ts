@@ -1,16 +1,18 @@
-import { Middleware, Opcode } from "../types";
+import { GenericMiddleware } from "@connext/types";
+import { Opcode } from "../types";
 
 export class MiddlewareContainer {
-  public readonly middlewares: { [I in Opcode]: Middleware[] } = {
+  public readonly middlewares: { [I in Opcode]: GenericMiddleware[] } = {
     [Opcode.IO_SEND]: [],
     [Opcode.IO_SEND_AND_WAIT]: [],
     [Opcode.OP_SIGN]: [],
     [Opcode.PERSIST_APP_INSTANCE]: [],
     [Opcode.PERSIST_COMMITMENT]: [],
     [Opcode.PERSIST_STATE_CHANNEL]: [],
+    [Opcode.OP_VALIDATE]: [],
   };
 
-  public add(scope: Opcode, method: Middleware) {
+  public add(scope: Opcode, method: GenericMiddleware) {
     this.middlewares[scope].push(method);
   }
 
