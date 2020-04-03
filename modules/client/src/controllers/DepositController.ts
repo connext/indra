@@ -25,7 +25,7 @@ export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<DepositResponse> => {
     const amount = toBN(params.amount);
     const assetId = params.assetId || AddressZero;
-    // TODO: when the `walletTransfer` is not used, these parameters
+    // NOTE: when the `walletTransfer` is not used, these parameters
     // do not have to be validated
     const startingBalance = assetId === AddressZero
       ? await this.ethProvider.getBalance(this.connext.freeBalanceAddress)
