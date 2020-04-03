@@ -8,6 +8,8 @@ import {
   MinimalTransaction,
   nullLogger,
   STORE_SCHEMA_VERSION,
+  ProtocolName,
+  ValidationMiddleware,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
@@ -167,6 +169,23 @@ export class Node {
   @Memoize()
   get freeBalanceAddress(): string {
     return getFreeBalanceAddress(this.publicIdentifier);
+  }
+
+  /**
+   * Attaches middleware for the chosen opcode. Currently, only `OP_VALIDATE`
+   * is accepted as an injected middleware
+   */
+  public injectMiddleware(
+    opcode: Opcode,
+    middleware: ValidationMiddleware,
+  ): void {
+    if (opcode !== Opcode.OP_VALIDATE) {
+      throw new Error(`Cannot inject middleware for opcode: ${opcode}`);
+    }
+    this.protocolRunner.register(opcode, async (args: [ProtocolName, any]) => {
+      const [protocol, context] = args;
+      return middleware(protocol, context);
+    });
   }
 
   /**
