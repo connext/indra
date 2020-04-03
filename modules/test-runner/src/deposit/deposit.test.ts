@@ -77,13 +77,12 @@ describe.only("Deposits", () => {
   });
 
   it("client should not be able to deposit with invalid token address", async () => {
-    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejected;
-    // TODO: assert error message
+    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith("invalid address");
   });
 
   it("client should not be able to deposit with negative amount", async () => {
     await expect(client.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero })).to.be.rejectedWith(
-      "is not greater than or equal to 0",
+      "Value (-1) is not greater than 0",
     );
   });
 
@@ -108,9 +107,10 @@ describe.only("Deposits", () => {
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
-    await expect(
-      client.checkDepositRights({ assetId: client.config.contractAddresses.Token }),
-    ).to.be.rejectedWith(`No balance refund app installed`);
+    const { appInstanceId } = await client.checkDepositRights({ 
+      assetId: client.config.contractAddresses.Token,
+    });
+    expect(appInstanceId).to.be.undefined;
   });
 
   it.skip("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {});

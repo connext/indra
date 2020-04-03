@@ -9,6 +9,7 @@ import {
   CheckDepositRightsParameters,
   AppInstanceJson,
   DefaultApp,
+  toBN,
 } from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
 import { DepositAppName, DepositAppState } from "@connext/types";
@@ -18,19 +19,33 @@ import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
 import { BigNumber } from "ethers/utils";
+import { validate, invalidAddress, notLessThanOrEqualTo, notGreaterThan } from "../validation";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<DepositResponse> => {
+    const amount = toBN(params.amount);
+    const assetId = params.assetId || AddressZero;
+    // TODO: when the `walletTransfer` is not used, these parameters
+    // do not have to be validated
+    const startingBalance = assetId === AddressZero
+      ? await this.ethProvider.getBalance(this.connext.freeBalanceAddress)
+      : await new Contract(assetId, tokenAbi, this.ethProvider)
+          .functions.balanceOf(this.connext.freeBalanceAddress);
+    validate(
+      invalidAddress(assetId),
+      notLessThanOrEqualTo(amount, startingBalance),
+      notGreaterThan(amount, Zero),
+    );
     const { 
       appInstanceId, 
-    } = await this.requestDepositRights({ assetId: params.assetId });
+    } = await this.requestDepositRights({ assetId });
     const hash = await this.connext.channelProvider.walletTransfer({
       recipient: this.connext.multisigAddress, 
-      amount: params.amount.toString(),
-      assetId: params.assetId, 
+      amount: amount.toString(),
+      assetId, 
     });
     this.log.debug(`Sent deposit transaction to chain: ${hash}`);
-    return this.rescindDepositRights({ appInstanceId, assetId: params.assetId });
+    return this.rescindDepositRights({ appInstanceId, assetId });
   };
 
   public requestDepositRights = async (

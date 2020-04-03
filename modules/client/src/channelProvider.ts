@@ -175,9 +175,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       });
       hash = tx.hash;
     } else {
-      const erc20 = new Contract(params.assetId, tokenAbi, this.wallet.provider);
+      const erc20 = new Contract(params.assetId, tokenAbi, this.wallet);
       const tx = await erc20.transfer(params.recipient, toBN(params.amount));
-      hash = tx.txhash;
+      hash = tx.hash;
     }
     return hash;
   }
