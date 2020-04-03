@@ -1,10 +1,13 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, BigNumberish } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { IConnextClient, BigNumberish, BigNumber, toBN } from "@connext/types";
+import { AddressZero, Zero, One } from "ethers/constants";
 
 import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
 import { createClient } from "../util/client";
-import { getOnchainBalance } from "../util/ethprovider";
+import { getOnchainBalance, ethProvider } from "../util/ethprovider";
+import { Contract } from "ethers";
+import tokenAbi from "human-standard-token-abi";
+
 
 describe.only("Deposits", () => {
   let client: IConnextClient;
@@ -28,6 +31,16 @@ describe.only("Deposits", () => {
     await assertFreeBalanceVersion(client, expected);
   };
 
+  const assertOnchainBalance = async (
+    client: IConnextClient,
+    expected: {node: BigNumberish; client: BigNumberish; assetId?: string },
+  ): Promise<void> => {
+    const onchainBalance: BigNumber = expected.assetId == AddressZero ?
+      await ethProvider.getBalance(client.multisigAddress) :
+      await (new Contract(expected.assetId!, tokenAbi, ethProvider)).functions.balanceOf(client.multisigAddress);
+    expect(onchainBalance.eq(toBN(expected.node).add(toBN(expected.client))));
+  }
+
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
@@ -40,19 +53,20 @@ describe.only("Deposits", () => {
 
   it("happy case: client should deposit ETH", async () => {
     const expected = {
-      node: Zero,
+      node: Zero.toString(),
       client: ONE,
       assetId: AddressZero,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
-    await assertFreeBalanceVersion(client, expected);
-    await assertNodeFreeBalance(client, expected);
+    await assertOnchainBalance(client, expected);
+    // await assertFreeBalanceVersion(client, expected);
+    // await assertNodeFreeBalance(client, expected);
   });
 
   it("happy case: client should deposit tokens", async () => {
     const expected = {
-      node: Zero,
-      client: ONE,
+      node: Zero.toString(),
+      client: One.toString(),
       assetId: tokenAddress,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });

@@ -43,7 +43,7 @@ export const validateDepositApp = async (
     throw new Error(`Cannot install deposit app with incorrect responder transfer to address: Expected ${responderFreeBalanceAddress}, got ${responderTransfer.to}`);
   }
 
-  if (initialState.transfers[0].amount.isZero() || initialState.transfers[1].amount.isZero()) {
+  if (!initialState.transfers[0].amount.isZero() || !initialState.transfers[1].amount.isZero()) {
       throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`)
   }
 
@@ -60,8 +60,7 @@ export const validateDepositApp = async (
 
   const minTimelock = MIN_DEPOSIT_TIMEOOUT_BLOCKS.add(await provider.getBlockNumber());
 
-  if (
-    initialState.timelock.lt(minTimelock)) {
+  if (initialState.timelock.lt(minTimelock)) {
     throw new Error(`Cannot install a deposit app with timelock within ${MIN_DEPOSIT_TIMEOOUT_BLOCKS} of now (${await provider.getBlockNumber()})`);
   }
 
