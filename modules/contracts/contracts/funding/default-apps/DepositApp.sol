@@ -46,7 +46,7 @@ contract DepositApp is CounterfactualApp {
             endingMultisigBalance = ERC20(state.assetId).balanceOf(state.multisigAddress);
         }
 
-        return LibOutcome.CoinTransfer[2]([
+        return abi.encode(LibOutcome.CoinTransfer[2]([
             LibOutcome.CoinTransfer(
                 state.transfers[0].to,
                 // NOTE: deliberately do NOT use safemath here. For more info, see: TODO
@@ -58,7 +58,7 @@ contract DepositApp is CounterfactualApp {
                 /* should always be 0 */
                 0
             )
-        ]);
+        ]));
     }
 
     function isDeployed(address _addr)

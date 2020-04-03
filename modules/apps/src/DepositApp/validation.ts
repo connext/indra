@@ -40,7 +40,7 @@ export const validateDepositApp = async (
       throw new Error(`Cannot install deposit app with incorrect initiator transfer to address: Expected ${initiatorFreeBalanceAddress}, got ${initiatorTransfer.to}`)
   }
 
-  if (initialState.transfers[0].amount === Zero || initialState.transfers[1].amount === Zero) {
+  if (!initialState.transfers[0].amount.eq(Zero) || !initialState.transfers[1].amount.eq(Zero)) {
       throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`)
   }
 
@@ -50,14 +50,6 @@ export const validateDepositApp = async (
 
   if (initialState.assetId != params.initiatorDepositTokenAddress || initialState.assetId != params.responderDepositTokenAddress) {
       throw new Error(`Cannot install deposit app with invalid token address. Expected ${params.initiatorDepositTokenAddress}, got ${initialState.assetId}`)
-  }
-
-  if (initialState.finalized) {
-      throw new Error(`Cannot install a deposit app with finalized state`)
-  }
-
-  if (initialState.timelock <= toBN(await provider.getBlockNumber())) {
-      throw new Error(`Cannot install a deposit app with an expired timeout`)
   }
 
   const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider)

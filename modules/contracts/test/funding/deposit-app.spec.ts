@@ -4,11 +4,9 @@ import {
   singleAssetTwoPartyCoinTransferEncoding,
   DepositAppState,
   DepositAppStateEncoding,
-  DepositAppActionEncoding,
-  DepositAppAction,
 } from "@connext/types";
 import { Wallet, ContractFactory, Contract } from "ethers";
-import { BigNumber, defaultAbiCoder, parseEther, bigNumberify } from "ethers/utils";
+import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
 import DepositApp from "../../build/DepositApp.json";
 import DelegateProxy from "../../build/DelegateProxy.json";
@@ -22,9 +20,6 @@ const MAX_INT = new BigNumber(2).pow(256).sub(1);
 const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
   defaultAbiCoder.decode([singleAssetTwoPartyCoinTransferEncoding], encodedTransfers)[0];
 
-const decodeState = (encodedState: string): DepositAppState =>
-  defaultAbiCoder.decode([DepositAppStateEncoding], encodedState)[0];
-
 const encodeAppState = (
   state: DepositAppState,
   onlyCoinTransfers: boolean = false,
@@ -35,14 +30,7 @@ const encodeAppState = (
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
 };
 
-const encodeAppAction = (
-  action: DepositAppAction,
-): string => {
-  const ret = defaultAbiCoder.encode([DepositAppActionEncoding], [action]);
-  return ret;
-};
-
-describe("DepositApp", () => {
+describe.only("DepositApp", () => {
 
   let wallet: Wallet;
   let depositApp: Contract;
