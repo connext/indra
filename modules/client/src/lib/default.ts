@@ -3,7 +3,13 @@ import { StoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
 
 import { ClientOptions } from "../types";
-import { isMainnet, isRinkeby, isWalletProvided, isLocalhost } from "./utils";
+import {
+  isMainnet,
+  isRinkeby,
+  isWalletProvided,
+  isLocalhost,
+  removeUndefinedFields,
+} from "./utils";
 
 export function shouldGenerateMnemonic(network: string, opts?: Partial<ClientOptions>): boolean {
   return !isMainnet(network) && !isWalletProvided(opts);
@@ -60,7 +66,7 @@ export async function getDefaultOptions(
     mnemonic,
     store,
     ...urlOptions,
-    ...overrideOptions,
+    ...removeUndefinedFields<Partial<ClientOptions>>(overrideOptions),
   };
 
   return opts;
