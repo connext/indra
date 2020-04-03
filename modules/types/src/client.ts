@@ -34,6 +34,10 @@ import {
   MethodParams,
   MethodName,
 } from "./methods";
+import {
+  DepositParameters,
+  DepositResponse,
+} from "./contracts/apps"
 import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
 
 export type ChannelState = {
@@ -47,11 +51,6 @@ export type ChannelState = {
 export type AssetAmount = {
   amount: BigNumber;
   assetId: Address;
-};
-
-export type DepositParameters = {
-  amount: BigNumberish;
-  assetId: Address; // TODO: Ensure that this value is case insensitive
 };
 
 export type RequestDepositRightsParameters = {

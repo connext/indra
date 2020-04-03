@@ -82,7 +82,11 @@ describe("Signed Transfers", () => {
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+<<<<<<< HEAD
     const signature = await signChannelMessage(signerWallet.privateKey, digest);
+=======
+    const signature = await signDigest(signerWallet.privateKey, digest);
+>>>>>>> 1a2b029fee8eca630139f8950faa3b30f009982d
 
     await new Promise(async res => {
       clientA.on("UNINSTALL_EVENT", async data => {
@@ -132,7 +136,11 @@ describe("Signed Transfers", () => {
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+<<<<<<< HEAD
     const signature = await signChannelMessage(signerWallet.privateKey, digest);
+=======
+    const signature = await signDigest(signerWallet.privateKey, digest);
+>>>>>>> 1a2b029fee8eca630139f8950faa3b30f009982d
 
     await new Promise(async res => {
       clientA.on("UNINSTALL_EVENT", async data => {
@@ -204,7 +212,11 @@ describe("Signed Transfers", () => {
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+<<<<<<< HEAD
     const signature = await signChannelMessage(signerWallet.privateKey, digest);
+=======
+    const signature = await signDigest(signerWallet.privateKey, digest);
+>>>>>>> 1a2b029fee8eca630139f8950faa3b30f009982d
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
@@ -294,7 +306,11 @@ describe("Signed Transfers", () => {
 
       // Including recipient signing in test to match real conditions
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+<<<<<<< HEAD
       const signature = await signChannelMessage(signerWallet.privateKey, digest);
+=======
+      const signature = await signDigest(signerWallet.privateKey, digest);
+>>>>>>> 1a2b029fee8eca630139f8950faa3b30f009982d
 
       await new Promise(async res => {
         clientA.once("UNINSTALL_EVENT", async data => {

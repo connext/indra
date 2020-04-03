@@ -1,15 +1,11 @@
 /* global before */
 import { SolidityValueType } from "@connext/types";
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
 import NimApp from "../../build/NimApp.json";
 
-chai.use(waffle.solidity);
-
-const { expect } = chai;
+import { expect, provider } from "../utils";
 
 type NimAppState = {
   versionNumber: BigNumber;
@@ -63,9 +59,12 @@ describe("Nim", () => {
   }
 
   before(async () => {
-    const provider = waffle.createMockProvider();
-    const wallet = (await waffle.getWallets(provider))[0];
-    nim = await waffle.deployContract(wallet, NimApp);
+    const wallet = (await provider.getWallets())[0];
+    nim = await new ContractFactory(
+      NimApp.abi,
+      NimApp.bytecode,
+      wallet,
+    ).deploy();
   });
 
   describe("applyAction", () => {

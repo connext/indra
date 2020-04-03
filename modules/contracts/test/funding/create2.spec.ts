@@ -1,7 +1,5 @@
 /* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
-import * as waffle from "ethereum-waffle";
-import { Contract, Event, Wallet } from "ethers";
+import { Contract, Event, Wallet, ContractFactory } from "ethers";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
 
@@ -9,12 +7,11 @@ import Echo from "../../build/Echo.json";
 import Proxy from "../../build/Proxy.json";
 import ProxyFactory from "../../build/ProxyFactory.json";
 
-import { expect } from "./utils/index";
+import { expect, provider } from "../utils";
 
 describe("ProxyFactory with CREATE2", function() {
   this.timeout(5000);
 
-  let provider = buidler.provider;
   let wallet: Wallet;
 
   let pf: Contract;
@@ -36,9 +33,17 @@ describe("ProxyFactory with CREATE2", function() {
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
+    pf = await new ContractFactory(
+      ProxyFactory.abi as any,
+      ProxyFactory.bytecode,
+      wallet,
+    ).deploy();
 
-    pf = await waffle.deployContract(wallet, ProxyFactory);
-    echo = await waffle.deployContract(wallet, Echo);
+    echo = await new ContractFactory(
+      Echo.abi as any,
+      Echo.bytecode,
+      wallet,
+    ).deploy();
   });
 
   describe("createProxy", async () => {
@@ -62,7 +67,7 @@ describe("ProxyFactory with CREATE2", function() {
       expect(event.eventSignature).to.eq("ProxyCreation(address)");
       expect(event.args![0]).to.eq(create2(initcode, saltNonce));
 
-      const echoProxy = new Contract(create2(initcode), Echo.abi, wallet);
+      const echoProxy = new Contract(create2(initcode), Echo.abi as any, wallet);
 
       expect(await echoProxy.functions.helloWorld()).to.eq("hello world");
     });

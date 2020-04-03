@@ -1,9 +1,8 @@
 /* global before */
 import { AppChallengeBigNumber } from "@connext/types";
 import { signChannelMessage } from "@connext/crypto";
-import { Wallet, Contract } from "ethers";
+import { Wallet, Contract, ContractFactory } from "ethers";
 import { keccak256 } from "ethers/utils";
-import * as waffle from "ethereum-waffle";
 
 import {
   expect,
@@ -57,8 +56,16 @@ describe("progressState", () => {
     wallet = (await provider.getWallets())[0];
     await wallet.getTransactionCount();
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry);
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+    appRegistry = await new ContractFactory(
+      ChallengeRegistry.abi as any,
+      ChallengeRegistry.bytecode,
+      wallet,
+    ).deploy();
+    appDefinition = await new ContractFactory(
+      AppWithAction.abi as any,
+      AppWithAction.bytecode,
+      wallet,
+    ).deploy();
   });
 
   beforeEach(async () => {
@@ -152,8 +159,11 @@ describe("progressState", () => {
   });
 
   it("progressState should fail if apply action fails", async () => {
-    // TODO: how to make sure the action is invalid?
-    const failingApp = await waffle.deployContract(wallet, AppApplyActionFails);
+    const failingApp = await new ContractFactory(
+      AppApplyActionFails.abi as any,
+      AppApplyActionFails.bytecode,
+      wallet,
+    ).deploy();
     const context = await setupContext(appRegistry, failingApp);
 
     await context["setStateAndVerify"](1, encodeState(context["state0"]));

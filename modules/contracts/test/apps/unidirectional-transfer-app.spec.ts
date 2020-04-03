@@ -1,15 +1,12 @@
 /* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { One, Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder, getAddress } from "ethers/utils";
 
 import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.json";
 
-const { expect } = chai.use(waffle.solidity);
+import { expect, provider } from "../utils";
 
 type CoinTransfer = {
   to: string;
@@ -72,7 +69,6 @@ const encodeAppAction = (state: SolidityValueType) =>
 
 describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
-  let provider = buidler.provider;
 
   const applyAction = (state: SolidityValueType, action: SolidityValueType) =>
     unidirectionalTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
@@ -82,10 +78,14 @@ describe("UnidirectionalTransferApp", () => {
 
   before(async () => {
     const wallet = (await provider.getWallets())[0];
-    unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
+    unidirectionalTransferApp = await new ContractFactory(
+      UnidirectionalTransferApp.abi as any,
+      UnidirectionalTransferApp.bytecode,
+      wallet,
+    ).deploy();
   });
 
-  describe("The applyAction function", async () => {
+  describe("The applyAction function", () => {
     const initialState: UnidirectionalTransferAppState = {
       stage: AppStage.POST_FUND,
       transfers: [
@@ -96,7 +96,7 @@ describe("UnidirectionalTransferApp", () => {
       finalized: false,
     };
 
-    describe("A valid SEND_MONEY action", async () => {
+    describe("A valid SEND_MONEY action", () => {
       let newState: UnidirectionalTransferAppState;
 
       before(async () => {

@@ -1,5 +1,9 @@
 import { MessagingService } from "@connext/messaging";
+<<<<<<< HEAD
 import { signChannelMessage } from "@connext/crypto";
+=======
+import { signDigest } from "@connext/crypto";
+>>>>>>> 1a2b029fee8eca630139f8950faa3b30f009982d
 import {
   CF_PATH,
   ConnextEventEmitter,
@@ -149,7 +153,11 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     const hdNode = fromMnemonic(this.options.mnemonic).derivePath(CF_PATH);
     const getSignature = async (message: string) => {
       const { privateKey } = hdNode.derivePath("0");
+<<<<<<< HEAD
       const sig = signChannelMessage(privateKey, message);
+=======
+      const sig = signDigest(privateKey, message);
+>>>>>>> 1a2b029fee8eca630139f8950faa3b30f009982d
       return sig;
     };
     const xpub = hdNode.neuter().extendedKey;

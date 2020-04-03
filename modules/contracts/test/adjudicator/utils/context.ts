@@ -27,14 +27,14 @@ import {
   computeCancelChallengeHash,
 } from "./index";
 
-export const setupContext = async (appRegistry: Contract, appDefinition: Contract) => {
+export const setupContext = async (appRegistry: Contract, appDefinition: Contract, providedWallet?: Wallet) => {
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
   const alice = new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
   const bob = new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
   // eth helpers
-  const wallet = (await provider.getWallets())[0];
+  const wallet = providedWallet || (await provider.getWallets())[0];
 
   // app helpers
   const ONCHAIN_CHALLENGE_TIMEOUT = 30;
