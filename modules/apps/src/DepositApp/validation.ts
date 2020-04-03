@@ -3,13 +3,14 @@ import {
   MethodParams,
   DepositAppState,
   stringify,
+  UninstallMiddlewareContext,
 } from "@connext/types";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
 import { baseCoinTransferValidation } from "../shared";
 import { Zero, AddressZero } from "ethers/constants";
 import { Contract } from "ethers";
-import { BaseProvider } from "ethers/providers";
+import { BaseProvider, JsonRpcProvider } from "ethers/providers";
 
 export const validateDepositApp = async (
   params: MethodParams.ProposeInstall,
@@ -43,7 +44,7 @@ export const validateDepositApp = async (
   }
 
   if (!initialState.transfers[0].amount.isZero() || !initialState.transfers[1].amount.isZero()) {
-      throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`)
+      throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`);
   }
 
   if (initialState.multisigAddress !== multisigAddress) {
@@ -86,4 +87,29 @@ export const validateDepositApp = async (
   if (!initialState.startingMultisigBalance.eq(startingMultisigBalance)) {
     throw new Error(`Cannot install deposit app with invalid startingMultisigBalance. Expected ${startingMultisigBalance}, got ${initialState.startingMultisigBalance}`);
   }
+};
+
+export const uninstallDepositMiddleware = async (
+  context: UninstallMiddlewareContext,
+  provider: JsonRpcProvider,
+) => {
+  const {
+    appInstance,
+    stateChannel,
+  } = context;
+
+  const latestState = appInstance.latestState as DepositAppState;
+  const currentMultisigBalance = latestState.assetId === AddressZero
+    ? await provider.getBalance(stateChannel.multisigAddress)
+    : await new Contract(
+        latestState.assetId,
+        ERC20.abi,
+        provider,
+      ).functions.balanceOf(stateChannel.multisigAddress);
+
+  if (currentMultisigBalance.lte(latestState.startingMultisigBalance)) {
+    throw new Error(`Refusing to uninstall, no deposit has occurred.`);
+  }
+
+  // TODO: withdrawal amount validation?
 };
