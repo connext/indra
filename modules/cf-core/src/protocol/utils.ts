@@ -174,15 +174,6 @@ function handleSingleAssetTwoPartyCoinTransfer(
   };
 }
 
-function decodeRefundAppState(encodedOutcome: string): [CoinTransfer] {
-  const [[{ to, amount }]] = defaultAbiCoder.decode(
-    ["tuple(address to, uint256 amount)[2]"],
-    encodedOutcome,
-  );
-
-  return [{ to, amount }];
-}
-
 function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcome {
   const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [BigNumber];
 
