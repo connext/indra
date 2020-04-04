@@ -7,6 +7,7 @@ import {
   ProtocolNames,
   ProtocolName,
   MiddlewareContext,
+  ProtocolRoles,
 } from "@connext/types";
 import { generateValidationMiddleware } from "@connext/apps";
 import { xkeyKthAddress } from "@connext/cf-core";
@@ -22,19 +23,23 @@ export const generateMiddleware = async (
     cxt: UninstallMiddlewareContext,
     cfCoreStore: CFCoreStore,
   ) => {
-    const { appInstance } = cxt;
+    const { appInstance, role } = cxt;
     const appDef = appInstance.appInterface.addr;
     if (appDef !== contractAddresses.DepositApp) {
       return;
     }
-    // do not uninstall deposit apps if node is depositor and
-    // there is a collateralization in flight
+    // do not respond to user requests to uninstall deposit 
+    // apps if node is depositor and there is an active collateralization
     const latestState = appInstance.latestState as DepositAppState;
-    if (latestState.transfers[0].to !== xkeyKthAddress(publicIdentifier)) {
+    if (
+      latestState.transfers[0].to !== xkeyKthAddress(publicIdentifier) || 
+      role === ProtocolRoles.initiator
+    ) {
       return;
     }
+
     const channel = await cfCoreStore.getChannel(appInstance.multisigAddress);
-    if (channel.collateralizationInFlight) {
+    if (channel.activeCollateralizations[latestState.assetId]) {
       throw new Error(`Cannot uninstall deposit app with active collateralization`);
     }
   };

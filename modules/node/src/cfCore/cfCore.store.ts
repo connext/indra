@@ -100,6 +100,12 @@ export class CFCoreStore implements IStoreService {
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
     channel.setupCommitment = setup;
+    const swaps = this.configService.getAllowedSwaps();
+    let activeCollateralizations = {};
+    swaps.forEach(swap => {
+      activeCollateralizations[swap.to] = false;
+    });
+    channel.activeCollateralizations = activeCollateralizations;
 
     const userFreeBalance = xkeyKthAddress(userPublicIdentifier);
     const nodeFreeBalance = xkeyKthAddress(this.configService.getPublicIdentifier());

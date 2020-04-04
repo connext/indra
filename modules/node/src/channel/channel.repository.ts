@@ -185,9 +185,10 @@ export class ChannelRepository extends Repository<Channel> {
 
   async setInflightCollateralization(
     channel: Channel,
+    assetId: string,
     collateralizationInFlight: boolean,
   ): Promise<Channel> {
-    channel.collateralizationInFlight = collateralizationInFlight;
+    channel.activeCollateralizations[assetId] = collateralizationInFlight;
     await this.save(channel);
     return channel;
   }

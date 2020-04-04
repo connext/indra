@@ -69,7 +69,7 @@ export class ChannelService {
     return (!channel || !channel.id) ? undefined : ({
       id: channel.id,
       available: channel.available,
-      collateralizationInFlight: channel.collateralizationInFlight,
+      activeCollateralizations: channel.activeCollateralizations,
       multisigAddress: channel.multisigAddress,
       nodePublicIdentifier: channel.nodePublicIdentifier,
       userPublicIdentifier: channel.userPublicIdentifier,
@@ -159,9 +159,9 @@ export class ChannelService {
     collateralNeeded: BigNumber,
     lowerBoundCollateral: BigNumber,
   ): Promise<TransactionReceipt> {
-    if (channel.collateralizationInFlight) {
+    if (channel.activeCollateralizations[assetId]) {
       this.log.warn(
-        `Collateral request is in flight, try request again for user ${channel.userPublicIdentifier} later`,
+        `Collateral request is in flight for ${assetId}, try request again for user ${channel.userPublicIdentifier} later`,
       );
       return undefined;
     }
@@ -186,16 +186,18 @@ export class ChannelService {
     );
 
     // set in flight so that it cant be double sent
-    await this.channelRepository.setInflightCollateralization(channel, true);
+    this.log.debug(`Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()} of ${assetId}`);
+    await this.setCollateralizationInFlight(channel.multisigAddress, assetId);
     let receipt;
     try {
       receipt = await this.depositService.deposit(channel, amountDeposit, assetId);
-      this.log.info(`Channel ${channel.multisigAddress} successfully collateralized`);
+      this.log.info(`Channel ${channel.multisigAddress} successfully collateralized: ${receipt.hash}`);
       this.log.debug(`Collateralization result: ${stringify(receipt)}`);
     } catch (e) {
-      throw e;
+      throw new Error(e.stack || e.message);
+    } finally {
+      await this.clearCollateralizationInFlight(channel.multisigAddress, assetId);
     }
-    await this.clearCollateralizationInFlight(channel.multisigAddress);
     return receipt;
   }
 
@@ -243,13 +245,22 @@ export class ChannelService {
     await this.withdrawService.withdraw(channel, amountWithdrawal, assetId);
   }
 
-  async clearCollateralizationInFlight(multisigAddress: string): Promise<Channel> {
+  async clearCollateralizationInFlight(multisigAddress: string, assetId: string): Promise<Channel> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
       throw new Error(`No channel exists for multisig ${multisigAddress}`);
     }
 
-    return await this.channelRepository.setInflightCollateralization(channel, false);
+    return await this.channelRepository.setInflightCollateralization(channel, assetId, false);
+  }
+
+  async setCollateralizationInFlight(multisigAddress: string, assetId: string): Promise<Channel> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisig ${multisigAddress}`);
+    }
+
+    return await this.channelRepository.setInflightCollateralization(channel, assetId, true);
   }
 
   async addRebalanceProfileToChannel(

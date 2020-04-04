@@ -45,7 +45,7 @@ class MockChannelRepository extends ChannelRepository {
   async findByMultisigAddress(): Promise<Channel | undefined> {
     const channel = new Channel();
     channel.available = true;
-    channel.collateralizationInFlight = false;
+    channel.activeCollateralizations = { [AddressZero]: false };
     channel.multisigAddress = mkAddress("0xAAA");
     channel.nodePublicIdentifier = mkXpub("xpubAAA");
     channel.userPublicIdentifier = mkXpub("xpubBBB");
