@@ -137,31 +137,6 @@ export class CFCoreService {
     return deployRes.result.result as MethodResults.DeployStateDepositHolder;
   }
 
-  // async deposit(
-  //   multisigAddress: string,
-  //   amount: BigNumber,
-  //   assetId: string = AddressZero,
-  // ): Promise<MethodResults.Deposit> {
-  //   this.log.debug(
-  //     `Calling ${MethodNames.chan_deposit} with params: ${stringify({
-  //       amount,
-  //       multisigAddress,
-  //       tokenAddress: assetId,
-  //     })}`,
-  //   );
-  //   const depositRes = await this.cfCore.rpcRouter.dispatch({
-  //     id: Date.now(),
-  //     methodName: MethodNames.chan_deposit,
-  //     parameters: {
-  //       amount,
-  //       multisigAddress,
-  //       tokenAddress: assetId,
-  //     } as MethodParams.Deposit,
-  //   });
-  //   this.log.debug(`deposit called with result ${stringify(depositRes.result.result)}`);
-  //   return depositRes.result.result as MethodResults.Deposit;
-  // }
-
   async createWithdrawCommitment(
     params: WithdrawParameters,
     multisigAddress: string,

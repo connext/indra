@@ -44,8 +44,6 @@ describe("Client Connect", () => {
       appInstanceId: retrievedToken2,
     } = await client.checkDepositRights({ assetId: client.config.contractAddresses.Token });
     expect(retrievedToken2).to.eq(tokenDeposit);
-
-    client.messaging.disconnect();
   });
 
   it("Client should wait for transfers and rescind deposit rights if it's offline", async () => {
@@ -70,6 +68,5 @@ describe("Client Connect", () => {
       app => app.appInterface.addr === client.config.contractAddresses.DepositApp,
     );
     expect(depositApps.length).to.be.eq(0);
-    client.messaging.disconnect();
   });
 });

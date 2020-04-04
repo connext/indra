@@ -162,7 +162,7 @@ describe("Deposit offline tests", () => {
     await makeDepositCall({
       client,
       clock,
-      failsWith: "Failed to deposit",
+      failsWith: "App install took longer than 90 seconds",
       subjectToFastforward: RECEIVED,
       protocol: "install",
     });
@@ -178,7 +178,7 @@ describe("Deposit offline tests", () => {
       `${client.nodePublicIdentifier}.channel.${client.multisigAddress}.app-instance.*.proposal.accept`,
       async () => {
         // delete the client store
-        client.store.clear();
+        await client.store.clear();
       },
     );
     await makeDepositCall({
