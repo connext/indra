@@ -5,7 +5,7 @@ import { createClient, expect, sendOnchainValue } from "../util";
 import { ConnextStore } from "@connext/store";
 import { StoreTypes, ClientOptions } from "@connext/types";
 
-describe.only("Client Connect", () => {
+describe("Client Connect", () => {
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {
     const mnemonic = Wallet.createRandom().mnemonic;
     let client = await createClient({ mnemonic });
