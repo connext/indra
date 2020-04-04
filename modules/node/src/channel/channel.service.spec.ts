@@ -24,9 +24,9 @@ class MockCFCoreService {
 
   async deposit(): Promise<MethodResults.Deposit> {
     return {
-      multisigBalance: One,
-      tokenAddress: AddressZero,
-      transactionHash: mkHash("0xa"),
+      freeBalance: {
+        [AddressZero]: One,
+      },
     };
   }
 
