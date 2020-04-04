@@ -1,15 +1,22 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, BigNumberish, BigNumber, toBN } from "@connext/types";
+import {
+  IConnextClient,
+  BigNumberish,
+  BigNumber,
+  toBN,
+  DepositAppState,
+  delay,
+} from "@connext/types";
 import { AddressZero, Zero, One } from "ethers/constants";
 
-import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
+import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS, TOKEN_AMOUNT_SM, TOKEN_AMOUNT } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance, ethProvider } from "../util/ethprovider";
 import { Contract } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 
-describe.only("Deposits", () => {
+describe("Deposits", () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
@@ -113,19 +120,62 @@ describe.only("Deposits", () => {
     expect(appInstanceId).to.be.undefined;
   });
 
-  it.skip("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {});
+  it("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
+    // send a payment to a receiver client to
+    // trigger collateral event
+    const expected = {
+      node: Zero.toString(),
+      client: TOKEN_AMOUNT.toString(),
+      assetId: tokenAddress,
+    };
+    await client.deposit({ assetId: expected.assetId, amount: expected.client });
+    await assertClientFreeBalance(client, expected);
+    
+    const receiver = await createClient();
+    
+    // TODO: chan_install events and nats subscription don't seem
+    // to trigger promise resolution here...
+    // cannot use INSTALL_EVENT because receiver will call install
+    // for nodes proposed deposit app and install event will not be
+    // emitted
+    await new Promise(async (resolve, reject) => {
+      receiver.on("PROPOSE_INSTALL_EVENT", (msg) => {
+        if (msg.params.appDefinition === receiver.config.contractAddresses.DepositApp) {
+          resolve();
+        }
+      });
+      receiver.on("REJECT_INSTALL_EVENT", reject);
+      await client.transfer({
+        amount: TOKEN_AMOUNT_SM,
+        assetId: expected.assetId,
+        recipient: receiver.publicIdentifier,
+      });
+    });
+    const getDepositApps = async () => {
+      const apps = await receiver.getAppInstances();
+      return apps.filter(app => 
+        app.appInterface.addr === client.config.contractAddresses.DepositApp,
+      )[0];
+    };
+    while(!(await getDepositApps())) {
+      await delay(200);
+    }
+    const depositApp = await getDepositApps();
 
-  it.skip("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => {});
+    expect(depositApp).to.exist;
+    const latestState = depositApp.latestState as DepositAppState;
+    expect(latestState.transfers[0].to).to.be.eq(nodeFreeBalanceAddress);
+    expect(latestState.transfers[1].to).to.be.eq(receiver.freeBalanceAddress);
 
-  it.skip("client deposits a different amount onchain than passed into the deposit fn", async () => {});
+    // try to deposit
+    await expect(receiver.deposit({ amount: ONE, assetId: expected.assetId })).to.be.rejectedWith("Node has unfinalized deposit");
+  });
 
   it.skip("client proposes deposit but never sends tx to chain", async () => {});
 
   it.skip("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => {});
 
   it.skip("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => {});
-
-  it.skip("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
 
   it("client deposits eth, withdraws, then successfully deposits eth again", async () => {
     const expected = {

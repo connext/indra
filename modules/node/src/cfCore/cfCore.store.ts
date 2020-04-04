@@ -60,6 +60,10 @@ export class CFCoreStore implements IStoreService {
     return allChannels.map(channel => convertChannelToJSON(channel));
   }
 
+  getChannel(multisig: string): Promise<Channel> {
+    return this.channelRepository.findByMultisigAddressOrThrow(multisig);
+  }
+
   getStateChannel(multisigAddress: string): Promise<StateChannelJSON> {
     return this.channelRepository.getStateChannel(multisigAddress);
   }

@@ -61,9 +61,15 @@ export class DepositService {
     }
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
-    const tx = await this.sendDepositToChain(channel, amount, assetId);
-    const receipt = await tx.wait();
-    await this.rescindDepositRights(appInstanceId || depositApp.identityHash);
+    let receipt;
+    try { 
+      const tx = await this.sendDepositToChain(channel, amount, assetId);
+      receipt = await tx.wait();
+    } catch (e) {
+      throw new Error(e.stack || e.message);
+    } finally {
+      await this.rescindDepositRights(appInstanceId || depositApp.identityHash);
+    }
     return receipt;
   }
 

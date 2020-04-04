@@ -10,6 +10,7 @@ import {
   AppInstanceJson,
   DefaultApp,
   toBN,
+  EventNames,
 } from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
 import { DepositAppName, DepositAppState } from "@connext/types";
@@ -39,13 +40,38 @@ export class DepositController extends AbstractController {
     const { 
       appInstanceId, 
     } = await this.requestDepositRights({ assetId });
-    const hash = await this.connext.channelProvider.walletTransfer({
-      recipient: this.connext.multisigAddress, 
-      amount: amount.toString(),
-      assetId, 
-    });
-    this.log.debug(`Sent deposit transaction to chain: ${hash}`);
-    return this.rescindDepositRights({ appInstanceId, assetId });
+
+    let ret;
+    try {
+      this.log.debug(`Starting deposit`);
+      this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
+        amount: amount.toString(),
+        assetId,
+        appInstanceId,
+      });
+      const hash = await this.connext.channelProvider.walletTransfer({
+        recipient: this.connext.multisigAddress, 
+        amount: amount.toString(),
+        assetId, 
+      });
+      this.log.debug(`Sent deposit transaction to chain: ${hash}`);
+      this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
+        hash,
+        amount: amount.toString(),
+        assetId,
+      });
+    } catch (e) {
+      this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
+        amount: amount.toString(),
+        assetId,
+        error: e.stack || e.message,
+      });
+      throw new Error(e.stack || e.message);
+    } finally {
+      ret = await this.rescindDepositRights({ appInstanceId, assetId });
+    }
+
+    return ret;
   };
 
   public requestDepositRights = async (

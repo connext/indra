@@ -4,6 +4,7 @@ import {
   DepositAppState,
   stringify,
   UninstallMiddlewareContext,
+  ProtocolRoles,
 } from "@connext/types";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
@@ -94,8 +95,10 @@ export const uninstallDepositMiddleware = async (
   provider: JsonRpcProvider,
 ) => {
   const {
+    role,
     appInstance,
     stateChannel,
+    params,
   } = context;
 
   const latestState = appInstance.latestState as DepositAppState;
@@ -105,8 +108,15 @@ export const uninstallDepositMiddleware = async (
         .functions
         .balanceOf(stateChannel.multisigAddress);
 
-  if (currentMultisigBalance.lte(latestState.startingMultisigBalance)) {
-    throw new Error(`Refusing to uninstall, no deposit has occurred.`);
+  if (currentMultisigBalance.lt(latestState.startingMultisigBalance)) {
+    throw new Error(`Refusing to uninstall, current multisig balance (${currentMultisigBalance.toString()}) is less than starting multsig balance (${latestState.startingMultisigBalance.toString()})`);
+  }
+
+  if (
+    role === ProtocolRoles.initiator
+    && latestState.transfers[0].to !== xkeyKthAddress(params.initiatorXpub)
+  ) {
+    throw new Error(`Cannot uninstall deposit app without being the initiator`);
   }
 
   // TODO: withdrawal amount validation?
