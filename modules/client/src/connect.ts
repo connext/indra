@@ -290,18 +290,6 @@ export const connect = async (
   log.debug("Cleaning up registry apps");
   await client.cleanupRegistryApps();
 
-  // TODO: delete
-  // check if there is a coin refund app installed for eth and tokens
-  const apps = await client.getAppInstances();
-  const coinBalanceRefundApps = apps.filter(
-    app => app.appInterface.addr === client.config.contractAddresses.CoinBalanceRefundApp,
-  );
-  for (const coinBalance of coinBalanceRefundApps) {
-    const tokenAddress = (coinBalance.latestState as CoinBalanceRefundAppState).tokenAddress;
-    log.debug(`Handling coin balance refund app for ${tokenAddress}`);
-    await client.uninstallCoinBalanceIfNeeded(tokenAddress);
-  }
-
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
   log.debug("Reclaiming pending async transfers");
