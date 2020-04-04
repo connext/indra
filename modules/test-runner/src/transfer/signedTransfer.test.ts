@@ -57,7 +57,67 @@ describe("Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-  it("happy case: client A signed transfers eth to client B through node", async () => {
+  it.only("happy case: client A signed transfers eth to client B through node, clientB is online", async () => {
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    const paymentId = hexlify(randomBytes(32));
+    const signerWallet = Wallet.createRandom();
+    const signerAddress = await signerWallet.getAddress();
+
+    const promises = await Promise.all([
+      clientA.conditionalTransfer({
+        amount: transfer.amount,
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId,
+        signer: signerAddress,
+        assetId: transfer.assetId,
+        recipient: clientB.publicIdentifier,
+        meta: { foo: "bar" },
+      } as SignedTransferParameters),
+      new Promise(res => {
+        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
+        clientB.messaging.subscribe(subject, data => res(data));
+      }),
+    ]);
+
+    const [,installed] = promises;
+    console.log('installed: ', installed);
+
+    // const {
+    //   [clientA.freeBalanceAddress]: clientAPostTransferBal,
+    //   [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+    // } = await clientA.getFreeBalance(transfer.assetId);
+    // expect(clientAPostTransferBal).to.eq(0);
+    // expect(nodePostTransferBal).to.eq(0);
+
+    // const data = hexlify(randomBytes(32));
+    // const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+    // const signature = await signDigest(signerWallet.privateKey, digest);
+
+    // await new Promise(async res => {
+    //   clientA.on("UNINSTALL_EVENT", async data => {
+    //     const {
+    //       [clientA.freeBalanceAddress]: clientAPostReclaimBal,
+    //       [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+    //     } = await clientA.getFreeBalance(transfer.assetId);
+    //     expect(clientAPostReclaimBal).to.eq(0);
+    //     expect(nodePostReclaimBal).to.eq(transfer.amount);
+    //     res();
+    //   });
+    //   await clientB.resolveCondition({
+    //     conditionType: ConditionalTransferTypes.SignedTransfer,
+    //     paymentId,
+    //     data,
+    //     signature,
+    //   } as ResolveSignedTransferParameters);
+    //   const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+    //     transfer.assetId,
+    //   );
+    //   expect(clientBPostTransferBal).to.eq(transfer.amount);
+    // });
+  });
+
+  it("happy case: client A signed transfers eth to client B through node, clientB is offline", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));

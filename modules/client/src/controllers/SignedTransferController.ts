@@ -20,7 +20,9 @@ export class SignedTransferController extends AbstractController {
   ): Promise<SignedTransferResponse> => {
     // convert params + validate
     const amount = toBN(params.amount);
-    const { meta, paymentId, signer, assetId } = params;
+    const { meta, paymentId, signer, assetId, recipient } = params;
+    let metaWithRecipient = meta || {};
+    metaWithRecipient.recipient = recipient;
 
     const initialState: SimpleSignedTransferAppState = {
       coinTransfers: [

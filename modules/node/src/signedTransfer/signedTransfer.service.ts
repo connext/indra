@@ -7,6 +7,8 @@ import {
   SignedTransferStatus,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
+  Bytes32Hash,
+  Xpub,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -16,9 +18,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { xkeyKthAddress } from "../util";
-import { ConfigService } from "../config/config.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
-import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 
 const appStatusesToSignedTransferStatus = (
@@ -57,18 +57,16 @@ export class SignedTransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly channelRepository: ChannelRepository,
-    private readonly appInstanceRepository: AppInstanceRepository,
     private readonly signedTransferRepository: SignedTransferRepository,
   ) {
     this.log.setContext("SignedTransferService");
   }
 
-  async resolveSignedTransfer(
-    userPublicIdentifier: string,
-    paymentId: string,
+  async installSignedTransferReceiverApp(
+    userPublicIdentifier: Xpub,
+    paymentId: Bytes32Hash,
   ): Promise<ResolveSignedTransferResponse> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
