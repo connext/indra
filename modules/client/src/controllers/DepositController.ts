@@ -42,6 +42,7 @@ export class DepositController extends AbstractController {
     } = await this.requestDepositRights({ assetId });
 
     let ret;
+    let transactionHash;
     try {
       this.log.debug(`Starting deposit`);
       this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
@@ -55,11 +56,7 @@ export class DepositController extends AbstractController {
         assetId, 
       });
       this.log.debug(`Sent deposit transaction to chain: ${hash}`);
-      this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
-        hash,
-        amount: amount.toString(),
-        assetId,
-      });
+      transactionHash = hash;
     } catch (e) {
       this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
         amount: amount.toString(),
@@ -69,6 +66,14 @@ export class DepositController extends AbstractController {
       throw new Error(e.stack || e.message);
     } finally {
       ret = await this.rescindDepositRights({ appInstanceId, assetId });
+    }
+
+    if (transactionHash) {
+      this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
+        hash: transactionHash,
+        amount: amount.toString(),
+        assetId,
+      });
     }
 
     return ret;
