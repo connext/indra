@@ -99,7 +99,7 @@ describe("Deposit offline tests", () => {
    */
   it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async () => {
     // create client where the propose protocol will not complete
-    // in deposit, client will propose the `CoinBalanceRefund` app (is the
+    // in deposit, client will propose the `DepositApp` (is the
     // initiator in the `propose` protocol)
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client

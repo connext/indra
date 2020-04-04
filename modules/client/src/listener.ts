@@ -1,6 +1,5 @@
 import {
   bigNumberifyJson,
-  CoinBalanceRefundAppName,
   DepositAppName,
   EventNames,
   EventPayloads,
@@ -291,12 +290,6 @@ export class ConnextListener extends ConnextEventEmitter {
         this.connext.config.supportedTokenAddresses,
       );
       switch (registryAppInfo.name) {
-        case CoinBalanceRefundAppName: {
-          const subject = `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
-          this.log.debug(`Sending acceptance message to: ${subject}`);
-          await this.connext.messaging.publish(subject, stringify(params));
-          return;
-        }
         case SimpleLinkedTransferAppName: {
           validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
           break;

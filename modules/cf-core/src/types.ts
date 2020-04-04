@@ -45,8 +45,6 @@ export {
   AppInstanceJson,
   AppInstanceProposal,
   AppInterface,
-  CoinBalanceRefundAppState,
-  CoinBalanceRefundAppStateEncoding,
   ConditionalTransactionCommitmentJSON,
   CreateChannelMessage,
   DepositConfirmationMessage,

@@ -5,7 +5,6 @@ import {
   CF_PATH,
   EventNames,
   StateSchemaVersion,
-  CoinBalanceRefundAppState,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
 import { signDigest } from "@connext/crypto";

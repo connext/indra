@@ -35,10 +35,6 @@ class MockCFCoreService {
       appInstanceId: mkHash("0xabc"),
     };
   }
-
-  async getCoinBalanceRefundApp(): Promise<AppInstanceJson | undefined> {
-    return undefined;
-  }
 }
 
 class MockChannelRepository extends ChannelRepository {

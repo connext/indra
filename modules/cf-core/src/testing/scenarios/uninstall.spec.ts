@@ -1,9 +1,8 @@
-import { EventNames, AppInstanceJson } from "@connext/types";
+import { EventNames } from "@connext/types";
 import { One, Two, Zero } from "ethers/constants";
 
 import { Node } from "../../node";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
-import { USE_RESCIND_DEPOSIT_RIGHTS } from "../../errors";
 import { UninstallMessage } from "../../types";
 
 import { toBeEq } from "../bignumber-jest-matcher";
@@ -17,10 +16,7 @@ import {
   getFreeBalanceState,
   getInstalledAppInstances,
   installApp,
-  getApps,
-  requestDepositRights,
 } from "../utils";
-import { isHexString } from "ethers/utils";
 
 expect.extend({ toBeEq });
 
@@ -35,43 +31,6 @@ function assertUninstallMessage(senderId: string, appInstanceId: string, msg: Un
     },
   });
 }
-
-describe("Uninstalling coin balance refund app", () => {
-  let nodeA: Node;
-  let nodeB: Node;
-
-  let multisigAddress: string;
-  let coinBalanceAppId: string;
-
-  const assertAppsPresent = async (expected: number) => {
-    const appsA = await getApps(nodeA, multisigAddress);
-    const appsB = await getApps(nodeB, multisigAddress);
-    expect(appsA.length).toEqual(expected);
-    expect(appsB.length).toEqual(expected);
-    return appsA.map((app: AppInstanceJson) => app.identityHash);
-  };
-
-  beforeEach(async () => {
-    const context: SetupContext = await setup(global);
-    nodeA = context["A"].node;
-    nodeB = context["B"].node;
-
-    multisigAddress = await createChannel(nodeA, nodeB);
-    expect(multisigAddress).toBeDefined();
-    expect(isHexString(multisigAddress)).toBeTruthy();
-
-    await requestDepositRights(nodeA, nodeB, multisigAddress);
-    coinBalanceAppId = (await assertAppsPresent(1))[0];
-    expect(coinBalanceAppId).toBeDefined();
-  });
-
-  it("should fail if you try to uninstall coin balance refund app", async () => {
-    await expect(
-      nodeB.rpcRouter.dispatch(constructUninstallRpc(coinBalanceAppId)),
-    ).rejects.toThrowError(USE_RESCIND_DEPOSIT_RIGHTS);
-    await assertAppsPresent(1);
-  });
-});
 
 describe("Node A and B install apps of different outcome types, then uninstall them to test outcomes types and interpreters", () => {
   let nodeA: Node;

@@ -7,7 +7,7 @@ import {
   IStoreService,
 } from "@connext/types";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
+import { HARD_CODED_ASSUMPTIONS } from "../constants";
 import { AppInstanceJson, SolidityValueType } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 
@@ -133,61 +133,6 @@ export class StateChannel {
       );
     }
     return appInstances;
-  }
-
-  public hasBalanceRefundAppInstance(
-    balanceRefundAppDefinitionAddress: string,
-    tokenAddress: string,
-  ) {
-    return (
-      Array.from(this.appInstances.values()).filter(
-        (appInstance: AppInstance) =>
-          appInstance.appInterface.addr === balanceRefundAppDefinitionAddress &&
-          appInstance.latestState["tokenAddress"] === tokenAddress,
-      ).length > 0
-    );
-  }
-
-  public hasProposedBalanceRefundAppInstance(
-    balanceRefundAppDefinitionAddress: string,
-    tokenAddress: string,
-  ) {
-    return (
-      Array.from(this.proposedAppInstances.values()).filter(
-        (appInstance: AppInstanceProposal) =>
-          appInstance.appDefinition === balanceRefundAppDefinitionAddress &&
-          appInstance.initialState["tokenAddress"] === tokenAddress,
-      ).length > 0
-    );
-  }
-
-  public getBalanceRefundAppInstance(
-    balanceRefundAppDefinitionAddress: string,
-    tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-  ) {
-    const noAppsErr = `No CoinBalanceRefund app instance of tokenAddress ${tokenAddress} exists on channel: ${this.multisigAddress}`;
-    let refundApps;
-    try {
-      refundApps = this.getAppInstancesOfKind(balanceRefundAppDefinitionAddress);
-    } catch (e) {
-      if (e.message.includes(`No AppInstance of addr`)) {
-        throw new Error(noAppsErr);
-      }
-      throw new Error(e.stack || e.message);
-    }
-    const appInstances = refundApps.filter(
-      (appInstance: AppInstance) => appInstance.latestState["tokenAddress"] === tokenAddress,
-    );
-    if (appInstances.length === 0) {
-      throw new Error(noAppsErr);
-    }
-
-    if (appInstances.length > 1) {
-      throw new Error(
-        `More than 1 CoinBalanceRefund app instance of tokenAddress ${tokenAddress} exists on channel: ${this.multisigAddress}`,
-      );
-    }
-    return appInstances[0];
   }
 
   public isAppInstanceInstalled(appInstanceIdentityHash: string) {
