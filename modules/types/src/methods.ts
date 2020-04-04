@@ -257,7 +257,6 @@ type WithdrawCommitmentResult = {
 export const MethodNames = enumify({
   chan_create: "chan_create",
   chan_deployStateDepositHolder: "chan_deployStateDepositHolder",
-  chan_deposit: "chan_deposit",
   chan_getAppInstance: "chan_getAppInstance",
   chan_getAppInstances: "chan_getAppInstances",
   chan_getChannelAddresses: "chan_getChannelAddresses",
@@ -271,8 +270,6 @@ export const MethodNames = enumify({
   chan_install: "chan_install",
   chan_proposeInstall: "chan_proposeInstall",
   chan_rejectInstall: "chan_rejectInstall",
-  chan_requestDepositRights: "chan_requestDepositRights",
-  chan_rescindDepositRights: "chan_rescindDepositRights",
   chan_takeAction: "chan_takeAction",
   chan_uninstall: "chan_uninstall",
   chan_updateState: "chan_updateState",
