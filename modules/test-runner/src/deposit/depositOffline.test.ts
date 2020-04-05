@@ -170,21 +170,4 @@ describe("Deposit offline tests", () => {
     await createClient({ mnemonic: getMnemonic(client.publicIdentifier) });
   });
 
-  it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
-    client = await createClientWithMessagingLimits();
-    expect(client.messaging).to.be.ok;
-    // on proposal accepted message, delete the store
-    await (client.messaging as TestMessagingService).subscribe(
-      `${client.nodePublicIdentifier}.channel.${client.multisigAddress}.app-instance.*.proposal.accept`,
-      async () => {
-        // delete the client store
-        await client.store.clear();
-      },
-    );
-    await makeDepositCall({
-      client,
-      clock,
-      failsWith: "Failed to deposit",
-    });
-  });
 });
