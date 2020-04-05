@@ -27,7 +27,8 @@ describe("Deposits", () => {
   ): Promise<void> => {
     const freeBalance = await client.getFreeBalance(expected.assetId || AddressZero);
     expect(freeBalance[client.freeBalanceAddress]).to.equal(expected.client);
-    expect(freeBalance[nodeFreeBalanceAddress]).to.equal(expected.node);
+    // does not need to be equal, because node may be collateralizing
+    expect(freeBalance[nodeFreeBalanceAddress]).to.be.at.least(expected.node);
   };
 
   const assertNodeFreeBalance = async (

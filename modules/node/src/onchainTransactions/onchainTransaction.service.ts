@@ -1,8 +1,6 @@
-import { MinimalTransaction, Contract, stringify } from "@connext/types";
+import { MinimalTransaction, stringify } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { TransactionResponse } from "ethers/providers";
-import { AddressZero } from "ethers/constants";
-import tokenAbi from "human-standard-token-abi";
 
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
@@ -61,7 +59,7 @@ export class OnchainTransactionService {
     let errors: {[k: number]: string} = [];
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
-        this.log.debug(`Attempt ${attempt}/${MAX_RETRIES} to send transaction`);
+        this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction`);
         const tx = await wallet.sendTransaction({ 
           ...transaction,
           nonce: await wallet.getTransactionCount(),
