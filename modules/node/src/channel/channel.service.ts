@@ -97,7 +97,7 @@ export class ChannelService {
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
     minimumRequiredCollateral: BigNumber = Zero,
-  ): Promise<void> {
+  ): Promise<TransactionReceipt | undefined> {
     const normalizedAssetId = getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
@@ -134,23 +134,30 @@ export class ChannelService {
     ) {
       throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
     }
+    let depositReceipt;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // if minimum amount is larger, override upper bound
       const collateralNeeded: BigNumber = maxBN([
         upperBoundCollateralize,
         minimumRequiredCollateral,
       ]);
-      await this.collateralizeIfNecessary(
+      depositReceipt = await this.collateralizeIfNecessary(
         channel,
         assetId,
         collateralNeeded,
         lowerBoundCollateralize,
       );
     } else if (rebalanceType === RebalanceType.RECLAIM) {
-      await this.reclaimIfNecessary(channel, assetId, upperBoundReclaim, lowerBoundReclaim);
+      await this.reclaimIfNecessary(
+        channel,
+        assetId,
+        upperBoundReclaim,
+        lowerBoundReclaim,
+      );
     } else {
       throw new Error(`Invalid rebalancing type: ${rebalanceType}`);
     }
+    return depositReceipt;
   }
 
   private async collateralizeIfNecessary(
@@ -158,7 +165,7 @@ export class ChannelService {
     assetId: string,
     collateralNeeded: BigNumber,
     lowerBoundCollateral: BigNumber,
-  ): Promise<TransactionReceipt> {
+  ): Promise<TransactionReceipt | undefined> {
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(
         `Collateral request is in flight for ${assetId}, try request again for user ${channel.userPublicIdentifier} later`,
@@ -188,10 +195,10 @@ export class ChannelService {
     // set in flight so that it cant be double sent
     this.log.debug(`Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()} of ${assetId}`);
     await this.setCollateralizationInFlight(channel.multisigAddress, assetId);
-    let receipt;
+    let receipt: TransactionReceipt | undefined = undefined;
     try {
       receipt = await this.depositService.deposit(channel, amountDeposit, assetId);
-      this.log.info(`Channel ${channel.multisigAddress} successfully collateralized: ${receipt.hash}`);
+      this.log.info(`Channel ${channel.multisigAddress} successfully collateralized: ${receipt.transactionHash}`);
       this.log.debug(`Collateralization result: ${stringify(receipt)}`);
     } catch (e) {
       throw new Error(e.stack || e.message);

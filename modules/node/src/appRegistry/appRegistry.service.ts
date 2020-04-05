@@ -87,13 +87,15 @@ export class AppRegistryService implements OnModuleInit {
       );
       const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
       if (freeBal[this.cfCoreService.cfCore.freeBalanceAddress].lt(responderDepositBigNumber)) {
-        // request collateral and wait for deposit to come through
-        await this.channelService.rebalance(
+        const depositReceipt = await this.channelService.rebalance(
           from,
           proposeInstallParams.responderDepositTokenAddress,
           RebalanceType.COLLATERALIZE,
           responderDepositBigNumber,
         );
+        if (!depositReceipt) {
+          throw new Error(`Could not collateralize sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`);
+        }
       } else {
         // request collateral normally without awaiting
         this.channelService.rebalance(
