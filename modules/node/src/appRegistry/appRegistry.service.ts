@@ -231,9 +231,6 @@ export class AppRegistryService implements OnModuleInit {
               proposeInstallParams.meta["recipient"],
               (proposeInstallParams.initialState as SimpleSignedTransferAppState).paymentId,
             )
-            .then(a => {
-              console.log("***** FINISHED INSTALLING SIGNED TRANSFER APP TO RECEIVER: ", a);
-            })
             // if receipient is not online, do not throw error, receipient can always unlock later
             .catch(e =>
               this.log.error(

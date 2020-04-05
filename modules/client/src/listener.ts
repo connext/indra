@@ -360,6 +360,7 @@ export class ConnextListener extends ConnextEventEmitter {
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
           deBigNumberifyJson({
             amount,
+            appInstanceId,
             assetId,
             meta,
             sender: meta["sender"],

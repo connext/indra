@@ -40,6 +40,7 @@ const CONDITIONAL_TRANSFER_RECEIVED_EVENT = "CONDITIONAL_TRANSFER_RECEIVED_EVENT
 
 export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTypes> = {
   amount: HexObject;
+  appInstanceId: string;
   assetId: string;
   paymentId?: string;
   sender: string;

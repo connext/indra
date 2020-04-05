@@ -10,7 +10,6 @@ import {
   SimpleSignedTransferAppState,
   Bytes32Hash,
   Address,
-  SignedTransfer,
 } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
