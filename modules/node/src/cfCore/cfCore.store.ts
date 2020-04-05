@@ -234,17 +234,28 @@ export class CFCoreStore implements IStoreService {
 
   async updateAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
     const { identityHash, latestState, latestTimeout, latestVersionNumber } = appJson;
+    const app = await this.appInstanceRepository.findByIdentityHash(identityHash);
 
-    await this.appInstanceRepository
-      .createQueryBuilder()
-      .update(AppInstance)
-      .set({
-        latestState: latestState as any,
-        latestTimeout,
-        latestVersionNumber,
-      })
-      .where("identityHash = :identityHash", { identityHash })
-      .execute();
+    if (!app) {
+      throw new Error(`No app found when trying to update. AppId: ${identityHash}`);
+    }
+
+    if (app.type !== AppType.INSTANCE) {
+      throw new Error(`App is not of correct type, type: ${app.type}`);
+    }
+
+    await getManager().transaction(async transactionalEntityManager => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(AppInstance)
+        .set({
+          latestState: latestState as any,
+          latestTimeout,
+          latestVersionNumber,
+        })
+        .where("identityHash = :identityHash", { identityHash })
+        .execute();
+    });
   }
 
   async removeAppInstance(
