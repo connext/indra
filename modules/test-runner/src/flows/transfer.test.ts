@@ -107,10 +107,10 @@ describe("Full Flow: Transfer", () => {
         rej(`Received transfer failed event on clientA`),
       );
       clientB.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
-        rej(`Received transfer failed event on clientA`),
+        rej(`Received transfer failed event on clientB`),
       );
       clientC.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
-        rej(`Received transfer failed event on clientA`),
+        rej(`Received transfer failed event on clientC`),
       );
       await Promise.all([
         clientB.transfer({ amount: "1", assetId: AddressZero, recipient: clientA.publicIdentifier }),
