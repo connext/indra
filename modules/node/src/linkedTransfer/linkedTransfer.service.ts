@@ -94,12 +94,15 @@ export class LinkedTransferService {
     );
     if (freeBal[freeBalanceAddr].lt(amountBN)) {
       // request collateral and wait for deposit to come through
-      await this.channelService.rebalance(
+      const depositReceipt = await this.channelService.rebalance(
         userPublicIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amountBN,
       );
+      if (!depositReceipt) {
+        throw new Error(`Could not obtain sufficient collateral for receiver channel when resolving linked payment ${paymentId}`);
+      }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
