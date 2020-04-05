@@ -118,7 +118,7 @@ docker run \
 echo "Starting $node_host.."
 docker run \
   --entrypoint="bash" \
-  --env="INDRA_ALLOWED_SWAPS='$allowed_swaps'" \
+  --env="INDRA_ALLOWED_SWAPS=$allowed_swaps" \
   --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
   --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
   --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
