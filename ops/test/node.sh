@@ -31,6 +31,10 @@ else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' 
 fi
 eth_rpc_url="http://$ethprovider_host:8545"
 
+# get supported addresses
+token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
+allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"UNISWAP"}]'
+
 postgres_db="${project}_$suffix"
 postgres_host="${project}_database_$suffix"
 postgres_password="$project"
@@ -114,6 +118,7 @@ docker run \
 echo "Starting $node_host.."
 docker run \
   --entrypoint="bash" \
+  --env="INDRA_ALLOWED_SWAPS='$allowed_swaps'" \
   --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
   --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
   --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
