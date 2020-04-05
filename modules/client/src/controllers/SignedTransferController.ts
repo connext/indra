@@ -77,8 +77,8 @@ export class SignedTransferController extends AbstractController {
       transferMeta: {
         signer,
       },
-    }) as EventPayloads.CreateSignedTransfer;
-    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
+    }) as EventPayloads.SignedTransferCreated;
+    this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
     return {
       appId,

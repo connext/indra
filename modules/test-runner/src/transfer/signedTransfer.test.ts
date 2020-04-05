@@ -8,6 +8,8 @@ import {
   SignedTransferParameters,
   SignedTransferStatus,
   SignedTransfer,
+  deBigNumberifyJson,
+  EventPayloads,
 } from "@connext/types";
 import { signDigest } from "@connext/crypto";
 import { xkeyKthAddress } from "@connext/cf-core";
@@ -74,47 +76,60 @@ describe("Signed Transfers", () => {
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar" },
       } as SignedTransferParameters),
-      new Promise(res => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, data => res(data));
+      new Promise(async res => {
+        clientB.once(
+          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          (data: EventPayloads.SignedTransferReceived) => {
+            res(data);
+          },
+        );
       }),
     ]);
 
-    const [,installed] = promises;
-    console.log('installed: ', installed);
+    const [, installed] = promises;
+    expect(installed).deep.contain(
+      deBigNumberifyJson({
+        amount: transfer.amount,
+        assetId: transfer.assetId,
+        type: ConditionalTransferTypes[SignedTransfer],
+        paymentId,
+        transferMeta: { signer: signerAddress },
+        meta: { foo: "bar", recipient: clientB.publicIdentifier },
+      }) as EventPayloads.SignedTransferReceived,
+    );
 
-    // const {
-    //   [clientA.freeBalanceAddress]: clientAPostTransferBal,
-    //   [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
-    // } = await clientA.getFreeBalance(transfer.assetId);
-    // expect(clientAPostTransferBal).to.eq(0);
-    // expect(nodePostTransferBal).to.eq(0);
+    const {
+      [clientA.freeBalanceAddress]: clientAPostTransferBal,
+      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+    } = await clientA.getFreeBalance(transfer.assetId);
+    expect(clientAPostTransferBal).to.eq(0);
+    expect(nodePostTransferBal).to.eq(0);
 
-    // const data = hexlify(randomBytes(32));
-    // const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    // const signature = await signDigest(signerWallet.privateKey, digest);
+    const data = hexlify(randomBytes(32));
+    const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
+    const signature = await signDigest(signerWallet.privateKey, digest);
 
-    // await new Promise(async res => {
-    //   clientA.on("UNINSTALL_EVENT", async data => {
-    //     const {
-    //       [clientA.freeBalanceAddress]: clientAPostReclaimBal,
-    //       [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
-    //     } = await clientA.getFreeBalance(transfer.assetId);
-    //     expect(clientAPostReclaimBal).to.eq(0);
-    //     expect(nodePostReclaimBal).to.eq(transfer.amount);
-    //     res();
-    //   });
-    //   await clientB.resolveCondition({
-    //     conditionType: ConditionalTransferTypes.SignedTransfer,
-    //     paymentId,
-    //     data,
-    //     signature,
-    //   } as ResolveSignedTransferParameters);
-    //   const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
-    //     transfer.assetId,
-    //   );
-    //   expect(clientBPostTransferBal).to.eq(transfer.amount);
-    // });
+    await new Promise(async res => {
+      clientA.on(EventNames.UNINSTALL_EVENT, async data => {
+        const {
+          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
+          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+        } = await clientA.getFreeBalance(transfer.assetId);
+        expect(clientAPostReclaimBal).to.eq(0);
+        expect(nodePostReclaimBal).to.eq(transfer.amount);
+        res();
+      });
+      await clientB.resolveCondition({
+        conditionType: ConditionalTransferTypes.SignedTransfer,
+        paymentId,
+        data,
+        signature,
+      } as ResolveSignedTransferParameters);
+      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+        transfer.assetId,
+      );
+      expect(clientBPostTransferBal).to.eq(transfer.amount);
+    });
   });
 
   it("happy case: client A signed transfers eth to client B through node, clientB is offline", async () => {
@@ -268,8 +283,8 @@ describe("Signed Transfers", () => {
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
-      clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, resolve);
-      clientB.once(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, reject);
+      clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve);
+      clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, reject);
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.SignedTransfer,
         data,
