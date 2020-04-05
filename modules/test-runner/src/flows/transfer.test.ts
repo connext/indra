@@ -88,7 +88,11 @@ describe("Full Flow: Transfer", () => {
 
   it("Client receives transfers concurrently", () => {
     return new Promise(async (res, rej) => {
-      await fundChannel(clientA, bigNumberify(5));
+      // TODO: should work without collateral as well
+      // seems there is a condition --> receiver sends resolve req.
+      // while user has deposit in flight and node has insufficient
+      // collateral. node will not allow the resolution of that payment
+      await requestCollateral(clientA, AddressZero, true);
       await fundChannel(clientB, bigNumberify(5));
       await fundChannel(clientC, bigNumberify(5));
       let transferCount = 0;
