@@ -321,7 +321,6 @@ describe("Signed Transfers", () => {
     for (let i = 0; i < numberOfRuns; i++) {
       const {
         [clientA.freeBalanceAddress]: clientAPreBal,
-        [clientA.nodeFreeBalanceAddress]: nodeAPreBal,
       } = await clientA.getFreeBalance(transfer.assetId);
       const {
         [clientB.freeBalanceAddress]: clientBPreBal,
@@ -333,23 +332,28 @@ describe("Signed Transfers", () => {
       // Start timer
       const start = Date.now();
 
-      await clientA.conditionalTransfer({
-        amount: transfer.amount,
-        conditionType: ConditionalTransferTypes[SignedTransfer],
-        paymentId,
-        signer: signerAddress,
-        assetId: transfer.assetId,
-        meta: { foo: "bar" },
-        recipient: clientB.publicIdentifier,
-      } as SignedTransferParameters);
+      // TODO: what are these errors
+      await new Promise(async res => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, async (data) => {
+          res();
+        });
+        await clientA.conditionalTransfer({
+          amount: transfer.amount,
+          conditionType: ConditionalTransferTypes[SignedTransfer],
+          paymentId,
+          signer: signerAddress,
+          assetId: transfer.assetId,
+          meta: { foo: "bar" },
+          recipient: clientB.publicIdentifier,
+        } as SignedTransferParameters);
+      });
 
       // Including recipient signing in test to match real conditions
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
       const signature = await signDigest(signerWallet.privateKey, digest);
 
       await new Promise(async res => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, async (data) => {
-          console.log('data: ', data);
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
           res();
         });
         await clientB.resolveCondition({
@@ -367,29 +371,14 @@ describe("Signed Transfers", () => {
 
       const {
         [clientA.freeBalanceAddress]: clientAPostBal,
-        [clientA.nodeFreeBalanceAddress]: nodeAPostBal,
       } = await clientA.getFreeBalance(transfer.assetId);
       const {
         [clientB.freeBalanceAddress]: clientBPostBal,
         [clientB.nodeFreeBalanceAddress]: nodeBPostBal,
       } = await clientB.getFreeBalance(transfer.assetId);
-      console.log('transfer.amount: ', transfer.amount);
-      console.log('clientAPreBal: ', clientAPreBal.toString());
-      console.log('clientAPostBal: ', clientAPostBal.toString());
-      console.log('clientBPreBal: ', clientBPreBal.toString());
-      console.log('clientBPostBal: ', clientBPostBal.toString());
-      console.log('nodeAPreBal: ', nodeAPreBal.toString());
-      console.log('nodeAPostBal: ', nodeAPostBal.toString());
-      console.log('nodeBPreBal: ', nodeBPreBal.toString());
-      console.log('nodeBPostBal: ', nodeBPostBal.toString());
       expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
-      console.log(1);
-      expect(nodeAPostBal).to.eq(nodeAPreBal.add(transfer.amount));
-      console.log(2);
       expect(nodeBPostBal).to.eq(nodeBPreBal.sub(transfer.amount));
-      console.log(3);
       expect(clientBPostBal).to.eq(clientBPreBal.add(transfer.amount));
-      console.log(4);
     }
     console.log(`Average = ${sum / numberOfRuns} ms`);
   });
