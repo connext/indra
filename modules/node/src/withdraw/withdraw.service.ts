@@ -27,7 +27,6 @@ import { xkeyKthAddress } from "../util";
 
 import { WithdrawRepository } from "./withdraw.repository";
 import { Withdraw } from "./withdraw.entity";
-import { StateChannel } from "@connext/cf-core";
 
 @Injectable()
 export class WithdrawService {
