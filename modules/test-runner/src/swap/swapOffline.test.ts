@@ -179,7 +179,11 @@ describe("Swap offline", () => {
     // go offline during swap, should fail with swap timeout
     await (providedClient.messaging as TestMessagingService)!.subscribe(
       `${providedClient.nodePublicIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
-      async () => {
+      async (msg: any) => {
+        const { appInterface } = msg.data;
+        if (appInterface.addr !== client.config.contractAddresses.SimpleTwoPartySwapApp) {
+          return;
+        }
         // we know client has swap app installed,
         // so delete store here
         await providedClient.store.clear();
