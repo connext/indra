@@ -27,17 +27,17 @@ import { AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const {
+  CONDITIONAL_TRANSFER_CREATED_EVENT,
+  CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+  CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+  CONDITIONAL_TRANSFER_FAILED_EVENT,
   CREATE_CHANNEL_EVENT,
-  CREATE_TRANSFER,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
   UPDATE_STATE_EVENT,
@@ -57,7 +57,6 @@ export default class ListenerService implements OnModuleInit {
     private readonly appActionsService: AppActionsService,
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
-    private readonly linkedTransferService: LinkedTransferService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly log: LoggerService,
     private readonly appRegistryRepository: AppRegistryRepository,
@@ -76,12 +75,21 @@ export default class ListenerService implements OnModuleInit {
 
   getEventListeners(): CallbackStruct {
     return {
+      CONDITIONAL_TRANSFER_CREATED_EVENT: (data: DepositConfirmationMessage): void => {
+        this.logEvent(CONDITIONAL_TRANSFER_CREATED_EVENT, data);
+      },
+      CONDITIONAL_TRANSFER_RECEIVED_EVENT: (data: DepositConfirmationMessage): void => {
+        this.logEvent(CONDITIONAL_TRANSFER_RECEIVED_EVENT, data);
+      },
+      CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (data: DepositConfirmationMessage): void => {
+        this.logEvent(CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data);
+      },
+      CONDITIONAL_TRANSFER_FAILED_EVENT: (data: DepositConfirmationMessage): void => {
+        this.logEvent(CONDITIONAL_TRANSFER_FAILED_EVENT, data);
+      },
       CREATE_CHANNEL_EVENT: async (data: CreateChannelMessage): Promise<void> => {
         this.logEvent(CREATE_CHANNEL_EVENT, data);
         this.channelService.makeAvailable(data);
-      },
-      CREATE_TRANSFER: (data: DepositFailedMessage): void => {
-        this.logEvent(CREATE_TRANSFER, data);
       },
       DEPOSIT_CONFIRMED_EVENT: (data: DepositConfirmationMessage): void => {
         this.logEvent(DEPOSIT_CONFIRMED_EVENT, data);
@@ -114,15 +122,6 @@ export default class ListenerService implements OnModuleInit {
       },
       PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
         this.logEvent(PROTOCOL_MESSAGE_EVENT, data);
-      },
-      RECEIVE_TRANSFER_FAILED_EVENT: (data: DepositFailedMessage): void => {
-        this.logEvent(RECEIVE_TRANSFER_FAILED_EVENT, data);
-      },
-      RECEIVE_TRANSFER_FINISHED_EVENT: (data: DepositFailedMessage): void => {
-        this.logEvent(RECEIVE_TRANSFER_FINISHED_EVENT, data);
-      },
-      RECEIVE_TRANSFER_STARTED_EVENT: (data: DepositFailedMessage): void => {
-        this.logEvent(RECEIVE_TRANSFER_STARTED_EVENT, data);
       },
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         this.logEvent(REJECT_INSTALL_EVENT, data);

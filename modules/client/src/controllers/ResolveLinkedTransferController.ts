@@ -6,7 +6,6 @@ import {
 } from "@connext/types";
 
 import { ResolveLinkedTransferParameters, ResolveLinkedTransferResponse } from "../types";
-import { invalid32ByteHexString, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -14,10 +13,10 @@ export class ResolveLinkedTransferController extends AbstractController {
   // properly logs error and emits a receive transfer failed event
   private handleResolveErr = (paymentId: string, e: any): void => {
     this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.stack || e.message}`);
-    this.connext.emit(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, {
+    this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
       error: e.stack || e.message,
       paymentId,
-    });
+    } as EventPayloads.LinkedTransferFailed);
   };
 
   public resolveLinkedTransfer = async (
@@ -28,10 +27,6 @@ export class ResolveLinkedTransferController extends AbstractController {
     const { paymentId, preImage } = params;
 
     this.log.info(`Resolving link transfer with id ${params.paymentId}`);
-
-    this.connext.emit(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, {
-      paymentId,
-    });
 
     let resolveRes: ResolveLinkedTransferResponse;
     try {
@@ -44,15 +39,18 @@ export class ResolveLinkedTransferController extends AbstractController {
       throw e;
     }
 
-    this.connext.emit(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, deBigNumberifyJson({
-      type: ConditionalTransferTypes.LinkedTransfer,
-      amount: resolveRes.amount,
-      assetId: resolveRes.assetId,
-      paymentId,
-      sender: resolveRes.sender,
-      recipient: this.connext.publicIdentifier,
-      meta: resolveRes.meta,
-    }) as EventPayloads.ReceiveTransferFinished);
+    this.connext.emit(
+      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+      deBigNumberifyJson({
+        type: ConditionalTransferTypes.LinkedTransfer,
+        amount: resolveRes.amount,
+        assetId: resolveRes.assetId,
+        paymentId,
+        sender: resolveRes.sender,
+        recipient: this.connext.publicIdentifier,
+        meta: resolveRes.meta,
+      }) as EventPayloads.LinkedTransferUnlocked,
+    );
 
     return resolveRes;
   };

@@ -93,8 +93,8 @@ describe("Full Flow: Transfer", () => {
       await fundChannel(clientC, bigNumberify(5));
       let transferCount = 0;
       clientA.on(
-        "RECEIVE_TRANSFER_FINISHED_EVENT",
-        async (data: EventPayloads.ReceiveTransferFinished) => {
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        async (data: EventPayloads.LinkedTransferUnlocked) => {
           transferCount += 1;
           if (transferCount === 2) {
             expect(transferCount).to.eq(2);
@@ -103,13 +103,13 @@ describe("Full Flow: Transfer", () => {
         },
       );
 
-      clientA.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
+      clientA.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, () =>
         rej(`Received transfer failed event on clientA`),
       );
-      clientB.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
+      clientB.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, () =>
         rej(`Received transfer failed event on clientA`),
       );
-      clientC.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
+      clientC.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, () =>
         rej(`Received transfer failed event on clientA`),
       );
       await Promise.all([

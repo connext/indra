@@ -15,14 +15,13 @@ import { encryptWithPublicKey } from "@connext/crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { createLinkedHash, stringify, xpubToAddress } from "../lib";
+import { createLinkedHash, stringify } from "../lib";
 import {
   invalidXpub,
   validate,
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { BigNumber } from "ethers/utils";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
@@ -109,9 +108,9 @@ export class LinkedTransferController extends AbstractController {
       paymentId,
       sender: this.connext.publicIdentifier,
       recipient,
-      meta, // TODO: include encrypted preimage / recipient?
+      meta,
       transferMeta: {},
-    }) as EventPayloads.CreateLinkedTransfer;
+    }) as EventPayloads.LinkedTransferCreated;
 
     this.log.info(`Emitting event data: ${JSON.stringify(eventData)}`);
 
@@ -127,7 +126,7 @@ export class LinkedTransferController extends AbstractController {
       // need to flush here so that the client can exit knowing that messages are in the NATS server
       await this.connext.messaging.flush();
     }
-    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
+    this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
     return { appId, paymentId, preImage };
   };
 }

@@ -1,10 +1,6 @@
 import {
   AppAction,
   AppState,
-  FastSignedTransferActionType,
-  FastSignedTransferAppAction,
-  FastSignedTransferAppName,
-  FastSignedTransferAppState,
   HashLockTransferAppAction,
   HashLockTransferAppName,
   HashLockTransferAppState,
@@ -52,15 +48,6 @@ export class AppActionsService {
     from: string,
   ): Promise<void> {
     switch (appName) {
-      case FastSignedTransferAppName: {
-        await this.handleFastSignedTransferAppAction(
-          app,
-          newState as FastSignedTransferAppState,
-          action as FastSignedTransferAppAction,
-          from,
-        );
-        break;
-      }
       case SimpleLinkedTransferAppName: {
         await this.handleSimpleLinkedTransferAppAction(
           app,
@@ -95,49 +82,6 @@ export class AppActionsService {
           from,
         );
         break;
-      }
-    }
-  }
-
-  private async handleFastSignedTransferAppAction(
-    appInstance: AppInstanceJson,
-    newState: FastSignedTransferAppState,
-    action: FastSignedTransferAppAction,
-    from: string,
-  ): Promise<void> {
-    switch (action.actionType) {
-      case FastSignedTransferActionType.CREATE: {
-        break;
-      }
-      case FastSignedTransferActionType.UNLOCK: {
-        const apps = await this.cfCoreService.getFastSignedTransferAppsByPaymentId(
-          action.paymentId,
-        );
-
-        // find hashlock transfer app where node is receiver
-        // TODO: move to new store
-        const senderApp = apps.find(app => {
-          const state = app.latestState as FastSignedTransferAppState;
-          return state.coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress;
-        });
-        if (!senderApp) {
-          throw new Error(
-            `Action UNLOCK taken on FastSignedTransferApp without corresponding sender app! ${appInstance.identityHash}`,
-          );
-        }
-        const senderAppState = senderApp.latestState as FastSignedTransferAppState;
-
-        const senderAppAction = {
-          actionType: FastSignedTransferActionType.UNLOCK,
-          data: action.data,
-          paymentId: action.paymentId,
-          signature: action.signature,
-          recipientXpub: senderAppState.recipientXpub, // not checked
-          amount: Zero, // not checked
-          signer: AddressZero, // not checked
-        } as FastSignedTransferAppAction;
-        await this.cfCoreService.takeAction(senderApp.identityHash, senderAppAction);
-        this.log.log(`Unlocked transfer from ${senderApp.identityHash}`);
       }
     }
   }

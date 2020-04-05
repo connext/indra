@@ -68,6 +68,7 @@ export class SignedTransferService {
     userPublicIdentifier: Xpub,
     paymentId: Bytes32Hash,
   ): Promise<ResolveSignedTransferResponse> {
+    console.log("INSTALLING SIGNED TRANSFER APP");
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
@@ -172,7 +173,10 @@ export class SignedTransferService {
       Zero,
       assetId,
       SimpleSignedTransferAppName,
+      senderApp.meta,
     );
+    console.log("INSTALLED SIGNED TRANSFER APP", receiverAppInstallRes);
+
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
       throw new Error(`Could not install app on receiver side.`);

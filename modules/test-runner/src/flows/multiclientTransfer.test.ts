@@ -46,8 +46,8 @@ describe.skip("Full Flow: Multi-client transfer", () => {
     await new Promise(async (res, rej) => {
       await fundChannel(gateway, bigNumberify(100));
       gateway.on(
-        EventNames.RECEIVE_TRANSFER_FINISHED_EVENT,
-        async (data: EventPayloads.ReceiveTransferFinished) => {
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        async (data: EventPayloads.LinkedTransferUnlocked) => {
           gatewayTransfers.received += 1;
           const freeBalance = await gateway.getFreeBalance();
           if (freeBalance[gateway.freeBalanceAddress].isZero()) {
@@ -73,8 +73,8 @@ describe.skip("Full Flow: Multi-client transfer", () => {
       );
 
       indexerA.on(
-        EventNames.RECEIVE_TRANSFER_FINISHED_EVENT,
-        async (data: EventPayloads.ReceiveTransferFinished) => {
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        async (data: EventPayloads.LinkedTransferUnlocked) => {
           indexerATransfers.received += 1;
           await indexerA.transfer({
             amount: toBN(data.amount),
@@ -87,8 +87,8 @@ describe.skip("Full Flow: Multi-client transfer", () => {
       );
 
       indexerB.on(
-        EventNames.RECEIVE_TRANSFER_FINISHED_EVENT,
-        async (data: EventPayloads.ReceiveTransferFinished) => {
+        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+        async (data: EventPayloads.LinkedTransferUnlocked) => {
           indexerBTransfers.received += 1;
           await indexerB.transfer({
             amount: toBN(data.amount),
@@ -102,7 +102,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
 
       // register failure events
       const rejectIfFailed = (object: IConnextClient) => {
-        object.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, () =>
+        object.on(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, () =>
           rej(`Received transfer failed event from ${object.publicIdentifier}`),
         );
       };

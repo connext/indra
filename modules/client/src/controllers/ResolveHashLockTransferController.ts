@@ -6,6 +6,7 @@ import {
   ResolveHashLockTransferResponse,
   ConditionalTransferTypes,
   HashLockTransferAppState,
+  HashLockTransfer,
 } from "@connext/types";
 import { HashZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
@@ -21,10 +22,6 @@ export class ResolveHashLockTransferController extends AbstractController {
     this.log.info(`Resolving hash lock transfer with preImage ${preImage}`);
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
-    this.connext.emit(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, {
-      lockHash,
-      publicIdentifier: this.connext.publicIdentifier,
-    });
 
     const installedApps = await this.connext.getAppInstances();
     const hashlockApp = installedApps.find(
@@ -42,15 +39,16 @@ export class ResolveHashLockTransferController extends AbstractController {
       await this.connext.takeAction(hashlockApp.identityHash, { preImage });
       await this.connext.uninstallApp(hashlockApp.identityHash);
     } catch (e) {
-      this.connext.emit(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, {
+      this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,
-        lockHash,
-      });
+        paymentId: lockHash,
+        type: ConditionalTransferTypes[HashLockTransfer],
+      } as EventPayloads.HashLockTransferFailed);
       throw e;
     }
     const sender = hashlockApp.meta["sender"];
     this.connext.emit(
-      EventNames.RECEIVE_TRANSFER_FINISHED_EVENT,
+      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
       deBigNumberifyJson({
         type: ConditionalTransferTypes.HashLockTransfer,
         amount: amount,
@@ -59,7 +57,7 @@ export class ResolveHashLockTransferController extends AbstractController {
         sender,
         recipient: this.connext.publicIdentifier,
         meta: hashlockApp.meta,
-      }) as EventPayloads.ReceiveTransferFinished,
+      }) as EventPayloads.HashLockTransferCreated,
     );
 
     return {

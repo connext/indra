@@ -3,7 +3,6 @@ import {
   commonAppProposalValidation,
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
-  validateFastSignedTransferApp,
   validateWithdrawApp,
   validateHashLockTransferApp,
   validateSignedTransferApp,
@@ -11,7 +10,6 @@ import {
 import {
   AppInstanceJson,
   CoinBalanceRefundAppName,
-  FastSignedTransferAppName,
   HashLockTransferAppName,
   MethodParams,
   SimpleLinkedTransferAppName,
@@ -154,14 +152,6 @@ export class AppRegistryService implements OnModuleInit {
         validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;
       }
-      case FastSignedTransferAppName: {
-        validateFastSignedTransferApp(
-          proposeInstallParams,
-          from,
-          this.cfCoreService.cfCore.publicIdentifier,
-        );
-        break;
-      }
       case WithdrawAppName: {
         await validateWithdrawApp(
           proposeInstallParams,
@@ -233,14 +223,17 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case SimpleSignedTransferAppName: {
-        this.log.debug(`Doing simple signed transfer post-install tasks`);
-        if (proposeInstallParams.meta["receipient"]) {
+        this.log.warn(`Doing simple signed transfer post-install tasks`);
+        if (proposeInstallParams.meta["recipient"]) {
           // do not await, this can happen in the background. otherwise will be blocked here if receiver is offline
           this.signedTransferService
             .installSignedTransferReceiverApp(
-              proposeInstallParams.meta["receipient"],
+              proposeInstallParams.meta["recipient"],
               (proposeInstallParams.initialState as SimpleSignedTransferAppState).paymentId,
             )
+            .then(a => {
+              console.log("***** FINISHED INSTALLING SIGNED TRANSFER APP TO RECEIVER: ", a);
+            })
             // if receipient is not online, do not throw error, receipient can always unlock later
             .catch(e =>
               this.log.error(
