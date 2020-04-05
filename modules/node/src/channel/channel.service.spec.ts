@@ -6,7 +6,6 @@ import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { mkHash, mkXpub } from "../test/utils";
-import { AppInstanceJson } from "../util";
 
 import { Channel } from "./channel.entity";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -27,12 +26,6 @@ class MockCFCoreService {
       freeBalance: {
         [AddressZero]: One,
       },
-    };
-  }
-
-  async proposeAndWaitForAccepted(): Promise<MethodResults.ProposeInstall> {
-    return {
-      appInstanceId: mkHash("0xabc"),
     };
   }
 }

@@ -1,7 +1,7 @@
 import { MessagingService } from "@connext/messaging";
 import {
   SupportedApplications,
-  WithdrawCommitment
+  WithdrawCommitment,
 } from "@connext/apps";
 import {
   AppAction,
@@ -144,7 +144,9 @@ export class CFCoreService {
     const amount = toBN(params.amount);
     const { assetId, recipient } = params;
     const channel = await this.getStateChannel(multisigAddress);
-    const contractAddresses = await this.configService.getContractAddresses((await this.configService.getEthNetwork()).chainId.toString())
+    const contractAddresses = await this.configService.getContractAddresses(
+      (await this.configService.getEthNetwork()
+    ).chainId.toString());
     return new WithdrawCommitment(
       contractAddresses,
       channel.data.multisigAddress,
@@ -168,43 +170,6 @@ export class CFCoreService {
     });
     this.log.debug(`proposeInstallApp called with result ${stringify(proposeRes.result.result)}`);
     return proposeRes.result.result as MethodResults.ProposeInstall;
-  }
-
-  async proposeAndWaitForAccepted(
-    params: MethodParams.ProposeInstall,
-    multisigAddress: string,
-  ): Promise<MethodResults.ProposeInstall> {
-    let boundReject: (msg: RejectProposalMessage) => void;
-    let proposeRes: MethodResults.ProposeInstall;
-    try {
-      await new Promise(
-        async (res: () => any, rej: (msg: string) => any): Promise<void> => {
-          let promiseCounter = 0;
-          const incrementAndResolve = () => {
-            promiseCounter += 1;
-            if (promiseCounter === 2) {
-              res();
-            }
-          };
-          boundReject = this.rejectInstallTransfer.bind(null, rej);
-          const subject = `${params.proposedToIdentifier}.channel.${multisigAddress}.app-instance.*.proposal.accept`;
-          this.log.debug(`Subscribing to: ${subject}`);
-          await this.messagingProvider.subscribe(subject, incrementAndResolve);
-          this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
-
-          proposeRes = await this.proposeInstallApp(params);
-          incrementAndResolve();
-          this.log.debug(`waiting for client to publish proposal results`);
-        },
-      );
-      this.log.debug(`client to published proposal results`);
-      return proposeRes;
-    } catch (e) {
-      this.log.error(`Error installing app: ${e.message}`, e.stack);
-      throw e;
-    } finally {
-      this.cleanupProposalListeners(boundReject, multisigAddress, params.proposedToIdentifier);
-    }
   }
 
   async proposeAndWaitForInstallApp(
@@ -467,16 +432,6 @@ export class CFCoreService {
     this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
 
-  private cleanupProposalListeners = (
-    boundReject: any,
-    multisigAddress: string,
-    userPubId: string,
-  ): void => {
-    this.messagingProvider.unsubscribe(
-      `${userPubId}.channel.${multisigAddress}.app-instance.*.proposal.accept`,
-    );
-    this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
-  };
 
   registerCfCoreListener(event: EventNames, callback: (data: any) => any): void {
     this.log.info(`Registering cfCore callback for event ${event}`);
