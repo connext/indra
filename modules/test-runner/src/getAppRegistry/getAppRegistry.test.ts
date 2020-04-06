@@ -12,6 +12,7 @@ const expectedNetwork = {
 const expectedAddresses = addressBook[expectedNetwork.chainId];
 
 const verifyApp = (app: DefaultApp): void => {
+  console.log('app: ', app);
   expect(app.chainId).to.be.equal(expectedNetwork.chainId);
   expect(app.name).to.exist;
 };
@@ -40,11 +41,12 @@ describe("Get App Registry", () => {
     verifyApp(appRegistry as DefaultApp);
   });
 
-  it("Happy case: user receives registry information for specific app using address", async () => {
+  it.only("Happy case: user receives registry information for specific app using address", async () => {
     client = await createClient();
     const appRegistry = await client.getAppRegistry({
-      appDefinitionAddress: expectedAddresses.WithdrawApp.address,
+      appDefinitionAddress: expectedAddresses.DepositApp.address,
     });
+    expect(appRegistry).to.be.ok;
     verifyApp(appRegistry as DefaultApp);
   });
 });
