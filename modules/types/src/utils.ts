@@ -8,6 +8,7 @@ import {
   BigNumber,
 } from "ethers/utils";
 import { isBN, toBN } from "./math";
+import BN from "bn.js";
 
 // stolen from https://github.com/microsoft/TypeScript/issues/3192#issuecomment-261720275
 export const enumify = <T extends { [index: string]: U }, U extends string>(x: T): T => x;
@@ -30,6 +31,14 @@ export const stringify = (obj: any, space: number = 2): string =>
     (key: string, value: any): any => (value && value._hex ? toBN(value._hex).toString() : value),
     space,
   );
+
+export function removeHexPrefix(hex: string): string {
+  return hex.replace(/^0x/, "");
+}
+
+export function addHexPrefix(hex: string): string {
+  return hex.startsWith("0x") ? hex : `0x${hex}`;
+}
 
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
@@ -56,7 +65,7 @@ export async function signDigestWithEthers(privateKey: string, digest: string) {
 }
 
 export function sortByAddress(a: string, b: string) {
-  return new BigNumber(a).lt(b) ? -1 : 1;
+  return new BN(removeHexPrefix(a), 16).lt(new BN(removeHexPrefix(b), 16)) ? -1 : 1;
 }
 
 export function sortAddresses(addrs: string[]) {
