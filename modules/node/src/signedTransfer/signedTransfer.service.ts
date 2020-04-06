@@ -99,12 +99,15 @@ export class SignedTransferService {
     );
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
-      await this.channelService.rebalance(
+      const depositReceipt = await this.channelService.rebalance(
         userPublicIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amount,
       );
+      if (!depositReceipt) {
+        throw new Error(`Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userPublicIdentifier}`);
+      }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(

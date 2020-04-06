@@ -123,12 +123,15 @@ export class FastSignedTransferService {
     let depositAmount = nodeFreeBalancePreCollateral;
     if (nodeFreeBalancePreCollateral.lt(transferAmount)) {
       // request collateral and wait for deposit to come through
-      await this.channelService.rebalance(
+      const depositReceipt = await this.channelService.rebalance(
         channel.userPublicIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         transferAmount,
       );
+      if (!depositReceipt) {
+        throw new Error(`Could not deposit sufficient collateral to install fast transfer app for channel: ${channel.multisigAddress}`);
+      }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(

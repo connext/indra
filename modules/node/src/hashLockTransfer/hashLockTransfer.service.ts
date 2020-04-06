@@ -115,12 +115,15 @@ export class HashLockTransferService {
     );
     if (receiverFreeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
-      await this.channelService.rebalance(
+      const depositReceipt = await this.channelService.rebalance(
         receiverPublicIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amount,
       );
+      if (!depositReceipt) {
+        throw new Error(`Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverPublicIdentifier}`);
+      }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
