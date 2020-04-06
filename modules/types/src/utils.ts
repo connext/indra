@@ -5,9 +5,9 @@ import {
   randomBytes,
   SigningKey,
   joinSignature,
+  bigNumberify,
 } from "ethers/utils";
 import { isBN, toBN } from "./math";
-import BN from "bn.js";
 
 // stolen from https://github.com/microsoft/TypeScript/issues/3192#issuecomment-261720275
 export const enumify = <T extends { [index: string]: U }, U extends string>(x: T): T => x;
@@ -64,7 +64,7 @@ export async function signDigestWithEthers(privateKey: string, digest: string) {
 }
 
 export function sortByAddress(a: string, b: string) {
-  return new BN(removeHexPrefix(a), 16).lt(new BN(removeHexPrefix(b), 16)) ? -1 : 1;
+  return bigNumberify(a).lt(b) ? -1 : 1;
 }
 
 export function sortAddresses(addrs: string[]) {
