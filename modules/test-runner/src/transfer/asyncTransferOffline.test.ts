@@ -38,7 +38,7 @@ const fundForTransfers = async (
   // make sure the tokenAddress is set
   const tokenAddress = senderClient.config.contractAddresses.Token;
   await fundChannel(senderClient, amount, assetId || tokenAddress);
-  await requestCollateral(receiverClient, assetId || tokenAddress);
+  await requestCollateral(receiverClient, assetId || tokenAddress, true);
 };
 
 const verifyTransfer = async (
@@ -208,30 +208,30 @@ describe("Async transfer offline tests", () => {
     receiverClient = await createClientWithMessagingLimits();
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
-    // transfer from the sender to the receiver, then take the
-    // sender offline
-    const received = new Promise((resolve: Function) =>
-      receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, () => {
-        resolve();
-      }),
-    );
 
-    // disconnect messaging on take action event
-    const actionTaken = new Promise((resolve: Function) => {
-      senderClient.once(EventNames.UPDATE_STATE_EVENT, async () => {
-        await received;
-        await (senderClient.messaging as TestMessagingService).disconnect();
-        resolve();
-      });
-    });
+    // disconnect messaging on take action event, ensuring transfer received
+    const transferCompleteAndActionTaken = Promise.all([
+      new Promise((resolve: Function) =>
+        receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, () => {
+          resolve();
+        }),
+      ),
+      new Promise((resolve: Function) => {
+        senderClient.once(EventNames.UPDATE_STATE_EVENT, async () => {
+          await senderClient.messaging.disconnect();
+          resolve();
+        });
+      }),
+    ]);
+
+    const senderApps = await senderClient.getAppInstances();
     const { paymentId } = await senderClient.transfer({
       amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
       recipient: receiverClient.publicIdentifier,
     });
-    const senderApps = await senderClient.getAppInstances();
     // wait for transfer to finish + messaging to be disconnected
-    await actionTaken;
+    await transferCompleteAndActionTaken;
     // verify transfer
     const expected = {
       amount: TOKEN_AMOUNT_SM,
@@ -254,7 +254,7 @@ describe("Async transfer offline tests", () => {
     expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
     // make sure the transfer is properly reclaimed
     const reconnectedApps = await senderClient.getAppInstances();
-    expect(reconnectedApps.length).to.be.equal(senderApps.length - 1);
+    expect(reconnectedApps.length).to.be.equal(senderApps.length);
     // make sure the transfer is properly returned
     await verifyTransfer(reconnected, expected);
   });
