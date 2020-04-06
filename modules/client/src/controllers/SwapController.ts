@@ -6,36 +6,21 @@ import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import {
   calculateExchange,
-  GetChannelResponse,
   DefaultApp,
   SwapParameters,
+  SwapResponse,
 } from "../types";
-import {
-  invalidAddress,
-  notGreaterThan,
-  notLessThanOrEqualTo,
-  notPositive,
-  validate,
-} from "../validation";
 
 import { AbstractController } from "./AbstractController";
 import {  } from "@connext/types";
 
 export class SwapController extends AbstractController {
-  public async swap(params: SwapParameters): Promise<GetChannelResponse> {
+  public async swap(params: SwapParameters): Promise<SwapResponse> {
     const amount = toBN(params.amount);
     const { toAssetId, fromAssetId, swapRate } = params;
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
     const swappedAmount = calculateExchange(amount, swapRate);
-    validate(
-      invalidAddress(fromAssetId),
-      invalidAddress(toAssetId),
-      notLessThanOrEqualTo(amount, userBal),
-      notGreaterThan(amount, Zero),
-      notPositive(parseEther(swapRate)),
-    );
 
     // get app definition from constants
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
@@ -73,10 +58,10 @@ export class SwapController extends AbstractController {
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
     }
-    const newState = await this.connext.getChannel();
+    const res = await this.connext.getChannel();
 
     // TODO: fix the state / types!!
-    return newState as GetChannelResponse;
+    return res as SwapResponse;
   }
 
   /////////////////////////////////

@@ -10,6 +10,7 @@ import {
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
   SwapParameters,
+  SwapResponse,
   WithdrawParameters,
   WithdrawResponse,
   GetHashLockTransferResponse,
@@ -130,7 +131,7 @@ export interface IConnextClient {
   ///////////////////////////////////
   // CORE CHANNEL METHODS
   deposit(params: DepositParameters): Promise<DepositResponse>;
-  swap(params: SwapParameters): Promise<GetChannelResponse>;
+  swap(params: SwapParameters): Promise<SwapResponse>;
   transfer(params: TransferParameters): Promise<any>;
   withdraw(params: WithdrawParameters): Promise<WithdrawResponse>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;

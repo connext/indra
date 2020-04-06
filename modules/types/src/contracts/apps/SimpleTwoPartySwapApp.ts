@@ -1,7 +1,8 @@
-import { Address, BigNumberish, HexString } from "../../basic";
+import { Address, BigNumberish, HexString, Xpub } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import { multiAssetMultiPartyCoinTransferEncoding, tidy } from "../misc";
+import { Collateralizations } from "../..";
 
 export const SimpleTwoPartySwapAppName = "SimpleTwoPartySwapApp";
 
@@ -24,6 +25,15 @@ export interface SwapParameters {
   swapRate: HexString;
   toAssetId: Address;
   fromAssetId: Address;
+}
+
+export interface SwapResponse {
+  id: number;
+  nodePublicIdentifier: Xpub;
+  userPublicIdentifier: Xpub;
+  multisigAddress: Address;
+  available: boolean;
+  activeCollateralizations: Collateralizations;
 }
 
 export type AllowedSwap = {

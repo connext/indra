@@ -70,6 +70,7 @@ import {
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
   SwapParameters,
+  SwapResponse,
   TransferInfo,
   TransferParameters,
 } from "./types";
@@ -334,7 +335,7 @@ export class ConnextClient implements IConnextClient {
     return { appInstanceId: app.identityHash };
   };
 
-  public swap = async (params: SwapParameters): Promise<GetChannelResponse> => {
+  public swap = async (params: SwapParameters): Promise<SwapResponse> => {
     const res = await this.swapController.swap(params);
     return res;
   };
