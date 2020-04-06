@@ -1,5 +1,4 @@
-import { utils } from "@connext/client";
-import { AppInstanceJson, IConnextClient, DepositAppState } from "@connext/types";
+import { AppInstanceJson, IConnextClient, DepositAppState, delay } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
@@ -8,7 +7,6 @@ import { expect } from "../";
 import { ethProvider } from "../ethprovider";
 import { bigNumberify } from "ethers/utils";
 
-const { xpubToAddress } = utils;
 
 export const requestDepositRights = async (
   client: IConnextClient,
@@ -24,10 +22,7 @@ export const requestDepositRights = async (
         );
   // get coin balance app details
   const {
-    actionEncoding,
     appDefinitionAddress: appDefinition,
-    stateEncoding,
-    outcomeType,
   } = client.getRegisteredAppDetails("DepositApp");
   // install the app and get the state
   let depositApp: DepositAppState;
@@ -43,34 +38,24 @@ export const requestDepositRights = async (
     depositApp = latestApp.latestState as DepositAppState;
   } else {
     // node is installing, params must be manually generated
-    const initialState = {
-      multisig: client.multisigAddress,
-      recipient: xpubToAddress(client.nodePublicIdentifier),
-      threshold: multisigBalance,
-      tokenAddress: assetId,
-    };
-
-    const params = {
-      abiEncodings: {
-        actionEncoding,
-        stateEncoding,
-      },
-      appDefinition,
-      initialState,
-      initiatorDeposit: Zero,
-      initiatorDepositTokenAddress: assetId,
-      outcomeType,
-      proposedToIdentifier: client.nodePublicIdentifier,
-      responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
-      timeout: Zero,
-    };
-    const { appInstanceId } = await client.proposeInstallApp(params);
-    // hub will not automatically install, so manually install app
-    const { appInstance } = await client.installApp(appInstanceId);
-    // get latest deposit state
-    depositApp = appInstance.latestState as DepositAppState;
-  }
+    const [latestState]: any = await Promise.race([
+      new Promise(async (res, rej) => {
+        await delay(10_000);
+        rej(`No install event caught within 10s`);
+      }),
+      Promise.all([
+        new Promise(async (resolve) => {
+          const subject = `${client.publicIdentifier}.channel.${client.multisigAddress}.app-instance.*.install`;
+          client.messaging.subscribe(subject, (msg: any) => {
+            const data = JSON.parse(msg.data);
+            resolve(data.latestState);
+          });
+        }),
+        await client.requestCollateral(assetId),
+      ]),
+    ]);
+    depositApp = latestState as DepositAppState;
+  };
   // verify the latest deposit state is correct
   expect(depositApp.multisigAddress).to.be.eq(client.multisigAddress);
   expect(depositApp.assetId).to.be.eq(assetId);
@@ -83,6 +68,7 @@ export const requestDepositRights = async (
   const transfers = depositApp.transfers;
   expect(transfers[0].amount).to.be.eq(Zero);
   expect(transfers[1].amount).to.be.eq(Zero);
-  expect(transfers[0].to).to.be.eq(client.freeBalanceAddress);
-  expect(transfers[1].to).to.be.eq(client.nodeFreeBalanceAddress);
+  const clientIdx = clientIsRecipient ? 0 : 1;
+  expect(transfers[clientIdx].to).to.be.eq(client.freeBalanceAddress);
+  expect(transfers[clientIdx === 0 ? 1 : 0].to).to.be.eq(client.nodeFreeBalanceAddress);
 };
