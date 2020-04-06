@@ -96,15 +96,8 @@ export class AppRegistryService implements OnModuleInit {
         if (!depositReceipt) {
           throw new Error(`Could not collateralize sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`);
         }
-      } else {
-        // request collateral normally without awaiting
-        this.channelService.rebalance(
-          from,
-          proposeInstallParams.responderDepositTokenAddress,
-          RebalanceType.COLLATERALIZE,
-          responderDepositBigNumber,
-        );
       }
+      // collateralized again in post-install tasks
       ({ appInstance } = await this.cfCoreService.installApp(appInstanceId));
     } catch (e) {
       // reject if error
