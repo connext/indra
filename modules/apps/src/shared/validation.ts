@@ -1,5 +1,4 @@
 import {
-  CoinBalanceRefundAppName,
   CoinTransfer,
   MethodParams,
   stringify,
@@ -131,8 +130,7 @@ export const commonAppProposalValidation = (
 
   // NOTE: may need to remove this condition if we start working
   // with games
-  const isDeposit = appRegistryInfo.name === CoinBalanceRefundAppName 
-    || appRegistryInfo.name === DepositAppName;
+  const isDeposit = appRegistryInfo.name === DepositAppName;
   if (
     responderDeposit.isZero() &&
     initiatorDeposit.isZero() &&

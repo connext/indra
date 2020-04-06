@@ -2,7 +2,7 @@ import { utils } from "@connext/client";
 import { ConnextStore } from "@connext/store";
 import {
   CF_PATH,
-  ConditionalTransferTypes, 
+  ConditionalTransferTypes,
   createRandom32ByteHexString,
   IConnextClient,
   StoreTypes,
@@ -181,9 +181,7 @@ describe("Async Transfers", () => {
         assetId,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(
-      `invalid address`,
-    );
+    ).to.be.rejectedWith(`invalid address`);
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
   });
@@ -285,9 +283,9 @@ describe("Async Transfers", () => {
       const start = Date.now();
       await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
       runTime[i] = Date.now() - start;
-      console.log(`Run: ${i}, Runtime: ${runTime[i]}`)
+      console.log(`Run: ${i}, Runtime: ${runTime[i]}`);
       sum = sum + runTime[i];
     }
-    console.log(`Average = ${sum/numberOfRuns} ms`)
+    console.log(`Average = ${sum / numberOfRuns} ms`);
   });
 });

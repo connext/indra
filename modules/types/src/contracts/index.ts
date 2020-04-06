@@ -1,8 +1,5 @@
 import { 
-  CoinBalanceRefundAppState,
   DepositAppState,
-  FastSignedTransferAppAction,
-  FastSignedTransferAppState,
   HashLockTransferAppAction,
   HashLockTransferAppState,
   SimpleLinkedTransferAppAction,
@@ -20,16 +17,13 @@ export * from "./funding";
 export * from "./misc";
 
 export type AppAction =
-  | FastSignedTransferAppAction
   | HashLockTransferAppAction
   | SimpleLinkedTransferAppAction
   | SimpleSignedTransferAppAction
   | WithdrawAppAction;
 
 export type AppState = 
-  | CoinBalanceRefundAppState
   | DepositAppState
-  | FastSignedTransferAppState
   | HashLockTransferAppState
   | SimpleLinkedTransferAppState
   | SimpleSignedTransferAppState

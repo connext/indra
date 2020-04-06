@@ -10,7 +10,6 @@ import { WithdrawModule } from "../withdraw/withdraw.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
 import { TransferModule } from "../transfer/transfer.module";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
-import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransfer.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { WithdrawRepository } from "../withdraw/withdraw.repository";
@@ -29,7 +28,6 @@ import { AppActionsService } from "./appActions.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
-    FastSignedTransferModule,
     HashLockTransferModule,
     LinkedTransferModule,
     LoggerModule,
