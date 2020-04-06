@@ -187,6 +187,4 @@ export interface INodeApiClient {
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<void>;
   unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
-  // TODO: fix types
-  verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
 }

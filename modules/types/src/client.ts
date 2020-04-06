@@ -178,7 +178,6 @@ export interface IConnextClient {
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse>;
-  verifyAppSequenceNumber(): Promise<ChannelAppSequences>;
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS

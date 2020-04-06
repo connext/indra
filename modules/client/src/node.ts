@@ -201,12 +201,6 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences> {
-    return this.send(`${this.userPublicIdentifier}.channel.verify-app-sequence`, {
-      userAppSequenceNumber: appSequenceNumber,
-    });
-  }
-
   // NOTE: maybe move since its not directly to the node just through messaging?
   // TODO -- What needs to happen here for JWT auth refactor?
   public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {

@@ -726,23 +726,6 @@ export class ConnextClient implements IConnextClient {
     return await this.node.clientCheckIn();
   };
 
-  public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.channelProvider.send(MethodNames.chan_getStateChannel as any, {
-      multisigAddress: this.multisigAddress,
-    });
-    let appSequenceNumber: number;
-    try {
-      appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
-    } catch (e) {
-      if (e.message.includes("There are no installed AppInstances in this StateChannel")) {
-        appSequenceNumber = 0;
-      } else {
-        throw e;
-      }
-    }
-    return await this.node.verifyAppSequenceNumber(appSequenceNumber);
-  };
-
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
