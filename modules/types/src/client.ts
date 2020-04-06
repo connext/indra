@@ -17,6 +17,7 @@ import {
   GetSignedTransferResponse,
   DepositParameters,
   DepositResponse,
+  LinkedTransferResponse,
 } from "./contracts";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { EventNames } from "./events";
@@ -132,7 +133,7 @@ export interface IConnextClient {
   // CORE CHANNEL METHODS
   deposit(params: DepositParameters): Promise<DepositResponse>;
   swap(params: SwapParameters): Promise<SwapResponse>;
-  transfer(params: TransferParameters): Promise<any>;
+  transfer(params: TransferParameters): Promise<LinkedTransferResponse>;
   withdraw(params: WithdrawParameters): Promise<WithdrawResponse>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
