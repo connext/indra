@@ -1,7 +1,7 @@
 import { TransactionResponse } from "ethers/providers";
 import { BigNumberish } from "ethers/utils";
 
-import { Address } from "../../basic";
+import { Address, HexString } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import {
@@ -20,6 +20,7 @@ export type WithdrawAppState = {
   signatures: string[];
   signers: string[];
   data: string;
+  nonce: string;
   finalized: boolean;
 };
 
@@ -28,6 +29,7 @@ export const WithdrawAppStateEncoding = tidy(`tuple(
   bytes[2] signatures,
   address[2] signers,
   bytes32 data,
+  bytes32 nonce,
   bool finalized
 )`);
 
@@ -45,8 +47,9 @@ export const WithdrawAppActionEncoding = tidy(`tuple(
 // Input/output
 export type WithdrawParameters = {
   amount: BigNumberish;
-  assetId?: string; // if not provided, will default to 0x0 (Eth)
+  assetId?: Address; // if not provided, will default to 0x0 (Eth)
   recipient?: Address; // if not provided, will default to signer addr
+  nonce?: HexString; // generated internally, end user doesn't need to provide it
 };
 
 export type WithdrawResponse = {

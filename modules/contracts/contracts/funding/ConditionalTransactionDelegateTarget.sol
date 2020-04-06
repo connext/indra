@@ -29,7 +29,8 @@ contract ConditionalTransactionDelegateTarget is MultisigTransfer {
     function withdrawWrapper(
         address payable recipient,
         address assetId,
-        uint256 amount
+        uint256 amount,
+        bytes32 nonce
     )
         public
     {
