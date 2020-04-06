@@ -66,7 +66,11 @@ describe("Node method follows spec - install", () => {
             multisigAddress,
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
-          assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
+          // FIXME: multisigAddress is undefined
+          assertProposeMessage(nodeA.publicIdentifier, msg, {
+            ...proposeInstallParams,
+            multisigAddress,
+          });
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
@@ -131,8 +135,7 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeA.signerAddress());
         await transferERC20Tokens(await nodeB.signerAddress());
 
-        const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite)
-          .DolphinCoin;
+        const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, erc20TokenAddress);
 
@@ -150,7 +153,8 @@ describe("Node method follows spec - install", () => {
             multisigAddress,
             erc20TokenAddress,
           );
-          assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
+          // FIXME: multisigAddress is undefined
+          assertProposeMessage(nodeA.publicIdentifier, msg, { ...proposedParams, multisigAddress });
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
