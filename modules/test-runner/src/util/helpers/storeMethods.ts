@@ -20,6 +20,7 @@ import {
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
   createRandomBytesHexString,
+  toBN,
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
@@ -36,7 +37,7 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   identityHash: "identityHashApp",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
   participants: ["sender", "receiver"],
-  defaultTimeout: 0,
+  defaultTimeout: "0x00",
   appInterface: {
     addr: TEST_STORE_ETH_ADDRESS,
     actionEncoding: `action encoding`,
@@ -44,7 +45,7 @@ export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   },
   appSeqNo: 1,
   latestVersionNumber: 2,
-  latestTimeout: 3,
+  stateTimeout: "0x01",
   latestState: {
     counter: 4,
   },
@@ -74,7 +75,8 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   proposedToIdentifier: "xpub2",
   responderDeposit: "11",
   responderDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
-  timeout: "123456",
+  defaultTimeout: "0x01",
+  stateTimeout: "0x00",
   singleAssetTwoPartyCoinTransferInterpreterParams: {
     limit: { _hex: "0x1" } as any,
     tokenAddress: AddressZero,
@@ -112,7 +114,7 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: "setStateAppStateHash",
   challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
-  timeout: 17,
+  stateTimeout: toBN(17).toHexString(),
   versionNumber: 23,
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
