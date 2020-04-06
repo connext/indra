@@ -3,7 +3,6 @@ import { Module } from "@nestjs/common";
 import { AdminModule } from "./admin/admin.module";
 import { AppRegistryModule } from "./appRegistry/appRegistry.module";
 import { AuthModule } from "./auth/auth.module";
-import { CFCoreController } from "./cfCore/cfCore.controller";
 import { CFCoreModule } from "./cfCore/cfCore.module";
 import { ChannelModule } from "./channel/channel.module";
 import { ConfigModule } from "./config/config.module";
@@ -22,7 +21,6 @@ import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.modu
 import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
 
 @Module({
-  controllers: [CFCoreController],
   exports: [ConfigModule, LoggerModule, AuthModule],
   imports: [
     AdminModule,
