@@ -11,6 +11,7 @@ import {
   Bytes32Hash,
   Address,
 } from "@connext/types";
+import { SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 
 import { AbstractController } from "./AbstractController";
 import { BigNumber } from "ethers/utils";
@@ -54,10 +55,14 @@ export class ResolveSignedTransferController extends AbstractController {
         sender = resolveRes.sender;
         meta = resolveRes.meta;
       }
-      await this.connext.takeAction(appId, {
-        data,
-        signature,
-      } as SimpleSignedTransferAppAction);
+      await this.connext.takeAction(
+        appId, 
+        {
+          data,
+          signature,
+        } as SimpleSignedTransferAppAction,
+        SIGNED_TRANSFER_STATE_TIMEOUT,
+      );
       await this.connext.uninstallApp(appId);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {

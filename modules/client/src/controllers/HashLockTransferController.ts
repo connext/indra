@@ -10,6 +10,7 @@ import {
   MethodParams,
   toBN,
 } from "@connext/types";
+import { DEFAULT_APP_TIMEOUT, HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import { HashZero, Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
@@ -63,7 +64,8 @@ export class HashLockTransferController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: HASHLOCK_TRANSFER_STATE_TIMEOUT,
     };
     const appId = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 

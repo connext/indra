@@ -4,6 +4,7 @@ import {
   EventNames,
   EventPayloads,
 } from "@connext/types";
+import { LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 
 import { ResolveLinkedTransferParameters, ResolveLinkedTransferResponse } from "../types";
 
@@ -32,7 +33,11 @@ export class ResolveLinkedTransferController extends AbstractController {
     try {
       // node installs app, validation happens in listener
       resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
-      await this.connext.takeAction(resolveRes.appId, { preImage });
+      await this.connext.takeAction(
+        resolveRes.appId, 
+        { preImage }, 
+        LINKED_TRANSFER_STATE_TIMEOUT,
+      );
       await this.connext.uninstallApp(resolveRes.appId);
     } catch (e) {
       this.handleResolveErr(paymentId, e);

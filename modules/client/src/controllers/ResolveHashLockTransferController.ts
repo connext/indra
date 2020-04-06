@@ -8,6 +8,7 @@ import {
   HashLockTransferAppState,
   HashLockTransfer,
 } from "@connext/types";
+import { HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import { HashZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
 
@@ -36,7 +37,11 @@ export class ResolveHashLockTransferController extends AbstractController {
 
     try {
       // node installs app, validation happens in listener
-      await this.connext.takeAction(hashlockApp.identityHash, { preImage });
+      await this.connext.takeAction(
+        hashlockApp.identityHash, 
+        { preImage }, 
+        HASHLOCK_TRANSFER_STATE_TIMEOUT,
+      );
       await this.connext.uninstallApp(hashlockApp.identityHash);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {

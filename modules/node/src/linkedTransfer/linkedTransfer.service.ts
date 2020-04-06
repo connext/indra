@@ -1,3 +1,4 @@
+import { LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   LinkedTransferStatus,
   ResolveLinkedTransferResponse,
@@ -139,6 +140,8 @@ export class LinkedTransferService {
       Zero,
       assetId,
       SimpleLinkedTransferAppName,
+      senderApp.meta,
+      LINKED_TRANSFER_STATE_TIMEOUT,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
@@ -248,9 +251,13 @@ export class LinkedTransferService {
         const preImage: string = senderApp.latestState["preImage"];
         if (preImage === HashZero) {
           // no action has been taken, but is not uninstalled
-          await this.cfCoreService.takeAction(senderApp.identityHash, {
-            preImage,
-          });
+          await this.cfCoreService.takeAction(
+            senderApp.identityHash,
+            {
+              preImage,
+            },
+            LINKED_TRANSFER_STATE_TIMEOUT,  
+          );
         }
         await this.cfCoreService.uninstallApp(senderApp.identityHash);
         unlockedAppIds.push(senderApp.identityHash);

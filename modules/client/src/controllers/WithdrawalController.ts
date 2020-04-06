@@ -1,6 +1,4 @@
-import {
-  WithdrawCommitment,
-} from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT, WITHDRAW_STATE_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppInstanceJson,
   ChannelMethods,
@@ -95,9 +93,13 @@ export class WithdrawalController extends AbstractController {
     const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
       hash,
     );
-    await this.connext.takeAction(appInstance.identityHash, {
-      signature: counterpartySignatureOnWithdrawCommitment,
-    } as WithdrawAppAction);
+    await this.connext.takeAction(
+      appInstance.identityHash, 
+      {
+        signature: counterpartySignatureOnWithdrawCommitment,
+      } as WithdrawAppAction,
+      WITHDRAW_STATE_TIMEOUT,
+    );
     await this.connext.uninstallApp(appInstance.identityHash);
   }
 
@@ -169,7 +171,8 @@ export class WithdrawalController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: WITHDRAW_STATE_TIMEOUT,
     };
 
     const appId = await this.proposeAndInstallLedgerApp(installParams);

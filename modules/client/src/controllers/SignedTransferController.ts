@@ -10,6 +10,7 @@ import {
   SimpleSignedTransferAppState,
   toBN,
 } from "@connext/types";
+import { DEFAULT_APP_TIMEOUT, SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import { Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
@@ -60,7 +61,8 @@ export class SignedTransferController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: SIGNED_TRANSFER_STATE_TIMEOUT,
     };
     const appId = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 

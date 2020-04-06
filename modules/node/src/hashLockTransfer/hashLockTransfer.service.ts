@@ -1,6 +1,6 @@
+import { HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   bigNumberifyJson,
-  EventNames,
   HashLockTransferAppName,
   HashLockTransferAppState,
   HashLockTransferStatus,
@@ -160,6 +160,7 @@ export class HashLockTransferService {
       assetId,
       HashLockTransferAppName,
       { ...meta, sender: senderPublicIdentifier },
+      HASHLOCK_TRANSFER_STATE_TIMEOUT,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {

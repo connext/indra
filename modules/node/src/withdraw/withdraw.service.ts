@@ -1,3 +1,4 @@
+import { WITHDRAW_STATE_TIMEOUT } from "@connext/apps";
 import { signDigest } from "@connext/crypto";
 import {
   AppInstanceJson,
@@ -80,9 +81,13 @@ export class WithdrawService {
     const hash = generatedCommitment.hashToSign();
     const counterpartySignatureOnWithdrawCommitment = await signDigest(privateKey, hash);
 
-    await this.cfCoreService.takeAction(appInstance.identityHash, {
-      signature: counterpartySignatureOnWithdrawCommitment,
-    } as WithdrawAppAction);
+    await this.cfCoreService.takeAction(
+      appInstance.identityHash, 
+      {
+        signature: counterpartySignatureOnWithdrawCommitment,
+      } as WithdrawAppAction,
+      WITHDRAW_STATE_TIMEOUT,  
+    );
     state = (await this.cfCoreService.getAppState(appInstance.identityHash))
       .state as WithdrawAppState;
 
@@ -240,6 +245,8 @@ export class WithdrawService {
       Zero,
       assetId,
       WithdrawAppName,
+      { reason: "Node withdrawal" },
+      WITHDRAW_STATE_TIMEOUT,
     );
 
     await this.saveWithdrawal(
