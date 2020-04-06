@@ -56,7 +56,7 @@ export async function signDigestWithEthers(privateKey: string, digest: string) {
 }
 
 export function sortByAddress(a: string, b: string) {
-  return parseInt(a, 16) < parseInt(b, 16) ? -1 : 1;
+  return new BigNumber(a).lt(b) ? -1 : 1;
 }
 
 export function sortAddresses(addrs: string[]) {
