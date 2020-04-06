@@ -98,6 +98,6 @@ export type GetHashLockTransferResponse =
   | undefined;
 
 // Event Data
-export type CreatedLinkedTransferMeta = {
-  encryptedPreImage?: string;
+export type CreatedHashLockTransferMeta = {
+  lockHash: string;
 };

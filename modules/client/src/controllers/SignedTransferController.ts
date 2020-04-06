@@ -20,7 +20,9 @@ export class SignedTransferController extends AbstractController {
   ): Promise<SignedTransferResponse> => {
     // convert params + validate
     const amount = toBN(params.amount);
-    const { meta, paymentId, signer, assetId } = params;
+    const { meta, paymentId, signer, assetId, recipient } = params;
+    let metaWithRecipient = meta || {};
+    metaWithRecipient.recipient = recipient;
 
     const initialState: SimpleSignedTransferAppState = {
       coinTransfers: [
@@ -75,8 +77,8 @@ export class SignedTransferController extends AbstractController {
       transferMeta: {
         signer,
       },
-    }) as EventPayloads.CreateSignedTransfer;
-    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
+    }) as EventPayloads.SignedTransferCreated;
+    this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
     return {
       appId,

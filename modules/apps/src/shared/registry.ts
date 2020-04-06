@@ -1,7 +1,6 @@
 import {
   DepositAppName,
   enumify,
-  FastSignedTransferAppName,
   HashLockTransferAppName,
   OutcomeType,
   SimpleLinkedTransferAppName,
@@ -14,7 +13,6 @@ export const SupportedApplications = enumify({
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
-  [FastSignedTransferAppName]: FastSignedTransferAppName,
   [WithdrawAppName]: WithdrawAppName,
   [HashLockTransferAppName]: HashLockTransferAppName,
   [DepositAppName]: DepositAppName,

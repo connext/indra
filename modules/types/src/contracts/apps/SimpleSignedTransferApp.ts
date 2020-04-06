@@ -8,6 +8,7 @@ import {
 import { enumify } from "../../utils";
 
 import { SignedTransfer } from "./common";
+import { Address, Xpub, Bytes32Hash, HexString, DecString } from "../../basic";
 
 export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 
@@ -57,47 +58,48 @@ export type SignedTransferStatus =
 export type SignedTransferParameters = {
   conditionType: typeof SignedTransfer;
   amount: BigNumber;
-  assetId: string;
-  paymentId: string;
-  signer: string;
-  meta?: object;
+  assetId: Address;
+  paymentId: Bytes32Hash;
+  signer: Address;
+  recipient?: Xpub;
+  meta?: any;
 };
 
 // Client Controller Response
 export type SignedTransferResponse = {
-  appId: string;
-  paymentId: string;
+  appId: Bytes32Hash;
+  paymentId: Bytes32Hash;
 };
 
 // Client Resolve Params
 export type ResolveSignedTransferParameters = {
   conditionType: typeof SignedTransfer;
-  paymentId: string;
-  data: string;
-  signature: string;
+  paymentId: Bytes32Hash;
+  data: Bytes32Hash;
+  signature: HexString;
 };
 
 // Client Resolve Response
 export type ResolveSignedTransferResponse = {
-  appId: string;
-  assetId: string;
+  appId: Bytes32Hash;
+  assetId: Address;
   amount: BigNumber;
-  sender: string;
-  meta?: object;
+  sender: Xpub;
+  meta?: any;
 };
 
 // Getter
 export type GetSignedTransferResponse = {
-  senderPublicIdentifier: string;
-  receiverPublicIdentifier?: string;
-  assetId: string;
-  amount: string;
-  paymentId: string;
+  senderPublicIdentifier: Xpub;
+  receiverPublicIdentifier?: Xpub;
+  assetId: Address;
+  amount: DecString;
+  paymentId: Bytes32Hash;
   status: SignedTransferStatus;
   meta?: any;
 };
 
 // Event Data
 export type CreatedSignedTransferMeta = {
-  signer: string;
+  signer: Address;
 };

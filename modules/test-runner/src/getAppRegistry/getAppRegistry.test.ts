@@ -43,8 +43,9 @@ describe("Get App Registry", () => {
   it("Happy case: user receives registry information for specific app using address", async () => {
     client = await createClient();
     const appRegistry = await client.getAppRegistry({
-      appDefinitionAddress: expectedAddresses.WithdrawApp.address,
+      appDefinitionAddress: expectedAddresses.DepositApp.address,
     });
+    expect(appRegistry).to.be.ok;
     verifyApp(appRegistry as DefaultApp);
   });
 });

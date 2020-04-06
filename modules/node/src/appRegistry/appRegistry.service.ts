@@ -3,7 +3,6 @@ import {
   commonAppProposalValidation,
   validateSimpleLinkedTransferApp,
   validateSimpleSwapApp,
-  validateFastSignedTransferApp,
   validateWithdrawApp,
   validateHashLockTransferApp,
   validateSignedTransferApp,
@@ -11,7 +10,6 @@ import {
 } from "@connext/apps";
 import {
   AppInstanceJson,
-  FastSignedTransferAppName,
   HashLockTransferAppName,
   MethodParams,
   SimpleLinkedTransferAppName,
@@ -20,6 +18,7 @@ import {
   WithdrawAppName,
   WithdrawAppState,
   HashLockTransferAppState,
+  SimpleSignedTransferAppState,
   DepositAppName,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
@@ -36,6 +35,7 @@ import { LoggerService } from "../logger/logger.service";
 import { Channel } from "../channel/channel.entity";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { HashLockTransferService } from "../hashLockTransfer/hashLockTransfer.service";
+import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -48,6 +48,7 @@ export class AppRegistryService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly log: LoggerService,
     private readonly hashlockTransferService: HashLockTransferService,
+    private readonly signedTransferService: SignedTransferService,
     private readonly swapRateService: SwapRateService,
     @Inject(MessagingProviderId) private readonly messagingService: MessagingService,
     private readonly withdrawService: WithdrawService,
@@ -138,14 +139,6 @@ export class AppRegistryService implements OnModuleInit {
         validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;
       }
-      case FastSignedTransferAppName: {
-        validateFastSignedTransferApp(
-          proposeInstallParams,
-          from,
-          this.cfCoreService.cfCore.publicIdentifier,
-        );
-        break;
-      }
       case WithdrawAppName: {
         await validateWithdrawApp(
           proposeInstallParams,
@@ -224,6 +217,24 @@ export class AppRegistryService implements OnModuleInit {
           appInstance.multisigAddress,
         );
         this.withdrawService.handleUserWithdraw(appInstance);
+        break;
+      }
+      case SimpleSignedTransferAppName: {
+        this.log.warn(`Doing simple signed transfer post-install tasks`);
+        if (proposeInstallParams.meta["recipient"]) {
+          // do not await, this can happen in the background. otherwise will be blocked here if receiver is offline
+          this.signedTransferService
+            .installSignedTransferReceiverApp(
+              proposeInstallParams.meta["recipient"],
+              (proposeInstallParams.initialState as SimpleSignedTransferAppState).paymentId,
+            )
+            // if receipient is not online, do not throw error, receipient can always unlock later
+            .catch(e =>
+              this.log.error(
+                `Could not install receiver app, receiver was possibly offline? ${e.toString()}`,
+              ),
+            );
+        }
         break;
       }
       default:

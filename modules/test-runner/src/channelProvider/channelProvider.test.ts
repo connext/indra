@@ -70,7 +70,7 @@ describe("ChannelProvider", () => {
         );
       }),
       new Promise(async resolve => {
-        clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, async () => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async () => {
           resolve();
         });
       }),
