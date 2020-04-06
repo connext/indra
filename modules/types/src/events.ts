@@ -26,7 +26,7 @@ type CreateMultisigEventData = {
 };
 
 ////////////////////////////////////////
-const CREATE_TRANSFER = "CREATE_TRANSFER";
+const CREATE_TRANSFER_EVENT = "CREATE_TRANSFER_EVENT";
 
 export type ReceiveTransferStartedEventData = {
   amount: string;
@@ -139,7 +139,7 @@ type WithdrawEventData = {
 
 export const EventNames = enumify({
   [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
-  [CREATE_TRANSFER]: CREATE_TRANSFER,
+  [CREATE_TRANSFER_EVENT]: CREATE_TRANSFER_EVENT,
   [DEPOSIT_CONFIRMED_EVENT]: DEPOSIT_CONFIRMED_EVENT,
   [DEPOSIT_FAILED_EVENT]: DEPOSIT_FAILED_EVENT,
   [DEPOSIT_STARTED_EVENT]: DEPOSIT_STARTED_EVENT,

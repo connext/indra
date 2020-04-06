@@ -44,7 +44,7 @@ import {
 
 const {
   CREATE_CHANNEL_EVENT,
-  CREATE_TRANSFER,
+  CREATE_TRANSFER_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
@@ -75,8 +75,8 @@ export class ConnextListener extends ConnextEventEmitter {
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
       this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
     },
-    CREATE_TRANSFER: (): void => {
-      this.emitAndLog(CREATE_TRANSFER, {});
+    CREATE_TRANSFER_EVENT: (): void => {
+      this.emitAndLog(CREATE_TRANSFER_EVENT, {});
     },
     DEPOSIT_CONFIRMED_EVENT: async (msg: DepositConfirmationMessage): Promise<void> => {
       this.emitAndLog(DEPOSIT_CONFIRMED_EVENT, msg.data);

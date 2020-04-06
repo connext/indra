@@ -28,7 +28,7 @@ import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 const {
   CREATE_CHANNEL_EVENT,
-  CREATE_TRANSFER,
+  CREATE_TRANSFER_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
@@ -80,8 +80,8 @@ export default class ListenerService implements OnModuleInit {
         this.logEvent(CREATE_CHANNEL_EVENT, data);
         this.channelService.makeAvailable(data);
       },
-      CREATE_TRANSFER: (data: DepositFailedMessage): void => {
-        this.logEvent(CREATE_TRANSFER, data);
+      CREATE_TRANSFER_EVENT: (data: DepositFailedMessage): void => {
+        this.logEvent(CREATE_TRANSFER_EVENT, data);
       },
       DEPOSIT_CONFIRMED_EVENT: (data: DepositConfirmationMessage): void => {
         this.logEvent(DEPOSIT_CONFIRMED_EVENT, data);

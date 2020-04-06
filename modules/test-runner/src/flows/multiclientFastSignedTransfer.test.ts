@@ -112,7 +112,7 @@ describe("Full Flow: Multi-client transfer", () => {
       );
 
       gateway.on(
-        EventNames.CREATE_TRANSFER,
+        EventNames.CREATE_TRANSFER_EVENT,
         async (eventData: EventPayloads.CreateFastTransfer,
       ) => {
           let withdrawerSigningKey: SigningKey;

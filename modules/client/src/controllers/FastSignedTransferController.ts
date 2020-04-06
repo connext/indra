@@ -157,7 +157,7 @@ export class FastSignedTransferController extends AbstractController {
         signer,
       },
     }) as EventPayloads.CreateFastTransfer;
-    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
+    this.connext.emit(EventNames.CREATE_TRANSFER_EVENT, eventData);
 
     return { appId };
   };

@@ -126,7 +126,7 @@ export class LinkedTransferController extends AbstractController {
       // need to flush here so that the client can exit knowing that messages are in the NATS server
       await this.connext.messaging.flush();
     }
-    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
+    this.connext.emit(EventNames.CREATE_TRANSFER_EVENT, eventData);
     return { appId, paymentId, preImage };
   };
 }

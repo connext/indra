@@ -82,7 +82,7 @@ export class HashLockTransferController extends AbstractController {
         lockHash,
       },
     }) as EventPayloads.CreateHashLockTransfer;
-    this.connext.emit(EventNames.CREATE_TRANSFER, eventData);
+    this.connext.emit(EventNames.CREATE_TRANSFER_EVENT, eventData);
 
     return {
       appId,
