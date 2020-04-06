@@ -102,6 +102,7 @@ export class AppWithCounterClass {
   get appIdentity(): AppIdentity {
     return {
       participants: this.participants,
+      multisigAddress: this.multisigAddress,
       appDefinition: this.appDefinition,
       defaultTimeout: this.defaultTimeout.toString(),
       channelNonce: this.channelNonce.toString(),
@@ -110,6 +111,7 @@ export class AppWithCounterClass {
 
   constructor(
     readonly participants: string[],
+    readonly multisigAddress: string,
     readonly appDefinition: string,
     readonly defaultTimeout: number,
     readonly channelNonce: number,
