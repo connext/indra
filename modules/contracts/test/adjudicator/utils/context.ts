@@ -1,5 +1,5 @@
 import { signDigest, recoverAddress } from "@connext/crypto";
-import { AppChallengeBigNumber, toBN, ChallengeStatus, sortSignaturesBySignerAddress, createRandom32ByteHexString, ChallengeEvents } from "@connext/types";
+import { AppChallengeBigNumber, toBN, ChallengeStatus, sortSignaturesBySignerAddress, createRandom32ByteHexString, ChallengeEvents, createRandomAddress } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
 import { keccak256, BigNumberish } from "ethers/utils";
@@ -20,8 +20,12 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
   const DEFAULT_TIMEOUT = 10;
   const CHANNEL_NONCE = parseInt((Math.random() * 100).toString().split(".")[0]);
 
+  // multisig address helpers
+  const multisigAddress = createRandomAddress(); // doesn't matter exactly what this is
+
   const appInstance = new AppWithCounterClass(
     [alice.address, bob.address],
+    multisigAddress,
     appDefinition.address,
     DEFAULT_TIMEOUT, // default timeout
     CHANNEL_NONCE, // channel nonce

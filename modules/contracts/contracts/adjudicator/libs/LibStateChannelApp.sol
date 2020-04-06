@@ -17,6 +17,7 @@ contract LibStateChannelApp is LibDispute {
     struct AppIdentity {
         uint256 channelNonce;
         address[] participants;
+        address multisigAddress;
         address appDefinition;
         uint256 defaultTimeout;
     }

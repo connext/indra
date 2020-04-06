@@ -112,6 +112,7 @@ export const createSetStateCommitmentJSON = (
     appIdentity: {
       channelNonce: "0",
       participants: [generateRandomAddress(), generateRandomAddress()],
+      multisigAddress: generateRandomAddress(),
       appDefinition: AddressZero,
       defaultTimeout: "0",
     },
