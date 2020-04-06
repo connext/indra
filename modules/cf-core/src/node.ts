@@ -80,7 +80,7 @@ export class Node {
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
-    lockService: CFCoreTypes.ILockService,
+    lockService: ILockService,
     publicExtendedKey?: string,
     privateKeyGenerator?: IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,

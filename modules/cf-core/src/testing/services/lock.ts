@@ -1,5 +1,5 @@
-import { Deferred } from "../../src/deferred";
-import { IO_SEND_AND_WAIT_TIMEOUT } from "../../src/constants";
+import { Deferred } from "../../deferred";
+import { IO_SEND_AND_WAIT_TIMEOUT } from "../../constants";
 
 export class Lock {
   private currentLockHandle: Deferred<any> | null = new Deferred();

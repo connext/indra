@@ -43,7 +43,7 @@ export class RequestHandler {
     readonly provider: JsonRpcProvider,
     readonly wallet: Signer,
     readonly blocksNeededForConfirmation: number,
-    readonly lockService: CFCoreTypes.ILockService,
+    readonly lockService: ILockService,
     public readonly log: ILoggerService,
   ) {
     this.log = this.log.newContext("CF-RequestHandler");

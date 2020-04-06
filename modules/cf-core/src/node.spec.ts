@@ -5,7 +5,7 @@ import { HDNode } from "ethers/utils";
 
 import { Node } from "./node";
 import { memoryMessagingService } from "./testing/services";
-import { MemoryLockService } from "./test/services/memory-lock-service";
+import { MemoryLockService } from "./testing/services/memory-lock-service";
 
 describe("Node", () => {
   it("is defined", () => {
