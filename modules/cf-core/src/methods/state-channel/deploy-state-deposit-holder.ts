@@ -1,5 +1,5 @@
 import { delay, MethodNames, MethodParams, MethodResults, stringify } from "@connext/types";
-import { ILoggerService } from "@connext/types";
+import { ILoggerService, sortAddresses } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
@@ -19,7 +19,7 @@ import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { NetworkContext } from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
-import { sortAddresses, xkeysToSortedKthAddresses } from "../../xkeys";
+import { xkeysToSortedKthAddresses } from "../../xkeys";
 
 import { NodeController } from "../controller";
 

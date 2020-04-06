@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
+import { CriticalStateChannelAddresses, ILoggerService, sortByAddress } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -85,7 +85,7 @@ export const getCreate2MultisigAddress = async (
           ? fromExtendedKey(xkey).address
           : fromExtendedKey(xkey).derivePath("0").address,
       )
-      .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+      .sort(sortByAddress);
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
@@ -116,14 +116,11 @@ export const getCreate2MultisigAddress = async (
   );
 };
 
-const memoizedGetAddress = memoize(
-  (params: string): string => getAddress(params),
-  {
-    max: 100,
-    maxAge: 60 * 1000,
-    primitive: true,
-  },
-);
+const memoizedGetAddress = memoize((params: string): string => getAddress(params), {
+  max: 100,
+  maxAge: 60 * 1000,
+  primitive: true,
+});
 
 export const scanForCriticalAddresses = async (
   ownerXpubs: string[],
