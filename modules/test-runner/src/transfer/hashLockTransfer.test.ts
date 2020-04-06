@@ -215,12 +215,9 @@ describe("HashLock Transfers", () => {
         recipient: clientB.publicIdentifier,
       } as HashLockTransferParameters),
       new Promise(res => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
+        clientA.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
       }),
     ]);
-    // disconnect so that it cant be unlocked
-    await clientA.messaging.disconnect();
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
