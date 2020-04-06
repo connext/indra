@@ -351,7 +351,7 @@ describe("CFCoreStore", () => {
         ...setStateCommitment,
         appStateHash: mkHash("0xfeef"),
         versionNumber: 42,
-        timeout: 1337,
+        stateTimeout: bigNumberify(1337).toHexString(),
       });
       await cfCoreStore.updateSetStateCommitment(setStateCommitment.appIdentityHash, updated);
 

@@ -3,6 +3,7 @@ import {
   CriticalStateChannelAddresses,
   StateChannelJSON,
   OutcomeType,
+  toBN,
 } from "@connext/types";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 import { HashZero, AddressZero, Zero } from "ethers/constants";
@@ -297,11 +298,17 @@ export class AdminService implements OnApplicationBootstrap {
                 proposedToIdentifier: channelJSON.userNeuteredExtendedKeys[1],
                 responderDeposit: "0",
                 responderDepositTokenAddress: AddressZero,
-                timeout: appInstance.latestTimeout.toString(),
+                defaultTimeout: appInstance.defaultTimeout || 
+                  toBN((appInstance as any).timeout).toHexString(),
+                stateTimeout: appInstance.stateTimeout 
+                  || toBN((appInstance as any).latestTimeout).toHexString(),
                 meta: appInstance.meta,
-                multiAssetMultiPartyCoinTransferInterpreterParams: appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
-                singleAssetTwoPartyCoinTransferInterpreterParams: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams as any,
-                twoPartyOutcomeInterpreterParams: appInstance.twoPartyOutcomeInterpreterParams as any,
+                multiAssetMultiPartyCoinTransferInterpreterParams: 
+                  appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
+                singleAssetTwoPartyCoinTransferInterpreterParams: 
+                  appInstance.singleAssetTwoPartyCoinTransferInterpreterParams as any,
+                twoPartyOutcomeInterpreterParams: 
+                  appInstance.twoPartyOutcomeInterpreterParams as any,
               },
               channelJSON.monotonicNumProposedApps,
             );

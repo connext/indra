@@ -3,6 +3,7 @@ import {
   OutcomeType,
   SolidityValueType,
   createRandomAddress,
+  toBN,
 } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify, getAddress } from "ethers/utils";
@@ -23,7 +24,8 @@ export function createAppInstanceProposalForTest(appInstanceId: string): AppInst
     } as AppABIEncodings,
     initiatorDeposit: "0x00",
     responderDeposit: "0x00",
-    timeout: "0x01",
+    defaultTimeout: "0x01",
+    stateTimeout: "0x00",
     initialState: {
       foo: AddressZero,
       bar: 0,
@@ -40,7 +42,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* participants */ stateChannel
       ? stateChannel.getSigningKeysFor(stateChannel.numProposedApps)
       : [getAddress(createRandomAddress()), getAddress(createRandomAddress())],
-    /* defaultTimeout */ 0,
+    /* defaultTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
     /* appInterface */ {
       addr: getAddress(createRandomAddress()),
       stateEncoding: "tuple(address foo, uint256 bar)",
@@ -49,7 +51,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* appSeqNo */ stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
     /* latestState */ { foo: AddressZero, bar: bigNumberify(0) },
     /* latestVersionNumber */ 0,
-    /* latestTimeout */ Math.ceil(1000 * Math.random()),
+    /* stateTimeout */ "0x00",
     /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     /* multisig */ stateChannel ? stateChannel.multisigAddress : getAddress(createRandomAddress()),
     /* twoPartyOutcomeInterpreterParams */ {

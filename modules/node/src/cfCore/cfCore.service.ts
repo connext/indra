@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { SupportedApplications, WithdrawCommitment } from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   ConnextNodeStorePrefix,
@@ -171,6 +171,7 @@ export class CFCoreService {
     responderDepositTokenAddress: string,
     app: string,
     meta: object = {},
+    stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
     let boundReject: (reason?: any) => void;
     let boundResolve: (reason?: any) => void;
@@ -199,7 +200,8 @@ export class CFCoreService {
       proposedToIdentifier: channel.userPublicIdentifier,
       responderDeposit,
       responderDepositTokenAddress,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout,
     };
 
     let proposeRes: MethodResults.ProposeInstall;
@@ -257,13 +259,14 @@ export class CFCoreService {
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
-  async takeAction(appInstanceId: string, action: AppAction): Promise<MethodResults.TakeAction> {
+  async takeAction(appInstanceId: string, action: AppAction, stateTimeout: BigNumber): Promise<MethodResults.TakeAction> {
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_takeAction,
       parameters: {
         action,
         appInstanceId,
+        stateTimeout,
       } as MethodParams.TakeAction,
     });
 

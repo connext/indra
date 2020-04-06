@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn, CreateDat
 import { AppIdentity } from "@connext/types";
 import { IsKeccak256Hash, IsEthAddress } from "../util";
 import { AppInstance } from "../appInstance/appInstance.entity";
+import { HexString } from "../../../types/src/basic";
 
 @Entity()
 export class SetStateCommitment {
@@ -22,8 +23,8 @@ export class SetStateCommitment {
   @Column("jsonb", { nullable: true })
   signatures!: string[];
 
-  @Column("integer")
-  timeout!: number;
+  @Column("text")
+  stateTimeout!: HexString;
 
   @Column("integer")
   versionNumber!: number;
