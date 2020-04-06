@@ -337,7 +337,7 @@ export class ConnextListener extends ConnextEventEmitter {
     }
     // install and run post-install tasks
     await this.runPostInstallTasks(appInstanceId, registryAppInfo);
-    const appInstance = this.connext.getAppInstanceDetails(appInstanceId);
+    const { appInstance } = await this.connext.getAppInstanceDetails(appInstanceId);
     await this.connext.messaging.publish(
       `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`,
       stringify(appInstance),
