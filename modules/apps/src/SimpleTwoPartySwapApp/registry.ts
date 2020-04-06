@@ -15,4 +15,4 @@ export const SimpleTwoPartySwapAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const SWAP_STATE_TIMEOUT = Zero.toHexString();
+export const SWAP_STATE_TIMEOUT = Zero;

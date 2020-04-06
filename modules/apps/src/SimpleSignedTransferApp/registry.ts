@@ -17,4 +17,4 @@ export const SimpleSignedTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const SIGNED_TRANSFER_STATE_TIMEOUT = Zero.toHexString();
+export const SIGNED_TRANSFER_STATE_TIMEOUT = Zero;

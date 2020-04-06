@@ -33,4 +33,4 @@ export type AppRegistryInfo = {
 export type AppRegistryType = AppRegistryInfo[];
 
 // timeout default values
-export const DEFAULT_APP_TIMEOUT = toBN(10).toHexString();
+export const DEFAULT_APP_TIMEOUT = toBN(10);

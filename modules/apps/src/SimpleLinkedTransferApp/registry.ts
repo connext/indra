@@ -17,4 +17,4 @@ export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const LINKED_TRANSFER_STATE_TIMEOUT = Zero.toHexString();
+export const LINKED_TRANSFER_STATE_TIMEOUT = Zero;

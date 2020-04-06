@@ -15,4 +15,4 @@ import { Zero } from "ethers/constants";
   };
   
 // timeout default values
-export const DEPOSIT_STATE_TIMEOUT = Zero.toHexString();
+export const DEPOSIT_STATE_TIMEOUT = Zero;

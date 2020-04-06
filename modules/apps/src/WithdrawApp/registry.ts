@@ -17,4 +17,4 @@ export const WithdrawAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const WITHDRAW_STATE_TIMEOUT = Zero.toHexString();
+export const WITHDRAW_STATE_TIMEOUT = Zero;

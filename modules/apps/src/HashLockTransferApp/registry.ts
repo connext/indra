@@ -17,4 +17,4 @@ export const HashLockTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const HASHLOCK_TRANSFER_STATE_TIMEOUT = Zero.toHexString();
+export const HASHLOCK_TRANSFER_STATE_TIMEOUT = Zero;
