@@ -29,7 +29,6 @@ import * as lolex from "lolex";
 const { xpubToAddress } = utils;
 
 let clock: any;
-let client: IConnextClient;
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
@@ -53,7 +52,7 @@ const fundChannelAndSwap = async (opts: {
   } = opts;
   // these tests should not have collateral issues
   // so make sure they are always properly funded
-  client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
+  const client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
 
   const input = {
     amount: inputAmount,
@@ -101,7 +100,7 @@ const fundChannelAndSwap = async (opts: {
 };
 
 describe("Swap offline", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clock = lolex.install({
       shouldAdvanceTime: true,
       advanceTimeDelta: 1,
@@ -180,7 +179,7 @@ describe("Swap offline", () => {
       `${providedClient.nodePublicIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
       async (msg: any) => {
         const { appInterface } = msg.data;
-        if (appInterface.addr !== client.config.contractAddresses.SimpleTwoPartySwapApp) {
+        if (appInterface.addr !== providedClient.config.contractAddresses.SimpleTwoPartySwapApp) {
           return;
         }
         // we know client has swap app installed,
