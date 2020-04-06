@@ -1,5 +1,4 @@
 import { 
-  CoinBalanceRefundAppState,
   DepositAppState,
   HashLockTransferAppAction,
   HashLockTransferAppState,
@@ -24,7 +23,6 @@ export type AppAction =
   | WithdrawAppAction;
 
 export type AppState = 
-  | CoinBalanceRefundAppState
   | DepositAppState
   | HashLockTransferAppState
   | SimpleLinkedTransferAppState

@@ -16,7 +16,6 @@ import {
   ResolveSignedTransferParameters,
   ResolveSignedTransferResponse,
 } from "./SimpleSignedTransferApp";
-export * from "./CoinBalanceRefundApp";
 export * from "./DepositApp";
 export * from "./common";
 export * from "./HashLockTransferApp";

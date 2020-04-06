@@ -39,7 +39,6 @@ export type AddressHistory = {
 
 export interface NetworkContext {
   ChallengeRegistry: Address;
-  CoinBalanceRefundApp: Address;
   ConditionalTransactionDelegateTarget: Address;
   IdentityApp: Address;
   MinimumViableMultisig: Address;
@@ -54,7 +53,6 @@ export interface NetworkContext {
 // Keep in sync with above
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ChallengeRegistry",
-  "CoinBalanceRefundApp",
   "ConditionalTransactionDelegateTarget",
   "IdentityApp",
   "MinimumViableMultisig",

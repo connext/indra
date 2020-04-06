@@ -1,5 +1,4 @@
 import {
-  CoinBalanceRefundAppName,
   DepositAppName,
   enumify,
   HashLockTransferAppName,
@@ -11,7 +10,6 @@ import {
 } from "@connext/types";
 
 export const SupportedApplications = enumify({
-  [CoinBalanceRefundAppName]: CoinBalanceRefundAppName,
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,
   [SimpleSignedTransferAppName]: SimpleSignedTransferAppName,
   [SimpleTwoPartySwapAppName]: SimpleTwoPartySwapAppName,
