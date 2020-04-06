@@ -48,7 +48,7 @@ export class ResolveHashLockTransferController extends AbstractController {
     }
     const sender = hashlockApp.meta["sender"];
     this.connext.emit(
-      EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
+      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
       deBigNumberifyJson({
         type: ConditionalTransferTypes.HashLockTransfer,
         amount: amount,

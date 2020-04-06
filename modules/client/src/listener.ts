@@ -16,6 +16,10 @@ import {
   CreatedSignedTransferMeta,
   ConditionalTransferTypes,
   SignedTransfer,
+  SimpleLinkedTransferAppState,
+  CreatedLinkedTransferMeta,
+  CreatedHashLockTransferMeta,
+  HashLockTransferAppState,
 } from "@connext/types";
 import {
   commonAppProposalValidation,
@@ -315,10 +319,10 @@ export class ConnextListener extends ConnextEventEmitter {
         }
         case DepositAppName: {
           await validateDepositApp(
-            params, 
-            from, 
-            this.connext.publicIdentifier, 
-            this.connext.multisigAddress, 
+            params,
+            from,
+            this.connext.publicIdentifier,
+            this.connext.multisigAddress,
             this.connext.ethProvider,
           );
           break;
@@ -376,6 +380,50 @@ export class ConnextListener extends ConnextEventEmitter {
             paymentId: initalState.paymentId,
             recipient: meta["recipient"],
           }) as EventPayloads.SignedTransferReceived,
+        );
+        break;
+      }
+      case HashLockTransferAppName: {
+        const initalState = params.initialState as HashLockTransferAppState;
+        const { initiatorDepositTokenAddress: assetId, meta } = params;
+        const amount = initalState.coinTransfers[0].amount;
+        this.connext.emit(
+          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          deBigNumberifyJson({
+            amount,
+            appInstanceId,
+            assetId,
+            meta,
+            sender: meta["sender"],
+            transferMeta: {
+              lockHash: initalState.lockHash,
+            } as CreatedHashLockTransferMeta,
+            type: ConditionalTransferTypes[SignedTransfer],
+            paymentId: initalState.lockHash,
+            recipient: meta["recipient"],
+          }) as EventPayloads.SignedTransferReceived,
+        );
+        break;
+      }
+      case SimpleLinkedTransferAppName: {
+        const initalState = params.initialState as SimpleLinkedTransferAppState;
+        const { initiatorDepositTokenAddress: assetId, meta } = params;
+        const amount = initalState.coinTransfers[0].amount;
+        this.connext.emit(
+          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          deBigNumberifyJson({
+            amount,
+            appInstanceId,
+            assetId,
+            meta,
+            sender: meta["sender"],
+            transferMeta: {
+              encryptedPreImage: meta["encryptedPreImage"],
+            } as CreatedLinkedTransferMeta,
+            type: ConditionalTransferTypes[SignedTransfer],
+            paymentId: initalState.paymentId,
+            recipient: meta["recipient"],
+          }) as EventPayloads.LinkedTransferReceived,
         );
         break;
       }
