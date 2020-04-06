@@ -167,11 +167,12 @@ type ProposeInstallParams = {
   initiatorDepositTokenAddress: Address;
   responderDeposit: BigNumber;
   responderDepositTokenAddress: Address;
-  timeout: BigNumber;
+  defaultTimeout: BigNumber;
   initialState: AppState;
   proposedToIdentifier: string;
   outcomeType: OutcomeType;
   meta?: Object;
+  stateTimeout?: BigNumber;
 };
 
 type ProposeInstallResult = {

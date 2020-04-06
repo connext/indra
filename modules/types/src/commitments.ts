@@ -37,7 +37,7 @@ export type SetStateCommitmentJSON = {
   readonly appStateHash: HexString;
   readonly challengeRegistryAddress: Address;
   readonly signatures: string[];
-  readonly timeout: number;
+  readonly timeout: HexString;
   readonly versionNumber: number;
 };
 
