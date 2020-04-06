@@ -12,6 +12,7 @@ export class WithdrawCommitment extends MultisigCommitment {
     public readonly recipient: string,
     public readonly assetId: string,
     public readonly amount: BigNumberish,
+    public readonly nonce: string,
   ) {
     super(multisigAddress, multisigOwners);
   }
@@ -24,6 +25,7 @@ export class WithdrawCommitment extends MultisigCommitment {
         this.recipient,
         this.assetId,
         this.amount,
+        this.nonce,
       ]),
       operation: MultisigOperation.DelegateCall,
     };

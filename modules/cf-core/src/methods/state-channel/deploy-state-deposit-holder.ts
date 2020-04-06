@@ -3,7 +3,7 @@ import { ILoggerService } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
-import { Interface } from "ethers/utils";
+import { Interface, keccak256, solidityKeccak256 } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -129,7 +129,11 @@ async function sendMultisigDeployTx(
         new Interface(MinimumViableMultisig.abi).functions.setup.encode([
           xkeysToSortedKthAddresses(owners, 0),
         ]),
-        0, // TODO: Increment nonce as needed
+        // hash chainId plus nonce for x-chain replay protection
+        solidityKeccak256(
+          ["uint256", "uint256"],
+          [provider.network.chainId, 0]
+        ), // TODO: Increment nonce as needed
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,
           gasPrice: provider.getGasPrice(),

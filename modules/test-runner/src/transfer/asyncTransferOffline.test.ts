@@ -150,7 +150,7 @@ describe("Async transfer offline tests", () => {
     // transfer from the sender to the receiver, then take the
     // sender offline
     const received = new Promise(resolve =>
-      receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, resolve),
+      receiverClient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, resolve),
     );
     const { paymentId } = await senderClient.transfer({
       amount: TOKEN_AMOUNT_SM,
@@ -212,7 +212,7 @@ describe("Async transfer offline tests", () => {
     // disconnect messaging on take action event, ensuring transfer received
     const transferCompleteAndActionTaken = Promise.all([
       new Promise((resolve: Function) =>
-        receiverClient.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, () => {
+        receiverClient.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, () => {
           resolve();
         }),
       ),

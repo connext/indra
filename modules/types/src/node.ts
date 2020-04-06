@@ -7,7 +7,6 @@ import {
   GetSignedTransferResponse,
   LinkedTransferStatus,
   NetworkContext,
-  ResolveFastSignedTransferResponse,
   ResolveLinkedTransferResponse,
 } from "./contracts";
 import { ILoggerService } from "./logger";
@@ -181,7 +180,6 @@ export interface INodeApiClient {
   fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
   fetchSignedTransfer(paymentId: string): Promise<GetSignedTransferResponse>;
   resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
-  resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
   resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;

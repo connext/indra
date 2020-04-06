@@ -22,7 +22,7 @@ export const withdrawFromChannel = async (
   log.info(`client.withdraw() called`);
   const start = Date.now();
   const { transaction } = await client.withdraw({
-    amount: amount.toString(),
+    amount,
     assetId,
     recipient,
   });
@@ -35,7 +35,7 @@ export const withdrawFromChannel = async (
     const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethProvider);
     recipientBalance = await token.balanceOf(recipient);
   }
-  expect(recipientBalance.toString()).to.be.eq(amount.toString());
+  expect(recipientBalance).to.be.at.least(amount.toString());
   expect(postWithdrawalBalance[client.freeBalanceAddress].toString()).to.be.eq(expected.toString());
   expect(transaction.hash).to.exist;
   return;

@@ -77,6 +77,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
+        multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: timeout.toString(),
       }),
       proposedByIdentifier: initiatorXpub,
@@ -108,6 +109,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
+        multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: timeout.toString(),
       },
       hashOfLatestState: keccak256(
@@ -234,6 +236,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
+        multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: timeout.toString(),
       }),
       timeout: timeout.toHexString(),
@@ -265,6 +268,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         participants: preProtocolStateChannel.getSigningKeysFor(
           preProtocolStateChannel.numProposedApps + 1,
         ),
+        multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: timeout.toString(),
       },
       hashOfLatestState: keccak256(

@@ -5,7 +5,6 @@ import * as addressHistory from "./address-history.json";
 // export all build artifacts
 import * as AppWithAction from "./build/AppWithAction.json";
 import * as ChallengeRegistry from "./build/ChallengeRegistry.json";
-import * as CoinBalanceRefundApp from "./build/CoinBalanceRefundApp.json";
 import * as ConditionalTransactionDelegateTarget from "./build/ConditionalTransactionDelegateTarget.json";
 import * as CounterfactualApp from "./build/CounterfactualApp.json";
 import * as ERC20 from "./build/ERC20.json";
@@ -25,7 +24,6 @@ export {
   addressHistory,
   AppWithAction,
   ChallengeRegistry,
-  CoinBalanceRefundApp,
   ConditionalTransactionDelegateTarget,
   CounterfactualApp,
   ERC20,

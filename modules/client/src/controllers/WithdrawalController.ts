@@ -16,7 +16,7 @@ import {
 } from "@connext/types";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { formatEther } from "ethers/utils";
+import { formatEther, hexlify, randomBytes } from "ethers/utils";
 
 import { stringify, xpubToAddress } from "../lib";
 import { invalidAddress, validate } from "../validation";
@@ -32,6 +32,10 @@ export class WithdrawalController extends AbstractController {
 
     if (!params.recipient) {
       params.recipient = this.connext.freeBalanceAddress;
+    }
+
+    if (!params.nonce) {
+      params.nonce = hexlify(randomBytes(32));
     }
 
     const amount = toBN(params.amount);
@@ -83,6 +87,7 @@ export class WithdrawalController extends AbstractController {
       amount: state.transfers[0].amount,
       assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
       recipient: state.transfers[0].to,
+      nonce: state.nonce,
     } as WithdrawParameters);
     const hash = generatedCommitment.hashToSign();
 
@@ -110,7 +115,7 @@ export class WithdrawalController extends AbstractController {
   private async createWithdrawCommitment(
     params: WithdrawParameters,
   ): Promise<WithdrawCommitment> {
-    const { assetId, amount, recipient } = params;
+    const { assetId, amount, nonce, recipient } = params;
     const channel = await this.connext.getStateChannel();
     return new WithdrawCommitment(
       this.connext.config.contractAddresses,
@@ -119,6 +124,7 @@ export class WithdrawalController extends AbstractController {
       recipient,
       assetId,
       amount,
+      nonce,
     );
   }
 
@@ -128,7 +134,7 @@ export class WithdrawalController extends AbstractController {
     withdrawerSignatureOnWithdrawCommitment: string,
   ): Promise<string> {
     const amount = toBN(params.amount);
-    const { recipient, assetId } = params;
+    const { assetId, nonce, recipient } = params;
     const appInfo = this.connext.getRegisteredAppDetails(WithdrawAppName);
     const {
       appDefinitionAddress: appDefinition,
@@ -147,6 +153,7 @@ export class WithdrawalController extends AbstractController {
         xpubToAddress(this.connext.nodePublicIdentifier),
       ],
       data: withdrawCommitmentHash,
+      nonce,
       finalized: false,
     };
     const installParams: MethodParams.ProposeInstall = {

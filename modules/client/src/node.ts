@@ -5,7 +5,6 @@ import {
   GetHashLockTransferResponse,
   GetPendingAsyncTransfersResponse,
   ILoggerService,
-  ResolveFastSignedTransferResponse,
   ChannelRestoreResponse,
   ResolveSignedTransferResponse,
   stringify,
@@ -177,14 +176,6 @@ export class NodeApiClient implements INodeApiClient {
 
   public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
     return this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
-      paymentId,
-    });
-  }
-
-  public async resolveFastSignedTransfer(
-    paymentId: string,
-  ): Promise<ResolveFastSignedTransferResponse> {
-    return this.send(`${this.userPublicIdentifier}.transfer.resolve-fast-signed`, {
       paymentId,
     });
   }

@@ -3,7 +3,6 @@ import {
   DepositAppName,
   EventNames,
   EventPayloads,
-  FastSignedTransferAppName,
   HashLockTransferAppName,
   ILoggerService,
   MethodNames,
@@ -12,13 +11,21 @@ import {
   SimpleSignedTransferAppName,
   WithdrawAppName,
   WithdrawAppState,
+  SimpleSignedTransferAppState,
+  deBigNumberifyJson,
+  CreatedSignedTransferMeta,
+  ConditionalTransferTypes,
+  SignedTransfer,
+  SimpleLinkedTransferAppState,
+  CreatedLinkedTransferMeta,
+  CreatedHashLockTransferMeta,
+  HashLockTransferAppState,
 } from "@connext/types";
 import {
   commonAppProposalValidation,
   SupportedApplications,
   validateSimpleLinkedTransferApp,
   validateWithdrawApp,
-  validateFastSignedTransferApp,
   validateHashLockTransferApp,
   validateSignedTransferApp,
   validateDepositApp,
@@ -43,17 +50,20 @@ import {
 } from "./types";
 
 const {
+  CONDITIONAL_TRANSFER_CREATED_EVENT,
+  CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+  CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+  CONDITIONAL_TRANSFER_FAILED_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
+  WITHDRAWAL_STARTED_EVENT,
   CREATE_CHANNEL_EVENT,
-  CREATE_TRANSFER_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DEPOSIT_STARTED_EVENT,
   INSTALL_EVENT,
   PROPOSE_INSTALL_EVENT,
   PROTOCOL_MESSAGE_EVENT,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
   REJECT_INSTALL_EVENT,
   UNINSTALL_EVENT,
   UPDATE_STATE_EVENT,
@@ -75,8 +85,17 @@ export class ConnextListener extends ConnextEventEmitter {
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
       this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
     },
-    CREATE_TRANSFER_EVENT: (): void => {
-      this.emitAndLog(CREATE_TRANSFER_EVENT, {});
+    CONDITIONAL_TRANSFER_CREATED_EVENT: (msg: any): void => {
+      this.emitAndLog(CONDITIONAL_TRANSFER_CREATED_EVENT, msg.data);
+    },
+    CONDITIONAL_TRANSFER_RECEIVED_EVENT: (msg: any): void => {
+      this.emitAndLog(CONDITIONAL_TRANSFER_RECEIVED_EVENT, msg.data);
+    },
+    CONDITIONAL_TRANSFER_UNLOCKED_EVENT: (msg: any): void => {
+      this.emitAndLog(CONDITIONAL_TRANSFER_UNLOCKED_EVENT, msg.data);
+    },
+    CONDITIONAL_TRANSFER_FAILED_EVENT: (msg: any): void => {
+      this.emitAndLog(CONDITIONAL_TRANSFER_FAILED_EVENT, msg.data);
     },
     DEPOSIT_CONFIRMED_EVENT: async (msg: DepositConfirmationMessage): Promise<void> => {
       this.emitAndLog(DEPOSIT_CONFIRMED_EVENT, msg.data);
@@ -112,15 +131,6 @@ export class ConnextListener extends ConnextEventEmitter {
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
     },
-    RECEIVE_TRANSFER_FAILED_EVENT: (msg: CreateChannelMessage): void => {
-      this.emitAndLog(RECEIVE_TRANSFER_FAILED_EVENT, {});
-    },
-    RECEIVE_TRANSFER_FINISHED_EVENT: (msg: CreateChannelMessage): void => {
-      this.emitAndLog(RECEIVE_TRANSFER_FINISHED_EVENT, {});
-    },
-    RECEIVE_TRANSFER_STARTED_EVENT: (msg: CreateChannelMessage): void => {
-      this.emitAndLog(RECEIVE_TRANSFER_STARTED_EVENT, {});
-    },
     REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {
       this.emitAndLog(REJECT_INSTALL_EVENT, msg.data);
     },
@@ -140,18 +150,19 @@ export class ConnextListener extends ConnextEventEmitter {
           amount: state.transfers[0].amount,
           recipient: state.transfers[0].to,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          nonce: state.nonce,
         };
         await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
       }
     },
     WITHDRAWAL_CONFIRMED_EVENT: (msg: UninstallMessage): void => {
-      this.emitAndLog(EventNames.WITHDRAWAL_CONFIRMED_EVENT, msg.data);
+      this.emitAndLog(WITHDRAWAL_CONFIRMED_EVENT, msg.data);
     },
     WITHDRAWAL_FAILED_EVENT: (msg: UninstallMessage): void => {
-      this.emitAndLog(EventNames.WITHDRAWAL_FAILED_EVENT, msg.data);
+      this.emitAndLog(WITHDRAWAL_FAILED_EVENT, msg.data);
     },
     WITHDRAWAL_STARTED_EVENT: (msg: UninstallMessage): void => {
-      this.emitAndLog(EventNames.WITHDRAWAL_STARTED_EVENT, msg.data);
+      this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
 
@@ -259,7 +270,7 @@ export class ConnextListener extends ConnextEventEmitter {
         transferMeta: { encryptedPreImage },
         amount,
         assetId,
-      }: EventPayloads.CreateTransfer = data;
+      }: EventPayloads.LinkedTransferCreated = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }
@@ -298,10 +309,6 @@ export class ConnextListener extends ConnextEventEmitter {
           await validateWithdrawApp(params, from, this.connext.publicIdentifier);
           break;
         }
-        case FastSignedTransferAppName: {
-          validateFastSignedTransferApp(params, from, this.connext.publicIdentifier);
-          break;
-        }
         case HashLockTransferAppName: {
           const blockNumber = await this.connext.ethProvider.getBlockNumber();
           validateHashLockTransferApp(params, blockNumber, from, this.connext.publicIdentifier);
@@ -313,10 +320,10 @@ export class ConnextListener extends ConnextEventEmitter {
         }
         case DepositAppName: {
           await validateDepositApp(
-            params, 
-            from, 
-            this.connext.publicIdentifier, 
-            this.connext.multisigAddress, 
+            params,
+            from,
+            this.connext.publicIdentifier,
+            this.connext.multisigAddress,
             this.connext.ethProvider,
           );
           break;
@@ -336,7 +343,7 @@ export class ConnextListener extends ConnextEventEmitter {
       throw e;
     }
     // install and run post-install tasks
-    await this.runPostInstallTasks(appInstanceId, registryAppInfo);
+    await this.runPostInstallTasks(appInstanceId, registryAppInfo, params);
     const { appInstance } = await this.connext.getAppInstanceDetails(appInstanceId);
     await this.connext.messaging.publish(
       `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`,
@@ -347,11 +354,78 @@ export class ConnextListener extends ConnextEventEmitter {
   private runPostInstallTasks = async (
     appInstanceId: string,
     registryAppInfo: DefaultApp,
+    params: MethodParams.ProposeInstall,
   ): Promise<void> => {
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
         const appInstance = (await this.connext.getAppInstanceDetails(appInstanceId)).appInstance;
         this.connext.respondToNodeWithdraw(appInstance);
+        break;
+      }
+      case SimpleSignedTransferAppName: {
+        const initalState = params.initialState as SimpleSignedTransferAppState;
+        const { initiatorDepositTokenAddress: assetId, meta } = params;
+        const amount = initalState.coinTransfers[0].amount;
+        this.connext.emit(
+          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          deBigNumberifyJson({
+            amount,
+            appInstanceId,
+            assetId,
+            meta,
+            sender: meta["sender"],
+            transferMeta: {
+              signer: initalState.signer,
+            } as CreatedSignedTransferMeta,
+            type: ConditionalTransferTypes[SignedTransfer],
+            paymentId: initalState.paymentId,
+            recipient: meta["recipient"],
+          }) as EventPayloads.SignedTransferReceived,
+        );
+        break;
+      }
+      case HashLockTransferAppName: {
+        const initalState = params.initialState as HashLockTransferAppState;
+        const { initiatorDepositTokenAddress: assetId, meta } = params;
+        const amount = initalState.coinTransfers[0].amount;
+        this.connext.emit(
+          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          deBigNumberifyJson({
+            amount,
+            appInstanceId,
+            assetId,
+            meta,
+            sender: meta["sender"],
+            transferMeta: {
+              lockHash: initalState.lockHash,
+            } as CreatedHashLockTransferMeta,
+            type: ConditionalTransferTypes[SignedTransfer],
+            paymentId: initalState.lockHash,
+            recipient: meta["recipient"],
+          }) as EventPayloads.SignedTransferReceived,
+        );
+        break;
+      }
+      case SimpleLinkedTransferAppName: {
+        const initalState = params.initialState as SimpleLinkedTransferAppState;
+        const { initiatorDepositTokenAddress: assetId, meta } = params;
+        const amount = initalState.coinTransfers[0].amount;
+        this.connext.emit(
+          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          deBigNumberifyJson({
+            amount,
+            appInstanceId,
+            assetId,
+            meta,
+            sender: meta["sender"],
+            transferMeta: {
+              encryptedPreImage: meta["encryptedPreImage"],
+            } as CreatedLinkedTransferMeta,
+            type: ConditionalTransferTypes[SignedTransfer],
+            paymentId: initalState.paymentId,
+            recipient: meta["recipient"],
+          }) as EventPayloads.LinkedTransferReceived,
+        );
         break;
       }
     }

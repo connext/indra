@@ -75,8 +75,6 @@ import {
   TransferParameters,
 } from "./types";
 import { ResolveLinkedTransferController } from "./controllers/ResolveLinkedTransferController";
-import { FastSignedTransferController } from "./controllers/FastSignedTransferController";
-import { ResolveFastSignedTransferController } from "./controllers/ResolveFastSignedTransferController";
 import { HashLockTransferController } from "./controllers/HashLockTransferController";
 import { ResolveHashLockTransferController } from "./controllers/ResolveHashLockTransferController";
 import { SignedTransferController } from "./controllers/SignedTransferController";
@@ -109,8 +107,6 @@ export class ConnextClient implements IConnextClient {
   private withdrawalController: WithdrawalController;
   private linkedTransferController: LinkedTransferController;
   private resolveLinkedTransferController: ResolveLinkedTransferController;
-  private fastSignedTransferController: FastSignedTransferController;
-  private resolveFastSignedTransferController: ResolveFastSignedTransferController;
   private hashlockTransferController: HashLockTransferController;
   private resolveHashLockTransferController: ResolveHashLockTransferController;
   private signedTransferController: SignedTransferController;
@@ -147,14 +143,6 @@ export class ConnextClient implements IConnextClient {
     this.linkedTransferController = new LinkedTransferController("LinkedTransferController", this);
     this.resolveLinkedTransferController = new ResolveLinkedTransferController(
       "ResolveLinkedTransferController",
-      this,
-    );
-    this.fastSignedTransferController = new FastSignedTransferController(
-      "FastSignedTransferController",
-      this,
-    );
-    this.resolveFastSignedTransferController = new ResolveFastSignedTransferController(
-      "ResolveFastSignedTransferController",
       this,
     );
     this.hashlockTransferController = new HashLockTransferController(
@@ -266,20 +254,23 @@ export class ConnextClient implements IConnextClient {
         }
       | { appDefinitionAddress: string },
   ): Promise<AppRegistry | DefaultApp | undefined> => {
-    const registry = await this.node.appRegistry();
+    if (!this.appRegistry) {
+      this.appRegistry = await this.node.appRegistry();
+    }
+    const registry = this.appRegistry;
     if (!appDetails) {
       return registry;
     }
     const { name, chainId, appDefinitionAddress } = appDetails as any;
     if (name) {
-      return registry.filter(app => 
+      return registry.find(app => 
         app.name === name &&
         app.chainId === chainId,
-      )[0];
+      );
     }
-    return registry.filter(app =>
+    return registry.find(app =>
       app.appDefinitionAddress === appDefinitionAddress,
-    )[0];
+    );
   };
 
   public createChannel = async (): Promise<CreateChannelResponse> => {
@@ -378,9 +369,6 @@ export class ConnextClient implements IConnextClient {
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.resolveLinkedTransferController.resolveLinkedTransfer(params);
       }
-      case ConditionalTransferTypes.FastSignedTransfer: {
-        return this.resolveFastSignedTransferController.resolveFastSignedTransfer(params);
-      }
       case ConditionalTransferTypes.HashLockTransfer: {
         return this.resolveHashLockTransferController.resolveHashLockTransfer(params);
       }
@@ -398,9 +386,6 @@ export class ConnextClient implements IConnextClient {
     switch (params.conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.linkedTransferController.linkedTransfer(params);
-      }
-      case ConditionalTransferTypes.FastSignedTransfer: {
-        return this.fastSignedTransferController.fastSignedTransfer(params);
       }
       case ConditionalTransferTypes.HashLockTransfer: {
         return this.hashlockTransferController.hashLockTransfer(params);

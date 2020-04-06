@@ -5,7 +5,6 @@ const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Min
 
 const coreContracts = [
   "ChallengeRegistry",
-  "CoinBalanceRefundApp",
   "ConditionalTransactionDelegateTarget",
   "IdentityApp",
   "MinimumViableMultisig",
@@ -18,7 +17,6 @@ const coreContracts = [
 
 const appContracts = [
   "DepositApp",
-  "FastSignedTransferApp",
   "HashLockTransferApp",
   "SimpleLinkedTransferApp",
   "SimpleSignedTransferApp",
