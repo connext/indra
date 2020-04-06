@@ -253,20 +253,23 @@ export class ConnextClient implements IConnextClient {
         }
       | { appDefinitionAddress: string },
   ): Promise<AppRegistry | DefaultApp | undefined> => {
-    const registry = await this.node.appRegistry();
+    if (!this.appRegistry) {
+      this.appRegistry = await this.node.appRegistry();
+    }
+    const registry = this.appRegistry;
     if (!appDetails) {
       return registry;
     }
     const { name, chainId, appDefinitionAddress } = appDetails as any;
     if (name) {
-      return registry.filter(app => 
+      return registry.find(app => 
         app.name === name &&
         app.chainId === chainId,
-      )[0];
+      );
     }
-    return registry.filter(app =>
+    return registry.find(app =>
       app.appDefinitionAddress === appDefinitionAddress,
-    )[0];
+    );
   };
 
   public createChannel = async (): Promise<CreateChannelResponse> => {
