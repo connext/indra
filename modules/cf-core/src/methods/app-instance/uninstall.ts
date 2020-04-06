@@ -38,7 +38,7 @@ export class UninstallController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.Uninstall,
   ) {
-    const { store, networkContext } = requestHandler;
+    const { store } = requestHandler;
     const { appInstanceId } = params;
 
     if (!appInstanceId) {
@@ -58,9 +58,6 @@ export class UninstallController extends NodeController {
     const app = await store.getAppInstance(appInstanceId);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
-    }
-    if (app.appInterface.addr === networkContext.CoinBalanceRefundApp) {
-      throw new Error(USE_RESCIND_DEPOSIT_RIGHTS);
     }
   }
 

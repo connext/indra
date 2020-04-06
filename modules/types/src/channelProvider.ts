@@ -1,4 +1,3 @@
-import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
@@ -11,6 +10,7 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
+import { ContractAddresses } from "./node";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -20,6 +20,7 @@ export const ChannelMethods = enumify({
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
   chan_setStateChannel: "chan_setStateChannel",
+  chan_walletTransfer: "chan_walletTransfer",
   chan_createSetupCommitment: "chan_createSetupCommitment",
   chan_createSetStateCommitment: "chan_createSetStateCommitment",
   chan_createConditionalCommitment: "chan_createConditionalCommitment",
@@ -61,6 +62,10 @@ export interface IChannelProvider extends ConnextEventEmitter {
   getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
   setUserWithdrawal(withdrawal: WithdrawalMonitorObject): Promise<void>;
   restoreState(state?: StateChannelJSON): Promise<void>;
+
+  ///////////////////////////////////
+  // TRANSFER METHODS
+  walletTransfer(params: WalletTransferParams): Promise<string>;
   setStateChannel(state: StateChannelJSON): Promise<void>;
   createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   createSetStateCommitment(
@@ -89,7 +94,7 @@ export interface CFChannelProviderOptions {
   lockService?: ILockService;
   logger?: ILoggerService;
   messaging: any;
-  networkContext: NetworkContext;
+  contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
   xpub: string;
@@ -104,6 +109,12 @@ export type JsonRpcRequest = {
 };
 
 export type KeyGen = (index: string) => Promise<string>;
+
+export type WalletTransferParams = {
+  amount: string;
+  assetId: string;
+  recipient: string;
+};
 
 export interface IRpcConnection extends ConnextEventEmitter {
   ////////////////////////////////////////

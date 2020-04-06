@@ -78,13 +78,14 @@ export type GetConfigResponse = {
   supportedTokenAddresses: string[];
 };
 
+export type Collateralizations = { [assetId: string]: boolean };
 export type GetChannelResponse = {
   id: number;
   nodePublicIdentifier: Xpub;
   userPublicIdentifier: Xpub;
   multisigAddress: Address;
   available: boolean;
-  collateralizationInFlight: boolean;
+  activeCollateralizations: Collateralizations;
 };
 
 // returns the transaction hash of the multisig deployment

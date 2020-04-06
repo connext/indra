@@ -1,8 +1,6 @@
 import {
   ChannelAppSequences,
-  CoinBalanceRefundAppName,
   maxBN,
-  MethodParams,
   MethodResults,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
@@ -11,18 +9,15 @@ import {
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
-import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { TransactionResponse } from "ethers/providers";
+import { TransactionReceipt } from "ethers/providers";
 import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
-import tokenAbi from "human-standard-token-abi";
 
-import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
-import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
+import { DepositService } from "../deposit/deposit.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { xkeyKthAddress } from "../util";
 import { CreateChannelMessage } from "../util/cfCore";
@@ -50,10 +45,9 @@ export class ChannelService {
     private readonly channelRepository: ChannelRepository,
     private readonly configService: ConfigService,
     private readonly withdrawService: WithdrawService,
+    private readonly depositService: DepositService,
     private readonly log: LoggerService,
     private readonly httpService: HttpService,
-    private readonly onchainTransactionRepository: OnchainTransactionRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
   ) {
     this.log.setContext("ChannelService");
   }
@@ -75,7 +69,7 @@ export class ChannelService {
     return (!channel || !channel.id) ? undefined : ({
       id: channel.id,
       available: channel.available,
-      collateralizationInFlight: channel.collateralizationInFlight,
+      activeCollateralizations: channel.activeCollateralizations,
       multisigAddress: channel.multisigAddress,
       nodePublicIdentifier: channel.nodePublicIdentifier,
       userPublicIdentifier: channel.userPublicIdentifier,
@@ -98,132 +92,12 @@ export class ChannelService {
     return createResult;
   }
 
-  private async deposit(
-    multisigAddress: string,
-    amount: BigNumber,
-    assetId: string = AddressZero,
-  ): Promise<MethodResults.Deposit> {
-    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
-    if (!channel) {
-      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
-    }
-
-    // don't allow deposit if user's balance refund app is installed
-    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(
-      multisigAddress,
-      assetId,
-    );
-    if (
-      balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
-    ) {
-      throw new Error(
-        `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
-      );
-    }
-
-    if (
-      balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
-    ) {
-      this.log.info(`Removing node's installed CoinBalanceRefundApp before depositing`);
-      await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
-    }
-
-    await this.proposeCoinBalanceRefund(assetId, channel);
-
-    const res = await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
-    const depositTx = await this.configService.getEthProvider().getTransaction(res.transactionHash);
-    await this.onchainTransactionRepository.addCollateralization(depositTx, channel);
-    return res;
-  }
-
-  private async reclaim(
-    channel: Channel,
-    amount: BigNumber,
-    assetId: string = AddressZero,
-  ): Promise<TransactionResponse> {
-    // don't allow withdraw if user's balance refund app is installed
-    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(
-      channel.multisigAddress,
-      assetId,
-    );
-    if (
-      balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
-    ) {
-      throw new Error(
-        `Cannot withdraw, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
-      );
-    }
-
-    if (
-      balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
-    ) {
-      this.log.info(`Removing node's installed CoinBalanceRefundApp before reclaiming`);
-      await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
-    }
-
-    await this.withdrawService.withdraw(channel.multisigAddress, amount, assetId);
-
-    return {} as TransactionResponse; //TODO ARJUN temporary!!
-  }
-
-  private async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
-    // any deposit has to first propose the balance refund app
-    const ethProvider = this.configService.getEthProvider();
-    const threshold =
-      assetId === AddressZero
-        ? await ethProvider.getBalance(channel.multisigAddress)
-        : await new Contract(assetId!, tokenAbi, ethProvider).functions.balanceOf(
-            channel.multisigAddress,
-          );
-
-    const initialState = {
-      multisig: channel.multisigAddress,
-      recipient: this.cfCoreService.cfCore.freeBalanceAddress,
-      threshold,
-      tokenAddress: assetId,
-    };
-
-    const ethNetwork = await this.configService.getEthNetwork();
-    const {
-      actionEncoding,
-      appDefinitionAddress: appDefinition,
-      stateEncoding,
-      outcomeType,
-    } = await this.appRegistryRepository.findByNameAndNetwork(
-      CoinBalanceRefundAppName,
-      ethNetwork.chainId,
-    );
-
-    const params: MethodParams.ProposeInstall = {
-      abiEncodings: {
-        actionEncoding,
-        stateEncoding,
-      },
-      appDefinition,
-      initialState,
-      initiatorDeposit: Zero,
-      initiatorDepositTokenAddress: assetId,
-      outcomeType,
-      proposedToIdentifier: channel.userPublicIdentifier,
-      responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
-      timeout: Zero,
-    };
-
-    // propose install + wait for client confirmation
-    await this.cfCoreService.proposeAndWaitForAccepted(params, channel.multisigAddress);
-  }
-
   async rebalance(
     userPubId: string,
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
     minimumRequiredCollateral: BigNumber = Zero,
-  ): Promise<TransactionResponse | undefined> {
+  ): Promise<TransactionReceipt | undefined> {
     const normalizedAssetId = getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
@@ -266,19 +140,20 @@ export class ChannelService {
         upperBoundCollateralize,
         minimumRequiredCollateral,
       ]);
-      const res = await this.collateralizeIfNecessary(
+      return this.collateralizeIfNecessary(
         channel,
         assetId,
         collateralNeeded,
         lowerBoundCollateralize,
       );
-      let txResponse: TransactionResponse;
-      if (res) {
-        txResponse = await this.configService.getEthProvider().getTransaction(res.transactionHash);
-      }
-      return txResponse;
     } else if (rebalanceType === RebalanceType.RECLAIM) {
-      return await this.reclaimIfNecessary(channel, assetId, upperBoundReclaim, lowerBoundReclaim);
+      await this.reclaimIfNecessary(
+        channel,
+        assetId,
+        upperBoundReclaim,
+        lowerBoundReclaim,
+      );
+      return undefined;
     } else {
       throw new Error(`Invalid rebalancing type: ${rebalanceType}`);
     }
@@ -289,10 +164,10 @@ export class ChannelService {
     assetId: string,
     collateralNeeded: BigNumber,
     lowerBoundCollateral: BigNumber,
-  ) {
-    if (channel.collateralizationInFlight) {
+  ): Promise<TransactionReceipt | undefined> {
+    if (channel.activeCollateralizations[assetId]) {
       this.log.warn(
-        `Collateral request is in flight, try request again for user ${channel.userPublicIdentifier} later`,
+        `Collateral request is in flight for ${assetId}, try request again for user ${channel.userPublicIdentifier} later`,
       );
       return undefined;
     }
@@ -317,18 +192,19 @@ export class ChannelService {
     );
 
     // set in flight so that it cant be double sent
-    await this.channelRepository.setInflightCollateralization(channel, true);
-    const result = this.deposit(channel.multisigAddress, amountDeposit, assetId)
-      .then(async (res: MethodResults.Deposit) => {
-        this.log.info(`Channel ${channel.multisigAddress} successfully collateralized`);
-        this.log.debug(`Collateralization result: ${stringify(res)}`);
-        return res;
-      })
-      .catch(async (e: any) => {
-        await this.clearCollateralizationInFlight(channel.multisigAddress);
-        throw e;
-      });
-    return result;
+    this.log.debug(`Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()} of ${assetId}`);
+    await this.setCollateralizationInFlight(channel.multisigAddress, assetId);
+    let receipt: TransactionReceipt | undefined = undefined;
+    try {
+      receipt = await this.depositService.deposit(channel, amountDeposit, assetId);
+      this.log.info(`Channel ${channel.multisigAddress} successfully collateralized: ${receipt.transactionHash}`);
+      this.log.debug(`Collateralization result: ${stringify(receipt)}`);
+    } catch (e) {
+      throw new Error(e.stack || e.message);
+    } finally {
+      await this.clearCollateralizationInFlight(channel.multisigAddress, assetId);
+    }
+    return receipt;
   }
 
   // collateral is reclaimed if it is above the upper bound
@@ -337,7 +213,7 @@ export class ChannelService {
     assetId: string,
     upperBoundReclaim: BigNumber,
     lowerBoundReclaim: BigNumber,
-  ): Promise<TransactionResponse | undefined> {
+  ): Promise<void> {
     if (upperBoundReclaim.isZero() && lowerBoundReclaim.isZero()) {
       this.log.info(
         `Collateral for channel ${channel.multisigAddress} is within bounds, nothing to reclaim.`,
@@ -372,16 +248,25 @@ export class ChannelService {
       `Reclaiming ${channel.multisigAddress}, ${amountWithdrawal.toString()}, token: ${assetId}`,
     );
 
-    return await this.reclaim(channel, amountWithdrawal, assetId);
+    await this.withdrawService.withdraw(channel, amountWithdrawal, assetId);
   }
 
-  async clearCollateralizationInFlight(multisigAddress: string): Promise<Channel> {
+  async clearCollateralizationInFlight(multisigAddress: string, assetId: string): Promise<Channel> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
       throw new Error(`No channel exists for multisig ${multisigAddress}`);
     }
 
-    return await this.channelRepository.setInflightCollateralization(channel, false);
+    return await this.channelRepository.setInflightCollateralization(channel, assetId, false);
+  }
+
+  async setCollateralizationInFlight(multisigAddress: string, assetId: string): Promise<Channel> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisig ${multisigAddress}`);
+    }
+
+    return await this.channelRepository.setInflightCollateralization(channel, assetId, true);
   }
 
   async addRebalanceProfileToChannel(

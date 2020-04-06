@@ -1,8 +1,8 @@
 import {
-  CoinBalanceRefundAppName,
   CoinTransfer,
   MethodParams,
   stringify,
+  DepositAppName,
 } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -130,10 +130,11 @@ export const commonAppProposalValidation = (
 
   // NOTE: may need to remove this condition if we start working
   // with games
+  const isDeposit = appRegistryInfo.name === DepositAppName;
   if (
     responderDeposit.isZero() &&
     initiatorDeposit.isZero() &&
-    appRegistryInfo.name !== CoinBalanceRefundAppName
+    !isDeposit
   ) {
     throw new Error(
       `Cannot install an app with zero valued deposits for both initiator and responder.`,

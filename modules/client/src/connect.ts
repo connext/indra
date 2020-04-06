@@ -5,7 +5,6 @@ import {
   CF_PATH,
   EventNames,
   StateSchemaVersion,
-  CoinBalanceRefundAppState,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
 import { signChannelMessage } from "@connext/crypto";
@@ -153,7 +152,7 @@ export const connect = async (
       keyGen,
       lockService: { acquireLock: node.acquireLock.bind(node) },
       messaging,
-      networkContext: config.contractAddresses,
+      contractAddresses: config.contractAddresses,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
       store,
@@ -289,17 +288,6 @@ export const connect = async (
   // cleanup any hanging registry apps
   log.debug("Cleaning up registry apps");
   await client.cleanupRegistryApps();
-
-  // check if there is a coin refund app installed for eth and tokens
-  const apps = await client.getAppInstances();
-  const coinBalanceRefundApps = apps.filter(
-    app => app.appInterface.addr === client.config.contractAddresses.CoinBalanceRefundApp,
-  );
-  for (const coinBalance of coinBalanceRefundApps) {
-    const tokenAddress = (coinBalance.latestState as CoinBalanceRefundAppState).tokenAddress;
-    log.debug(`Handling coin balance refund app for ${tokenAddress}`);
-    await client.uninstallCoinBalanceIfNeeded(tokenAddress);
-  }
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting

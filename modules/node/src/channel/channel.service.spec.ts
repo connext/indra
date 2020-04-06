@@ -6,7 +6,6 @@ import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { mkHash, mkXpub } from "../test/utils";
-import { AppInstanceJson } from "../util";
 
 import { Channel } from "./channel.entity";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -24,20 +23,10 @@ class MockCFCoreService {
 
   async deposit(): Promise<MethodResults.Deposit> {
     return {
-      multisigBalance: One,
-      tokenAddress: AddressZero,
-      transactionHash: mkHash("0xa"),
+      freeBalance: {
+        [AddressZero]: One,
+      },
     };
-  }
-
-  async proposeAndWaitForAccepted(): Promise<MethodResults.ProposeInstall> {
-    return {
-      appInstanceId: mkHash("0xabc"),
-    };
-  }
-
-  async getCoinBalanceRefundApp(): Promise<AppInstanceJson | undefined> {
-    return undefined;
   }
 }
 
@@ -45,7 +34,7 @@ class MockChannelRepository extends ChannelRepository {
   async findByMultisigAddress(): Promise<Channel | undefined> {
     const channel = new Channel();
     channel.available = true;
-    channel.collateralizationInFlight = false;
+    channel.activeCollateralizations = { [AddressZero]: false };
     channel.multisigAddress = mkAddress("0xAAA");
     channel.nodePublicIdentifier = mkXpub("xpubAAA");
     channel.userPublicIdentifier = mkXpub("xpubBBB");

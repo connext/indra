@@ -1,3 +1,4 @@
+import { generateValidationMiddleware } from "@connext/apps";
 import {
   ChannelMethods,
   ConnextEventEmitter,
@@ -8,12 +9,17 @@ import {
   StateChannelJSON,
   WithdrawalMonitorObject,
   deBigNumberifyJson,
+  WalletTransferParams,
   SetStateCommitmentJSON,
   MinimalTransaction,
   ConditionalTransactionCommitmentJSON,
+  toBN,
+  Opcode,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { signChannelMessage } from "@connext/crypto";
+import { Wallet, Contract } from "ethers";
+import tokenAbi from "human-standard-token-abi";
 
 import { CFCore, xpubToAddress } from "./lib";
 import {
@@ -22,13 +28,14 @@ import {
   IRpcConnection,
   JsonRpcRequest,
 } from "./types";
+import { AddressZero } from "ethers/constants";
 
 export const createCFChannelProvider = async ({
   ethProvider,
   keyGen,
   lockService,
   messaging,
-  networkContext,
+  contractAddresses,
   nodeConfig,
   nodeUrl,
   store,
@@ -38,7 +45,7 @@ export const createCFChannelProvider = async ({
   const cfCore = await CFCore.create(
     messaging,
     store,
-    networkContext,
+    contractAddresses,
     nodeConfig,
     ethProvider,
     lockService,
@@ -47,13 +54,24 @@ export const createCFChannelProvider = async ({
     undefined,
     logger,
   );
+
+  // register any default middlewares
+  cfCore.injectMiddleware(
+    Opcode.OP_VALIDATE,
+    await generateValidationMiddleware({
+      ...contractAddresses,
+      provider: ethProvider,
+    }),
+  );
+
   const channelProviderConfig: ChannelProviderConfig = {
     freeBalanceAddress: xpubToAddress(xpub),
     nodeUrl,
     signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
-  const connection = new CFCoreRpcConnection(cfCore, store, await keyGen("0"));
+  const wallet = new Wallet(await keyGen("0")).connect(ethProvider);
+  const connection = new CFCoreRpcConnection(cfCore, store, wallet);
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
   return channelProvider;
 };
@@ -64,12 +82,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public store: IClientStore;
 
   // TODO: replace this when signing keys are added!
-  public authKey: string;
+  public wallet: Wallet;
 
-  constructor(cfCore: CFCore, store: IClientStore, authKey: string) {
+  constructor(cfCore: CFCore, store: IClientStore, wallet: Wallet) {
     super();
     this.cfCore = cfCore;
-    this.authKey = authKey;
+    this.wallet = wallet;
     this.store = store;
   }
 
@@ -91,6 +109,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         break;
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
+        break;
+      case ChannelMethods.chan_walletTransfer:
+        result = await this.walletTransfer(params);
         break;
       case ChannelMethods.chan_createSetupCommitment:
         result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
@@ -135,7 +156,23 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private signMessage = async (message: string): Promise<string> => {
-    return signChannelMessage(this.authKey, message);
+    return signChannelMessage(this.wallet.privateKey, message);
+  };
+
+  private walletTransfer = async (params: WalletTransferParams): Promise<string> => {
+    let hash;
+    if (params.assetId === AddressZero) {
+      const tx = await this.wallet.sendTransaction({
+        to: params.recipient,
+        value: toBN(params.amount),
+      });
+      hash = tx.hash;
+    } else {
+      const erc20 = new Contract(params.assetId, tokenAbi, this.wallet);
+      const tx = await erc20.transfer(params.recipient, toBN(params.amount));
+      hash = tx.hash;
+    }
+    return hash;
   };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {

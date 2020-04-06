@@ -154,7 +154,7 @@ describe("Withdrawal", () => {
     });
   });
 
-  describe("client tries to withdraw while node has active deposit rights", () => {
+  describe.skip("client tries to withdraw while node has active deposit rights", () => {
     // if node has rights, then it should not allow client to withdraw
     it("node has active rights in eth, withdrawing eth", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH);

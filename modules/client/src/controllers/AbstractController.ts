@@ -82,61 +82,6 @@ export abstract class AbstractController {
     }
   };
 
-  proposeAndWaitForAccepted = async (params: MethodParams.ProposeInstall): Promise<string> => {
-    let boundReject: (reason?: any) => void;
-    let appId: string;
-
-    try {
-      await Promise.race([
-        delayAndThrow(
-          CF_METHOD_TIMEOUT,
-          `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
-        ),
-        new Promise(
-          async (res: () => void, rej: (msg: string | Error) => void): Promise<void> => {
-            // set up reject install event listeners
-            // must be bound to properly remove listener on clean up
-            boundReject = this.rejectProposal.bind(null, rej);
-            this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
-
-            // set up proposal accepted nats subscriptions
-            const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.*.proposal.accept`;
-            this.log.debug(`subscribing to ${subject}`);
-
-            // it is not clear whether the `proposalAccepted` (indicating
-            // the responder is done with the protocol), or the
-            // `proposeInstallApp` call (indicating the initiator is done with
-            // the protocol) will resolve first, so make sure promises
-            // example: client messaging fails on receipt of m2 in `propose.ts`
-            let proposed = false;
-            const resolveIfProposed = (): void => {
-              if (proposed) {
-                res();
-              } else {
-                proposed = true;
-              }
-            };
-            // TODO: refactor this, its confusing as hell
-            const [proposeResult] = await Promise.all([
-              this.connext.proposeInstallApp(params),
-              this.connext.messaging.subscribe(subject, resolveIfProposed),
-            ]);
-            appId = proposeResult.appInstanceId;
-            resolveIfProposed();
-            this.log.debug(`waiting for proposal acceptance of ${appId}`);
-          },
-        ),
-      ]);
-      this.log.info(`Successfully proposed app with id ${appId}`);
-      return appId;
-    } catch (e) {
-      this.log.error(`Error proposing app: ${e.stack || e.message}`);
-      throw new Error(e.stack || e.message);
-    } finally {
-      this.cleanupProposalListeners(boundReject);
-    }
-  };
-
   // private resolveInstall = (
   //   res: (value?: unknown) => void,
   //   appInstanceId: string,
@@ -176,13 +121,6 @@ export abstract class AbstractController {
   private cleanupInstallListeners = (boundReject: any, appId: string): void => {
     this.connext.messaging.unsubscribe(
       `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appId}.install`,
-    );
-    this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
-  };
-
-  private cleanupProposalListeners = (boundReject: any): void => {
-    this.connext.messaging.unsubscribe(
-      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.*.proposal.accept`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };

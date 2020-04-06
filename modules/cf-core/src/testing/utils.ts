@@ -17,7 +17,8 @@ import {
   ProtocolParams,
   SolidityValueType,
   UninstallMessage,
-  DepositFailedMessage,
+  DepositAppStateEncoding,
+  DepositAppState,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -30,8 +31,6 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { AppInstance, StateChannel } from "../models";
 import { computeRandomExtendedPrvKey, xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
 import {
-  DepositConfirmationMessage,
-  DepositStartedMessage,
   EventEmittedMessage,
 } from "../types";
 
@@ -40,6 +39,8 @@ import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
 import { initialSimpleTransferState, simpleTransferAbiEncodings } from "./simple-transfer";
 import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { initialTransferState, transferAbiEncodings } from "./unidirectional-transfer";
+import { ERC20, MinimumViableMultisig } from "@connext/contracts";
+import { CONTRACT_NOT_DEPLOYED } from "../errors";
 
 interface AppContext {
   appDefinition: string;
@@ -49,7 +50,7 @@ interface AppContext {
 }
 
 const {
-  CoinBalanceRefundApp,
+  DepositApp,
   TicTacToeApp,
   SimpleTransferApp,
   UnidirectionalLinkedTransferApp,
@@ -122,48 +123,63 @@ export async function requestDepositRights(
   multisigAddress: string,
   tokenAddress: string = AddressZero,
 ) {
-  const parameters = await getProposeCoinBalanceRefundAppParams(multisigAddress, depositor.publicIdentifier, counterparty.publicIdentifier, tokenAddress);
-  await new Promise(async (resolve, reject) => {
-    counterparty.once("PROPOSE_INSTALL_EVENT", resolve);
-    counterparty.once("REJECT_INSTALL_EVENT", reject);
-    await depositor.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: MethodNames.chan_proposeInstall,
-      parameters,
-    });
-  });
-  return await depositor.rpcRouter.dispatch({
-    id: Date.now(),
-    methodName: MethodNames.chan_requestDepositRights,
-    parameters: {
-      multisigAddress,
-      tokenAddress,
-    } as MethodParams.RequestDepositRights,
-  });
+  const proposeParams = await getProposeDepositAppParams(
+    multisigAddress,
+    depositor.publicIdentifier,
+    counterparty.publicIdentifier,
+    tokenAddress,
+  );
+  const [appId] = await installApp(
+    depositor,
+    counterparty,
+    multisigAddress,
+    proposeParams.appDefinition,
+    proposeParams.initialState,
+    proposeParams.initiatorDeposit,
+    proposeParams.initiatorDepositTokenAddress,
+    proposeParams.responderDeposit,
+    proposeParams.responderDepositTokenAddress,
+  );
+  return appId;
 }
 
 export async function rescindDepositRights(
   node: Node,
+  counterparty: Node,
   multisigAddress: string,
   tokenAddress: string = AddressZero,
 ) {
-  return await node.rpcRouter.dispatch(
-    constructRescindDepositRightsRpcCall(multisigAddress, tokenAddress),
-  );
+  const apps = await getInstalledAppInstances(node, multisigAddress);
+  const depositApp = apps.filter(app => 
+    app.appInterface.addr === global[`network`][`DepositApp`] &&
+    (app.latestState as DepositAppState).assetId === tokenAddress,
+  )[0];
+  if (!depositApp) {
+    // no apps to uninstall, return
+    return;
+  }
+  // uninstall
+  await uninstallApp(node, counterparty, depositApp.identityHash);
 }
 
-export function constructRescindDepositRightsRpcCall(
-  multisigAddress: string,
-  tokenAddress: string = AddressZero,
-) {
-  return {
-    id: Date.now(),
-    methodName: MethodNames.chan_rescindDepositRights,
-    parameters: {
-      multisigAddress,
-      tokenAddress,
-    },
-  };
+export async function getDepositApps(
+  node: Node,
+  multisigAddr: string,
+  assetIds: string[] = [],
+): Promise<AppInstanceJson[]> {
+  const apps = await getInstalledAppInstances(node, multisigAddr);
+  if (apps.length === 0) {
+    return [];
+  }
+  const depositApps = apps.filter(app => 
+    app.appInterface.addr === global[`network`][`DepositApp`],
+  );
+  if (assetIds.length === 0) {
+    return depositApps;
+  }
+  return depositApps.filter(app =>
+    assetIds.includes((app.latestState as DepositAppState).assetId),
+  );
 }
 
 /**
@@ -376,32 +392,71 @@ export async function getProposedAppInstances(
   return result.appInstances;
 }
 
-export async function getProposeCoinBalanceRefundAppParams(
+export async function getMultisigBalance(
+  multisigAddr: string,
+  assetId: string = AddressZero,
+): Promise<BigNumber> {
+  const provider = global[`wallet`].provider;
+  return assetId === AddressZero
+    ? await provider.getBalance(multisigAddr)
+    : await new Contract(assetId, ERC20.abi, provider)
+        .functions.balanceOf(multisigAddr);
+}
+
+export async function getMultisigAmountWithdrawn(
+  multisigAddr: string,
+  assetId: string = AddressZero,
+) {
+  const provider = global[`wallet`].provider;
+  const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi, provider);
+  try {
+    return await multisig.functions.totalAmountWithdrawn(assetId);
+  } catch (e) {
+    if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
+      console.log(CONTRACT_NOT_DEPLOYED);
+      throw new Error(e);
+    }
+    // multisig is deployed on withdrawal, if not
+    // deployed withdrawal amount is 0
+    return Zero;
+  }
+}
+
+export async function getProposeDepositAppParams(
   multisigAddress: string,
-  balanceRefundRecipientIdentifer: string,
+  proposedByIdentifier: string,
   proposedToIdentifier: string,
   tokenAddress: string = AddressZero,
 ): Promise<MethodParams.ProposeInstall> {
-  const provider = global[`wallet`].provider;
-  let threshold: BigNumber;
-  if (tokenAddress === AddressZero) {
-    threshold = await provider.getBalance(multisigAddress);
-  } else {
-    const contract = new Contract(tokenAddress, DolphinCoin.abi, provider);
-    threshold = await contract.balanceOf(multisigAddress);
-  }
+  const startingTotalAmountWithdrawn = await getMultisigAmountWithdrawn(
+    multisigAddress,
+    tokenAddress,
+  );
+  const startingMultisigBalance = await getMultisigBalance(multisigAddress, tokenAddress);
+  const initialState: DepositAppState = {
+    multisigAddress,
+    assetId: tokenAddress,
+    startingTotalAmountWithdrawn,
+    startingMultisigBalance,
+    transfers: [
+      {
+        amount: Zero,
+        to: xkeyKthAddress(proposedByIdentifier),
+      },
+      {
+        amount: Zero,
+        to: xkeyKthAddress(proposedToIdentifier),
+      },
+    ],
+  };
+
   return {
     abiEncodings: {
       actionEncoding: undefined,
-      stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`,
+      stateEncoding: DepositAppStateEncoding,
     },
-    appDefinition: CoinBalanceRefundApp,
-    initialState: {
-      multisig: multisigAddress,
-      recipient: xkeyKthAddress(balanceRefundRecipientIdentifer, 0),
-      threshold,
-      tokenAddress,
-    },
+    appDefinition: DepositApp,
+    initialState,
     initiatorDeposit: Zero,
     initiatorDepositTokenAddress: tokenAddress,
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
@@ -419,76 +474,20 @@ export async function deposit(
   proposedToNode: Node,
   tokenAddress?: string,
 ) {
-  const proposeParams = await getProposeCoinBalanceRefundAppParams(
-    multisigAddress,
-    node.publicIdentifier,
-    proposedToNode.publicIdentifier,
-    tokenAddress,
-  );
-  await new Promise(async resolve => {
-    proposedToNode.once(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {
-      // TODO: assert this?
-      // assertNodeMessage(msg, {
-      //   from: node.publicIdentifier,
-      //   type: "PROPOSE_INSTALL_EVENT",
-      //   data: proposeParams
-      // });
-      resolve();
-    });
-
-  await node.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: MethodNames.chan_proposeInstall,
-      parameters: proposeParams,
-    });
-  });
-  const depositReq = constructDepositRpc(multisigAddress, amount, tokenAddress);
-
-  return new Promise(async (resolve, reject) => {
-    node.once(`DEPOSIT_CONFIRMED_EVENT`, (msg: DepositConfirmationMessage) => {
-      assertNodeMessage(msg, {
-        from: node.publicIdentifier,
-        type: `DEPOSIT_CONFIRMED_EVENT`,
-        data: {
-          multisigAddress,
-          amount,
-          tokenAddress: tokenAddress || AddressZero,
-        },
-      });
-      resolve();
-    });
-
-    node.once(`DEPOSIT_STARTED_EVENT`, (msg: DepositStartedMessage) => {
-      assertNodeMessage(
-        msg,
-        {
-          from: node.publicIdentifier,
-          type: `DEPOSIT_STARTED_EVENT`,
-          data: {
-            value: amount,
-          },
-        },
-        [`data.txHash`],
-      );
-    });
-
-    node.once(`DEPOSIT_FAILED_EVENT`, (msg: DepositFailedMessage) => {
-      assertNodeMessage(
-        msg,
-        {
-          from: node.publicIdentifier,
-          type: `DEPOSIT_STARTED_EVENT`,
-          data: {
-            params: depositReq.parameters,
-          },
-        },
-        [`data.errors`],
-      );
-      reject(msg.data.errors.toString());
-    });
-
-    await node.rpcRouter.dispatch(depositReq);
-  });
+  // get rights
+  await requestDepositRights(node, proposedToNode, multisigAddress, tokenAddress);
+  const wallet = global["wallet"] as Wallet;
+  // send a deposit to the multisig
+  const tx = (tokenAddress || AddressZero) === AddressZero
+    ? await wallet.sendTransaction({
+        value: amount,
+        to: multisigAddress,
+      })
+    : await new Contract(tokenAddress || AddressZero, ERC20.abi, wallet)
+        .transfer(multisigAddress, amount);
+  expect(tx.hash).toBeDefined();
+  // rescind rights
+  await rescindDepositRights(node, proposedToNode, multisigAddress, tokenAddress);
 }
 
 export async function deployStateDepositHolder(node: Node, multisigAddress: string) {
@@ -502,22 +501,6 @@ export async function deployStateDepositHolder(node: Node, multisigAddress: stri
   const result = response.result.result as MethodResults.DeployStateDepositHolder;
 
   return result.transactionHash;
-}
-
-export function constructDepositRpc(
-  multisigAddress: string,
-  amount: BigNumber,
-  tokenAddress?: string,
-): Rpc {
-  return {
-    id: Date.now(),
-    methodName: MethodNames.chan_deposit,
-    parameters: deBigNumberifyJson({
-      multisigAddress,
-      amount,
-      tokenAddress,
-    }),
-  };
 }
 
 export function constructInstallRpc(appInstanceId: string): Rpc {
@@ -744,15 +727,13 @@ export async function installApp(
 
   const proposedParams = installationProposalRpc.parameters as ProtocolParams.Propose;
 
-  return new Promise(async resolve => {
+  const appId: string = await new Promise(async resolve => {
     nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
       // assert message
       assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-
       const {
         data: { appInstanceId },
       } = msg;
-
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
@@ -762,26 +743,29 @@ export async function installApp(
         installationProposalRpc.parameters,
         await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
       );
-
-      nodeA.once(`INSTALL_EVENT`, async (msg: InstallMessage) => {
-        if (msg.data.params.appInstanceId === appInstanceId) {
-          // assert message
-          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceId);
-          const appInstanceNodeA = await getAppInstance(nodeA, appInstanceId);
-          const appInstanceNodeB = await getAppInstance(nodeB, appInstanceId);
-          expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-          resolve([appInstanceId, proposedParams]);
-        }
-      });
-
-      await nodeB.rpcRouter.dispatch(constructInstallRpc(msg.data.appInstanceId));
+      resolve(msg.data.appInstanceId);
     });
 
-    const response = await nodeA.rpcRouter.dispatch(installationProposalRpc);
-
-    const { appInstanceId } = response.result.result as MethodResults.ProposeInstall;
-    return appInstanceId;
+    await nodeA.rpcRouter.dispatch(installationProposalRpc);
   });
+
+  // send nodeB install call
+  await Promise.all([
+    nodeB.rpcRouter.dispatch(constructInstallRpc(appId)),
+    new Promise(async resolve => {
+      nodeA.on(EventNames.INSTALL_EVENT, async (msg: InstallMessage) => {
+        if (msg.data.params.appInstanceId === appId) {
+          // assert message
+          assertInstallMessage(nodeB.publicIdentifier, msg, appId);
+          const appInstanceNodeA = await getAppInstance(nodeA, appId);
+          const appInstanceNodeB = await getAppInstance(nodeB, appId);
+          expect(appInstanceNodeA).toEqual(appInstanceNodeB);
+          resolve();
+        }
+      });
+    }),
+  ]);
+  return [appId, proposedParams];
 }
 
 export async function confirmChannelCreation(
@@ -909,6 +893,13 @@ export function getAppContext(
       );
     }
   };
+  const checkForInitialState = () => {
+    if (!initialState) {
+      throw new Error(
+        `Must have initial state to generate app context`,
+      );
+    }
+  };
 
   switch (appDefinition) {
     case TicTacToeApp:
@@ -949,6 +940,18 @@ export function getAppContext(
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
       };
 
+    case DepositApp:
+      checkForInitialState();
+      return {
+        appDefinition,
+        initialState: initialState!,
+        abiEncodings: {
+          stateEncoding: DepositAppStateEncoding,
+          actionEncoding: undefined,
+        },
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+      };
+
     default:
       throw new Error(`Proposing the specified app is not supported: ${appDefinition}`);
   }
@@ -959,17 +962,17 @@ export async function takeAppAction(node: Node, appId: string, action: any) {
   return res.result.result;
 }
 
-export function uninstallApp(node: Node, counterparty: Node, appId: string): Promise<string> {
-  return new Promise(async (resolve, reject) => {
-    counterparty.once(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
-      resolve(msg.data.appInstanceId);
-    });
-    try {
-      await node.rpcRouter.dispatch(constructUninstallRpc(appId));
-    } catch (e) {
-      return reject(e.message);
-    }
-  });
+export async function uninstallApp(node: Node, counterparty: Node, appId: string): Promise<string> {
+  await Promise.all([
+    node.rpcRouter.dispatch(constructUninstallRpc(appId)),
+    new Promise(resolve => {
+      counterparty.once(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
+        expect(msg.data.appInstanceId).toBe(appId);
+        resolve(appId);
+      });
+    }),
+  ]);
+  return appId;
 }
 
 export async function getApps(node: Node, multisigAddress: string): Promise<AppInstanceJson[]> {

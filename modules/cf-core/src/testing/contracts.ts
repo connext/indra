@@ -5,7 +5,8 @@ import SimpleTransferApp from "@connext/contracts/build/SimpleTransferApp.json";
 import TicTacToeApp from "@connext/contracts/build/TicTacToeApp.json";
 import UnidirectionalLinkedTransferApp from "@connext/contracts/build/UnidirectionalLinkedTransferApp.json";
 import UnidirectionalTransferApp from "@connext/contracts/build/UnidirectionalTransferApp.json";
-import CoinBalanceRefundApp from "@connext/contracts/build/CoinBalanceRefundApp.json";
+import DepositApp from "@connext/contracts/build/DepositApp.json";
+import WithdrawApp from "@connext/contracts/build/WithdrawApp.json";
 import ConditionalTransactionDelegateTarget from "@connext/contracts/build/ConditionalTransactionDelegateTarget.json";
 import DolphinCoin from "@connext/contracts/build/DolphinCoin.json";
 import ERC20 from "@connext/contracts/build/ERC20.json";
@@ -29,12 +30,20 @@ export type NetworkContextForTestSuite = NetworkContext & {
   UnidirectionalTransferApp: string;
   UnidirectionalLinkedTransferApp: string;
   SimpleTransferApp: string;
+  WithdrawApp: string;
+  DepositApp: string;
 };
 
 export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> => {
-  const coinBalanceRefundContract = await new ContractFactory(
-    CoinBalanceRefundApp.abi,
-    CoinBalanceRefundApp.bytecode,
+  const depositAppContract = await new ContractFactory(
+    DepositApp.abi,
+    DepositApp.bytecode,
+    wallet,
+  ).deploy();
+
+  const withdrawAppContract = await new ContractFactory(
+    WithdrawApp.abi,
+    WithdrawApp.bytecode,
     wallet,
   ).deploy();
 
@@ -125,9 +134,9 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
   return {
     provider: wallet.provider as JsonRpcProvider,
     ChallengeRegistry: challengeRegistry.address,
-    CoinBalanceRefundApp: coinBalanceRefundContract.address,
     ConditionalTransactionDelegateTarget: conditionalTransactionDelegateTarget.address,
     DolphinCoin: dolphinCoin.address,
+    DepositApp: depositAppContract.address,
     IdentityApp: identityApp.address,
     MinimumViableMultisig: mvmContract.address,
     MultiAssetMultiPartyCoinTransferInterpreter: coinTransferETHInterpreter.address,
@@ -139,6 +148,7 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
     UnidirectionalLinkedTransferApp: linkContract.address,
     UnidirectionalTransferApp: transferContract.address,
+    WithdrawApp: withdrawAppContract.address,
   } as NetworkContextForTestSuite;
 };
 

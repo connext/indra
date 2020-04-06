@@ -1,5 +1,5 @@
 import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
-import { AppState } from "./contracts";
+import { AppState, DepositParameters, DepositResponse } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
 import { OutcomeType } from "./contracts";
@@ -21,17 +21,9 @@ type CreateChannelResult = {
 
 ////////////////////////////////////////
 
-type DepositParams = {
-  multisigAddress: string;
-  amount: BigNumber;
-  tokenAddress?: string;
-};
+type DepositParams = DepositParameters;
 
-type DepositResult = {
-  multisigBalance: BigNumber;
-  tokenAddress: string;
-  transactionHash: string;
-};
+type DepositResult = DepositResponse;
 
 ////////////////////////////////////////
 
@@ -158,16 +150,12 @@ type InstallResult = {
 ////////////////////////////////////////
 
 type RequestDepositRightsParams = {
-  multisigAddress: string;
-  tokenAddress?: string;
+  assetId?: string;
 };
 
 type RequestDepositRightsResult = {
-  freeBalance: {
-    [s: string]: BigNumber;
-  };
-  recipient: string;
-  tokenAddress: string;
+  appInstanceId: string;
+  multisigAddress: string;
 };
 
 ////////////////////////////////////////
@@ -231,13 +219,14 @@ type UninstallResult = {};
 ////////////////////////////////////////
 
 type RescindDepositRightsParams = {
-  multisigAddress: string;
-  tokenAddress?: string;
+  assetId?: string;
+  appInstanceId?: string;
 };
 
 type RescindDepositRightsResult = {
-  multisigBalance: BigNumber;
-  tokenAddress: string;
+  freeBalance: {
+    [s: string]: BigNumber;
+  };
 };
 
 ////////////////////////////////////////
@@ -268,7 +257,6 @@ type WithdrawCommitmentResult = {
 export const MethodNames = enumify({
   chan_create: "chan_create",
   chan_deployStateDepositHolder: "chan_deployStateDepositHolder",
-  chan_deposit: "chan_deposit",
   chan_getAppInstance: "chan_getAppInstance",
   chan_getAppInstances: "chan_getAppInstances",
   chan_getChannelAddresses: "chan_getChannelAddresses",
@@ -282,8 +270,6 @@ export const MethodNames = enumify({
   chan_install: "chan_install",
   chan_proposeInstall: "chan_proposeInstall",
   chan_rejectInstall: "chan_rejectInstall",
-  chan_requestDepositRights: "chan_requestDepositRights",
-  chan_rescindDepositRights: "chan_rescindDepositRights",
   chan_takeAction: "chan_takeAction",
   chan_uninstall: "chan_uninstall",
   chan_updateState: "chan_updateState",
@@ -296,7 +282,7 @@ export type MethodName = keyof typeof MethodNames;
 export namespace MethodParams {
   export type CreateChannel = CreateChannelParams;
   export type DeployStateDepositHolder = DeployStateDepositHolderParams;
-  export type Deposit = DepositParams;
+  export type Deposit = DepositParameters;
   export type GetAppInstanceDetails = GetAppInstanceDetailsParams;
   export type GetAppInstances = GetAppInstancesParams
   export type GetChannelAddresses = GetChannelAddressesParams;

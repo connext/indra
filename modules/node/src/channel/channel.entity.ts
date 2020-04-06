@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses } from "@connext/types";
+import { CriticalStateChannelAddresses, Collateralizations } from "@connext/types";
 import {
   Column,
   CreateDateColumn,
@@ -17,6 +17,7 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { IsEthAddress, IsXpub } from "../util";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
+import { AddressZero } from "ethers/constants";
 
 @Entity()
 export class Channel {
@@ -45,8 +46,8 @@ export class Channel {
   @Column("boolean", { default: false })
   available!: boolean;
 
-  @Column("boolean", { default: false })
-  collateralizationInFlight!: boolean;
+  @Column("json", { default: { [AddressZero]: false } })
+  activeCollateralizations!: Collateralizations;
 
   @OneToMany(
     (type: any) => AppInstance,

@@ -2,16 +2,16 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import {
   MethodParams,
   DepositAppState,
-  CoinTransfer,
   stringify,
-  toBN,
+  UninstallMiddlewareContext,
+  ProtocolRoles,
 } from "@connext/types";
-import { MinimumViableMultisig, ERC20 } from "@connext/contracts"
+import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
 import { baseCoinTransferValidation } from "../shared";
 import { Zero, AddressZero } from "ethers/constants";
 import { Contract } from "ethers";
-import { BaseProvider } from "ethers/providers";
+import { BaseProvider, JsonRpcProvider } from "ethers/providers";
 
 export const validateDepositApp = async (
   params: MethodParams.ProposeInstall,
@@ -36,38 +36,88 @@ export const validateDepositApp = async (
     responderTransfer,
   );
 
-  if (initiatorFreeBalanceAddress != initiatorTransfer.to) {
-      throw new Error(`Cannot install deposit app with incorrect initiator transfer to address: Expected ${initiatorFreeBalanceAddress}, got ${initiatorTransfer.to}`)
+  if (initiatorFreeBalanceAddress !== initiatorTransfer.to) {
+    throw new Error(`Cannot install deposit app with incorrect initiator transfer to address: Expected ${initiatorFreeBalanceAddress}, got ${initiatorTransfer.to}`);
   }
 
-  if (!initialState.transfers[0].amount.eq(Zero) || !initialState.transfers[1].amount.eq(Zero)) {
-      throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`)
+  if (responderFreeBalanceAddress !== responderTransfer.to) {
+    throw new Error(`Cannot install deposit app with incorrect responder transfer to address: Expected ${responderFreeBalanceAddress}, got ${responderTransfer.to}`);
   }
 
-  if (initialState.multisigAddress != multisigAddress) {
-      throw new Error(`Cannot install deposit app with invalid multisig address. Expected ${multisigAddress}, got ${initialState.multisigAddress}`)
+  if (!initialState.transfers[0].amount.isZero() || !initialState.transfers[1].amount.isZero()) {
+      throw new Error(`Cannot install deposit app with nonzero initial balance: ${stringify(initialState.transfers)}`);
   }
 
-  if (initialState.assetId != params.initiatorDepositTokenAddress || initialState.assetId != params.responderDepositTokenAddress) {
-      throw new Error(`Cannot install deposit app with invalid token address. Expected ${params.initiatorDepositTokenAddress}, got ${initialState.assetId}`)
+  if (initialState.multisigAddress !== multisigAddress) {
+    throw new Error(`Cannot install deposit app with invalid multisig address. Expected ${multisigAddress}, got ${initialState.multisigAddress}`);
   }
 
-  const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider)
-  const startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(initialState.assetId)
-  let startingMultisigBalance;
-  
-  if(initialState.assetId == AddressZero) {
-    startingMultisigBalance = await provider.getBalance(multisigAddress);
-  } else {
-    const erc20 = new Contract(initialState.assetId, ERC20.abi, provider)
-    startingMultisigBalance = await erc20.functions.balanceOf(multisigAddress)
+  if (
+    initialState.assetId !== params.initiatorDepositTokenAddress
+    || initialState.assetId !== params.responderDepositTokenAddress
+  ) {
+    throw new Error(`Cannot install deposit app with invalid token address. Expected ${params.initiatorDepositTokenAddress}, got ${initialState.assetId}`);
   }
 
-  if (initialState.startingTotalAmountWithdrawn != startingTotalAmountWithdrawn) {
-      throw new Error(`Cannot install deposit app with invalid totalAmountWithdrawn. Expected ${startingTotalAmountWithdrawn}, got ${initialState.startingTotalAmountWithdrawn}`)
+  const startingMultisigBalance = initialState.assetId === AddressZero
+    ? await provider.getBalance(multisigAddress)
+    : await new Contract(initialState.assetId, ERC20.abi, provider)
+        .functions
+        .balanceOf(multisigAddress);
+
+  const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
+  let startingTotalAmountWithdrawn;
+  try {
+    startingTotalAmountWithdrawn = await multisig
+      .functions
+      .totalAmountWithdrawn(initialState.assetId);
+  } catch (e) {
+    const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${multisigAddress}"`;
+    if (!e.message.includes(NOT_DEPLOYED_ERR)) {
+      throw new Error(e);
+    }
+    // multisig is deployed on withdrawal, if not
+    // deployed withdrawal amount is 0
+    startingTotalAmountWithdrawn = Zero;
   }
 
-  if (initialState.startingMultisigBalance != startingMultisigBalance) {
-      throw new Error(`Cannot install deposit app with invalid startingMultisigBalance. Expected ${startingMultisigBalance}, got ${initialState.startingMultisigBalance}`)
+  if (!initialState.startingTotalAmountWithdrawn.eq(startingTotalAmountWithdrawn)) {
+    throw new Error(`Cannot install deposit app with invalid totalAmountWithdrawn. Expected ${startingTotalAmountWithdrawn}, got ${initialState.startingTotalAmountWithdrawn}`);
   }
+
+  if (!initialState.startingMultisigBalance.eq(startingMultisigBalance)) {
+    throw new Error(`Cannot install deposit app with invalid startingMultisigBalance. Expected ${startingMultisigBalance}, got ${initialState.startingMultisigBalance}`);
+  }
+};
+
+export const uninstallDepositMiddleware = async (
+  context: UninstallMiddlewareContext,
+  provider: JsonRpcProvider,
+) => {
+  const {
+    role,
+    appInstance,
+    stateChannel,
+    params,
+  } = context;
+
+  const latestState = appInstance.latestState as DepositAppState;
+  const currentMultisigBalance = latestState.assetId === AddressZero
+    ? await provider.getBalance(stateChannel.multisigAddress)
+    : await new Contract(latestState.assetId, ERC20.abi as any, provider)
+        .functions
+        .balanceOf(stateChannel.multisigAddress);
+
+  if (currentMultisigBalance.lt(latestState.startingMultisigBalance)) {
+    throw new Error(`Refusing to uninstall, current multisig balance (${currentMultisigBalance.toString()}) is less than starting multsig balance (${latestState.startingMultisigBalance.toString()})`);
+  }
+
+  if (
+    role === ProtocolRoles.initiator
+    && latestState.transfers[0].to !== xkeyKthAddress(params.initiatorXpub)
+  ) {
+    throw new Error(`Cannot uninstall deposit app without being the initiator`);
+  }
+
+  // TODO: withdrawal amount validation?
 };

@@ -165,6 +165,18 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     return app && convertAppToInstanceJSON(app, app.channel);
   }
 
+  async findInstalledAppsByAppDefinition(
+    multisigAddress: string,
+    appDefinition: string,
+  ): Promise<AppInstance[]> {
+    return this.createQueryBuilder("app_instances")
+      .leftJoinAndSelect("app_instances.channel", "channel")
+      .where("channel.multisigAddress = :multisigAddress", { multisigAddress })
+      .where("app_instances.type = :type", { type: AppType.INSTANCE })
+      .andWhere("app_instances.appDefinition = :appDefinition", { appDefinition })
+      .getMany();
+  }
+
   async findLinkedTransferAppsByPaymentIdAndType(
     paymentId: string,
     type: AppType = AppType.INSTANCE,
