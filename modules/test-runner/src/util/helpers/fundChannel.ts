@@ -44,32 +44,49 @@ export const requestCollateral = async (
   enforce: boolean = false,
 ): Promise<void> => {
   const log = new Logger("RequestCollateral", env.logLevel);
-  log.debug(`client.requestCollateral() called`);
-  const start = Date.now();
-  await client.requestCollateral(assetId);
-  log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
   const preCollateralBal = await client.getFreeBalance(assetId);
 
   return new Promise(async (resolve, reject) => {
     log.debug(`client.requestCollateral() called`);
     const start = Date.now();
-    await client.requestCollateral(assetId);
-    log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
-    let currCollateralBal = await client.getFreeBalance(assetId);
-    while (
-      enforce &&
-      currCollateralBal[
-        client.nodeFreeBalanceAddress
-      ].lte(preCollateralBal[client.nodeFreeBalanceAddress]) &&
-      Date.now() - start > 5_000 // wait 5s
-    ) {
-      await delay(500);
-      currCollateralBal = await client.getFreeBalance(assetId);
+    if (!enforce) {
+      try {
+        await client.requestCollateral(assetId);
+        log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+        return resolve();
+      } catch (e) {
+        return reject(e);
+      }
     }
-    if (Date.now() - start > 5_000 && enforce) {
-      reject(`No collateral received after 5s in channel ${client.multisigAddress}`);
-      return;
+    // watch for balance change on uninstall
+    try {
+      await Promise.race([
+        new Promise(async (res, rej) => {
+          await delay(20_000);
+          return rej(`Could not detect increase in node free balance within 20s`);
+        }),
+        new Promise(async res => {
+          client.on(
+            EventNames.UNINSTALL_EVENT,
+            async () => {
+            const currBal = await client.getFreeBalance(assetId);
+            if (
+              currBal[client.nodeFreeBalanceAddress]
+                .lte(preCollateralBal[client.nodeFreeBalanceAddress])
+            ) {
+              // no increase in bal
+              return;
+            }
+            // otherwise resolve
+            return res();
+          });
+          await client.requestCollateral(assetId);
+        }),
+      ]);
+      log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+      resolve();
+    } catch (e) {
+      return reject(e);
     }
-    resolve();
   });
 };
