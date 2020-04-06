@@ -140,6 +140,7 @@ export class ConnextListener extends ConnextEventEmitter {
           amount: state.transfers[0].amount,
           recipient: state.transfers[0].to,
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+          nonce: state.nonce,
         };
         await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
       }

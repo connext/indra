@@ -16,7 +16,7 @@ import {
 } from "@connext/types";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { formatEther } from "ethers/utils";
+import { formatEther, hexlify, randomBytes } from "ethers/utils";
 
 import { stringify, xpubToAddress } from "../lib";
 import { invalidAddress, validate } from "../validation";
@@ -32,6 +32,10 @@ export class WithdrawalController extends AbstractController {
 
     if (!params.recipient) {
       params.recipient = this.connext.freeBalanceAddress;
+    }
+
+    if (!params.nonce) {
+      params.nonce = hexlify(randomBytes(32));
     }
 
     const amount = toBN(params.amount);
