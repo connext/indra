@@ -5,7 +5,6 @@ import {
   randomBytes,
   SigningKey,
   joinSignature,
-  BigNumber,
 } from "ethers/utils";
 import { isBN, toBN } from "./math";
 import BN from "bn.js";
