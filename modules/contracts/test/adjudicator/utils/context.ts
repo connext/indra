@@ -6,6 +6,7 @@ import {
   sortSignaturesBySignerAddress,
   createRandom32ByteHexString,
   ChallengeEvents,
+  createRandomAddress,
 } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
@@ -27,7 +28,11 @@ import {
   computeCancelChallengeHash,
 } from "./index";
 
-export const setupContext = async (appRegistry: Contract, appDefinition: Contract, providedWallet?: Wallet) => {
+export const setupContext = async (
+  appRegistry: Contract,
+  appDefinition: Contract,
+  providedWallet?: Wallet,
+) => {
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
   const alice = new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
@@ -41,8 +46,12 @@ export const setupContext = async (appRegistry: Contract, appDefinition: Contrac
   const DEFAULT_TIMEOUT = 10;
   const CHANNEL_NONCE = parseInt((Math.random() * 100).toString().split(".")[0]);
 
+  // multisig address helpers
+  const multisigAddress = createRandomAddress(); // doesn't matter exactly what this is
+
   const appInstance = new AppWithCounterClass(
     [alice.address, bob.address],
+    multisigAddress,
     appDefinition.address,
     DEFAULT_TIMEOUT, // default timeout
     CHANNEL_NONCE, // channel nonce

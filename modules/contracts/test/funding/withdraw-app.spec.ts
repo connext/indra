@@ -10,7 +10,7 @@ import {
   WithdrawAppStateEncoding,
 } from "@connext/types";
 import { Wallet, ContractFactory, Contract } from "ethers";
-import { BigNumber, defaultAbiCoder, SigningKey } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, hexlify, randomBytes, SigningKey } from "ethers/utils";
 
 import WithdrawApp from "../../build/WithdrawApp.json";
 import { Zero, HashZero } from "ethers/constants";
@@ -77,6 +77,7 @@ describe("WithdrawApp", async () => {
       signatures: [await signChannelMessage(withdrawerSigningKey.privateKey, data), HashZero],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
       data,
+      nonce: hexlify(randomBytes(32)),
       finalized: false,
     };
   };

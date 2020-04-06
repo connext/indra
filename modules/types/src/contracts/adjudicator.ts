@@ -21,6 +21,7 @@ export const enum ChallengeEvents {
 export type AppIdentity<T = string> = {
   channelNonce: T;
   participants: Address[];
+  multisigAddress: Address;
   appDefinition: Address;
   defaultTimeout: T;
 };

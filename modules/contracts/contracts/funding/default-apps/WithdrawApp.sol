@@ -22,6 +22,7 @@ contract WithdrawApp is CounterfactualApp {
         bytes[2] signatures;
         address[2] signers; // must be multisig participants with withdrawer at [0]
         bytes32 data;
+        bytes32 nonce;
         bool finalized;
     }
 

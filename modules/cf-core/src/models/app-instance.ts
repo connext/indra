@@ -172,6 +172,7 @@ export class AppInstance {
   public get identity(): AppIdentity {
     return {
       participants: this.participants,
+      multisigAddress: this.multisigAddress,
       appDefinition: this.appInterface.addr,
       defaultTimeout: this.defaultTimeout.toString(),
       channelNonce: this.appSeqNo.toString(),

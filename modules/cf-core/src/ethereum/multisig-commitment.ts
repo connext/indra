@@ -52,8 +52,8 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   public encode(): string {
     const { to, value, data, operation } = this.getTransactionDetails();
     return defaultAbiCoder.encode(
-      ["bytes1", "address[]", "address", "uint256", "bytes32", "uint8"],
-      ["0x19", this.multisigOwners, to, value, solidityKeccak256(["bytes"], [data]), operation],
+      ["bytes1", "address", "address", "uint256", "bytes32", "uint8"],
+      ["0x19", this.multisigAddress, to, value, solidityKeccak256(["bytes"], [data]), operation],
     );
   }
 

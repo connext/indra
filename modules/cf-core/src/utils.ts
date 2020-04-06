@@ -36,8 +36,8 @@ export const logTime = (log: ILoggerService, start: number, msg: string) => {
 export function appIdentityToHash(appIdentity: AppIdentity): string {
   return keccak256(
     defaultAbiCoder.encode(
-      ["uint256", "address[]"],
-      [appIdentity.channelNonce, appIdentity.participants],
+      ["uint256", "address"],
+      [appIdentity.channelNonce, appIdentity.multisigAddress],
     ),
   );
 }
@@ -104,7 +104,11 @@ export const getCreate2MultisigAddress = async (
                 xkeysToSortedKthAddresses(owners),
               ]),
             ),
-            0,
+            // hash chainId + saltNonce to ensure multisig addresses are *always* unique
+            solidityKeccak256(
+              ["uint256", "uint256"],
+              [ethProvider.network.chainId, 0],
+            )
           ],
         ),
         solidityKeccak256(
