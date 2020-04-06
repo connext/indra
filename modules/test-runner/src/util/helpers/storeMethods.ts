@@ -105,6 +105,7 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentity: {
     channelNonce: TEST_STORE_APP_INSTANCE.appSeqNo.toString(),
     participants: TEST_STORE_APP_INSTANCE.participants,
+    multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
     appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
     defaultTimeout: "35",
   },

@@ -71,10 +71,11 @@ describe("Set State Commitment", () => {
     });
 
     it("should contain expected AppIdentity argument", () => {
-      const [channelNonce, participants, appDefinition, defaultTimeout] = desc.args[0];
+      const [channelNonce, participants, multisigAddress, appDefinition, defaultTimeout] = desc.args[0];
 
       expect(channelNonce).toEqual(bigNumberify(appInstance.identity.channelNonce));
       expect(participants).toEqual(appInstance.identity.participants);
+      expect(multisigAddress).toBe(appInstance.multisigAddress);
       expect(appDefinition).toBe(appInstance.identity.appDefinition);
       expect(defaultTimeout).toEqual(bigNumberify(appInstance.identity.defaultTimeout));
     });
