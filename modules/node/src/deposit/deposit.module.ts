@@ -7,14 +7,12 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { ChannelRepository } from "../channel/channel.repository";
 
-import { WithdrawRepository } from "./withdraw.repository";
-import { WithdrawService } from "./withdraw.service";
+import { DepositService } from "./deposit.service";
 
 @Module({
     controllers: [],
-    exports: [WithdrawService],
+    exports: [DepositService],
     imports: [
       CFCoreModule,
       ConfigModule,
@@ -23,10 +21,8 @@ import { WithdrawService } from "./withdraw.service";
       TypeOrmModule.forFeature([
         OnchainTransactionRepository,
         AppRegistryRepository,
-        WithdrawRepository,
-        ChannelRepository,
       ]),
     ],
-    providers: [WithdrawService],
+    providers: [DepositService],
 })
-export class WithdrawModule {}
+export class DepositModule {}

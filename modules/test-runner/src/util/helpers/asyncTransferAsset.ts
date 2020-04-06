@@ -10,8 +10,6 @@ import { ExistingBalancesAsyncTransfer } from "../types";
 
 const log = new Logger("AsyncTransfer", env.logLevel);
 
-// NOTE: will fail if not collateralized by transfer amount exactly
-// when pretransfer balances are not supplied.
 export async function asyncTransferAsset(
   clientA: IConnextClient,
   clientB: IConnextClient,
@@ -51,7 +49,7 @@ export async function asyncTransferAsset(
         }),
       ]),
       new Promise((resolve: Function): void => {
-        clientA.once(EventNames.UNINSTALL_EVENT, data => {
+        clientA.on(EventNames.UNINSTALL_EVENT, data => {
           if (data.appInstanceId === senderAppId) {
             resolve();
           }
@@ -83,7 +81,9 @@ export async function asyncTransferAsset(
   expect(postTransferFreeBalanceClientA).to.equal(
     preTransferFreeBalanceClientA.sub(transferAmount),
   );
-  expect(postTransferFreeBalanceNodeA).equal(preTransferFreeBalanceNodeA.add(transferAmount));
+  expect(postTransferFreeBalanceNodeA).to.be.at.least(
+    preTransferFreeBalanceNodeA.add(transferAmount),
+  );
 
   const {
     [clientB.freeBalanceAddress]: postTransferFreeBalanceClientB,
@@ -91,9 +91,10 @@ export async function asyncTransferAsset(
   } = await clientB.getFreeBalance(assetId);
   expect(postTransferFreeBalanceClientB).equal(preTransferFreeBalanceClientB.add(transferAmount));
 
-  if (!preTransferFreeBalanceNodeB.isZero()) {
-    expect(postTransferFreeBalanceNodeB).equal(preTransferFreeBalanceNodeB.sub(transferAmount));
-  }
+  // node could have collateralized
+  expect(postTransferFreeBalanceNodeB.add(transferAmount)).to.be.at.least(
+    preTransferFreeBalanceNodeB,
+  );
 
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);

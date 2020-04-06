@@ -1,23 +1,34 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, BigNumberish } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import {
+  IConnextClient,
+  BigNumberish,
+  BigNumber,
+  toBN,
+  DepositAppState,
+  delay,
+} from "@connext/types";
+import { AddressZero, Zero, One } from "ethers/constants";
 
-import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
+import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS, TOKEN_AMOUNT_SM, TOKEN_AMOUNT } from "../util";
 import { createClient } from "../util/client";
-import { getOnchainBalance } from "../util/ethprovider";
+import { getOnchainBalance, ethProvider } from "../util/ethprovider";
+import { Contract } from "ethers";
+import tokenAbi from "human-standard-token-abi";
+
 
 describe("Deposits", () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
 
-  const assertFreeBalanceVersion = async (
+  const assertClientFreeBalance = async (
     client: IConnextClient,
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
     const freeBalance = await client.getFreeBalance(expected.assetId || AddressZero);
     expect(freeBalance[client.freeBalanceAddress]).to.equal(expected.client);
-    expect(freeBalance[nodeFreeBalanceAddress]).to.equal(expected.node);
+    // does not need to be equal, because node may be collateralizing
+    expect(freeBalance[nodeFreeBalanceAddress]).to.be.at.least(expected.node);
   };
 
   const assertNodeFreeBalance = async (
@@ -25,7 +36,19 @@ describe("Deposits", () => {
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
     await client.restoreState();
-    await assertFreeBalanceVersion(client, expected);
+    await assertClientFreeBalance(client, expected);
+  };
+
+  const assertOnchainBalance = async (
+    client: IConnextClient,
+    expected: {node: BigNumberish; client: BigNumberish; assetId?: string },
+  ): Promise<void> => {
+    const onchainBalance: BigNumber = expected.assetId === AddressZero ?
+      await ethProvider.getBalance(client.multisigAddress) :
+      await new Contract(expected.assetId!, tokenAbi, ethProvider)
+        .functions
+        .balanceOf(client.multisigAddress);
+    expect(onchainBalance.eq(toBN(expected.node).add(toBN(expected.client))));
   };
 
   beforeEach(async () => {
@@ -40,34 +63,34 @@ describe("Deposits", () => {
 
   it("happy case: client should deposit ETH", async () => {
     const expected = {
-      node: Zero,
+      node: Zero.toString(),
       client: ONE,
       assetId: AddressZero,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
-    await assertFreeBalanceVersion(client, expected);
+    await assertOnchainBalance(client, expected);
+    await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });
 
   it("happy case: client should deposit tokens", async () => {
     const expected = {
-      node: Zero,
-      client: ONE,
+      node: Zero.toString(),
+      client: One.toString(),
       assetId: tokenAddress,
     };
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
-    await assertFreeBalanceVersion(client, expected);
+    await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });
 
   it("client should not be able to deposit with invalid token address", async () => {
-    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejected;
-    // TODO: assert error message
+    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith("invalid address");
   });
 
   it("client should not be able to deposit with negative amount", async () => {
     await expect(client.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero })).to.be.rejectedWith(
-      "is not greater than or equal to 0",
+      "Value (-1) is not greater than 0",
     );
   });
 
@@ -90,26 +113,70 @@ describe("Deposits", () => {
     };
     await client.requestDepositRights({ assetId: expected.assetId });
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
-    await assertFreeBalanceVersion(client, expected);
+    await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
-    await expect(
-      client.checkDepositRights({ assetId: client.config.contractAddresses.Token }),
-    ).to.be.rejectedWith(`No balance refund app installed`);
+    const { appInstanceId } = await client.checkDepositRights({ 
+      assetId: client.config.contractAddresses.Token,
+    });
+    expect(appInstanceId).to.be.undefined;
   });
 
-  it.skip("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {});
+  it("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
+    // send a payment to a receiver client to
+    // trigger collateral event
+    const expected = {
+      node: Zero.toString(),
+      client: TOKEN_AMOUNT.toString(),
+      assetId: tokenAddress,
+    };
+    await client.deposit({ assetId: expected.assetId, amount: expected.client });
+    await assertClientFreeBalance(client, expected);
+    
+    const receiver = await createClient();
+    
+    // TODO: chan_install events and nats subscription don't seem
+    // to trigger promise resolution here...
+    // cannot use INSTALL_EVENT because receiver will call install
+    // for nodes proposed deposit app and install event will not be
+    // emitted
+    await new Promise(async (resolve, reject) => {
+      receiver.on("PROPOSE_INSTALL_EVENT", (msg) => {
+        if (msg.params.appDefinition === receiver.config.contractAddresses.DepositApp) {
+          resolve();
+        }
+      });
+      receiver.on("REJECT_INSTALL_EVENT", reject);
+      await client.transfer({
+        amount: TOKEN_AMOUNT_SM,
+        assetId: expected.assetId,
+        recipient: receiver.publicIdentifier,
+      });
+    });
+    const getDepositApps = async () => {
+      const apps = await receiver.getAppInstances();
+      return apps.filter(app => 
+        app.appInterface.addr === client.config.contractAddresses.DepositApp,
+      )[0];
+    };
+    while(!(await getDepositApps())) {
+      await delay(200);
+    }
+    const depositApp = await getDepositApps();
 
-  it.skip("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => {});
+    expect(depositApp).to.exist;
+    const latestState = depositApp.latestState as DepositAppState;
+    expect(latestState.transfers[0].to).to.be.eq(nodeFreeBalanceAddress);
+    expect(latestState.transfers[1].to).to.be.eq(receiver.freeBalanceAddress);
 
-  it.skip("client deposits a different amount onchain than passed into the deposit fn", async () => {});
+    // try to deposit
+    await expect(receiver.deposit({ amount: ONE, assetId: expected.assetId })).to.be.rejectedWith("Node has unfinalized deposit");
+  });
 
   it.skip("client proposes deposit but never sends tx to chain", async () => {});
 
   it.skip("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => {});
 
   it.skip("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => {});
-
-  it.skip("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
 
   it("client deposits eth, withdraws, then successfully deposits eth again", async () => {
     const expected = {
@@ -120,7 +187,7 @@ describe("Deposits", () => {
     await client.deposit({ amount: TWO, assetId: expected.assetId });
     await client.withdraw({ amount: TWO, assetId: expected.assetId });
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
-    await assertFreeBalanceVersion(client, expected);
+    await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
   });
 
@@ -138,8 +205,8 @@ describe("Deposits", () => {
     await client.deposit({ amount: TWO, assetId: ethExpected.assetId });
     await client.withdraw({ amount: TWO, assetId: ethExpected.assetId });
     await client.deposit({ amount: tokenExpected.client, assetId: tokenExpected.assetId });
-    await assertFreeBalanceVersion(client, ethExpected);
-    await assertFreeBalanceVersion(client, tokenExpected);
+    await assertClientFreeBalance(client, ethExpected);
+    await assertClientFreeBalance(client, tokenExpected);
     await assertNodeFreeBalance(client, ethExpected);
     await assertNodeFreeBalance(client, tokenExpected);
   });

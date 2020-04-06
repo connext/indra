@@ -1,5 +1,4 @@
-import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, EventNames } from "@connext/types";
+import { IConnextClient, EventNames, delay } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -42,33 +41,52 @@ export const fundChannel = async (
 export const requestCollateral = async (
   client: IConnextClient,
   assetId: string = AddressZero,
+  enforce: boolean = false,
 ): Promise<void> => {
   const log = new Logger("RequestCollateral", env.logLevel);
-  const nodeFreeBalanceAddress = xkeyKthAddress(client.nodePublicIdentifier);
-  const prevFreeBalance = await client.getFreeBalance(assetId);
-  await new Promise(async (resolve, reject) => {
-    client.once(EventNames.DEPOSIT_CONFIRMED_EVENT, async data => {
-      const freeBalance = await client.getFreeBalance(assetId);
-      // verify free balance increased as expected
-      expect(freeBalance[nodeFreeBalanceAddress]).to.be.above(
-        prevFreeBalance[nodeFreeBalanceAddress],
-      );
-      log.info(`Got deposit confirmed event, helper wrapper is returning`);
-      resolve();
-    });
-    client.once(EventNames.DEPOSIT_FAILED_EVENT, async (msg: any) => {
-      reject(new Error(JSON.stringify(msg)));
-    });
+  const preCollateralBal = await client.getFreeBalance(assetId);
 
+  return new Promise(async (resolve, reject) => {
+    log.debug(`client.requestCollateral() called`);
+    const start = Date.now();
+    if (!enforce) {
+      try {
+        await client.requestCollateral(assetId);
+        log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+        return resolve();
+      } catch (e) {
+        return reject(e);
+      }
+    }
+    // watch for balance change on uninstall
     try {
-      log.debug(`client.requestCollateral() called`);
-      const start = Date.now();
-      await client.requestCollateral(assetId);
+      await Promise.race([
+        new Promise(async (res, rej) => {
+          await delay(20_000);
+          return rej(`Could not detect increase in node free balance within 20s`);
+        }),
+        new Promise(async res => {
+          client.on(
+            EventNames.UNINSTALL_EVENT,
+            async () => {
+            const currBal = await client.getFreeBalance(assetId);
+            if (
+              currBal[client.nodeFreeBalanceAddress]
+                .lte(preCollateralBal[client.nodeFreeBalanceAddress])
+            ) {
+              // no increase in bal
+              return;
+            }
+            // otherwise resolve
+            return res();
+          });
+          await client.requestCollateral(assetId);
+        }),
+      ]);
       log.info(`client.requestCollateral() returned in ${Date.now() - start}`);
+      resolve();
     } catch (e) {
-      return reject(new Error(e.stack || e.message));
+      return reject(e);
     }
   });
-
-  return;
 };

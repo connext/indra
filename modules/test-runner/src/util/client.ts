@@ -30,7 +30,7 @@ export const createClient = async (
   const log = new Logger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    loggerService: new Logger("CreateClient", env.logLevel, true, opts.id),
+    loggerService: new Logger("Client", env.logLevel, true, opts.id),
     mnemonic,
     nodeUrl: env.nodeUrl,
     store,

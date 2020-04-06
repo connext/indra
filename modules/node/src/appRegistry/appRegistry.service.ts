@@ -6,10 +6,10 @@ import {
   validateWithdrawApp,
   validateHashLockTransferApp,
   validateSignedTransferApp,
+  validateDepositApp,
 } from "@connext/apps";
 import {
   AppInstanceJson,
-  CoinBalanceRefundAppName,
   HashLockTransferAppName,
   MethodParams,
   SimpleLinkedTransferAppName,
@@ -19,6 +19,7 @@ import {
   WithdrawAppState,
   HashLockTransferAppState,
   SimpleSignedTransferAppState,
+  DepositAppName,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -77,41 +78,27 @@ export class AppRegistryService implements OnModuleInit {
         throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
       }
 
-      // dont install coin balance refund
-      // TODO: need to validate this still
-      if (registryAppInfo.name === CoinBalanceRefundAppName) {
-        this.log.debug(`Not installing coin balance refund app, emitting proposalAccepted event`);
-        const proposalAcceptedSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
-        await this.messagingService.publish(proposalAcceptedSubject, proposeInstallParams);
-        return;
-      }
-
       await this.runPreInstallValidation(registryAppInfo, proposeInstallParams, from);
 
       // check if we need to collateralize
-      const preInstallFreeBalance = await this.cfCoreService.getFreeBalance(
+      const freeBal = await this.cfCoreService.getFreeBalance(
         from,
         installerChannel.multisigAddress,
         proposeInstallParams.responderDepositTokenAddress,
       );
       const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
-      if (
-        preInstallFreeBalance[this.cfCoreService.cfCore.freeBalanceAddress].lt(
-          responderDepositBigNumber,
-        )
-      ) {
-        this.log.info(`Collateralizing channel before rebalancing...`);
-        // collateralize and wait for tx
-        const tx = await this.channelService.rebalance(
+      if (freeBal[this.cfCoreService.cfCore.freeBalanceAddress].lt(responderDepositBigNumber)) {
+        const depositReceipt = await this.channelService.rebalance(
           from,
           proposeInstallParams.responderDepositTokenAddress,
           RebalanceType.COLLATERALIZE,
           responderDepositBigNumber,
         );
-        if (tx) {
-          await tx.wait();
+        if (!depositReceipt) {
+          throw new Error(`Could not collateralize sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`);
         }
       }
+      // collateralized again in post-install tasks
       ({ appInstance } = await this.cfCoreService.installApp(appInstanceId));
     } catch (e) {
       // reject if error
@@ -157,6 +144,16 @@ export class AppRegistryService implements OnModuleInit {
           proposeInstallParams,
           from,
           this.cfCoreService.cfCore.publicIdentifier,
+        );
+        break;
+      }
+      case DepositAppName: {
+        await validateDepositApp(
+          proposeInstallParams,
+          from,
+          this.cfCoreService.cfCore.publicIdentifier,
+          (await this.channelRepository.findByUserPublicIdentifierOrThrow(from)).multisigAddress,
+          this.configService.getEthProvider(),
         );
         break;
       }

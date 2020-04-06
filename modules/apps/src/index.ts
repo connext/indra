@@ -34,3 +34,5 @@ export {
   DepositAppRegistryInfo,
   CoinBalanceRefundAppRegistryInfo,
 };
+
+export * from "./middleware";

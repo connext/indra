@@ -46,37 +46,13 @@ export class WithdrawService {
         Called in the case that node wants to withdraw funds from channel
     */
   async withdraw(
-    multisigAddress: string,
+    channel: Channel,
     amount: BigNumber,
     assetId: string = AddressZero,
   ): Promise<void> {
-    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
-      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
+      throw new Error(`No channel exists for multisigAddress ${channel.multisigAddress}`);
     }
-
-    // don't allow withdraw if user's balance refund app is installed
-    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(
-      multisigAddress,
-      assetId,
-    );
-    if (
-      balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xkeyKthAddress(channel.userPublicIdentifier)
-    ) {
-      throw new Error(
-        `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
-      );
-    }
-
-    if (
-      balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
-    ) {
-      this.log.info(`Removing node's installed CoinBalanceRefundApp before depositing`);
-      await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
-    }
-
     return this.proposeWithdrawApp(amount, assetId, channel);
   }
 

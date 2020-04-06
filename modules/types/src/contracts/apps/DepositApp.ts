@@ -39,6 +39,7 @@ export type DepositParameters = {
 };
 
 export type DepositResponse = {
-  multisigAddress: string;
-  appInstanceId: string;
+  freeBalance: {
+    [s: string]: BigNumber;
+  };
 };

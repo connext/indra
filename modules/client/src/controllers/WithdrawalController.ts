@@ -1,5 +1,5 @@
 import {
-  WithdrawCommitment
+  WithdrawCommitment,
 } from "@connext/apps";
 import {
   AppInstanceJson,

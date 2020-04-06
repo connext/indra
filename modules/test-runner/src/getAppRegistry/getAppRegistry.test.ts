@@ -1,6 +1,6 @@
 import { SupportedApplications } from "@connext/apps";
 import { addressBook } from "@connext/contracts";
-import { DefaultApp, IConnextClient } from "@connext/types";
+import { DefaultApp, IConnextClient, AppRegistry } from "@connext/types";
 
 import { expect } from "../util";
 import { createClient } from "../util/client";
@@ -26,7 +26,7 @@ describe("Get App Registry", () => {
   it("Happy case: user receives all the app registry information", async () => {
     client = await createClient();
     expect(client.multisigAddress).to.exist;
-    const appRegistry = await client.getAppRegistry();
+    const appRegistry = await client.getAppRegistry() as AppRegistry;
     expect(appRegistry.length).to.equal(Object.keys(SupportedApplications).length);
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });
@@ -37,7 +37,7 @@ describe("Get App Registry", () => {
       chainId: 4447,
       name: "WithdrawApp",
     });
-    appRegistry.forEach((app: DefaultApp) => verifyApp(app));
+    verifyApp(appRegistry as DefaultApp);
   });
 
   it("Happy case: user receives registry information for specific app using address", async () => {
@@ -45,6 +45,6 @@ describe("Get App Registry", () => {
     const appRegistry = await client.getAppRegistry({
       appDefinitionAddress: expectedAddresses.WithdrawApp.address,
     });
-    appRegistry.forEach((app: DefaultApp) => verifyApp(app));
+    verifyApp(appRegistry as DefaultApp);
   });
 });

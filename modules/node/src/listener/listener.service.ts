@@ -93,11 +93,6 @@ export default class ListenerService implements OnModuleInit {
       },
       DEPOSIT_CONFIRMED_EVENT: (data: DepositConfirmationMessage): void => {
         this.logEvent(DEPOSIT_CONFIRMED_EVENT, data);
-
-        // if it's from us, clear the in flight collateralization
-        if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
-          this.channelService.clearCollateralizationInFlight(data.data.multisigAddress);
-        }
       },
       DEPOSIT_FAILED_EVENT: (data: DepositFailedMessage): void => {
         this.logEvent(DEPOSIT_FAILED_EVENT, data);

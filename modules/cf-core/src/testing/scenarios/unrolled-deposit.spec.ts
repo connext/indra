@@ -1,9 +1,8 @@
-import { CoinBalanceRefundAppState, MethodNames, ProposeMessage, EventNames, InstallMessage } from "@connext/types";
-import { AddressZero, One } from "ethers/constants";
+import { DepositAppState, BigNumber } from "@connext/types";
+import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../node";
-import { NOT_YOUR_BALANCE_REFUND_APP } from "../../errors";
 import { xkeyKthAddress } from "../../xkeys";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
@@ -11,18 +10,17 @@ import { setup, SetupContext } from "../setup";
 import {
   createChannel,
   getBalances,
-  getInstalledAppInstances,
-  getProposedAppInstances,
-  getProposeCoinBalanceRefundAppParams,
   rescindDepositRights,
   requestDepositRights,
   transferERC20Tokens,
-  getAppInstance,
+  getDepositApps,
+  getMultisigBalance,
 } from "../utils";
+import { DolphinCoin } from "../contracts";
 
 expect.extend({ toBeLt, toBeEq });
 
-describe(`Node method follows spec - install balance refund`, () => {
+describe(`Node method follows spec - install deposit app`, () => {
   let multisigAddress: string;
   let nodeA: Node;
   let nodeB: Node;
@@ -37,225 +35,141 @@ describe(`Node method follows spec - install balance refund`, () => {
     multisigAddress = await createChannel(nodeA, nodeB);
   });
 
-  it(`install app with ETH, sending ETH should increase free balance`, async done => {
-    nodeB.on(EventNames.INSTALL_EVENT, async () => {
-      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
-      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
-      expect(appInstanceNodeA).toBeDefined();
-      expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(
-        xkeyKthAddress(nodeA.publicIdentifier, 0),
-      );
+  const runUnrolledDepositTest = async (
+    assetId: string = AddressZero,
+    depositAmt: BigNumber = new BigNumber(1000),
+  ) => {
+    // request rights
+    const appId = await requestDepositRights(nodeA, nodeB, multisigAddress, assetId);
+    const appsA = await getDepositApps(nodeA, multisigAddress, [assetId]);
+    const appsB = await getDepositApps(nodeB, multisigAddress, [assetId]);
+    expect(appsA.length).toBe(appsB.length);
+    expect(appsA.length).toBe(1);
+    expect(appsA[0].identityHash).toBe(appId);
+    const transfers = (appsA[0].latestState as DepositAppState).transfers;
+    expect(transfers[0].to).toBe(xkeyKthAddress(nodeA.publicIdentifier));
+    expect(transfers[1].to).toBe(xkeyKthAddress(nodeB.publicIdentifier));
 
-      const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
-      expect(proposedAppsA.length).toBe(0);
+    // validate post-deposit free balance
+    const [preSendBalA, preSendBalB] = await getBalances(
+      nodeA,
+      nodeB,
+      multisigAddress,
+      assetId,
+    );
+    expect(preSendBalA).toBeEq(0);
+    expect(preSendBalB).toBeEq(0);
 
-      const [preSendBalA, preSendBalB] = await getBalances(
-        nodeA,
-        nodeB,
-        multisigAddress,
-        AddressZero,
-      );
-      expect(preSendBalA).toBeEq(0);
-      expect(preSendBalB).toBeEq(0);
+    // send tx
+    const preDepositMultisig = await getMultisigBalance(multisigAddress, assetId);
+    assetId === AddressZero
+      ? await provider.getSigner().sendTransaction({
+          to: multisigAddress,
+          value: depositAmt,
+        })
+      : await transferERC20Tokens(
+          multisigAddress,
+          assetId,
+          DolphinCoin.abi,
+          depositAmt,
+        );
+    const multisigBalance = await getMultisigBalance(multisigAddress, assetId);
+    expect(multisigBalance).toBeEq(preDepositMultisig.add(depositAmt));
 
-      const preDepositMultisig = await provider.getBalance(multisigAddress);
-      const tx = await provider.getSigner().sendTransaction({
-        to: multisigAddress,
-        value: One,
-      });
-      await provider.waitForTransaction(tx.hash!);
-      const multisigBalance = await provider.getBalance(multisigAddress);
-      expect(multisigBalance).toBeEq(preDepositMultisig.add(One));
+    // rescind rights
+    await rescindDepositRights(nodeA, nodeB, multisigAddress, assetId);
+    const postRescindA = await getDepositApps(nodeA, multisigAddress, [assetId]);
+    const postRescindB = await getDepositApps(nodeA, multisigAddress, [assetId]);
+    expect(postRescindA.length).toBe(postRescindB.length);
+    expect(postRescindA.length).toBe(0);
 
-      await rescindDepositRights(nodeA, multisigAddress);
+    // validate post-deposit free balance
+    const [postSendBalA, postSendBalB] = await getBalances(
+      nodeA,
+      nodeB,
+      multisigAddress,
+      assetId,
+    );
+    expect(postSendBalA).toBeEq(depositAmt);
+    expect(postSendBalB).toBeEq(0);
+  };
 
-      const [postSendBalA, postSendBalB] = await getBalances(
-        nodeA,
-        nodeB,
-        multisigAddress,
-        AddressZero,
-      );
-      expect(postSendBalA).toBeEq(1);
-      expect(postSendBalB).toBeEq(0);
-
-      done();
-    });
-
-    await requestDepositRights(nodeA, nodeB, multisigAddress);
+  it(`install app with ETH, sending ETH should increase free balance`, async () => {
+    await runUnrolledDepositTest();
   });
 
-  it(`install app with tokens, sending tokens should increase free balance`, async done => {
+  it(`install app with tokens, sending tokens should increase free balance`, async () => {
+    const depositAmt = new BigNumber(1000);
+    const assetId = global[`network`].DolphinCoin;
+
+    await runUnrolledDepositTest(assetId, depositAmt);;
+  });
+
+  it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
     const erc20TokenAddress = global[`network`].DolphinCoin;
+    const depositAmtToken = new BigNumber(1000);
+    const depositAmtEth = new BigNumber(500);
 
-    nodeB.on(EventNames.INSTALL_EVENT, async () => {
-      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
-      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
-      expect(appInstanceNodeA).toBeDefined();
-      expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(
-        xkeyKthAddress(nodeA.publicIdentifier, 0),
-      );
+    // request deposit rights
+    await requestDepositRights(
+      nodeA,
+      nodeB,
+      multisigAddress,
+    );
+    await requestDepositRights(
+      nodeA,
+      nodeB,
+      multisigAddress,
+      erc20TokenAddress,
+    );
 
-      const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
-      expect(proposedAppsA.length).toBe(0);
+    // pre-deposit free balances
+    const [preSendBalAToken, preSendBalBToken] = await getBalances(
+      nodeA,
+      nodeB,
+      multisigAddress,
+      erc20TokenAddress,
+    );
+    expect(preSendBalAToken).toBeEq(0);
+    expect(preSendBalBToken).toBeEq(0);
 
-      const [preSendBalA, preSendBalB] = await getBalances(
-        nodeA,
-        nodeB,
-        multisigAddress,
-        erc20TokenAddress,
-      );
-      expect(preSendBalA).toBeEq(0);
-      expect(preSendBalB).toBeEq(0);
+    const [preSendBalAEth, preSendBalBEth] = await getBalances(
+      nodeA,
+      nodeB,
+      multisigAddress,
+      AddressZero,
+    );
+    expect(preSendBalAEth).toBeEq(0);
+    expect(preSendBalBEth).toBeEq(0);
 
-      await transferERC20Tokens(multisigAddress, erc20TokenAddress);
-
-      await rescindDepositRights(nodeA, multisigAddress, erc20TokenAddress);
-
-      const [postSendBalA, postSendBalB] = await getBalances(
-        nodeA,
-        nodeB,
-        multisigAddress,
-        erc20TokenAddress,
-      );
-      expect(postSendBalA).toBeEq(1);
-      expect(postSendBalB).toBeEq(0);
-
-      done();
+    // send onchain transactions
+    await transferERC20Tokens(multisigAddress, erc20TokenAddress, DolphinCoin.abi, depositAmtToken);
+    const tx = await provider.getSigner().sendTransaction({
+      to: multisigAddress,
+      value: depositAmtEth,
     });
+    await provider.waitForTransaction(tx.hash!);
 
-    await requestDepositRights(nodeA, nodeB, multisigAddress, erc20TokenAddress);
-  });
+    // rescind rights
+    await rescindDepositRights(nodeA, nodeB, multisigAddress);
+    await rescindDepositRights(nodeA, nodeB, multisigAddress, erc20TokenAddress);
 
-  it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async done => {
-    const erc20TokenAddress = global[`network`].DolphinCoin;
-
-    let installedCount = 0;
-    nodeB.on(EventNames.INSTALL_EVENT, async (msg: InstallMessage) => {
-      installedCount += 1;
-      const appId = msg.data.params.appInstanceId;
-      const appInstanceNodeA = await getAppInstance(nodeA, appId);
-      const appInstanceNodeB = await getAppInstance(nodeB, appId);
-      expect(appInstanceNodeA).toBeDefined();
-      expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(nodeA.freeBalanceAddress);
-
-      // wait for both apps to install
-      if (installedCount < 2) {
-        return;
-      }
-
-      const appsA = await getInstalledAppInstances(nodeA, multisigAddress);
-      const appsB = await getInstalledAppInstances(nodeB, multisigAddress);
-      expect(appsA.length).toBe(appsB.length);
-      expect(appsA.length).toBe(2);
-      const proposedAppsA = await getProposedAppInstances(nodeA, multisigAddress);
-      expect(proposedAppsA.length).toBe(0);
-
-      // tokens
-      const [preSendBalAToken, preSendBalBToken] = await getBalances(
-        nodeA,
-        nodeB,
-        multisigAddress,
-        erc20TokenAddress,
-      );
-      expect(preSendBalAToken).toBeEq(0);
-      expect(preSendBalBToken).toBeEq(0);
-
-      await transferERC20Tokens(multisigAddress, erc20TokenAddress);
-
-      await rescindDepositRights(nodeA, multisigAddress, erc20TokenAddress);
-
-      const [postSendBalAToken, postSendBalBToken] = await getBalances(
-        nodeA,
-        nodeB,
-        multisigAddress,
-        erc20TokenAddress,
-      );
-      expect(postSendBalAToken).toBeEq(1);
-      expect(postSendBalBToken).toBeEq(0);
-
-      // eth
-      const [preSendBalAEth, preSendBalBEth] = await getBalances(
-        nodeA,
-        nodeB,
-        multisigAddress,
-        AddressZero,
-      );
-      expect(preSendBalAEth).toBeEq(0);
-      expect(preSendBalBEth).toBeEq(0);
-
-      const preDepositMultisig = await provider.getBalance(multisigAddress);
-      const tx = await provider.getSigner().sendTransaction({
-        to: multisigAddress,
-        value: One,
-      });
-      await provider.waitForTransaction(tx.hash!);
-      const multisigBalance = await provider.getBalance(multisigAddress);
-      expect(multisigBalance).toBeEq(preDepositMultisig.add(One));
-
-      await rescindDepositRights(nodeA, multisigAddress);
-
-      const [postSendBalAEth, postSendBalBEth] = await getBalances(
-        nodeA,
-        nodeB,
-        multisigAddress,
-        AddressZero,
-      );
-      expect(postSendBalAEth).toBeEq(1);
-      expect(postSendBalBEth).toBeEq(0);
-
-      done();
-    });
-
-    await requestDepositRights(nodeA, nodeB, multisigAddress, erc20TokenAddress);
-    await requestDepositRights(nodeA, nodeB, multisigAddress);
-  });
-
-  it(`install does not error if already installed`, async done => {
-    nodeB.on(EventNames.INSTALL_EVENT, async () => {
-      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
-      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
-      expect(appInstanceNodeA).toBeDefined();
-      expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-      expect((appInstanceNodeA.latestState as CoinBalanceRefundAppState).recipient).toBe(
-        xkeyKthAddress(nodeA.publicIdentifier, 0),
-      );
-      done();
-    });
-
-    await requestDepositRights(nodeA, nodeB, multisigAddress);
-  });
-
-  it(`uninstall does error if caller is not recipient`, async done => {
-    nodeB.once(EventNames.INSTALL_EVENT, async data => {
-      await expect(rescindDepositRights(nodeB, multisigAddress)).rejects.toThrowError(
-        NOT_YOUR_BALANCE_REFUND_APP,
-      );
-      done();
-    });
-    await requestDepositRights(nodeA, nodeB, multisigAddress);
-  });
-
-  it(`can uninstall with no changes`, async done => {
-    nodeB.on(EventNames.INSTALL_EVENT, async () => {
-      await rescindDepositRights(nodeA, multisigAddress);
-      const appInstancesNodeA = await getInstalledAppInstances(nodeA, multisigAddress);
-      const appInstancesNodeB = await getInstalledAppInstances(nodeB, multisigAddress);
-      expect(appInstancesNodeA.length).toBe(0);
-      expect(appInstancesNodeB.length).toBe(0);
-      done();
-    });
-
-    await requestDepositRights(nodeA, nodeB, multisigAddress);
-  });
-
-  it(`uninstall does not error if not installed`, async () => {
-    await rescindDepositRights(nodeA, multisigAddress);
-    const appInstancesNodeA = await getInstalledAppInstances(nodeA, multisigAddress);
-    const appInstancesNodeB = await getInstalledAppInstances(nodeB, multisigAddress);
-    expect(appInstancesNodeA.length).toBe(0);
-    expect(appInstancesNodeB.length).toBe(0);
+    // post-deposit free balances
+    const [postSendBalAEth, postSendBalBEth] = await getBalances(
+      nodeA,
+      nodeB,
+      multisigAddress,
+      AddressZero,
+    );
+    expect(postSendBalAEth).toBeEq(depositAmtEth);
+    expect(postSendBalBEth).toBeEq(0);
+    const [postSendBalAToken, postSendBalBToken] = await getBalances(
+      nodeA,
+      nodeB,
+      multisigAddress,
+      erc20TokenAddress,
+    );
+    expect(postSendBalAToken).toBeEq(depositAmtToken);
+    expect(postSendBalBToken).toBeEq(0);
   });
 });
