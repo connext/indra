@@ -192,6 +192,7 @@ type RejectInstallResult = {};
 type UpdateStateParams = {
   appInstanceId: string;
   newState: SolidityValueType;
+  stateTimeout?: BigNumber;
 };
 
 type UpdateStateResult = {
@@ -203,6 +204,7 @@ type UpdateStateResult = {
 type TakeActionParams = {
   appInstanceId: string;
   action: SolidityValueType;
+  stateTimeout?: BigNumber;
 };
 
 type TakeActionResult = {
