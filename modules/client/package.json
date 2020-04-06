@@ -21,6 +21,7 @@
     "@connext/cf-core": "6.0.0-alpha.7",
     "@connext/channel-provider": "6.0.0-alpha.7",
     "@connext/crypto": "6.0.0-alpha.7",
+    "@connext/contracts": "1.0.5",
     "@connext/messaging": "6.0.0-alpha.7",
     "@connext/store": "6.0.0-alpha.7",
     "@connext/types": "6.0.0-alpha.7",

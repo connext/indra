@@ -1,6 +1,6 @@
 import {
   bigNumberifyJson,
-  CoinBalanceRefundAppName,
+  DepositAppName,
   EventNames,
   EventPayloads,
   FastSignedTransferAppName,
@@ -21,6 +21,7 @@ import {
   validateFastSignedTransferApp,
   validateHashLockTransferApp,
   validateSignedTransferApp,
+  validateDepositApp,
 } from "@connext/apps";
 
 import { ConnextClient } from "./connext";
@@ -289,12 +290,6 @@ export class ConnextListener extends ConnextEventEmitter {
         this.connext.config.supportedTokenAddresses,
       );
       switch (registryAppInfo.name) {
-        case CoinBalanceRefundAppName: {
-          const subject = `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.proposal.accept`;
-          this.log.debug(`Sending acceptance message to: ${subject}`);
-          await this.connext.messaging.publish(subject, stringify(params));
-          return;
-        }
         case SimpleLinkedTransferAppName: {
           validateSimpleLinkedTransferApp(params, from, this.connext.publicIdentifier);
           break;
@@ -316,6 +311,16 @@ export class ConnextListener extends ConnextEventEmitter {
           validateSignedTransferApp(params, from, this.connext.publicIdentifier);
           break;
         }
+        case DepositAppName: {
+          await validateDepositApp(
+            params, 
+            from, 
+            this.connext.publicIdentifier, 
+            this.connext.multisigAddress, 
+            this.connext.ethProvider,
+          );
+          break;
+        }
         default: {
           throw new Error(
             `Not installing app without configured validation: ${registryAppInfo.name}`,
@@ -326,13 +331,13 @@ export class ConnextListener extends ConnextEventEmitter {
       // the proposal is automatically removed from the store
       await this.connext.installApp(appInstanceId);
     } catch (e) {
-      this.log.error(`Caught error: ${e.message}`);
+      console.error(`Caught error: ${e.message}`);
       await this.connext.rejectInstallApp(appInstanceId);
       throw e;
     }
     // install and run post-install tasks
     await this.runPostInstallTasks(appInstanceId, registryAppInfo);
-    const appInstance = this.connext.getAppInstanceDetails(appInstanceId);
+    const { appInstance } = await this.connext.getAppInstanceDetails(appInstanceId);
     await this.connext.messaging.publish(
       `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`,
       stringify(appInstance),

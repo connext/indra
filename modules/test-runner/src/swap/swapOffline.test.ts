@@ -29,7 +29,6 @@ import * as lolex from "lolex";
 const { xpubToAddress } = utils;
 
 let clock: any;
-let client: IConnextClient;
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
@@ -53,7 +52,7 @@ const fundChannelAndSwap = async (opts: {
   } = opts;
   // these tests should not have collateral issues
   // so make sure they are always properly funded
-  client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
+  const client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
 
   const input = {
     amount: inputAmount,
@@ -101,7 +100,7 @@ const fundChannelAndSwap = async (opts: {
 };
 
 describe("Swap offline", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clock = lolex.install({
       shouldAdvanceTime: true,
       advanceTimeDelta: 1,
@@ -109,9 +108,8 @@ describe("Swap offline", () => {
     });
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     clock && clock.reset && clock.reset();
-    await client.messaging.disconnect();
   });
 
   it("Bot A tries to install swap but there’s no response from node", async () => {
@@ -179,7 +177,11 @@ describe("Swap offline", () => {
     // go offline during swap, should fail with swap timeout
     await (providedClient.messaging as TestMessagingService)!.subscribe(
       `${providedClient.nodePublicIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
-      async () => {
+      async (msg: any) => {
+        const { appInterface } = msg.data;
+        if (appInterface.addr !== providedClient.config.contractAddresses.SimpleTwoPartySwapApp) {
+          return;
+        }
         // we know client has swap app installed,
         // so delete store here
         await providedClient.store.clear();

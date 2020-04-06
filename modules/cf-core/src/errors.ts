@@ -24,6 +24,8 @@ export const BALANCE_REFUND_APP_NOT_INSTALLED = "Balance refund app is not insta
 export const CANNOT_UNINSTALL_FREE_BALANCE = (multisigAddress: string): string =>
   `Cannot uninstall the FreeBalance of channel: ${multisigAddress}`;
 
+export const CONTRACT_NOT_DEPLOYED = `contract not deployed`;
+
 export const CANNOT_WITHDRAW =
   "Cannot withdraw while another deposit / withdraw app is active in the channel.";
 

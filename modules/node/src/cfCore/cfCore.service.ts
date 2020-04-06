@@ -1,7 +1,7 @@
 import { MessagingService } from "@connext/messaging";
 import {
   SupportedApplications,
-  WithdrawCommitment
+  WithdrawCommitment,
 } from "@connext/apps";
 import {
   AppAction,
@@ -137,31 +137,6 @@ export class CFCoreService {
     return deployRes.result.result as MethodResults.DeployStateDepositHolder;
   }
 
-  async deposit(
-    multisigAddress: string,
-    amount: BigNumber,
-    assetId: string = AddressZero,
-  ): Promise<MethodResults.Deposit> {
-    this.log.debug(
-      `Calling ${MethodNames.chan_deposit} with params: ${stringify({
-        amount,
-        multisigAddress,
-        tokenAddress: assetId,
-      })}`,
-    );
-    const depositRes = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: MethodNames.chan_deposit,
-      parameters: {
-        amount,
-        multisigAddress,
-        tokenAddress: assetId,
-      } as MethodParams.Deposit,
-    });
-    this.log.debug(`deposit called with result ${stringify(depositRes.result.result)}`);
-    return depositRes.result.result as MethodResults.Deposit;
-  }
-
   async createWithdrawCommitment(
     params: WithdrawParameters,
     multisigAddress: string,
@@ -169,7 +144,9 @@ export class CFCoreService {
     const amount = toBN(params.amount);
     const { assetId, recipient } = params;
     const channel = await this.getStateChannel(multisigAddress);
-    const contractAddresses = await this.configService.getContractAddresses((await this.configService.getEthNetwork()).chainId.toString())
+    const contractAddresses = await this.configService.getContractAddresses(
+      (await this.configService.getEthNetwork()
+    ).chainId.toString());
     return new WithdrawCommitment(
       contractAddresses,
       channel.data.multisigAddress,
@@ -193,43 +170,6 @@ export class CFCoreService {
     });
     this.log.debug(`proposeInstallApp called with result ${stringify(proposeRes.result.result)}`);
     return proposeRes.result.result as MethodResults.ProposeInstall;
-  }
-
-  async proposeAndWaitForAccepted(
-    params: MethodParams.ProposeInstall,
-    multisigAddress: string,
-  ): Promise<MethodResults.ProposeInstall> {
-    let boundReject: (msg: RejectProposalMessage) => void;
-    let proposeRes: MethodResults.ProposeInstall;
-    try {
-      await new Promise(
-        async (res: () => any, rej: (msg: string) => any): Promise<void> => {
-          let promiseCounter = 0;
-          const incrementAndResolve = () => {
-            promiseCounter += 1;
-            if (promiseCounter === 2) {
-              res();
-            }
-          };
-          boundReject = this.rejectInstallTransfer.bind(null, rej);
-          const subject = `${params.proposedToIdentifier}.channel.${multisigAddress}.app-instance.*.proposal.accept`;
-          this.log.debug(`Subscribing to: ${subject}`);
-          await this.messagingProvider.subscribe(subject, incrementAndResolve);
-          this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
-
-          proposeRes = await this.proposeInstallApp(params);
-          incrementAndResolve();
-          this.log.debug(`waiting for client to publish proposal results`);
-        },
-      );
-      this.log.debug(`client to published proposal results`);
-      return proposeRes;
-    } catch (e) {
-      this.log.error(`Error installing app: ${e.message}`, e.stack);
-      throw e;
-    } finally {
-      this.cleanupProposalListeners(boundReject, multisigAddress, params.proposedToIdentifier);
-    }
   }
 
   async proposeAndWaitForInstallApp(
@@ -360,23 +300,6 @@ export class CFCoreService {
     return uninstallResponse.result.result as MethodResults.Uninstall;
   }
 
-  async rescindDepositRights(
-    multisigAddress: string,
-    tokenAddress: string = AddressZero,
-  ): Promise<MethodResults.Deposit> {
-    // check the app is actually installed
-    this.log.info(`Calling rescindDepositRights`);
-    const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: MethodNames.chan_rescindDepositRights,
-      parameters: { multisigAddress, tokenAddress } as MethodParams.RescindDepositRights,
-    });
-
-    this.log.info(`rescindDepositRights succeeded for multisig ${multisigAddress}`);
-    this.log.debug(`rescindDepositRights result: ${stringify(uninstallResponse.result.result)}`);
-    return uninstallResponse.result.result as MethodResults.Deposit;
-  }
-
   async getAppInstances(multisigAddress: string): Promise<AppInstanceJson[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
@@ -392,32 +315,6 @@ export class CFCoreService {
     );
     */
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
-  }
-
-  async getCoinBalanceRefundApp(
-    multisigAddress: string,
-    tokenAddress: string = AddressZero,
-  ): Promise<AppInstanceJson | undefined> {
-    const appInstances = await this.getAppInstances(multisigAddress);
-    const contractAddresses = await this.configService.getContractAddresses();
-    const coinBalanceRefundAppArray = appInstances.filter(
-      (app: AppInstanceJson) =>
-        app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
-        app.latestState[`tokenAddress`] === tokenAddress,
-    );
-    this.log.info(
-      `Got ${coinBalanceRefundAppArray.length} coinBalanceRefundApps for multisig ${multisigAddress}`,
-    );
-    this.log.debug(`CoinBalanceRefundApps result: ${stringify(coinBalanceRefundAppArray)}`);
-    if (coinBalanceRefundAppArray.length > 1) {
-      throw new Error(
-        `More than 1 instance of CoinBalanceRefundApp installed for asset! This should never happen.`,
-      );
-    }
-    if (coinBalanceRefundAppArray.length === 0) {
-      return undefined;
-    }
-    return coinBalanceRefundAppArray[0];
   }
 
   async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
@@ -535,16 +432,6 @@ export class CFCoreService {
     this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
 
-  private cleanupProposalListeners = (
-    boundReject: any,
-    multisigAddress: string,
-    userPubId: string,
-  ): void => {
-    this.messagingProvider.unsubscribe(
-      `${userPubId}.channel.${multisigAddress}.app-instance.*.proposal.accept`,
-    );
-    this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
-  };
 
   registerCfCoreListener(event: EventNames, callback: (data: any) => any): void {
     this.log.info(`Registering cfCore callback for event ${event}`);

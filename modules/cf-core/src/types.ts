@@ -1,4 +1,4 @@
-import { ILoggerService, NetworkContext, ProtocolMessage, enumify, IStoreService } from "@connext/types";
+import { ILoggerService, NetworkContext, ProtocolMessage, enumify, IStoreService, Opcode } from "@connext/types";
 
 export const PersistAppType = enumify({
   CreateProposal: "CreateProposal",
@@ -20,24 +20,6 @@ export const PersistCommitmentType = enumify({
   UpdateWithdrawal: "UpdateWithdrawal",
 });
 export type PersistCommitmentType = typeof PersistCommitmentType[keyof typeof PersistCommitmentType];
-
-export enum Opcode {
-  // Middleware hook to send a ProtocolMessage to a peer.
-  IO_SEND,
-  // Middleware hook to both send and wait for a response from a ProtocolMessage
-  IO_SEND_AND_WAIT,
-  // Requests a signature on the hash of previously generated EthereumCommitments.
-  OP_SIGN,
-  // Middleware hook to write the app instances to store.
-  PERSIST_APP_INSTANCE,
-  // Called at the end of execution before the return value to store a commitment
-  PERSIST_COMMITMENT,
-  // Middleware hook to write the state channel to store. Used to lock channel between protocols.
-  PERSIST_STATE_CHANNEL,
-  // Middleware hook to validate state transitions in protocol. Called before
-  // `computeStateTransition` and registered using `injectMiddleware`
-  OP_VALIDATE,
-}
 
 export interface IPrivateKeyGenerator {
   (s: string): Promise<string>;
@@ -63,8 +45,6 @@ export {
   AppInstanceJson,
   AppInstanceProposal,
   AppInterface,
-  CoinBalanceRefundAppState,
-  CoinBalanceRefundAppStateEncoding,
   ConditionalTransactionCommitmentJSON,
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -94,6 +74,7 @@ export {
   NodeMessage,
   NodeMessageWrappedProtocolMessage,
   OutcomeType,
+  Opcode,
   ProposeMessage,
   ProtocolMessage,
   ProtocolName,

@@ -24,6 +24,7 @@ const appContracts = [
   "SimpleSignedTransferApp",
   "SimpleTransferApp",
   "SimpleTwoPartySwapApp",
+  "DepositApp",
   "WithdrawApp",
 ];
 

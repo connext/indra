@@ -29,8 +29,8 @@ export class TransferMessaging extends AbstractMessagingProvider {
    */
   async clientCheckIn(userPublicIdentifier: string): Promise<void> {
     // reclaim collateral from redeemed transfers
-    // eslint-disable-next-line max-len
-    await this.linkedTransferService.unlockLinkedTransfersFromUser(userPublicIdentifier);
+    await this.linkedTransferService
+      .unlockLinkedTransfersFromUser(userPublicIdentifier);
   }
 
   async setupSubscriptions(): Promise<void> {
@@ -55,7 +55,12 @@ export const transferProviderFactory: FactoryProvider<Promise<void>> = {
     messaging: MessagingService,
     linkedTransferService: LinkedTransferService,
   ): Promise<void> => {
-    const transfer = new TransferMessaging(authService, logging, messaging, linkedTransferService);
+    const transfer = new TransferMessaging(
+      authService,
+      logging,
+      messaging,
+      linkedTransferService,
+    );
     await transfer.setupSubscriptions();
   },
 };

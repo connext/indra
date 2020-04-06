@@ -22,12 +22,9 @@ import {
 } from "./proposed-app-instance";
 import {
   CreateChannelController,
-  DepositController,
   GetAllChannelAddressesController,
   GetStateChannelController,
   GetStateDepositHolderAddressController,
-  RequestDepositRightsController,
-  RescindDepositRightsController,
 } from "./state-channel";
 
 const controllers = [
@@ -35,12 +32,9 @@ const controllers = [
    * Stateful / interactive methods
    */
   CreateChannelController,
-  DepositController,
   InstallAppInstanceController,
   ProposeInstallAppInstanceController,
   RejectInstallController,
-  RescindDepositRightsController,
-  RequestDepositRightsController,
   TakeActionController,
   UninstallController,
   UpdateStateController,

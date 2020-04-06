@@ -14,6 +14,8 @@ import {
   WithdrawResponse,
   GetHashLockTransferResponse,
   GetSignedTransferResponse,
+  DepositParameters,
+  DepositResponse,
 } from "./contracts";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { EventNames } from "./events";
@@ -34,10 +36,6 @@ import {
   MethodParams,
   MethodName,
 } from "./methods";
-import {
-  DepositParameters,
-  DepositResponse,
-} from "./contracts/apps"
 import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
 
 export type ChannelState = {
@@ -53,26 +51,22 @@ export type AssetAmount = {
   assetId: Address;
 };
 
-export type RequestDepositRightsParameters = {
-  assetId?: Address;
-}
-
+export type RequestDepositRightsParameters = MethodParams.RequestDepositRights;
 export type RequestDepositRightsResponse = MethodResults.RequestDepositRights;
 
-export type CheckDepositRightsParameters = RequestDepositRightsParameters;
-
-export type CheckDepositRightsResponse = {
-  assetId: Address;
-  multisigBalance: BigNumber;
-  recipient: Address;
-  threshold: BigNumber;
+export type CheckDepositRightsParameters = {
+  assetId?: Address;
 };
 
-export type RescindDepositRightsParameters = RequestDepositRightsParameters;
-export type RescindDepositRightsResponse = MethodResults.Deposit;
+export type CheckDepositRightsResponse = {
+  appInstanceId: string;
+};
+
+export type RescindDepositRightsParameters = MethodParams.RescindDepositRights;
+export type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
 
 // Generic transfer types
-export type TransferParameters = DepositParameters & {
+export type TransferParameters = MethodParams.Deposit & {
   recipient: Address;
   meta?: object;
   paymentId?: string;
@@ -135,7 +129,7 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
-  deposit(params: DepositParameters): Promise<ChannelState>;
+  deposit(params: DepositParameters): Promise<DepositResponse>;
   swap(params: SwapParameters): Promise<GetChannelResponse>;
   transfer(params: TransferParameters): Promise<any>;
   withdraw(params: WithdrawParameters): Promise<WithdrawResponse>;
@@ -166,7 +160,7 @@ export interface IConnextClient {
           chainId: number;
         }
       | { appDefinitionAddress: string },
-  ): Promise<AppRegistry>;
+  ): Promise<AppRegistry | DefaultApp | undefined>;
   getRegisteredAppDetails(appName: string): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
@@ -188,11 +182,6 @@ export interface IConnextClient {
   // CF MODULE EASY ACCESS METHODS
   deployMultisig(): Promise<MethodResults.DeployStateDepositHolder>;
   getStateChannel(): Promise<MethodResults.GetStateChannel>;
-  providerDeposit(
-    amount: BigNumber,
-    assetId: string,
-    notifyCounterparty: boolean,
-  ): Promise<MethodResults.Deposit>;
   getFreeBalance(assetId?: string): Promise<MethodResults.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<MethodResults.GetAppInstanceDetails>;

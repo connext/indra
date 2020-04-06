@@ -24,6 +24,7 @@ export {
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
+  Opcode,
 } from "./protocol";
 export * from "./middleware";
 export * from "./state";

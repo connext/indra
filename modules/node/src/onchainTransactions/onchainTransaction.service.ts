@@ -43,6 +43,15 @@ export class OnchainTransactionService {
     return tx;
   }
 
+  async sendDeposit(
+    channel: Channel,
+    transaction: MinimalTransaction,
+  ): Promise<TransactionResponse> {
+    const tx = await this.sendTransaction(transaction);
+    await this.onchainTransactionRepository.addCollateralization(tx, channel);
+    return tx;
+  }
+
   private async sendTransaction(
     transaction: MinimalTransaction,
   ): Promise<TransactionResponse> {
@@ -50,7 +59,7 @@ export class OnchainTransactionService {
     let errors: {[k: number]: string} = [];
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
-        this.log.debug(`Attempt ${attempt}/${MAX_RETRIES} to send transaction`);
+        this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
         const tx = await wallet.sendTransaction({ 
           ...transaction,
           nonce: await wallet.getTransactionCount(),

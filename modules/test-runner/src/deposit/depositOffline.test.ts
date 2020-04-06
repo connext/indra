@@ -99,7 +99,7 @@ describe("Deposit offline tests", () => {
    */
   it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async () => {
     // create client where the propose protocol will not complete
-    // in deposit, client will propose the `CoinBalanceRefund` app (is the
+    // in deposit, client will propose the `DepositApp` (is the
     // initiator in the `propose` protocol)
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
@@ -162,7 +162,7 @@ describe("Deposit offline tests", () => {
     await makeDepositCall({
       client,
       clock,
-      failsWith: "Failed to deposit",
+      failsWith: "App install took longer than 90 seconds",
       subjectToFastforward: RECEIVED,
       protocol: "install",
     });
@@ -170,21 +170,4 @@ describe("Deposit offline tests", () => {
     await createClient({ mnemonic: getMnemonic(client.publicIdentifier) });
   });
 
-  it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
-    client = await createClientWithMessagingLimits();
-    expect(client.messaging).to.be.ok;
-    // on proposal accepted message, delete the store
-    await (client.messaging as TestMessagingService).subscribe(
-      `${client.nodePublicIdentifier}.channel.${client.multisigAddress}.app-instance.*.proposal.accept`,
-      async () => {
-        // delete the client store
-        client.store.clear();
-      },
-    );
-    await makeDepositCall({
-      client,
-      clock,
-      failsWith: "Failed to deposit",
-    });
-  });
 });

@@ -6,7 +6,6 @@ import {
 } from "@connext/types";
 
 import { ResolveLinkedTransferParameters, ResolveLinkedTransferResponse } from "../types";
-import { invalid32ByteHexString, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 

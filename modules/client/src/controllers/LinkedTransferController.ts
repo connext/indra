@@ -15,14 +15,13 @@ import { encryptWithPublicKey } from "@connext/crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { createLinkedHash, stringify, xpubToAddress } from "../lib";
+import { createLinkedHash, stringify } from "../lib";
 import {
   invalidXpub,
   validate,
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { BigNumber } from "ethers/utils";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (

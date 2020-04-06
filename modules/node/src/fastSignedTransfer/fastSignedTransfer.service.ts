@@ -1,7 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import {
-  DepositConfirmationMessage,
-  DepositFailedMessage,
   EventNames,
   FastSignedTransferActionType,
   FastSignedTransferAppAction,
@@ -125,55 +123,15 @@ export class FastSignedTransferService {
     let depositAmount = nodeFreeBalancePreCollateral;
     if (nodeFreeBalancePreCollateral.lt(transferAmount)) {
       // request collateral and wait for deposit to come through
-      // TODO: expose remove listener
-      await new Promise(async (resolve, reject) => {
-        this.cfCoreService.cfCore.on(
-          EventNames.DEPOSIT_CONFIRMED_EVENT,
-          async (msg: DepositConfirmationMessage) => {
-            if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
-              // do not reject promise here, since theres a chance the event is
-              // emitted for another user depositing into their channel
-              this.log.debug(
-                `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
-              );
-              return;
-            }
-            if (msg.data.multisigAddress !== channel.multisigAddress) {
-              // do not reject promise here, since theres a chance the event is
-              // emitted for node collateralizing another users' channel
-              this.log.debug(
-                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
-              );
-              return;
-            }
-            let {
-              [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalancePostCollateral,
-            } = await this.cfCoreService.getFreeBalance(
-              channel.userPublicIdentifier,
-              channel.multisigAddress,
-              assetId,
-            );
-            depositAmount = nodeFreeBalancePostCollateral;
-            resolve();
-          },
-        );
-        this.cfCoreService.cfCore.on(
-          EventNames.DEPOSIT_FAILED_EVENT,
-          (msg: DepositFailedMessage) => {
-            return reject(JSON.stringify(msg, null, 2));
-          },
-        );
-        try {
-          await this.channelService.rebalance(
-            channel.userPublicIdentifier,
-            assetId,
-            RebalanceType.COLLATERALIZE,
-            transferAmount,
-          );
-        } catch (e) {
-          return reject(e);
-        }
-      });
+      const depositReceipt = await this.channelService.rebalance(
+        channel.userPublicIdentifier,
+        assetId,
+        RebalanceType.COLLATERALIZE,
+        transferAmount,
+      );
+      if (!depositReceipt) {
+        throw new Error(`Could not deposit sufficient collateral to install fast transfer app for channel: ${channel.multisigAddress}`);
+      }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
