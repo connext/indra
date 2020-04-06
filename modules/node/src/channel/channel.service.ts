@@ -134,14 +134,13 @@ export class ChannelService {
     ) {
       throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
     }
-    let depositReceipt;
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // if minimum amount is larger, override upper bound
       const collateralNeeded: BigNumber = maxBN([
         upperBoundCollateralize,
         minimumRequiredCollateral,
       ]);
-      depositReceipt = await this.collateralizeIfNecessary(
+      return this.collateralizeIfNecessary(
         channel,
         assetId,
         collateralNeeded,
@@ -154,10 +153,10 @@ export class ChannelService {
         upperBoundReclaim,
         lowerBoundReclaim,
       );
+      return undefined;
     } else {
       throw new Error(`Invalid rebalancing type: ${rebalanceType}`);
     }
-    return depositReceipt;
   }
 
   private async collateralizeIfNecessary(
