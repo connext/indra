@@ -49,10 +49,11 @@ export class MessagingService implements IMessagingService {
     }
   }
 
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     if (this.service?.isConnected()) {
-      this.service!.disconnect();
+      return this.service!.disconnect();
     }
+    return Promise.resolve();
   }
 
   ////////////////////////////////////////
