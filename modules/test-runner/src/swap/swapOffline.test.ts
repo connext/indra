@@ -109,9 +109,8 @@ describe("Swap offline", () => {
     });
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     clock && clock.reset && clock.reset();
-    await client.messaging.disconnect();
   });
 
   it("Bot A tries to install swap but there’s no response from node", async () => {
