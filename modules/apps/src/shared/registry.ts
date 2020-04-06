@@ -7,6 +7,7 @@ import {
   SimpleSignedTransferAppName,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
+  toBN,
 } from "@connext/types";
 
 export const SupportedApplications = enumify({
@@ -30,3 +31,6 @@ export type AppRegistryInfo = {
 };
 
 export type AppRegistryType = AppRegistryInfo[];
+
+// timeout default values
+export const DEFAULT_APP_TIMEOUT = toBN(10).toHexString();
