@@ -80,7 +80,7 @@ describe("Set State Commitment", () => {
       expect(defaultTimeout).toEqual(bigNumberify(appInstance.identity.defaultTimeout));
     });
 
-    it("should contain expected SignedStateHashUpdate argument", () => {
+    it("should contain expected SignedAppChallengeUpdate argument", () => {
       const [stateHash, versionNumber, timeout, []] = desc.args[1];
       expect(stateHash).toBe(appInstance.hashOfLatestState);
       expect(versionNumber).toEqual(bigNumberify(appInstance.versionNumber));

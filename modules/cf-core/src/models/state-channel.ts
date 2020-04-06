@@ -5,16 +5,18 @@ import {
   stringify,
   deBigNumberifyJson,
   IStoreService,
+  AppInstanceProposal,
 } from "@connext/types";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
 import { AppInstanceJson, SolidityValueType } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 
-import { AppInstanceProposal } from "./app-instance-proposal";
 import { AppInstance } from "./app-instance";
 import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
 import { flipTokenIndexedBalances, sortAddresses } from "./utils";
+import { BigNumber } from "ethers/utils";
+import { Zero } from "ethers/constants";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,
@@ -332,11 +334,18 @@ export class StateChannel {
     });
   }
 
-  public setState(appInstance: AppInstance, state: SolidityValueType) {
+  public setState(
+    appInstance: AppInstance,
+    state: SolidityValueType,
+    stateTimeout: BigNumber = Zero,
+  ) {
 
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
-    appInstances.set(appInstance.identityHash, appInstance.setState(state));
+    appInstances.set(
+      appInstance.identityHash,
+      appInstance.setState(state, stateTimeout),
+    );
 
     return this.build({
       appInstances,

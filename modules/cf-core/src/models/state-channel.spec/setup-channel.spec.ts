@@ -1,13 +1,12 @@
 import { Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress } from "@connext/types";
+import { AppInstanceProposal, createRandomAddress, toBN } from "@connext/types";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../../constants";
 import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
-import { AppInstanceProposal } from "../app-instance-proposal";
 import { StateChannel } from "../state-channel";
 
 describe("StateChannel::setupChannel", () => {
@@ -64,11 +63,17 @@ describe("StateChannel::setupChannel", () => {
 
     it("should have a default timeout defined by the hard-coded assumption", () => {
       // See HARD_CODED_ASSUMPTIONS in state-channel.ts
-      expect(fb.timeout).toBe(172800);
+      expect(fb.defaultTimeout).toBe(
+        toBN(HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout)
+          .toHexString(),
+      );
     });
 
     it("should use the default timeout for the initial timeout", () => {
-      expect(fb.timeout).toBe(fb.defaultTimeout);
+      expect(fb.stateTimeout).toBe(
+        toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout)
+          .toHexString(),
+      );
     });
 
     it("should use the multisig owners as the participants", () => {

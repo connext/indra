@@ -19,6 +19,7 @@ import {
   UninstallMessage,
   DepositAppStateEncoding,
   DepositAppState,
+  toBN,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -75,7 +76,8 @@ export function createAppInstanceProposalForTest(appInstanceId: string): AppInst
     } as AppABIEncodings,
     initiatorDeposit: "0x00",
     responderDeposit: "0x00",
-    timeout: "0x01",
+    defaultTimeout: "0x01",
+    stateTimeout: "0x00",
     initialState: {
       foo: AddressZero,
       bar: 0,
@@ -92,7 +94,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* participants */ stateChannel
       ? stateChannel.getSigningKeysFor(stateChannel.numProposedApps)
       : [getAddress(hexlify(randomBytes(20))), getAddress(hexlify(randomBytes(20)))],
-    /* defaultTimeout */ 0,
+    /* defaultTimeout */ "0x00",
     /* appInterface */ {
       addr: getAddress(hexlify(randomBytes(20))),
       stateEncoding: "tuple(address foo, uint256 bar)",
@@ -101,7 +103,7 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
     /* appSeqNo */ stateChannel ? stateChannel.numProposedApps : Math.ceil(1000 * Math.random()),
     /* latestState */ { foo: AddressZero, bar: bigNumberify(0) },
     /* latestVersionNumber */ 0,
-    /* latestTimeout */ Math.ceil(1000 * Math.random()),
+    /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
     /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     /* multisig */ stateChannel
       ? stateChannel.multisigAddress
@@ -463,7 +465,8 @@ export async function getProposeDepositAppParams(
     proposedToIdentifier,
     responderDeposit: Zero,
     responderDepositTokenAddress: tokenAddress,
-    timeout: Zero,
+    defaultTimeout: Zero,
+    stateTimeout: Zero,
   };
 }
 
@@ -547,7 +550,7 @@ export function constructAppProposalRpc(
       initialState,
       abiEncodings,
       outcomeType,
-      timeout: One,
+      defaultTimeout: One,
     } as MethodParams.ProposeInstall),
   };
 }
@@ -581,7 +584,8 @@ export function confirmProposedAppInstance(
     );
   }
 
-  expect(proposalParams.timeout).toEqual(bigNumberify(appInstanceProposal.timeout));
+  expect(proposalParams.defaultTimeout).toEqual(toBN(appInstanceProposal.defaultTimeout));
+  expect(proposalParams.stateTimeout).toEqual(toBN(appInstanceProposal.stateTimeout));
 
   // TODO: uncomment when getState is implemented
   // expect(proposalParams.initialState).toEqual(appInstanceInitialState);
@@ -736,11 +740,11 @@ export async function installApp(
       } = msg;
       // Sanity-check
       confirmProposedAppInstance(
-        installationProposalRpc.parameters,
+        { stateTimeout: Zero, ...installationProposalRpc.parameters },
         await getAppInstanceProposal(nodeB, appInstanceId, multisigAddress),
       );
       confirmProposedAppInstance(
-        installationProposalRpc.parameters,
+        { stateTimeout: Zero, ...installationProposalRpc.parameters },
         await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
       );
       resolve(msg.data.appInstanceId);
@@ -790,7 +794,8 @@ export async function confirmAppInstanceInstallation(
   expect(appInstance.appInterface.addr).toEqual(params.appDefinition);
   expect(appInstance.appInterface.stateEncoding).toEqual(params.abiEncodings.stateEncoding);
   expect(appInstance.appInterface.actionEncoding).toEqual(params.abiEncodings.actionEncoding);
-  expect(appInstance.defaultTimeout).toEqual(params.timeout.toNumber());
+  expect(appInstance.defaultTimeout).toEqual(params.defaultTimeout.toHexString());
+  expect(appInstance.stateTimeout).toEqual(params.stateTimeout.toHexString());
   expect(appInstance.latestState).toEqual(params.initialState);
 }
 

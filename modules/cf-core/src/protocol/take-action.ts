@@ -44,6 +44,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderXpub,
       action,
+      stateTimeout,
     } = params as ProtocolParams.TakeAction;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
@@ -68,6 +69,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
       await preAppInstance.computeStateTransition(action, network.provider),
+      stateTimeout,
     );
     logTime(log, substart, `SetState called in takeAction initiating`);
 
@@ -139,6 +141,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       initiatorXpub,
       action,
+      stateTimeout,
     } = params as ProtocolParams.TakeAction;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
@@ -163,6 +166,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preAppInstance,
       await preAppInstance.computeStateTransition(action, network.provider),
+      stateTimeout,
     );
 
     // 0ms

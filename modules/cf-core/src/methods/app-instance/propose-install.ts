@@ -11,6 +11,7 @@ import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import { Zero } from "ethers/constants";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -68,7 +69,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
   ): Promise<MethodResults.ProposeInstall> {
     const { protocolRunner, publicIdentifier, store } = requestHandler;
 
-    const { proposedToIdentifier } = params;
+    const { proposedToIdentifier, stateTimeout } = params;
 
     const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
     if (!json) {
@@ -77,6 +78,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
     await protocolRunner.initiateProtocol(ProtocolNames.propose, {
       ...params,
+      stateTimeout: stateTimeout || Zero,
       multisigAddress: json.multisigAddress,
       initiatorXpub: publicIdentifier,
       responderXpub: proposedToIdentifier,

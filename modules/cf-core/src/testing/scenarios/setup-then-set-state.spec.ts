@@ -93,7 +93,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         freeBalance.identity,
         keccak256(freeBalance.encodedLatestState),
         freeBalance.versionNumber,
-        freeBalance.timeout,
+        freeBalance.stateTimeout,
       );
       const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [
@@ -109,7 +109,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       });
 
       // eslint-disable-next-line
-      for (const _ of Array(freeBalance.timeout)) {
+      for (const _ of Array(freeBalance.stateTimeout)) {
         await provider.send("evm_mine", []);
       }
 

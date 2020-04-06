@@ -17,6 +17,8 @@ import { getFirstElementInListNotEqualTo } from "../../utils";
 
 import { NodeController } from "../controller";
 import { AppInstance } from "../../models";
+import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 
 export class TakeActionController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_takeAction)
@@ -67,7 +69,7 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
-    const { appInstanceId, action } = params;
+    const { appInstanceId, action, stateTimeout } = params;
 
     const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
     if (!sc) {
@@ -86,6 +88,7 @@ export class TakeActionController extends NodeController {
       publicIdentifier,
       responderXpub,
       action,
+      stateTimeout,
     );
 
     const appInstance = await store.getAppInstance(appInstanceId);
@@ -125,6 +128,7 @@ async function runTakeActionProtocol(
   initiatorXpub: string,
   responderXpub: string,
   action: SolidityValueType,
+  stateTimeout: BigNumber = Zero,
 ) {
   const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
     if (!stateChannel) {
@@ -138,6 +142,7 @@ async function runTakeActionProtocol(
       appIdentityHash,
       action,
       multisigAddress: stateChannel.multisigAddress,
+      stateTimeout,
     });
   } catch (e) {
     if (e.toString().indexOf(`VM Exception`) !== -1) {

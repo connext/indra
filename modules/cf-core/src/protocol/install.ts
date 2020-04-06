@@ -418,6 +418,7 @@ function computeStateChannelTransition(
     initialState,
     appInterface,
     defaultTimeout,
+    stateTimeout,
     appSeqNo,
     outcomeType,
     disableLimit,
@@ -444,12 +445,12 @@ function computeStateChannelTransition(
 
   const appInstanceToBeInstalled = new AppInstance(
     /* participants */ participants,
-    /* defaultTimeout */ defaultTimeout,
+    /* defaultTimeout */ defaultTimeout.toHexString(),
     /* appInterface */ appInterface,
     /* appSeqNo */ appSeqNo,
     /* latestState */ initialState,
     /* latestVersionNumber */ 0,
-    /* defaultTimeout */ defaultTimeout,
+    /* stateTimeout */ stateTimeout.toHexString(),
     /* outcomeType */ outcomeType,
     /* multisig */ stateChannel.multisigAddress,
     meta,
