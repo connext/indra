@@ -13,7 +13,7 @@ import {
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -68,6 +68,7 @@ export class WithdrawService {
         amount: state.transfers[0].amount,
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: state.transfers[0].to,
+        nonce: state.nonce,
       } as WithdrawParameters,
       appInstance.multisigAddress,
     );
@@ -196,12 +197,14 @@ export class WithdrawService {
     channel: Channel,
   ): Promise<void> {
     this.log.debug(`Creating proposal for node withdraw`);
+    const nonce = hexlify(randomBytes(32));
 
     const commitment = await this.cfCoreService.createWithdrawCommitment(
       {
         amount,
         assetId,
         recipient: this.cfCoreService.cfCore.freeBalanceAddress,
+        nonce,
       } as WithdrawParameters,
       channel.multisigAddress,
     );
@@ -224,6 +227,7 @@ export class WithdrawService {
         xkeyKthAddress(channel.userPublicIdentifier),
       ],
       data: hash,
+      nonce,
       finalized: false,
     };
 
