@@ -17,7 +17,6 @@ import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
 import { CollateralModule } from "./collateral/collateral.module";
 import { LinkedTransferModule } from "./linkedTransfer/linkedTransfer.module";
-import { FastSignedTransferModule } from "./fastSignedTransfer/fastSignedTransfer.module";
 import { HashLockTransferModule } from "./hashLockTransfer/hashLockTransfer.module";
 import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
 
@@ -33,7 +32,6 @@ import { SignedTransferModule } from "./signedTransfer/signedTransfer.module";
     CollateralModule,
     ConfigModule,
     DatabaseModule,
-    FastSignedTransferModule,
     HashLockTransferModule,
     ListenerModule,
     LinkedTransferModule,

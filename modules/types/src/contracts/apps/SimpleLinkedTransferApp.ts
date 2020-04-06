@@ -80,3 +80,7 @@ export type ResolveLinkedTransferResponse = {
   assetId: string;
   meta?: object;
 };
+
+export type CreatedLinkedTransferMeta = {
+  encryptedPreImage?: string;
+};

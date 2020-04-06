@@ -34,7 +34,7 @@ export async function asyncTransferAsset(
     Promise.all([
       Promise.race([
         new Promise((resolve: Function): void => {
-          clientB.once(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+          clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data => {
             expect(data).to.deep.include({
               amount: { _hex: transferAmount.toHexString() },
               sender: clientA.publicIdentifier,
@@ -43,7 +43,7 @@ export async function asyncTransferAsset(
           });
         }),
         new Promise((resolve: Function, reject: Function): void => {
-          clientB.once(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
+          clientB.once(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, (msg: any) => {
             reject(msg.error);
           });
         }),

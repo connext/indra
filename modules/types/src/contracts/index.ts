@@ -1,7 +1,5 @@
 import { 
   DepositAppState,
-  FastSignedTransferAppAction,
-  FastSignedTransferAppState,
   HashLockTransferAppAction,
   HashLockTransferAppState,
   SimpleLinkedTransferAppAction,
@@ -19,7 +17,6 @@ export * from "./funding";
 export * from "./misc";
 
 export type AppAction =
-  | FastSignedTransferAppAction
   | HashLockTransferAppAction
   | SimpleLinkedTransferAppAction
   | SimpleSignedTransferAppAction
@@ -27,7 +24,6 @@ export type AppAction =
 
 export type AppState = 
   | DepositAppState
-  | FastSignedTransferAppState
   | HashLockTransferAppState
   | SimpleLinkedTransferAppState
   | SimpleSignedTransferAppState
