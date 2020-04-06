@@ -1,14 +1,9 @@
 import { MessagingService } from "@connext/messaging";
-import {
-  SupportedApplications,
-  WithdrawCommitment,
-} from "@connext/apps";
+import { SupportedApplications, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   ConnextNodeStorePrefix,
   EventNames,
-  FastSignedTransferAppName,
-  FastSignedTransferAppState,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -99,9 +94,7 @@ export class CFCoreService {
     return getStateChannelRes.result.result;
   }
 
-  async createChannel(
-    counterpartyPublicIdentifier: string,
-  ): Promise<MethodResults.CreateChannel> {
+  async createChannel(counterpartyPublicIdentifier: string): Promise<MethodResults.CreateChannel> {
     const params = {
       id: Date.now(),
       methodName: MethodNames.chan_create,
@@ -115,9 +108,7 @@ export class CFCoreService {
     return createRes.result.result as MethodResults.CreateChannel;
   }
 
-  async deployMultisig(
-    multisigAddress: string,
-  ): Promise<MethodResults.DeployStateDepositHolder> {
+  async deployMultisig(multisigAddress: string): Promise<MethodResults.DeployStateDepositHolder> {
     const params = {
       id: Date.now(),
       methodName: MethodNames.chan_deployStateDepositHolder,
@@ -145,8 +136,8 @@ export class CFCoreService {
     const { assetId, recipient } = params;
     const channel = await this.getStateChannel(multisigAddress);
     const contractAddresses = await this.configService.getContractAddresses(
-      (await this.configService.getEthNetwork()
-    ).chainId.toString());
+      (await this.configService.getEthNetwork()).chainId.toString(),
+    );
     return new WithdrawCommitment(
       contractAddresses,
       channel.data.multisigAddress,
@@ -160,9 +151,7 @@ export class CFCoreService {
   async proposeInstallApp(
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> {
-    this.log.debug(
-      `Calling ${MethodNames.chan_proposeInstall} with params: ${stringify(params)}`,
-    );
+    this.log.debug(`Calling ${MethodNames.chan_proposeInstall} with params: ${stringify(params)}`);
     const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_proposeInstall,
@@ -267,10 +256,7 @@ export class CFCoreService {
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
-  async takeAction(
-    appInstanceId: string,
-    action: AppAction,
-  ): Promise<MethodResults.TakeAction> {
+  async takeAction(appInstanceId: string, action: AppAction): Promise<MethodResults.TakeAction> {
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_takeAction,
@@ -366,27 +352,6 @@ export class CFCoreService {
     return stateResponse.result.result as MethodResults.GetState;
   }
 
-  // TODO: REFACTOR WITH NEW STORE THIS CAN BE ONE DB QUERY
-  async getFastSignedTransferAppsByPaymentId(paymentId: string): Promise<AppInstanceJson[]> {
-    const channels = await this.channelRepository.findAll();
-    const apps: AppInstanceJson[] = [];
-    for (const channel of channels) {
-      const installed = await this.getAppInstancesByAppName(
-        channel.multisigAddress,
-        FastSignedTransferAppName,
-      );
-      // found fastsigned transfer app
-      for (const app of installed) {
-        const appState = app.latestState as FastSignedTransferAppState;
-        if (appState.paymentId === paymentId) {
-          // TODO: FIX THIS IN CF CORE
-          apps.push({ ...app, multisigAddress: channel.multisigAddress });
-        }
-      }
-    }
-    return apps;
-  }
-
   async getAppInstancesByAppName(
     multisigAddress: string,
     appName: SupportedApplications,
@@ -431,7 +396,6 @@ export class CFCoreService {
     this.cfCore.off(EventNames.INSTALL_EVENT, boundResolve);
     this.cfCore.off(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
-
 
   registerCfCoreListener(event: EventNames, callback: (data: any) => any): void {
     this.log.info(`Registering cfCore callback for event ${event}`);

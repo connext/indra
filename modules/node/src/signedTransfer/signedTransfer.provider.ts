@@ -36,7 +36,10 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     this.log.info(`Got resolve signed transfer request with paymentId: ${data.paymentId}`);
-    const response = await this.signedTransferService.resolveSignedTransfer(pubId, data.paymentId);
+    const response = await this.signedTransferService.installSignedTransferReceiverApp(
+      pubId,
+      data.paymentId,
+    );
     return {
       ...response,
       amount: response.amount,
