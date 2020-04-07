@@ -61,7 +61,8 @@ export type AppInstanceInfo = {
 export type AppInstanceJson = {
   identityHash: HexString;
   multisigAddress: Address;
-  participants: Xpub[];
+  initiator: Address;
+  responder: Address;
   defaultTimeout: number;
   appInterface: AppInterface;
   appSeqNo: number;

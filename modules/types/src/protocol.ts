@@ -11,7 +11,6 @@ type InstallProtocolParams = {
   multisigAddress: Address;
   initiatorBalanceDecrement: BigNumber;
   responderBalanceDecrement: BigNumber;
-  participants: string[];
   initialState: SolidityValueType;
   appInterface: AppInterface;
   meta?: Object;
