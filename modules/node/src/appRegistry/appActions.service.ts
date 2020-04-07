@@ -1,9 +1,4 @@
 import {
-  LINKED_TRANSFER_STATE_TIMEOUT,
-  HASHLOCK_TRANSFER_STATE_TIMEOUT,
-  SIGNED_TRANSFER_STATE_TIMEOUT,
-} from "@connext/apps";
-import {
   AppAction,
   AppState,
   HashLockTransferAppAction,
@@ -108,7 +103,6 @@ export class AppActionsService {
       {
         preImage: action.preImage,
       } as SimpleLinkedTransferAppAction,
-      LINKED_TRANSFER_STATE_TIMEOUT,
     );
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
@@ -172,7 +166,6 @@ export class AppActionsService {
       {
         preImage: action.preImage,
       } as HashLockTransferAppAction,
-      HASHLOCK_TRANSFER_STATE_TIMEOUT,
     );
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
@@ -200,7 +193,6 @@ export class AppActionsService {
         data: action.data,
         signature: action.signature,
       } as SimpleSignedTransferAppAction,
-      SIGNED_TRANSFER_STATE_TIMEOUT,
     );
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);

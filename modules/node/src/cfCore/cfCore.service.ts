@@ -259,7 +259,7 @@ export class CFCoreService {
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
-  async takeAction(appInstanceId: string, action: AppAction, stateTimeout: BigNumber): Promise<MethodResults.TakeAction> {
+  async takeAction(appInstanceId: string, action: AppAction, stateTimeout?: BigNumber): Promise<MethodResults.TakeAction> {
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_takeAction,

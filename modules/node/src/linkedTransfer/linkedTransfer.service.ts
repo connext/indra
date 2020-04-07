@@ -256,7 +256,6 @@ export class LinkedTransferService {
             {
               preImage,
             },
-            LINKED_TRANSFER_STATE_TIMEOUT,  
           );
         }
         await this.cfCoreService.uninstallApp(senderApp.identityHash);
