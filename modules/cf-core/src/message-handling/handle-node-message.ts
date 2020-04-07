@@ -1,6 +1,6 @@
 import { RequestHandler } from "../request-handler";
 import { RejectProposalMessage } from "../types";
-import { NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID } from "../errors";
+import { NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH } from "../errors";
 import { StateChannel } from "../models";
 
 export async function handleRejectProposalMessage(
@@ -14,7 +14,7 @@ export async function handleRejectProposalMessage(
 
   const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!json) {
-    throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
   }
   const stateChannel = StateChannel.fromJson(json).removeProposal(appIdentityHash);
   await store.removeAppProposal(stateChannel.multisigAddress, appIdentityHash);

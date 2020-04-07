@@ -3,8 +3,8 @@ import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "./constants";
 
-export const APP_ALREADY_UNINSTALLED = (id: string): string =>
-  `Cannot uninstall app ${id}, it has already been uninstalled`;
+export const APP_ALREADY_UNINSTALLED = (appIdentityHash: string): string =>
+  `Cannot uninstall app ${appIdentityHash}, it has already been uninstalled`;
 
 export const CANNOT_DEPOSIT = "Cannot deposit while another deposit is occurring in the channel.";
 
@@ -95,28 +95,28 @@ export const NO_ACTION_ENCODING_FOR_APP_INSTANCE =
 
 export const NO_APP_CONTRACT_ADDR = "The App Contract address is empty";
 
-export const NO_APP_INSTANCE_FOR_GIVEN_ID = "No AppInstance exists for the given ID";
+export const NO_APP_INSTANCE_FOR_GIVEN_HASH = "No appInstance exists for the given identity hash";
 
 export const NO_APP_INSTANCE_FOR_TAKE_ACTION = "No appIdentityHash specified to takeAction on";
 
-export const NO_APP_INSTANCE_ID_FOR_GET_STATE = "No string specified to get state for";
+export const NO_APP_IDENTITY_HASH_FOR_GET_STATE = "No appIdentityHash specified to get state for";
 
-export const NO_APP_INSTANCE_ID_TO_GET_DETAILS = "No string specified to get details for";
+export const NO_APP_IDENTITY_HASH_TO_GET_DETAILS = "No appIdentityHash specified to get details";
 
-export const NO_APP_INSTANCE_ID_TO_INSTALL = "No appIdentityHash specified to install";
+export const NO_APP_IDENTITY_HASH_TO_INSTALL = "No appIdentityHash specified to install";
 
-export const NO_APP_INSTANCE_ID_TO_UNINSTALL = "No appIdentityHash specified to uninstall";
+export const NO_APP_IDENTITY_HASH_TO_UNINSTALL = "No appIdentityHash specified to uninstall";
 
-export const NO_MULTISIG_FOR_APP_INSTANCE_ID =
+export const NO_MULTISIG_FOR_APP_IDENTITY_HASH =
   "No multisig address exists for the given appIdentityHash";
 
-export const NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID = (id: string): string =>
+export const NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH = (id: string): string =>
   `No proposed AppInstance exists for the given appIdentityHash: ${id}`;
 
 export const NO_STATE_CHANNEL_FOR_MULTISIG_ADDR = (multisigAddress: string): string =>
   `Call to getStateChannel failed when searching for multisig address: ${multisigAddress}. This probably means that the StateChannel does not exist yet.`;
 
-export const NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID = (appIdentityHash: string): string =>
+export const NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH = (appIdentityHash: string): string =>
   `Call to getStateChannel failed when searching for app identity hash: ${appIdentityHash}.`;
 
 export const NO_STATE_CHANNEL_FOR_OWNERS = (owners: string): string =>

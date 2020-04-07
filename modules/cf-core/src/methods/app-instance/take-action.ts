@@ -7,8 +7,8 @@ import {
   INVALID_ACTION,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE,
-  NO_APP_INSTANCE_FOR_GIVEN_ID,
-  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+  NO_APP_INSTANCE_FOR_GIVEN_HASH,
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
@@ -30,7 +30,7 @@ export class TakeActionController extends NodeController {
       params.appIdentityHash,
     );
     if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
     return [app.multisigAddress, params.appIdentityHash];
   }
@@ -48,7 +48,7 @@ export class TakeActionController extends NodeController {
 
     const json = await store.getAppInstance(appIdentityHash);
     if (!json) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
     const appInstance = AppInstance.fromJson(json);
 
@@ -71,7 +71,7 @@ export class TakeActionController extends NodeController {
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     const responderXpub = getFirstElementInListNotEqualTo(
@@ -90,7 +90,7 @@ export class TakeActionController extends NodeController {
 
     const appInstance = await store.getAppInstance(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
     return { newState: AppInstance.fromJson(appInstance).state };
@@ -105,7 +105,7 @@ export class TakeActionController extends NodeController {
 
     const appInstance = await store.getAppInstance(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
     const msg = {
@@ -128,7 +128,7 @@ async function runTakeActionProtocol(
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
   try {

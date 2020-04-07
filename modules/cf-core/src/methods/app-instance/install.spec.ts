@@ -14,9 +14,9 @@ import { HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
 import {
-  NO_APP_INSTANCE_ID_TO_INSTALL,
-  NO_MULTISIG_FOR_APP_INSTANCE_ID,
-  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
+  NO_APP_IDENTITY_HASH_TO_INSTALL,
+  NO_MULTISIG_FOR_APP_IDENTITY_HASH,
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
 } from "../../errors";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { ProtocolRunner } from "../../machine";
@@ -55,19 +55,19 @@ describe("Can handle correct & incorrect installs", () => {
   it("fails to install with undefined appIdentityHash", async () => {
     await expect(
       install(store, protocolRunner, { appIdentityHash: undefined! }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
+    ).rejects.toThrowError(NO_APP_IDENTITY_HASH_TO_INSTALL);
   });
 
   it("fails to install with empty string appIdentityHash", async () => {
     await expect(
       install(store, protocolRunner, { appIdentityHash: "" }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
+    ).rejects.toThrowError(NO_APP_IDENTITY_HASH_TO_INSTALL);
   });
 
   it("fails to install without the AppInstance being proposed first", async () => {
     await expect(
       install(store, protocolRunner, { appIdentityHash: HashZero }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(HashZero));
+    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(HashZero));
   });
 
   it("fails to install without the appIdentityHash being in a channel", async () => {
@@ -81,12 +81,12 @@ describe("Can handle correct & incorrect installs", () => {
     when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
 
     when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenThrow(
-      Error(NO_MULTISIG_FOR_APP_INSTANCE_ID),
+      Error(NO_MULTISIG_FOR_APP_IDENTITY_HASH),
     );
 
     await expect(
       install(instance(mockedStore), protocolRunner, { appIdentityHash }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_MULTISIG_FOR_APP_INSTANCE_ID);
+    ).rejects.toThrowError(NO_MULTISIG_FOR_APP_IDENTITY_HASH);
   });
 
   it("succeeds to install a proposed AppInstance", async () => {
