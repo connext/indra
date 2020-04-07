@@ -1,29 +1,24 @@
 import { 
-  MethodParams,
-  DepositParameters,
-  DepositResponse,
-  RequestDepositRightsParameters,
-  RequestDepositRightsResponse,
-  RescindDepositRightsResponse,
-  RescindDepositRightsParameters,
-  CheckDepositRightsParameters,
   AppInstanceJson,
   DefaultApp,
-  toBN,
   EventNames,
+  MethodParams,
+  PublicParams,
+  PublicResults,
+  toBN,
 } from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
 import { DepositAppName, DepositAppState } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
-import { BigNumber } from "ethers/utils";
 import { validate, invalidAddress, notLessThanOrEqualTo, notGreaterThan } from "../validation";
 
 export class DepositController extends AbstractController {
-  public deposit = async (params: DepositParameters): Promise<DepositResponse> => {
+  public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
     const amount = toBN(params.amount);
     const assetId = params.assetId || AddressZero;
     // NOTE: when the `walletTransfer` is not used, these parameters
@@ -80,8 +75,8 @@ export class DepositController extends AbstractController {
   };
 
   public requestDepositRights = async (
-    params: RequestDepositRightsParameters,
-  ): Promise<RequestDepositRightsResponse> => {
+    params: PublicParams.RequestDepositRights,
+  ): Promise<PublicResults.RequestDepositRights> => {
     const assetId = params.assetId || AddressZero;
     const depositApp = await this.getDepositApp({ assetId });
     
@@ -111,8 +106,8 @@ export class DepositController extends AbstractController {
   }
 
   public rescindDepositRights = async (
-    params: RescindDepositRightsParameters,
-  ): Promise<RescindDepositRightsResponse> => {
+    params: PublicParams.RescindDepositRights,
+  ): Promise<PublicResults.RescindDepositRights> => {
     const assetId = params.assetId || AddressZero;
     // get the app instance
     const app = await this.getDepositApp({ assetId });
@@ -130,7 +125,7 @@ export class DepositController extends AbstractController {
   }
 
   public getDepositApp = async (
-    params: CheckDepositRightsParameters,
+    params: PublicParams.CheckDepositRights,
   ): Promise<AppInstanceJson | undefined> => {
     const appInstances = await this.connext.getAppInstances();
     const depositAppInfo = await this.connext.getAppRegistry({

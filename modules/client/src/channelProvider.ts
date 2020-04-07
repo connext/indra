@@ -1,34 +1,31 @@
 import { generateValidationMiddleware } from "@connext/apps";
+import { Node as CFCore, xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import {
+  CFChannelProviderOptions,
   ChannelMethods,
+  ChannelProviderConfig,
+  ConditionalTransactionCommitmentJSON,
   ConnextEventEmitter,
+  deBigNumberifyJson,
   EventNames,
   IChannelProvider,
   IClientStore,
+  IRpcConnection,
+  JsonRpcRequest,
   MethodName,
-  StateChannelJSON,
-  WithdrawalMonitorObject,
-  deBigNumberifyJson,
-  WalletTransferParams,
-  SetStateCommitmentJSON,
   MinimalTransaction,
-  ConditionalTransactionCommitmentJSON,
-  toBN,
   Opcode,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  toBN,
+  WalletTransferParams,
+  WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { signChannelMessage, signDigest } from "@connext/crypto";
 import { Wallet, Contract } from "ethers";
-import tokenAbi from "human-standard-token-abi";
-
-import { CFCore, xpubToAddress } from "./lib";
-import {
-  CFChannelProviderOptions,
-  ChannelProviderConfig,
-  IRpcConnection,
-  JsonRpcRequest,
-} from "./types";
 import { AddressZero } from "ethers/constants";
+import tokenAbi from "human-standard-token-abi";
 
 export const createCFChannelProvider = async ({
   ethProvider,

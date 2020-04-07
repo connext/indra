@@ -1,32 +1,19 @@
 import { MessagingService } from "@connext/messaging";
 import {
+  AppRegistry,
   bigNumberifyJson,
   delay,
-  GetHashLockTransferResponse,
-  GetPendingAsyncTransfersResponse,
+  IChannelProvider,
   ILoggerService,
-  ChannelRestoreResponse,
-  ResolveSignedTransferResponse,
+  INodeApiClient,
+  NodeResponses,
   stringify,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
-import {
-  AppRegistry,
-  ChannelAppSequences,
-  CreateChannelResponse,
-  GetChannelResponse,
-  GetConfigResponse,
-  IChannelProvider,
-  INodeApiClient,
-  NodeInitializationParameters,
-  RebalanceProfile,
-  RequestCollateralResponse,
-  ResolveLinkedTransferResponse,
-  TransferInfo,
-} from "./types";
+import { NodeInitializationParameters } from "./types";
 import { invalidXpub } from "./validation";
 
 const sendFailed = "Failed to send message";
@@ -54,8 +41,8 @@ export class NodeApiClient implements INodeApiClient {
     this.nodeUrl = opts.nodeUrl;
   }
 
-  public static async config(nodeUrl: string): Promise<GetConfigResponse> {
-    const response: AxiosResponse<GetConfigResponse> = await axios.get(`${nodeUrl}/config`);
+  public static async config(nodeUrl: string): Promise<NodeResponses.GetConfig> {
+    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(`${nodeUrl}/config`);
     return response.data;
   }
 
@@ -114,20 +101,20 @@ export class NodeApiClient implements INodeApiClient {
     return response.data;
   }
 
-  public async config(): Promise<GetConfigResponse> {
-    const response: AxiosResponse<GetConfigResponse> = await axios.get(`${this.nodeUrl}/config`);
+  public async config(): Promise<NodeResponses.GetConfig> {
+    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(`${this.nodeUrl}/config`);
     return response.data;
   }
 
-  public async createChannel(): Promise<CreateChannelResponse> {
+  public async createChannel(): Promise<NodeResponses.CreateChannel> {
     return this.send(`${this.userPublicIdentifier}.channel.create`);
   }
 
-  public async getChannel(): Promise<GetChannelResponse> {
+  public async getChannel(): Promise<NodeResponses.GetChannel> {
     return this.send(`${this.userPublicIdentifier}.channel.get`);
   }
 
-  public async getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse> {
+  public async getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
     return (await this.send(`${this.userPublicIdentifier}.transfer.get-pending`)) || [];
   }
 
@@ -135,11 +122,11 @@ export class NodeApiClient implements INodeApiClient {
     return this.send(`${this.userPublicIdentifier}.swap-rate.${from}.${to}`);
   }
 
-  public async getTransferHistory(): Promise<TransferInfo[]> {
+  public async getTransferHistory(): Promise<NodeResponses.GetTransferHistory> {
     return (await this.send(`${this.userPublicIdentifier}.transfer.get-history`)) || [];
   }
 
-  public async getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse> {
+  public async getHashLockTransfer(lockHash: string): Promise<NodeResponses.GetHashLockTransfer> {
     return this.send(`${this.userPublicIdentifier}.transfer.get-hashlock`, {
       lockHash,
     });
@@ -147,7 +134,7 @@ export class NodeApiClient implements INodeApiClient {
 
   // TODO: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
-  public async requestCollateral(assetId: string): Promise<RequestCollateralResponse | void> {
+  public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral | void> {
     try {
       return this.send(`${this.userPublicIdentifier}.channel.request-collateral`, {
         assetId,
@@ -174,19 +161,23 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
+  public async resolveLinkedTransfer(
+    paymentId: string,
+  ): Promise<NodeResponses.ResolveLinkedTransfer> {
     return this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
       paymentId,
     });
   }
 
-  public async resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse> {
+  public async resolveSignedTransfer(
+    paymentId: string,
+  ): Promise<NodeResponses.ResolveSignedTransfer> {
     return this.send(`${this.userPublicIdentifier}.transfer.resolve-signed`, {
       paymentId,
     });
   }
 
-  public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
+  public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
     return this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
       assetId: getAddress(assetId),
     });
@@ -229,7 +220,7 @@ export class NodeApiClient implements INodeApiClient {
     await this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
-  public async restoreState(): Promise<ChannelRestoreResponse> {
+  public async restoreState(): Promise<NodeResponses.ChannelRestore> {
     return this.send(`${this.userPublicIdentifier}.channel.restore`);
   }
 

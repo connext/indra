@@ -1,5 +1,4 @@
 import {
-  ChannelAppSequences,
   MethodResults,
   NodeResponses,
 } from "@connext/types";
@@ -35,7 +34,8 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
-    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository:
+      ConditionalTransactionCommitmentRepository,
   ) {
     super(log, messaging);
   }

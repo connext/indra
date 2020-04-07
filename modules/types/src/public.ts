@@ -88,7 +88,7 @@ type ResolveLinkedTransferParameters = {
   preImage: Bytes32;
 }
 
-export type ResolveLinkedTransferResponse = {
+type ResolveLinkedTransferResponse = {
   appIdentityHash: Bytes32;
   sender: Xpub;
   paymentId: Bytes32;
@@ -122,7 +122,7 @@ type ResolveSignedTransferParameters = {
   signature: HexString;
 };
 
-export type ResolveSignedTransferResponse = {
+type ResolveSignedTransferResponse = {
   appIdentityHash: Bytes32;
   assetId: Address;
   amount: BigNumber;
@@ -133,12 +133,12 @@ export type ResolveSignedTransferResponse = {
 ////////////////////////////////////////
 // conditional transfer
 
-export type ConditionalTransferParameters =
+type ConditionalTransferParameters =
   | LinkedTransferParameters
   | HashLockTransferParameters
   | SignedTransferParameters;
 
-export type ConditionalTransferResponse =
+type ConditionalTransferResponse =
   | LinkedTransferResponse
   | HashLockTransferResponse
   | SignedTransferResponse;
@@ -146,12 +146,12 @@ export type ConditionalTransferResponse =
 ////////////////////////////////////////
 // resolve condition
 
-export type ResolveConditionParameters =
+type ResolveConditionParameters =
   | ResolveHashLockTransferParameters
   | ResolveLinkedTransferParameters
   | ResolveSignedTransferParameters;
 
-export type ResolveConditionResponse =
+type ResolveConditionResponse =
   | ResolveHashLockTransferResponse
   | ResolveLinkedTransferResponse
   | ResolveSignedTransferResponse;
@@ -159,14 +159,14 @@ export type ResolveConditionResponse =
 ////////////////////////////////////////
 // swap
 
-interface SwapParameters {
+type SwapParameters = {
   amount: BigNumberish;
   swapRate: string; // DecString?
   toAssetId: Address;
   fromAssetId: Address;
 }
 
-interface SwapResponse {
+type SwapResponse = {
   id: number;
   nodePublicIdentifier: Xpub;
   userPublicIdentifier: Xpub;

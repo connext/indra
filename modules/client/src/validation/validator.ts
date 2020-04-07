@@ -1,4 +1,4 @@
-import { falsy } from "./";
+import { falsy } from "./bn";
 
 export function validator(errs: string[]): string[] {
   return errs.filter(falsy);

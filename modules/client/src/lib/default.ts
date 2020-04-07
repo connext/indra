@@ -1,8 +1,7 @@
 import { ConnextStore } from "@connext/store";
-import { StoreTypes } from "@connext/types";
+import { ClientOptions, StoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
 
-import { ClientOptions } from "../types";
 import {
   isMainnet,
   isRinkeby,

@@ -1,6 +1,7 @@
 import { ILogger, ClientOptions, createRandom32ByteHexString } from "@connext/types";
 import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
+
 import { RINKEBY_NETWORK, MAINNET_NETWORK, LOCALHOST_NETWORK } from "./constants";
 
 export const logTime = (log: ILogger, start: number, msg: string) => {
