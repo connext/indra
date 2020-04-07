@@ -70,7 +70,7 @@ describe("Can handle correct & incorrect installs", () => {
     ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(HashZero));
   });
 
-  it("fails to install without the AppInstanceId being in a channel", async () => {
+  it("fails to install without the appIdentityHash being in a channel", async () => {
     expect.hasAssertions();
 
     const mockedStore = mock(MemoryStoreService);

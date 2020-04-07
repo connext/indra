@@ -97,15 +97,15 @@ export const NO_APP_CONTRACT_ADDR = "The App Contract address is empty";
 
 export const NO_APP_INSTANCE_FOR_GIVEN_ID = "No AppInstance exists for the given ID";
 
-export const NO_APP_INSTANCE_FOR_TAKE_ACTION = "No AppInstanceId specified to takeAction on";
+export const NO_APP_INSTANCE_FOR_TAKE_ACTION = "No appIdentityHash specified to takeAction on";
 
 export const NO_APP_INSTANCE_ID_FOR_GET_STATE = "No string specified to get state for";
 
 export const NO_APP_INSTANCE_ID_TO_GET_DETAILS = "No string specified to get details for";
 
-export const NO_APP_INSTANCE_ID_TO_INSTALL = "No AppInstanceId specified to install";
+export const NO_APP_INSTANCE_ID_TO_INSTALL = "No appIdentityHash specified to install";
 
-export const NO_APP_INSTANCE_ID_TO_UNINSTALL = "No AppInstanceId specified to uninstall";
+export const NO_APP_INSTANCE_ID_TO_UNINSTALL = "No appIdentityHash specified to uninstall";
 
 export const NO_MULTISIG_FOR_APP_INSTANCE_ID =
   "No multisig address exists for the given appIdentityHash";
