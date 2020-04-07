@@ -44,7 +44,10 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
         returns (bytes32)
     {
         return keccak256(
-            abi.encode(appIdentity.channelNonce, appIdentity.multisigAddress)
+            abi.encodePacked(
+                appIdentity.channelNonce,
+                appIdentity.multisigAddress
+            )
         );
     }
 
