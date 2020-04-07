@@ -281,8 +281,8 @@ describe("CFCoreStore", () => {
         ...appInstance,
         latestState: { updated: "updated app instance" },
         latestVersionNumber: 42,
-        stateTimeout: "0x00",
-        defaultTimeout: toBN(1142).toHexString(),
+        stateTimeout: toBN(1142).toHexString(),
+        defaultTimeout: "0x00",
       });
 
       await cfCoreStore.updateAppInstance(multisigAddress, updated);
