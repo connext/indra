@@ -1,4 +1,4 @@
-import { deBigNumberifyJson, MethodParams, ProposeMessage } from "@connext/types";
+import { deBigNumberifyJson, ProposeMessage, ProtocolParams, MethodParams } from "@connext/types";
 
 import { Node } from "../../node";
 
@@ -56,6 +56,7 @@ describe("Node method follows spec - propose install", () => {
       const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
+        multisigAddress: undefined,
         meta: {
           info: "Provided meta",
         },
