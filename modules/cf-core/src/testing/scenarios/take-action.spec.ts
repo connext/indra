@@ -8,7 +8,7 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
-  constructGetStateRpc,
+  getAppInstance,
   constructTakeActionRpc,
   createChannel,
   installApp,
@@ -77,11 +77,7 @@ describe("Node method follows spec - takeAction", () => {
            * TEST #3
            * The database of Node C is correctly updated and querying it works
            */
-          const {
-            result: {
-              result: { state },
-            },
-          } = await nodeB.rpcRouter.dispatch(constructGetStateRpc(appIdentityHash));
+          const { latestState: state } = await getAppInstance(nodeB, appIdentityHash);
 
           expect(state).toEqual(expectedNewState);
 

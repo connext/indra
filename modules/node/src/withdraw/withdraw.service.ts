@@ -83,8 +83,8 @@ export class WithdrawService {
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
     } as WithdrawAppAction);
-    state = (await this.cfCoreService.getAppState(appInstance.identityHash))
-      .state as WithdrawAppState;
+    state = (await this.cfCoreService.getAppInstanceDetails(appInstance.identityHash))
+      .latestState as WithdrawAppState;
 
     // Update the db entity with signature
     let withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);

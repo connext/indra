@@ -340,19 +340,6 @@ export class CFCoreService {
     return appInstance as AppInstanceJson;
   }
 
-  async getAppState(appIdentityHash: string): Promise<MethodResults.GetState | undefined> {
-    const stateResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: MethodNames.chan_getState,
-      parameters: {
-        appIdentityHash,
-      } as MethodParams.GetState,
-    });
-    this.log.info(`Got state for app ${appIdentityHash}`);
-    this.log.debug(`getAppState result: ${stringify(stateResponse)}`);
-    return stateResponse.result.result as MethodResults.GetState;
-  }
-
   async getAppInstancesByAppName(
     multisigAddress: string,
     appName: SupportedApplications,

@@ -605,20 +605,6 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.GetAppInstanceDetails);
   };
 
-  public getAppState = async (
-    appIdentityHash: string,
-  ): Promise<MethodResults.GetState | undefined> => {
-    // check the app is actually installed, or returned undefined
-    const err = await this.appNotInstalled(appIdentityHash);
-    if (err) {
-      this.log.warn(err);
-      return undefined;
-    }
-    return await this.channelProvider.send(MethodNames.chan_getState, {
-      appIdentityHash,
-    } as MethodParams.GetState);
-  };
-
   public takeAction = async (
     appIdentityHash: string,
     action: AppAction,
@@ -630,9 +616,8 @@ export class ConnextClient implements IConnextClient {
       throw new Error(err);
     }
     // check state is not finalized
-    const state: MethodResults.GetState = await this.getAppState(appIdentityHash);
-    // FIXME: casting?
-    if ((state.state as any).finalized) {
+    const { latestState: state } = (await this.getAppInstanceDetails(appIdentityHash)).appInstance;
+    if ((state as any).finalized) { // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(MethodNames.chan_takeAction, {
@@ -653,9 +638,8 @@ export class ConnextClient implements IConnextClient {
       throw new Error(err);
     }
     // check state is not finalized
-    const state: MethodResults.GetState = await this.getAppState(appIdentityHash);
-    // FIXME: casting?
-    if ((state.state as any).finalized) {
+    const { latestState: state } = (await this.getAppInstanceDetails(appIdentityHash)).appInstance;
+    if ((state as any).finalized) { // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(MethodNames.chan_updateState, {
@@ -918,7 +902,9 @@ export class ConnextClient implements IConnextClient {
 
   private appNotInstalled = async (appIdentityHash: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appIdentityHash);
+    const app = apps.filter(
+      (app: AppInstanceJson): boolean => app.identityHash === appIdentityHash,
+    );
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appIdentityHash}. ` +
@@ -936,7 +922,9 @@ export class ConnextClient implements IConnextClient {
 
   private appInstalled = async (appIdentityHash: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appIdentityHash);
+    const app = apps.filter(
+      (app: AppInstanceJson): boolean => app.identityHash === appIdentityHash,
+    );
     if (app.length > 0) {
       return (
         `App with id ${appIdentityHash} is already installed. ` +

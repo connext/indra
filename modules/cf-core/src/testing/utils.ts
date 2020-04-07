@@ -582,19 +582,6 @@ export function confirmProposedAppInstance(
   }
 
   expect(proposalParams.timeout).toEqual(bigNumberify(appInstanceProposal.timeout));
-
-  // TODO: uncomment when getState is implemented
-  // expect(proposalParams.initialState).toEqual(appInstanceInitialState);
-}
-
-export function constructGetStateRpc(appIdentityHash: string): Rpc {
-  return {
-    parameters: {
-      appIdentityHash,
-    },
-    id: Date.now(),
-    methodName: MethodNames.chan_getState,
-  };
 }
 
 export function constructGetStateChannelRpc(multisigAddress: string): Rpc {
@@ -792,12 +779,6 @@ export async function confirmAppInstanceInstallation(
   expect(appInstance.appInterface.actionEncoding).toEqual(params.abiEncodings.actionEncoding);
   expect(appInstance.defaultTimeout).toEqual(params.timeout.toNumber());
   expect(appInstance.latestState).toEqual(params.initialState);
-}
-
-export async function getState(nodeA: Node, appIdentityHash: string): Promise<SolidityValueType> {
-  const getStateReq = constructGetStateRpc(appIdentityHash);
-  const getStateResult = await nodeA.rpcRouter.dispatch(getStateReq);
-  return (getStateResult.result.result as MethodResults.GetState).state;
 }
 
 export async function makeInstallCall(node: Node, appIdentityHash: string) {

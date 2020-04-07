@@ -184,7 +184,6 @@ export interface IConnextClient {
   getFreeBalance(assetId?: Address): Promise<MethodResults.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appIdentityHash: Bytes32): Promise<MethodResults.GetAppInstanceDetails>;
-  getAppState(appIdentityHash: Bytes32): Promise<MethodResults.GetState>;
   getProposedAppInstances(
     multisigAddress?: Address,
   ): Promise<MethodResults.GetProposedAppInstances | undefined>;

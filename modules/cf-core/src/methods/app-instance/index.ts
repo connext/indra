@@ -1,7 +1,6 @@
 export { GetInstalledAppInstancesController } from "./get-all";
 export { GetAppInstanceController } from "./get-app-instance";
 export { GetFreeBalanceStateController } from "./get-free-balance";
-export { GetAppInstanceStateController } from "./get-state";
 export { GetTokenIndexedFreeBalancesController } from "./get-token-indexed-free-balances";
 export { InstallAppInstanceController } from "./install";
 export { ProposeInstallAppInstanceController } from "./propose-install";

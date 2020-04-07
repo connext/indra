@@ -119,16 +119,6 @@ type GetProposedAppInstancesResult = {
 
 ////////////////////////////////////////
 
-type GetStateParams = {
-  appIdentityHash: Bytes32;
-};
-
-type GetStateResult = {
-  state: SolidityValueType;
-};
-
-////////////////////////////////////////
-
 type GetStateChannelParams = {
   multisigAddress: Address;
 };
@@ -263,7 +253,6 @@ export const MethodNames = enumify({
   chan_getFreeBalanceState: "chan_getFreeBalanceState",
   chan_getProposedAppInstance: "chan_getProposedAppInstance",
   chan_getProposedAppInstances: "chan_getProposedAppInstances",
-  chan_getState: "chan_getState",
   chan_getStateChannel: "chan_getStateChannel",
   chan_getStateDepositHolderAddress: "chan_getStateDepositHolderAddress",
   chan_getTokenIndexedFreeBalanceStates: "chan_getTokenIndexedFreeBalanceStates",
@@ -289,7 +278,6 @@ export namespace MethodParams {
   export type GetFreeBalanceState = GetFreeBalanceStateParams;
   export type GetProposedAppInstance = GetProposedAppInstanceParams;
   export type GetProposedAppInstances = GetProposedAppInstancesParams;
-  export type GetState = GetStateParams;
   export type GetStateChannel = GetStateChannelParams;
   export type GetStateDepositHolderAddress = GetStateDepositHolderAddressParams;
   export type GetTokenIndexedFreeBalanceStates = GetTokenIndexedFreeBalanceStatesParams;
@@ -315,7 +303,6 @@ export type MethodParam =
   | GetFreeBalanceStateParams
   | GetProposedAppInstanceParams
   | GetProposedAppInstancesParams
-  | GetStateParams
   | GetStateChannelParams
   | GetStateDepositHolderAddressParams
   | GetTokenIndexedFreeBalanceStatesParams
@@ -340,7 +327,6 @@ export namespace MethodResults {
   export type GetFreeBalanceState = GetFreeBalanceStateResult;
   export type GetProposedAppInstance = GetProposedAppInstanceResult;
   export type GetProposedAppInstances = GetProposedAppInstancesResult;
-  export type GetState = GetStateResult;
   export type GetStateChannel = GetStateChannelResult;
   export type GetStateDepositHolderAddress = GetStateDepositHolderAddressResult;
   export type GetTokenIndexedFreeBalanceStates = GetTokenIndexedFreeBalanceStatesResult;
@@ -366,7 +352,6 @@ export type MethodResult =
   | GetFreeBalanceStateResult
   | GetProposedAppInstanceResult
   | GetProposedAppInstancesResult
-  | GetStateResult
   | GetStateChannelResult
   | GetStateDepositHolderAddressResult
   | GetTokenIndexedFreeBalanceStatesResult
