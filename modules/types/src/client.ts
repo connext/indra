@@ -107,7 +107,6 @@ export interface IConnextClient {
   nodePublicIdentifier: Xpub;
   nodeFreeBalanceAddress: Address;
   publicIdentifier: Xpub;
-  signerAddress: Address;
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;

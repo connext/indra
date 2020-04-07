@@ -123,12 +123,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     this._multisigAddress = multisigAddress;
   }
 
-  get signerAddress(): string | undefined {
-    return this.config.signerAddress;
+  get freeBalanceAddress(): string | undefined {
+    return this.config.freeBalanceAddress;
   }
 
-  set signerAddress(signerAddress: string | undefined) {
-    this.config.signerAddress = signerAddress;
+  set freeBalanceAddress(freeBalanceAddress: string | undefined) {
+    this.config.freeBalanceAddress = freeBalanceAddress;
   }
 
   ///////////////////////////////////////////////

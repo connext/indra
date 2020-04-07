@@ -129,7 +129,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       return undefined;
     }
-    if (!this.hasAppHash(appIdentityHash, channel.appInstances)) {
+    if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
       return undefined;
     }
     const [, app] = channel.appInstances.find(([id]) => id === appIdentityHash);
@@ -145,7 +145,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app instance without channel`);
     }
-    if (this.hasAppHash(appInstance.identityHash, channel.appInstances)) {
+    if (this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
       throw new Error(`App instance with hash ${appInstance.identityHash} already exists`);
     }
     channel.appInstances.push([appInstance.identityHash, appInstance]);
@@ -160,7 +160,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app instance without channel`);
     }
-    if (!this.hasAppHash(appInstance.identityHash, channel.appInstances)) {
+    if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
       throw new Error(`Could not find app instance with hash ${appInstance.identityHash}`);
     }
     const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
@@ -177,7 +177,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       return;
     }
-    if (!this.hasAppHash(appIdentityHash, channel.appInstances)) {
+    if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
       // does not exist
       return;
     }
@@ -195,7 +195,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       return undefined;
     }
-    if (!this.hasAppHash(appIdentityHash, channel.proposedAppInstances)) {
+    if (!this.hasAppIdentityHash(appIdentityHash, channel.proposedAppInstances)) {
       return undefined;
     }
     const [, proposal] = channel.proposedAppInstances.find(([id]) => id === appIdentityHash);
@@ -211,7 +211,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app proposal without channel`);
     }
-    if (this.hasAppHash(appInstance.identityHash, channel.proposedAppInstances)) {
+    if (this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)) {
       throw new Error(`App proposal with hash ${appInstance.identityHash} already exists`);
     }
     channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
@@ -226,7 +226,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app proposal without channel`);
     }
-    if (!this.hasAppHash(appInstance.identityHash, channel.proposedAppInstances)) {
+    if (!this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)) {
       throw new Error(
         `Could not find app proposal with hash ${appInstance.identityHash} already exists`,
       );
@@ -242,7 +242,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       return;
     }
-    if (!this.hasAppHash(appIdentityHash, channel.proposedAppInstances)) {
+    if (!this.hasAppIdentityHash(appIdentityHash, channel.proposedAppInstances)) {
       return;
     }
     const idx = channel.proposedAppInstances.findIndex(([app]) => app === appIdentityHash);
@@ -427,7 +427,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     });
   }
 
-  private hasAppHash(
+  private hasAppIdentityHash(
     hash: string,
     toSearch: [string, AppInstanceJson][] | [string, AppInstanceProposal][],
   ) {

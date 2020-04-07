@@ -95,7 +95,6 @@ export class ConnextClient implements IConnextClient {
   public nodePublicIdentifier: string;
   public nodeFreeBalanceAddress: string;
   public publicIdentifier: string;
-  public signerAddress: Address;
   public store: IClientStore;
   public token: Contract;
 
@@ -127,7 +126,6 @@ export class ConnextClient implements IConnextClient {
     this.token = opts.token;
 
     this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
-    this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
