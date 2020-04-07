@@ -50,7 +50,7 @@ export async function asyncTransferAsset(
       ]),
       new Promise((resolve: Function): void => {
         clientA.on(EventNames.UNINSTALL_EVENT, data => {
-          if (data.appInstanceId === senderAppId) {
+          if (data.appIdentityHash === senderAppId) {
             resolve();
           }
         });
@@ -59,7 +59,7 @@ export async function asyncTransferAsset(
 
   let start = Date.now();
   log.info(`call client.transfer()`);
-  const { paymentId: senderPaymentId, appId } = await clientA.transfer({
+  const { paymentId: senderPaymentId, appIdentityHash } = await clientA.transfer({
     amount: transferAmount.toString(),
     assetId,
     meta: { ...SENDER_INPUT_META },
@@ -68,7 +68,7 @@ export async function asyncTransferAsset(
   log.info(`transfer() returned in ${Date.now() - start}ms`);
   paymentId = senderPaymentId;
 
-  await transferFinished(appId);
+  await transferFinished(appIdentityHash);
   log.info(`Got transfer finished event in ${Date.now() - start}ms`);
 
   expect((await clientB.getAppInstances()).length).to.be.eq(0);

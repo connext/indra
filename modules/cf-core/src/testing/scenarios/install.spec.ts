@@ -69,7 +69,7 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
-          makeInstallCall(nodeB, msg.data.appInstanceId);
+          makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
 
         // FIXME: still no symmetric events -- nodeB will never emit an
@@ -130,8 +130,8 @@ describe("Node method follows spec - install", () => {
       });
 
       it("install app with ERC20", async done => {
-        await transferERC20Tokens(await nodeA.signerAddress());
-        await transferERC20Tokens(await nodeB.signerAddress());
+        await transferERC20Tokens(await nodeA.freeBalanceAddress);
+        await transferERC20Tokens(await nodeB.freeBalanceAddress);
 
         const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
 
@@ -154,7 +154,7 @@ describe("Node method follows spec - install", () => {
             erc20TokenAddress,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-          makeInstallCall(nodeB, msg.data.appInstanceId);
+          makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {

@@ -167,9 +167,7 @@ export class WithdrawalController extends AbstractController {
       responderDepositTokenAddress: assetId,
       timeout: Zero,
     };
-
-    const appId = await this.proposeAndInstallLedgerApp(installParams);
-    return appId;
+    return await this.proposeAndInstallLedgerApp(installParams);
   }
 
   public async saveWithdrawCommitmentToStore(

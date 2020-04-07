@@ -8,7 +8,7 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import { validAction } from "../tic-tac-toe";
 import {
-  constructGetStateRpc,
+  getAppInstance,
   constructTakeActionRpc,
   createChannel,
   installApp,
@@ -50,7 +50,7 @@ describe("Node method follows spec - takeAction", () => {
     "Node A and B install an AppInstance, Node A takes action, " +
       "Node B confirms receipt of state update",
     () => {
-      it("sends takeAction with invalid appInstanceId", async () => {
+      it("sends takeAction with invalid appIdentityHash", async () => {
         const takeActionReq = constructTakeActionRpc("", validAction);
 
         await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
@@ -60,7 +60,7 @@ describe("Node method follows spec - takeAction", () => {
 
       it("can take action", async done => {
         const multisigAddress = await createChannel(nodeA, nodeB);
-        const [appInstanceId] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+        const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
         const expectedNewState = {
           board: [
@@ -77,27 +77,23 @@ describe("Node method follows spec - takeAction", () => {
            * TEST #3
            * The database of Node C is correctly updated and querying it works
            */
-          const {
-            result: {
-              result: { state },
-            },
-          } = await nodeB.rpcRouter.dispatch(constructGetStateRpc(appInstanceId));
+          const { latestState: state } = await getAppInstance(nodeB, appIdentityHash);
 
           expect(state).toEqual(expectedNewState);
 
           done();
         });
 
-        const takeActionReq = constructTakeActionRpc(appInstanceId, validAction);
+        const takeActionReq = constructTakeActionRpc(appIdentityHash, validAction);
 
         /**
          * TEST #1
          * The event emittted by Node C after an action is taken by A
-         * sends the appInstanceId and the newState correctly.
+         * sends the appIdentityHash and the newState correctly.
          */
         confirmMessages(nodeA, nodeB, {
           newState: expectedNewState,
-          appInstanceId,
+          appIdentityHash,
           action: validAction,
         });
 

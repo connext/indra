@@ -3,7 +3,7 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
-import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../../errors";
+import { NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../../errors";
 
 export class GetProposedAppInstanceController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_getProposedAppInstance)
@@ -11,9 +11,9 @@ export class GetProposedAppInstanceController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.GetProposedAppInstance,
   ): Promise<MethodResults.GetProposedAppInstance> {
-    const appInstance = await requestHandler.store.getAppProposal(params.appInstanceId);
+    const appInstance = await requestHandler.store.getAppProposal(params.appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(params.appInstanceId));
+      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(params.appIdentityHash));
     }
     return { appInstance };
   }

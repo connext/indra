@@ -163,11 +163,6 @@ export class Node {
   }
 
   @Memoize()
-  async signerAddress(): Promise<string> {
-    return await this.requestHandler.getSignerAddress();
-  }
-
-  @Memoize()
   get freeBalanceAddress(): string {
     return getFreeBalanceAddress(this.publicIdentifier);
   }

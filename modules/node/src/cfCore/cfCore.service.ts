@@ -207,13 +207,13 @@ export class CFCoreService {
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
           proposeRes = await this.proposeInstallApp(params);
-          boundResolve = this.resolveInstallTransfer.bind(null, res, proposeRes.appInstanceId);
+          boundResolve = this.resolveInstallTransfer.bind(null, res, proposeRes.appIdentityHash);
           boundReject = this.rejectInstallTransfer.bind(null, rej);
           this.cfCore.on(EventNames.INSTALL_EVENT, boundResolve);
           this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
         },
       );
-      this.log.info(`App was installed successfully: ${proposeRes.appInstanceId}`);
+      this.log.info(`App was installed successfully: ${proposeRes.appIdentityHash}`);
       this.log.debug(`App install result: ${stringify(proposeRes)}`);
       return proposeRes;
     } catch (e) {
@@ -224,65 +224,65 @@ export class CFCoreService {
     }
   }
 
-  async installApp(appInstanceId: string): Promise<MethodResults.Install> {
+  async installApp(appIdentityHash: string): Promise<MethodResults.Install> {
     const installRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_install,
       parameters: {
-        appInstanceId,
+        appIdentityHash,
       } as MethodParams.Install,
     });
-    this.log.info(`installApp succeeded for app ${appInstanceId}`);
+    this.log.info(`installApp succeeded for app ${appIdentityHash}`);
     this.log.debug(`installApp result: ${stringify(installRes.result.result)}`);
     return installRes.result.result as MethodResults.Install;
   }
 
-  async rejectInstallApp(appInstanceId: string): Promise<MethodResults.RejectInstall> {
+  async rejectInstallApp(appIdentityHash: string): Promise<MethodResults.RejectInstall> {
     const rejectRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_rejectInstall,
       parameters: {
-        appInstanceId,
+        appIdentityHash,
       } as MethodParams.RejectInstall,
     });
-    this.log.info(`rejectInstallApp succeeded for app ${appInstanceId}`);
+    this.log.info(`rejectInstallApp succeeded for app ${appIdentityHash}`);
     this.log.debug(`rejectInstallApp result: ${stringify(rejectRes.result.result)}`);
     // update app status
-    const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
+    const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
     if (!rejectedApp) {
-      throw new Error(`No app found after being rejected for app ${appInstanceId}`);
+      throw new Error(`No app found after being rejected for app ${appIdentityHash}`);
     }
     rejectedApp.type = AppType.REJECTED;
     await this.appInstanceRepository.save(rejectedApp);
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
-  async takeAction(appInstanceId: string, action: AppAction): Promise<MethodResults.TakeAction> {
+  async takeAction(appIdentityHash: string, action: AppAction): Promise<MethodResults.TakeAction> {
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_takeAction,
       parameters: {
         action,
-        appInstanceId,
+        appIdentityHash,
       } as MethodParams.TakeAction,
     });
 
-    this.log.info(`takeAction succeeded for app ${appInstanceId}`);
+    this.log.info(`takeAction succeeded for app ${appIdentityHash}`);
     this.log.debug(`takeAction result: ${stringify(actionResponse.result)}`);
     return actionResponse.result.result as MethodResults.TakeAction;
   }
 
-  async uninstallApp(appInstanceId: string): Promise<MethodResults.Uninstall> {
-    this.log.info(`Calling uninstallApp for appInstanceId ${appInstanceId}`);
+  async uninstallApp(appIdentityHash: string): Promise<MethodResults.Uninstall> {
+    this.log.info(`Calling uninstallApp for appIdentityHash ${appIdentityHash}`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_uninstall,
       parameters: {
-        appInstanceId,
+        appIdentityHash,
       },
     });
 
-    this.log.info(`uninstallApp succeeded for app ${appInstanceId}`);
+    this.log.info(`uninstallApp succeeded for app ${appIdentityHash}`);
     this.log.debug(`uninstallApp result: ${stringify(uninstallResponse.result.result)}`);
     return uninstallResponse.result.result as MethodResults.Uninstall;
   }
@@ -318,39 +318,26 @@ export class CFCoreService {
     return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
 
-  async getAppInstanceDetails(appInstanceId: string): Promise<AppInstanceJson> {
+  async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
     let appInstance: any;
     try {
       const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
         methodName: MethodNames.chan_getAppInstance,
-        parameters: { appInstanceId } as MethodParams.GetAppInstanceDetails,
+        parameters: { appIdentityHash } as MethodParams.GetAppInstanceDetails,
       });
       appInstance = appInstanceResponse.result.result.appInstance;
     } catch (e) {
-      if (e.message.includes(`No multisig address exists for the given appInstanceId`)) {
-        this.log.warn(`${e.message}: ${appInstanceId}`);
+      if (e.message.includes(`No multisig address exists for the given appIdentityHash`)) {
+        this.log.warn(`${e.message}: ${appIdentityHash}`);
         appInstance = undefined;
       } else {
         throw e;
       }
     }
-    this.log.info(`Got app instance details for app ${appInstanceId}`);
-    this.log.debug(`getAppInstanceDetails result: ${stringify(appInstance)}`);
+    this.log.info(`Got app instance details for app ${appIdentityHash}`);
+    this.log.debug(`getAppInstance result: ${stringify(appInstance)}`);
     return appInstance as AppInstanceJson;
-  }
-
-  async getAppState(appInstanceId: string): Promise<MethodResults.GetState | undefined> {
-    const stateResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: MethodNames.chan_getState,
-      parameters: {
-        appInstanceId,
-      } as MethodParams.GetState,
-    });
-    this.log.info(`Got state for app ${appInstanceId}`);
-    this.log.debug(`getAppState result: ${stringify(stateResponse)}`);
-    return stateResponse.result.result as MethodResults.GetState;
   }
 
   async getAppInstancesByAppName(
@@ -377,10 +364,10 @@ export class CFCoreService {
 
   private resolveInstallTransfer = (
     res: (value?: unknown) => void,
-    appInstanceId: string,
+    appIdentityHash: string,
     message: InstallMessage,
   ): InstallMessage => {
-    if (appInstanceId === message.data.params.appInstanceId) {
+    if (appIdentityHash === message.data.params.appIdentityHash) {
       res(message);
     }
     return message;

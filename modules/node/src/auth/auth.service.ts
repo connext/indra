@@ -116,9 +116,9 @@ export class AuthService {
     return async (subject: string, data: any): Promise<string> => {
       const lockName = subject.split(".").pop(); // last item of subject is lockName
 
-      // TODO need to validate that lockName is EITHER multisig OR [multisig, appInstanceId]
+      // TODO need to validate that lockName is EITHER multisig OR [multisig, appIdentityHash]
       //      holding off on this right now because it will be *much* easier to iterate through
-      //      all appInstanceIds after our store refactor.
+      //      all appIdentityHashs after our store refactor.
 
       // const xpub = subject.split(".")[0]; // first item of subscription is xpub
       // const channel = await this.channelRepo.findByUserPublicIdentifier(xpub);

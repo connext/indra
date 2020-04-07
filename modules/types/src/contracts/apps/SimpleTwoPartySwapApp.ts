@@ -1,7 +1,8 @@
-import { Address, BigNumberish, HexString } from "../../basic";
+import { Address, BigNumberish, Xpub } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import { multiAssetMultiPartyCoinTransferEncoding, tidy } from "../misc";
+import { Collateralizations } from "../..";
 
 export const SimpleTwoPartySwapAppName = "SimpleTwoPartySwapApp";
 
@@ -21,9 +22,18 @@ export const SimpleSwapAppStateEncoding = tidy(`tuple(
 
 export interface SwapParameters {
   amount: BigNumberish;
-  swapRate: HexString;
+  swapRate: string; // DecString?
   toAssetId: Address;
   fromAssetId: Address;
+}
+
+export interface SwapResponse {
+  id: number;
+  nodePublicIdentifier: Xpub;
+  userPublicIdentifier: Xpub;
+  multisigAddress: Address;
+  available: boolean;
+  activeCollateralizations: Collateralizations;
 }
 
 export type AllowedSwap = {
@@ -38,7 +48,7 @@ export const PriceOracleTypes = {
 export type PriceOracleType = keyof typeof PriceOracleTypes;
 
 export type SwapRate = AllowedSwap & {
-  rate: HexString;
+  rate: string; // DecString?
   priceOracleType: PriceOracleType;
   blockNumber?: number;
 };

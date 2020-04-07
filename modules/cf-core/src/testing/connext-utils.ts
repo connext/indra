@@ -55,7 +55,7 @@ export async function installLink(
     Zero,
     action.assetId,
   );
-  return res[0]; // appInstanceId
+  return res[0]; // appIdentityHash
 }
 
 function assertLinkRedemption(app: AppInstanceJson, amount: BigNumber): void {
@@ -71,14 +71,14 @@ function assertLinkRedemption(app: AppInstanceJson, amount: BigNumber): void {
 export async function redeemLink(
   redeemer: Node,
   funder: Node,
-  appId: string,
+  appIdentityHash: string,
   action: UnidirectionalLinkedTransferAppAction,
 ): Promise<string> {
   // take action to finalize state and claim funds from intermediary
-  await takeAppAction(redeemer, appId, action);
-  const redeemerApp = await getAppInstance(redeemer, appId);
+  await takeAppAction(redeemer, appIdentityHash, action);
+  const redeemerApp = await getAppInstance(redeemer, appIdentityHash);
   assertLinkRedemption(redeemerApp, action.amount);
-  return await uninstallApp(redeemer, funder, appId);
+  return await uninstallApp(redeemer, funder, appIdentityHash);
 }
 
 /**

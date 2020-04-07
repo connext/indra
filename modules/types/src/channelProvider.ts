@@ -1,3 +1,4 @@
+import { Address, Bytes32, DecString, Xpub } from "./basic";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
@@ -45,8 +46,8 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // GETTERS / SETTERS
   isSigner: boolean;
   config: ChannelProviderConfig | undefined;
-  multisigAddress: string | undefined;
-  signerAddress: string | undefined;
+  multisigAddress: Address | undefined;
+  freeBalanceAddress: Address | undefined;
 
   ///////////////////////////////////
   // LISTENER METHODS
@@ -73,48 +74,45 @@ export interface IChannelProvider extends ConnextEventEmitter {
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
   createConditionalCommitment(
-    appIdentityHash: string,
+    appIdentityHash: Bytes32,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
 }
 
 export type ChannelProviderConfig = {
-  freeBalanceAddress: string;
-  multisigAddress?: string; // may not be deployed yet
-  natsClusterId?: string;
-  natsToken?: string;
+  freeBalanceAddress: Address;
+  multisigAddress?: Address; // may not be deployed yet
   nodeUrl: string;
-  signerAddress: string;
-  userPublicIdentifier: string;
+  userPublicIdentifier: Xpub;
 };
 
+export type KeyGen = (index: string) => Promise<string>;
+
 export interface CFChannelProviderOptions {
-  ethProvider: any;
-  keyGen(s: string): Promise<string>;
+  ethProvider: any; // TODO: replace w real type
+  keyGen: KeyGen;
   lockService?: ILockService;
   logger?: ILoggerService;
   messaging: any;
   contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
-  xpub: string;
+  xpub: Xpub;
   store: IClientStore;
 }
 
 export type JsonRpcRequest = {
   id: number;
   jsonrpc: "2.0";
-  method: string;
+  method: string; // MethodNames?
   params: any;
 };
 
-export type KeyGen = (index: string) => Promise<string>;
-
 export type WalletTransferParams = {
-  amount: string;
-  assetId: string;
-  recipient: string;
-};
+  amount: DecString;
+  assetId: Address;
+  recipient: Address;
+}
 
 export interface IRpcConnection extends ConnextEventEmitter {
   ////////////////////////////////////////

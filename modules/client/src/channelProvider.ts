@@ -67,7 +67,6 @@ export const createCFChannelProvider = async ({
   const channelProviderConfig: ChannelProviderConfig = {
     freeBalanceAddress: xpubToAddress(xpub),
     nodeUrl,
-    signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
   const wallet = new Wallet(await keyGen("0")).connect(ethProvider);

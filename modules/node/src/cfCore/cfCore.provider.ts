@@ -58,10 +58,10 @@ export const cfCoreProviderFactory: Provider = {
         store,
       ),
     );
-    const signerAddr = await cfCore.signerAddress();
-    const balance = (await provider.getBalance(signerAddr)).toString();
+    const freeBalanceAddress = await cfCore.freeBalanceAddress;
+    const balance = (await provider.getBalance(freeBalanceAddress)).toString();
     log.info(
-      `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
+      `Balance of signer address ${freeBalanceAddress} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
     log.info("CFCore created");
     return cfCore;

@@ -59,7 +59,7 @@ export class AppRegistryService implements OnModuleInit {
   }
 
   async validateAndInstallOrReject(
-    appInstanceId: string,
+    appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
@@ -99,16 +99,16 @@ export class AppRegistryService implements OnModuleInit {
         }
       }
       // collateralized again in post-install tasks
-      ({ appInstance } = await this.cfCoreService.installApp(appInstanceId));
+      ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
     } catch (e) {
       // reject if error
-      this.log.warn(`App install failed, . Error: ${e.stack || e.message}`);
-      await this.cfCoreService.rejectInstallApp(appInstanceId);
+      this.log.warn(`App install failed: ${e.stack || e.message}`);
+      await this.cfCoreService.rejectInstallApp(appIdentityHash);
       return;
     }
 
     // any tasks that need to happen after install, i.e. DB writes
-    await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
+    await this.runPostInstallTasks(registryAppInfo, appIdentityHash, proposeInstallParams, from);
 
     const installSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${installerChannel.multisigAddress}.app-instance.${appInstance.identityHash}.install`;
     await this.messagingService.publish(installSubject, appInstance);
@@ -196,18 +196,18 @@ export class AppRegistryService implements OnModuleInit {
 
   private async runPostInstallTasks(
     registryAppInfo: AppRegistry,
-    appInstanceId: string,
+    appIdentityHash: string,
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
         this.log.debug(`Doing withdrawal post-install tasks`);
-        const appInstance = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
+        const appInstance = await this.cfCoreService.getAppInstance(appIdentityHash);
         const initialState = proposeInstallParams.initialState as WithdrawAppState;
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(
-          appInstanceId,
+          appIdentityHash,
           bigNumberify(proposeInstallParams.initiatorDeposit),
           proposeInstallParams.initiatorDepositTokenAddress,
           initialState.transfers[0].to,

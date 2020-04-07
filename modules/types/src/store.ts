@@ -2,6 +2,7 @@ import { Sequelize } from "sequelize";
 
 import { StateChannelJSON } from "./state";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
+import { Address, Bytes32 } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
@@ -79,55 +80,55 @@ export interface IStoreService {
 
   ///// State channels
   getAllChannels(): Promise<StateChannelJSON[]>;
-  getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined>;
-  getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
-  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined>;
+  getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
+  getStateChannelByOwners(owners: Address[]): Promise<StateChannelJSON | undefined>;
+  getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
   createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
 
   ///// App instances
-  getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
+  getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
   createAppInstance(
-    multisigAddress: string,
+    multisigAddress: Address,
     appInstance: AppInstanceJson,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void>;
-  updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
+  updateAppInstance(multisigAddress: Address, appInstance: AppInstanceJson): Promise<void>;
   removeAppInstance(
-    multisigAddress: string,
-    appInstanceId: string,
+    multisigAddress: Address,
+    appIdentityHash: Bytes32,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void>;
 
   ///// App proposals
-  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined>;
+  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceProposal | undefined>;
   createAppProposal(
-    multisigAddress: string,
+    multisigAddress: Address,
     appProposal: AppInstanceProposal,
     numProposedApps: number,
   ): Promise<void>;
-  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void>;
+  removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
   // proposals dont need to be updated
 
   ///// Free balance
-  getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined>;
+  getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;
   updateFreeBalance(
-    multisigAddress: string,
+    multisigAddress: Address,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void>;
 
   ///// Setup commitment
-  getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined>;
-  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
+  getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
+  createSetupCommitment(multisigAddress: Address, commitment: MinimalTransaction): Promise<void>;
   // no update, only ever created once
 
   ///// SetState commitment
-  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
+  getSetStateCommitment(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON | undefined>;
   createSetStateCommitment(
-    appIdentityHash: string,
+    appIdentityHash: Bytes32,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
   updateSetStateCommitment(
-    appIdentityHash: string,
+    appIdentityHash: Bytes32,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
   // no removal for disputes, only 1 per app thats
@@ -135,26 +136,26 @@ export interface IStoreService {
 
   ///// Conditional tx commitment
   getConditionalTransactionCommitment(
-    appIdentityHash: string,
+    appIdentityHash: Bytes32,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
   createConditionalTransactionCommitment(
-    appIdentityHash: string,
+    appIdentityHash: Bytes32,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
   updateConditionalTransactionCommitment(
-    appIdentityHash: string,
+    appIdentityHash: Bytes32,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
   // no removal for disputes
 
   ///// Withdrawal commitment
-  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined>;
+  getWithdrawalCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
   createWithdrawalCommitment(
-    multisigAddress: string,
+    multisigAddress: Address,
     commitment: MinimalTransaction,
   ): Promise<void>;
   updateWithdrawalCommitment(
-    multisigAddress: string,
+    multisigAddress: Address,
     commitment: MinimalTransaction,
   ): Promise<void>;
 

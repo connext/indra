@@ -93,7 +93,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
             multisigAddress,
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
-          makeInstallCall(nodeB, msg.data.appInstanceId);
+          makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
 
         nodeA.on(`INSTALL_EVENT`, async () => {

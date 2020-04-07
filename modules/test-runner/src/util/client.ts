@@ -44,12 +44,12 @@ export const createClient = async (
   mnemonics[client.publicIdentifier] = mnemonic;
 
   const ethTx = await ethWallet.sendTransaction({
-    to: client.signerAddress,
+    to: client.freeBalanceAddress,
     value: ETH_AMOUNT_LG,
   });
   if (fund) {
     const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
-    const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
+    const tokenTx = await token.functions.transfer(client.freeBalanceAddress, TOKEN_AMOUNT);
     await Promise.all([ethTx.wait(), tokenTx.wait()]);
   }
   expect(client.freeBalanceAddress).to.be.ok;

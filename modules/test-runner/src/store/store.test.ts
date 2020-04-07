@@ -81,17 +81,17 @@ describe("ConnextStore", () => {
     });
   });
 
-  describe("getStateChannelByAppInstanceId", () => {
+  describe("getStateChannelByAppIdentityHash", () => {
     storeTypes.forEach(type => {
       it(`${type} - should work`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
-        const appInstanceId = channel.appInstances[0][0];
-        const nullValue = await store.getStateChannelByAppInstanceId(appInstanceId);
+        const appIdentityHash = channel.appInstances[0][0];
+        const nullValue = await store.getStateChannelByAppIdentityHash(appIdentityHash);
         expect(nullValue).to.be.undefined;
         await store.createStateChannel(channel);
-        const retrieved = await store.getStateChannelByAppInstanceId(appInstanceId);
+        const retrieved = await store.getStateChannelByAppIdentityHash(appIdentityHash);
         expect(retrieved).to.deep.eq(channel);
         await store.clear();
       });
