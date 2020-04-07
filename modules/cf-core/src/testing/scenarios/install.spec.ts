@@ -1,4 +1,4 @@
-import { ProtocolParams } from "@connext/types";
+import { ProtocolParams, delay } from "@connext/types";
 import { One } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
 
@@ -60,6 +60,8 @@ describe("Node method follows spec - install", () => {
         let proposeInstallParams: ProtocolParams.Propose;
 
         nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+          // Delay because propose event fires before params are set
+          await delay(2000);
           [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
@@ -113,7 +115,6 @@ describe("Node method follows spec - install", () => {
           //   done();
           // }
         });
-
         const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
@@ -144,6 +145,8 @@ describe("Node method follows spec - install", () => {
         let proposedParams: ProtocolParams.Propose;
 
         nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+          // Delay because propose event fires before params are set
+          await delay(2000);
           [preInstallERC20BalanceNodeA, preInstallERC20BalanceNodeB] = await getBalances(
             nodeA,
             nodeB,

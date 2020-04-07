@@ -1,5 +1,5 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames, sortAddresses } from "@connext/types";
+import { OutcomeType, ProtocolNames, sortAddresses, toBN } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -202,7 +202,7 @@ export class TestRunner {
       initiatorDepositTokenAddress: tokenAddress,
       responderDeposit: One,
       responderDepositTokenAddress: tokenAddress,
-      timeout: bigNumberify(100),
+      timeout: toBN(100),
       initialState,
       outcomeType,
     });

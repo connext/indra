@@ -64,7 +64,7 @@ export async function signDigestWithEthers(privateKey: string, digest: string) {
 }
 
 export function sortByAddress(a: string, b: string) {
-  return bigNumberify(a).lt(b) ? -1 : 1;
+  return toBN(a).lt(toBN(b)) ? -1 : 1;
 }
 
 export function sortAddresses(addrs: string[]) {
