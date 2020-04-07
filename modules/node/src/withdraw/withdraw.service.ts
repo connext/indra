@@ -4,12 +4,12 @@ import {
   BigNumber,
   CoinTransfer,
   MinimalTransaction,
+  PublicParams,
   stringify,
   TransactionResponse,
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
-  WithdrawParameters,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
@@ -69,7 +69,7 @@ export class WithdrawService {
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
         recipient: state.transfers[0].to,
         nonce: state.nonce,
-      } as WithdrawParameters,
+      } as PublicParams.Withdraw,
       appInstance.multisigAddress,
     );
 
@@ -205,7 +205,7 @@ export class WithdrawService {
         assetId,
         recipient: this.cfCoreService.cfCore.freeBalanceAddress,
         nonce,
-      } as WithdrawParameters,
+      } as PublicParams.Withdraw,
       channel.multisigAddress,
     );
 

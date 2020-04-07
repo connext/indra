@@ -3,6 +3,14 @@ import { enumify } from "./utils";
 
 export type Collateralizations = { [assetId: string]: boolean };
 
+export type RebalanceProfile = {
+  assetId: Address;
+  upperBoundCollateralize: BigNumber;
+  lowerBoundCollateralize: BigNumber;
+  upperBoundReclaim: BigNumber;
+  lowerBoundReclaim: BigNumber;
+};
+
 // wtf is this?
 export interface VerifyNonceDtoType {
   sig: string;
@@ -10,7 +18,7 @@ export interface VerifyNonceDtoType {
 }
 
 // used to verify channel is in sequence
-type ChannelAppSequences = {
+export type ChannelAppSequences = {
   userSequenceNumber: number;
   nodeSequenceNumber: number;
 };

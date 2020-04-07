@@ -1,10 +1,8 @@
 import { MessagingService } from "@connext/messaging";
 import {
   bigNumberifyJson,
-  GetLinkedTransferResponse,
-  GetPendingAsyncTransfersResponse,
   LinkedTransferStatus,
-  ResolveLinkedTransferResponse,
+  NodeResponses,
   SimpleLinkedTransferAppState,
   stringify,
 } from "@connext/types";
@@ -32,7 +30,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   async getLinkedTransferByPaymentId(
     pubId: string,
     data: { paymentId: string },
-  ): Promise<GetLinkedTransferResponse | undefined> {
+  ): Promise<NodeResponses.GetLinkedTransfer | undefined> {
     const { paymentId } = data;
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
@@ -67,7 +65,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   async resolveLinkedTransfer(
     pubId: string,
     { paymentId }: { paymentId: string },
-  ): Promise<ResolveLinkedTransferResponse> {
+  ): Promise<NodeResponses.ResolveLinkedTransfer> {
     this.log.debug(
       `Got resolve link request with data: ${stringify(paymentId)}`,
     );
@@ -83,7 +81,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async getPendingTransfers(
     userPublicIdentifier: string,
-  ): Promise<GetPendingAsyncTransfersResponse> {
+  ): Promise<NodeResponses.GetPendingAsyncTransfers> {
     const transfers = await this.linkedTransferService.getLinkedTransfersForRedeem(
       userPublicIdentifier,
     );

@@ -18,6 +18,7 @@ export {
   MethodResult,
   MethodResults,
 } from "./methods";
+export * from "./misc";
 export * from "./node";
 export {
   ProtocolName,

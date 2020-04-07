@@ -1,5 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
-import { GetConfigResponse } from "@connext/types";
+import { NodeResponses } from "@connext/types";
 
 import { ConfigService } from "./config.service";
 
@@ -15,6 +15,6 @@ export class ConfigController {
       supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
       messagingUrl: this.configService.getMessagingConfig().messagingUrl,
       nodePublicIdentifier: this.configService.getPublicIdentifier(),
-    } as GetConfigResponse);
+    } as NodeResponses.GetConfig);
   }
 }

@@ -9,15 +9,9 @@ import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
-import { Collateralizations } from "./misc";
+import { Collateralizations, RebalanceProfile } from "./misc";
 
-type GetRebalanceProfileResponse = {
-  assetId: Address;
-  upperBoundCollateralize: BigNumber;
-  lowerBoundCollateralize: BigNumber;
-  upperBoundReclaim: BigNumber;
-  lowerBoundReclaim: BigNumber;
-};
+type GetRebalanceProfileResponse = RebalanceProfile;
 
 type GetHashLockTransferResponse =
   | {
