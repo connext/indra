@@ -76,7 +76,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
 
-    const initiatorSignature = yield [
+    const mySignature = yield [
       OP_SIGN,
       setStateCommitment.hashToSign(),
       appInstance.appSeqNo,
@@ -84,7 +84,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     const {
-      customData: { signature: responderSignature },
+      customData: { signature: counterpartySig },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -94,7 +94,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
         toXpub: responderXpub,
         customData: {
-          signature: initiatorSignature,
+          signature: mySignature,
         },
       } as ProtocolMessage,
     ];
@@ -104,11 +104,20 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     await assertIsValidSignature(
       responderEphemeralKey,
       setStateCommitment.hashToSign(),
-      responderSignature,
+      counterpartySig,
     );
     logTime(log, substart, `Verified responder's sig`);
 
-    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+    // add signatures and write commitment to store
+    const isAppInitiator = appInstance.initiator !== responderEphemeralKey;
+    await setStateCommitment.addSignatures(
+      isAppInitiator
+        ? mySignature as any
+        : counterpartySig,
+      isAppInitiator
+        ? counterpartySig
+        : mySignature as any,
+    );
 
     yield [
       PERSIST_COMMITMENT,
@@ -136,7 +145,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const {
       processID,
       params,
-      customData: { signature: initiatorSignature },
+      customData: { signature: counterpartySig },
     } = message;
 
     const {
@@ -177,17 +186,26 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     await assertIsValidSignature(
       initiatorEphemeralKey,
       setStateCommitment.hashToSign(),
-      initiatorSignature,
+      counterpartySig,
     );
     logTime(log, substart, `Verified initator's sig`);
 
-    const responderSignature = yield [
+    const mySignature = yield [
       OP_SIGN,
       setStateCommitment.hashToSign(),
       appInstance.appSeqNo,
     ];
 
-    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+    // add signatures and write commitment to store
+    const isAppInitiator = appInstance.initiator !== initiatorEphemeralKey;
+    await setStateCommitment.addSignatures(
+      isAppInitiator
+        ? mySignature as any
+        : counterpartySig,
+      isAppInitiator
+        ? counterpartySig
+        : mySignature as any,
+    );
 
     yield [
       PERSIST_COMMITMENT,
@@ -211,7 +229,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: initiatorXpub,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
-          signature: responderSignature,
+          signature: mySignature,
         },
       } as ProtocolMessage,
     ];

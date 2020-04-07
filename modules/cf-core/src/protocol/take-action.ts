@@ -81,11 +81,11 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 6ms
-    const initiatorSignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
+    const mySignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
 
     // 117ms
     const {
-      customData: { signature: responderSignature },
+      customData: { signature: counterpartySig },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -95,16 +95,24 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
         toXpub: responderXpub,
         customData: {
-          signature: initiatorSignature,
+          signature: mySignature,
         },
       } as ProtocolMessage,
     ];
 
     // 10ms
-    await assertIsValidSignature(responderEphemeralKey, setStateCommitmentHash, responderSignature);
+    await assertIsValidSignature(responderEphemeralKey, setStateCommitmentHash, counterpartySig);
 
     // add signatures and write commitment to store
-    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+    const isAppInitiator = appInstance.initiator !== responderEphemeralKey;
+    await setStateCommitment.addSignatures(
+      isAppInitiator
+        ? mySignature as any
+        : counterpartySig,
+      isAppInitiator
+        ? counterpartySig
+        : mySignature as any,
+    );
 
     yield [
       PERSIST_COMMITMENT,
@@ -131,7 +139,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const {
       processID,
       params,
-      customData: { signature: initiatorSignature },
+      customData: { signature: counterpartySignature },
     } = message;
 
     const {
@@ -175,13 +183,21 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 9ms
-    await assertIsValidSignature(initiatorEphemeralKey, setStateCommitmentHash, initiatorSignature);
+    await assertIsValidSignature(initiatorEphemeralKey, setStateCommitmentHash, counterpartySignature);
 
     // 7ms
-    const responderSignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
+    const mySignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
 
     // add signatures and write commitment to store
-    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+    const isAppInitiator = appInstance.initiator !== initiatorEphemeralKey;
+    await setStateCommitment.addSignatures(
+      isAppInitiator
+        ? mySignature as any
+        : counterpartySignature,
+      isAppInitiator
+        ? counterpartySignature
+        : mySignature as any,
+    );
 
     yield [
       PERSIST_COMMITMENT,
@@ -206,7 +222,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: initiatorXpub,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
-          signature: responderSignature,
+          signature: mySignature,
         },
       } as ProtocolMessage,
     ];

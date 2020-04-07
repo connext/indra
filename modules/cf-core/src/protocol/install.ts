@@ -1,4 +1,4 @@
-import { ProtocolNames, ProtocolParams, ProtocolRoles, InstallMiddlewareContext } from "@connext/types";
+import { ProtocolNames, ProtocolParams, ProtocolRoles, InstallMiddlewareContext, delay } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -148,10 +148,15 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     );
 
-    conditionalTxCommitment.signatures = [
-      mySignatureOnConditionalTransaction,
-      counterpartySignatureOnConditionalTransaction,
-    ];
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderFreeBalanceAddress;
+    await conditionalTxCommitment.addSignatures(
+      isChannelInitiator 
+        ? mySignatureOnConditionalTransaction as any
+        : counterpartySignatureOnConditionalTransaction,
+      isChannelInitiator
+        ? counterpartySignatureOnConditionalTransaction
+        : mySignatureOnConditionalTransaction as any,
+    );
 
     // 12ms
     yield [
@@ -177,10 +182,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // add signatures to commitment
-    freeBalanceUpdateData.signatures = [
-      mySignatureOnFreeBalanceStateUpdate,
-      counterpartySignatureOnFreeBalanceStateUpdate,
-    ];
+    await freeBalanceUpdateData.addSignatures(
+      isChannelInitiator 
+        ? mySignatureOnFreeBalanceStateUpdate as any
+        : counterpartySignatureOnFreeBalanceStateUpdate,
+      isChannelInitiator 
+        ? counterpartySignatureOnFreeBalanceStateUpdate
+        : mySignatureOnFreeBalanceStateUpdate as any,
+    );
 
     // 10ms
     yield [
@@ -309,10 +318,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
-    conditionalTxCommitment.signatures = [
-      mySignatureOnConditionalTransaction,
-      counterpartySignatureOnConditionalTransaction,
-    ];
+    // add signatures to commitment
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== initiatorFreeBalanceAddress;
+    await conditionalTxCommitment.addSignatures(
+      isChannelInitiator 
+        ? mySignatureOnConditionalTransaction as any
+        : counterpartySignatureOnConditionalTransaction,
+      isChannelInitiator
+        ? counterpartySignatureOnConditionalTransaction
+        : mySignatureOnConditionalTransaction as any,
+    );
 
     // 12ms
     yield [
@@ -354,10 +369,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // add signature
-    freeBalanceUpdateData.signatures = [
-      mySignatureOnFreeBalanceStateUpdate,
-      counterpartySignatureOnFreeBalanceStateUpdate,
-    ];
+    await freeBalanceUpdateData.addSignatures(
+      isChannelInitiator 
+        ? mySignatureOnFreeBalanceStateUpdate as any
+        : counterpartySignatureOnFreeBalanceStateUpdate,
+      isChannelInitiator 
+        ? counterpartySignatureOnFreeBalanceStateUpdate
+        : mySignatureOnFreeBalanceStateUpdate as any,
+    );
 
     // 13ms
     yield [
@@ -421,6 +440,8 @@ function computeStateChannelTransition(
     outcomeType,
     disableLimit,
     meta,
+    appInitiatorAddress,
+    appResponderAddress,
   } = params;
 
   const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorXpub);
@@ -441,12 +462,9 @@ function computeStateChannelTransition(
     disableLimit,
   );
 
-  const initiator = xkeyKthAddress(initiatorXpub, appSeqNo);
-  const responder = xkeyKthAddress(responderXpub, appSeqNo);
-
   const appInstanceToBeInstalled = new AppInstance(
-    /* initiator */ initiator,
-    /* responder */ responder,
+    /* initiator */ appInitiatorAddress,
+    /* responder */ appResponderAddress,
     /* defaultTimeout */ defaultTimeout,
     /* appInterface */ appInterface,
     /* appSeqNo */ appSeqNo,
@@ -486,8 +504,6 @@ function computeStateChannelTransition(
   return stateChannel.installApp(
     appInstanceToBeInstalled,
     tokenIndexedBalanceDecrement,
-    initiatorXpub, // verification
-    responderXpub, // verification
   );
 }
 

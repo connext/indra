@@ -73,7 +73,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const responderEphemeralKey = xkeyKthAddress(responderXpub, appToUninstall.appSeqNo);
+    const responderFreeBalanceKey = xkeyKthAddress(responderXpub);
 
     const uninstallCommitment = getSetStateCommitment(
       context,
@@ -83,12 +83,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     let checkpoint = Date.now();
     // 4ms
-    const signature = yield [OP_SIGN, uninstallCommitmentHash, appToUninstall.appSeqNo];
+    const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
     logTime(log, checkpoint, `Signed uninstall commitment initiator`);
 
     // 94ms
     const {
-      customData: { signature: responderSignature },
+      customData: { signature: counterpartySignature },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -96,7 +96,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         params,
         toXpub: responderXpub,
-        customData: { signature },
+        customData: { signature: mySignature },
         seq: 1,
       } as ProtocolMessage,
     ];
@@ -104,13 +104,23 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     checkpoint = Date.now();
     // 6ms
     await assertIsValidSignature(
-      responderEphemeralKey,
+      responderFreeBalanceKey,
       uninstallCommitmentHash,
-      responderSignature,
+      counterpartySignature,
     );
     logTime(log, checkpoint, `Asserted valid signature in initiating uninstall`);
 
-    uninstallCommitment.signatures = [signature, responderSignature];
+    const isInitiator = postProtocolStateChannel
+      .multisigOwners[0] !== responderFreeBalanceKey;
+    // use channel initiator bc free balance app
+    await uninstallCommitment.addSignatures(
+      isInitiator 
+        ? mySignature as any
+        : counterpartySignature,
+      isInitiator
+        ? counterpartySignature
+        : mySignature as any,
+    );
 
     yield [
       PERSIST_COMMITMENT,
@@ -167,31 +177,41 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appToUninstall.appSeqNo);
+    const initiatorFreeBalanceKey = xkeyKthAddress(initiatorXpub);
 
     const uninstallCommitment = getSetStateCommitment(
       context,
       postProtocolStateChannel.freeBalance,
     );
 
-    const initiatorSignature = context.message.customData.signature;
+    const counterpartySignature = context.message.customData.signature;
     const uninstallCommitmentHash = uninstallCommitment.hashToSign();
 
     let checkpoint = Date.now();
     // 15ms
     await assertIsValidSignature(
-      initiatorEphemeralKey,
+      initiatorFreeBalanceKey,
       uninstallCommitmentHash,
-      initiatorSignature,
+      counterpartySignature,
     );
     logTime(log, checkpoint, `Asserted valid signature in responding uninstall`);
     checkpoint = Date.now();
 
     // 10ms
-    const responderSignature = yield [OP_SIGN, uninstallCommitmentHash, appToUninstall.appSeqNo];
+    const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
     logTime(log, checkpoint, `Signed commitment in responding uninstall`);
 
-    uninstallCommitment.signatures = [responderSignature, initiatorSignature];
+    const isInitiator = postProtocolStateChannel
+      .multisigOwners[0] !== initiatorFreeBalanceKey;
+    // use channel initiator bc free balance app
+    await uninstallCommitment.addSignatures(
+      isInitiator 
+        ? mySignature
+        : counterpartySignature as any,
+      isInitiator
+        ? counterpartySignature
+        : mySignature as any,
+    );
 
     yield [
       PERSIST_COMMITMENT,
@@ -217,7 +237,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: initiatorXpub,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
-          signature: responderSignature,
+          signature: mySignature,
         },
       } as ProtocolMessage,
     ];

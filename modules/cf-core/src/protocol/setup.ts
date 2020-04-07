@@ -112,11 +112,15 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Verified responder's sigs`);
 
     // add sigs to commitments
-    setupCommitment.signatures = [responderSetupSignature, mySetupSignature];
-    freeBalanceUpdateData.signatures = [
+    await setupCommitment.addSignatures(
+      mySetupSignature as any,
+      responderSetupSignature,
+    );
+
+    await freeBalanceUpdateData.addSignatures(
+      mySignatureOnFreeBalanceState as any,
       responderSignatureOnFreeBalanceState,
-      mySignatureOnFreeBalanceState,
-    ];
+    );
 
     // 33 ms
     yield [
@@ -194,8 +198,15 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const mySetupSignature = yield [OP_SIGN, setupCommitment.hashToSign()];
     const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData.hashToSign()];
 
-    setupCommitment.signatures = [mySetupSignature, initiatorSetupSignature];
-    freeBalanceUpdateData.signatures = [mySignatureOnFreeBalanceState, initiatorSetupSignature];
+    await setupCommitment.addSignatures(
+      initiatorSetupSignature,
+      mySetupSignature as any,
+    );
+
+    await freeBalanceUpdateData.addSignatures(
+      initiatorSignatureOnFreeBalanceState,
+      mySignatureOnFreeBalanceState as any,
+    );
 
     yield [
       PERSIST_COMMITMENT,

@@ -165,10 +165,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Asserted valid signture initiator propose`);
 
     // add signatures to commitment and save
-    setStateCommitment.signatures = [
-      initiatorSignatureOnInitialState,
+    await setStateCommitment.addSignatures(
+      initiatorSignatureOnInitialState as any,
       responderSignatureOnInitialState,
-    ];
+    );
 
     substart = Date.now();
 
@@ -322,10 +322,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    setStateCommitment.signatures = [
+    await setStateCommitment.addSignatures(
       initiatorSignatureOnInitialState,
-      responderSignatureOnInitialState,
-    ];
+      responderSignatureOnInitialState as any,
+    );
 
     substart = Date.now();
 
