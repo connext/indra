@@ -1,3 +1,4 @@
+import { xkeyKthAddress } from "@connext/cf-core";
 import { utils } from "@connext/client";
 import { ConnextStore } from "@connext/store";
 import {
@@ -31,8 +32,6 @@ import {
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { getNatsClient } from "../util/nats";
-
-const { xpubToAddress } = utils;
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -143,7 +142,7 @@ describe("Async Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const receiverBal = await clientB.getFreeBalance(transfer.assetId);
-    expect(receiverBal[xpubToAddress(clientB.nodePublicIdentifier)].lt(transfer.amount)).to.be.true;
+    expect(receiverBal[xkeyKthAddress(clientB.nodePublicIdentifier)].lt(transfer.amount)).to.be.true;
 
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });

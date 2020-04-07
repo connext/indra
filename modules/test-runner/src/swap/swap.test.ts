@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { calculateExchange, IConnextClient, SwapParameters } from "@connext/types";
+import { calculateExchange, IConnextClient, PublicParams } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -76,7 +76,7 @@ describe("Swaps", () => {
     await client.requestCollateral(tokenAddress);
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
-    const swapParams: SwapParameters = {
+    const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
       fromAssetId: WRONG_ADDRESS,
       swapRate,
@@ -90,7 +90,7 @@ describe("Swaps", () => {
     await client.requestCollateral(tokenAddress);
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
-    const swapParams: SwapParameters = {
+    const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
       swapRate,
@@ -104,7 +104,7 @@ describe("Swaps", () => {
     await client.requestCollateral(tokenAddress);
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     const swapAmount = parseEther(ZERO_ZERO_TWO);
-    const swapParams: SwapParameters = {
+    const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
       swapRate,
@@ -118,7 +118,7 @@ describe("Swaps", () => {
     await client.requestCollateral(tokenAddress);
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
-    const swapParams: SwapParameters = {
+    const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
       swapRate: (-swapRate).toString(),
@@ -132,7 +132,7 @@ describe("Swaps", () => {
     await client.requestCollateral(tokenAddress);
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
-    const swapParams: SwapParameters = {
+    const swapParams: PublicParams.Swap = {
       amount: swapAmount.mul(-1).toString(),
       fromAssetId: AddressZero,
       swapRate,
@@ -151,7 +151,7 @@ describe("Swaps", () => {
     // No collateral requested
     const swapRate = ONE;
     const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
-    const swapParams: SwapParameters = {
+    const swapParams: PublicParams.Swap = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
       swapRate,

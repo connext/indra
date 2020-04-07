@@ -2,12 +2,10 @@
 import {
   ConditionalTransferTypes,
   EventNames,
-  GetSignedTransferResponse,
+  NodeResponses,
   IConnextClient,
-  ResolveSignedTransferParameters,
-  SignedTransferParameters,
+  PublicParams,
   SignedTransferStatus,
-  SignedTransfer,
   deBigNumberifyJson,
   EventPayloads,
 } from "@connext/types";
@@ -77,7 +75,7 @@ describe("Signed Transfers", () => {
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar" },
-      } as SignedTransferParameters),
+      } as PublicParams.SignedTransfer),
       new Promise(async res => {
         clientB.once(
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
@@ -93,7 +91,7 @@ describe("Signed Transfers", () => {
       deBigNumberifyJson({
         amount: transfer.amount,
         assetId: transfer.assetId,
-        type: ConditionalTransferTypes[SignedTransfer],
+        type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
         paymentId,
         transferMeta: { signer: signerAddress },
         meta: { foo: "bar", recipient: clientB.publicIdentifier },
@@ -126,7 +124,7 @@ describe("Signed Transfers", () => {
         paymentId,
         data,
         signature,
-      } as ResolveSignedTransferParameters);
+      } as PublicParams.ResolveSignedTransfer);
       const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
@@ -150,7 +148,7 @@ describe("Signed Transfers", () => {
         assetId: transfer.assetId,
         recipient: clientB.publicIdentifier,
         meta: { foo: "bar" },
-      } as SignedTransferParameters),
+      } as PublicParams.SignedTransfer),
       new Promise(async res => {
         clientB.once(
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
@@ -166,7 +164,7 @@ describe("Signed Transfers", () => {
       deBigNumberifyJson({
         amount: transfer.amount,
         assetId: transfer.assetId,
-        type: ConditionalTransferTypes[SignedTransfer],
+        type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
         paymentId,
         transferMeta: { signer: signerAddress },
         meta: { foo: "bar", recipient: clientB.publicIdentifier },
@@ -199,7 +197,7 @@ describe("Signed Transfers", () => {
         paymentId,
         data,
         signature,
-      } as ResolveSignedTransferParameters);
+      } as PublicParams.ResolveSignedTransfer);
       const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
@@ -221,7 +219,7 @@ describe("Signed Transfers", () => {
       signer: signerAddress,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
-    } as SignedTransferParameters);
+    } as PublicParams.SignedTransfer);
 
     const retrievedTransfer = await clientB.getSignedTransfer(paymentId);
     expect(retrievedTransfer).to.deep.equal({
@@ -231,7 +229,7 @@ describe("Signed Transfers", () => {
       senderPublicIdentifier: clientA.publicIdentifier,
       status: SignedTransferStatus.PENDING,
       meta: { foo: "bar" },
-    } as GetSignedTransferResponse);
+    } as NodeResponses.GetSignedTransfer);
   });
 
   it("gets a completed signed transfer by lock hash", async () => {
@@ -248,7 +246,7 @@ describe("Signed Transfers", () => {
       signer: signerAddress,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
-    } as SignedTransferParameters);
+    } as PublicParams.SignedTransfer);
     // disconnect so that it cant be unlocked
     await clientA.messaging.disconnect();
 
@@ -276,7 +274,7 @@ describe("Signed Transfers", () => {
       receiverPublicIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.COMPLETED,
       meta: { foo: "bar" },
-    } as GetSignedTransferResponse);
+    } as NodeResponses.GetSignedTransfer);
   });
 
   it("cannot resolve a signed transfer if signature is wrong", async () => {
@@ -293,7 +291,7 @@ describe("Signed Transfers", () => {
       signer: signerAddress,
       assetId: transfer.assetId,
       meta: { foo: "bar" },
-    } as SignedTransferParameters);
+    } as PublicParams.SignedTransfer);
 
     const badSig = hexlify(randomBytes(65));
     const data = hexlify(randomBytes(32));
@@ -303,7 +301,7 @@ describe("Signed Transfers", () => {
         data,
         paymentId,
         signature: badSig,
-      } as ResolveSignedTransferParameters),
+      } as PublicParams.ResolveSignedTransfer),
     ).to.eventually.be.rejectedWith(/VM Exception while processing transaction/);
   });
 
@@ -339,13 +337,13 @@ describe("Signed Transfers", () => {
         });
         await clientA.conditionalTransfer({
           amount: transfer.amount,
-          conditionType: ConditionalTransferTypes[SignedTransfer],
+          conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId,
           signer: signerAddress,
           assetId: transfer.assetId,
           meta: { foo: "bar" },
           recipient: clientB.publicIdentifier,
-        } as SignedTransferParameters);
+        } as PublicParams.SignedTransfer);
       });
 
       // Including recipient signing in test to match real conditions
@@ -357,11 +355,11 @@ describe("Signed Transfers", () => {
           res();
         });
         await clientB.resolveCondition({
-          conditionType: ConditionalTransferTypes[SignedTransfer],
+          conditionType: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
           paymentId,
           data,
           signature,
-        } as ResolveSignedTransferParameters);
+        } as PublicParams.ResolveSignedTransfer);
       });
 
       // Stop timer and add to sum

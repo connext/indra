@@ -1,4 +1,4 @@
-import { calculateExchange, IConnextClient, inverse, SwapParameters } from "@connext/types";
+import { calculateExchange, IConnextClient, inverse, PublicParams } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
 import { expect } from "../";
@@ -44,7 +44,7 @@ export async function swapAsset(
   const swapRate = ethToToken ? rate : inverse(rate);
 
   const inputSwapAmount = input.amount;
-  const swapParams: SwapParameters = {
+  const swapParams: PublicParams.Swap = {
     amount: inputSwapAmount.toString(),
     fromAssetId: input.assetId,
     swapRate,
