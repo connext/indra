@@ -598,16 +598,6 @@ export function confirmProposedAppInstance(
   // expect(proposalParams.initialState).toEqual(appInstanceInitialState);
 }
 
-export function constructGetStateRpc(appInstanceId: string): Rpc {
-  return {
-    parameters: {
-      appInstanceId,
-    },
-    id: Date.now(),
-    methodName: MethodNames.chan_getState,
-  };
-}
-
 export function constructGetStateChannelRpc(multisigAddress: string): Rpc {
   return {
     parameters: {

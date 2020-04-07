@@ -77,7 +77,7 @@ export class TakeActionController extends NodeController {
     }
     const app = await store.getAppInstance(appIdentityHash);
     if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
     const defaultTimeout = app.defaultTimeout;
 
