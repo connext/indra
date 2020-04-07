@@ -12,7 +12,7 @@ export async function handleRejectProposalMessage(
     data: { appIdentityHash },
   } = receivedRejectProposalMessage;
 
-  const json = await store.getStateChannelByAppInstanceId(appIdentityHash);
+  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!json) {
     throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
   }

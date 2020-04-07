@@ -82,7 +82,7 @@ export interface IStoreService {
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: Address[]): Promise<StateChannelJSON | undefined>;
-  getStateChannelByAppInstanceId(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
+  getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
   createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
 
   ///// App instances

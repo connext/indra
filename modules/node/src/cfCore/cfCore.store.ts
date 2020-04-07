@@ -72,8 +72,8 @@ export class CFCoreStore implements IStoreService {
     return this.channelRepository.getStateChannelByOwners(owners);
   }
 
-  getStateChannelByAppInstanceId(appIdentityHash: string): Promise<StateChannelJSON> {
-    return this.channelRepository.getStateChannelByAppInstanceId(appIdentityHash);
+  getStateChannelByAppIdentityHash(appIdentityHash: string): Promise<StateChannelJSON> {
+    return this.channelRepository.getStateChannelByAppIdentityHash(appIdentityHash);
   }
 
   async createStateChannel(stateChannel: StateChannelJSON): Promise<void> {

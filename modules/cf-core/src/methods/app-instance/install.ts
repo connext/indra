@@ -27,7 +27,7 @@ export class InstallAppInstanceController extends NodeController {
     const { store } = requestHandler;
     const { appIdentityHash } = params;
 
-    const sc = await store.getStateChannelByAppInstanceId(appIdentityHash);
+    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
     }
@@ -71,7 +71,7 @@ export async function install(
     throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appIdentityHash));
   }
 
-  const json = await store.getStateChannelByAppInstanceId(appIdentityHash);
+  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!json) {
     throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
   }

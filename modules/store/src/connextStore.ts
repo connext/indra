@@ -133,8 +133,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getStateChannelByOwners(owners);
   }
 
-  getStateChannelByAppInstanceId(appIdentityHash: string): Promise<StateChannelJSON> {
-    return this.internalStore.getStateChannelByAppInstanceId(appIdentityHash);
+  getStateChannelByAppIdentityHash(appIdentityHash: string): Promise<StateChannelJSON> {
+    return this.internalStore.getStateChannelByAppIdentityHash(appIdentityHash);
   }
 
   createStateChannel(stateChannel: StateChannelJSON): Promise<void> {

@@ -32,7 +32,7 @@ export class RejectInstallController extends NodeController {
       throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appIdentityHash));
     }
 
-    const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
+    const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!stateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
     }

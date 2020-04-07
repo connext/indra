@@ -107,7 +107,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     );
   }
 
-  async getStateChannelByAppInstanceId(
+  async getStateChannelByAppIdentityHash(
     appIdentityHash: string,
   ): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
@@ -125,7 +125,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
-    const channel = await this.getStateChannelByAppInstanceId(appIdentityHash);
+    const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       return undefined;
     }
@@ -191,7 +191,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
-    const channel = await this.getStateChannelByAppInstanceId(appIdentityHash);
+    const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       return undefined;
     }

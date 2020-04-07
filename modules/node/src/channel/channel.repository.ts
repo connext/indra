@@ -54,7 +54,7 @@ export class ChannelRepository extends Repository<Channel> {
     return convertChannelToJSON(channel);
   }
 
-  async getStateChannelByAppInstanceId(
+  async getStateChannelByAppIdentityHash(
     appIdentityHash: string,
   ): Promise<StateChannelJSON | undefined> {
     const channel = await this.findByAppInstanceId(appIdentityHash);

@@ -66,7 +66,7 @@ export class MemoryStorage implements IClientStore {
     return this.getStateChannel(channel.multisigAddress);
   }
 
-  getStateChannelByAppInstanceId(appIdentityHash: string): Promise<StateChannelJSON | undefined> {
+  getStateChannelByAppIdentityHash(appIdentityHash: string): Promise<StateChannelJSON | undefined> {
     return Promise.resolve(
       [...this.channels.values()].find(channel => {
         return (

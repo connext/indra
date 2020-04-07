@@ -26,7 +26,7 @@ export class MockStoreService implements IStoreService {
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     return Promise.resolve(undefined);
   }
-  getStateChannelByAppInstanceId(appIdentityHash: string): Promise<StateChannelJSON | undefined> {
+  getStateChannelByAppIdentityHash(appIdentityHash: string): Promise<StateChannelJSON | undefined> {
     return Promise.resolve(undefined);
   }
   createStateChannel(stateChannel: StateChannelJSON): Promise<void> {

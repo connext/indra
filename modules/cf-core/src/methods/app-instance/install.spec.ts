@@ -80,7 +80,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getStateChannelByAppInstanceId(appIdentityHash)).thenThrow(
+    when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenThrow(
       Error(NO_MULTISIG_FOR_APP_INSTANCE_ID),
     );
 
@@ -125,7 +125,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getStateChannelByAppInstanceId(appIdentityHash)).thenResolve(stateChannel.toJson());
+    when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenResolve(stateChannel.toJson());
 
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the

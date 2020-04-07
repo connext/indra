@@ -69,7 +69,7 @@ export class TakeActionController extends NodeController {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appIdentityHash, action } = params;
 
-    const sc = await store.getStateChannelByAppInstanceId(appIdentityHash);
+    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
     }
@@ -126,7 +126,7 @@ async function runTakeActionProtocol(
   responderXpub: string,
   action: SolidityValueType,
 ) {
-  const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
+  const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!stateChannel) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
     }
