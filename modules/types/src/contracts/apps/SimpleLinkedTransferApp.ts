@@ -61,7 +61,7 @@ export type LinkedTransferParameters = {
 };
 
 export type LinkedTransferResponse = {
-  appId: Bytes32;
+  appIdentityHash: Bytes32;
   paymentId: Bytes32;
   preImage: Bytes32;
 };
@@ -73,7 +73,7 @@ export type ResolveLinkedTransferParameters = {
 }
 
 export type ResolveLinkedTransferResponse = {
-  appId: Bytes32;
+  appIdentityHash: Bytes32;
   sender: Xpub;
   paymentId: Bytes32;
   amount: BigNumber;

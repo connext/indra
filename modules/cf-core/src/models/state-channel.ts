@@ -488,7 +488,7 @@ export class StateChannel {
   ): Promise<string[]> {
     const channel = await store.getStateChannelByAppInstanceId(appInstanceId);
     if (!channel) {
-      throw new Error(`[getPeersAddressFromAppInstanceID] No state channel found in store for appId ${appInstanceId}`);
+      throw new Error(`[getPeersAddressFromAppInstanceID] No state channel found in store for appIdentityHash ${appInstanceId}`);
     }
     return StateChannel.getPeersAddressFromChannel(myIdentifier, store, channel.multisigAddress);
   }

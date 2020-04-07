@@ -68,7 +68,7 @@ export type HashLockTransferParameters = {
 
 // Client Controller Response
 export type HashLockTransferResponse = {
-  appId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 // Client Resolve Params
@@ -79,7 +79,7 @@ export type ResolveHashLockTransferParameters = {
 
 // Client Resolve Response
 export type ResolveHashLockTransferResponse = {
-  appId: Bytes32;
+  appIdentityHash: Bytes32;
   sender: Xpub;
   amount: BigNumber;
   assetId: Address;

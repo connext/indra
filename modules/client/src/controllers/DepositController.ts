@@ -224,7 +224,6 @@ export class DepositController extends AbstractController {
       timeout: Zero,
     };
 
-    const appId = await this.proposeAndInstallLedgerApp(params);
-    return appId;
+    return await this.proposeAndInstallLedgerApp(params);
   };
 }

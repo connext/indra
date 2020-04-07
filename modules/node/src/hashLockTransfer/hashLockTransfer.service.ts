@@ -167,7 +167,7 @@ export class HashLockTransferService {
     }
 
     return {
-      appId: receiverAppInstallRes.appInstanceId,
+      appIdentityHash: receiverAppInstallRes.appInstanceId,
     };
   }
 

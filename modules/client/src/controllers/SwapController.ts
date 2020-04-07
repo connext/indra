@@ -26,7 +26,7 @@ export class SwapController extends AbstractController {
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
 
     // install the swap app
-    const appId = await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
+    const appIdentityHash = await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     // if app installed, that means swap was accepted now uninstall
@@ -36,7 +36,7 @@ export class SwapController extends AbstractController {
           CF_METHOD_TIMEOUT,
           `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
-        this.connext.uninstallApp(appId),
+        this.connext.uninstallApp(appIdentityHash),
       ]);
     } catch (e) {
       const msg = `Failed to uninstall swap: ${e.stack || e.message}`;

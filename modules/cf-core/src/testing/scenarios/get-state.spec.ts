@@ -21,8 +21,8 @@ describe("Node method follows spec - getAppInstances", () => {
   });
 
   it("returns the right response for getting the state of a non-existent AppInstance", async () => {
-    const appId = uuid();
-    const getStateReq = constructGetStateRpc(appId);
+    const appIdentityHash = uuid();
+    const getStateReq = constructGetStateRpc(appIdentityHash);
     await expect(nodeA.rpcRouter.dispatch(getStateReq)).rejects.toThrowError(
       `No AppInstance exists for the given ID`,
     );

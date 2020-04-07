@@ -99,8 +99,8 @@ export type RequestCollateralResponse = MethodResults.Deposit | undefined;
 export type ChannelRestoreResponse = {
   channel: StateChannelJSON;
   setupCommitment: MinimalTransaction | undefined;
-  setStateCommitments: [Bytes32, SetStateCommitmentJSON][]; // appId, commitment
-  conditionalCommitments: [Bytes32, ConditionalTransactionCommitmentJSON][]; // appId, commitment
+  setStateCommitments: [Bytes32, SetStateCommitmentJSON][]; // appIdentityHash, commitment
+  conditionalCommitments: [Bytes32, ConditionalTransactionCommitmentJSON][]; // appIdentityHash, commitment
 };
 
 ////////////////////////////////////

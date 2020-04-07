@@ -67,7 +67,7 @@ export type SignedTransferParameters = {
 
 // Client Controller Response
 export type SignedTransferResponse = {
-  appId: Bytes32;
+  appIdentityHash: Bytes32;
   paymentId: Bytes32;
 };
 
@@ -81,7 +81,7 @@ export type ResolveSignedTransferParameters = {
 
 // Client Resolve Response
 export type ResolveSignedTransferResponse = {
-  appId: Bytes32;
+  appIdentityHash: Bytes32;
   assetId: Address;
   amount: BigNumber;
   sender: Xpub;

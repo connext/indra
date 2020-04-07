@@ -40,12 +40,12 @@ describe(`Node method follows spec - install deposit app`, () => {
     depositAmt: BigNumber = new BigNumber(1000),
   ) => {
     // request rights
-    const appId = await requestDepositRights(nodeA, nodeB, multisigAddress, assetId);
+    const appIdentityHash = await requestDepositRights(nodeA, nodeB, multisigAddress, assetId);
     const appsA = await getDepositApps(nodeA, multisigAddress, [assetId]);
     const appsB = await getDepositApps(nodeB, multisigAddress, [assetId]);
     expect(appsA.length).toBe(appsB.length);
     expect(appsA.length).toBe(1);
-    expect(appsA[0].identityHash).toBe(appId);
+    expect(appsA[0].identityHash).toBe(appIdentityHash);
     const transfers = (appsA[0].latestState as DepositAppState).transfers;
     expect(transfers[0].to).toBe(xkeyKthAddress(nodeA.publicIdentifier));
     expect(transfers[1].to).toBe(xkeyKthAddress(nodeB.publicIdentifier));

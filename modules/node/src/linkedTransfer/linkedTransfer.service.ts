@@ -146,7 +146,7 @@ export class LinkedTransferService {
     }
 
     const returnRes: ResolveLinkedTransferResponse = {
-      appId: receiverAppInstallRes.appInstanceId,
+      appIdentityHash: receiverAppInstallRes.appInstanceId,
       sender: senderApp.channel.userPublicIdentifier,
       meta: senderApp.meta,
       paymentId,

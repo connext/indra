@@ -41,7 +41,7 @@ export class MockStoreService implements IStoreService {
   updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
-  removeAppInstance(multisigAddress: string, appId: string): Promise<void> {
+  removeAppInstance(multisigAddress: string, appIdentityHash: string): Promise<void> {
     return Promise.resolve();
   }
   getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
@@ -50,7 +50,7 @@ export class MockStoreService implements IStoreService {
   createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
     return Promise.resolve();
   }
-  removeAppProposal(multisigAddress: string, appId: string): Promise<void> {
+  removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
     return Promise.resolve();
   }
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {

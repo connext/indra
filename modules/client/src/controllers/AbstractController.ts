@@ -118,9 +118,9 @@ export abstract class AbstractController {
     return rej(new Error(`Proposal rejected, event data: ${stringify(msg)}`));
   };
 
-  private cleanupInstallListeners = (boundReject: any, appId: string): void => {
+  private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {
     this.connext.messaging.unsubscribe(
-      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appId}.install`,
+      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };

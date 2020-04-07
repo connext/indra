@@ -129,7 +129,7 @@ export async function requestDepositRights(
     counterparty.publicIdentifier,
     tokenAddress,
   );
-  const [appId] = await installApp(
+  const [appIdentityHash] = await installApp(
     depositor,
     counterparty,
     multisigAddress,
@@ -140,7 +140,7 @@ export async function requestDepositRights(
     proposeParams.responderDeposit,
     proposeParams.responderDepositTokenAddress,
   );
-  return appId;
+  return appIdentityHash;
 }
 
 export async function rescindDepositRights(
@@ -727,7 +727,7 @@ export async function installApp(
 
   const proposedParams = installationProposalRpc.parameters as ProtocolParams.Propose;
 
-  const appId: string = await new Promise(async resolve => {
+  const appIdentityHash: string = await new Promise(async resolve => {
     nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
       // assert message
       assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
@@ -751,21 +751,21 @@ export async function installApp(
 
   // send nodeB install call
   await Promise.all([
-    nodeB.rpcRouter.dispatch(constructInstallRpc(appId)),
+    nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash)),
     new Promise(async resolve => {
       nodeA.on(EventNames.INSTALL_EVENT, async (msg: InstallMessage) => {
-        if (msg.data.params.appInstanceId === appId) {
+        if (msg.data.params.appInstanceId === appIdentityHash) {
           // assert message
-          assertInstallMessage(nodeB.publicIdentifier, msg, appId);
-          const appInstanceNodeA = await getAppInstance(nodeA, appId);
-          const appInstanceNodeB = await getAppInstance(nodeB, appId);
+          assertInstallMessage(nodeB.publicIdentifier, msg, appIdentityHash);
+          const appInstanceNodeA = await getAppInstance(nodeA, appIdentityHash);
+          const appInstanceNodeB = await getAppInstance(nodeB, appIdentityHash);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
           resolve();
         }
       });
     }),
   ]);
-  return [appId, proposedParams];
+  return [appIdentityHash, proposedParams];
 }
 
 export async function confirmChannelCreation(
@@ -957,22 +957,22 @@ export function getAppContext(
   }
 }
 
-export async function takeAppAction(node: Node, appId: string, action: any) {
-  const res = await node.rpcRouter.dispatch(constructTakeActionRpc(appId, action));
+export async function takeAppAction(node: Node, appIdentityHash: string, action: any) {
+  const res = await node.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHash, action));
   return res.result.result;
 }
 
-export async function uninstallApp(node: Node, counterparty: Node, appId: string): Promise<string> {
+export async function uninstallApp(node: Node, counterparty: Node, appIdentityHash: string): Promise<string> {
   await Promise.all([
-    node.rpcRouter.dispatch(constructUninstallRpc(appId)),
+    node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash)),
     new Promise(resolve => {
       counterparty.once(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
-        expect(msg.data.appInstanceId).toBe(appId);
-        resolve(appId);
+        expect(msg.data.appInstanceId).toBe(appIdentityHash);
+        resolve(appIdentityHash);
       });
     }),
   ]);
-  return appId;
+  return appIdentityHash;
 }
 
 export async function getApps(node: Node, multisigAddress: string): Promise<AppInstanceJson[]> {

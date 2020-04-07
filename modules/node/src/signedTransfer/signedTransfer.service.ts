@@ -149,7 +149,7 @@ export class SignedTransferService {
     }
 
     return {
-      appId: receiverAppInstallRes.appInstanceId,
+      appIdentityHash: receiverAppInstallRes.appInstanceId,
       sender: senderChannel.userPublicIdentifier,
       meta: senderApp["meta"] || {},
       amount,
