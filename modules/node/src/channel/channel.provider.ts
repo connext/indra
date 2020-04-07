@@ -49,13 +49,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.channelService.create(pubId);
   }
 
-  async verifyAppSequenceNumber(
-    pubId: string,
-    data: { userAppSequenceNumber: number },
-  ): Promise<ChannelAppSequences> {
-    return this.channelService.verifyAppSequenceNumber(pubId, data.userAppSequenceNumber);
-  }
-
   async requestCollateral(
     pubId: string,
     data: { assetId?: string },
@@ -134,10 +127,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "*.channel.get-profile",
       this.authService.parseXpub(this.getRebalanceProfile.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "*.channel.verify-app-sequence",
-      this.authService.parseXpub(this.verifyAppSequenceNumber.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.restore",

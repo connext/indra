@@ -162,12 +162,12 @@ export class HashLockTransferService {
       { ...meta, sender: senderPublicIdentifier },
     );
 
-    if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
+    if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);
     }
 
     return {
-      appId: receiverAppInstallRes.appInstanceId,
+      appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
   }
 

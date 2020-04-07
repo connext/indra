@@ -39,7 +39,7 @@ describe("Node method follows spec - toke action", () => {
     });
 
     it("can take actions on two different apps concurrently", async done => {
-      const appIds: string[] = [];
+      const appIdentityHashes: string[] = [];
 
       await collateralizeChannel(
         multisigAddress,
@@ -49,11 +49,11 @@ describe("Node method follows spec - toke action", () => {
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-        makeInstallCall(nodeB, msg.data.appInstanceId);
+        makeInstallCall(nodeB, msg.data.appIdentityHash);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
-        appIds.push(msg.data.params.appInstanceId);
+        appIdentityHashes.push(msg.data.params.appIdentityHash);
       });
 
       const proposeRpc = makeProposeCall(
@@ -69,7 +69,7 @@ describe("Node method follows spec - toke action", () => {
       nodeA.rpcRouter.dispatch(proposeRpc);
       nodeA.rpcRouter.dispatch(proposeRpc);
 
-      while (appIds.length !== 2) {
+      while (appIdentityHashes.length !== 2) {
         await new Promise(resolve => setTimeout(resolve, 20));
       }
 
@@ -80,8 +80,8 @@ describe("Node method follows spec - toke action", () => {
         if (appsTakenActionOn === 2) done();
       });
 
-      nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIds[0], validAction));
-      nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIds[1], validAction));
+      nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHashes[0], validAction));
+      nodeA.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHashes[1], validAction));
     });
   });
 });

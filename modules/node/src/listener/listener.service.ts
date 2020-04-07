@@ -110,7 +110,7 @@ export default class ListenerService implements OnModuleInit {
         }
         this.logEvent(PROPOSE_INSTALL_EVENT, data);
         this.appRegistryService.validateAndInstallOrReject(
-          data.data.appInstanceId,
+          data.data.appIdentityHash,
           data.data.params,
           data.from,
         );
@@ -123,7 +123,7 @@ export default class ListenerService implements OnModuleInit {
 
         // update app status
         const rejectedApp = await this.appInstanceRepository.findByIdentityHash(
-          data.data.appInstanceId,
+          data.data.appIdentityHash,
         );
         if (!rejectedApp) {
           this.log.debug(`No app found`);
@@ -142,14 +142,14 @@ export default class ListenerService implements OnModuleInit {
         }
         // if this is for a recipient of a transfer
         this.logEvent(UPDATE_STATE_EVENT, data);
-        const { newState, appInstanceId, action } = data.data;
-        const app = await this.cfCoreService.getAppInstanceDetails(appInstanceId);
+        const { newState, appIdentityHash, action } = data.data;
+        const app = await this.cfCoreService.getAppInstance(appIdentityHash);
         const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
           app.appInterface.addr,
         );
         if (!appRegistryInfo) {
           throw new Error(
-            `Could not find registry info for updated app ${data.data.appInstanceId}`,
+            `Could not find registry info for updated app ${data.data.appIdentityHash}`,
           );
         }
         await this.appActionsService.handleAppAction(
@@ -183,7 +183,7 @@ export default class ListenerService implements OnModuleInit {
       MethodNames.chan_uninstall as any,
       async (data: any) => {
         // TODO: GET CHANNEL MULTISIG
-        const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${AddressZero}.app-instance.${data.result.result.appInstanceId}.uninstall`;
+        const uninstallSubject = `${this.cfCoreService.cfCore.publicIdentifier}.channel.${AddressZero}.app-instance.${data.result.result.appIdentityHash}.uninstall`;
         await this.messagingService.publish(uninstallSubject, data.result.result);
       },
     );

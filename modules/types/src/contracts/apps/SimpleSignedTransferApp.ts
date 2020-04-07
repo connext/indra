@@ -8,7 +8,7 @@ import {
 import { enumify } from "../../utils";
 
 import { SignedTransfer } from "./common";
-import { Address, Xpub, Bytes32Hash, HexString, DecString } from "../../basic";
+import { Address, Xpub, Bytes32, HexString, DecString } from "../../basic";
 
 export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 
@@ -18,8 +18,8 @@ export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 // ABI Encoding TS Types
 export type SimpleSignedTransferAppState = {
   coinTransfers: CoinTransfer[];
-  signer: string;
-  paymentId: string;
+  signer: Address;
+  paymentId: Bytes32;
   finalized: boolean;
 };
 
@@ -32,7 +32,7 @@ export const SimpleSignedTransferAppStateEncoding = tidy(`tuple(
 )`);
 
 export type SimpleSignedTransferAppAction = {
-  data: string;
+  data: Bytes32;
   signature: string;
 };
 
@@ -59,7 +59,7 @@ export type SignedTransferParameters = {
   conditionType: typeof SignedTransfer;
   amount: BigNumber;
   assetId: Address;
-  paymentId: Bytes32Hash;
+  paymentId: Bytes32;
   signer: Address;
   recipient?: Xpub;
   meta?: any;
@@ -67,21 +67,21 @@ export type SignedTransferParameters = {
 
 // Client Controller Response
 export type SignedTransferResponse = {
-  appId: Bytes32Hash;
-  paymentId: Bytes32Hash;
+  appIdentityHash: Bytes32;
+  paymentId: Bytes32;
 };
 
 // Client Resolve Params
 export type ResolveSignedTransferParameters = {
   conditionType: typeof SignedTransfer;
-  paymentId: Bytes32Hash;
-  data: Bytes32Hash;
+  paymentId: Bytes32;
+  data: Bytes32;
   signature: HexString;
 };
 
 // Client Resolve Response
 export type ResolveSignedTransferResponse = {
-  appId: Bytes32Hash;
+  appIdentityHash: Bytes32;
   assetId: Address;
   amount: BigNumber;
   sender: Xpub;
@@ -94,7 +94,7 @@ export type GetSignedTransferResponse = {
   receiverPublicIdentifier?: Xpub;
   assetId: Address;
   amount: DecString;
-  paymentId: Bytes32Hash;
+  paymentId: Bytes32;
   status: SignedTransferStatus;
   meta?: any;
 };

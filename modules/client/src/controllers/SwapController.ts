@@ -6,9 +6,9 @@ import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import {
   calculateExchange,
-  GetChannelResponse,
   DefaultApp,
   SwapParameters,
+  SwapResponse,
 } from "../types";
 import {
   invalidAddress,
@@ -19,16 +19,17 @@ import {
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import {  } from "@connext/types";
 
 export class SwapController extends AbstractController {
-  public async swap(params: SwapParameters): Promise<GetChannelResponse> {
+  public async swap(params: SwapParameters): Promise<SwapResponse> {
     const amount = toBN(params.amount);
     const { toAssetId, fromAssetId, swapRate } = params;
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
+    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const swappedAmount = calculateExchange(amount, swapRate);
+
+
     validate(
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
@@ -37,11 +38,25 @@ export class SwapController extends AbstractController {
       notPositive(parseEther(swapRate)),
     );
 
+    const error = notLessThanOrEqualTo(
+      amount,
+      toBN(preSwapFromBal[this.connext.freeBalanceAddress]),
+    );
+    if (error) {
+      throw new Error(error);
+    }
+
     // get app definition from constants
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
 
     // install the swap app
-    const appId = await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
+    const appIdentityHash = await this.swapAppInstall(
+      amount,
+      toAssetId,
+      fromAssetId,
+      swapRate,
+      appInfo,
+    );
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     // if app installed, that means swap was accepted now uninstall
@@ -51,7 +66,7 @@ export class SwapController extends AbstractController {
           CF_METHOD_TIMEOUT,
           `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
-        this.connext.uninstallApp(appId),
+        this.connext.uninstallApp(appIdentityHash),
       ]);
     } catch (e) {
       const msg = `Failed to uninstall swap: ${e.stack || e.message}`;
@@ -73,10 +88,10 @@ export class SwapController extends AbstractController {
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
     }
-    const newState = await this.connext.getChannel();
+    const res = await this.connext.getChannel();
 
     // TODO: fix the state / types!!
-    return newState as GetChannelResponse;
+    return res as SwapResponse;
   }
 
   /////////////////////////////////
@@ -138,8 +153,8 @@ export class SwapController extends AbstractController {
       timeout: Zero,
     };
 
-    const appInstanceId = await this.proposeAndInstallLedgerApp(params);
-    this.log.info(`Successfully installed swap app with id ${appInstanceId}`);
-    return appInstanceId;
+    const appIdentityHash = await this.proposeAndInstallLedgerApp(params);
+    this.log.info(`Successfully installed swap app with id ${appIdentityHash}`);
+    return appIdentityHash;
   };
 }

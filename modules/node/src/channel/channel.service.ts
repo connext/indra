@@ -349,37 +349,6 @@ export class ChannelService {
     await this.channelRepository.save(existing);
   }
 
-  /**
-   * Returns the app sequence number of the node and the user
-   *
-   * @param userPublicIdentifier users xpub
-   * @param userSequenceNumber sequence number provided by user
-   */
-  async verifyAppSequenceNumber(
-    userPublicIdentifier: string,
-    userSequenceNumber: number,
-  ): Promise<ChannelAppSequences> {
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
-    );
-    const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
-    const [, appJson] = sc.appInstances.reduce((prev, curr) => {
-      const [, prevJson] = prev;
-      const [, currJson] = curr;
-      return currJson.appSeqNo > prevJson.appSeqNo ? curr : prev;
-    });
-    const nodeSequenceNumber = appJson.appSeqNo;
-    if (nodeSequenceNumber !== userSequenceNumber) {
-      this.log.warn(
-        `Node app sequence number (${nodeSequenceNumber}) !== user app sequence number (${userSequenceNumber})`,
-      );
-    }
-    return {
-      nodeSequenceNumber,
-      userSequenceNumber,
-    };
-  }
-
   async getDataFromRebalancingService(
     userPublicIdentifier: string,
     assetId: string,

@@ -32,8 +32,8 @@ export class ResolveLinkedTransferController extends AbstractController {
     try {
       // node installs app, validation happens in listener
       resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
-      await this.connext.takeAction(resolveRes.appId, { preImage });
-      await this.connext.uninstallApp(resolveRes.appId);
+      await this.connext.takeAction(resolveRes.appIdentityHash, { preImage });
+      await this.connext.uninstallApp(resolveRes.appIdentityHash);
     } catch (e) {
       this.handleResolveErr(paymentId, e);
       throw e;

@@ -7,8 +7,8 @@ import {
   INVALID_ACTION,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE,
-  NO_APP_INSTANCE_FOR_GIVEN_ID,
-  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+  NO_APP_INSTANCE_FOR_GIVEN_HASH,
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
@@ -27,12 +27,12 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<string[]> {
     const app = await requestHandler.store.getAppInstance(
-      params.appInstanceId,
+      params.appIdentityHash,
     );
     if (!app) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
-    return [app.multisigAddress, params.appInstanceId];
+    return [app.multisigAddress, params.appIdentityHash];
   }
 
   protected async beforeExecution(
@@ -40,15 +40,15 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<void> {
     const { store } = requestHandler;
-    const { appInstanceId, action } = params;
+    const { appIdentityHash, action } = params;
 
-    if (!appInstanceId) {
+    if (!appIdentityHash) {
       throw new Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
     }
 
-    const json = await store.getAppInstance(appInstanceId);
+    const json = await store.getAppInstance(appIdentityHash);
     if (!json) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
     const appInstance = AppInstance.fromJson(json);
 
@@ -67,11 +67,11 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
-    const { appInstanceId, action } = params;
+    const { appIdentityHash, action } = params;
 
-    const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
+    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     const responderXpub = getFirstElementInListNotEqualTo(
@@ -80,7 +80,7 @@ export class TakeActionController extends NodeController {
     );
 
     await runTakeActionProtocol(
-      appInstanceId,
+      appIdentityHash,
       store,
       protocolRunner,
       publicIdentifier,
@@ -88,9 +88,9 @@ export class TakeActionController extends NodeController {
       action,
     );
 
-    const appInstance = await store.getAppInstance(appInstanceId);
+    const appInstance = await store.getAppInstance(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
     return { newState: AppInstance.fromJson(appInstance).state };
@@ -101,17 +101,17 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
-    const { appInstanceId, action } = params;
+    const { appIdentityHash, action } = params;
 
-    const appInstance = await store.getAppInstance(appInstanceId);
+    const appInstance = await store.getAppInstance(appIdentityHash);
     if (!appInstance) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
 
     const msg = {
       from: publicIdentifier,
       type: EventNames.UPDATE_STATE_EVENT,
-      data: { appInstanceId, action, newState: AppInstance.fromJson(appInstance).state },
+      data: { appIdentityHash, action, newState: AppInstance.fromJson(appInstance).state },
     } as UpdateStateMessage;
 
     await router.emit(msg.type, msg, `outgoing`);
@@ -126,9 +126,9 @@ async function runTakeActionProtocol(
   responderXpub: string,
   action: SolidityValueType,
 ) {
-  const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
+  const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
   try {

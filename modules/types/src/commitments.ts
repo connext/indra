@@ -1,4 +1,4 @@
-import { Address, BigNumberish, HexString } from "./basic";
+import { Address, BigNumberish, Bytes32, HexString } from "./basic";
 import { AppIdentity, MultisigOperation, NetworkContext } from "./contracts";
 import { enumify } from "./utils";
 
@@ -6,16 +6,16 @@ import { enumify } from "./utils";
 // requires the nonce and chain ID to be specified, when sometimes those
 // arguments are not known at the time of creating a transaction.
 export type MinimalTransaction = {
-  to: string;
+  to: Address;
   value: BigNumberish;
-  data: string;
+  data: HexString;
 };
 
 // Multisig
 export interface EthereumCommitment {
   signatures: string[];
-  encode(): string;
-  hashToSign(): string;
+  encode(): HexString;
+  hashToSign(): Bytes32;
   getSignedTransaction(): Promise<MinimalTransaction>;
 }
 

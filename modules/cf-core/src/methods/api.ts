@@ -7,7 +7,6 @@ import {
   GetInstalledAppInstancesController,
   GetAppInstanceController,
   GetFreeBalanceStateController,
-  GetAppInstanceStateController,
   GetTokenIndexedFreeBalancesController,
   InstallAppInstanceController,
   ProposeInstallAppInstanceController,
@@ -44,7 +43,6 @@ const controllers = [
    */
   GetAllChannelAddressesController,
   GetAppInstanceController,
-  GetAppInstanceStateController,
   GetFreeBalanceStateController,
   GetTokenIndexedFreeBalancesController,
   GetInstalledAppInstancesController,

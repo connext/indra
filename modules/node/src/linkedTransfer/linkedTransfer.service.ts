@@ -141,12 +141,12 @@ export class LinkedTransferService {
       SimpleLinkedTransferAppName,
     );
 
-    if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
+    if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);
     }
 
     const returnRes: ResolveLinkedTransferResponse = {
-      appId: receiverAppInstallRes.appInstanceId,
+      appIdentityHash: receiverAppInstallRes.appIdentityHash,
       sender: senderApp.channel.userPublicIdentifier,
       meta: senderApp.meta,
       paymentId,

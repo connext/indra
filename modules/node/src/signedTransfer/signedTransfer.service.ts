@@ -4,7 +4,7 @@ import {
   SignedTransferStatus,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  Bytes32Hash,
+  Bytes32,
   Xpub,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
@@ -63,7 +63,7 @@ export class SignedTransferService {
 
   async installSignedTransferReceiverApp(
     userPublicIdentifier: Xpub,
-    paymentId: Bytes32Hash,
+    paymentId: Bytes32,
   ): Promise<ResolveSignedTransferResponse> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
@@ -144,12 +144,12 @@ export class SignedTransferService {
     );
 
 
-    if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
+    if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);
     }
 
     return {
-      appId: receiverAppInstallRes.appInstanceId,
+      appIdentityHash: receiverAppInstallRes.appIdentityHash,
       sender: senderChannel.userPublicIdentifier,
       meta: senderApp["meta"] || {},
       amount,

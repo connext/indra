@@ -1,7 +1,7 @@
 import { TransactionResponse } from "ethers/providers";
 import { BigNumberish } from "ethers/utils";
 
-import { Address, HexString } from "../../basic";
+import { Address, Bytes32, HexString } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import {
@@ -18,9 +18,9 @@ export const WithdrawAppName = "WithdrawApp";
 export type WithdrawAppState = {
   transfers: CoinTransfer[];
   signatures: string[];
-  signers: string[];
-  data: string;
-  nonce: string;
+  signers: Address[];
+  data: Bytes32;
+  nonce: Bytes32;
   finalized: boolean;
 };
 

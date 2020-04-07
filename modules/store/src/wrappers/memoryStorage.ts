@@ -66,14 +66,14 @@ export class MemoryStorage implements IClientStore {
     return this.getStateChannel(channel.multisigAddress);
   }
 
-  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined> {
+  getStateChannelByAppIdentityHash(appIdentityHash: string): Promise<StateChannelJSON | undefined> {
     return Promise.resolve(
       [...this.channels.values()].find(channel => {
         return (
-          channel.proposedAppInstances.find(([app]) => app === appInstanceId) ||
-          channel.appInstances.find(([app]) => app === appInstanceId) ||
+          channel.proposedAppInstances.find(([app]) => app === appIdentityHash) ||
+          channel.appInstances.find(([app]) => app === appIdentityHash) ||
           (channel.freeBalanceAppInstance &&
-            channel.freeBalanceAppInstance.identityHash === appInstanceId)
+            channel.freeBalanceAppInstance.identityHash === appIdentityHash)
         );
       }),
     );
@@ -91,11 +91,11 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve();
   }
 
-  getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
-    if (!this.appInstances.has(appInstanceId)) {
+  getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
+    if (!this.appInstances.has(appIdentityHash)) {
       return Promise.resolve(undefined);
     }
-    return Promise.resolve(this.appInstances.get(appInstanceId));
+    return Promise.resolve(this.appInstances.get(appIdentityHash));
   }
 
   createAppInstance(
@@ -126,22 +126,22 @@ export class MemoryStorage implements IClientStore {
 
   removeAppInstance(
     multisigAddress: string,
-    appInstanceId: string,
+    appIdentityHash: string,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
     const channel = this.getChannelOrThrow(multisigAddress);
-    channel.appInstances.filter(([id]) => id !== appInstanceId);
+    channel.appInstances.filter(([id]) => id !== appIdentityHash);
     this.channels.set(channel.multisigAddress, channel);
-    this.appInstances.delete(appInstanceId);
+    this.appInstances.delete(appIdentityHash);
     this.freeBalances.set(multisigAddress, freeBalanceAppInstance);
     return Promise.resolve();
   }
 
-  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
-    if (!this.proposedApps.has(appInstanceId)) {
+  getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+    if (!this.proposedApps.has(appIdentityHash)) {
       return Promise.resolve(undefined);
     }
-    return Promise.resolve(this.proposedApps.get(appInstanceId));
+    return Promise.resolve(this.proposedApps.get(appIdentityHash));
   }
 
   createAppProposal(
@@ -159,11 +159,11 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve();
   }
 
-  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+  removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
     const channel = this.getChannelOrThrow(multisigAddress);
-    channel.proposedAppInstances.filter(([id]) => id !== appInstanceId);
+    channel.proposedAppInstances.filter(([id]) => id !== appIdentityHash);
     this.channels.set(channel.multisigAddress, channel);
-    this.proposedApps.delete(appInstanceId);
+    this.proposedApps.delete(appIdentityHash);
     return Promise.resolve();
   }
 
@@ -202,56 +202,56 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve();
   }
 
-  getSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {
-    if (!this.setStateCommitments.has(appInstanceId)) {
+  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {
+    if (!this.setStateCommitments.has(appIdentityHash)) {
       return Promise.resolve(undefined);
     }
-    return Promise.resolve(this.setStateCommitments.get(appInstanceId));
+    return Promise.resolve(this.setStateCommitments.get(appIdentityHash));
   }
 
   createSetStateCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    this.setStateCommitments.set(appInstanceId, commitment);
+    this.setStateCommitments.set(appIdentityHash, commitment);
     return Promise.resolve();
   }
 
   updateSetStateCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    if (!this.setStateCommitments.has(appInstanceId)) {
-      throw new Error(`Could not find set state commitment for app: ${appInstanceId}`);
+    if (!this.setStateCommitments.has(appIdentityHash)) {
+      throw new Error(`Could not find set state commitment for app: ${appIdentityHash}`);
     }
-    return this.createSetStateCommitment(appInstanceId, commitment);
+    return this.createSetStateCommitment(appIdentityHash, commitment);
   }
 
   getConditionalTransactionCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
-    if (!this.conditionalTxCommitment.has(appInstanceId)) {
+    if (!this.conditionalTxCommitment.has(appIdentityHash)) {
       return Promise.resolve(undefined);
     }
-    return Promise.resolve(this.conditionalTxCommitment.get(appInstanceId));
+    return Promise.resolve(this.conditionalTxCommitment.get(appIdentityHash));
   }
 
   createConditionalTransactionCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
-    this.conditionalTxCommitment.set(appInstanceId, commitment);
+    this.conditionalTxCommitment.set(appIdentityHash, commitment);
     return Promise.resolve();
   }
 
   updateConditionalTransactionCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
-    if (!this.conditionalTxCommitment.has(appInstanceId)) {
-      throw new Error(`Could not find conditional tx for app: ${appInstanceId}`);
+    if (!this.conditionalTxCommitment.has(appIdentityHash)) {
+      throw new Error(`Could not find conditional tx for app: ${appIdentityHash}`);
     }
-    return this.createConditionalTransactionCommitment(appInstanceId, commitment);
+    return this.createConditionalTransactionCommitment(appIdentityHash, commitment);
   }
 
   getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {

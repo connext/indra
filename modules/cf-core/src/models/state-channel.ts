@@ -63,22 +63,22 @@ export class StateChannel {
     return this.appInstances.size;
   }
 
-  public getAppInstance(appInstanceIdentityHash: string): AppInstance {
-    if (this.hasFreeBalance && appInstanceIdentityHash === this.freeBalance.identityHash) {
+  public getAppInstance(appIdentityHash: string): AppInstance {
+    if (this.hasFreeBalance && appIdentityHash === this.freeBalance.identityHash) {
       return this.freeBalance;
     }
-    if (!this.appInstances.has(appInstanceIdentityHash)) {
-      throw new Error(ERRORS.APP_DOES_NOT_EXIST(appInstanceIdentityHash));
+    if (!this.appInstances.has(appIdentityHash)) {
+      throw new Error(ERRORS.APP_DOES_NOT_EXIST(appIdentityHash));
     }
-    return this.appInstances.get(appInstanceIdentityHash)!;
+    return this.appInstances.get(appIdentityHash)!;
   }
 
-  public hasAppInstance(appInstanceId: string): boolean {
-    return this.appInstances.has(appInstanceId);
+  public hasAppInstance(appIdentityHash: string): boolean {
+    return this.appInstances.has(appIdentityHash);
   }
 
-  public hasAppProposal(appInstanceId: string): boolean {
-    return this.proposedAppInstances.has(appInstanceId);
+  public hasAppProposal(appIdentityHash: string): boolean {
+    return this.proposedAppInstances.has(appIdentityHash);
   }
 
   public hasAppInstanceOfKind(address: string): boolean {
@@ -135,8 +135,8 @@ export class StateChannel {
     return appInstances;
   }
 
-  public isAppInstanceInstalled(appInstanceIdentityHash: string) {
-    return this.appInstances.has(appInstanceIdentityHash);
+  public isAppInstanceInstalled(appIdentityHash: string) {
+    return this.appInstances.has(appIdentityHash);
   }
 
   public getSigningKeysFor(addressIndex: number): string[] {
@@ -299,12 +299,12 @@ export class StateChannel {
     });
   }
 
-  public removeProposal = (appInstanceId: string) => {
+  public removeProposal = (appIdentityHash: string) => {
     const proposedAppInstances = new Map<string, AppInstanceProposal>(
       this.proposedAppInstances.entries(),
     );
 
-    proposedAppInstances.delete(appInstanceId);
+    proposedAppInstances.delete(appIdentityHash);
 
     return this.build({
       proposedAppInstances,
@@ -322,10 +322,10 @@ export class StateChannel {
     });
   }
 
-  public removeAppInstance(appInstanceId: string) {
+  public removeAppInstance(appIdentityHash: string) {
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
-    appInstances.delete(appInstanceId);
+    appInstances.delete(appIdentityHash);
 
     return this.build({
       appInstances,
@@ -479,17 +479,5 @@ export class StateChannel {
     }
     const owners = stateChannel.userNeuteredExtendedKeys;
     return owners.filter(owner => owner !== myIdentifier);
-  }
-
-  static async getPeersAddressFromAppInstanceID(
-    myIdentifier: string,
-    store: IStoreService,
-    appInstanceId: string,
-  ): Promise<string[]> {
-    const channel = await store.getStateChannelByAppInstanceId(appInstanceId);
-    if (!channel) {
-      throw new Error(`[getPeersAddressFromAppInstanceID] No state channel found in store for appId ${appInstanceId}`);
-    }
-    return StateChannel.getPeersAddressFromChannel(myIdentifier, store, channel.multisigAddress);
   }
 }

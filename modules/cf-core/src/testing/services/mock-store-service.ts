@@ -26,13 +26,13 @@ export class MockStoreService implements IStoreService {
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     return Promise.resolve(undefined);
   }
-  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined> {
+  getStateChannelByAppIdentityHash(appIdentityHash: string): Promise<StateChannelJSON | undefined> {
     return Promise.resolve(undefined);
   }
   createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     return Promise.resolve();
   }
-  getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
+  getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
     return Promise.resolve(undefined);
   }
   createAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
@@ -41,16 +41,16 @@ export class MockStoreService implements IStoreService {
   updateAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     return Promise.resolve();
   }
-  removeAppInstance(multisigAddress: string, appId: string): Promise<void> {
+  removeAppInstance(multisigAddress: string, appIdentityHash: string): Promise<void> {
     return Promise.resolve();
   }
-  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
+  getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
     return Promise.resolve(undefined);
   }
   createAppProposal(multisigAddress: string, appProposal: AppInstanceProposal): Promise<void> {
     return Promise.resolve();
   }
-  removeAppProposal(multisigAddress: string, appId: string): Promise<void> {
+  removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
     return Promise.resolve();
   }
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson | undefined> {
@@ -71,34 +71,34 @@ export class MockStoreService implements IStoreService {
   ): Promise<void> {
     return Promise.resolve();
   }
-  getSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {
+  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {
     return Promise.resolve(undefined);
   }
   createSetStateCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
     return Promise.resolve();
   }
   updateSetStateCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
     return Promise.resolve();
   }
   getConditionalTransactionCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
   ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
     return Promise.resolve(undefined);
   }
   createConditionalTransactionCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     return Promise.resolve();
   }
   updateConditionalTransactionCommitment(
-    appInstanceId: string,
+    appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     return Promise.resolve();

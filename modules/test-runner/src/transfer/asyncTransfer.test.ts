@@ -197,9 +197,9 @@ describe("Async Transfers", () => {
     expect(deployHash).to.exist;
     await ethProvider.waitForTransaction(token.deployTransaction.hash!);
     // mint token to client
-    await token.mint(clientA.signerAddress, TOKEN_AMOUNT);
+    await token.mint(clientA.freeBalanceAddress, TOKEN_AMOUNT);
     // assert sender balance
-    const senderBal = await token.balanceOf(clientA.signerAddress);
+    const senderBal = await token.balanceOf(clientA.freeBalanceAddress);
     expect(senderBal).to.equal(TOKEN_AMOUNT);
 
     // fund channel

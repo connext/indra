@@ -63,9 +63,9 @@ export const newWallet = (wallet: Wallet) =>
     new JsonRpcProvider((wallet.provider as JsonRpcProvider).connection.url),
   );
 
-export function createAppInstanceProposalForTest(appInstanceId: string): AppInstanceProposal {
+export function createAppInstanceProposalForTest(appIdentityHash: string): AppInstanceProposal {
   return {
-    identityHash: appInstanceId,
+    identityHash: appIdentityHash,
     proposedByIdentifier: computeRandomExtendedPrvKey(),
     proposedToIdentifier: computeRandomExtendedPrvKey(),
     appDefinition: AddressZero,
@@ -129,7 +129,7 @@ export async function requestDepositRights(
     counterparty.publicIdentifier,
     tokenAddress,
   );
-  const [appId] = await installApp(
+  const [appIdentityHash] = await installApp(
     depositor,
     counterparty,
     multisigAddress,
@@ -140,7 +140,7 @@ export async function requestDepositRights(
     proposeParams.responderDeposit,
     proposeParams.responderDepositTokenAddress,
   );
-  return appId;
+  return appIdentityHash;
 }
 
 export async function rescindDepositRights(
@@ -189,7 +189,7 @@ export async function getDepositApps(
  * @param msg msg to check
  * @param expected expected message, can be partial
  * @param shouldExist array of keys to check existence of if value not known
- * for `expected` (e.g `appInstanceId`s)
+ * for `expected` (e.g `appIdentityHash`s)
  */
 export function assertNodeMessage(
   msg: EventEmittedMessage,
@@ -197,7 +197,7 @@ export function assertNodeMessage(
   shouldExist: string[] = [],
 ): void {
   // ensure keys exist, shouldExist is array of
-  // keys, ie. data.appInstanceId
+  // keys, ie. data.appIdentityHash
   shouldExist.forEach(key => {
     let subset = { ...msg };
     key.split(`.`).forEach(k => {
@@ -232,17 +232,17 @@ export function assertProposeMessage(
         },
       },
     },
-    [`data.appInstanceId`],
+    [`data.appIdentityHash`],
   );
 }
 
-export function assertInstallMessage(senderId: string, msg: InstallMessage, appInstanceId: string) {
+export function assertInstallMessage(senderId: string, msg: InstallMessage, appIdentityHash: string) {
   assertNodeMessage(msg, {
     from: senderId,
     type: `INSTALL_EVENT`,
     data: {
       params: {
-        appInstanceId,
+        appIdentityHash,
       },
     },
   });
@@ -293,7 +293,7 @@ export async function getChannelAddresses(node: Node): Promise<Set<string>> {
   return new Set(multisigAddresses);
 }
 
-export async function getAppInstance(node: Node, appInstanceId: string): Promise<AppInstanceJson> {
+export async function getAppInstance(node: Node, appIdentityHash: string): Promise<AppInstanceJson> {
   const {
     result: {
       result: { appInstance },
@@ -302,7 +302,7 @@ export async function getAppInstance(node: Node, appInstanceId: string): Promise
     id: Date.now(),
     methodName: MethodNames.chan_getAppInstance,
     parameters: {
-      appInstanceId,
+      appIdentityHash,
     },
   });
 
@@ -311,11 +311,11 @@ export async function getAppInstance(node: Node, appInstanceId: string): Promise
 
 export async function getAppInstanceProposal(
   node: Node,
-  appInstanceId: string,
+  appIdentityHash: string,
   multisigAddress: string,
 ): Promise<AppInstanceProposal> {
   const proposals = await getProposedAppInstances(node, multisigAddress);
-  const candidates = proposals.filter(proposal => proposal.identityHash === appInstanceId);
+  const candidates = proposals.filter(proposal => proposal.identityHash === appIdentityHash);
 
   if (candidates.length === 0) {
     throw new Error(`Could not find proposal`);
@@ -503,22 +503,22 @@ export async function deployStateDepositHolder(node: Node, multisigAddress: stri
   return result.transactionHash;
 }
 
-export function constructInstallRpc(appInstanceId: string): Rpc {
+export function constructInstallRpc(appIdentityHash: string): Rpc {
   return {
     id: Date.now(),
     methodName: MethodNames.chan_install,
     parameters: {
-      appInstanceId,
+      appIdentityHash,
     } as MethodParams.Install,
   };
 }
 
-export function constructRejectInstallRpc(appInstanceId: string): Rpc {
+export function constructRejectInstallRpc(appIdentityHash: string): Rpc {
   return {
     id: Date.now(),
     methodName: MethodNames.chan_rejectInstall,
     parameters: {
-      appInstanceId,
+      appIdentityHash,
     } as MethodParams.RejectInstall,
   };
 }
@@ -582,19 +582,6 @@ export function confirmProposedAppInstance(
   }
 
   expect(proposalParams.timeout).toEqual(bigNumberify(appInstanceProposal.timeout));
-
-  // TODO: uncomment when getState is implemented
-  // expect(proposalParams.initialState).toEqual(appInstanceInitialState);
-}
-
-export function constructGetStateRpc(appInstanceId: string): Rpc {
-  return {
-    parameters: {
-      appInstanceId,
-    },
-    id: Date.now(),
-    methodName: MethodNames.chan_getState,
-  };
 }
 
 export function constructGetStateChannelRpc(multisigAddress: string): Rpc {
@@ -607,10 +594,10 @@ export function constructGetStateChannelRpc(multisigAddress: string): Rpc {
   };
 }
 
-export function constructTakeActionRpc(appInstanceId: string, action: any): Rpc {
+export function constructTakeActionRpc(appIdentityHash: string, action: any): Rpc {
   return {
     parameters: deBigNumberifyJson({
-      appInstanceId,
+      appIdentityHash,
       action,
     } as MethodParams.TakeAction),
     id: Date.now(),
@@ -626,10 +613,10 @@ export function constructGetAppsRpc(multisigAddress: string): Rpc {
   };
 }
 
-export function constructUninstallRpc(appInstanceId: string): Rpc {
+export function constructUninstallRpc(appIdentityHash: string): Rpc {
   return {
     parameters: {
-      appInstanceId,
+      appIdentityHash,
     } as MethodParams.Uninstall,
     id: Date.now(),
     methodName: MethodNames.chan_uninstall,
@@ -727,23 +714,23 @@ export async function installApp(
 
   const proposedParams = installationProposalRpc.parameters as ProtocolParams.Propose;
 
-  const appId: string = await new Promise(async resolve => {
+  const appIdentityHash: string = await new Promise(async resolve => {
     nodeB.once(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
       // assert message
       assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
       const {
-        data: { appInstanceId },
+        data: { appIdentityHash },
       } = msg;
       // Sanity-check
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeB, appInstanceId, multisigAddress),
+        await getAppInstanceProposal(nodeB, appIdentityHash, multisigAddress),
       );
       confirmProposedAppInstance(
         installationProposalRpc.parameters,
-        await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
+        await getAppInstanceProposal(nodeA, appIdentityHash, multisigAddress),
       );
-      resolve(msg.data.appInstanceId);
+      resolve(msg.data.appIdentityHash);
     });
 
     await nodeA.rpcRouter.dispatch(installationProposalRpc);
@@ -751,21 +738,21 @@ export async function installApp(
 
   // send nodeB install call
   await Promise.all([
-    nodeB.rpcRouter.dispatch(constructInstallRpc(appId)),
+    nodeB.rpcRouter.dispatch(constructInstallRpc(appIdentityHash)),
     new Promise(async resolve => {
       nodeA.on(EventNames.INSTALL_EVENT, async (msg: InstallMessage) => {
-        if (msg.data.params.appInstanceId === appId) {
+        if (msg.data.params.appIdentityHash === appIdentityHash) {
           // assert message
-          assertInstallMessage(nodeB.publicIdentifier, msg, appId);
-          const appInstanceNodeA = await getAppInstance(nodeA, appId);
-          const appInstanceNodeB = await getAppInstance(nodeB, appId);
+          assertInstallMessage(nodeB.publicIdentifier, msg, appIdentityHash);
+          const appInstanceNodeA = await getAppInstance(nodeA, appIdentityHash);
+          const appInstanceNodeB = await getAppInstance(nodeB, appIdentityHash);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
           resolve();
         }
       });
     }),
   ]);
-  return [appId, proposedParams];
+  return [appIdentityHash, proposedParams];
 }
 
 export async function confirmChannelCreation(
@@ -794,14 +781,8 @@ export async function confirmAppInstanceInstallation(
   expect(appInstance.latestState).toEqual(params.initialState);
 }
 
-export async function getState(nodeA: Node, appInstanceId: string): Promise<SolidityValueType> {
-  const getStateReq = constructGetStateRpc(appInstanceId);
-  const getStateResult = await nodeA.rpcRouter.dispatch(getStateReq);
-  return (getStateResult.result.result as MethodResults.GetState).state;
-}
-
-export async function makeInstallCall(node: Node, appInstanceId: string) {
-  return await node.rpcRouter.dispatch(constructInstallRpc(appInstanceId));
+export async function makeInstallCall(node: Node, appIdentityHash: string) {
+  return await node.rpcRouter.dispatch(constructInstallRpc(appIdentityHash));
 }
 
 export function makeProposeCall(
@@ -836,7 +817,7 @@ export async function makeAndSendProposeCall(
   responderDeposit: BigNumber = Zero,
   responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
 ): Promise<{
-  appInstanceId: string;
+  appIdentityHash: string;
   params: ProtocolParams.Propose;
 }> {
   const installationProposalRpc = makeProposeCall(
@@ -851,12 +832,12 @@ export async function makeAndSendProposeCall(
 
   const {
     result: {
-      result: { appInstanceId },
+      result: { appIdentityHash },
     },
   } = await nodeA.rpcRouter.dispatch(installationProposalRpc);
 
   return {
-    appInstanceId,
+    appIdentityHash,
     params: installationProposalRpc.parameters as ProtocolParams.Propose,
   };
 }
@@ -957,22 +938,22 @@ export function getAppContext(
   }
 }
 
-export async function takeAppAction(node: Node, appId: string, action: any) {
-  const res = await node.rpcRouter.dispatch(constructTakeActionRpc(appId, action));
+export async function takeAppAction(node: Node, appIdentityHash: string, action: any) {
+  const res = await node.rpcRouter.dispatch(constructTakeActionRpc(appIdentityHash, action));
   return res.result.result;
 }
 
-export async function uninstallApp(node: Node, counterparty: Node, appId: string): Promise<string> {
+export async function uninstallApp(node: Node, counterparty: Node, appIdentityHash: string): Promise<string> {
   await Promise.all([
-    node.rpcRouter.dispatch(constructUninstallRpc(appId)),
+    node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash)),
     new Promise(resolve => {
       counterparty.once(EventNames.UNINSTALL_EVENT, (msg: UninstallMessage) => {
-        expect(msg.data.appInstanceId).toBe(appId);
-        resolve(appId);
+        expect(msg.data.appIdentityHash).toBe(appIdentityHash);
+        resolve(appIdentityHash);
       });
     }),
   ]);
-  return appId;
+  return appIdentityHash;
 }
 
 export async function getApps(node: Node, multisigAddress: string): Promise<AppInstanceJson[]> {
