@@ -1,6 +1,6 @@
 import { MethodParams, SimpleSwapAppState, toBN } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther } from "ethers/utils";
+import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
 import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
@@ -10,7 +10,13 @@ import {
   SwapParameters,
   SwapResponse,
 } from "../types";
-import { notLessThanOrEqualTo } from "../validation";
+import {
+  invalidAddress,
+  notGreaterThan,
+  notLessThanOrEqualTo,
+  notPositive,
+  validate,
+} from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -20,7 +26,17 @@ export class SwapController extends AbstractController {
     const { toAssetId, fromAssetId, swapRate } = params;
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
+    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const swappedAmount = calculateExchange(amount, swapRate);
+
+
+    validate(
+      invalidAddress(fromAssetId),
+      invalidAddress(toAssetId),
+      notLessThanOrEqualTo(amount, userBal),
+      notGreaterThan(amount, Zero),
+      notPositive(parseEther(swapRate)),
+    );
 
     const error = notLessThanOrEqualTo(
       amount,
