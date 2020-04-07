@@ -53,9 +53,6 @@ export class AppInstance<T extends AppState = any> {
   latestState!: T;
 
   @Column("integer")
-  latestTimeout!: number;
-
-  @Column("integer")
   latestVersionNumber!: number;
 
   @Column("text", {

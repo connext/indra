@@ -42,6 +42,7 @@ import { meta1584732939683 } from "../../migrations/1584732939683-meta";
 import { removeStore1585640540983 } from "../../migrations/1585640540983-remove-store";
 import { jsonb1585828108215 } from "../../migrations/1585828108215-jsonb";
 import { updateCollateralizationTracking1585962441544 } from "../../migrations/1585962441544-update-collateralization-tracking";
+import { updateTimeouts1586212135729 } from "../../migrations/1586212135729-update-timeouts";
 
 export const entities = [
   AppInstance,
@@ -82,6 +83,7 @@ export const migrations = [
   removeStore1585640540983,
   jsonb1585828108215,
   updateCollateralizationTracking1585962441544,
+  updateTimeouts1586212135729,
 ];
 
 @Injectable()
