@@ -120,6 +120,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           await makeProposeCall(
             nodeB,
             (global[`network`] as NetworkContextForTestSuite).TicTacToeApp,
+            multisigAddress,
             undefined,
             One,
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,

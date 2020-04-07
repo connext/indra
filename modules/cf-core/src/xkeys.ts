@@ -2,6 +2,7 @@ import { Wallet } from "ethers";
 import { SigningKey } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic, HDNode } from "ethers/utils/hdnode";
 import memoize from "memoizee";
+import { sortByAddress, sortAddresses } from "@connext/types";
 
 /**
  * BIP-32 specified HD Wallets
@@ -20,15 +21,10 @@ const xkeyKthHDNode = memoize(
 );
 
 const sortSigningkeys = (addrs: SigningKey[]): SigningKey[] =>
-  addrs.sort((a: SigningKey, b: SigningKey): number =>
-    parseInt(a.address, 16) < parseInt(b.address, 16) ? -1 : 1,
-  );
+  addrs.sort((a: SigningKey, b: SigningKey): number => sortByAddress(a.address, b.address));
 
 export const computeRandomExtendedPrvKey = (): string =>
   fromMnemonic(Wallet.createRandom().mnemonic).extendedKey;
-
-export const sortAddresses = (addrs: string[]): string[] =>
-  addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 
 export const xkeyKthAddress = (xkey: string, k: number | string = "0"): string =>
   xkeyKthHDNode(xkey, k.toString()).address;

@@ -5,31 +5,39 @@ import {
   randomBytes,
   SigningKey,
   joinSignature,
-  BigNumber,
+  bigNumberify,
 } from "ethers/utils";
 import { isBN, toBN } from "./math";
 
 // stolen from https://github.com/microsoft/TypeScript/issues/3192#issuecomment-261720275
-export const enumify = <T extends {[index: string]: U}, U extends string>(x: T): T => x;
+export const enumify = <T extends { [index: string]: U }, U extends string>(x: T): T => x;
 
 export const bigNumberifyJson = (json: any): object =>
-  typeof json === "string" ? json : JSON.parse(
-    JSON.stringify(json),
-    (key: string, value: any): any => (value && value["_hex"]) ? toBN(value._hex) : value,
-  );
+  typeof json === "string"
+    ? json
+    : JSON.parse(JSON.stringify(json), (key: string, value: any): any =>
+        value && value["_hex"] ? toBN(value._hex) : value,
+      );
 
 export const deBigNumberifyJson = (json: object) =>
-  JSON.parse(
-    JSON.stringify(json),
-    (key: string, val: any) => (val && isBN(val)) ? val.toHexString() : val,
+  JSON.parse(JSON.stringify(json), (key: string, val: any) =>
+    val && isBN(val) ? val.toHexString() : val,
   );
 
 export const stringify = (obj: any, space: number = 2): string =>
   JSON.stringify(
     obj,
-    (key: string, value: any): any => (value && value._hex) ? toBN(value._hex).toString() : value,
+    (key: string, value: any): any => (value && value._hex ? toBN(value._hex).toString() : value),
     space,
   );
+
+export function removeHexPrefix(hex: string): string {
+  return hex.replace(/^0x/, "");
+}
+
+export function addHexPrefix(hex: string): string {
+  return hex.startsWith("0x") ? hex : `0x${hex}`;
+}
 
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
@@ -55,6 +63,14 @@ export async function signDigestWithEthers(privateKey: string, digest: string) {
   return joinSignature(signingKey.signDigest(arrayify(digest)));
 }
 
+export function sortByAddress(a: string, b: string) {
+  return toBN(a).lt(toBN(b)) ? -1 : 1;
+}
+
+export function sortAddresses(addrs: string[]) {
+  return addrs.sort(sortByAddress);
+}
+
 export async function sortSignaturesBySignerAddress(
   digest: string,
   signatures: string[],
@@ -62,13 +78,9 @@ export async function sortSignaturesBySignerAddress(
 ): Promise<string[]> {
   return (
     await Promise.all(
-      signatures
-        .slice()
-        .map(async sig => ({ sig, addr: await recoverAddressFn(digest, sig) })),
+      signatures.map(async sig => ({ sig, addr: await recoverAddressFn(digest, sig) })),
     )
   )
-    .sort((A, B) => {
-      return new BigNumber(A.addr).lt(B.addr) ? -1 : 1;
-    })
+    .sort((a, b) => sortByAddress(a.addr, b.addr))
     .map(x => x.sig);
 }
