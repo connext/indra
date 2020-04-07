@@ -30,6 +30,7 @@ import { ConfigService } from "../config/config.service";
 import { sortAddresses, AppInstanceJson, xkeyKthAddress } from "../util";
 import { getConnection } from "typeorm";
 import { bigNumberify } from "ethers/utils";
+import { toBN } from "@connext/types";
 
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
@@ -280,7 +281,8 @@ describe("CFCoreStore", () => {
         ...appInstance,
         latestState: { updated: "updated app instance" },
         latestVersionNumber: 42,
-        latestTimeout: 1337,
+        stateTimeout: "0x00",
+        defaultTimeout: toBN(1142).toHexString(),
       });
 
       await cfCoreStore.updateAppInstance(multisigAddress, updated);

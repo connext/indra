@@ -5,12 +5,11 @@ import { One, AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { mkHash, mkXpub } from "../test/utils";
+import { mkHash, mkXpub, mkAddress } from "../test/utils";
 
 import { Channel } from "./channel.entity";
 import { ChannelService, RebalanceType } from "./channel.service";
 import { ChannelRepository } from "./channel.repository";
-import { mkAddress } from "../../dist/src/test/utils";
 import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
