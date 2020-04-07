@@ -106,7 +106,7 @@ contract MinimumViableMultisig is MultisigData {
                 address(this),
                 to,
                 value,
-                keccak256(abi.encodePacked(data)),
+                keccak256(data),
                 uint8(operation)
             )
         );
