@@ -85,7 +85,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
     const updated = await store.getStateChannel(json.multisigAddress);
 
     return {
-      appInstanceId: StateChannel.fromJson(updated!).mostRecentlyProposedAppInstance().identityHash,
+      appIdentityHash: StateChannel.fromJson(updated!).mostRecentlyProposedAppInstance().identityHash,
     };
   }
 }

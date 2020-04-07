@@ -24,7 +24,7 @@ export class UpdateStateController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.UpdateState,
   ): Promise<string[]> {
-    return [params.appInstanceId];
+    return [params.appIdentityHash];
   }
 
   protected async beforeExecution(
@@ -32,13 +32,13 @@ export class UpdateStateController extends NodeController {
     params: MethodParams.UpdateState,
   ): Promise<void> {
     const { store } = requestHandler;
-    const { appInstanceId, newState } = params;
+    const { appIdentityHash, newState } = params;
 
-    if (!appInstanceId) {
+    if (!appIdentityHash) {
       throw new Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
     }
 
-    const appJson = await store.getAppInstance(appInstanceId);
+    const appJson = await store.getAppInstance(appIdentityHash);
     if (!appJson) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
     }
@@ -59,11 +59,11 @@ export class UpdateStateController extends NodeController {
     params: MethodParams.UpdateState,
   ): Promise<MethodResults.UpdateState> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
-    const { appInstanceId, newState } = params;
+    const { appIdentityHash, newState } = params;
 
-    const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
+    const sc = await store.getStateChannelByAppInstanceId(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
     }
 
     const responderXpub = getFirstElementInListNotEqualTo(
@@ -72,7 +72,7 @@ export class UpdateStateController extends NodeController {
     );
 
     await runUpdateStateProtocol(
-      appInstanceId,
+      appIdentityHash,
       store,
       protocolRunner,
       publicIdentifier,

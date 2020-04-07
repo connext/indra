@@ -33,7 +33,7 @@ export abstract class AbstractController {
   }
 
   /**
-   * @returns {string} appInstanceId - Installed app's appInstanceId
+   * @returns {string} appIdentityHash - Installed app's identityHash
    */
   proposeAndInstallLedgerApp = async (
     params: MethodParams.ProposeInstall,
@@ -46,7 +46,7 @@ export abstract class AbstractController {
         `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
       ),
     ]);
-    const { appInstanceId } = proposeRes as MethodResults.ProposeInstall;
+    const { appIdentityHash } = proposeRes as MethodResults.ProposeInstall;
 
     // let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
@@ -59,51 +59,51 @@ export abstract class AbstractController {
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
-          // boundResolve = this.resolveInstall.bind(null, res, appInstanceId);
-          boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
+          // boundResolve = this.resolveInstall.bind(null, res, appIdentityHash);
+          boundReject = this.rejectInstall.bind(null, rej, appIdentityHash);
 
           // set up install nats subscription
-          const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`;
+          const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
           this.connext.messaging.subscribe(subject, res);
 
-          // this.listener.on(INSTALL_EVENT, boundResolve, appInstanceId);
+          // this.listener.on(INSTALL_EVENT, boundResolve, appIdentityHash);
           this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
       ]);
 
-      this.log.info(`Installed app with id: ${appInstanceId}`);
+      this.log.info(`Installed app with id: ${appIdentityHash}`);
       // this.log.debug(`Installed app details: ${stringify(res as object)}`);
-      return appInstanceId;
+      return appIdentityHash;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
       throw new Error(e.stack || e.message);
     } finally {
-      this.cleanupInstallListeners(boundReject, appInstanceId);
+      this.cleanupInstallListeners(boundReject, appIdentityHash);
     }
   };
 
   // private resolveInstall = (
   //   res: (value?: unknown) => void,
-  //   appInstanceId: string,
+  //   appIdentityHash: string,
   //   message: any,
   // ): void => {
   //   const data = message.data ? message.data : message;
-  //   if (data.params.appInstanceId === appInstanceId) {
+  //   if (data.params.appIdentityHash === appIdentityHash) {
   //     res();
   //   }
   // };
 
   private rejectInstall = (
     rej: (message?: Error) => void,
-    appInstanceId: string,
+    appIdentityHash: string,
     message: any,
   ): void => {
     // check app id
     const data = message.data && message.data.data ? message.data.data : message.data || message;
-    if (data.appInstanceId !== appInstanceId) {
+    if (data.appIdentityHash !== appIdentityHash) {
       const msg = `Caught reject install event for different app ${stringify(
         message,
-      )}, expected ${appInstanceId}. This should not happen.`;
+      )}, expected ${appIdentityHash}. This should not happen.`;
       this.log.warn(msg);
       return rej(new Error(msg));
     }

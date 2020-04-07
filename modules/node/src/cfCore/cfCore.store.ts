@@ -72,8 +72,8 @@ export class CFCoreStore implements IStoreService {
     return this.channelRepository.getStateChannelByOwners(owners);
   }
 
-  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON> {
-    return this.channelRepository.getStateChannelByAppInstanceId(appInstanceId);
+  getStateChannelByAppInstanceId(appIdentityHash: string): Promise<StateChannelJSON> {
+    return this.channelRepository.getStateChannelByAppInstanceId(appIdentityHash);
   }
 
   async createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
@@ -154,8 +154,8 @@ export class CFCoreStore implements IStoreService {
     await this.channelRepository.save(channel);
   }
 
-  getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
-    return this.appInstanceRepository.getAppInstance(appInstanceId);
+  getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
+    return this.appInstanceRepository.getAppInstance(appIdentityHash);
   }
 
   async createAppInstance(
@@ -260,12 +260,12 @@ export class CFCoreStore implements IStoreService {
 
   async removeAppInstance(
     multisigAddress: string,
-    appInstanceId: string,
+    appIdentityHash: string,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
-    const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
+    const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
     if (!app) {
-      throw new Error(`No app found when trying to remove. AppId: ${appInstanceId}`);
+      throw new Error(`No app found when trying to remove. AppId: ${appIdentityHash}`);
     }
     if (app.type !== AppType.INSTANCE) {
       throw new Error(`App is not of correct type`);
@@ -297,8 +297,8 @@ export class CFCoreStore implements IStoreService {
     });
   }
 
-  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal> {
-    return this.appInstanceRepository.getAppProposal(appInstanceId);
+  getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal> {
+    return this.appInstanceRepository.getAppProposal(appIdentityHash);
   }
 
   async createAppProposal(
@@ -334,12 +334,12 @@ export class CFCoreStore implements IStoreService {
     await this.channelRepository.save(channel);
   }
 
-  async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+  async removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
     // called in protocol during install and reject protocols
     // but we dont "remove" app proposals, they get upgraded. so
     // simply return without editing, and set the status to `REJECTED`
     // in the listener
-    const app = await this.appInstanceRepository.findByIdentityHash(appInstanceId);
+    const app = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
     if (!app || app.type !== AppType.PROPOSAL) {
       return;
     }

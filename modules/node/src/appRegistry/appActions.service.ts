@@ -114,7 +114,7 @@ export class AppActionsService {
   ): Promise<void> {
     let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
     if (!withdraw) {
-      throw new Error(`No withdraw entity found for this appInstanceId: ${appInstance.identityHash}`);
+      throw new Error(`No withdraw entity found for this appIdentityHash: ${appInstance.identityHash}`);
     }
     withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(
       withdraw,

@@ -133,16 +133,16 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getStateChannelByOwners(owners);
   }
 
-  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON> {
-    return this.internalStore.getStateChannelByAppInstanceId(appInstanceId);
+  getStateChannelByAppInstanceId(appIdentityHash: string): Promise<StateChannelJSON> {
+    return this.internalStore.getStateChannelByAppInstanceId(appIdentityHash);
   }
 
   createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
     return this.internalStore.createStateChannel(stateChannel);
   }
 
-  getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
-    return this.internalStore.getAppInstance(appInstanceId);
+  getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
+    return this.internalStore.getAppInstance(appIdentityHash);
   }
 
   createAppInstance(
@@ -159,26 +159,26 @@ export class ConnextStore implements IClientStore {
 
   removeAppInstance(
     multisigAddress: string,
-    appInstanceId: string,
+    appIdentityHash: string,
     freeBalance: AppInstanceJson,
   ): Promise<void> {
-    return this.internalStore.removeAppInstance(multisigAddress, appInstanceId, freeBalance);
+    return this.internalStore.removeAppInstance(multisigAddress, appIdentityHash, freeBalance);
   }
 
-  getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
-    return this.internalStore.getAppProposal(appInstanceId);
+  getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+    return this.internalStore.getAppProposal(appIdentityHash);
   }
 
   createAppProposal(
-    appInstanceId: string,
+    appIdentityHash: string,
     proposal: AppInstanceProposal,
     numProposedApps: number,
   ): Promise<void> {
-    return this.internalStore.createAppProposal(appInstanceId, proposal, numProposedApps);
+    return this.internalStore.createAppProposal(appIdentityHash, proposal, numProposedApps);
   }
 
-  removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
-    return this.internalStore.removeAppProposal(multisigAddress, appInstanceId);
+  removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
+    return this.internalStore.removeAppProposal(multisigAddress, appIdentityHash);
   }
 
   getFreeBalance(multisigAddress: string): Promise<AppInstanceJson> {

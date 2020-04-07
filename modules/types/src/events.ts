@@ -40,7 +40,7 @@ const CONDITIONAL_TRANSFER_RECEIVED_EVENT = "CONDITIONAL_TRANSFER_RECEIVED_EVENT
 
 export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTypes> = {
   amount: HexObject;
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
   assetId: Address;
   paymentId?: Bytes32;
   sender: Xpub;
@@ -99,7 +99,7 @@ const DEPOSIT_STARTED_EVENT = "DEPOSIT_STARTED_EVENT";
 const INSTALL_EVENT = "INSTALL_EVENT";
 
 type InstallEventData = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 ////////////////////////////////////////
@@ -119,14 +119,14 @@ type RejectInstallEventData = {
 const UNINSTALL_EVENT = "UNINSTALL_EVENT";
 
 type UninstallEventData = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 ////////////////////////////////////////
 const UPDATE_STATE_EVENT = "UPDATE_STATE_EVENT";
 
 type UpdateStateEventData = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
   newState: SolidityValueType;
   action?: SolidityValueType;
 };

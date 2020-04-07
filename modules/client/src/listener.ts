@@ -112,7 +112,7 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
       const {
-        data: { params, appInstanceId },
+        data: { params, appIdentityHash },
         from,
       } = msg;
       // return if its from us
@@ -125,7 +125,7 @@ export class ConnextListener extends ConnextEventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
-      this.handleAppProposal(params, appInstanceId, from);
+      this.handleAppProposal(params, appIdentityHash, from);
       this.log.info(`Done processing propose install event ${time()}`);
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
@@ -139,7 +139,7 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
-      const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appInstanceId))
+      const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appIdentityHash))
         .appInstance;
       const state = msg.data.newState as WithdrawAppState;
       const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
@@ -219,7 +219,7 @@ export class ConnextListener extends ConnextEventEmitter {
           },
         } = msg;
         await this.connext.messaging.publish(
-          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appInstanceId}.uninstall`,
+          `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appIdentityHash}.uninstall`,
           appInstance,
         );
       },
@@ -281,7 +281,7 @@ export class ConnextListener extends ConnextEventEmitter {
 
   private handleAppProposal = async (
     params: MethodParams.ProposeInstall,
-    appInstanceId: string,
+    appIdentityHash: string,
     from: string,
   ): Promise<void> => {
     // get supported apps
@@ -336,29 +336,29 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       // NOTE: by trying to install here, if the installation fails,
       // the proposal is automatically removed from the store
-      await this.connext.installApp(appInstanceId);
+      await this.connext.installApp(appIdentityHash);
     } catch (e) {
       console.error(`Caught error: ${e.message}`);
-      await this.connext.rejectInstallApp(appInstanceId);
+      await this.connext.rejectInstallApp(appIdentityHash);
       throw e;
     }
     // install and run post-install tasks
-    await this.runPostInstallTasks(appInstanceId, registryAppInfo, params);
-    const { appInstance } = await this.connext.getAppInstanceDetails(appInstanceId);
+    await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
+    const { appInstance } = await this.connext.getAppInstanceDetails(appIdentityHash);
     await this.connext.messaging.publish(
-      `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstanceId}.install`,
+      `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
       stringify(appInstance),
     );
   };
 
   private runPostInstallTasks = async (
-    appInstanceId: string,
+    appIdentityHash: string,
     registryAppInfo: DefaultApp,
     params: MethodParams.ProposeInstall,
   ): Promise<void> => {
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
-        const appInstance = (await this.connext.getAppInstanceDetails(appInstanceId)).appInstance;
+        const appInstance = (await this.connext.getAppInstanceDetails(appIdentityHash)).appInstance;
         this.connext.respondToNodeWithdraw(appInstance);
         break;
       }
@@ -370,7 +370,7 @@ export class ConnextListener extends ConnextEventEmitter {
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
           deBigNumberifyJson({
             amount,
-            appInstanceId,
+            appIdentityHash,
             assetId,
             meta,
             sender: meta["sender"],
@@ -392,7 +392,7 @@ export class ConnextListener extends ConnextEventEmitter {
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
           deBigNumberifyJson({
             amount,
-            appInstanceId,
+            appIdentityHash,
             assetId,
             meta,
             sender: meta["sender"],
@@ -414,7 +414,7 @@ export class ConnextListener extends ConnextEventEmitter {
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
           deBigNumberifyJson({
             amount,
-            appInstanceId,
+            appIdentityHash,
             assetId,
             meta,
             sender: meta["sender"],

@@ -60,7 +60,7 @@ export type CheckDepositRightsParameters = {
 };
 
 export type CheckDepositRightsResponse = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 export type RescindDepositRightsParameters = MethodParams.RescindDepositRights;
@@ -184,20 +184,20 @@ export interface IConnextClient {
   getStateChannel(): Promise<MethodResults.GetStateChannel>;
   getFreeBalance(assetId?: Address): Promise<MethodResults.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
-  getAppInstanceDetails(appInstanceId: Bytes32): Promise<MethodResults.GetAppInstanceDetails>;
-  getAppState(appInstanceId: Bytes32): Promise<MethodResults.GetState>;
+  getAppInstanceDetails(appIdentityHash: Bytes32): Promise<MethodResults.GetAppInstanceDetails>;
+  getAppState(appIdentityHash: Bytes32): Promise<MethodResults.GetState>;
   getProposedAppInstances(
     multisigAddress?: Address,
   ): Promise<MethodResults.GetProposedAppInstances | undefined>;
   getProposedAppInstance(
-    appInstanceId: Bytes32,
+    appIdentityHash: Bytes32,
   ): Promise<MethodResults.GetProposedAppInstance | undefined>;
   proposeInstallApp(
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall>;
-  installApp(appInstanceId: Bytes32): Promise<MethodResults.Install>;
-  rejectInstallApp(appInstanceId: Bytes32): Promise<MethodResults.Uninstall>;
-  takeAction(appInstanceId: Bytes32, action: any): Promise<MethodResults.TakeAction>;
-  updateState(appInstanceId: Bytes32, newState: any): Promise<MethodResults.UpdateState>;
-  uninstallApp(appInstanceId: Bytes32): Promise<MethodResults.Uninstall>;
+  installApp(appIdentityHash: Bytes32): Promise<MethodResults.Install>;
+  rejectInstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
+  takeAction(appIdentityHash: Bytes32, action: any): Promise<MethodResults.TakeAction>;
+  updateState(appIdentityHash: Bytes32, newState: any): Promise<MethodResults.UpdateState>;
+  uninstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
 }

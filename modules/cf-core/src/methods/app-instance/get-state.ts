@@ -19,13 +19,13 @@ export class GetAppInstanceStateController extends NodeController {
     params: MethodParams.GetState,
   ): Promise<MethodResults.GetState> {
     const { store } = requestHandler;
-    const { appInstanceId } = params;
+    const { appIdentityHash } = params;
 
-    if (!appInstanceId) {
+    if (!appIdentityHash) {
       throw new Error(NO_APP_INSTANCE_ID_FOR_GET_STATE);
     }
 
-    const appInstance = await store.getAppInstance(appInstanceId);
+    const appInstance = await store.getAppInstance(appIdentityHash);
     if (!appInstance) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
     }

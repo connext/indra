@@ -67,7 +67,7 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
-          makeInstallCall(nodeB, msg.data.appInstanceId);
+          makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
 
         // FIXME: still no symmetric events -- nodeB will never emit an
@@ -151,7 +151,7 @@ describe("Node method follows spec - install", () => {
             erc20TokenAddress,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-          makeInstallCall(nodeB, msg.data.appInstanceId);
+          makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {

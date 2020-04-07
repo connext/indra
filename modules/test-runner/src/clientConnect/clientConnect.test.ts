@@ -10,20 +10,20 @@ describe("Client Connect", () => {
     const mnemonic = Wallet.createRandom().mnemonic;
     let client = await createClient({ mnemonic });
     const { 
-      appInstanceId: ethDeposit, 
+      appIdentityHash: ethDeposit, 
     } = await client.requestDepositRights({ assetId: AddressZero });
     const { 
-      appInstanceId: tokenDeposit, 
+      appIdentityHash: tokenDeposit, 
     } = await client.requestDepositRights({ assetId: client.config.contractAddresses.Token });
 
     // verify
     const { 
-      appInstanceId: retrievedEth,
+      appIdentityHash: retrievedEth,
     } = await client.checkDepositRights({ assetId: AddressZero });
     expect(retrievedEth).to.eq(ethDeposit);
 
     const { 
-      appInstanceId: retrievedToken,
+      appIdentityHash: retrievedToken,
     } = await client.checkDepositRights({ assetId: client.config.contractAddresses.Token });
     expect(retrievedToken).to.eq(tokenDeposit);
 
@@ -36,12 +36,12 @@ describe("Client Connect", () => {
 
     // verify still installed
     const { 
-      appInstanceId: retrievedEth2,
+      appIdentityHash: retrievedEth2,
     } = await client.checkDepositRights({ assetId: AddressZero });
     expect(retrievedEth2).to.eq(ethDeposit);
 
     const { 
-      appInstanceId: retrievedToken2,
+      appIdentityHash: retrievedToken2,
     } = await client.checkDepositRights({ assetId: client.config.contractAddresses.Token });
     expect(retrievedToken2).to.eq(tokenDeposit);
   });

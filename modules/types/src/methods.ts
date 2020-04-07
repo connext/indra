@@ -47,7 +47,7 @@ type GetChannelAddressesResult = {
 ////////////////////////////////////////
 
 type GetAppInstanceDetailsParams = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 type GetAppInstanceDetailsResult = {
@@ -100,7 +100,7 @@ type GetTokenIndexedFreeBalanceStatesResult = {
 ////////////////////////////////////////
 
 type GetProposedAppInstanceParams = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 type GetProposedAppInstanceResult = {
@@ -120,7 +120,7 @@ type GetProposedAppInstancesResult = {
 ////////////////////////////////////////
 
 type GetStateParams = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 type GetStateResult = {
@@ -140,7 +140,7 @@ type GetStateChannelResult = {
 ////////////////////////////////////////
 
 type InstallParams = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 type InstallResult = {
@@ -154,7 +154,7 @@ type RequestDepositRightsParams = {
 };
 
 type RequestDepositRightsResult = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
   multisigAddress: Address;
 };
 
@@ -175,13 +175,13 @@ type ProposeInstallParams = {
 };
 
 type ProposeInstallResult = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 ////////////////////////////////////////
 
 type RejectInstallParams = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 type RejectInstallResult = {};
@@ -189,7 +189,7 @@ type RejectInstallResult = {};
 ////////////////////////////////////////
 
 type UpdateStateParams = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
   newState: SolidityValueType;
 };
 
@@ -200,7 +200,7 @@ type UpdateStateResult = {
 ////////////////////////////////////////
 
 type TakeActionParams = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
   action: SolidityValueType;
 };
 
@@ -211,7 +211,7 @@ type TakeActionResult = {
 ////////////////////////////////////////
 
 type UninstallParams = {
-  appInstanceId: Bytes32;
+  appIdentityHash: Bytes32;
 };
 
 type UninstallResult = {};
@@ -220,7 +220,7 @@ type UninstallResult = {};
 
 type RescindDepositRightsParams = {
   assetId?: Address;
-  appInstanceId?: Bytes32;
+  appIdentityHash?: Bytes32;
 };
 
 type RescindDepositRightsResult = {

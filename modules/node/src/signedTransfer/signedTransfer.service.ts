@@ -144,12 +144,12 @@ export class SignedTransferService {
     );
 
 
-    if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
+    if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);
     }
 
     return {
-      appIdentityHash: receiverAppInstallRes.appInstanceId,
+      appIdentityHash: receiverAppInstallRes.appIdentityHash,
       sender: senderChannel.userPublicIdentifier,
       meta: senderApp["meta"] || {},
       amount,

@@ -157,7 +157,7 @@ export class WithdrawService {
   }
 
   async saveWithdrawal(
-    appInstanceId: string,
+    appIdentityHash: string,
     amount: BigNumber,
     assetId: string,
     recipient: string,
@@ -168,7 +168,7 @@ export class WithdrawService {
   ) {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const withdraw = new Withdraw();
-    withdraw.appInstanceId = appInstanceId;
+    withdraw.appInstanceId = appIdentityHash;
     withdraw.amount = amount;
     withdraw.assetId = assetId;
     withdraw.recipient = recipient;
@@ -232,7 +232,7 @@ export class WithdrawService {
     };
 
     // propose install + wait for client confirmation
-    const { appInstanceId } = await this.cfCoreService.proposeAndWaitForInstallApp(
+    const { appIdentityHash } = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
       amount,
@@ -243,7 +243,7 @@ export class WithdrawService {
     );
 
     await this.saveWithdrawal(
-      appInstanceId,
+      appIdentityHash,
       bigNumberify(amount),
       assetId,
       initialState.transfers[0].to,

@@ -27,12 +27,12 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<string[]> {
     const app = await requestHandler.store.getAppInstance(
-      params.appInstanceId,
+      params.appIdentityHash,
     );
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
     }
-    return [app.multisigAddress, params.appInstanceId];
+    return [app.multisigAddress, params.appIdentityHash];
   }
 
   protected async beforeExecution(
@@ -40,13 +40,13 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<void> {
     const { store } = requestHandler;
-    const { appInstanceId, action } = params;
+    const { appIdentityHash, action } = params;
 
-    if (!appInstanceId) {
+    if (!appIdentityHash) {
       throw new Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
     }
 
-    const json = await store.getAppInstance(appInstanceId);
+    const json = await store.getAppInstance(appIdentityHash);
     if (!json) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
     }
@@ -67,11 +67,11 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
-    const { appInstanceId, action } = params;
+    const { appIdentityHash, action } = params;
 
-    const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
+    const sc = await store.getStateChannelByAppInstanceId(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
     }
 
     const responderXpub = getFirstElementInListNotEqualTo(
@@ -80,7 +80,7 @@ export class TakeActionController extends NodeController {
     );
 
     await runTakeActionProtocol(
-      appInstanceId,
+      appIdentityHash,
       store,
       protocolRunner,
       publicIdentifier,
@@ -88,7 +88,7 @@ export class TakeActionController extends NodeController {
       action,
     );
 
-    const appInstance = await store.getAppInstance(appInstanceId);
+    const appInstance = await store.getAppInstance(appIdentityHash);
     if (!appInstance) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
     }
@@ -101,9 +101,9 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
-    const { appInstanceId, action } = params;
+    const { appIdentityHash, action } = params;
 
-    const appInstance = await store.getAppInstance(appInstanceId);
+    const appInstance = await store.getAppInstance(appIdentityHash);
     if (!appInstance) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
     }
@@ -111,7 +111,7 @@ export class TakeActionController extends NodeController {
     const msg = {
       from: publicIdentifier,
       type: EventNames.UPDATE_STATE_EVENT,
-      data: { appInstanceId, action, newState: AppInstance.fromJson(appInstance).state },
+      data: { appIdentityHash, action, newState: AppInstance.fromJson(appInstance).state },
     } as UpdateStateMessage;
 
     await router.emit(msg.type, msg, `outgoing`);

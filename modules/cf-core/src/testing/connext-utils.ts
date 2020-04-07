@@ -55,7 +55,7 @@ export async function installLink(
     Zero,
     action.assetId,
   );
-  return res[0]; // appInstanceId
+  return res[0]; // appIdentityHash
 }
 
 function assertLinkRedemption(app: AppInstanceJson, amount: BigNumber): void {

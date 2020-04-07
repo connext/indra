@@ -73,12 +73,12 @@ export class StateChannel {
     return this.appInstances.get(appIdentityHash)!;
   }
 
-  public hasAppInstance(appInstanceId: string): boolean {
-    return this.appInstances.has(appInstanceId);
+  public hasAppInstance(appIdentityHash: string): boolean {
+    return this.appInstances.has(appIdentityHash);
   }
 
-  public hasAppProposal(appInstanceId: string): boolean {
-    return this.proposedAppInstances.has(appInstanceId);
+  public hasAppProposal(appIdentityHash: string): boolean {
+    return this.proposedAppInstances.has(appIdentityHash);
   }
 
   public hasAppInstanceOfKind(address: string): boolean {
@@ -299,12 +299,12 @@ export class StateChannel {
     });
   }
 
-  public removeProposal = (appInstanceId: string) => {
+  public removeProposal = (appIdentityHash: string) => {
     const proposedAppInstances = new Map<string, AppInstanceProposal>(
       this.proposedAppInstances.entries(),
     );
 
-    proposedAppInstances.delete(appInstanceId);
+    proposedAppInstances.delete(appIdentityHash);
 
     return this.build({
       proposedAppInstances,
@@ -322,10 +322,10 @@ export class StateChannel {
     });
   }
 
-  public removeAppInstance(appInstanceId: string) {
+  public removeAppInstance(appIdentityHash: string) {
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
-    appInstances.delete(appInstanceId);
+    appInstances.delete(appIdentityHash);
 
     return this.build({
       appInstances,
@@ -484,11 +484,11 @@ export class StateChannel {
   static async getPeersAddressFromAppInstanceID(
     myIdentifier: string,
     store: IStoreService,
-    appInstanceId: string,
+    appIdentityHash: string,
   ): Promise<string[]> {
-    const channel = await store.getStateChannelByAppInstanceId(appInstanceId);
+    const channel = await store.getStateChannelByAppInstanceId(appIdentityHash);
     if (!channel) {
-      throw new Error(`[getPeersAddressFromAppInstanceID] No state channel found in store for appIdentityHash ${appInstanceId}`);
+      throw new Error(`[getPeersAddressFromAppInstanceID] No state channel found in store for appIdentityHash ${appIdentityHash}`);
     }
     return StateChannel.getPeersAddressFromChannel(myIdentifier, store, channel.multisigAddress);
   }

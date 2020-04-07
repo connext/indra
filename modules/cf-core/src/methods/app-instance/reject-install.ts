@@ -13,9 +13,9 @@ export class RejectInstallController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.RejectInstall,
   ): Promise<string[]> {
-    const { appInstanceId } = params;
+    const { appIdentityHash } = params;
 
-    return [appInstanceId];
+    return [appIdentityHash];
   }
 
   @jsonRpcMethod(MethodNames.chan_rejectInstall)
@@ -25,25 +25,25 @@ export class RejectInstallController extends NodeController {
   ): Promise<MethodResults.RejectInstall> {
     const { store, messagingService, publicIdentifier } = requestHandler;
 
-    const { appInstanceId } = params;
+    const { appIdentityHash } = params;
 
-    const appInstanceProposal = await store.getAppProposal(appInstanceId);
+    const appInstanceProposal = await store.getAppProposal(appIdentityHash);
     if (!appInstanceProposal) {
-      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId));
+      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appIdentityHash));
     }
 
-    const stateChannel = await store.getStateChannelByAppInstanceId(appInstanceId);
+    const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
     if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
     }
     
-    await store.removeAppProposal(stateChannel.multisigAddress, appInstanceId);
+    await store.removeAppProposal(stateChannel.multisigAddress, appIdentityHash);
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,
       type: EventNames.REJECT_INSTALL_EVENT,
       data: {
-        appInstanceId,
+        appIdentityHash,
       },
     };
 

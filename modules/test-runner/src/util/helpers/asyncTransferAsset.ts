@@ -50,7 +50,7 @@ export async function asyncTransferAsset(
       ]),
       new Promise((resolve: Function): void => {
         clientA.on(EventNames.UNINSTALL_EVENT, data => {
-          if (data.appInstanceId === senderAppId) {
+          if (data.appIdentityHash === senderAppId) {
             resolve();
           }
         });

@@ -108,16 +108,16 @@ export const NO_APP_INSTANCE_ID_TO_INSTALL = "No AppInstanceId specified to inst
 export const NO_APP_INSTANCE_ID_TO_UNINSTALL = "No AppInstanceId specified to uninstall";
 
 export const NO_MULTISIG_FOR_APP_INSTANCE_ID =
-  "No multisig address exists for the given appInstanceId";
+  "No multisig address exists for the given appIdentityHash";
 
 export const NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID = (id: string): string =>
-  `No proposed AppInstance exists for the given appInstanceId: ${id}`;
+  `No proposed AppInstance exists for the given appIdentityHash: ${id}`;
 
 export const NO_STATE_CHANNEL_FOR_MULTISIG_ADDR = (multisigAddress: string): string =>
   `Call to getStateChannel failed when searching for multisig address: ${multisigAddress}. This probably means that the StateChannel does not exist yet.`;
 
-export const NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID = (appInstanceId: string): string =>
-  `Call to getStateChannel failed when searching for app instance id: ${appInstanceId}.`;
+export const NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID = (appIdentityHash: string): string =>
+  `Call to getStateChannel failed when searching for app identity hash: ${appIdentityHash}.`;
 
 export const NO_STATE_CHANNEL_FOR_OWNERS = (owners: string): string =>
   `Call to getStateChannel failed when searching by owners: ${owners}.`;

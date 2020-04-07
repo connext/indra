@@ -48,11 +48,11 @@ describe("Node method follows spec - uninstall", () => {
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-        makeInstallCall(nodeB, msg.data.appInstanceId);
+        makeInstallCall(nodeB, msg.data.appIdentityHash);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
-        appIdentityHashes.push(msg.data.params.appInstanceId);
+        appIdentityHashes.push(msg.data.params.appIdentityHash);
       });
 
       const proposeRpc = makeProposeCall(
@@ -77,7 +77,7 @@ describe("Node method follows spec - uninstall", () => {
 
       // NOTE: nodeA does not ever emit this event
       nodeB.on("UNINSTALL_EVENT", (msg: UninstallMessage) => {
-        expect(appIdentityHashes.includes(msg.data.appInstanceId)).toBe(true);
+        expect(appIdentityHashes.includes(msg.data.appIdentityHash)).toBe(true);
         uninstalledApps += 1;
         if (uninstalledApps === 2) done();
       });

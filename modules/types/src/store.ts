@@ -82,11 +82,11 @@ export interface IStoreService {
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: Address[]): Promise<StateChannelJSON | undefined>;
-  getStateChannelByAppInstanceId(appInstanceId: Bytes32): Promise<StateChannelJSON | undefined>;
+  getStateChannelByAppInstanceId(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
   createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
 
   ///// App instances
-  getAppInstance(appInstanceId: Bytes32): Promise<AppInstanceJson | undefined>;
+  getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
   createAppInstance(
     multisigAddress: Address,
     appInstance: AppInstanceJson,
@@ -95,18 +95,18 @@ export interface IStoreService {
   updateAppInstance(multisigAddress: Address, appInstance: AppInstanceJson): Promise<void>;
   removeAppInstance(
     multisigAddress: Address,
-    appInstanceId: Bytes32,
+    appIdentityHash: Bytes32,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void>;
 
   ///// App proposals
-  getAppProposal(appInstanceId: Bytes32): Promise<AppInstanceProposal | undefined>;
+  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceProposal | undefined>;
   createAppProposal(
     multisigAddress: Address,
     appProposal: AppInstanceProposal,
     numProposedApps: number,
   ): Promise<void>;
-  removeAppProposal(multisigAddress: Address, appInstanceId: Bytes32): Promise<void>;
+  removeAppProposal(multisigAddress: Address, appIdentityHash: Bytes32): Promise<void>;
   // proposals dont need to be updated
 
   ///// Free balance

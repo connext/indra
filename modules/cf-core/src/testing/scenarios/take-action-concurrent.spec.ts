@@ -49,11 +49,11 @@ describe("Node method follows spec - toke action", () => {
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-        makeInstallCall(nodeB, msg.data.appInstanceId);
+        makeInstallCall(nodeB, msg.data.appIdentityHash);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
-        appIdentityHashes.push(msg.data.params.appInstanceId);
+        appIdentityHashes.push(msg.data.params.appIdentityHash);
       });
 
       const proposeRpc = makeProposeCall(

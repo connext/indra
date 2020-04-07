@@ -47,7 +47,7 @@ export type Error = {
   data: {
     errorName: string;
     message?: string;
-    appInstanceId?: Bytes32;
+    appIdentityHash?: Bytes32;
     extra?: { [k: string]: string | number | boolean | object };
   };
 };
@@ -164,13 +164,13 @@ export interface InstallMessage extends NodeMessage {
 export interface ProposeMessage extends NodeMessage {
   data: {
     params: MethodParams.ProposeInstall;
-    appInstanceId: string;
+    appIdentityHash: string;
   };
 }
 
 export interface RejectProposalMessage extends NodeMessage {
   data: {
-    appInstanceId: string;
+    appIdentityHash: string;
   };
 }
 

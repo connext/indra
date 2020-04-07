@@ -123,8 +123,8 @@ export class SwapController extends AbstractController {
       timeout: Zero,
     };
 
-    const appInstanceId = await this.proposeAndInstallLedgerApp(params);
-    this.log.info(`Successfully installed swap app with id ${appInstanceId}`);
-    return appInstanceId;
+    const appIdentityHash = await this.proposeAndInstallLedgerApp(params);
+    this.log.info(`Successfully installed swap app with id ${appIdentityHash}`);
+    return appIdentityHash;
   };
 }
