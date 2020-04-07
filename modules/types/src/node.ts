@@ -1,5 +1,5 @@
 import { AppRegistry } from "./app";
-import { Address, BigNumber, Network, Transaction, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, DecString, Network, Transaction, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import {
   GetHashLockTransferResponse,
@@ -36,22 +36,22 @@ export type ChannelAppSequences = {
 // NODE RESPONSE TYPES
 
 export type ContractAddresses = NetworkContext & {
-  Token: string;
-  [SupportedApplication: string]: string;
+  Token: Address;
+  [SupportedApplication: string]: Address;
 };
 
 export interface NodeConfig {
-  nodePublicIdentifier: string; // x-pub of node
+  nodePublicIdentifier: Xpub;
   chainId: string; // network that your channel is on
   nodeUrl: string;
 }
 
 export type TransferInfo = {
-  paymentId: string;
+  paymentId: Bytes32;
   amount: BigNumber;
-  assetId: string;
-  senderPublicIdentifier: string;
-  receiverPublicIdentifier: string;
+  assetId: Address;
+  senderPublicIdentifier: Xpub;
+  receiverPublicIdentifier: Xpub;
   meta: any;
 };
 
@@ -72,9 +72,9 @@ export type NatsResponse = {
 export type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
-  nodePublicIdentifier: string;
+  nodePublicIdentifier: Xpub;
   messagingUrl: string[];
-  supportedTokenAddresses: string[];
+  supportedTokenAddresses: Address[];
 };
 
 export type Collateralizations = { [assetId: string]: boolean };
@@ -90,7 +90,7 @@ export type GetChannelResponse = {
 // returns the transaction hash of the multisig deployment
 // TODO: this will likely change
 export type CreateChannelResponse = {
-  transactionHash: string;
+  transactionHash: Bytes32;
 };
 
 export type RequestCollateralResponse = MethodResults.Deposit | undefined;
@@ -99,35 +99,35 @@ export type RequestCollateralResponse = MethodResults.Deposit | undefined;
 export type ChannelRestoreResponse = {
   channel: StateChannelJSON;
   setupCommitment: MinimalTransaction | undefined;
-  setStateCommitments: [string, SetStateCommitmentJSON][]; // appId, commitment
-  conditionalCommitments: [string, ConditionalTransactionCommitmentJSON][]; // appId, commitment
+  setStateCommitments: [Bytes32, SetStateCommitmentJSON][]; // appId, commitment
+  conditionalCommitments: [Bytes32, ConditionalTransactionCommitmentJSON][]; // appId, commitment
 };
 
 ////////////////////////////////////
 // NODE API CLIENT
 
 export interface PendingAsyncTransfer {
-  assetId: string;
+  assetId: Address;
   amount: BigNumber;
   encryptedPreImage: string;
-  linkedHash: string;
-  paymentId: string;
+  linkedHash: Bytes32;
+  paymentId: Bytes32;
 }
 
 export interface PendingFastSignedTransfer {
-  assetId: string;
+  assetId: Bytes32;
   amount: BigNumber;
-  paymentId: string;
-  signer: string;
+  paymentId: Bytes32;
+  signer: string; // Address?
 }
 
 export type FetchedLinkedTransfer<T = any> = {
-  paymentId: string;
+  paymentId: Bytes32;
   createdAt: Date;
   amount: BigNumber;
-  assetId: string;
-  senderPublicIdentifier: string;
-  receiverPublicIdentifier?: string;
+  assetId: Address;
+  senderPublicIdentifier: Xpub;
+  receiverPublicIdentifier?: Xpub;
   status: LinkedTransferStatus;
   meta: T;
   encryptedPreImage?: string;
@@ -140,22 +140,22 @@ export type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
 
 export interface VerifyNonceDtoType {
   sig: string;
-  userPublicIdentifier: string;
+  userPublicIdentifier: Xpub;
 }
 
 export interface NodeInitializationParameters {
   nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
-  userPublicIdentifier?: string;
-  nodePublicIdentifier?: string;
+  userPublicIdentifier?: Xpub;
+  nodePublicIdentifier?: Xpub;
   channelProvider?: IChannelProvider;
 }
 
 export interface INodeApiClient {
   channelProvider: IChannelProvider | undefined;
-  userPublicIdentifier: string | undefined;
-  nodePublicIdentifier: string | undefined;
+  userPublicIdentifier: Xpub | undefined;
+  nodePublicIdentifier: Xpub | undefined;
 
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
   appRegistry(
@@ -164,25 +164,25 @@ export interface INodeApiClient {
           name: string;
           chainId: number;
         }
-      | { appDefinitionAddress: string },
+      | { appDefinitionAddress: Address },
   ): Promise<AppRegistry>;
   config(): Promise<GetConfigResponse>;
   createChannel(): Promise<CreateChannelResponse>;
   clientCheckIn(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
-  getLatestSwapRate(from: string, to: string): Promise<string>;
-  getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
-  getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
+  getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
+  getRebalanceProfile(assetId?: Address): Promise<RebalanceProfile>;
+  getHashLockTransfer(lockHash: Bytes32): Promise<GetHashLockTransferResponse>;
   getPendingAsyncTransfers(): Promise<GetPendingAsyncTransfersResponse>;
-  getTransferHistory(publicIdentifier?: string): Promise<TransferInfo[]>;
+  getTransferHistory(publicIdentifier?: Xpub): Promise<TransferInfo[]>;
   getLatestWithdrawal(): Promise<Transaction>;
-  requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  fetchLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
-  fetchSignedTransfer(paymentId: string): Promise<GetSignedTransferResponse>;
-  resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
-  resolveSignedTransfer(paymentId: string): Promise<ResolveSignedTransferResponse>;
-  recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
-  restoreState(publicIdentifier: string): Promise<any>;
-  subscribeToSwapRates(from: string, to: string, callback: any): Promise<void>;
-  unsubscribeFromSwapRates(from: string, to: string): Promise<void>;
+  requestCollateral(assetId: Address): Promise<RequestCollateralResponse | void>;
+  fetchLinkedTransfer(paymentId: Bytes32): Promise<GetLinkedTransferResponse>;
+  fetchSignedTransfer(paymentId: Bytes32): Promise<GetSignedTransferResponse>;
+  resolveLinkedTransfer(paymentId: Bytes32): Promise<ResolveLinkedTransferResponse>;
+  resolveSignedTransfer(paymentId: Bytes32): Promise<ResolveSignedTransferResponse>;
+  recipientOnline(recipientPublicIdentifier: Xpub): Promise<boolean>;
+  restoreState(publicIdentifier: Xpub): Promise<any>;
+  subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<void>;
+  unsubscribeFromSwapRates(from: Address, to: Address): Promise<void>;
 }

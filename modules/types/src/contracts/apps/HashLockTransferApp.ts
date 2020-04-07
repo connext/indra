@@ -1,11 +1,13 @@
 import { BigNumber, BigNumberish } from "ethers/utils";
 
+import { Address, Bytes32, DecString, Xpub } from "../../basic";
+import { enumify } from "../../utils";
+
 import { CoinTransfer } from "../funding";
 import {
   singleAssetTwoPartyCoinTransferEncoding,
   tidy,
 } from "../misc";
-import { enumify } from "../../utils";
 
 import { HashLockTransfer } from "./common";
 
@@ -17,8 +19,8 @@ export const HashLockTransferAppName = "HashLockTransferApp";
 // ABI Encoding TS Types
 export type HashLockTransferAppState = {
   coinTransfers: CoinTransfer[];
-  lockHash: string;
-  preImage: string;
+  lockHash: Bytes32;
+  preImage: Bytes32;
   timelock: BigNumber;
   finalized: boolean;
 };
@@ -33,7 +35,7 @@ export const HashLockTransferAppStateEncoding = tidy(`tuple(
 )`);
 
 export type HashLockTransferAppAction = {
-  preImage: string;
+  preImage: Bytes32;
 };
 
 export const HashLockTransferAppActionEncoding = tidy(`tuple(
@@ -58,40 +60,40 @@ export type HashLockTransferParameters = {
   conditionType: typeof HashLockTransfer;
   amount: BigNumberish;
   timelock: BigNumberish;
-  lockHash: string;
-  recipient: string;
-  assetId?: string;
+  lockHash: Bytes32;
+  recipient: Xpub;
+  assetId?: Address;
   meta?: object;
 };
 
 // Client Controller Response
 export type HashLockTransferResponse = {
-  appId: string;
+  appId: Bytes32;
 };
 
 // Client Resolve Params
 export type ResolveHashLockTransferParameters = {
   conditionType: typeof HashLockTransfer;
-  preImage: string;
+  preImage: Bytes32;
 };
 
 // Client Resolve Response
 export type ResolveHashLockTransferResponse = {
-  appId: string;
-  sender: string;
+  appId: Bytes32;
+  sender: Xpub;
   amount: BigNumber;
-  assetId: string;
+  assetId: Address;
   meta?: object;
 };
 
 // Getter
 export type GetHashLockTransferResponse =
   | {
-      senderPublicIdentifier: string;
-      receiverPublicIdentifier?: string;
-      assetId: string;
-      amount: string;
-      lockHash: string;
+      senderPublicIdentifier: Xpub;
+      receiverPublicIdentifier?: Xpub;
+      assetId: Address;
+      amount: DecString;
+      lockHash: Bytes32;
       status: HashLockTransferStatus;
       meta?: any;
     }
@@ -99,5 +101,5 @@ export type GetHashLockTransferResponse =
 
 // Event Data
 export type CreatedHashLockTransferMeta = {
-  lockHash: string;
+  lockHash: Bytes32;
 };

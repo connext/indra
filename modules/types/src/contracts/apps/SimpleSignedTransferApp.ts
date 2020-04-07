@@ -18,8 +18,8 @@ export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 // ABI Encoding TS Types
 export type SimpleSignedTransferAppState = {
   coinTransfers: CoinTransfer[];
-  signer: string;
-  paymentId: string;
+  signer: Address;
+  paymentId: Bytes32;
   finalized: boolean;
 };
 
@@ -32,7 +32,7 @@ export const SimpleSignedTransferAppStateEncoding = tidy(`tuple(
 )`);
 
 export type SimpleSignedTransferAppAction = {
-  data: string;
+  data: Bytes32;
   signature: string;
 };
 

@@ -1,4 +1,4 @@
-import { Address, BigNumberish, HexString, Xpub } from "../../basic";
+import { Address, BigNumberish, Xpub } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import { multiAssetMultiPartyCoinTransferEncoding, tidy } from "../misc";
@@ -22,7 +22,7 @@ export const SimpleSwapAppStateEncoding = tidy(`tuple(
 
 export interface SwapParameters {
   amount: BigNumberish;
-  swapRate: HexString;
+  swapRate: string; // DecString?
   toAssetId: Address;
   fromAssetId: Address;
 }
@@ -48,7 +48,7 @@ export const PriceOracleTypes = {
 export type PriceOracleType = keyof typeof PriceOracleTypes;
 
 export type SwapRate = AllowedSwap & {
-  rate: HexString;
+  rate: string; // DecString?
   priceOracleType: PriceOracleType;
   blockNumber?: number;
 };

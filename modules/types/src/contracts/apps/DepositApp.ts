@@ -35,7 +35,7 @@ export const DepositAppStateEncoding = tidy(`tuple(
 // Input/output
 export type DepositParameters = {
   amount: BigNumberish;
-  assetId?: string; // if not provided, will default to 0x0 (Eth)
+  assetId?: Address; // if not provided, will default to 0x0 (Eth)
 };
 
 export type DepositResponse = {

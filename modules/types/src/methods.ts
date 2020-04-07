@@ -1,4 +1,4 @@
-import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
 import { AppState, DepositParameters, DepositResponse } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
@@ -28,12 +28,12 @@ type DepositResult = DepositResponse;
 ////////////////////////////////////////
 
 type DeployStateDepositHolderParams = {
-  multisigAddress: string;
+  multisigAddress: Address;
   retryCount?: number;
 };
 
 type DeployStateDepositHolderResult = {
-  transactionHash: string;
+  transactionHash: Bytes32;
 };
 
 ////////////////////////////////////////
@@ -41,13 +41,13 @@ type DeployStateDepositHolderResult = {
 type GetChannelAddressesParams = {};
 
 type GetChannelAddressesResult = {
-  multisigAddresses: string[];
+  multisigAddresses: Address[];
 };
 
 ////////////////////////////////////////
 
 type GetAppInstanceDetailsParams = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
 };
 
 type GetAppInstanceDetailsResult = {
@@ -57,7 +57,7 @@ type GetAppInstanceDetailsResult = {
 ////////////////////////////////////////
 
 type GetAppInstancesParams = {
-  multisigAddress: string;
+  multisigAddress: Address;
 };
 
 type GetAppInstancesResult = {
@@ -67,18 +67,18 @@ type GetAppInstancesResult = {
 ////////////////////////////////////////
 
 type GetStateDepositHolderAddressParams = {
-  owners: string[];
+  owners: Address[];
 };
 
 type GetStateDepositHolderAddressResult = {
-  address: string;
+  address: Address;
 };
 
 ////////////////////////////////////////
 
 type GetFreeBalanceStateParams = {
-  multisigAddress: string;
-  tokenAddress?: string;
+  multisigAddress: Address;
+  tokenAddress?: Address;
 };
 
 type GetFreeBalanceStateResult = {
@@ -88,7 +88,7 @@ type GetFreeBalanceStateResult = {
 ////////////////////////////////////////
 
 type GetTokenIndexedFreeBalanceStatesParams = {
-  multisigAddress: string;
+  multisigAddress: Address;
 };
 
 type GetTokenIndexedFreeBalanceStatesResult = {
@@ -100,7 +100,7 @@ type GetTokenIndexedFreeBalanceStatesResult = {
 ////////////////////////////////////////
 
 type GetProposedAppInstanceParams = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
 };
 
 type GetProposedAppInstanceResult = {
@@ -110,7 +110,7 @@ type GetProposedAppInstanceResult = {
 ////////////////////////////////////////
 
 type GetProposedAppInstancesParams = {
-  multisigAddress: string;
+  multisigAddress: Address;
 };
 
 type GetProposedAppInstancesResult = {
@@ -120,7 +120,7 @@ type GetProposedAppInstancesResult = {
 ////////////////////////////////////////
 
 type GetStateParams = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
 };
 
 type GetStateResult = {
@@ -130,7 +130,7 @@ type GetStateResult = {
 ////////////////////////////////////////
 
 type GetStateChannelParams = {
-  multisigAddress: string;
+  multisigAddress: Address;
 };
 
 type GetStateChannelResult = {
@@ -140,7 +140,7 @@ type GetStateChannelResult = {
 ////////////////////////////////////////
 
 type InstallParams = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
 };
 
 type InstallResult = {
@@ -150,12 +150,12 @@ type InstallResult = {
 ////////////////////////////////////////
 
 type RequestDepositRightsParams = {
-  assetId?: string;
+  assetId?: Address;
 };
 
 type RequestDepositRightsResult = {
-  appInstanceId: string;
-  multisigAddress: string;
+  appInstanceId: Bytes32;
+  multisigAddress: Address;
 };
 
 ////////////////////////////////////////
@@ -169,19 +169,19 @@ type ProposeInstallParams = {
   responderDepositTokenAddress: Address;
   timeout: BigNumber;
   initialState: AppState;
-  proposedToIdentifier: string;
+  proposedToIdentifier: Xpub;
   outcomeType: OutcomeType;
   meta?: Object;
 };
 
 type ProposeInstallResult = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
 };
 
 ////////////////////////////////////////
 
 type RejectInstallParams = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
 };
 
 type RejectInstallResult = {};
@@ -189,7 +189,7 @@ type RejectInstallResult = {};
 ////////////////////////////////////////
 
 type UpdateStateParams = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
   newState: SolidityValueType;
 };
 
@@ -200,7 +200,7 @@ type UpdateStateResult = {
 ////////////////////////////////////////
 
 type TakeActionParams = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
   action: SolidityValueType;
 };
 
@@ -211,7 +211,7 @@ type TakeActionResult = {
 ////////////////////////////////////////
 
 type UninstallParams = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
 };
 
 type UninstallResult = {};
@@ -219,8 +219,8 @@ type UninstallResult = {};
 ////////////////////////////////////////
 
 type RescindDepositRightsParams = {
-  assetId?: string;
-  appInstanceId?: string;
+  assetId?: Address;
+  appInstanceId?: Bytes32;
 };
 
 type RescindDepositRightsResult = {
@@ -232,15 +232,15 @@ type RescindDepositRightsResult = {
 ////////////////////////////////////////
 
 type WithdrawParams = {
-  multisigAddress: string;
-  recipient?: string;
+  multisigAddress: Address;
+  recipient?: Address;
   amount: BigNumber;
-  tokenAddress?: string;
+  tokenAddress?: Address;
 };
 
 type WithdrawResult = {
-  recipient: string;
-  txHash: string;
+  recipient: Address;
+  txHash: Bytes32;
 };
 
 ////////////////////////////////////////
