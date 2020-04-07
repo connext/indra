@@ -366,7 +366,7 @@ export class StateChannel {
         ? this.proposedAppInstances.get(appInstance.identityHash) 
         : undefined;
         
-    if (proposal) {
+    if (!!proposal) {
       const [initiator, responder] = this.getSigningKeysFor(
         proposal.proposedByIdentifier, 
         proposal.proposedToIdentifier, 

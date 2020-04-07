@@ -52,7 +52,7 @@ export class MemoryStorage implements IClientStore {
       // TODO: this is broken, does not scope to current multisig
       appInstances: [...this.appInstances.entries()],
       proposedAppInstances: [...this.proposedApps.entries()],
-      freeBalanceAppInstance: this.freeBalances.get(multisigAddress),
+      freeBalanceAppInstance: { ...this.freeBalances.get(multisigAddress) },
     });
   }
 

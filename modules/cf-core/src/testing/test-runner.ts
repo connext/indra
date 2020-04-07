@@ -1,5 +1,5 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames, sortAddresses, toBN } from "@connext/types";
+import { OutcomeType, ProtocolNames, toBN, ProtocolParams } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -233,7 +233,12 @@ export class TestRunner {
       responderBalanceDecrement: One,
       responderDepositTokenAddress: tokenAddress,
       responderXpub: this.mininodeB.xpub,
-    });
+      appInitiatorAddress: xkeyKthAddress(
+        this.mininodeA.xpub,
+        proposal.appSeqNo,
+      ),
+      appResponderAddress: xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
+    } as ProtocolParams.Install);
   }
 
   async installSplitDeposits(
@@ -314,7 +319,9 @@ export class TestRunner {
       initiatorDepositTokenAddress: tokenAddressA,
       responderDepositTokenAddress: tokenAddressB,
       disableLimit: false,
-    });
+      appInitiatorAddress: xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
+      appResponderAddress: xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
+    } as ProtocolParams.Install);
   }
 
   async uninstall() {

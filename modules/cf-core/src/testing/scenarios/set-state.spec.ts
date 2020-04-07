@@ -1,6 +1,6 @@
-import { NetworkContext } from "@connext/types";
+import { NetworkContext, createRandomAddress } from "@connext/types";
 import { Contract, Wallet } from "ethers";
-import { AddressZero, WeiPerEther } from "ethers/constants";
+import { WeiPerEther } from "ethers/constants";
 import { signChannelMessage } from "@connext/crypto";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
@@ -9,8 +9,8 @@ import { FreeBalanceClass, StateChannel } from "../../models";
 
 import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
-import { getRandomExtendedPrvKeys } from "../random-signing-keys";
-import { xkeyKthHDNode } from "../../xkeys";
+import { getRandomHDNodes } from "../random-signing-keys";
+import { getAddress } from "ethers/utils";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -33,25 +33,27 @@ beforeAll(async () => {
  */
 describe("set state on free balance", () => {
   it("should have the correct versionNumber", async done => {
-    const xprvs = getRandomExtendedPrvKeys(2);
-
-    const multisigOwnerKeys = [
-      xkeyKthHDNode(xprvs[0], "0"),
-      xkeyKthHDNode(xprvs[1], "0"),
-    ];
-
-    const stateChannel = StateChannel.setupChannel(
+    const [initiatorNode, responderNode] = getRandomHDNodes(2);
+    // State channel testing values
+    let stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
-      { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
-      AddressZero,
-      multisigOwnerKeys[0].neuter().extendedKey,
-      multisigOwnerKeys[1].neuter().extendedKey,
-    ).setFreeBalance(
-      FreeBalanceClass.createWithFundedTokenAmounts(
-        multisigOwnerKeys.map<string>(key => key.address),
-        WeiPerEther,
-        [CONVENTION_FOR_ETH_TOKEN_ADDRESS],
-      ),
+      {
+        proxyFactory: network.ProxyFactory,
+        multisigMastercopy: network.MinimumViableMultisig,
+      },
+      getAddress(createRandomAddress()),
+      initiatorNode.neuter().extendedKey,
+      responderNode.neuter().extendedKey,
+    );
+
+    expect(stateChannel.userNeuteredExtendedKeys[0]).toEqual(initiatorNode.neuter().extendedKey);
+    expect(stateChannel.userNeuteredExtendedKeys[1]).toEqual(responderNode.neuter().extendedKey);
+
+    // Set the state to some test values
+    stateChannel = stateChannel.setFreeBalance(
+      FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      ]),
     );
 
     const freeBalanceETH = stateChannel.freeBalance;
@@ -65,10 +67,18 @@ describe("set state on free balance", () => {
     );
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
-    setStateCommitment.signatures = [
-      await signChannelMessage(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
-      await signChannelMessage(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
-    ];
+    await setStateCommitment.addSignatures(
+      await signChannelMessage(
+        initiatorNode.derivePath(freeBalanceETH.appSeqNo.toString())
+          .privateKey, 
+        setStateCommitmentHash,
+      ),
+      await signChannelMessage(
+        responderNode.derivePath(freeBalanceETH.appSeqNo.toString())
+          .privateKey,
+        setStateCommitmentHash,
+      ),
+    );
 
     const setStateTx = await setStateCommitment.getSignedTransaction();
 

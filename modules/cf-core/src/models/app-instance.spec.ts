@@ -35,7 +35,7 @@ describe("AppInstance", () => {
     expect(appInstance).not.toBe(null);
     expect(appInstance).not.toBe(undefined);
     expect(appInstance.initiator).toBe(participants[0]);
-    expect(appInstance.initiator).toBe(participants[1]);
+    expect(appInstance.responder).toBe(participants[1]);
 
     // TODO: moar tests pl0x
   });

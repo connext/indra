@@ -189,7 +189,7 @@ async function checkForCorrectOwners(
 
   const expectedOwners = [
     xkeyKthAddress(xpubs[0], 0),
-    xkeyKthAddress(xpubs[0], 0),
+    xkeyKthAddress(xpubs[1], 0),
   ];
 
   const actualOwners = await contract.functions.getOwners();
