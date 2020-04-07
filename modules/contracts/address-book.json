@@ -409,9 +409,9 @@
     },
     "MinimumViableMultisig": {
       "address": "0x9FBDa871d559710256a2502A2517b794B482Db40",
-      "creationCodeHash": "0x33327a877d020518504412314f6928b8732a27434ce29e0debb4f50730f418dd",
-      "runtimeCodeHash": "0xd488a4a43e1dddc60c14cba215fddd30b7b47a53a708dc78d86c6d04bdd616e8",
-      "txHash": "0xfda38f3a474e8f7e37062dd3a2ce44657e8ed4fe23af3441df59d0915f8fac3e"
+      "creationCodeHash": "0xd1bab4b6ea95a17bd954b5e66863d0db4b1fe545c70fe8a42b800ec7554a60ed",
+      "runtimeCodeHash": "0x64c7e0039c53724e235bd35178b791df0457ba5406bfae5c217b5c7db9de05bc",
+      "txHash": "0x3827858f7a58fe598905e08e8f6f42c58e4a7cd69b85132b7d2375fbc7bbd43c"
     },
     "ProxyFactory": {
       "address": "0x30753E4A8aad7F8597332E813735Def5dD395028",
@@ -487,9 +487,9 @@
     },
     "DepositApp": {
       "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10",
-      "creationCodeHash": "0xabc9c1a3adc4d83669cf83c8c13c1aa96c0913f7d54a95a2692fed69e9c573fb",
-      "runtimeCodeHash": "0x9416dfe7d8eed6d3b110ede6e8a114bcf5d211b70de90c49060db8bf5612d0cc",
-      "txHash": "0xe9d1268120575de217127047d81eeb2bf3480345479c426988d1b4f8b5c6b40c"
+      "creationCodeHash": "0xb90579fdf5071e12f17c0643e0f31ab4dc3a9c4750ed13ef71f211cd4535628a",
+      "runtimeCodeHash": "0x176de2323e10d11ec0be508023d307013720bb15453461be262c77fed6411679",
+      "txHash": "0x55d097f0be652c4626310e94b1a3aa70e959f4c20041da01a244010b3c5399fb"
     }
   }
 }
