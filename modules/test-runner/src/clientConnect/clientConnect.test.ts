@@ -1,7 +1,7 @@
 import { Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 
-import { createClient, expect, sendOnchainValue } from "../util";
+import { createClient, expect, sendOnchainValue, env } from "../util";
 import { ConnextStore } from "@connext/store";
 import { StoreTypes, ClientOptions } from "@connext/types";
 
@@ -9,22 +9,22 @@ describe("Client Connect", () => {
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {
     const mnemonic = Wallet.createRandom().mnemonic;
     let client = await createClient({ mnemonic });
-    const { 
-      appInstanceId: ethDeposit, 
-    } = await client.requestDepositRights({ assetId: AddressZero });
-    const { 
-      appInstanceId: tokenDeposit, 
-    } = await client.requestDepositRights({ assetId: client.config.contractAddresses.Token });
+    const { appInstanceId: ethDeposit } = await client.requestDepositRights({
+      assetId: AddressZero,
+    });
+    const { appInstanceId: tokenDeposit } = await client.requestDepositRights({
+      assetId: client.config.contractAddresses.Token,
+    });
 
     // verify
-    const { 
-      appInstanceId: retrievedEth,
-    } = await client.checkDepositRights({ assetId: AddressZero });
+    const { appInstanceId: retrievedEth } = await client.checkDepositRights({
+      assetId: AddressZero,
+    });
     expect(retrievedEth).to.eq(ethDeposit);
 
-    const { 
-      appInstanceId: retrievedToken,
-    } = await client.checkDepositRights({ assetId: client.config.contractAddresses.Token });
+    const { appInstanceId: retrievedToken } = await client.checkDepositRights({
+      assetId: client.config.contractAddresses.Token,
+    });
     expect(retrievedToken).to.eq(tokenDeposit);
 
     // disconnect + reconnect
@@ -35,14 +35,14 @@ describe("Client Connect", () => {
     });
 
     // verify still installed
-    const { 
-      appInstanceId: retrievedEth2,
-    } = await client.checkDepositRights({ assetId: AddressZero });
+    const { appInstanceId: retrievedEth2 } = await client.checkDepositRights({
+      assetId: AddressZero,
+    });
     expect(retrievedEth2).to.eq(ethDeposit);
 
-    const { 
-      appInstanceId: retrievedToken2,
-    } = await client.checkDepositRights({ assetId: client.config.contractAddresses.Token });
+    const { appInstanceId: retrievedToken2 } = await client.checkDepositRights({
+      assetId: client.config.contractAddresses.Token,
+    });
     expect(retrievedToken2).to.eq(tokenDeposit);
   });
 
@@ -68,5 +68,12 @@ describe("Client Connect", () => {
       app => app.appInterface.addr === client.config.contractAddresses.DepositApp,
     );
     expect(depositApps.length).to.be.eq(0);
+  });
+
+  it("Client should override messaging URL if provided", async () => {
+    let client = await createClient({
+      messagingUrl: env.nodeUrl.replace("http://", "nats://").split(":8080")[0] + ":4222",
+    });
+    expect(client.publicIdentifier).to.be.ok;
   });
 });
