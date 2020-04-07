@@ -3,10 +3,10 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppActionEncoding,
   SimpleLinkedTransferAppStateEncoding,
-  toBN,
 } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
+import { Zero } from "ethers/constants";
 
 export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
   actionEncoding: SimpleLinkedTransferAppActionEncoding,
@@ -17,4 +17,4 @@ export const SimpleLinkedTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const LINKED_TRANSFER_STATE_TIMEOUT = toBN(10);
+export const LINKED_TRANSFER_STATE_TIMEOUT = Zero;

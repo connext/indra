@@ -33,4 +33,4 @@ export type AppRegistryInfo = {
 export type AppRegistryType = AppRegistryInfo[];
 
 // timeout default values
-export const DEFAULT_APP_TIMEOUT = toBN(10);
+export const DEFAULT_APP_TIMEOUT = toBN(8640); // 6 blocks per min (ethereum) * 60 mins * 24h
