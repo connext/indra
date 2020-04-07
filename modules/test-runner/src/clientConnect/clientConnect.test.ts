@@ -70,10 +70,16 @@ describe("Client Connect", () => {
     expect(depositApps.length).to.be.eq(0);
   });
 
-  it.only("Client should override messaging URL if provided", async () => {
-    console.log('env.nodeUrl: ', env.nodeUrl);
+  it("Client should override messaging URL if provided", async () => {
+    let messagingUrl: string;
+    if (env.nodeUrl.startsWith("https://")) {
+      // prod mode
+      messagingUrl = env.nodeUrl.replace("https://", "nats://").split("/api")[0] + ":4222";
+    } else {
+      messagingUrl = env.nodeUrl.replace("http://", "nats://").split(":8080")[0] + ":4222";
+    }
     let client = await createClient({
-      messagingUrl: env.nodeUrl.replace("http://", "nats://").split(":8080")[0] + ":4222",
+      messagingUrl,
     });
     expect(client.publicIdentifier).to.be.ok;
   });
