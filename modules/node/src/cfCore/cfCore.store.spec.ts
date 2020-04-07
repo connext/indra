@@ -140,10 +140,11 @@ describe("CFCoreStore", () => {
 
       expect(channel).toMatchObject({
         ...channelJson,
-        userNeuteredExtendedKeys: channelJson.userNeuteredExtendedKeys.sort(),
+        userNeuteredExtendedKeys: channelJson.userNeuteredExtendedKeys,
         freeBalanceAppInstance: {
           ...channelJson.freeBalanceAppInstance,
-          participants: sortAddresses(channelJson.freeBalanceAppInstance!.participants),
+          initiator: xkeyKthAddress(channelJson.userNeuteredExtendedKeys[0]),
+          responder: xkeyKthAddress(channelJson.userNeuteredExtendedKeys[1]),
         },
       });
     });
