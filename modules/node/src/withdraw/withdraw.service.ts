@@ -101,9 +101,15 @@ export class WithdrawService {
     await this.cfCoreService.uninstallApp(appInstance.identityHash);
 
     // Get a finalized minTx object and put it onchain
+    // NOTE: withdrawal commitments extend the multisig commitment
+    // type, which means that as they add signatures they have
+    // to be in the same order as the `multisigOwners`. The node
+    // will always call `create`, so will always be multisigOwner[0]
+    // meaning their signature must be included fist on the withdrawal
+    // commitment
     await generatedCommitment.addSignatures(
-      state.signatures[0], // user sig
       counterpartySignatureOnWithdrawCommitment, // out sig
+      state.signatures[0], // user sig
     );
     const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
     const transaction = await this.submitWithdrawToChain(

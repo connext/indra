@@ -154,8 +154,7 @@ export class ConnextListener extends ConnextEventEmitter {
         };
         await this.connext.saveWithdrawCommitmentToStore(
           params,
-          state.signatures[0], // withdrawer
-          state.signatures[1], // counterparty
+          state.signatures,
         );
       }
     },
