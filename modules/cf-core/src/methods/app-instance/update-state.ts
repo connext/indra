@@ -6,8 +6,8 @@ import {
   IMPROPERLY_FORMATTED_STRUCT,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE,
-  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
-  NO_APP_INSTANCE_FOR_GIVEN_ID,
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
+  NO_APP_INSTANCE_FOR_GIVEN_HASH,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
@@ -26,7 +26,7 @@ export class UpdateStateController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.UpdateState,
   ): Promise<string[]> {
-    return [params.appInstanceId];
+    return [params.appIdentityHash];
   }
 
   protected async beforeExecution(
@@ -34,15 +34,15 @@ export class UpdateStateController extends NodeController {
     params: MethodParams.UpdateState,
   ): Promise<void> {
     const { store } = requestHandler;
-    const { appInstanceId, newState } = params;
+    const { appIdentityHash, newState } = params;
 
-    if (!appInstanceId) {
+    if (!appIdentityHash) {
       throw new Error(NO_APP_INSTANCE_FOR_TAKE_ACTION);
     }
 
-    const appJson = await store.getAppInstance(appInstanceId);
+    const appJson = await store.getAppInstance(appIdentityHash);
     if (!appJson) {
-      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
     }
     const appInstance = AppInstance.fromJson(appJson);
 
@@ -61,11 +61,11 @@ export class UpdateStateController extends NodeController {
     params: MethodParams.UpdateState,
   ): Promise<MethodResults.UpdateState> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
-    const { appInstanceId, newState, stateTimeout } = params;
+    const { appIdentityHash, newState, stateTimeout } = params;
 
-    const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
+    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     const responderXpub = getFirstElementInListNotEqualTo(
@@ -74,7 +74,7 @@ export class UpdateStateController extends NodeController {
     );
 
     await runUpdateStateProtocol(
-      appInstanceId,
+      appIdentityHash,
       store,
       protocolRunner,
       publicIdentifier,
@@ -96,9 +96,9 @@ async function runUpdateStateProtocol(
   newState: SolidityValueType,
   stateTimeout: BigNumber = Zero,
 ) {
-  const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
+  const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!stateChannel) {
-    throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
   }
 
   await protocolRunner.initiateProtocol(ProtocolNames.update, {

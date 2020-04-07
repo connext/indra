@@ -163,12 +163,12 @@ export class HashLockTransferService {
       HASHLOCK_TRANSFER_STATE_TIMEOUT,
     );
 
-    if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
+    if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);
     }
 
     return {
-      appId: receiverAppInstallRes.appInstanceId,
+      appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
   }
 

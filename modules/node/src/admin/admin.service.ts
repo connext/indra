@@ -247,7 +247,7 @@ export class AdminService implements OnApplicationBootstrap {
         continue;
       }
       try {
-        this.log.log(`Found channel to migrate: ${channelJSON.multisigAddress}`);
+        this.log.info(`Found channel to migrate: ${channelJSON.multisigAddress}`);
         // create blank setup commitment
         await this.cfCoreStore.createSetupCommitment(channelJSON.multisigAddress, {
           data: HashZero,

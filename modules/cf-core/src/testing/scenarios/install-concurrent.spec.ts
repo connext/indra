@@ -49,7 +49,7 @@ describe(`Node method follows spec - install`, () => {
         let completedInstalls = 0;
 
         nodeB.on(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {
-          makeInstallCall(nodeB, msg.data.appInstanceId);
+          makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
 
         nodeA.on(`INSTALL_EVENT`, () => {

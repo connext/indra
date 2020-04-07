@@ -147,8 +147,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .getMany();
   }
 
-  async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
-    const app = await this.findByIdentityHash(appInstanceId);
+  async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+    const app = await this.findByIdentityHash(appIdentityHash);
     if (!app || app.type !== AppType.PROPOSAL) {
       return undefined;
     }
@@ -160,8 +160,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     return app && convertAppToInstanceJSON(app, app.channel);
   }
 
-  async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
-    const app = await this.findByIdentityHash(appInstanceId);
+  async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
+    const app = await this.findByIdentityHash(appIdentityHash);
     return app && convertAppToInstanceJSON(app, app.channel);
   }
 

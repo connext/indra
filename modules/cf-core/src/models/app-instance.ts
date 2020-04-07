@@ -243,7 +243,7 @@ export class AppInstance {
 
       throw new Error(
         `Attempted to setState on an app with an invalid state object.
-          - appInstanceIdentityHash = ${this.identityHash}
+          - appIdentityHash = ${this.identityHash}
           - newState = ${stringify(newState)}
           - encodingExpected = ${this.appInterface.stateEncoding}
           Error: ${e.message}`,

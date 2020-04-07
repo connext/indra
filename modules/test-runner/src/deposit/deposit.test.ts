@@ -115,10 +115,10 @@ describe("Deposits", () => {
     await client.deposit({ amount: expected.client, assetId: expected.assetId });
     await assertClientFreeBalance(client, expected);
     await assertNodeFreeBalance(client, expected);
-    const { appInstanceId } = await client.checkDepositRights({ 
+    const { appIdentityHash } = await client.checkDepositRights({ 
       assetId: client.config.contractAddresses.Token,
     });
-    expect(appInstanceId).to.be.undefined;
+    expect(appIdentityHash).to.be.undefined;
   });
 
   it("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {

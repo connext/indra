@@ -17,7 +17,7 @@ import { Zero } from "ethers/constants";
  * This creates an entry of a proposed AppInstance while sending the proposal
  * to the peer with whom this AppInstance is specified to be installed.
  *
- * @returns The AppInstanceId for the proposed AppInstance
+ * @returns The appIdentityHash for the proposed AppInstance
  */
 export class ProposeInstallAppInstanceController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_proposeInstall)
@@ -87,7 +87,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
     const updated = await store.getStateChannel(json.multisigAddress);
 
     return {
-      appInstanceId: StateChannel.fromJson(updated!).mostRecentlyProposedAppInstance().identityHash,
+      appIdentityHash: StateChannel.fromJson(updated!).mostRecentlyProposedAppInstance().identityHash,
     };
   }
 }

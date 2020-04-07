@@ -70,6 +70,7 @@ import {
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
   SwapParameters,
+  SwapResponse,
   TransferInfo,
   TransferParameters,
 } from "./types";
@@ -94,7 +95,6 @@ export class ConnextClient implements IConnextClient {
   public nodePublicIdentifier: string;
   public nodeFreeBalanceAddress: string;
   public publicIdentifier: string;
-  public signerAddress: Address;
   public store: IClientStore;
   public token: Contract;
 
@@ -126,7 +126,6 @@ export class ConnextClient implements IConnextClient {
     this.token = opts.token;
 
     this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
-    this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
@@ -320,12 +319,12 @@ export class ConnextClient implements IConnextClient {
   ): Promise<CheckDepositRightsResponse> => {
     const app = await this.depositController.getDepositApp(params);
     if (!app) {
-      return { appInstanceId: undefined };
+      return { appIdentityHash: undefined };
     }
-    return { appInstanceId: app.identityHash };
+    return { appIdentityHash: app.identityHash };
   };
 
-  public swap = async (params: SwapParameters): Promise<GetChannelResponse> => {
+  public swap = async (params: SwapParameters): Promise<SwapResponse> => {
     const res = await this.swapController.swap(params);
     return res;
   };
@@ -586,83 +585,67 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getProposedAppInstance = async (
-    appInstanceId: string,
+    appIdentityHash: string,
   ): Promise<MethodResults.GetProposedAppInstance | undefined> => {
     return await this.channelProvider.send(MethodNames.chan_getProposedAppInstance, {
-      appInstanceId,
+      appIdentityHash,
     } as MethodParams.GetProposedAppInstance);
   };
 
-  public getAppInstanceDetails = async (
-    appInstanceId: string,
+  public getAppInstance = async (
+    appIdentityHash: string,
   ): Promise<MethodResults.GetAppInstanceDetails | undefined> => {
-    const err = await this.appNotInstalled(appInstanceId);
+    const err = await this.appNotInstalled(appIdentityHash);
     if (err) {
       this.log.warn(err);
       return undefined;
     }
     return await this.channelProvider.send(MethodNames.chan_getAppInstance, {
-      appInstanceId,
+      appIdentityHash,
     } as MethodParams.GetAppInstanceDetails);
   };
 
-  public getAppState = async (
-    appInstanceId: string,
-  ): Promise<MethodResults.GetState | undefined> => {
-    // check the app is actually installed, or returned undefined
-    const err = await this.appNotInstalled(appInstanceId);
-    if (err) {
-      this.log.warn(err);
-      return undefined;
-    }
-    return await this.channelProvider.send(MethodNames.chan_getState, {
-      appInstanceId,
-    } as MethodParams.GetState);
-  };
-
   public takeAction = async (
-    appInstanceId: string,
+    appIdentityHash: string,
     action: AppAction,
     stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> => {
     // check the app is actually installed
-    const err = await this.appNotInstalled(appInstanceId);
+    const err = await this.appNotInstalled(appIdentityHash);
     if (err) {
       this.log.error(err);
       throw new Error(err);
     }
     // check state is not finalized
-    const state: MethodResults.GetState = await this.getAppState(appInstanceId);
-    // FIXME: casting?
-    if ((state.state as any).finalized) {
+    const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
+    if ((state as any).finalized) { // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(MethodNames.chan_takeAction, {
       action,
-      appInstanceId,
+      appIdentityHash,
       stateTimeout,
     } as MethodParams.TakeAction);
   };
 
   public updateState = async (
-    appInstanceId: string,
+    appIdentityHash: string,
     newState: AppState | any, // cast to any bc no supported apps use
     // the update state method
   ): Promise<MethodResults.UpdateState> => {
     // check the app is actually installed
-    const err = await this.appNotInstalled(appInstanceId);
+    const err = await this.appNotInstalled(appIdentityHash);
     if (err) {
       this.log.error(err);
       throw new Error(err);
     }
     // check state is not finalized
-    const state: MethodResults.GetState = await this.getAppState(appInstanceId);
-    // FIXME: casting?
-    if ((state.state as any).finalized) {
+    const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
+    if ((state as any).finalized) { // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(MethodNames.chan_updateState, {
-      appInstanceId,
+      appIdentityHash,
       newState,
     } as MethodParams.UpdateState);
   };
@@ -676,32 +659,32 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  public installApp = async (appInstanceId: string): Promise<MethodResults.Install> => {
+  public installApp = async (appIdentityHash: string): Promise<MethodResults.Install> => {
     // check the app isnt actually installed
-    const alreadyInstalled = await this.appInstalled(appInstanceId);
+    const alreadyInstalled = await this.appInstalled(appIdentityHash);
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
     return await this.channelProvider.send(MethodNames.chan_install, {
-      appInstanceId,
+      appIdentityHash,
     } as MethodParams.Install);
   };
 
-  public uninstallApp = async (appInstanceId: string): Promise<MethodResults.Uninstall> => {
+  public uninstallApp = async (appIdentityHash: string): Promise<MethodResults.Uninstall> => {
     // check the app is actually installed
-    const err = await this.appNotInstalled(appInstanceId);
+    const err = await this.appNotInstalled(appIdentityHash);
     if (err) {
       this.log.error(err);
       throw new Error(err);
     }
     return await this.channelProvider.send(MethodNames.chan_uninstall, {
-      appInstanceId,
+      appIdentityHash,
     } as MethodParams.Uninstall);
   };
 
-  public rejectInstallApp = async (appInstanceId: string): Promise<MethodResults.Uninstall> => {
+  public rejectInstallApp = async (appIdentityHash: string): Promise<MethodResults.Uninstall> => {
     return await this.channelProvider.send(MethodNames.chan_rejectInstall, {
-      appInstanceId,
+      appIdentityHash,
     });
   };
 
@@ -710,23 +693,6 @@ export class ConnextClient implements IConnextClient {
 
   public clientCheckIn = async (): Promise<void> => {
     return await this.node.clientCheckIn();
-  };
-
-  public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.channelProvider.send(MethodNames.chan_getStateChannel as any, {
-      multisigAddress: this.multisigAddress,
-    });
-    let appSequenceNumber: number;
-    try {
-      appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
-    } catch (e) {
-      if (e.message.includes("There are no installed AppInstances in this StateChannel")) {
-        appSequenceNumber = 0;
-      } else {
-        throw e;
-      }
-    }
-    return await this.node.verifyAppSequenceNumber(appSequenceNumber);
   };
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
@@ -873,13 +839,13 @@ export class ConnextClient implements IConnextClient {
   private handleInstalledDepositApps = async () => {
     const assetIds = this.config.supportedTokenAddresses;
     for (const assetId of assetIds) {
-      const { appInstanceId } = await this.checkDepositRights({ assetId });
-      if (!appInstanceId) {
+      const { appIdentityHash } = await this.checkDepositRights({ assetId });
+      if (!appIdentityHash) {
         // no deposit app installed for asset, continue
         continue;
       }
       // otherwise, handle installed app
-      const { appInstance } = await this.getAppInstanceDetails(appInstanceId);
+      const { appInstance } = await this.getAppInstance(appIdentityHash);
       if (!appInstance) {
         continue;
       }
@@ -900,9 +866,9 @@ export class ConnextClient implements IConnextClient {
       if (currentMultisigBalance.gt(latestState.startingMultisigBalance)) {
         // deposit has occurred, rescind
         try {
-          await this.rescindDepositRights({ assetId, appInstanceId });
+          await this.rescindDepositRights({ assetId, appIdentityHash });
         } catch (e) {
-          this.log.warn(`Could not uninstall deposit app ${appInstanceId}. Error: ${e.stack || e.message}`);
+          this.log.warn(`Could not uninstall deposit app ${appIdentityHash}. Error: ${e.stack || e.message}`);
         }
         continue;
       }
@@ -914,7 +880,7 @@ export class ConnextClient implements IConnextClient {
           this.multisigAddress, 
           async (balance: BigNumber) => {
             if (balance.gt(latestState.startingMultisigBalance)) {
-              await this.rescindDepositRights({ assetId, appInstanceId });
+              await this.rescindDepositRights({ assetId, appIdentityHash });
             }
           },
         );
@@ -928,7 +894,7 @@ export class ConnextClient implements IConnextClient {
             const bal = await new Contract(assetId, tokenAbi, this.ethProvider)
               .functions.balanceOf(this.multisigAddress);
             if (bal.gt(latestState.startingMultisigBalance)) {
-              await this.rescindDepositRights({ assetId, appInstanceId });
+              await this.rescindDepositRights({ assetId, appIdentityHash });
             }
           }
         },
@@ -936,12 +902,14 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
-  private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
+  private appNotInstalled = async (appIdentityHash: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
+    const app = apps.filter(
+      (app: AppInstanceJson): boolean => app.identityHash === appIdentityHash,
+    );
     if (!app || app.length === 0) {
       return (
-        `Could not find installed app with id: ${appInstanceId}. ` +
+        `Could not find installed app with id: ${appIdentityHash}. ` +
         `Installed apps: ${stringify(apps)}.`
       );
     }
@@ -954,12 +922,14 @@ export class ConnextClient implements IConnextClient {
     return undefined;
   };
 
-  private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
+  private appInstalled = async (appIdentityHash: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
+    const app = apps.filter(
+      (app: AppInstanceJson): boolean => app.identityHash === appIdentityHash,
+    );
     if (app.length > 0) {
       return (
-        `App with id ${appInstanceId} is already installed. ` +
+        `App with id ${appIdentityHash} is already installed. ` +
         `Installed apps: ${stringify(apps)}.`
       );
     }

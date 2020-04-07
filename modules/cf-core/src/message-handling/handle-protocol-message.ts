@@ -57,25 +57,25 @@ export async function handleReceivedProtocolMessage(
     return;
   }
 
-  const appInstanceId =
-      outgoingEventData!.data["appInstanceId"] ||
-      (outgoingEventData!.data as any).params["appInstanceId"];
+  const appIdentityHash =
+      outgoingEventData!.data["appIdentityHash"] ||
+      (outgoingEventData!.data as any).params["appIdentityHash"];
 
-  if (!appInstanceId) {
+  if (!appIdentityHash) {
     await emitOutgoingNodeMessage(router, outgoingEventData);
     return;
   }
 
-  const proposal = await store.getAppProposal(appInstanceId);
+  const proposal = await store.getAppProposal(appIdentityHash);
   if (!proposal) {
     await emitOutgoingNodeMessage(router, outgoingEventData);
     return;
   }
 
   // remove proposal from channel and store
-  const json = await store.getStateChannelByAppInstanceId(appInstanceId);
+  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!json) {
-    throw new Error(`Could not find channel for app instance ${appInstanceId} when processing install protocol message`);
+    throw new Error(`Could not find channel for app instance ${appIdentityHash} when processing install protocol message`);
   }
   const channel = StateChannel.fromJson(json).removeProposal(proposal.identityHash);
   await store.removeAppProposal(channel.multisigAddress, proposal.identityHash);
@@ -119,7 +119,7 @@ async function getOutgoingEventDataFromProtocol(
             ...emittedParams,
             proposedToIdentifier: responderXpub,
           },
-          appInstanceId: app.identityHash,
+          appIdentityHash: app.identityHash,
         },
       };
     case ProtocolNames.install:
@@ -135,7 +135,7 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appInstanceId: StateChannel.fromJson(retrieved).mostRecentlyInstalledAppInstance().identityHash,
+            appIdentityHash: StateChannel.fromJson(retrieved).mostRecentlyInstalledAppInstance().identityHash,
           },
         },
       };
@@ -183,12 +183,12 @@ function getStateUpdateEventData(
 ) {
   // note: action does not exist on type `ProtocolParams.Update`
   // so use any cast
-  const { appIdentityHash: appInstanceId, action } = params as any;
-  return { newState, appInstanceId, action };
+  const { appIdentityHash: appIdentityHash, action } = params as any;
+  return { newState, appIdentityHash, action };
 }
 
-function getUninstallEventData({ appIdentityHash: appInstanceId }: ProtocolParams.Uninstall) {
-  return { appInstanceId };
+function getUninstallEventData({ appIdentityHash: appIdentityHash }: ProtocolParams.Uninstall) {
+  return { appIdentityHash };
 }
 
 function getSetupEventData(

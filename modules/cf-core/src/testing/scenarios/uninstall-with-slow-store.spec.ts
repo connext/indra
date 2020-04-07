@@ -39,17 +39,17 @@ describe("Node method follows spec - uninstall", () => {
       const multisigAddess = await createChannel(nodeA, nodeB);
       expect(multisigAddess).toBeDefined;
 
-      const [appInstanceId] = await installApp(
+      const [appIdentityHash] = await installApp(
         nodeA,
         nodeB,
         multisigAddess,
         TicTacToeApp,
         initialState,
       );
-      expect(appInstanceId).toBeDefined;
+      expect(appIdentityHash).toBeDefined;
 
       nodeB.once("UNINSTALL_EVENT", async (msg: UninstallMessage) => {
-        expect(msg.data.appInstanceId).toBe(appInstanceId);
+        expect(msg.data.appIdentityHash).toBe(appIdentityHash);
 
         // FIXME: There is some timing issue with slow stores @snario noticed
         await delay(1000);
@@ -58,7 +58,7 @@ describe("Node method follows spec - uninstall", () => {
         done();
       });
 
-      await nodeA.rpcRouter.dispatch(constructUninstallRpc(appInstanceId));
+      await nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash));
 
       expect(await getInstalledAppInstances(nodeA, multisigAddess)).toEqual([]);
     });

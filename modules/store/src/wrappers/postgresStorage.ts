@@ -45,7 +45,7 @@ export class WrappedPostgresStorage implements WrappedStorage {
       try {
         await this.backupService.backup({ path: key, value });
       } catch (e) {
-        console.info(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
+        console.warn(`Could not save ${key} to backup service. Error: ${e.stack || e.message}`);
       }
     }
     await ConnextClientData.upsert({

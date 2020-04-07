@@ -9,11 +9,12 @@ export {
 export { BigNumberish, Network, Transaction } from "ethers/utils";
 
 // special strings
+// these function more as documentation for devs than checked types
 export type ABIEncoding = string; // eg "tuple(address to, uint256 amount)"
 export type Address = string; // aka HexString of length 42
-export type Bytes32Hash = string; // aka HexString of length 66
-export type DecString = string; // eg "3.14" (implied to be e18 int)
-export type HexString = string; // eg "0xabc123"
+export type Bytes32 = string; // aka HexString of length 66
+export type DecString = string; // eg "3.14"
+export type HexString = string; // eg "0xabc123" of arbitrary length
 export type Xpub = string; // eg "xpub6AbC...123" (str length = 111)
 
 export type BigNumber = ethersBN;

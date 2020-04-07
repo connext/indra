@@ -55,10 +55,10 @@ export class DepositService {
       );
     }
 
-    let appInstanceId;
+    let appIdentityHash;
     if (!depositApp) {
       this.log.info(`Requesting deposit rights before depositing`);
-      appInstanceId = await this.requestDepositRights(channel, assetId);
+      appIdentityHash = await this.requestDepositRights(channel, assetId);
     }
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
@@ -69,23 +69,23 @@ export class DepositService {
     } catch (e) {
       throw new Error(e.stack || e.message);
     } finally {
-      await this.rescindDepositRights(appInstanceId || depositApp.identityHash);
+      await this.rescindDepositRights(appIdentityHash || depositApp.identityHash);
     }
     return receipt;
   }
 
   async requestDepositRights(channel: Channel, assetIdParam: string): Promise<string | undefined> {
     const assetId = assetIdParam || AddressZero;
-    const appInstanceId = await this.proposeDepositInstall(channel, assetId);
-    if (!appInstanceId) {
+    const appIdentityHash = await this.proposeDepositInstall(channel, assetId);
+    if (!appIdentityHash) {
       throw new Error(`Failed to install deposit app for ${assetId} in channel ${channel.multisigAddress}`);
     }
-    return appInstanceId;
+    return appIdentityHash;
   }
 
-  async rescindDepositRights(appInstanceId: string): Promise<void> {
+  async rescindDepositRights(appIdentityHash: string): Promise<void> {
     this.log.debug(`Uninstalling deposit app`);
-    await this.cfCoreService.uninstallApp(appInstanceId);
+    await this.cfCoreService.uninstallApp(appIdentityHash);
   }
 
   private async sendDepositToChain(
@@ -172,7 +172,7 @@ export class DepositService {
         { reason: "Node deposit" }, // meta
         DEPOSIT_STATE_TIMEOUT,
     );
-    return res ? res.appInstanceId : undefined;
+    return res ? res.appIdentityHash : undefined;
   };
 
 }

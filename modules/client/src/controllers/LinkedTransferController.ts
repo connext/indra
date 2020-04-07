@@ -97,9 +97,9 @@ export class LinkedTransferController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: LINKED_TRANSFER_STATE_TIMEOUT,
     };
-    const appId = await this.proposeAndInstallLedgerApp(proposeInstallParams);
+    const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 
-    if (!appId) {
+    if (!appIdentityHash) {
       throw new Error(`App was not installed`);
     }
 
@@ -129,6 +129,6 @@ export class LinkedTransferController extends AbstractController {
       await this.connext.messaging.flush();
     }
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
-    return { appId, paymentId, preImage };
+    return { appIdentityHash, paymentId, preImage };
   };
 }

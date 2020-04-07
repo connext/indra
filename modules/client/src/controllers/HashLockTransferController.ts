@@ -67,9 +67,9 @@ export class HashLockTransferController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: HASHLOCK_TRANSFER_STATE_TIMEOUT,
     };
-    const appId = await this.proposeAndInstallLedgerApp(proposeInstallParams);
+    const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 
-    if (!appId) {
+    if (!appIdentityHash) {
       throw new Error(`App was not installed`);
     }
 
@@ -87,7 +87,7 @@ export class HashLockTransferController extends AbstractController {
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
     return {
-      appId,
+      appIdentityHash,
     };
   };
 }

@@ -40,7 +40,7 @@ export class DepositController extends AbstractController {
       notGreaterThan(amount, Zero),
     );
     const { 
-      appInstanceId, 
+      appIdentityHash, 
     } = await this.requestDepositRights({ assetId });
 
     let ret;
@@ -50,7 +50,7 @@ export class DepositController extends AbstractController {
       this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
         amount: amount.toString(),
         assetId,
-        appInstanceId,
+        appIdentityHash,
       });
       const hash = await this.connext.channelProvider.walletTransfer({
         recipient: this.connext.multisigAddress, 
@@ -67,7 +67,7 @@ export class DepositController extends AbstractController {
       });
       throw new Error(e.stack || e.message);
     } finally {
-      ret = await this.rescindDepositRights({ appInstanceId, assetId });
+      ret = await this.rescindDepositRights({ appIdentityHash, assetId });
     }
 
     if (transactionHash) {
@@ -89,9 +89,9 @@ export class DepositController extends AbstractController {
     
     if (!depositApp) {
       this.log.debug(`No deposit app installed for ${assetId}. Installing.`);
-      const appInstanceId = await this.proposeDepositInstall(assetId);
+      const appIdentityHash = await this.proposeDepositInstall(assetId);
       return {
-        appInstanceId,
+        appIdentityHash,
         multisigAddress: this.connext.multisigAddress,
       };
     }
@@ -107,7 +107,7 @@ export class DepositController extends AbstractController {
 
     this.log.debug(`Found existing, unfinalized deposit app for ${assetId}, doing nothing. (deposit app: ${depositApp.identityHash})`);
     return {
-      appInstanceId: depositApp.identityHash,
+      appIdentityHash: depositApp.identityHash,
       multisigAddress: this.connext.multisigAddress,
     };
   }
@@ -227,7 +227,6 @@ export class DepositController extends AbstractController {
       stateTimeout: DEPOSIT_STATE_TIMEOUT,
     };
 
-    const appId = await this.proposeAndInstallLedgerApp(params);
-    return appId;
+    return await this.proposeAndInstallLedgerApp(params);
   };
 }

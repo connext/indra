@@ -179,7 +179,7 @@ describe("Async transfer offline tests", () => {
     });
     // NOTE: fast forwarding does not propagate to node timers
     // so when `reconnected comes online, there is still a 90s
-    // timer locked on the multisig address + appId (trying to
+    // timer locked on the multisig address + appIdentityHash (trying to
     // take action) and uninstall app (this is why this test has
     // an extended timeout)
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);

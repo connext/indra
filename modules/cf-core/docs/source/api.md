@@ -32,7 +32,7 @@ Result:
 
 ### Method: `proposeInstall`
 
-Requests that a peer start the install protocol for an app instance. At the same time, authorize the installation of that app instance, and generate and return a fresh ID for it. If the peer accepts and the install protocol completes, its ID should be the generated appInstanceId.
+Requests that a peer start the install protocol for an app instance. At the same time, authorize the installation of that app instance, and generate and return a fresh ID for it. If the peer accepts and the install protocol completes, its ID should be the generated appIdentityHash.
 
 Params:
 
@@ -57,8 +57,8 @@ Params:
 
 Result:
 
-- `appInstanceId: string`
-  - Generated appInstanceId
+- `appIdentityHash: string`
+  - Generated appIdentityHash
 
 Errors: (TODO)
 
@@ -70,7 +70,7 @@ Reject an app instance installation.
 
 Params:
 
-- `appInstanceId: string`
+- `appIdentityHash: string`
   - ID of the app instance to reject
 
 Result: "OK"
@@ -85,7 +85,7 @@ Install an app instance.
 
 Params:
 
-- `appInstanceId: string`
+- `appIdentityHash: string`
   - ID of the app instance to install
   - Counterparty must have called `proposedInstall` and generated this ID
 
@@ -104,7 +104,7 @@ Get the latest state of an app instance.
 
 Params:
 
-- `appInstanceId: string`
+- `appIdentityHash: string`
   - ID of the app instance to get state of
 
 Result:
@@ -122,7 +122,7 @@ Get details of an app instance.
 
 Params:
 
-- `appInstanceId: string`
+- `appIdentityHash: string`
   - ID of the app instance to get details of
 
 Result:
@@ -136,7 +136,7 @@ Get details of a proposed app instance.
 
 Params:
 
-- `appInstanceId: string`
+- `appIdentityHash: string`
   - ID of the app instance to get details of
 
 Result:
@@ -150,7 +150,7 @@ Take action on current app state to advance it to a new state.
 
 Params:
 
-- `appInstanceId: string`
+- `appIdentityHash: string`
   - ID of the app instance for which to take action
 - `action:`[`SolidityValueType`](#data-type-appaction)
   - Action to take on the current state
@@ -170,7 +170,7 @@ Uninstall an app instance, paying out users according to the latest signed state
 
 Params:
 
-- `appInstanceId: string`
+- `appIdentityHash: string`
   - ID of the app instance to uninstall
 
 Result: "OK"
@@ -386,7 +386,7 @@ Fired if app state is successfully updated.
 
 Data:
 
-- `appInstanceId: string`
+- `appIdentityHash: string`
   - ID of app instance whose app state was updated
 - `newState:`[`AppState`](#data-type-appstate)
 - `action?:`[`SolidityValueType`](#data-type-appaction)

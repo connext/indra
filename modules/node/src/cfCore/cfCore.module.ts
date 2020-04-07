@@ -15,14 +15,12 @@ import { LockModule } from "../lock/lock.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
-import { CFCoreController } from "./cfCore.controller";
 import { cfCoreProviderFactory } from "./cfCore.provider";
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreService } from "./cfCore.service";
 import { CFCoreStore } from "./cfCore.store";
 
 @Module({
-  controllers: [CFCoreController],
   exports: [cfCoreProviderFactory, CFCoreService, CFCoreStore],
   imports: [
     ConfigModule,

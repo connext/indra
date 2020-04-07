@@ -107,15 +107,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     );
   }
 
-  async getStateChannelByAppInstanceId(
-    appInstanceId: string,
+  async getStateChannelByAppIdentityHash(
+    appIdentityHash: string,
   ): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
     return channels.find(channel => {
       return (
-        channel.proposedAppInstances.find(([app]) => app === appInstanceId) ||
-        channel.appInstances.find(([app]) => app === appInstanceId) ||
-        channel.freeBalanceAppInstance.identityHash === appInstanceId
+        channel.proposedAppInstances.find(([app]) => app === appIdentityHash) ||
+        channel.appInstances.find(([app]) => app === appIdentityHash) ||
+        channel.freeBalanceAppInstance.identityHash === appIdentityHash
       );
     });
   }
@@ -124,15 +124,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.saveStateChannel(stateChannel);
   }
 
-  async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
-    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
+  async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson | undefined> {
+    const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       return undefined;
     }
-    if (!this.hasAppHash(appInstanceId, channel.appInstances)) {
+    if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
       return undefined;
     }
-    const [, app] = channel.appInstances.find(([id]) => id === appInstanceId);
+    const [, app] = channel.appInstances.find(([id]) => id === appIdentityHash);
     return app;
   }
 
@@ -145,7 +145,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app instance without channel`);
     }
-    if (this.hasAppHash(appInstance.identityHash, channel.appInstances)) {
+    if (this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
       throw new Error(`App instance with hash ${appInstance.identityHash} already exists`);
     }
     channel.appInstances.push([appInstance.identityHash, appInstance]);
@@ -160,7 +160,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app instance without channel`);
     }
-    if (!this.hasAppHash(appInstance.identityHash, channel.appInstances)) {
+    if (!this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
       throw new Error(`Could not find app instance with hash ${appInstance.identityHash}`);
     }
     const idx = channel.appInstances.findIndex(([app]) => app === appInstance.identityHash);
@@ -170,18 +170,18 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async removeAppInstance(
     multisigAddress: string,
-    appInstanceId: string,
+    appIdentityHash: string,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       return;
     }
-    if (!this.hasAppHash(appInstanceId, channel.appInstances)) {
+    if (!this.hasAppIdentityHash(appIdentityHash, channel.appInstances)) {
       // does not exist
       return;
     }
-    const idx = channel.appInstances.findIndex(([app]) => app === appInstanceId);
+    const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
     channel.appInstances.splice(idx, 1);
 
     return this.saveStateChannel({
@@ -190,15 +190,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     });
   }
 
-  async getAppProposal(appInstanceId: string): Promise<AppInstanceProposal | undefined> {
-    const channel = await this.getStateChannelByAppInstanceId(appInstanceId);
+  async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {
+    const channel = await this.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!channel) {
       return undefined;
     }
-    if (!this.hasAppHash(appInstanceId, channel.proposedAppInstances)) {
+    if (!this.hasAppIdentityHash(appIdentityHash, channel.proposedAppInstances)) {
       return undefined;
     }
-    const [, proposal] = channel.proposedAppInstances.find(([id]) => id === appInstanceId);
+    const [, proposal] = channel.proposedAppInstances.find(([id]) => id === appIdentityHash);
     return proposal;
   }
 
@@ -211,7 +211,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app proposal without channel`);
     }
-    if (this.hasAppHash(appInstance.identityHash, channel.proposedAppInstances)) {
+    if (this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)) {
       throw new Error(`App proposal with hash ${appInstance.identityHash} already exists`);
     }
     channel.proposedAppInstances.push([appInstance.identityHash, appInstance]);
@@ -226,7 +226,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (!channel) {
       throw new Error(`Can't save app proposal without channel`);
     }
-    if (!this.hasAppHash(appInstance.identityHash, channel.proposedAppInstances)) {
+    if (!this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)) {
       throw new Error(
         `Could not find app proposal with hash ${appInstance.identityHash} already exists`,
       );
@@ -237,15 +237,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.saveStateChannel(channel);
   }
 
-  async removeAppProposal(multisigAddress: string, appInstanceId: string): Promise<void> {
+  async removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
       return;
     }
-    if (!this.hasAppHash(appInstanceId, channel.proposedAppInstances)) {
+    if (!this.hasAppIdentityHash(appIdentityHash, channel.proposedAppInstances)) {
       return;
     }
-    const idx = channel.proposedAppInstances.findIndex(([app]) => app === appInstanceId);
+    const idx = channel.proposedAppInstances.findIndex(([app]) => app === appIdentityHash);
     channel.proposedAppInstances.splice(idx, 1);
 
     return this.saveStateChannel(channel);
@@ -427,7 +427,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     });
   }
 
-  private hasAppHash(
+  private hasAppIdentityHash(
     hash: string,
     toSearch: [string, AppInstanceJson][] | [string, AppInstanceProposal][],
   ) {
