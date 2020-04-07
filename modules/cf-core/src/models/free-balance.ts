@@ -66,7 +66,7 @@ export type TokenIndexedCoinTransferMap = {
 };
 
 // todo(xuanji): replace with Set
-export type ActiveAppsMap = { [appInstanceIdentityHash: string]: true };
+export type ActiveAppsMap = { [appIdentityHash: string]: true };
 
 export class FreeBalanceClass {
   private constructor(

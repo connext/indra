@@ -10,19 +10,19 @@ import {
 } from "./types";
 
 export class PrivateKeysGetter {
-  private appInstanceIdentityHashToPrivateKey: Map<string, string> = new Map();
+  private appIdentityHashToPrivateKey: Map<string, string> = new Map();
   private readonly privateKeys: Set<string> = new Set();
 
   constructor(private readonly privateKeyGenerator: IPrivateKeyGenerator) {}
 
   @Memoize()
-  public async getPrivateKey(appInstanceIdentityHash: string): Promise<string> {
+  public async getPrivateKey(appIdentityHash: string): Promise<string> {
     const validHDPathRepresentationOfIdentityHash = convertDecimalStringToValidHDPath(
-      new BigNumber(appInstanceIdentityHash).toString(),
+      new BigNumber(appIdentityHash).toString(),
     );
 
-    if (this.appInstanceIdentityHashToPrivateKey.has(validHDPathRepresentationOfIdentityHash)) {
-      return await this.appInstanceIdentityHashToPrivateKey.get(
+    if (this.appIdentityHashToPrivateKey.has(validHDPathRepresentationOfIdentityHash)) {
+      return await this.appIdentityHashToPrivateKey.get(
         validHDPathRepresentationOfIdentityHash,
       )!;
     }
@@ -33,7 +33,7 @@ export class PrivateKeysGetter {
     } catch (e) {
       throw new Error(`
         Invalid private key retrieved from wallet-provided
-        callback given AppInstance ID ${appInstanceIdentityHash}: ${JSON.stringify(e, null, 4)}
+        callback given AppInstance ID ${appIdentityHash}: ${JSON.stringify(e, null, 4)}
       `);
     }
 
@@ -43,7 +43,7 @@ export class PrivateKeysGetter {
       );
     }
 
-    this.appInstanceIdentityHashToPrivateKey = this.appInstanceIdentityHashToPrivateKey.set(
+    this.appIdentityHashToPrivateKey = this.appIdentityHashToPrivateKey.set(
       validHDPathRepresentationOfIdentityHash,
       privateKey,
     );

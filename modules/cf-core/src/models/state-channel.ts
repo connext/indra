@@ -63,14 +63,14 @@ export class StateChannel {
     return this.appInstances.size;
   }
 
-  public getAppInstance(appInstanceIdentityHash: string): AppInstance {
-    if (this.hasFreeBalance && appInstanceIdentityHash === this.freeBalance.identityHash) {
+  public getAppInstance(appIdentityHash: string): AppInstance {
+    if (this.hasFreeBalance && appIdentityHash === this.freeBalance.identityHash) {
       return this.freeBalance;
     }
-    if (!this.appInstances.has(appInstanceIdentityHash)) {
-      throw new Error(ERRORS.APP_DOES_NOT_EXIST(appInstanceIdentityHash));
+    if (!this.appInstances.has(appIdentityHash)) {
+      throw new Error(ERRORS.APP_DOES_NOT_EXIST(appIdentityHash));
     }
-    return this.appInstances.get(appInstanceIdentityHash)!;
+    return this.appInstances.get(appIdentityHash)!;
   }
 
   public hasAppInstance(appInstanceId: string): boolean {
@@ -135,8 +135,8 @@ export class StateChannel {
     return appInstances;
   }
 
-  public isAppInstanceInstalled(appInstanceIdentityHash: string) {
-    return this.appInstances.has(appInstanceIdentityHash);
+  public isAppInstanceInstalled(appIdentityHash: string) {
+    return this.appInstances.has(appIdentityHash);
   }
 
   public getSigningKeysFor(addressIndex: number): string[] {
