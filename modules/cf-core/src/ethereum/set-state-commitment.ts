@@ -1,6 +1,5 @@
 import { MinimalTransaction, EthereumCommitment } from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
-import { sortSignaturesBySignerAddress } from "@connext/types";
 import { verifyChannelMessage } from "@connext/crypto";
 
 import { ChallengeRegistry } from "../contracts";
@@ -27,20 +26,28 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly versionNumber: number, // app nonce
     public readonly timeout: number,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
-    private participantSignatures: string[] = [],
+    private initiatorSignature?: string,
+    private responderSignature?: string,
   ) {}
 
   get signatures(): string[] {
-    return this.participantSignatures;
+    if (!this.initiatorSignature && !this.responderSignature) {
+      return [];
+    }
+    return [this.initiatorSignature!, this.responderSignature!];
+  }
+
+  public async addSignatures(
+    initiatorSignature: string,
+    responderSignature: string,
+  ): Promise<void> {
+    this.initiatorSignature = initiatorSignature;
+    this.responderSignature = responderSignature;
+    await this.assertSignatures();
   }
 
   set signatures(sigs: string[]) {
-    if (sigs.length < 2) {
-      throw new Error(
-        `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
-      );
-    }
-    this.participantSignatures = sigs;
+    throw new Error(`Use "addSignatures" to ensure the correct sorting`);
   }
 
   public encode(): string {
@@ -92,22 +99,22 @@ export class SetStateCommitment implements EthereumCommitment {
       json.versionNumber,
       json.timeout,
       json.appIdentityHash,
-      json.signatures,
+      json.signatures[0],
+      json.signatures[1],
     );
   }
 
   private async getSignedStateHashUpdate(): Promise<SignedStateHashUpdate> {
-    this.assertSignatures();
-    const hash = this.hashToSign();
+    this.assertSignatures(true);
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: this.timeout,
-      signatures: await sortSignaturesBySignerAddress(hash, this.signatures, verifyChannelMessage),
+      signatures: this.signatures,
     };
   }
 
-  private assertSignatures() {
+  private async assertSignatures(presenceOnly: boolean = false) {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }
@@ -116,6 +123,16 @@ export class SetStateCommitment implements EthereumCommitment {
       throw new Error(
         `Incorrect number of signatures supplied. Expected at least 2, got ${this.signatures.length}`,
       );
+    }
+
+    if (presenceOnly) {
+      return;
+    }
+    for (const idx in this.signatures) {
+      const signer = await verifyChannelMessage(this.hashToSign(), this.signatures[idx]);
+      if (signer !== this.appIdentity.participants[idx]) {
+        throw new Error(`Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`);
+      }
     }
   }
 }
