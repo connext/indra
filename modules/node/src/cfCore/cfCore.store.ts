@@ -184,12 +184,12 @@ export class CFCoreStore implements IStoreService {
     // upgrade proposal to instance
     proposal.type = AppType.INSTANCE;
     // save participants
-    let userAddr = xkeyKthAddress(this.configService.getPublicIdentifier(), proposal.appSeqNo);
-    if (![initiator, responder].find(p => p === userAddr)) {
-      userAddr = xkeyKthAddress(this.configService.getPublicIdentifier());
-    }
-    proposal.userParticipantAddress = [initiator, responder].find(p => p === userAddr);
-    proposal.nodeParticipantAddress = [initiator, responder].find(p => p !== userAddr);
+    const nodeAddr = xkeyKthAddress(
+      this.configService.getPublicIdentifier(),
+      proposal.appSeqNo,
+    );
+    proposal.userParticipantAddress = [initiator, responder].find(p => p !== nodeAddr);
+    proposal.nodeParticipantAddress = [initiator, responder].find(p => p === nodeAddr);
 
     proposal.meta = meta;
 
