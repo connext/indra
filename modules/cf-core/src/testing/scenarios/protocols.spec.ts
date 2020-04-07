@@ -79,6 +79,8 @@ describe("Three mininodes", () => {
         stateEncoding: proposal.abiEncodings.stateEncoding,
         actionEncoding: proposal.abiEncodings.actionEncoding,
       },
+      appInitiatorAddress: xkeyKthAddress(proposal.proposedByIdentifier, proposal.appSeqNo),
+      appResponderAddress: xkeyKthAddress(proposal.proposedToIdentifier, proposal.appSeqNo),
       defaultTimeout: 100,
       appSeqNo: proposal.appSeqNo,
       outcomeType: proposal.outcomeType,

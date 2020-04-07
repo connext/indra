@@ -1,4 +1,4 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, ProtocolParams } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -14,6 +14,7 @@ import {
 } from "../../types";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import { xkeyKthAddress } from "../../xkeys";
 
 /**
  * This converts a proposed app instance to an installed app instance while
@@ -102,7 +103,15 @@ export async function install(
     responderDepositTokenAddress: proposal.responderDepositTokenAddress,
     disableLimit: false,
     meta: proposal.meta,
-  });
+    appInitiatorAddress: xkeyKthAddress(
+      proposal.proposedByIdentifier,
+      proposal.appSeqNo,
+    ),
+    appResponderAddress: xkeyKthAddress(
+      proposal.proposedToIdentifier,
+      proposal.appSeqNo,
+    ),
+  } as ProtocolParams.Install);
   stateChannel.removeProposal(appIdentityHash);
   await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);
 

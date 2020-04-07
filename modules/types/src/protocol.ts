@@ -23,6 +23,10 @@ type InstallProtocolParams = {
   // `initiatorBalanceDecrement + responderBalanceDecrement`; setting this
   // flag disables the limit by setting it to MAX_UINT256
   disableLimit: boolean;
+  // these are set during the proposal for the app instance
+  // set state commitment generation
+  appInitiatorAddress: string;
+  appResponderAddress: string;
 };
 
 type ProposeProtocolParams = {
