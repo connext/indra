@@ -1,5 +1,5 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames } from "@connext/types";
+import { OutcomeType, ProtocolNames, sortAddresses, toBN } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -7,7 +7,7 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { getCreate2MultisigAddress } from "../utils";
-import { sortAddresses, xkeyKthAddress } from "../xkeys";
+import { xkeyKthAddress } from "../xkeys";
 
 import { IdentityApp } from "./contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
@@ -118,9 +118,7 @@ export class TestRunner {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
       const json = await mininode.store.getStateChannel(this.multisigAB)!;
       const sc = StateChannel.fromJson(json!);
-      const updatedBalance = sc.addActiveAppAndIncrementFreeBalance(
-        HashZero,  
-      {
+      const updatedBalance = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
         [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
           [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
@@ -140,9 +138,7 @@ export class TestRunner {
     for (const mininode of [this.mininodeB, this.mininodeC]) {
       const json = await mininode.store.getStateChannel(this.multisigBC)!;
       const sc = StateChannel.fromJson(json!);
-      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(
-        HashZero,
-      {
+      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
         [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
           [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
@@ -206,7 +202,7 @@ export class TestRunner {
       initiatorDepositTokenAddress: tokenAddress,
       responderDeposit: One,
       responderDepositTokenAddress: tokenAddress,
-      defaultTimeout: bigNumberify(100),
+      defaultTimeout: toBN(100),
       stateTimeout: Zero,
       initialState,
       outcomeType,

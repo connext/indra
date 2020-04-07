@@ -1,5 +1,5 @@
 import { IStoreService, ILoggerService } from "@connext/types";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 
@@ -32,8 +32,8 @@ export async function assertIsValidSignature(
   if (typeof signature === "undefined") {
     throw new Error("assertIsValidSignature received an undefined signature");
   }
-  // recoverAddress: 83 ms, hashToSign: 7 ms
-  const signer = await recoverAddress(commitmentHash, signature);
+  // verifyChannelMessage: 83 ms, hashToSign: 7 ms
+  const signer = await verifyChannelMessage(commitmentHash, signature);
   if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}.`,
@@ -74,7 +74,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
     } catch (e) {
       throw new Error(`Unable to compute outcome: ${e.stack || e.message}`);
     }
-  };
+  }
   const encodedOutcome = encodedOutcomeOverride;
 
   if (log) logTime(log, checkpoint, `Computed outcome with current state`);
@@ -106,7 +106,6 @@ export async function computeTokenIndexedFreeBalanceIncrements(
     }
   }
 }
-
 
 function handleTwoPartyFixedOutcome(
   encodedOutcome: string,

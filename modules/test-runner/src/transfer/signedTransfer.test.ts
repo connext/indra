@@ -11,7 +11,7 @@ import {
   deBigNumberifyJson,
   EventPayloads,
 } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
@@ -109,7 +109,7 @@ describe("Signed Transfers", () => {
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signDigest(signerWallet.privateKey, digest);
+    const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
@@ -182,7 +182,7 @@ describe("Signed Transfers", () => {
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signDigest(signerWallet.privateKey, digest);
+    const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
@@ -254,7 +254,7 @@ describe("Signed Transfers", () => {
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signDigest(signerWallet.privateKey, digest);
+    const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
@@ -350,7 +350,7 @@ describe("Signed Transfers", () => {
 
       // Including recipient signing in test to match real conditions
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = await signDigest(signerWallet.privateKey, digest);
+      const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
       await new Promise(async res => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {

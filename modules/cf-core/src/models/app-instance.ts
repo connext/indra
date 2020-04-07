@@ -1,4 +1,11 @@
-import { bigNumberifyJson, deBigNumberifyJson, isBN, stringify, HexString } from "@connext/types";
+import {
+  bigNumberifyJson,
+  deBigNumberifyJson,
+  isBN,
+  stringify,
+  sortAddresses,
+  HexString,
+} from "@connext/types";
 import { Contract } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, keccak256, BigNumber } from "ethers/utils";
@@ -19,7 +26,6 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "../types";
 import { appIdentityToHash } from "../utils";
-import { sortAddresses } from "../xkeys";
 import { Zero } from "ethers/constants";
 
 /**
@@ -58,12 +64,9 @@ export class AppInstance {
     public readonly outcomeType: OutcomeType,
     public readonly multisigAddress: string,
     public readonly meta?: object,
-    private readonly twoPartyOutcomeInterpreterParamsInternal?:
-      TwoPartyFixedOutcomeInterpreterParams,
-    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
-      MultiAssetMultiPartyCoinTransferInterpreterParams,
-    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
-      SingleAssetTwoPartyCoinTransferInterpreterParams,
+    private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
+    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
+    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
   ) {
     this.participants = sortAddresses(this.participants);
   }
@@ -101,24 +104,21 @@ export class AppInstance {
     const deserialized = bigNumberifyJson(json) as AppInstanceJson;
 
     const interpreterParams = {
-      twoPartyOutcomeInterpreterParams:
-        deserialized.twoPartyOutcomeInterpreterParams
-          ? bigNumberifyJson(
-              deserialized.twoPartyOutcomeInterpreterParams,
-            ) as TwoPartyFixedOutcomeInterpreterParams
-          : undefined,
-      singleAssetTwoPartyCoinTransferInterpreterParams:
-        deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
-          ? bigNumberifyJson(
-              deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
-            ) as SingleAssetTwoPartyCoinTransferInterpreterParams
-          : undefined,
-      multiAssetMultiPartyCoinTransferInterpreterParams:
-        deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
-          ? bigNumberifyJson(
-              deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
-            ) as MultiAssetMultiPartyCoinTransferInterpreterParams
-          : undefined,
+      twoPartyOutcomeInterpreterParams: deserialized.twoPartyOutcomeInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.twoPartyOutcomeInterpreterParams,
+          ) as TwoPartyFixedOutcomeInterpreterParams)
+        : undefined,
+      singleAssetTwoPartyCoinTransferInterpreterParams: deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+          ) as SingleAssetTwoPartyCoinTransferInterpreterParams)
+        : undefined,
+      multiAssetMultiPartyCoinTransferInterpreterParams: deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
+          ) as MultiAssetMultiPartyCoinTransferInterpreterParams)
+        : undefined,
     };
 
     return new AppInstance(
@@ -176,8 +176,8 @@ export class AppInstance {
       participants: this.participants,
       multisigAddress: this.multisigAddress,
       appDefinition: this.appInterface.addr,
-      defaultTimeout: (this.defaultTimeout).toString(),
-      channelNonce: (this.appSeqNo).toString(),
+      defaultTimeout: this.defaultTimeout.toString(),
+      channelNonce: this.appSeqNo.toString(),
     };
   }
 

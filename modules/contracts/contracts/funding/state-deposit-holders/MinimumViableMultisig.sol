@@ -2,7 +2,7 @@ pragma solidity 0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "./MultisigData.sol";
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "../../shared/libs/LibChannelCrypto.sol";
 
 
 /// @title MinimumViableMultisig - A multisig wallet supporting the minimum
@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 /// (d) Uses hash-based instead of nonce-based replay protection
 contract MinimumViableMultisig is MultisigData {
 
-    using ECDSA for bytes32;
+    using LibChannelCrypto for bytes32;
 
     mapping(bytes32 => bool) isExecuted;
 
@@ -70,7 +70,7 @@ contract MinimumViableMultisig is MultisigData {
         address lastSigner = address(0);
         for (uint256 i = 0; i < _owners.length; i++) {
             require(
-                _owners[i] == transactionHash.recover(signatures[i]),
+                _owners[i] == transactionHash.verifyChannelMessage(signatures[i]),
                 "Invalid signature"
             );
             require(_owners[i] > lastSigner, "Signers not in alphanumeric order");

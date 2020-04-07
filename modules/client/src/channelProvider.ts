@@ -17,7 +17,7 @@ import {
   Opcode,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signChannelMessage, signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { Wallet, Contract } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
@@ -103,9 +103,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
-      case ChannelMethods.chan_signDigest:
-        result = await this.signDigest(params.message);
-        break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
         break;
@@ -161,10 +158,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return signChannelMessage(this.wallet.privateKey, message);
   };
 
-  private signDigest = async (message: string): Promise<string> => {
-    return signDigest(this.wallet.privateKey, message);
-  };
-
   private walletTransfer = async (params: WalletTransferParams): Promise<string> => {
     let hash;
     if (params.assetId === AddressZero) {
@@ -179,7 +172,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       hash = tx.hash;
     }
     return hash;
-  }
+  };
 
   private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
     return this.store.getUserWithdrawal();

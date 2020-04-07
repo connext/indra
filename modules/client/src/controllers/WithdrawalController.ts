@@ -55,7 +55,7 @@ export class WithdrawalController extends AbstractController {
 
     const withdrawCommitment = await this.createWithdrawCommitment(params);
     const hash = withdrawCommitment.hashToSign();
-    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
+    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
       hash,
     );
 
@@ -90,7 +90,7 @@ export class WithdrawalController extends AbstractController {
     const hash = generatedCommitment.hashToSign();
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signDigest(
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
       hash,
     );
     await this.connext.takeAction(
@@ -114,9 +114,7 @@ export class WithdrawalController extends AbstractController {
     await this.connext.rescindDepositRights({ assetId });
   }
 
-  private async createWithdrawCommitment(
-    params: WithdrawParameters,
-  ): Promise<WithdrawCommitment> {
+  private async createWithdrawCommitment(params: WithdrawParameters): Promise<WithdrawCommitment> {
     const { assetId, amount, nonce, recipient } = params;
     const channel = await this.connext.getStateChannel();
     return new WithdrawCommitment(
@@ -187,10 +185,9 @@ export class WithdrawalController extends AbstractController {
     const minTx: MinimalTransaction = await commitment.getSignedTransaction();
     const value = { tx: minTx, retry: 0 };
     await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, { ...value });
-    await this.connext.channelProvider.send(
-      ChannelMethods.chan_setUserWithdrawal,
-      { withdrawalObject: value },
-    );
+    await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
+      withdrawalObject: value,
+    });
     return;
   }
 }

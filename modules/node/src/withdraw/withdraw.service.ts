@@ -1,5 +1,5 @@
 import { WITHDRAW_STATE_TIMEOUT } from "@connext/apps";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import {
   AppInstanceJson,
   BigNumber,
@@ -79,7 +79,7 @@ export class WithdrawService {
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = await signDigest(privateKey, hash);
+    const counterpartySignatureOnWithdrawCommitment = await signChannelMessage(privateKey, hash);
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -213,7 +213,7 @@ export class WithdrawService {
     const privateKey = this.configService.getEthWallet().privateKey;
     const hash = commitment.hashToSign();
 
-    const withdrawerSignatureOnCommitment = await signDigest(privateKey, hash);
+    const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, hash);
 
     const transfers: CoinTransfer[] = [
       { amount, to: this.cfCoreService.cfCore.freeBalanceAddress },

@@ -21,7 +21,7 @@ import {
 export * from "eccrypto-js";
 
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
-export const CHAN_SIGN_PREFIX = "\x19Channel Signed Message:\n";
+export const CHAN_SIGN_PREFIX = "\x18Channel Signed Message:\n";
 
 export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
