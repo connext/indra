@@ -24,7 +24,7 @@
   "dependencies": {
     "@connext/apps": "6.0.0-alpha.9",
     "@connext/cf-core": "6.0.0-alpha.9",
-    "@connext/contracts": "1.0.5",
+    "@connext/contracts": "2.0.2",
     "@connext/crypto": "6.0.0-alpha.9",
     "@connext/messaging": "6.0.0-alpha.9",
     "@connext/store": "6.0.0-alpha.9",
