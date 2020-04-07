@@ -4,6 +4,7 @@ import {
   StateChannelJSON,
   OutcomeType,
   toBN,
+  stringify,
 } from "@connext/types";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 import { HashZero, AddressZero, Zero } from "ethers/constants";
@@ -268,30 +269,42 @@ export class AdminService implements OnApplicationBootstrap {
         }
         // handle `timeout` --> `defaultTimeout` and
         // `latestTimeout` --> `stateTimeout` cases
-        const freeBalOnCreate: any = {
-          ...channelJSON.freeBalanceAppInstance,
-          defaultTimeout: channelJSON.freeBalanceAppInstance.defaultTimeout
-            ? channelJSON.freeBalanceAppInstance.defaultTimeout
-            : toBN(
-                (channelJSON.freeBalanceAppInstance as any).timeout)
-              .toHexString(),
-          stateTimeout: channelJSON.freeBalanceAppInstance.stateTimeout
-            ? channelJSON.freeBalanceAppInstance.stateTimeout
-            : toBN(
-                (channelJSON.freeBalanceAppInstance as any).latestTimeout,
-              ).toHexString(),
+        const getProperTimeouts = (obj: any) => {
+          const isUndefinedOrNull = (val: any) => val === undefined || val === null;
+          let stateTimeoutKey = undefined;
+          for (const k of ["stateTimeout", "latestTimeout", "timeout"]) {
+            if (!isUndefinedOrNull(stateTimeoutKey)) continue;
+            if (!isUndefinedOrNull(obj[k])) {
+              stateTimeoutKey = k;
+            }
+          }
+          if (isUndefinedOrNull(stateTimeoutKey)) {
+            throw new Error(`Could not determine state timeout key for ${stringify(obj, 2)}`);
+          }
+          const stateTimeout = toBN(obj[stateTimeoutKey]).toHexString();
+
+          const defaultTimeoutKey = !isUndefinedOrNull(obj.defaultTimeout)
+            ? "defaultTimeout"
+            : "timeout";
+          
+          if (isUndefinedOrNull(obj[defaultTimeoutKey])) {
+            throw new Error(`Could not determine default timeout key for ${stringify(obj, 2)}`);
+          }
+          const defaultTimeout = toBN(obj[defaultTimeoutKey]).toHexString();
+          return { stateTimeout, defaultTimeout };
         };
 
         await this.cfCoreStore.createStateChannel({ 
           ...channelJSON, 
-          freeBalanceAppInstance: freeBalOnCreate, 
+          freeBalanceAppInstance: {
+            ...channelJSON.freeBalanceAppInstance,
+            ...getProperTimeouts(channelJSON.freeBalanceAppInstance),
+          }, 
         });
         for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
           const proposal = {
             ...proposedApp,
-            defaultTimeout: proposedApp.defaultTimeout || 
-              toBN((proposedApp as any).timeout).toHexString(),
-            stateTimeout: proposedApp.defaultTimeout || Zero.toHexString(),
+            ...getProperTimeouts(proposedApp),
           };
           await this.cfCoreStore.createAppProposal(
             channelJSON.multisigAddress,
@@ -305,17 +318,11 @@ export class AdminService implements OnApplicationBootstrap {
           if (existing) {
             await this.cfCoreStore.updateAppInstance(appInstance.identityHash, {
               ...appInstance,
-              defaultTimeout: existing.defaultTimeout || 
-                toBN((appInstance as any).timeout).toHexString(),
-              stateTimeout: appInstance.stateTimeout || 
-                toBN((appInstance as any).latestTimeout).toHexString(),
+              ...getProperTimeouts(appInstance),
             });
           } else {
-            const defaultTimeout = appInstance.defaultTimeout || 
-              toBN((appInstance as any).timeout).toHexString();
-            const stateTimeout = appInstance.stateTimeout || 
-              toBN((appInstance as any).latestTimeout).toHexString();
             const proposal = {
+              ...getProperTimeouts(appInstance),
               abiEncodings: {
                 actionEncoding: appInstance.appInterface.actionEncoding,
                 stateEncoding: appInstance.appInterface.stateEncoding,
@@ -331,8 +338,6 @@ export class AdminService implements OnApplicationBootstrap {
               proposedToIdentifier: channelJSON.userNeuteredExtendedKeys[1],
               responderDeposit: "0",
               responderDepositTokenAddress: AddressZero,
-              defaultTimeout: defaultTimeout || Zero.toHexString(),
-              stateTimeout: stateTimeout || Zero.toHexString(),
               meta: appInstance.meta,
               multiAssetMultiPartyCoinTransferInterpreterParams: 
                 appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
@@ -348,14 +353,15 @@ export class AdminService implements OnApplicationBootstrap {
             );
             const app = {
               ...appInstance,
-              defaultTimeout: appInstance.defaultTimeout 
-                || proposal.defaultTimeout,
-              stateTimeout: appInstance.stateTimeout || proposal.stateTimeout,
+              ...getProperTimeouts(appInstance),
             };
             await this.cfCoreStore.createAppInstance(
               channelJSON.multisigAddress,
               app,
-              channelJSON.freeBalanceAppInstance,
+              {
+                ...channelJSON.freeBalanceAppInstance,
+                ...getProperTimeouts(channelJSON.freeBalanceAppInstance),
+              },
             );
           }
         }
