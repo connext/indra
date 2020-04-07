@@ -318,7 +318,7 @@ export class CFCoreService {
     return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
 
-  async getAppInstanceDetails(appIdentityHash: string): Promise<AppInstanceJson> {
+  async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
     let appInstance: any;
     try {
       const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
@@ -336,7 +336,7 @@ export class CFCoreService {
       }
     }
     this.log.info(`Got app instance details for app ${appIdentityHash}`);
-    this.log.debug(`getAppInstanceDetails result: ${stringify(appInstance)}`);
+    this.log.debug(`getAppInstance result: ${stringify(appInstance)}`);
     return appInstance as AppInstanceJson;
   }
 

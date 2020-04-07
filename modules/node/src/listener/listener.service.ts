@@ -143,7 +143,7 @@ export default class ListenerService implements OnModuleInit {
         // if this is for a recipient of a transfer
         this.logEvent(UPDATE_STATE_EVENT, data);
         const { newState, appIdentityHash, action } = data.data;
-        const app = await this.cfCoreService.getAppInstanceDetails(appIdentityHash);
+        const app = await this.cfCoreService.getAppInstance(appIdentityHash);
         const appRegistryInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
           app.appInterface.addr,
         );

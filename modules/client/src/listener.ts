@@ -139,7 +139,7 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
-      const appInstance = (await this.connext.getAppInstanceDetails(msg.data.appIdentityHash))
+      const appInstance = (await this.connext.getAppInstance(msg.data.appIdentityHash))
         .appInstance;
       const state = msg.data.newState as WithdrawAppState;
       const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
@@ -344,7 +344,7 @@ export class ConnextListener extends ConnextEventEmitter {
     }
     // install and run post-install tasks
     await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
-    const { appInstance } = await this.connext.getAppInstanceDetails(appIdentityHash);
+    const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
     await this.connext.messaging.publish(
       `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
       stringify(appInstance),
@@ -358,7 +358,7 @@ export class ConnextListener extends ConnextEventEmitter {
   ): Promise<void> => {
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
-        const appInstance = (await this.connext.getAppInstanceDetails(appIdentityHash)).appInstance;
+        const appInstance = (await this.connext.getAppInstance(appIdentityHash)).appInstance;
         this.connext.respondToNodeWithdraw(appInstance);
         break;
       }

@@ -203,7 +203,7 @@ export class AppRegistryService implements OnModuleInit {
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
         this.log.debug(`Doing withdrawal post-install tasks`);
-        const appInstance = await this.cfCoreService.getAppInstanceDetails(appIdentityHash);
+        const appInstance = await this.cfCoreService.getAppInstance(appIdentityHash);
         const initialState = proposeInstallParams.initialState as WithdrawAppState;
         this.log.debug(`AppRegistry sending withdrawal to db at ${appInstance.multisigAddress}`);
         await this.withdrawService.saveWithdrawal(

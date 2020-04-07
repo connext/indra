@@ -592,7 +592,7 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.GetProposedAppInstance);
   };
 
-  public getAppInstanceDetails = async (
+  public getAppInstance = async (
     appIdentityHash: string,
   ): Promise<MethodResults.GetAppInstanceDetails | undefined> => {
     const err = await this.appNotInstalled(appIdentityHash);
@@ -616,7 +616,7 @@ export class ConnextClient implements IConnextClient {
       throw new Error(err);
     }
     // check state is not finalized
-    const { latestState: state } = (await this.getAppInstanceDetails(appIdentityHash)).appInstance;
+    const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
     if ((state as any).finalized) { // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
@@ -638,7 +638,7 @@ export class ConnextClient implements IConnextClient {
       throw new Error(err);
     }
     // check state is not finalized
-    const { latestState: state } = (await this.getAppInstanceDetails(appIdentityHash)).appInstance;
+    const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
     if ((state as any).finalized) { // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
@@ -843,7 +843,7 @@ export class ConnextClient implements IConnextClient {
         continue;
       }
       // otherwise, handle installed app
-      const { appInstance } = await this.getAppInstanceDetails(appIdentityHash);
+      const { appInstance } = await this.getAppInstance(appIdentityHash);
       if (!appInstance) {
         continue;
       }

@@ -6,7 +6,7 @@ import { confirmAppInstanceInstallation, createChannel, getAppInstance, installA
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
-describe("Node method follows spec - getAppInstanceDetails", () => {
+describe("Node method follows spec - getAppInstance", () => {
   let nodeA: Node;
   let nodeB: Node;
 
