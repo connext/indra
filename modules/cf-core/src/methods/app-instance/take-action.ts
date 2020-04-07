@@ -1,4 +1,11 @@
-import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
+import {
+  EventNames,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  IStoreService,
+} from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -8,7 +15,7 @@ import {
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE,
   NO_APP_INSTANCE_FOR_GIVEN_ID,
-  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
@@ -26,9 +33,7 @@ export class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: MethodParams.TakeAction,
   ): Promise<string[]> {
-    const app = await requestHandler.store.getAppInstance(
-      params.appIdentityHash,
-    );
+    const app = await requestHandler.store.getAppInstance(params.appIdentityHash);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
     }
@@ -71,7 +76,7 @@ export class TakeActionController extends NodeController {
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     const responderXpub = getFirstElementInListNotEqualTo(
@@ -127,9 +132,9 @@ async function runTakeActionProtocol(
   action: SolidityValueType,
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
-    }
+  if (!stateChannel) {
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
+  }
 
   try {
     await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {

@@ -1,12 +1,18 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
+import {
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  IStoreService,
+} from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
   APP_ALREADY_UNINSTALLED,
   CANNOT_UNINSTALL_FREE_BALANCE,
-  NO_APP_INSTANCE_ID_TO_UNINSTALL,
+  NO_APP_IDENTITY_HASH_TO_UNINSTALL,
   USE_RESCIND_DEPOSIT_RIGHTS,
-  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
   NO_APP_INSTANCE_FOR_GIVEN_ID,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
@@ -28,26 +34,23 @@ export class UninstallController extends NodeController {
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     return [sc.multisigAddress, appIdentityHash];
   }
 
-  protected async beforeExecution(
-    requestHandler: RequestHandler,
-    params: MethodParams.Uninstall,
-  ) {
+  protected async beforeExecution(requestHandler: RequestHandler, params: MethodParams.Uninstall) {
     const { store } = requestHandler;
     const { appIdentityHash } = params;
 
     if (!appIdentityHash) {
-      throw new Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
+      throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);
     }
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     if (sc.freeBalanceAppInstance && sc.freeBalanceAppInstance!.identityHash === appIdentityHash) {
@@ -69,7 +72,7 @@ export class UninstallController extends NodeController {
     const { appIdentityHash } = params;
 
     if (!appIdentityHash) {
-      throw new Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
+      throw new Error(NO_APP_IDENTITY_HASH_TO_UNINSTALL);
     }
 
     const app = await store.getAppInstance(appIdentityHash);
@@ -80,7 +83,7 @@ export class UninstallController extends NodeController {
     const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
 
     if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     const to = getFirstElementInListNotEqualTo(
@@ -109,7 +112,9 @@ export async function uninstallAppInstanceFromChannel(
 ): Promise<void> {
   const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!json) {
-    throw new Error(`Could not find state channel in store associated with app ${appIdentityHash} when uninstalling`);
+    throw new Error(
+      `Could not find state channel in store associated with app ${appIdentityHash} when uninstalling`,
+    );
   }
   const stateChannel = StateChannel.fromJson(json);
 

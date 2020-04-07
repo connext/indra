@@ -99,24 +99,24 @@ export const NO_APP_INSTANCE_FOR_GIVEN_ID = "No AppInstance exists for the given
 
 export const NO_APP_INSTANCE_FOR_TAKE_ACTION = "No appIdentityHash specified to takeAction on";
 
-export const NO_APP_INSTANCE_ID_FOR_GET_STATE = "No string specified to get state for";
+export const NO_APP_IDENTITY_HASH_FOR_GET_STATE = "No string specified to get state for";
 
-export const NO_APP_INSTANCE_ID_TO_GET_DETAILS = "No string specified to get details for";
+export const NO_APP_IDENTITY_HASH_TO_GET_DETAILS = "No string specified to get details for";
 
-export const NO_APP_INSTANCE_ID_TO_INSTALL = "No appIdentityHash specified to install";
+export const NO_APP_IDENTITY_HASH_TO_INSTALL = "No appIdentityHash specified to install";
 
-export const NO_APP_INSTANCE_ID_TO_UNINSTALL = "No appIdentityHash specified to uninstall";
+export const NO_APP_IDENTITY_HASH_TO_UNINSTALL = "No appIdentityHash specified to uninstall";
 
-export const NO_MULTISIG_FOR_APP_INSTANCE_ID =
+export const NO_MULTISIG_FOR_APP_IDENTITY_HASH =
   "No multisig address exists for the given appIdentityHash";
 
-export const NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID = (id: string): string =>
+export const NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH = (id: string): string =>
   `No proposed AppInstance exists for the given appIdentityHash: ${id}`;
 
 export const NO_STATE_CHANNEL_FOR_MULTISIG_ADDR = (multisigAddress: string): string =>
   `Call to getStateChannel failed when searching for multisig address: ${multisigAddress}. This probably means that the StateChannel does not exist yet.`;
 
-export const NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID = (appIdentityHash: string): string =>
+export const NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH = (appIdentityHash: string): string =>
   `Call to getStateChannel failed when searching for app identity hash: ${appIdentityHash}.`;
 
 export const NO_STATE_CHANNEL_FOR_OWNERS = (owners: string): string =>

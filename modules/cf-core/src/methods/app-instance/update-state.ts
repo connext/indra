@@ -1,4 +1,10 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
+import {
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  IStoreService,
+} from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -6,7 +12,7 @@ import {
   IMPROPERLY_FORMATTED_STRUCT,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE,
-  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
   NO_APP_INSTANCE_FOR_GIVEN_ID,
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
@@ -63,7 +69,7 @@ export class UpdateStateController extends NodeController {
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     const responderXpub = getFirstElementInListNotEqualTo(
@@ -94,7 +100,7 @@ async function runUpdateStateProtocol(
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!stateChannel) {
-    throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
   }
 
   await protocolRunner.initiateProtocol(ProtocolNames.update, {

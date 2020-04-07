@@ -2,11 +2,12 @@ import { EventNames, MethodNames, MethodParams, MethodResults } from "@connext/t
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import {
-  RejectProposalMessage,
-} from "../../types";
+import { RejectProposalMessage } from "../../types";
 import { NodeController } from "../controller";
-import { NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID, NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../../errors";
+import {
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
+} from "../../errors";
 
 export class RejectInstallController extends NodeController {
   protected async getRequiredLockNames(
@@ -29,14 +30,14 @@ export class RejectInstallController extends NodeController {
 
     const appInstanceProposal = await store.getAppProposal(appIdentityHash);
     if (!appInstanceProposal) {
-      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!stateChannel) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appIdentityHash));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
-    
+
     await store.removeAppProposal(stateChannel.multisigAddress, appIdentityHash);
 
     const rejectProposalMsg: RejectProposalMessage = {

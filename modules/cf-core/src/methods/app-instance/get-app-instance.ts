@@ -1,7 +1,7 @@
 import { MethodNames, MethodParams, MethodResults } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
-import { NO_APP_INSTANCE_ID_TO_GET_DETAILS, NO_APP_INSTANCE_FOR_GIVEN_ID } from "../../errors";
+import { NO_APP_IDENTITY_HASH_TO_GET_DETAILS, NO_APP_INSTANCE_FOR_GIVEN_ID } from "../../errors";
 import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
@@ -21,7 +21,7 @@ export class GetAppInstanceController extends NodeController {
     const { appIdentityHash } = params;
 
     if (!appIdentityHash) {
-      throw new Error(NO_APP_INSTANCE_ID_TO_GET_DETAILS);
+      throw new Error(NO_APP_IDENTITY_HASH_TO_GET_DETAILS);
     }
 
     const appInstance = await store.getAppInstance(appIdentityHash);
