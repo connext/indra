@@ -2,6 +2,7 @@ pragma solidity 0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "./MultisigData.sol";
+import "../../shared/libs/LibCommitment.sol";
 import "../../shared/libs/LibChannelCrypto.sol";
 
 
@@ -13,7 +14,7 @@ import "../../shared/libs/LibChannelCrypto.sol";
 /// (b) Requires n-of-n unanimous consent
 /// (c) Does not use on-chain address for signature verification
 /// (d) Uses hash-based instead of nonce-based replay protection
-contract MinimumViableMultisig is MultisigData {
+contract MinimumViableMultisig is MultisigData, LibCommitment {
 
     using LibChannelCrypto for bytes32;
 
@@ -103,6 +104,7 @@ contract MinimumViableMultisig is MultisigData {
     {
         return keccak256(
             abi.encodePacked(
+                uint8(CommitmentTypeId.MULTISIG),
                 address(this),
                 to,
                 value,

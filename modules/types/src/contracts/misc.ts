@@ -85,3 +85,12 @@ export const OutcomeType = enumify({
   SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER",
 });
 export type OutcomeType = (typeof OutcomeType)[keyof typeof OutcomeType];
+
+// Commitment types
+export const enum CommitmentTypeId {
+  MULTISIG = 0,
+  SET_STATE = 1,
+  PROGRESS_STATE = 2,
+  CANCEL_DISPUTE = 3,
+}
+

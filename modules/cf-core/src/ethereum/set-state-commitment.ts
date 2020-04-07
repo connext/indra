@@ -1,4 +1,4 @@
-import { MinimalTransaction, EthereumCommitment } from "@connext/types";
+import { MinimalTransaction, EthereumCommitment, CommitmentTypeId } from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
 import { sortSignaturesBySignerAddress } from "@connext/types";
 import { verifyChannelMessage } from "@connext/crypto";
@@ -45,8 +45,9 @@ export class SetStateCommitment implements EthereumCommitment {
 
   public encode(): string {
     return solidityPack(
-      ["bytes32", "uint256", "uint256", "bytes32"],
+      ["uint8", "bytes32", "uint256", "uint256", "bytes32"],
       [
+        CommitmentTypeId.SET_STATE,
         appIdentityToHash(this.appIdentity),
         this.versionNumber,
         this.timeout,
