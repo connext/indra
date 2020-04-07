@@ -3,10 +3,10 @@ import {
   HashLockTransferAppActionEncoding,
   HashLockTransferAppStateEncoding,
   HashLockTransferAppName,
+  toBN,
 } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
-import { Zero } from "ethers/constants";
 
 export const HashLockTransferAppRegistryInfo: AppRegistryInfo = {
   name: HashLockTransferAppName,
@@ -17,4 +17,4 @@ export const HashLockTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const HASHLOCK_TRANSFER_STATE_TIMEOUT = Zero;
+export const HASHLOCK_TRANSFER_STATE_TIMEOUT = toBN(10);

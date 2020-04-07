@@ -3,10 +3,10 @@ import {
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppStateEncoding,
   SimpleSignedTransferAppActionEncoding,
+  toBN,
 } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
-import { Zero } from "ethers/constants";
 
 export const SimpleSignedTransferAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,
@@ -17,4 +17,4 @@ export const SimpleSignedTransferAppRegistryInfo: AppRegistryInfo = {
 };
 
 // timeout default values
-export const SIGNED_TRANSFER_STATE_TIMEOUT = Zero;
+export const SIGNED_TRANSFER_STATE_TIMEOUT = toBN(10);
