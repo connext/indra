@@ -56,8 +56,8 @@ export const computeCancelChallengeHash = (
   versionNumber: BigNumber,
 ) => keccak256(
   solidityPack(
-    ["bytes1", "bytes32", "uint256"],
-    ["0x19", identityHash, versionNumber],
+    ["bytes32", "uint256"],
+    [identityHash, versionNumber],
   ),
 );
 
@@ -73,8 +73,8 @@ export const computeAppChallengeHash = (
 ) =>
   keccak256(
     solidityPack(
-      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-      ["0x19", id, versionNumber, timeout, appStateHash],
+      ["bytes32", "uint256", "uint256", "bytes32"],
+      [id, versionNumber, timeout, appStateHash],
     ),
   );
 
@@ -87,8 +87,8 @@ export const computeActionHash = (
 ) =>
   keccak256(
     solidityPack(
-      ["bytes1", "address", "bytes", "bytes", "uint256"],
-      ["0x19", turnTaker, previousState, action, versionNumber],
+      ["address", "bytes", "bytes", "uint256"],
+      [turnTaker, previousState, action, versionNumber],
     ),
   );
 

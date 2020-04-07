@@ -66,7 +66,6 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
     {
         return keccak256(
             abi.encodePacked(
-                byte(0x19),
                 identityHash,
                 versionNumber,
                 timeout,
@@ -93,7 +92,6 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
     {
         return keccak256(
             abi.encodePacked(
-                byte(0x19),
                 turnTaker,
                 previousState,
                 action,
@@ -116,7 +114,6 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
     {
         return keccak256(
             abi.encodePacked(
-                byte(0x19),
                 identityHash,
                 versionNumber
             )
