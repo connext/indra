@@ -35,7 +35,7 @@ export const formatMessagingUrl = (nodeUrl: string) => {
           .replace(/^http/, "ws"),
   );
   if (isNode()) {
-    return url.split("/api")[0] + ":4222";
+    return url.includes("/api") ? url.split("/api")[0] + ":4222" : url.split(":8080")[0] + ":4222";
   }
   url = `${url}/messaging`;
   return url;
@@ -62,8 +62,9 @@ export const createMessagingService = async (
   xpub: string,
   chainId: number,
   getSignature: (nonce: string) => Promise<string>,
+  messagingUrl?: string,
 ): Promise<MessagingService> => {
-  const messagingUrl = formatMessagingUrl(nodeUrl);
+  messagingUrl = messagingUrl ? messagingUrl : formatMessagingUrl(nodeUrl);
   logger.debug(`Creating messaging service client ${messagingUrl}`);
   const config: MessagingConfig = {
     messagingUrl,
