@@ -1,4 +1,4 @@
-import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
+import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, toBN } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -75,13 +75,16 @@ export class TakeActionController extends NodeController {
     if (!sc) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
     }
+    const app = await store.getAppInstance(appInstanceId);
+    if (!app) {
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
+    }
+    const defaultTimeout = app.defaultTimeout;
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
       sc.userNeuteredExtendedKeys,
     );
-
-    const defaultTimeout = (await store.getAppInstance(appInstanceId))?.defaultTimeout
 
     await runTakeActionProtocol(
       appInstanceId,
@@ -90,7 +93,7 @@ export class TakeActionController extends NodeController {
       publicIdentifier,
       responderXpub,
       action,
-      stateTimeout || defaultTimeout,
+      stateTimeout || toBN(defaultTimeout),
     );
 
     const appInstance = await store.getAppInstance(appInstanceId);
