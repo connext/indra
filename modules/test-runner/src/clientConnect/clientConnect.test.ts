@@ -70,7 +70,8 @@ describe("Client Connect", () => {
     expect(depositApps.length).to.be.eq(0);
   });
 
-  it("Client should override messaging URL if provided", async () => {
+  it.only("Client should override messaging URL if provided", async () => {
+    console.log('env.nodeUrl: ', env.nodeUrl);
     let client = await createClient({
       messagingUrl: env.nodeUrl.replace("http://", "nats://").split(":8080")[0] + ":4222",
     });
