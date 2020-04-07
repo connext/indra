@@ -1,5 +1,5 @@
-import { BigNumber } from "../../basic";
-import { enumify } from "../../utils";
+import { BigNumber } from "./basic";
+import { enumify } from "./utils";
 
 export const HashLockTransfer = "HashLockTransfer";
 export const LinkedTransfer = "LinkedTransfer";

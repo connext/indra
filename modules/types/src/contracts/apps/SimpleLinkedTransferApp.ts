@@ -1,10 +1,7 @@
-import { Address, BigNumber, BigNumberish, Bytes32, HexString, Xpub } from "../../basic";
-import { enumify } from "../../utils";
+import { Address, BigNumber, HexString } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
-
-import { LinkedTransfer } from "./common";
 
 export const SimpleLinkedTransferAppName = "SimpleLinkedTransferApp";
 
@@ -36,51 +33,3 @@ export type SimpleLinkedTransferAppAction = {
 export const SimpleLinkedTransferAppActionEncoding = tidy(`tuple(
   bytes32 preImage
 )`);
-
-////////////////////////////////////////
-// Off-chain app types
-
-// transfer status for client/node
-export const LinkedTransferStatus = enumify({
-  PENDING: "PENDING",
-  COMPLETED: "COMPLETED",
-  FAILED: "FAILED",
-});
-export type LinkedTransferStatus =
-  (typeof LinkedTransferStatus)[keyof typeof LinkedTransferStatus];
-
-// linked transfer types
-export type LinkedTransferParameters = {
-  conditionType: typeof LinkedTransfer;
-  amount: BigNumberish;
-  assetId?: Address;
-  paymentId: Bytes32;
-  preImage: Bytes32;
-  recipient?: Xpub;
-  meta?: object;
-};
-
-export type LinkedTransferResponse = {
-  appIdentityHash: Bytes32;
-  paymentId: Bytes32;
-  preImage: Bytes32;
-};
-
-export type ResolveLinkedTransferParameters = {
-  conditionType: typeof LinkedTransfer;
-  paymentId: Bytes32;
-  preImage: Bytes32;
-}
-
-export type ResolveLinkedTransferResponse = {
-  appIdentityHash: Bytes32;
-  sender: Xpub;
-  paymentId: Bytes32;
-  amount: BigNumber;
-  assetId: Address;
-  meta?: object;
-};
-
-export type CreatedLinkedTransferMeta = {
-  encryptedPreImage?: string;
-};

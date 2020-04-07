@@ -1,20 +1,27 @@
 import EventEmitter from "eventemitter3";
 
-import {
-  ConditionalTransferTypes,
-  CreatedLinkedTransferMeta,
-  CreatedSignedTransferMeta,
-  CreatedHashLockTransferMeta,
-} from "./contracts";
-
 import { AppInstanceProposal } from "./app";
 import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, Xpub } from "./basic";
 import { ChannelMethods } from "./channelProvider";
+import { ConditionalTransferTypes } from "./transfers";
 import { enumify } from "./utils";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
 type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
+
+export type CreatedSignedTransferMeta = {
+  signer: Address;
+};
+
+export type CreatedLinkedTransferMeta = {
+  encryptedPreImage?: string;
+};
+
+export type CreatedHashLockTransferMeta = {
+  lockHash: Bytes32;
+};
+
 ////////////////////////////////////////
 const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
 

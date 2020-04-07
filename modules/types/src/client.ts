@@ -1,29 +1,14 @@
 import { providers } from "ethers";
-import { TransactionResponse } from "ethers/providers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, BigNumber, Bytes32, DecString, Xpub } from "./basic";
-import {
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
-  ResolveConditionParameters,
-  ResolveConditionResponse,
-  ResolveLinkedTransferResponse,
-  SwapParameters,
-  SwapResponse,
-  WithdrawParameters,
-  WithdrawResponse,
-  GetHashLockTransferResponse,
-  GetSignedTransferResponse,
-  DepositParameters,
-  DepositResponse,
-  LinkedTransferResponse,
-} from "./contracts";
+import { Address, Bytes32, DecString, Xpub } from "./basic";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { EventNames } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
+  GetHashLockTransferResponse,
+  GetSignedTransferResponse,
   RebalanceProfile,
   GetChannelResponse,
   CreateChannelResponse,
@@ -38,42 +23,7 @@ import {
   MethodName,
 } from "./methods";
 import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
-
-export type ChannelState = {
-  apps: AppInstanceJson[]; // result of getApps()
-  freeBalance: MethodResults.GetFreeBalanceState;
-};
-
-/////////////////////////////////
-// Client input types
-
-export type AssetAmount = {
-  amount: BigNumber;
-  assetId: Address;
-};
-
-export type RequestDepositRightsParameters = MethodParams.RequestDepositRights;
-export type RequestDepositRightsResponse = MethodResults.RequestDepositRights;
-
-export type CheckDepositRightsParameters = {
-  assetId?: Address;
-};
-
-export type CheckDepositRightsResponse = {
-  appIdentityHash: Bytes32;
-};
-
-export type RescindDepositRightsParameters = MethodParams.RescindDepositRights;
-export type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
-
-// Generic transfer types
-export type TransferParameters = MethodParams.Deposit & {
-  recipient: Address;
-  meta?: object;
-  paymentId?: Bytes32;
-};
-
-export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };
+import { PublicParams, PublicResults } from "./public";
 
 /////////////////////////////////
 
@@ -130,21 +80,25 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
-  deposit(params: DepositParameters): Promise<DepositResponse>;
-  swap(params: SwapParameters): Promise<SwapResponse>;
-  transfer(params: TransferParameters): Promise<LinkedTransferResponse>;
-  withdraw(params: WithdrawParameters): Promise<WithdrawResponse>;
-  resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
-  conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
-  restoreState(): Promise<void>;
   channelProviderConfig(): Promise<ChannelProviderConfig>;
+  checkDepositRights(
+    params: PublicParams.CheckDepositRights
+  ): Promise<PublicResults.CheckDepositRights>;
+  conditionalTransfer(
+    params: PublicParams.ConditionalTransfer
+  ): Promise<PublicResults.ConditionalTransfer>;
+  deposit(params: PublicParams.Deposit): Promise<PublicResults.Deposit>;
   requestDepositRights(
-    params: RequestDepositRightsParameters,
+    params: PublicParams.RequestDepositRights
   ): Promise<MethodResults.RequestDepositRights>;
   rescindDepositRights(
-    params: RescindDepositRightsParameters,
-  ): Promise<RescindDepositRightsResponse>;
-  checkDepositRights(params: CheckDepositRightsParameters): Promise<CheckDepositRightsResponse>;
+    params: PublicParams.RescindDepositRights
+  ): Promise<PublicResults.RescindDepositRights>;
+  resolveCondition(params: PublicParams.ResolveCondition): Promise<PublicResults.ResolveCondition>;
+  restoreState(): Promise<void>;
+  swap(params: PublicParams.Swap): Promise<PublicResults.Swap>;
+  transfer(params: PublicParams.Transfer): Promise<PublicResults.LinkedTransfer>;
+  withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw>;
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
@@ -176,7 +130,7 @@ export interface IConnextClient {
     assetId: Address,
     paymentId: Bytes32,
     encryptedPreImage: string,
-  ): Promise<ResolveLinkedTransferResponse>;
+  ): Promise<PublicResults.ResolveLinkedTransfer>;
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS

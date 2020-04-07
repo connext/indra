@@ -1,19 +1,72 @@
 import { AppRegistry } from "./app";
 import { Address, BigNumber, Bytes32, DecString, Network, Transaction, Xpub } from "./basic";
 import { IChannelProvider } from "./channelProvider";
-import {
-  GetHashLockTransferResponse,
-  ResolveSignedTransferResponse,
-  GetSignedTransferResponse,
-  LinkedTransferStatus,
-  NetworkContext,
-  ResolveLinkedTransferResponse,
-} from "./contracts";
+import { NetworkContext } from "./contracts";
 import { ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { MethodResults } from "./methods";
+import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
-import { MinimalTransaction, SetStateCommitmentJSON, ConditionalTransactionCommitmentJSON } from "./commitments";
+import {
+  ConditionalTransactionCommitmentJSON,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+} from "./commitments";
+import { enumify } from "./utils";
+
+export type Collateralizations = { [assetId: string]: boolean };
+
+////////////////////////////////////
+// Swap Rate Management
+
+export type AllowedSwap = {
+  from: Address;
+  to: Address;
+};
+
+export const PriceOracleTypes = {
+  UNISWAP: "UNISWAP",
+};
+
+export type PriceOracleType = keyof typeof PriceOracleTypes;
+
+export type SwapRate = AllowedSwap & {
+  rate: string; // DecString?
+  priceOracleType: PriceOracleType;
+  blockNumber?: number;
+};
+
+////////////////////////////////////
+// Transfer Status
+
+// transfer status for client/node
+export const LinkedTransferStatus = enumify({
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+});
+export type LinkedTransferStatus =
+  (typeof LinkedTransferStatus)[keyof typeof LinkedTransferStatus];
+
+// statuses
+export const HashLockTransferStatus = enumify({
+  PENDING: "PENDING",
+  EXPIRED: "EXPIRED",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+});
+export type HashLockTransferStatus =
+  (typeof HashLockTransferStatus)[keyof typeof HashLockTransferStatus];
+
+// statuses
+const SignedTransferStatus = enumify({
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+});
+type SignedTransferStatus =
+  (typeof SignedTransferStatus)[keyof typeof SignedTransferStatus];
+
 
 ////////////////////////////////////
 // Misc
@@ -34,6 +87,28 @@ export type ChannelAppSequences = {
 
 ////////////////////////////////////
 // NODE RESPONSE TYPES
+
+export type GetHashLockTransferResponse =
+  | {
+      senderPublicIdentifier: Xpub;
+      receiverPublicIdentifier?: Xpub;
+      assetId: Address;
+      amount: DecString;
+      lockHash: Bytes32;
+      status: HashLockTransferStatus;
+      meta?: any;
+    }
+  | undefined;
+
+export type GetSignedTransferResponse = {
+  senderPublicIdentifier: Xpub;
+  receiverPublicIdentifier?: Xpub;
+  assetId: Address;
+  amount: DecString;
+  paymentId: Bytes32;
+  status: SignedTransferStatus;
+  meta?: any;
+};
 
 export type ContractAddresses = NetworkContext & {
   Token: Address;
@@ -77,7 +152,6 @@ export type GetConfigResponse = {
   supportedTokenAddresses: Address[];
 };
 
-export type Collateralizations = { [assetId: string]: boolean };
 export type GetChannelResponse = {
   id: number;
   nodePublicIdentifier: Xpub;
@@ -179,8 +253,8 @@ export interface INodeApiClient {
   requestCollateral(assetId: Address): Promise<RequestCollateralResponse | void>;
   fetchLinkedTransfer(paymentId: Bytes32): Promise<GetLinkedTransferResponse>;
   fetchSignedTransfer(paymentId: Bytes32): Promise<GetSignedTransferResponse>;
-  resolveLinkedTransfer(paymentId: Bytes32): Promise<ResolveLinkedTransferResponse>;
-  resolveSignedTransfer(paymentId: Bytes32): Promise<ResolveSignedTransferResponse>;
+  resolveLinkedTransfer(paymentId: Bytes32): Promise<PublicResults.ResolveLinkedTransfer>;
+  resolveSignedTransfer(paymentId: Bytes32): Promise<PublicResults.ResolveSignedTransfer>;
   recipientOnline(recipientPublicIdentifier: Xpub): Promise<boolean>;
   restoreState(publicIdentifier: Xpub): Promise<any>;
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<void>;
