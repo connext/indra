@@ -62,9 +62,9 @@ export class SignedTransferController extends AbstractController {
       responderDepositTokenAddress: assetId,
       timeout: Zero,
     };
-    const appId = await this.proposeAndInstallLedgerApp(proposeInstallParams);
+    const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 
-    if (!appId) {
+    if (!appIdentityHash) {
       throw new Error(`App was not installed`);
     }
 
@@ -81,7 +81,7 @@ export class SignedTransferController extends AbstractController {
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
     return {
-      appId,
+      appIdentityHash,
       paymentId,
     };
   };

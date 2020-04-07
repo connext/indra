@@ -1,4 +1,4 @@
-import { Address, BigNumber, BigNumberish, HexString } from "../../basic";
+import { Address, BigNumber, BigNumberish, Bytes32, HexString, Xpub } from "../../basic";
 import { enumify } from "../../utils";
 
 import { CoinTransfer } from "../funding";
@@ -53,31 +53,31 @@ export type LinkedTransferStatus =
 export type LinkedTransferParameters = {
   conditionType: typeof LinkedTransfer;
   amount: BigNumberish;
-  assetId?: string;
-  paymentId: string;
-  preImage: string;
-  recipient?: string;
+  assetId?: Address;
+  paymentId: Bytes32;
+  preImage: Bytes32;
+  recipient?: Xpub;
   meta?: object;
 };
 
 export type LinkedTransferResponse = {
-  appId: string;
-  paymentId: string;
-  preImage: string;
+  appIdentityHash: Bytes32;
+  paymentId: Bytes32;
+  preImage: Bytes32;
 };
 
 export type ResolveLinkedTransferParameters = {
   conditionType: typeof LinkedTransfer;
-  paymentId: string;
-  preImage: string;
+  paymentId: Bytes32;
+  preImage: Bytes32;
 }
 
 export type ResolveLinkedTransferResponse = {
-  appId: string;
-  sender: string;
-  paymentId: string;
+  appIdentityHash: Bytes32;
+  sender: Xpub;
+  paymentId: Bytes32;
   amount: BigNumber;
-  assetId: string;
+  assetId: Address;
   meta?: object;
 };
 

@@ -1,5 +1,5 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
@@ -26,15 +26,15 @@ type InstallProtocolParams = {
 };
 
 type ProposeProtocolParams = {
-  multisigAddress: string;
-  initiatorXpub: string;
-  responderXpub: string;
-  appDefinition: string;
+  multisigAddress: Address;
+  initiatorXpub: Xpub;
+  responderXpub: Xpub;
+  appDefinition: Address;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress: string;
+  initiatorDepositTokenAddress: Address;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress: string;
+  responderDepositTokenAddress: Address;
   timeout: BigNumber;
   initialState: SolidityValueType;
   outcomeType: OutcomeType;
@@ -42,32 +42,32 @@ type ProposeProtocolParams = {
 };
 
 type SetupProtocolParams = {
-  initiatorXpub: string;
-  responderXpub: string;
-  multisigAddress: string;
+  initiatorXpub: Xpub;
+  responderXpub: Xpub;
+  multisigAddress: Address;
 };
 
 type TakeActionProtocolParams = {
-  initiatorXpub: string;
-  responderXpub: string;
-  multisigAddress: string;
-  appIdentityHash: string;
+  initiatorXpub: Xpub;
+  responderXpub: Xpub;
+  multisigAddress: Address;
+  appIdentityHash: Address;
   action: SolidityValueType;
 };
 
 type UninstallProtocolParams = {
-  appIdentityHash: string;
-  initiatorXpub: string;
-  responderXpub: string;
-  multisigAddress: string;
+  appIdentityHash: Bytes32;
+  initiatorXpub: Xpub;
+  responderXpub: Xpub;
+  multisigAddress: Address;
   blockNumberToUseIfNecessary?: number;
 };
 
 type UpdateProtocolParams = {
-  initiatorXpub: string;
-  responderXpub: string;
-  multisigAddress: string;
-  appIdentityHash: string;
+  initiatorXpub: Xpub;
+  responderXpub: Xpub;
+  multisigAddress: Address;
+  appIdentityHash: Address;
   newState: SolidityValueType;
 };
 

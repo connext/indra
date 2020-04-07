@@ -1,4 +1,4 @@
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import {
   AppInstanceJson,
   BigNumber,
@@ -78,16 +78,16 @@ export class WithdrawService {
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = await signDigest(privateKey, hash);
+    const counterpartySignatureOnWithdrawCommitment = await signChannelMessage(privateKey, hash);
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
     } as WithdrawAppAction);
-    state = (await this.cfCoreService.getAppState(appInstance.identityHash))
-      .state as WithdrawAppState;
+    state = (await this.cfCoreService.getAppInstance(appInstance.identityHash))
+      .latestState as WithdrawAppState;
 
     // Update the db entity with signature
-    let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+    let withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
     if (!withdraw) {
       this.log.error(
         `Unable to find withdraw entity that we just took action upon. AppId ${appInstance.identityHash}`,
@@ -110,7 +110,7 @@ export class WithdrawService {
     );
 
     // Update db entry again
-    withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+    withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
     if (!withdraw) {
       this.log.error(
         `Unable to find withdraw entity that we just uninstalled. AppId ${appInstance.identityHash}`,
@@ -157,7 +157,7 @@ export class WithdrawService {
   }
 
   async saveWithdrawal(
-    appInstanceId: string,
+    appIdentityHash: string,
     amount: BigNumber,
     assetId: string,
     recipient: string,
@@ -168,7 +168,7 @@ export class WithdrawService {
   ) {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const withdraw = new Withdraw();
-    withdraw.appInstanceId = appInstanceId;
+    withdraw.appIdentityHash = appIdentityHash;
     withdraw.amount = amount;
     withdraw.assetId = assetId;
     withdraw.recipient = recipient;
@@ -212,7 +212,7 @@ export class WithdrawService {
     const privateKey = this.configService.getEthWallet().privateKey;
     const hash = commitment.hashToSign();
 
-    const withdrawerSignatureOnCommitment = await signDigest(privateKey, hash);
+    const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, hash);
 
     const transfers: CoinTransfer[] = [
       { amount, to: this.cfCoreService.cfCore.freeBalanceAddress },
@@ -232,7 +232,7 @@ export class WithdrawService {
     };
 
     // propose install + wait for client confirmation
-    const { appInstanceId } = await this.cfCoreService.proposeAndWaitForInstallApp(
+    const { appIdentityHash } = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
       amount,
@@ -243,7 +243,7 @@ export class WithdrawService {
     );
 
     await this.saveWithdrawal(
-      appInstanceId,
+      appIdentityHash,
       bigNumberify(amount),
       assetId,
       initialState.transfers[0].to,

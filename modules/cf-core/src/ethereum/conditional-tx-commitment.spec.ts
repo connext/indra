@@ -1,13 +1,14 @@
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { createRandomAddress, createRandom32ByteHexString, MultisigTransaction } from "@connext/types";
+import {
+  createRandomAddress,
+  createRandom32ByteHexString,
+  MultisigTransaction,
+} from "@connext/types";
 import { WeiPerEther } from "ethers/constants";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
-import {
-  getRandomExtendedPubKey,
-  getRandomHDNodes,
-} from "../testing/random-signing-keys";
+import { getRandomExtendedPubKey, getRandomHDNodes } from "../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../testing/mocks";
 import { createAppInstanceForTest } from "../testing/utils";
 
@@ -27,7 +28,7 @@ describe("ConditionalTransactionCommitment", () => {
   let commitment: ConditionalTransactionCommitment;
 
   // Test network context
-  const context= { network: generateRandomNetworkContext() } as Context;
+  const context = { network: generateRandomNetworkContext() } as Context;
 
   // signing keys
   const hdNodes = getRandomHDNodes(2);
@@ -62,11 +63,7 @@ describe("ConditionalTransactionCommitment", () => {
   const appInstance = createAppInstanceForTest(stateChannel);
 
   beforeAll(() => {
-    commitment = getConditionalTransactionCommitment(
-      context, 
-      stateChannel,
-      appInstance,
-    );
+    commitment = getConditionalTransactionCommitment(context, stateChannel, appInstance);
     tx = commitment.getTransactionDetails();
   });
 
@@ -86,8 +83,8 @@ describe("ConditionalTransactionCommitment", () => {
       expect(retrieved).toMatchObject(commitment);
       const hash = createRandom32ByteHexString();
       commitment.signatures = [
-        await signDigest(hdNodes[0].privateKey, hash),
-        await signDigest(hdNodes[1].privateKey, hash),
+        await signChannelMessage(hdNodes[0].privateKey, hash),
+        await signChannelMessage(hdNodes[1].privateKey, hash),
       ];
       await store.updateConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);

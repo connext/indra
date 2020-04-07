@@ -2,7 +2,7 @@ import { MessagingAuthService } from "@connext/messaging";
 import { Injectable, Inject } from "@nestjs/common";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { createRandomBytesHexString } from "@connext/types";
-import { recoverAddress } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/crypto";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
@@ -60,7 +60,7 @@ export class AuthService {
     }
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
-    const addr = await recoverAddress(nonce, signedNonce);
+    const addr = await verifyChannelMessage(nonce, signedNonce);
     if (addr !== xpubAddress) {
       throw new Error(`Verification failed`);
     }
@@ -116,9 +116,9 @@ export class AuthService {
     return async (subject: string, data: any): Promise<string> => {
       const lockName = subject.split(".").pop(); // last item of subject is lockName
 
-      // TODO need to validate that lockName is EITHER multisig OR [multisig, appInstanceId]
+      // TODO need to validate that lockName is EITHER multisig OR [multisig, appIdentityHash]
       //      holding off on this right now because it will be *much* easier to iterate through
-      //      all appInstanceIds after our store refactor.
+      //      all appIdentityHashs after our store refactor.
 
       // const xpub = subject.split(".")[0]; // first item of subscription is xpub
       // const channel = await this.channelRepo.findByUserPublicIdentifier(xpub);

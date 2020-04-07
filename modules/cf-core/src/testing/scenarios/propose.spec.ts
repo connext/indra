@@ -1,4 +1,4 @@
-import { deBigNumberifyJson, MethodParams, ProposeMessage } from "@connext/types";
+import { deBigNumberifyJson, ProposeMessage, ProtocolParams, MethodParams } from "@connext/types";
 
 import { Node } from "../../node";
 
@@ -53,9 +53,10 @@ describe("Node method follows spec - propose install", () => {
     });
 
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
-      const rpc = makeProposeCall(nodeB, TicTacToeApp);
+      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
+        multisigAddress: undefined,
         meta: {
           info: "Provided meta",
         },
@@ -70,9 +71,9 @@ describe("Node method follows spec - propose install", () => {
 
       nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         // make sure message has the right structure
-        assertNodeMessage(msg, expectedMessageB, ["data.appInstanceId"]);
+        assertNodeMessage(msg, expectedMessageB, ["data.appIdentityHash"]);
         // both nodes should have 1 app, they should be the same
-        await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [msg.data.appInstanceId]);
+        await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [msg.data.appIdentityHash]);
         done();
       });
 

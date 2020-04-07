@@ -1,5 +1,5 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames } from "@connext/types";
+import { OutcomeType, ProtocolNames, sortAddresses, toBN } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -121,9 +121,7 @@ export class TestRunner {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
       const json = await mininode.store.getStateChannel(this.multisigAB)!;
       const sc = StateChannel.fromJson(json!);
-      const updatedBalance = sc.addActiveAppAndIncrementFreeBalance(
-        HashZero,  
-      {
+      const updatedBalance = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
         [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
           [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
@@ -143,9 +141,7 @@ export class TestRunner {
     for (const mininode of [this.mininodeB, this.mininodeC]) {
       const json = await mininode.store.getStateChannel(this.multisigBC)!;
       const sc = StateChannel.fromJson(json!);
-      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(
-        HashZero,
-      {
+      const updatedSc = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
         [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
           [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
           [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
@@ -209,7 +205,7 @@ export class TestRunner {
       initiatorDepositTokenAddress: tokenAddress,
       responderDeposit: One,
       responderDepositTokenAddress: tokenAddress,
-      timeout: bigNumberify(100),
+      timeout: toBN(100),
       initialState,
       outcomeType,
     });

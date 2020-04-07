@@ -1,4 +1,4 @@
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import {
   AppInstanceProposal,
   delay,
@@ -163,11 +163,6 @@ export class Node {
   }
 
   @Memoize()
-  async signerAddress(): Promise<string> {
-    return await this.requestHandler.getSignerAddress();
-  }
-
-  @Memoize()
   get freeBalanceAddress(): string {
     return getFreeBalanceAddress(this.publicIdentifier);
   }
@@ -214,7 +209,7 @@ export class Node {
 
       const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
 
-      return signDigest(privateKey, commitmentHash);
+      return signChannelMessage(privateKey, commitmentHash);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {

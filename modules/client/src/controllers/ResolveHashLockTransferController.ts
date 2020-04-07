@@ -62,7 +62,7 @@ export class ResolveHashLockTransferController extends AbstractController {
 
     return {
       amount,
-      appId: hashlockApp.identityHash,
+      appIdentityHash: hashlockApp.identityHash,
       assetId,
       sender,
       meta: hashlockApp.meta,

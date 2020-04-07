@@ -1,7 +1,7 @@
 import { NetworkContext } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, WeiPerEther } from "ethers/constants";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { SetStateCommitment } from "../../ethereum";
@@ -66,8 +66,8 @@ describe("set state on free balance", () => {
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     setStateCommitment.signatures = [
-      await signDigest(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
-      await signDigest(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
+      await signChannelMessage(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
+      await signChannelMessage(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
     ];
 
     const setStateTx = await setStateCommitment.getSignedTransaction();

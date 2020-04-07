@@ -295,7 +295,6 @@ class App extends React.Component {
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.multisigAddress}`);
-    console.log(` - CF Account address: ${channel.signerAddress}`);
     console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
     console.log(` - Swap rate: ${swapRate}`);
@@ -406,11 +405,11 @@ class App extends React.Component {
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
     balance.onChain.ether = Currency.WEI(
-      await ethProvider.getBalance(channel.signerAddress),
+      await ethProvider.getBalance(channel.freeBalanceAddress),
       swapRate,
     ).toETH();
     balance.onChain.token = Currency.DEI(
-      await token.balanceOf(channel.signerAddress),
+      await token.balanceOf(channel.freeBalanceAddress),
       swapRate,
     ).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
@@ -654,7 +653,7 @@ class App extends React.Component {
       token,
       wallet,
     } = this.state;
-    const address = wallet ? wallet.address : channel ? channel.signerAddress : AddressZero;
+    const address = wallet ? wallet.address : channel ? channel.freeBalanceAddress : AddressZero;
     const { classes } = this.props;
     return (
       <Router>

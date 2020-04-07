@@ -60,9 +60,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
-      case ChannelMethods.chan_signDigest:
-        result = await this.signDigest(params.message);
-        break;
       case ChannelMethods.chan_config:
         result = this.config;
         break;
@@ -81,11 +78,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         break;
 
       case ChannelMethods.chan_createSetStateCommitment:
-        result = await this.createSetStateCommitment(params.appIdentityHash,params.commitment);
+        result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
         break;
-      
+
       case ChannelMethods.chan_createConditionalCommitment:
-        result = await this.createConditionalCommitment(params.appIdentityHash,params.commitment);
+        result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
 
       default:
@@ -123,12 +120,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     this._multisigAddress = multisigAddress;
   }
 
-  get signerAddress(): string | undefined {
-    return this.config.signerAddress;
+  get freeBalanceAddress(): string | undefined {
+    return this.config.freeBalanceAddress;
   }
 
-  set signerAddress(signerAddress: string | undefined) {
-    this.config.signerAddress = signerAddress;
+  set freeBalanceAddress(freeBalanceAddress: string | undefined) {
+    this.config.freeBalanceAddress = freeBalanceAddress;
   }
 
   ///////////////////////////////////////////////
@@ -149,13 +146,9 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return this._send(ChannelMethods.chan_signMessage, { message });
   }
 
-  public signDigest = async (message: string): Promise<string> => {
-    return this._send(ChannelMethods.chan_signDigest, { message });
-  };
-
   public walletTransfer = async (params: WalletTransferParams) => {
     return this._send(ChannelMethods.chan_walletTransfer, params);
-  }
+  };
 
   /// ////////////////////////////////////////////
   /// // STORE METHODS

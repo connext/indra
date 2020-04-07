@@ -3,10 +3,6 @@ import { BigNumber } from "ethers/utils";
 
 import { CoinTransferMap, TokenIndexedCoinTransferMap } from "./free-balance";
 
-export function sortAddresses(addrs: string[]) {
-  return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-}
-
 export function flipTokenIndexedBalances(
   tokenIndexedBalances: TokenIndexedCoinTransferMap,
 ): TokenIndexedCoinTransferMap {

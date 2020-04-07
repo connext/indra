@@ -1,7 +1,7 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "../../shared/libs/LibChannelCrypto.sol";
 import "../../adjudicator/interfaces/CounterfactualApp.sol";
 import "../libs/LibOutcome.sol";
 
@@ -12,7 +12,7 @@ import "../libs/LibOutcome.sol";
 
 ///         THIS CONTRACT WILL ONLY WORK FOR 2-PARTY CHANNELS!
 contract WithdrawApp is CounterfactualApp {
-    using ECDSA for bytes32;
+    using LibChannelCrypto for bytes32;
 
     struct AppState {
         // Note:
@@ -66,8 +66,8 @@ contract WithdrawApp is CounterfactualApp {
         Action memory action = abi.decode(encodedAction, (Action));
 
         require(!state.finalized, "cannot take action on a finalized state");
-        require(state.signers[0] == state.data.recover(state.signatures[0]), "invalid withdrawer signature");
-        require(state.signers[1] == state.data.recover(action.signature), "invalid counterparty signature");
+        require(state.signers[0] == state.data.verifyChannelMessage(state.signatures[0]), "invalid withdrawer signature");
+        require(state.signers[1] == state.data.verifyChannelMessage(action.signature), "invalid counterparty signature");
 
         state.signatures[1] = action.signature;
         state.finalized = true;

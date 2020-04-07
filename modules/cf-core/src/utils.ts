@@ -120,14 +120,11 @@ export const getCreate2MultisigAddress = async (
   );
 };
 
-const memoizedGetAddress = memoize(
-  (params: string): string => getAddress(params),
-  {
-    max: 100,
-    maxAge: 60 * 1000,
-    primitive: true,
-  },
-);
+const memoizedGetAddress = memoize((params: string): string => getAddress(params), {
+  max: 100,
+  maxAge: 60 * 1000,
+  primitive: true,
+});
 
 export const scanForCriticalAddresses = async (
   initiatorXpub: string,

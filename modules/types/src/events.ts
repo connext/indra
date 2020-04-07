@@ -8,7 +8,7 @@ import {
 } from "./contracts";
 
 import { AppInstanceProposal } from "./app";
-import { BigNumber, HexObject, SolidityValueType } from "./basic";
+import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, Xpub } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import { enumify } from "./utils";
 
@@ -20,10 +20,10 @@ const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
 
 type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
   amount: HexObject;
-  assetId: string;
-  paymentId?: string;
-  sender: string;
-  recipient?: string;
+  assetId: Address;
+  paymentId?: Bytes32;
+  sender: Address;
+  recipient?: Address;
   meta: any;
   type: T;
   transferMeta: T extends LinkedTransfer
@@ -40,11 +40,11 @@ const CONDITIONAL_TRANSFER_RECEIVED_EVENT = "CONDITIONAL_TRANSFER_RECEIVED_EVENT
 
 export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTypes> = {
   amount: HexObject;
-  appInstanceId: string;
-  assetId: string;
-  paymentId?: string;
-  sender: string;
-  recipient?: string;
+  appIdentityHash: Bytes32;
+  assetId: Address;
+  paymentId?: Bytes32;
+  sender: Xpub;
+  recipient?: Xpub;
   meta: any;
   type: T;
   transferMeta: T extends LinkedTransfer
@@ -61,10 +61,10 @@ const CONDITIONAL_TRANSFER_UNLOCKED_EVENT = "CONDITIONAL_TRANSFER_UNLOCKED_EVENT
 
 export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTypes> = {
   amount: HexObject;
-  assetId: string;
-  paymentId?: string;
-  sender: string;
-  recipient?: string;
+  assetId: Address;
+  paymentId?: Bytes32;
+  sender: Xpub;
+  recipient?: Xpub;
   meta: any;
   type: T;
 };
@@ -73,7 +73,7 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
 const CONDITIONAL_TRANSFER_FAILED_EVENT = "CONDITIONAL_TRANSFER_FAILED_EVENT";
 
 export type ConditionalTransferFailedEventData<T extends ConditionalTransferTypes> = {
-  paymentId: string;
+  paymentId: Bytes32;
   type: T;
   error: any;
 };
@@ -82,8 +82,8 @@ export type ConditionalTransferFailedEventData<T extends ConditionalTransferType
 const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 
 type CreateMultisigEventData = {
-  owners: string[];
-  multisigAddress: string;
+  owners: Address[];
+  multisigAddress: Address;
 };
 
 ////////////////////////////////////////
@@ -99,7 +99,7 @@ const DEPOSIT_STARTED_EVENT = "DEPOSIT_STARTED_EVENT";
 const INSTALL_EVENT = "INSTALL_EVENT";
 
 type InstallEventData = {
-  appInstanceId: string;
+  appIdentityHash: Bytes32;
 };
 
 ////////////////////////////////////////
@@ -119,14 +119,14 @@ type RejectInstallEventData = {
 const UNINSTALL_EVENT = "UNINSTALL_EVENT";
 
 type UninstallEventData = {
-  appInstanceId: string;
+  appIdentityHash: Bytes32;
 };
 
 ////////////////////////////////////////
 const UPDATE_STATE_EVENT = "UPDATE_STATE_EVENT";
 
 type UpdateStateEventData = {
-  appInstanceId: string;
+  appIdentityHash: Bytes32;
   newState: SolidityValueType;
   action?: SolidityValueType;
 };
@@ -211,4 +211,4 @@ export type Event = {
   data: EventPayload;
 };
 
-export class ConnextEventEmitter extends EventEmitter<string | EventNames | ChannelMethods> {}
+export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventNames> {}

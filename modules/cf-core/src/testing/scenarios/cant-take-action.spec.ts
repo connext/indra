@@ -30,9 +30,9 @@ describe("Node method follows spec - fails with improper action taken", () => {
       };
       const multisigAddress = await createChannel(nodeA, nodeB);
 
-      const [appInstanceId] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
+      const [appIdentityHash] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
-      const takeActionReq = constructTakeActionRpc(appInstanceId, validAction);
+      const takeActionReq = constructTakeActionRpc(appIdentityHash, validAction);
 
       await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(INVALID_ACTION);
     });

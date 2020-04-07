@@ -14,9 +14,9 @@ import { HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
 import {
-  NO_APP_INSTANCE_ID_TO_INSTALL,
-  NO_MULTISIG_FOR_APP_INSTANCE_ID,
-  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
+  NO_APP_IDENTITY_HASH_TO_INSTALL,
+  NO_MULTISIG_FOR_APP_IDENTITY_HASH,
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
 } from "../../errors";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { ProtocolRunner } from "../../machine";
@@ -52,41 +52,41 @@ describe("Can handle correct & incorrect installs", () => {
     initiatorIdentifier = HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
   });
 
-  it("fails to install with undefined appInstanceId", async () => {
+  it("fails to install with undefined appIdentityHash", async () => {
     await expect(
-      install(store, protocolRunner, { appInstanceId: undefined! }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
+      install(store, protocolRunner, { appIdentityHash: undefined! }, initiatorIdentifier),
+    ).rejects.toThrowError(NO_APP_IDENTITY_HASH_TO_INSTALL);
   });
 
-  it("fails to install with empty string appInstanceId", async () => {
+  it("fails to install with empty string appIdentityHash", async () => {
     await expect(
-      install(store, protocolRunner, { appInstanceId: "" }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
+      install(store, protocolRunner, { appIdentityHash: "" }, initiatorIdentifier),
+    ).rejects.toThrowError(NO_APP_IDENTITY_HASH_TO_INSTALL);
   });
 
   it("fails to install without the AppInstance being proposed first", async () => {
     await expect(
-      install(store, protocolRunner, { appInstanceId: HashZero }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(HashZero));
+      install(store, protocolRunner, { appIdentityHash: HashZero }, initiatorIdentifier),
+    ).rejects.toThrowError(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(HashZero));
   });
 
-  it("fails to install without the AppInstanceId being in a channel", async () => {
+  it("fails to install without the appIdentityHash being in a channel", async () => {
     expect.hasAssertions();
 
     const mockedStore = mock(MemoryStoreService);
 
-    const appInstanceId = createRandom32ByteHexString();
-    const appInstanceProposal = createAppInstanceProposalForTest(appInstanceId);
+    const appIdentityHash = createRandom32ByteHexString();
+    const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
 
-    when(mockedStore.getAppProposal(appInstanceId)).thenResolve(appInstanceProposal);
+    when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getStateChannelByAppInstanceId(appInstanceId)).thenThrow(
-      Error(NO_MULTISIG_FOR_APP_INSTANCE_ID),
+    when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenThrow(
+      Error(NO_MULTISIG_FOR_APP_IDENTITY_HASH),
     );
 
     await expect(
-      install(instance(mockedStore), protocolRunner, { appInstanceId }, initiatorIdentifier),
-    ).rejects.toThrowError(NO_MULTISIG_FOR_APP_INSTANCE_ID);
+      install(instance(mockedStore), protocolRunner, { appIdentityHash }, initiatorIdentifier),
+    ).rejects.toThrowError(NO_MULTISIG_FOR_APP_IDENTITY_HASH);
   });
 
   it("succeeds to install a proposed AppInstance", async () => {
@@ -96,7 +96,7 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedStore = mock(MemoryStoreService);
     const store = instance(mockedStore);
 
-    const appInstanceId = createRandom32ByteHexString();
+    const appIdentityHash = createRandom32ByteHexString();
     const multisigAddress = Wallet.createRandom().address;
     const extendedKeys = getRandomExtendedPubKeys(2);
     const participants = [
@@ -125,11 +125,11 @@ describe("Can handle correct & incorrect installs", () => {
 
     await store.createStateChannel(stateChannel.toJson());
 
-    const appInstanceProposal = createAppInstanceProposalForTest(appInstanceId);
+    const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
 
-    when(mockedStore.getAppProposal(appInstanceId)).thenResolve(appInstanceProposal);
+    when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getStateChannelByAppInstanceId(appInstanceId)).thenResolve(stateChannel.toJson());
+    when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenResolve(stateChannel.toJson());
 
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the
@@ -143,7 +143,7 @@ describe("Can handle correct & incorrect installs", () => {
         store,
         protocolRunner,
         {
-          appInstanceId,
+          appIdentityHash,
         },
         extendedKeys[0],
       ),

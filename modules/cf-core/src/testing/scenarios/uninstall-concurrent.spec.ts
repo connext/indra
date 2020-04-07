@@ -38,7 +38,7 @@ describe("Node method follows spec - uninstall", () => {
     });
 
     it("uninstall apps with ETH concurrently", async done => {
-      const appIds: string[] = [];
+      const appIdentityHashes: string[] = [];
       let uninstalledApps = 0;
       await collateralizeChannel(
         multisigAddress,
@@ -48,16 +48,17 @@ describe("Node method follows spec - uninstall", () => {
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
-        makeInstallCall(nodeB, msg.data.appInstanceId);
+        makeInstallCall(nodeB, msg.data.appIdentityHash);
       });
 
       nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
-        appIds.push(msg.data.params.appInstanceId);
+        appIdentityHashes.push(msg.data.params.appIdentityHash);
       });
 
       const proposeRpc = makeProposeCall(
         nodeB,
         TicTacToeApp,
+        multisigAddress,
         /* initialState */ undefined,
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
@@ -68,16 +69,16 @@ describe("Node method follows spec - uninstall", () => {
       nodeA.rpcRouter.dispatch(proposeRpc);
       nodeA.rpcRouter.dispatch(proposeRpc);
 
-      while (appIds.length !== 2) {
+      while (appIdentityHashes.length !== 2) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      nodeA.rpcRouter.dispatch(constructUninstallRpc(appIds[0]));
-      nodeA.rpcRouter.dispatch(constructUninstallRpc(appIds[1]));
+      nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHashes[0]));
+      nodeA.rpcRouter.dispatch(constructUninstallRpc(appIdentityHashes[1]));
 
       // NOTE: nodeA does not ever emit this event
       nodeB.on("UNINSTALL_EVENT", (msg: UninstallMessage) => {
-        expect(appIds.includes(msg.data.appInstanceId)).toBe(true);
+        expect(appIdentityHashes.includes(msg.data.appIdentityHash)).toBe(true);
         uninstalledApps += 1;
         if (uninstalledApps === 2) done();
       });

@@ -1,4 +1,10 @@
-import { bigNumberifyJson, deBigNumberifyJson, isBN, stringify } from "@connext/types";
+import {
+  bigNumberifyJson,
+  deBigNumberifyJson,
+  isBN,
+  stringify,
+  sortAddresses,
+} from "@connext/types";
 import { Contract } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
@@ -98,24 +104,21 @@ export class AppInstance {
     const deserialized = bigNumberifyJson(json) as AppInstanceJson;
 
     const interpreterParams = {
-      twoPartyOutcomeInterpreterParams:
-        deserialized.twoPartyOutcomeInterpreterParams
-          ? bigNumberifyJson(
-              deserialized.twoPartyOutcomeInterpreterParams,
-            ) as TwoPartyFixedOutcomeInterpreterParams
-          : undefined,
-      singleAssetTwoPartyCoinTransferInterpreterParams:
-        deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
-          ? bigNumberifyJson(
-              deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
-            ) as SingleAssetTwoPartyCoinTransferInterpreterParams
-          : undefined,
-      multiAssetMultiPartyCoinTransferInterpreterParams:
-        deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
-          ? bigNumberifyJson(
-              deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
-            ) as MultiAssetMultiPartyCoinTransferInterpreterParams
-          : undefined,
+      twoPartyOutcomeInterpreterParams: deserialized.twoPartyOutcomeInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.twoPartyOutcomeInterpreterParams,
+          ) as TwoPartyFixedOutcomeInterpreterParams)
+        : undefined,
+      singleAssetTwoPartyCoinTransferInterpreterParams: deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+          ) as SingleAssetTwoPartyCoinTransferInterpreterParams)
+        : undefined,
+      multiAssetMultiPartyCoinTransferInterpreterParams: deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
+        ? (bigNumberifyJson(
+            deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
+          ) as MultiAssetMultiPartyCoinTransferInterpreterParams)
+        : undefined,
     };
 
     return new AppInstance(
@@ -178,8 +181,8 @@ export class AppInstance {
       participants: [this.initiator, this.responder].sort(),
       multisigAddress: this.multisigAddress,
       appDefinition: this.appInterface.addr,
-      defaultTimeout: (this.defaultTimeout).toString(),
-      channelNonce: (this.appSeqNo).toString(),
+      defaultTimeout: this.defaultTimeout.toString(),
+      channelNonce: this.appSeqNo.toString(),
     };
   }
 
@@ -245,7 +248,7 @@ export class AppInstance {
 
       throw new Error(
         `Attempted to setState on an app with an invalid state object.
-          - appInstanceIdentityHash = ${this.identityHash}
+          - appIdentityHash = ${this.identityHash}
           - newState = ${stringify(newState)}
           - encodingExpected = ${this.appInterface.stateEncoding}
           Error: ${e.message}`,

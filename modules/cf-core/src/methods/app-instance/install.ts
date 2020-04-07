@@ -2,7 +2,11 @@ import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService 
 import { bigNumberify } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
-import { NO_APP_INSTANCE_ID_TO_INSTALL, NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID, NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../../errors";
+import {
+  NO_APP_IDENTITY_HASH_TO_INSTALL,
+  NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH,
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
+} from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import {
@@ -25,11 +29,11 @@ export class InstallAppInstanceController extends NodeController {
     params: MethodParams.Install,
   ): Promise<string[]> {
     const { store } = requestHandler;
-    const { appInstanceId } = params;
+    const { appIdentityHash } = params;
 
-    const sc = await store.getStateChannelByAppInstanceId(appInstanceId);
+    const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
-      throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+      throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
     return [sc.multisigAddress];
@@ -60,20 +64,20 @@ export async function install(
   params: MethodParams.Install,
   initiatorXpub: string,
 ): Promise<AppInstanceProposal> {
-  const { appInstanceId } = params;
+  const { appIdentityHash } = params;
 
-  if (!appInstanceId || !appInstanceId.trim()) {
-    throw new Error(NO_APP_INSTANCE_ID_TO_INSTALL);
+  if (!appIdentityHash || !appIdentityHash.trim()) {
+    throw new Error(NO_APP_IDENTITY_HASH_TO_INSTALL);
   }
 
-  const proposal = await store.getAppProposal(appInstanceId);
+  const proposal = await store.getAppProposal(appIdentityHash);
   if (!proposal) {
-    throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId));
+    throw new Error(NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH(appIdentityHash));
   }
 
-  const json = await store.getStateChannelByAppInstanceId(appInstanceId);
+  const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!json) {
-    throw new Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
+    throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
   }
   const stateChannel = StateChannel.fromJson(json);
 
@@ -99,7 +103,7 @@ export async function install(
     disableLimit: false,
     meta: proposal.meta,
   });
-  stateChannel.removeProposal(appInstanceId);
+  stateChannel.removeProposal(appIdentityHash);
   await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);
 
   return proposal;

@@ -1,4 +1,4 @@
-import { ProtocolParams } from "@connext/types";
+import { ProtocolParams, delay } from "@connext/types";
 import { One } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
 
@@ -60,6 +60,8 @@ describe("Node method follows spec - install", () => {
         let proposeInstallParams: ProtocolParams.Propose;
 
         nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+          // Delay because propose event fires before params are set
+          await delay(2000);
           [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
@@ -67,7 +69,7 @@ describe("Node method follows spec - install", () => {
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
-          makeInstallCall(nodeB, msg.data.appInstanceId);
+          makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
 
         // FIXME: still no symmetric events -- nodeB will never emit an
@@ -113,11 +115,11 @@ describe("Node method follows spec - install", () => {
           //   done();
           // }
         });
-
         const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
           TicTacToeApp,
+          multisigAddress,
           undefined,
           One,
           CONVENTION_FOR_ETH_TOKEN_ADDRESS,
@@ -128,11 +130,10 @@ describe("Node method follows spec - install", () => {
       });
 
       it("install app with ERC20", async done => {
-        await transferERC20Tokens(await nodeA.signerAddress());
-        await transferERC20Tokens(await nodeB.signerAddress());
+        await transferERC20Tokens(await nodeA.freeBalanceAddress);
+        await transferERC20Tokens(await nodeB.freeBalanceAddress);
 
-        const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite)
-          .DolphinCoin;
+        const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, erc20TokenAddress);
 
@@ -144,6 +145,8 @@ describe("Node method follows spec - install", () => {
         let proposedParams: ProtocolParams.Propose;
 
         nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+          // Delay because propose event fires before params are set
+          await delay(2000);
           [preInstallERC20BalanceNodeA, preInstallERC20BalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
@@ -151,7 +154,7 @@ describe("Node method follows spec - install", () => {
             erc20TokenAddress,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
-          makeInstallCall(nodeB, msg.data.appInstanceId);
+          makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
 
         nodeA.on("INSTALL_EVENT", async (msg: InstallMessage) => {
@@ -179,6 +182,7 @@ describe("Node method follows spec - install", () => {
           nodeA,
           nodeB,
           TicTacToeApp,
+          multisigAddress,
           undefined,
           One,
           erc20TokenAddress,
@@ -191,6 +195,7 @@ describe("Node method follows spec - install", () => {
       it("sends proposal with null initial state", async () => {
         const appContext = getAppContext(TicTacToeApp);
         const appInstanceProposalReq = constructAppProposalRpc(
+          multisigAddress,
           nodeB.publicIdentifier,
           appContext.appDefinition,
           appContext.abiEncodings,

@@ -1,4 +1,6 @@
 import {
+  Address,
+  Bytes32,
   ConditionalTransferTypes,
   deBigNumberifyJson,
   EventNames,
@@ -8,8 +10,6 @@ import {
   SimpleSignedTransferAppAction,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  Bytes32Hash,
-  Address,
 } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
@@ -32,7 +32,7 @@ export class ResolveSignedTransferController extends AbstractController {
             .appDefinitionAddress &&
         (app.latestState as SimpleSignedTransferAppState).paymentId === paymentId,
     );
-    let appId: Bytes32Hash;
+    let appIdentityHash: Bytes32;
     let amount: BigNumber;
     let assetId: Address;
     let sender: Address;
@@ -40,7 +40,7 @@ export class ResolveSignedTransferController extends AbstractController {
     try {
       // node installs app, validation happens in listener
       if (existing) {
-        appId = existing.identityHash;
+        appIdentityHash = existing.identityHash;
         amount = (existing.latestState as SimpleSignedTransferAppState).coinTransfers[0].amount;
         assetId = existing.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
         sender = existing.meta["sender"];
@@ -48,17 +48,17 @@ export class ResolveSignedTransferController extends AbstractController {
       } else {
         this.log.info(`Did not find installed app, ask node to install it for us`);
         resolveRes = await this.connext.node.resolveSignedTransfer(paymentId);
-        appId = resolveRes.appId;
+        appIdentityHash = resolveRes.appIdentityHash;
         amount = resolveRes.amount;
         assetId = resolveRes.assetId;
         sender = resolveRes.sender;
         meta = resolveRes.meta;
       }
-      await this.connext.takeAction(appId, {
+      await this.connext.takeAction(appIdentityHash, {
         data,
         signature,
       } as SimpleSignedTransferAppAction);
-      await this.connext.uninstallApp(appId);
+      await this.connext.uninstallApp(appIdentityHash);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,

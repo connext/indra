@@ -25,14 +25,14 @@ export const minBN = (lobn: any) =>
 
 export const inverse = (bn: any) => formatEther(toWad(toWad(`1`)).div(toWad(bn)));
 
-export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
+export const calculateExchange = (amount: BigNumber, swapRate: DecString): BigNumber => {
   const [integer, fractional] = swapRate.split(".");
   const safeSwapRate = [integer, fractional.substring(0, 18)].join(".");
   return bigNumberify(formatEther(amount.mul(parseEther(safeSwapRate))).replace(/\.[0-9]*$/, ""));
 };
 
-const toHex = (a: DecString): HexString => toBN(a).toHexString();
-const toDec = (a: DecString): HexString => toBN(a).toString();
+const toHex = (a: DecString | BigNumberish): HexString => toBN(a).toHexString();
+const toDec = (a: DecString | BigNumberish): DecString => toBN(a).toString();
 
 export const decMath = {
   add: (a: DecString, b: DecString): DecString => toBN(a).add(toBN(b)).toString(),

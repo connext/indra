@@ -86,6 +86,7 @@ export {
   StateChannelJSON,
   StorePair,
   SwapParameters,
+  SwapResponse,
   toBN,
   tokenToWei,
   toWad,

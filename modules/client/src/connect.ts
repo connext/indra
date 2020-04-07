@@ -7,7 +7,7 @@ import {
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 import { Contract, providers } from "ethers";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
@@ -52,7 +52,7 @@ export const connect = async (
     logLevel,
     mnemonic,
   } = opts;
-  let { xpub, keyGen, store, messaging, nodeUrl } = opts;
+  let { xpub, keyGen, store, messaging, nodeUrl, messagingUrl } = opts;
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -79,7 +79,7 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      const sig = await channelProvider.send(ChannelMethods.chan_signDigest, { message });
+      const sig = await channelProvider.send(ChannelMethods.chan_signMessage, { message });
       return sig;
     };
 
@@ -92,6 +92,7 @@ export const connect = async (
         userPublicIdentifier,
         network.chainId,
         getSignature,
+        messagingUrl,
       );
     } else {
       await messaging.connect();
@@ -126,12 +127,19 @@ export const connect = async (
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
-      const sig = await signDigest(await keyGen("0"), message);
+      const sig = await signChannelMessage(await keyGen("0"), message);
       return sig;
     };
 
     if (!messaging) {
-      messaging = await createMessagingService(log, nodeUrl, xpub, network.chainId, getSignature);
+      messaging = await createMessagingService(
+        log,
+        nodeUrl,
+        xpub,
+        network.chainId,
+        getSignature,
+        messagingUrl,
+      );
     } else {
       await messaging.connect();
     }

@@ -1,5 +1,5 @@
 import { EventNames, EventPayloads } from "./events";
-import { DecString } from "./basic";
+import { Bytes32, DecString, Xpub } from "./basic";
 import { ILoggerService } from "./logger";
 import {
   MethodName,
@@ -12,7 +12,7 @@ import { ProtocolName, ProtocolParam } from "./protocol";
 
 export type MethodMessage = {
   type: MethodName;
-  requestId: string;
+  requestId: string; // uuid?
 };
 
 export type MethodRequest = MethodMessage & {
@@ -27,10 +27,10 @@ export type MethodResponse = MethodMessage & {
 // Message Metadata & Wrappers
 
 export type ProtocolMessage = {
-  processID: string;
+  processID: string; // uuid?
   protocol: ProtocolName;
   params?: ProtocolParam;
-  toXpub: string;
+  toXpub: Xpub;
   seq: number;
   // customData: Additional data which depends on the protocol (or even the specific message
   // number in a protocol) lives here. Includes signatures
@@ -43,11 +43,11 @@ export enum ErrorType {
 
 export type Error = {
   type: ErrorType;
-  requestId?: string;
+  requestId?: string; // uuid?
   data: {
     errorName: string;
     message?: string;
-    appInstanceId?: string;
+    appIdentityHash?: Bytes32;
     extra?: { [k: string]: string | number | boolean | object };
   };
 };
@@ -61,7 +61,7 @@ export const CF_CORE_MESSAGING_PREFIX = "INDRA";
 export const getMessagingPrefix = (chainId: number) => `${CF_CORE_MESSAGING_PREFIX}.${chainId}`;
 
 export type NodeMessage = {
-  from: string;
+  from: string; // Xpub?
   type: EventNames;
 };
 
@@ -84,7 +84,7 @@ export type JsonRpcResponse = JsonRpcNotification & {
 };
 
 export type Rpc = {
-  methodName: string;
+  methodName: string; // MethodNames?
   parameters: RpcParameters;
   id?: number;
 };
@@ -99,8 +99,8 @@ export interface MessagingConfig {
   logger?: ILoggerService;
   messagingUrl: string | string[];
   options?: any;
-  privateKey?: string;
-  publicKey?: string;
+  privateKey?: string; // HexString or openssl keyfile?
+  publicKey?: string; // HexString or openssl keyfile?
   token?: string;
 }
 
@@ -164,13 +164,13 @@ export interface InstallMessage extends NodeMessage {
 export interface ProposeMessage extends NodeMessage {
   data: {
     params: MethodParams.ProposeInstall;
-    appInstanceId: string;
+    appIdentityHash: string;
   };
 }
 
 export interface RejectProposalMessage extends NodeMessage {
   data: {
-    appInstanceId: string;
+    appIdentityHash: string;
   };
 }
 
