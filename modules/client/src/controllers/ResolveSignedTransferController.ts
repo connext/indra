@@ -1,4 +1,6 @@
 import {
+  Address,
+  Bytes32,
   ConditionalTransferTypes,
   deBigNumberifyJson,
   EventNames,
@@ -8,8 +10,6 @@ import {
   SimpleSignedTransferAppAction,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  Bytes32Hash,
-  Address,
 } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
@@ -32,7 +32,7 @@ export class ResolveSignedTransferController extends AbstractController {
             .appDefinitionAddress &&
         (app.latestState as SimpleSignedTransferAppState).paymentId === paymentId,
     );
-    let appId: Bytes32Hash;
+    let appId: Bytes32;
     let amount: BigNumber;
     let assetId: Address;
     let sender: Address;

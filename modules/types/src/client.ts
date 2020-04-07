@@ -2,7 +2,7 @@ import { providers } from "ethers";
 import { TransactionResponse } from "ethers/providers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, BigNumber, BigNumberish, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, DecString, Xpub } from "./basic";
 import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -27,7 +27,6 @@ import {
   RebalanceProfile,
   GetChannelResponse,
   CreateChannelResponse,
-  ChannelAppSequences,
   GetConfigResponse,
   RequestCollateralResponse,
   TransferInfo,
@@ -61,7 +60,7 @@ export type CheckDepositRightsParameters = {
 };
 
 export type CheckDepositRightsResponse = {
-  appInstanceId: string;
+  appInstanceId: Bytes32;
 };
 
 export type RescindDepositRightsParameters = MethodParams.RescindDepositRights;
@@ -71,7 +70,7 @@ export type RescindDepositRightsResponse = MethodResults.RescindDepositRights;
 export type TransferParameters = MethodParams.Deposit & {
   recipient: Address;
   meta?: object;
-  paymentId?: string;
+  paymentId?: Bytes32;
 };
 
 export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };
@@ -85,7 +84,7 @@ export interface ClientOptions {
   ethProviderUrl: string;
   keyGen?: KeyGen;
   mnemonic?: string;
-  xpub?: string;
+  xpub?: Xpub;
   store?: IClientStore;
   storeType?: StoreTypes;
   logger?: ILogger;
@@ -103,12 +102,12 @@ export interface IConnextClient {
   config: GetConfigResponse;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
-  freeBalanceAddress: string;
-  multisigAddress: string;
-  nodePublicIdentifier: string;
-  nodeFreeBalanceAddress: string;
-  publicIdentifier: string;
-  signerAddress: string;
+  freeBalanceAddress: Address;
+  multisigAddress: Address;
+  nodePublicIdentifier: Xpub;
+  nodeFreeBalanceAddress: Address;
+  publicIdentifier: Xpub;
+  signerAddress: Address;
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
@@ -152,30 +151,30 @@ export interface IConnextClient {
   // TODO: do we really need to expose all of these?
   isAvailable(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
-  getLinkedTransfer(paymentId: string): Promise<GetLinkedTransferResponse>;
-  getHashLockTransfer(lockHash: string): Promise<GetHashLockTransferResponse>;
-  getSignedTransfer(lockHash: string): Promise<GetSignedTransferResponse>;
+  getLinkedTransfer(paymentId: Bytes32): Promise<GetLinkedTransferResponse>;
+  getHashLockTransfer(lockHash: Bytes32): Promise<GetHashLockTransferResponse>;
+  getSignedTransfer(lockHash: Bytes32): Promise<GetSignedTransferResponse>;
   getAppRegistry(
     appDetails?:
       | {
-          name: string;
+          name: string; // AppNames?
           chainId: number;
         }
-      | { appDefinitionAddress: string },
+      | { appDefinitionAddress: Address },
   ): Promise<AppRegistry | DefaultApp | undefined>;
-  getRegisteredAppDetails(appName: string): DefaultApp;
+  getRegisteredAppDetails(appName: string /* AppNames */): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
-  subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
-  getLatestSwapRate(from: string, to: string): Promise<string>;
-  unsubscribeToSwapRates(from: string, to: string): Promise<void>;
-  requestCollateral(tokenAddress: string): Promise<RequestCollateralResponse | void>;
-  getRebalanceProfile(assetId?: string): Promise<RebalanceProfile | undefined>;
+  subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<any>;
+  getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
+  unsubscribeToSwapRates(from: Address, to: Address): Promise<void>;
+  requestCollateral(tokenAddress: Address): Promise<RequestCollateralResponse | void>;
+  getRebalanceProfile(assetId?: Address): Promise<RebalanceProfile | undefined>;
   getTransferHistory(): Promise<TransferInfo[]>;
   reclaimPendingAsyncTransfers(): Promise<void>;
   reclaimPendingAsyncTransfer(
-    amount: string,
-    assetId: string,
-    paymentId: string,
+    amount: DecString,
+    assetId: Address,
+    paymentId: Bytes32,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse>;
 
@@ -183,22 +182,22 @@ export interface IConnextClient {
   // CF MODULE EASY ACCESS METHODS
   deployMultisig(): Promise<MethodResults.DeployStateDepositHolder>;
   getStateChannel(): Promise<MethodResults.GetStateChannel>;
-  getFreeBalance(assetId?: string): Promise<MethodResults.GetFreeBalanceState>;
+  getFreeBalance(assetId?: Address): Promise<MethodResults.GetFreeBalanceState>;
   getAppInstances(): Promise<AppInstanceJson[]>;
-  getAppInstanceDetails(appInstanceId: string): Promise<MethodResults.GetAppInstanceDetails>;
-  getAppState(appInstanceId: string): Promise<MethodResults.GetState>;
+  getAppInstanceDetails(appInstanceId: Bytes32): Promise<MethodResults.GetAppInstanceDetails>;
+  getAppState(appInstanceId: Bytes32): Promise<MethodResults.GetState>;
   getProposedAppInstances(
-    multisigAddress?: string,
+    multisigAddress?: Address,
   ): Promise<MethodResults.GetProposedAppInstances | undefined>;
   getProposedAppInstance(
-    appInstanceId: string,
+    appInstanceId: Bytes32,
   ): Promise<MethodResults.GetProposedAppInstance | undefined>;
   proposeInstallApp(
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall>;
-  installApp(appInstanceId: string): Promise<MethodResults.Install>;
-  rejectInstallApp(appInstanceId: string): Promise<MethodResults.Uninstall>;
-  takeAction(appInstanceId: string, action: any): Promise<MethodResults.TakeAction>;
-  updateState(appInstanceId: string, newState: any): Promise<MethodResults.UpdateState>;
-  uninstallApp(appInstanceId: string): Promise<MethodResults.Uninstall>;
+  installApp(appInstanceId: Bytes32): Promise<MethodResults.Install>;
+  rejectInstallApp(appInstanceId: Bytes32): Promise<MethodResults.Uninstall>;
+  takeAction(appInstanceId: Bytes32, action: any): Promise<MethodResults.TakeAction>;
+  updateState(appInstanceId: Bytes32, newState: any): Promise<MethodResults.UpdateState>;
+  uninstallApp(appInstanceId: Bytes32): Promise<MethodResults.Uninstall>;
 }
