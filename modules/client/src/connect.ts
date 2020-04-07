@@ -52,7 +52,7 @@ export const connect = async (
     logLevel,
     mnemonic,
   } = opts;
-  let { xpub, keyGen, store, messaging, nodeUrl } = opts;
+  let { xpub, keyGen, store, messaging, nodeUrl, messagingUrl } = opts;
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -92,6 +92,7 @@ export const connect = async (
         userPublicIdentifier,
         network.chainId,
         getSignature,
+        messagingUrl,
       );
     } else {
       await messaging.connect();
@@ -131,7 +132,14 @@ export const connect = async (
     };
 
     if (!messaging) {
-      messaging = await createMessagingService(log, nodeUrl, xpub, network.chainId, getSignature);
+      messaging = await createMessagingService(
+        log,
+        nodeUrl,
+        xpub,
+        network.chainId,
+        getSignature,
+        messagingUrl,
+      );
     } else {
       await messaging.connect();
     }

@@ -91,6 +91,7 @@ export interface ClientOptions {
   logLevel?: number;
   messaging?: IMessagingService;
   nodeUrl?: string; // node's HTTP endpoint
+  messagingUrl?: string; // optional override for messaging endpoint
 }
 
 export interface IConnextClient {
