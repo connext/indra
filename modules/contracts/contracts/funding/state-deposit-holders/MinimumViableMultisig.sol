@@ -67,14 +67,11 @@ contract MinimumViableMultisig is MultisigData {
             "Transacation has already been executed"
         );
 
-        address lastSigner = address(0);
         for (uint256 i = 0; i < _owners.length; i++) {
             require(
                 _owners[i] == transactionHash.verifyChannelMessage(signatures[i]),
                 "Invalid signature"
             );
-            require(_owners[i] > lastSigner, "Signers not in alphanumeric order");
-            lastSigner = _owners[i];
         }
 
         execute(
