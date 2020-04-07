@@ -6,7 +6,7 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 @EntityRepository(Withdraw)
 export class WithdrawRepository extends Repository<Withdraw> {
   async findByAppIdentityHash(appIdentityHash: string): Promise<Withdraw | undefined> {
-    return await this.findOne({ where: { appInstanceId: appIdentityHash } });
+    return await this.findOne({ where: { appIdentityHash } });
   }
 
   async findAll(): Promise<Withdraw[]> {

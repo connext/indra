@@ -168,7 +168,7 @@ export class WithdrawService {
   ) {
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
     const withdraw = new Withdraw();
-    withdraw.appInstanceId = appIdentityHash;
+    withdraw.appIdentityHash = appIdentityHash;
     withdraw.amount = amount;
     withdraw.assetId = assetId;
     withdraw.recipient = recipient;

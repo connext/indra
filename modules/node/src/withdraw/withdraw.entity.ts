@@ -43,7 +43,7 @@ export class Withdraw {
 
   @Column("text")
   @IsBytes32()
-  appInstanceId!: string;
+  appIdentityHash!: string;
 
   @Column("text")
   @IsBytes32()
