@@ -245,7 +245,7 @@ export class AdminService implements OnApplicationBootstrap {
         continue;
       }
       try {
-        this.log.log(`Found channel to migrate: ${channelJSON.multisigAddress}`);
+        this.log.info(`Found channel to migrate: ${channelJSON.multisigAddress}`);
         // create blank setup commitment
         await this.cfCoreStore.createSetupCommitment(channelJSON.multisigAddress, {
           data: HashZero,
@@ -299,9 +299,12 @@ export class AdminService implements OnApplicationBootstrap {
                 responderDepositTokenAddress: AddressZero,
                 timeout: appInstance.latestTimeout.toString(),
                 meta: appInstance.meta,
-                multiAssetMultiPartyCoinTransferInterpreterParams: appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
-                singleAssetTwoPartyCoinTransferInterpreterParams: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams as any,
-                twoPartyOutcomeInterpreterParams: appInstance.twoPartyOutcomeInterpreterParams as any,
+                multiAssetMultiPartyCoinTransferInterpreterParams:
+                  appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
+                singleAssetTwoPartyCoinTransferInterpreterParams:
+                  appInstance.singleAssetTwoPartyCoinTransferInterpreterParams as any,
+                twoPartyOutcomeInterpreterParams:
+                  appInstance.twoPartyOutcomeInterpreterParams as any,
               },
               channelJSON.monotonicNumProposedApps,
             );

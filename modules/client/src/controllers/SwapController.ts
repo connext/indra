@@ -1,6 +1,6 @@
 import { MethodParams, SimpleSwapAppState, toBN } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, formatEther } from "ethers/utils";
 
 import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
@@ -10,9 +10,9 @@ import {
   SwapParameters,
   SwapResponse,
 } from "../types";
+import { notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import {  } from "@connext/types";
 
 export class SwapController extends AbstractController {
   public async swap(params: SwapParameters): Promise<SwapResponse> {
@@ -22,11 +22,25 @@ export class SwapController extends AbstractController {
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
     const swappedAmount = calculateExchange(amount, swapRate);
 
+    const error = notLessThanOrEqualTo(
+      amount,
+      toBN(preSwapFromBal[this.connext.freeBalanceAddress]),
+    );
+    if (error) {
+      throw new Error(error);
+    }
+
     // get app definition from constants
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
 
     // install the swap app
-    const appIdentityHash = await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
+    const appIdentityHash = await this.swapAppInstall(
+      amount,
+      toAssetId,
+      fromAssetId,
+      swapRate,
+      appInfo,
+    );
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     // if app installed, that means swap was accepted now uninstall

@@ -102,7 +102,7 @@ export class AppRegistryService implements OnModuleInit {
       ({ appInstance } = await this.cfCoreService.installApp(appIdentityHash));
     } catch (e) {
       // reject if error
-      this.log.warn(`App install failed, . Error: ${e.stack || e.message}`);
+      this.log.warn(`App install failed: ${e.stack || e.message}`);
       await this.cfCoreService.rejectInstallApp(appIdentityHash);
       return;
     }
