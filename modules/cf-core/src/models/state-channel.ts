@@ -480,16 +480,4 @@ export class StateChannel {
     const owners = stateChannel.userNeuteredExtendedKeys;
     return owners.filter(owner => owner !== myIdentifier);
   }
-
-  static async getPeersAddressFromAppInstanceID(
-    myIdentifier: string,
-    store: IStoreService,
-    appIdentityHash: string,
-  ): Promise<string[]> {
-    const channel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
-    if (!channel) {
-      throw new Error(`[getPeersAddressFromAppInstanceID] No state channel found in store for appIdentityHash ${appIdentityHash}`);
-    }
-    return StateChannel.getPeersAddressFromChannel(myIdentifier, store, channel.multisigAddress);
-  }
 }
