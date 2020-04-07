@@ -9,88 +9,7 @@ import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
-import { enumify } from "./utils";
-
-type Collateralizations = { [assetId: string]: boolean };
-
-// wtf is this?
-interface VerifyNonceDtoType {
-  sig: string;
-  userPublicIdentifier: Xpub;
-}
-
-////////////////////////////////////
-// Swap Rate Management
-
-type AllowedSwap = {
-  from: Address;
-  to: Address;
-};
-
-const PriceOracleTypes = enumify({
-  UNISWAP: "UNISWAP",
-});
-type PriceOracleTypes = (typeof PriceOracleTypes)[keyof typeof PriceOracleTypes];
-
-type PriceOracleType = keyof typeof PriceOracleTypes;
-
-type SwapRate = AllowedSwap & {
-  rate: string; // DecString?
-  priceOracleType: PriceOracleType;
-  blockNumber?: number;
-};
-
-////////////////////////////////////
-// Misc
-
-type FetchedLinkedTransfer<T = any> = {
-  paymentId: Bytes32;
-  createdAt: Date;
-  amount: BigNumber;
-  assetId: Address;
-  senderPublicIdentifier: Xpub;
-  receiverPublicIdentifier?: Xpub;
-  status: LinkedTransferStatus;
-  meta: T;
-  encryptedPreImage?: string;
-};
-
-interface PendingAsyncTransfer {
-  assetId: Address;
-  amount: BigNumber;
-  encryptedPreImage: string;
-  linkedHash: Bytes32;
-  paymentId: Bytes32;
-}
-
-// used to verify channel is in sequence
-type ChannelAppSequences = {
-  userSequenceNumber: number;
-  nodeSequenceNumber: number;
-};
-
-interface NodeConfig {
-  nodePublicIdentifier: Xpub;
-  chainId: string; // network that your channel is on
-  nodeUrl: string;
-}
-
-type NatsResponse = {
-  data: string;
-} & (errorResponse | successResponse);
-
-// nats stuff
-type successResponse = {
-  status: "success";
-};
-
-type errorResponse = {
-  status: "error";
-  message: string;
-};
-
-////////////////////////////////////
-// NODE RESPONSE TYPES
+import { Collateralizations } from "./misc";
 
 type GetRebalanceProfileResponse = {
   assetId: Address;
@@ -164,8 +83,19 @@ type ChannelRestoreResponse = {
   conditionalCommitments: [Bytes32, ConditionalTransactionCommitmentJSON][]; // appIdentityHash, commitment
 };
 
-type GetLinkedTransferResponse<T = any> = FetchedLinkedTransfer<T>;
+type FetchedLinkedTransfer = {
+  paymentId: Bytes32;
+  createdAt: Date;
+  amount: BigNumber;
+  assetId: Address;
+  senderPublicIdentifier: Xpub;
+  receiverPublicIdentifier?: Xpub;
+  status: LinkedTransferStatus;
+  meta: any;
+  encryptedPreImage?: string;
+};
 
+type GetLinkedTransferResponse = FetchedLinkedTransfer;
 type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
 
 ////////////////////////////////////

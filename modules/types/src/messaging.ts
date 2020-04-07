@@ -10,6 +10,20 @@ import {
 } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
 
+type NatsResponse = {
+  data: string;
+} & (errorResponse | successResponse);
+
+// nats stuff
+type successResponse = {
+  status: "success";
+};
+
+type errorResponse = {
+  status: "error";
+  message: string;
+};
+
 export type MethodMessage = {
   type: MethodName;
   requestId: string; // uuid?
