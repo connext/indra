@@ -109,7 +109,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
-      timeout: toBN(this.stateTimeout).toNumber(), // this is a *state-specific* timeout
+      timeout: toBN(this.stateTimeout).toNumber(), // this is a *state-specific* timeout (defaults to defaultTimeout)
       signatures: await sortSignaturesBySignerAddress(hash, this.signatures, recoverAddress),
     };
   }

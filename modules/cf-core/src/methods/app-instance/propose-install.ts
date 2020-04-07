@@ -69,7 +69,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
   ): Promise<MethodResults.ProposeInstall> {
     const { protocolRunner, publicIdentifier, store } = requestHandler;
 
-    const { proposedToIdentifier, stateTimeout } = params;
+    const { proposedToIdentifier, stateTimeout, defaultTimeout } = params;
 
     const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
     if (!json) {
@@ -78,7 +78,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
     await protocolRunner.initiateProtocol(ProtocolNames.propose, {
       ...params,
-      stateTimeout: stateTimeout || Zero,
+      stateTimeout: stateTimeout || defaultTimeout,
       multisigAddress: json.multisigAddress,
       initiatorXpub: publicIdentifier,
       responderXpub: proposedToIdentifier,

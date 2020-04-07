@@ -81,6 +81,8 @@ export class TakeActionController extends NodeController {
       sc.userNeuteredExtendedKeys,
     );
 
+    const defaultTimeout = (await store.getAppInstance(appInstanceId))?.defaultTimeout
+
     await runTakeActionProtocol(
       appInstanceId,
       store,
@@ -88,7 +90,7 @@ export class TakeActionController extends NodeController {
       publicIdentifier,
       responderXpub,
       action,
-      stateTimeout,
+      stateTimeout || defaultTimeout,
     );
 
     const appInstance = await store.getAppInstance(appInstanceId);
@@ -128,7 +130,7 @@ async function runTakeActionProtocol(
   initiatorXpub: string,
   responderXpub: string,
   action: SolidityValueType,
-  stateTimeout: BigNumber = Zero,
+  stateTimeout: BigNumber,
 ) {
   const stateChannel = await store.getStateChannelByAppInstanceId(appIdentityHash);
     if (!stateChannel) {
