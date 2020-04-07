@@ -69,13 +69,13 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
-    const { appInstanceId, action, stateTimeout } = params;
+    const { appIdentityHash, action, stateTimeout } = params;
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
-    const app = await store.getAppInstance(appInstanceId);
+    const app = await store.getAppInstance(appIdentityHash);
     if (!app) {
       throw new Error(NO_APP_INSTANCE_FOR_GIVEN_ID);
     }
