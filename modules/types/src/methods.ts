@@ -67,7 +67,7 @@ type GetAppInstancesResult = {
 ////////////////////////////////////////
 
 type GetStateDepositHolderAddressParams = {
-  owners: string[];
+  owners: string[]; // [initiator, responder]
 };
 
 type GetStateDepositHolderAddressResult = {

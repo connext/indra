@@ -34,7 +34,8 @@ describe("StateChannel::setState", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs,
+      xpubs[0],
+      xpubs[1],
     );
 
     testApp = createAppInstanceForTest(sc1);
@@ -44,7 +45,7 @@ describe("StateChannel::setState", () => {
         [xkeyKthAddress(xpubs[0], 0)]: Zero,
         [xkeyKthAddress(xpubs[1], 0)]: Zero,
       },
-    });
+    }, xpubs[0], xpubs[1]);
 
     sc2 = sc1.setState(testApp, APP_STATE);
   });

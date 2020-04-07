@@ -9,4 +9,4 @@ export {
   getCreate2MultisigAddress,
   scanForCriticalAddresses,
 } from "./utils";
-export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./xkeys";
+export { xkeyKthAddress } from "./xkeys";

@@ -46,7 +46,8 @@ describe("ConditionalTransactionCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    [interaction.sender, interaction.receiver],
+    interaction.sender,
+    interaction.receiver,
   );
 
   // Set the state to some test values

@@ -6,11 +6,12 @@ import { signDigest } from "@connext/crypto";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
-import { xkeysToSortedKthSigningKeys } from "../../xkeys";
 
 import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "../random-signing-keys";
+import { xkeyKthHDNode } from "../../xkeys";
+import { SigningKey } from "ethers/utils";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -35,13 +36,17 @@ describe("set state on free balance", () => {
   it("should have the correct versionNumber", async done => {
     const xprvs = getRandomExtendedPrvKeys(2);
 
-    const multisigOwnerKeys = xkeysToSortedKthSigningKeys(xprvs, 0);
+    const multisigOwnerKeys = [
+      new SigningKey(xkeyKthHDNode(xprvs[0], 0).privateKey),
+      new SigningKey(xkeyKthHDNode(xprvs[1], 0).privateKey),
+    ];
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       AddressZero,
-      xprvs.map(extendedPrvKeyToExtendedPubKey),
+      extendedPrvKeyToExtendedPubKey(xprvs[0]),
+      extendedPrvKeyToExtendedPubKey(xprvs[1]),
     ).setFreeBalance(
       FreeBalanceClass.createWithFundedTokenAmounts(
         multisigOwnerKeys.map<string>(key => key.address),

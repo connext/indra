@@ -75,6 +75,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: bigNumberify(preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
+          initiatorXpub,
+          responderXpub,
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
@@ -107,6 +109,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
+          initiatorXpub,
+          responderXpub,
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
@@ -234,6 +238,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
+          initiatorXpub,
+          responderXpub,
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
@@ -266,6 +272,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
+          initiatorXpub,
+          responderXpub,
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,

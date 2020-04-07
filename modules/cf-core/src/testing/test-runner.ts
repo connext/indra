@@ -7,7 +7,7 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { getCreate2MultisigAddress } from "../utils";
-import { sortAddresses, xkeyKthAddress } from "../xkeys";
+import { xkeyKthAddress } from "../xkeys";
 
 import { IdentityApp } from "./contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
@@ -53,7 +53,8 @@ export class TestRunner {
     this.mininodeC = new MiniNode(network, this.provider, new MemoryStoreService());
 
     this.multisigAB = await getCreate2MultisigAddress(
-      [this.mininodeA.xpub, this.mininodeB.xpub],
+      this.mininodeA.xpub,
+      this.mininodeB.xpub,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -62,7 +63,8 @@ export class TestRunner {
     );
 
     this.multisigAC = await getCreate2MultisigAddress(
-      [this.mininodeA.xpub, this.mininodeC.xpub],
+      this.mininodeA.xpub,
+      this.mininodeC.xpub,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -71,7 +73,8 @@ export class TestRunner {
     );
 
     this.multisigBC = await getCreate2MultisigAddress(
-      [this.mininodeB.xpub, this.mininodeC.xpub],
+      this.mininodeB.xpub,
+      this.mininodeC.xpub,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -215,11 +218,6 @@ export class TestRunner {
     const [proposal] = [
       ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
     ];
-    // TODO: fix sortAddresses sometimes not sorting correctly
-    const participants = sortAddresses([
-      xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
-      xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
-    ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
       appInterface: {
@@ -236,7 +234,6 @@ export class TestRunner {
       initiatorXpub: this.mininodeA.xpub,
       multisigAddress: this.multisigAB,
       outcomeType,
-      participants,
       responderBalanceDecrement: One,
       responderDepositTokenAddress: tokenAddress,
       responderXpub: this.mininodeB.xpub,
@@ -302,14 +299,8 @@ export class TestRunner {
     const [proposal] = [
       ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
     ];
-    // TODO: fix sortAddresses sometimes not sorting correctly
-    const participants = sortAddresses([
-      xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
-      xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
-    ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
-      participants,
       outcomeType,
       initialState,
       initiatorXpub: this.mininodeA.xpub,

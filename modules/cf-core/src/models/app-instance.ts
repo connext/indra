@@ -19,7 +19,6 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "../types";
 import { appIdentityToHash } from "../utils";
-import { sortAddresses } from "../xkeys";
 
 /**
  * Representation of an AppInstance.
@@ -47,7 +46,8 @@ import { sortAddresses } from "../xkeys";
  */
 export class AppInstance {
   constructor(
-    public readonly participants: string[],
+    public readonly initiator: string, // eth addr at appSeqNp idx
+    public readonly responder: string, // eth addr at appSeqNp idx
     public readonly defaultTimeout: number,
     public readonly appInterface: AppInterface,
     public readonly appSeqNo: number, // channel nonce at app proposal
@@ -63,9 +63,7 @@ export class AppInstance {
       MultiAssetMultiPartyCoinTransferInterpreterParams,
     private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
       SingleAssetTwoPartyCoinTransferInterpreterParams,
-  ) {
-    this.participants = sortAddresses(this.participants);
-  }
+  ) {}
 
   get twoPartyOutcomeInterpreterParams() {
     if (this.outcomeType !== OutcomeType.TWO_PARTY_FIXED_OUTCOME) {
@@ -121,7 +119,8 @@ export class AppInstance {
     };
 
     return new AppInstance(
-      deserialized.participants,
+      deserialized.initiator,
+      deserialized.responder,
       deserialized.defaultTimeout,
       deserialized.appInterface,
       deserialized.appSeqNo,
@@ -143,7 +142,8 @@ export class AppInstance {
     // of an AppInstance that's not turn based
     return deBigNumberifyJson({
       identityHash: this.identityHash,
-      participants: this.participants,
+      initiator: this.initiator,
+      responder: this.responder,
       defaultTimeout: this.defaultTimeout,
       appInterface: {
         ...this.appInterface,
@@ -172,7 +172,7 @@ export class AppInstance {
   @Memoize()
   public get identity(): AppIdentity {
     return {
-      participants: this.participants,
+      participants: [this.initiator, this.responder],
       multisigAddress: this.multisigAddress,
       appDefinition: this.appInterface.addr,
       defaultTimeout: (this.defaultTimeout).toString(),

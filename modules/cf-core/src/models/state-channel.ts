@@ -14,7 +14,7 @@ import { xkeyKthAddress } from "../xkeys";
 import { AppInstanceProposal } from "./app-instance-proposal";
 import { AppInstance } from "./app-instance";
 import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
-import { flipTokenIndexedBalances, sortAddresses } from "./utils";
+import { flipTokenIndexedBalances } from "./utils";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,
@@ -52,7 +52,11 @@ export class StateChannel {
   }
 
   public get multisigOwners() {
-    return this.getSigningKeysFor(0);
+    return this.getSigningKeysFor(
+      /* initiatorXpub */ this.userNeuteredExtendedKeys[0],
+      /* responderXpub */ this.userNeuteredExtendedKeys[1],
+      /* appSeqNo */ 0,
+    );
   }
 
   public get numProposedApps() {
@@ -139,14 +143,15 @@ export class StateChannel {
     return this.appInstances.has(appInstanceIdentityHash);
   }
 
-  public getSigningKeysFor(addressIndex: number): string[] {
-    return sortAddresses(
-      this.userNeuteredExtendedKeys.map(xpub => xkeyKthAddress(xpub, addressIndex)),
-    );
-  }
-
-  public getNextSigningKeys(): string[] {
-    return this.getSigningKeysFor(this.monotonicNumProposedApps);
+  public getSigningKeysFor(
+    initiatorXpub: string, 
+    responderXpub: string, 
+    addressIndex: number,
+  ): string[] {
+    return [
+      xkeyKthAddress(initiatorXpub, addressIndex),
+      xkeyKthAddress(responderXpub, addressIndex),
+    ];
   }
 
   public get hasFreeBalance(): boolean {
@@ -162,21 +167,18 @@ export class StateChannel {
   }
 
   public getMultisigOwnerAddrOf(xpub: string): string {
-    const [alice, bob] = this.multisigOwners;
-
-    const topLevelKey = xkeyKthAddress(xpub, 0);
-
-    if (topLevelKey !== alice && topLevelKey !== bob) {
+    if (!this.userNeuteredExtendedKeys.find(k => k === xpub)) {
       throw new Error(
         `getMultisigOwnerAddrOf received invalid xpub not in multisigOwners: ${xpub}`,
       );
     }
 
-    return topLevelKey;
+    return xkeyKthAddress(xpub, 0);
   }
 
   public getFreeBalanceAddrOf(xpub: string): string {
-    const [alice, bob] = this.freeBalanceAppInstance!.participants;
+    const alice = this.freeBalanceAppInstance!.initiator;
+    const bob = this.freeBalanceAppInstance!.responder;
 
     const topLevelKey = xkeyKthAddress(xpub, 0);
 
@@ -249,17 +251,19 @@ export class StateChannel {
     freeBalanceAppAddress: string,
     addresses: CriticalStateChannelAddresses,
     multisigAddress: string,
-    userNeuteredExtendedKeys: string[],
+    initiatorXpub: string,
+    responderXpub: string,
     freeBalanceTimeout?: number,
   ) {
     return new StateChannel(
       multisigAddress,
       addresses,
-      userNeuteredExtendedKeys,
+      [initiatorXpub, responderXpub],
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>([]),
       createFreeBalance(
-        userNeuteredExtendedKeys,
+        initiatorXpub,
+        responderXpub,
         freeBalanceAppAddress,
         freeBalanceTimeout || HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout,
         multisigAddress,
@@ -271,12 +275,13 @@ export class StateChannel {
   public static createEmptyChannel(
     multisigAddress: string,
     addresses: CriticalStateChannelAddresses,
-    userNeuteredExtendedKeys: string[],
+    initiatorXpub: string,
+    responderXpub: string,
   ) {
     return new StateChannel(
       multisigAddress,
       addresses,
-      userNeuteredExtendedKeys,
+      [initiatorXpub, responderXpub],
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>(),
       // Note that this FreeBalance is undefined because a channel technically
@@ -343,17 +348,26 @@ export class StateChannel {
     });
   }
 
-  public installApp(appInstance: AppInstance, tokenIndexedDecrements: TokenIndexedCoinTransferMap) {
+  public installApp(
+    appInstance: AppInstance,
+    tokenIndexedDecrements: TokenIndexedCoinTransferMap,
+    initiatorXpub: string, 
+    responderXpub: string,
+  ) {
     // Verify appInstance has expected signingkeys
 
-    const participants = this.getSigningKeysFor(appInstance.appSeqNo);
+    const [initiator, responder] = this.getSigningKeysFor(
+      initiatorXpub, 
+      responderXpub, 
+      appInstance.appSeqNo,
+    );
 
-    if (!participants.every((v, idx) => v === appInstance.participants[idx])) {
+    if (appInstance.initiator !== initiator || appInstance.responder !== responder) {
       throw new Error(
         `AppInstance passed to installApp has incorrect participants. Got ${
-          JSON.stringify(appInstance.participants)
+          JSON.stringify(appInstance.identity.participants)
         } but expected ${
-          JSON.stringify(participants)
+          JSON.stringify([initiator, responder])
         }`,
       );
     }

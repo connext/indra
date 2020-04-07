@@ -414,7 +414,6 @@ function computeStateChannelTransition(
     responderDepositTokenAddress,
     initiatorXpub,
     responderXpub,
-    participants,
     initialState,
     appInterface,
     defaultTimeout,
@@ -442,8 +441,12 @@ function computeStateChannelTransition(
     disableLimit,
   );
 
+  const initiator = xkeyKthAddress(initiatorXpub, appSeqNo);
+  const responder = xkeyKthAddress(responderXpub, appSeqNo);
+
   const appInstanceToBeInstalled = new AppInstance(
-    /* participants */ participants,
+    /* initiator */ initiator,
+    /* responder */ responder,
     /* defaultTimeout */ defaultTimeout,
     /* appInterface */ appInterface,
     /* appSeqNo */ appSeqNo,
@@ -480,7 +483,12 @@ function computeStateChannelTransition(
     };
   }
 
-  return stateChannel.installApp(appInstanceToBeInstalled, tokenIndexedBalanceDecrement);
+  return stateChannel.installApp(
+    appInstanceToBeInstalled,
+    tokenIndexedBalanceDecrement,
+    initiatorXpub, // verification
+    responderXpub, // verification
+  );
 }
 
 /**

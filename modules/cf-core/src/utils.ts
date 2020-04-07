@@ -70,7 +70,8 @@ export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
  * existing channels
  */
 export const getCreate2MultisigAddress = async (
-  owners: string[],
+  initiatorXpub: string,
+  responderXpub: string,
   addresses: CriticalStateChannelAddresses,
   ethProvider: JsonRpcProvider,
   legacyKeygen?: boolean,
@@ -78,14 +79,13 @@ export const getCreate2MultisigAddress = async (
 ): Promise<string> => {
   const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
 
-  const xkeysToSortedKthAddresses = xkeys =>
+  const xkeysToKthAddresses = xkeys =>
     xkeys
       .map(xkey =>
         legacyKeygen === true
           ? fromExtendedKey(xkey).address
           : fromExtendedKey(xkey).derivePath("0").address,
-      )
-      .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+      );
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
@@ -101,7 +101,7 @@ export const getCreate2MultisigAddress = async (
             keccak256(
               // see encoding notes
               new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                xkeysToSortedKthAddresses(owners),
+                xkeysToKthAddresses([initiatorXpub, responderXpub]),
               ]),
             ),
             // hash chainId + saltNonce to ensure multisig addresses are *always* unique
@@ -130,7 +130,8 @@ const memoizedGetAddress = memoize(
 );
 
 export const scanForCriticalAddresses = async (
-  ownerXpubs: string[],
+  initiatorXpub: string,
+  responderXpub: string,
   expectedMultisig: string,
   ethProvider: JsonRpcProvider,
   moreAddressHistory?: {
@@ -182,7 +183,8 @@ export const scanForCriticalAddresses = async (
       for (const multisigMastercopy of mastercopies) {
         for (const proxyFactory of proxyFactories) {
           let calculated = await getCreate2MultisigAddress(
-            ownerXpubs,
+            initiatorXpub,
+            responderXpub,
             { proxyFactory, multisigMastercopy },
             ethProvider,
             legacyKeygen,

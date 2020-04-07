@@ -29,7 +29,7 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 import { Node } from "../node";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { AppInstance, StateChannel } from "../models";
-import { computeRandomExtendedPrvKey, xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
+import { computeRandomExtendedPrvKey, xkeyKthAddress } from "../xkeys";
 import {
   EventEmittedMessage,
 } from "../types";
@@ -88,10 +88,19 @@ export function createAppInstanceProposalForTest(appInstanceId: string): AppInst
 }
 
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
+  const [initiator, responder] = stateChannel
+    ? stateChannel.getSigningKeysFor(
+        stateChannel!.userNeuteredExtendedKeys[0],
+        stateChannel!.userNeuteredExtendedKeys[1],
+        stateChannel!.numProposedApps,
+      )
+    : [
+        getAddress(hexlify(randomBytes(20))),
+        getAddress(hexlify(randomBytes(20))),
+      ];
   return new AppInstance(
-    /* participants */ stateChannel
-      ? stateChannel.getSigningKeysFor(stateChannel.numProposedApps)
-      : [getAddress(hexlify(randomBytes(20))), getAddress(hexlify(randomBytes(20)))],
+    /* initiator */ initiator,
+    /* responder */ responder,
     /* defaultTimeout */ 0,
     /* appInterface */ {
       addr: getAddress(hexlify(randomBytes(20))),
@@ -651,10 +660,10 @@ export async function collateralizeChannel(
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
-  const sortedOwners = xkeysToSortedKthAddresses(
-    [nodeA.publicIdentifier, nodeB.publicIdentifier],
-    0,
-  );
+  const sortedOwners = [
+    xkeyKthAddress(nodeA.publicIdentifier, 0),
+    xkeyKthAddress(nodeB.publicIdentifier, 0),
+  ];
   const [multisigAddress]: any = await Promise.all([
     new Promise(async resolve => {
       nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {

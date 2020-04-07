@@ -6,7 +6,7 @@ import { signDigest } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { Interface, parseEther } from "ethers/utils";
+import { Interface, parseEther, SigningKey } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import {
@@ -16,7 +16,7 @@ import {
 } from "../../ethereum";
 import { AppInstance, FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
-import { xkeysToSortedKthSigningKeys } from "../../xkeys";
+import { xkeyKthHDNode } from "../../xkeys";
 
 import {
   ChallengeRegistry,
@@ -68,7 +68,10 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
   it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
     const xprvs = getRandomExtendedPrvKeys(2);
-    const multisigOwnerKeys = xkeysToSortedKthSigningKeys(xprvs, 0);
+    const multisigOwnerKeys = [
+      new SigningKey(xkeyKthHDNode(xprvs[0], 0).privateKey),
+      new SigningKey(xkeyKthHDNode(xprvs[1], 0).privateKey),
+    ];
     const xpubs = xprvs.map(extendedPrvKeyToExtendedPubKey);
     const erc20TokenAddress = network.DolphinCoin;
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
@@ -78,7 +81,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         network.IdentityApp,
         { proxyFactory: proxyFactory.address, multisigMastercopy: network.MinimumViableMultisig },
         proxyAddress, // used as multisigAddress
-        xpubs,
+        xpubs[0],
+        xpubs[1],
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
@@ -88,12 +92,16 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         ),
       );
 
-      const uniqueAppSigningKeys = xkeysToSortedKthSigningKeys(xprvs, stateChannel.numProposedApps);
+      const uniqueAppSigningKeys = [
+        new SigningKey(xkeyKthHDNode(xprvs[0], stateChannel.numProposedApps.toString()).privateKey),
+        new SigningKey(xkeyKthHDNode(xprvs[1], stateChannel.numProposedApps.toString()).privateKey),
+      ];
 
       // todo(xuanji): don't reuse state
       // todo(xuanji): use createAppInstance
       const identityAppInstance = new AppInstance(
-        uniqueAppSigningKeys.map(x => x.address),
+        uniqueAppSigningKeys[0].address,
+        uniqueAppSigningKeys[1].address,
         stateChannel.freeBalance.defaultTimeout, // Re-use ETH FreeBalance timeout
         {
           addr: network.IdentityApp,
@@ -137,7 +145,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
           [multisigOwnerKeys[0].address]: Zero,
           [multisigOwnerKeys[1].address]: WeiPerEther,
         },
-      });
+      }, xpubs[0], xpubs[1]);
 
       const setStateCommitment = getSetStateCommitment(
         context,

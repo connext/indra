@@ -42,7 +42,8 @@ describe("StateChannel", () => {
         IdentityApp,
         { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
         multisigAddress,
-        xpubs,
+        xpubs[0],
+        xpubs[1],
       );
       json = sc.toJson();
     });
@@ -91,7 +92,8 @@ describe("StateChannel", () => {
         IdentityApp,
         { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
         multisigAddress,
-        xpubs,
+        xpubs[0],
+        xpubs[1],
       );
       json = sc.toJson();
       rehydrated = StateChannel.fromJson(json);

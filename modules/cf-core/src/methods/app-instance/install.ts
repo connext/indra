@@ -86,7 +86,6 @@ export async function install(
     initiatorBalanceDecrement: bigNumberify(proposal.initiatorDeposit),
     responderBalanceDecrement: bigNumberify(proposal.responderDeposit),
     multisigAddress: stateChannel.multisigAddress,
-    participants: stateChannel.getSigningKeysFor(proposal.appSeqNo),
     initialState: proposal.initialState,
     appInterface: {
       ...proposal.abiEncodings,

@@ -17,7 +17,8 @@ describe("injected validation middleware", () => {
     nodeB = context["B"].node;
 
     multisigAddress = await getCreate2MultisigAddress(
-      [nodeA.publicIdentifier, nodeB.publicIdentifier].sort(),
+      nodeA.publicIdentifier,
+      nodeB.publicIdentifier,
       {
         proxyFactory: nodeA.networkContext.ProxyFactory,
         multisigMastercopy: nodeA.networkContext.MinimumViableMultisig,

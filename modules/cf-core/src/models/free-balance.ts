@@ -4,7 +4,7 @@ import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
 import { AppInterface, OutcomeType } from "../types";
-import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
+import { xkeyKthAddress } from "../xkeys";
 
 import { AppInstance } from "./app-instance";
 import { merge } from "./utils";
@@ -196,15 +196,15 @@ export class FreeBalanceClass {
  * and only converted to more complex types (i.e. BigNumber) upon usage.
  */
 export function createFreeBalance(
-  userNeuteredExtendedKeys: string[],
+  initiatorXpub: string,
+  responderXpub: string,
   coinBucketAddress: string,
   freeBalanceTimeout: number,
   multisigAddress: string,
 ) {
-  const sortedTopLevelKeys = xkeysToSortedKthAddresses(
-    userNeuteredExtendedKeys,
-    0, // NOTE: We re-use 0 which is also used as the keys for `multisigOwners`
-  );
+
+  const initiator = xkeyKthAddress(initiatorXpub, 0);
+  const responder = xkeyKthAddress(responderXpub, 0);
 
   const initialState: FreeBalanceState = {
     activeAppsMap: {},
@@ -213,14 +213,15 @@ export function createFreeBalance(
       // addresses of the recipients are the "top level keys" as defined
       // as the 0th derived children of the xpubs.
       [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: [
-        { to: sortedTopLevelKeys[0], amount: Zero },
-        { to: sortedTopLevelKeys[1], amount: Zero },
+        { to: initiator, amount: Zero },
+        { to: responder, amount: Zero },
       ],
     },
   };
 
   return new AppInstance(
-    /* participants */ sortedTopLevelKeys,
+    /* initiator */ initiator,
+    /* responder */ responder,
     /* defaultTimeout */ freeBalanceTimeout,
     /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,

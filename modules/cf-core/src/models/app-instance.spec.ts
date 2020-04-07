@@ -9,7 +9,8 @@ describe("AppInstance", () => {
     const participants = [getAddress(createRandomAddress()), getAddress(createRandomAddress())];
 
     const appInstance = new AppInstance(
-      participants,
+      participants[0],
+      participants[1],
       Math.ceil(Math.random() * 2e10),
       {
         addr: getAddress(createRandomAddress()),
@@ -33,7 +34,8 @@ describe("AppInstance", () => {
 
     expect(appInstance).not.toBe(null);
     expect(appInstance).not.toBe(undefined);
-    expect(appInstance.participants).toBe(participants);
+    expect(appInstance.initiator).toBe(participants[0]);
+    expect(appInstance.initiator).toBe(participants[1]);
 
     // TODO: moar tests pl0x
   });

@@ -2,14 +2,14 @@ import { signDigest } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { Interface, keccak256 } from "ethers/utils";
+import { Interface, keccak256, SigningKey } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { SetStateCommitment, getSetupCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
-import { xkeysToSortedKthSigningKeys } from "../../xkeys";
+import { xkeyKthHDNode } from "../../xkeys";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import {
@@ -55,7 +55,10 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
   it("should distribute funds in ETH free balance when put on chain", async done => {
     const xprvs = getRandomExtendedPrvKeys(2);
 
-    const multisigOwnerKeys = xkeysToSortedKthSigningKeys(xprvs, 0);
+    const multisigOwnerKeys = [
+      new SigningKey(xkeyKthHDNode(xprvs[0], 0).privateKey),
+      new SigningKey(xkeyKthHDNode(xprvs[1], 0).privateKey),
+    ];
 
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 
@@ -63,7 +66,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       // TODO: Test this separately
       expect(proxy).toBe(
         await getCreate2MultisigAddress(
-          xprvs,
+          xprvs[0],
+          xprvs[1],
           {
             proxyFactory: network.ProxyFactory,
             multisigMastercopy: network.MinimumViableMultisig,
@@ -76,7 +80,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         network.IdentityApp,
         { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
         proxy, // used as multisig
-        xprvs.map(extendedPrvKeyToExtendedPubKey),
+        extendedPrvKeyToExtendedPubKey(xprvs[0]),
+        extendedPrvKeyToExtendedPubKey(xprvs[1]),
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(

@@ -56,7 +56,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       multisigAddress,
-      [initiatorXpub, responderXpub],
+      initiatorXpub,
+      responderXpub,
     );
 
     const setupCommitment = getSetupCommitment(context, stateChannel);
@@ -165,7 +166,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       multisigAddress,
-      [initiatorXpub, responderXpub],
+      initiatorXpub,
+      responderXpub,
     );
 
     const setupCommitment = getSetupCommitment(context, stateChannel);

@@ -26,7 +26,8 @@ describe("StateChannel::setupChannel", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs,
+      xpubs[0],
+      xpubs[1],
     );
   });
 
@@ -72,7 +73,7 @@ describe("StateChannel::setupChannel", () => {
     });
 
     it("should use the multisig owners as the participants", () => {
-      expect(fb.participants).toEqual(sc.multisigOwners);
+      expect([fb.initiator, fb.responder]).toEqual(sc.multisigOwners);
     });
 
     it("should use the FreeBalanceAppApp as the app target", () => {
