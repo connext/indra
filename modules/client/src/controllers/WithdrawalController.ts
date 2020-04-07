@@ -90,9 +90,8 @@ export class WithdrawalController extends AbstractController {
     const hash = generatedCommitment.hashToSign();
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
-      hash,
-    );
+    const counterpartySignatureOnWithdrawCommitment = await this
+      .connext.channelProvider.signMessage(hash);
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
     } as WithdrawAppAction);
@@ -148,8 +147,8 @@ export class WithdrawalController extends AbstractController {
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [
-        xpubToAddress(this.connext.publicIdentifier),
-        xpubToAddress(this.connext.nodePublicIdentifier),
+        this.connext.freeBalanceAddress,
+        this.connext.nodeFreeBalanceAddress,
       ],
       data: withdrawCommitmentHash,
       nonce,
@@ -175,12 +174,12 @@ export class WithdrawalController extends AbstractController {
 
   public async saveWithdrawCommitmentToStore(
     params: WithdrawParameters,
-    initiatorSig: string,
-    responderSig: string,
+    withdrawerSig: string,
+    counterpartySig: string,
   ): Promise<void> {
     // set the withdrawal tx in the store
     const commitment = await this.createWithdrawCommitment(params);
-    await commitment.addSignatures(initiatorSig, responderSig);
+    await commitment.addSignatures(withdrawerSig, counterpartySig);
     const minTx: MinimalTransaction = await commitment.getSignedTransaction();
     const value = { tx: minTx, retry: 0 };
     await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, { ...value });

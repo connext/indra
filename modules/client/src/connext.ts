@@ -355,13 +355,13 @@ export class ConnextClient implements IConnextClient {
 
   public saveWithdrawCommitmentToStore = async (
     params: WithdrawParameters,
-    initatorSignature: string,
-    responderSignature: string,
+    withdrawerSignature: string,
+    counterparySignature: string,
   ): Promise<void> => {
     return await this.withdrawalController.saveWithdrawCommitmentToStore(
       params,
-      initatorSignature,
-      responderSignature,
+      withdrawerSignature,
+      counterparySignature,
     );
   };
 

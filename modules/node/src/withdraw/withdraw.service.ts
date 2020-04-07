@@ -101,8 +101,10 @@ export class WithdrawService {
     await this.cfCoreService.uninstallApp(appInstance.identityHash);
 
     // Get a finalized minTx object and put it onchain
-    // TODO: remove any casting by using Signature type
-    generatedCommitment.signatures = state.signatures as any;
+    await generatedCommitment.addSignatures(
+      state.signatures[0], // user sig
+      counterpartySignatureOnWithdrawCommitment, // out sig
+    );
     const signedWithdrawalCommitment = await generatedCommitment.getSignedTransaction();
     const transaction = await this.submitWithdrawToChain(
       appInstance.multisigAddress,
