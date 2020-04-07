@@ -141,6 +141,8 @@ export async function requestDepositRights(
     proposeParams.initiatorDepositTokenAddress,
     proposeParams.responderDeposit,
     proposeParams.responderDepositTokenAddress,
+    proposeParams.defaultTimeout,
+    proposeParams.stateTimeout,
   );
   return appId;
 }
@@ -535,6 +537,8 @@ export function constructAppProposalRpc(
   initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
   responderDeposit: BigNumber = Zero,
   responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  defaultTimeout: BigNumber = Zero,
+  stateTimeout: BigNumber = defaultTimeout,
 ): Rpc {
   const { outcomeType } = getAppContext(appDefinition, initialState);
   return {
@@ -550,7 +554,8 @@ export function constructAppProposalRpc(
       initialState,
       abiEncodings,
       outcomeType,
-      defaultTimeout: One,
+      defaultTimeout,
+      stateTimeout,
     } as MethodParams.ProposeInstall),
   };
 }
@@ -715,6 +720,8 @@ export async function installApp(
   initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
   responderDeposit: BigNumber = Zero,
   responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  defaultTimeout: BigNumber = Zero,
+  stateTimeout: BigNumber = defaultTimeout,
 ): Promise<[string, ProtocolParams.Propose]> {
   const appContext = getAppContext(appDefinition, initialState);
 
@@ -727,6 +734,8 @@ export async function installApp(
     initiatorDepositTokenAddress,
     responderDeposit,
     responderDepositTokenAddress,
+    defaultTimeout,
+    stateTimeout,
   );
 
   const proposedParams = installationProposalRpc.parameters as ProtocolParams.Propose;
@@ -740,11 +749,11 @@ export async function installApp(
       } = msg;
       // Sanity-check
       confirmProposedAppInstance(
-        { stateTimeout: Zero, ...installationProposalRpc.parameters },
+        installationProposalRpc.parameters,
         await getAppInstanceProposal(nodeB, appInstanceId, multisigAddress),
       );
       confirmProposedAppInstance(
-        { stateTimeout: Zero, ...installationProposalRpc.parameters },
+        installationProposalRpc.parameters,
         await getAppInstanceProposal(nodeA, appInstanceId, multisigAddress),
       );
       resolve(msg.data.appInstanceId);
