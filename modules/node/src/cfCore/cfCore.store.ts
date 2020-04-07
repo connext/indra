@@ -109,12 +109,12 @@ export class CFCoreStore implements IStoreService {
 
     const userFreeBalance = xkeyKthAddress(userPublicIdentifier);
     const nodeFreeBalance = xkeyKthAddress(this.configService.getPublicIdentifier());
-    const userParticipantAddress = freeBalanceAppInstance.participants.find(
-      p => p === userFreeBalance,
-    );
-    const nodeParticipantAddress = freeBalanceAppInstance.participants.find(
-      p => p === nodeFreeBalance,
-    );
+    const participants = [
+      freeBalanceAppInstance.initiator,
+      freeBalanceAppInstance.responder,
+    ];
+    const userParticipantAddress = participants.find(p => p === userFreeBalance);
+    const nodeParticipantAddress = participants.find(p => p === nodeFreeBalance);
     const {
       identityHash,
       appInterface: { stateEncoding, actionEncoding, addr },
@@ -165,7 +165,8 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     const {
       identityHash,
-      participants,
+      initiator,
+      responder,
       latestState,
       latestTimeout,
       latestVersionNumber,
@@ -184,11 +185,11 @@ export class CFCoreStore implements IStoreService {
     proposal.type = AppType.INSTANCE;
     // save participants
     let userAddr = xkeyKthAddress(this.configService.getPublicIdentifier(), proposal.appSeqNo);
-    if (!participants.find(p => p === userAddr)) {
+    if (![initiator, responder].find(p => p === userAddr)) {
       userAddr = xkeyKthAddress(this.configService.getPublicIdentifier());
     }
-    proposal.userParticipantAddress = participants.find(p => p === userAddr);
-    proposal.nodeParticipantAddress = participants.find(p => p !== userAddr);
+    proposal.userParticipantAddress = [initiator, responder].find(p => p === userAddr);
+    proposal.nodeParticipantAddress = [initiator, responder].find(p => p !== userAddr);
 
     proposal.meta = meta;
 

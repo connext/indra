@@ -163,7 +163,8 @@ export class AdminService implements OnApplicationBootstrap {
         !state.addresses.multisigMastercopy ||
         state.multisigAddress !==
           (await getCreate2MultisigAddress(
-            state.userNeuteredExtendedKeys,
+            state.userNeuteredExtendedKeys[0],
+            state.userNeuteredExtendedKeys[1],
             state.addresses,
             this.configService.getEthProvider(),
           ))
@@ -183,7 +184,8 @@ export class AdminService implements OnApplicationBootstrap {
       const state = await this.cfCoreStore.getStateChannel(brokenMultisig);
       this.log.info(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
       const criticalAddresses = await scanForCriticalAddresses(
-        state.userNeuteredExtendedKeys,
+        state.userNeuteredExtendedKeys[0],
+        state.userNeuteredExtendedKeys[1],
         state.multisigAddress,
         this.configService.getEthProvider(),
       );

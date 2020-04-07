@@ -134,14 +134,17 @@ export class CFCoreService {
   ): Promise<WithdrawCommitment> {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
-    const channel = await this.getStateChannel(multisigAddress);
+    const { data: channel } = await this.getStateChannel(multisigAddress);
     const contractAddresses = await this.configService.getContractAddresses(
       (await this.configService.getEthNetwork()).chainId.toString(),
     );
     return new WithdrawCommitment(
       contractAddresses,
-      channel.data.multisigAddress,
-      channel.data.freeBalanceAppInstance.participants,
+      channel.multisigAddress,
+      [
+        channel.freeBalanceAppInstance.initiator,
+        channel.freeBalanceAppInstance.responder,
+      ],
       recipient,
       assetId,
       amount,
