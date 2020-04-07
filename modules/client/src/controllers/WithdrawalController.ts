@@ -112,11 +112,14 @@ export class WithdrawalController extends AbstractController {
 
   private async createWithdrawCommitment(params: WithdrawParameters): Promise<WithdrawCommitment> {
     const { assetId, amount, nonce, recipient } = params;
-    const channel = await this.connext.getStateChannel();
+    const { data: channel } = await this.connext.getStateChannel();
     return new WithdrawCommitment(
       this.connext.config.contractAddresses,
-      channel.data.multisigAddress,
-      channel.data.freeBalanceAppInstance.participants,
+      channel.multisigAddress,
+      [
+        channel.freeBalanceAppInstance.initiator,
+        channel.freeBalanceAppInstance.responder,
+      ],
       recipient,
       assetId,
       amount,

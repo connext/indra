@@ -35,7 +35,8 @@ export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0
 export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   identityHash: "identityHashApp",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
-  participants: ["sender", "receiver"],
+  initiator: "sender",
+  responder: "receiver",
   defaultTimeout: 0,
   appInterface: {
     addr: TEST_STORE_ETH_ADDRESS,
@@ -104,7 +105,7 @@ export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentity: {
     channelNonce: TEST_STORE_APP_INSTANCE.appSeqNo.toString(),
-    participants: TEST_STORE_APP_INSTANCE.participants,
+    participants: [TEST_STORE_APP_INSTANCE.initiator, TEST_STORE_APP_INSTANCE.responder],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
     appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
     defaultTimeout: "35",
