@@ -57,7 +57,7 @@ export class ChannelRepository extends Repository<Channel> {
   async getStateChannelByAppIdentityHash(
     appIdentityHash: string,
   ): Promise<StateChannelJSON | undefined> {
-    const channel = await this.findByAppInstanceId(appIdentityHash);
+    const channel = await this.findByAppIdentityHash(appIdentityHash);
     if (!channel) {
       return undefined;
     }
@@ -90,7 +90,7 @@ export class ChannelRepository extends Repository<Channel> {
     .getOne();
   }
 
-  async findByAppInstanceId(appIdentityHash: string): Promise<Channel | undefined> {
+  async findByAppIdentityHash(appIdentityHash: string): Promise<Channel | undefined> {
     // TODO: fix this query
     // when you return just `channel` you will only have one app instance
     // that matches the appId

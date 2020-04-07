@@ -112,7 +112,7 @@ export class AppActionsService {
     action: WithdrawAppAction,
     state: WithdrawAppState,
   ): Promise<void> {
-    let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+    let withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
     if (!withdraw) {
       throw new Error(`No withdraw entity found for this appIdentityHash: ${appInstance.identityHash}`);
     }

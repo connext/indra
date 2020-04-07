@@ -87,7 +87,7 @@ export class WithdrawService {
       .state as WithdrawAppState;
 
     // Update the db entity with signature
-    let withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+    let withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
     if (!withdraw) {
       this.log.error(
         `Unable to find withdraw entity that we just took action upon. AppId ${appInstance.identityHash}`,
@@ -110,7 +110,7 @@ export class WithdrawService {
     );
 
     // Update db entry again
-    withdraw = await this.withdrawRepository.findByAppInstanceId(appInstance.identityHash);
+    withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
     if (!withdraw) {
       this.log.error(
         `Unable to find withdraw entity that we just uninstalled. AppId ${appInstance.identityHash}`,
