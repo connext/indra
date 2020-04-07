@@ -53,7 +53,7 @@ describe("Node method follows spec - propose install", () => {
     });
 
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
-      const rpc = makeProposeCall(nodeB, TicTacToeApp);
+      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
         meta: {

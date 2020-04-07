@@ -524,6 +524,7 @@ export function constructRejectInstallRpc(appInstanceId: string): Rpc {
 }
 
 export function constructAppProposalRpc(
+  multisigAddress: string,
   proposedToIdentifier: string,
   appDefinition: string,
   abiEncodings: AppABIEncodings,
@@ -538,6 +539,7 @@ export function constructAppProposalRpc(
     id: Date.now(),
     methodName: MethodNames.chan_proposeInstall,
     parameters: deBigNumberifyJson({
+      multisigAddress,
       proposedToIdentifier,
       initiatorDeposit,
       initiatorDepositTokenAddress,
@@ -715,6 +717,7 @@ export async function installApp(
   const appContext = getAppContext(appDefinition, initialState);
 
   const installationProposalRpc = constructAppProposalRpc(
+    multisigAddress,
     nodeB.publicIdentifier,
     appContext.appDefinition,
     appContext.abiEncodings,
@@ -807,6 +810,7 @@ export async function makeInstallCall(node: Node, appInstanceId: string) {
 export function makeProposeCall(
   nodeB: Node,
   appDefinition: string,
+  multisigAddress: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
   initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
@@ -815,6 +819,7 @@ export function makeProposeCall(
 ): Rpc {
   const appContext = getAppContext(appDefinition, initialState);
   return constructAppProposalRpc(
+    multisigAddress,
     nodeB.publicIdentifier,
     appContext.appDefinition,
     appContext.abiEncodings,
@@ -830,6 +835,7 @@ export async function makeAndSendProposeCall(
   nodeA: Node,
   nodeB: Node,
   appDefinition: string,
+  multisigAddress: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
   initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
@@ -842,6 +848,7 @@ export async function makeAndSendProposeCall(
   const installationProposalRpc = makeProposeCall(
     nodeB,
     appDefinition,
+    multisigAddress,
     initialState,
     initiatorDeposit,
     initiatorDepositTokenAddress,

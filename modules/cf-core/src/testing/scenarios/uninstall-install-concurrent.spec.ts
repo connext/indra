@@ -48,6 +48,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       installCall = makeProposeCall(
         nodeB,
         TicTacToeApp,
+        multisigAddress,
         /* initialState */ undefined,
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
@@ -91,6 +92,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       const installCall = makeProposeCall(
         nodeB,
         TicTacToeApp,
+        multisigAddress,
         /* initialState */ undefined,
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
@@ -123,6 +125,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       const installCall = makeProposeCall(
         nodeB,
         TicTacToeApp,
+        multisigAddress,
         /* initialState */ undefined,
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,

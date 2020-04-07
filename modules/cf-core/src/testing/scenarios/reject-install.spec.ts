@@ -59,7 +59,7 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeB.rpcRouter.dispatch(rejectReq);
       });
 
-      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
+      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
     });
 
     it("Node A installs, node a rejects", async done => {
@@ -93,7 +93,7 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeA.rpcRouter.dispatch(rejectReq);
       });
 
-      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
+      await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp, multisigAddress);
     });
   });
 });

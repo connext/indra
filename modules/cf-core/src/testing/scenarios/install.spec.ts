@@ -66,11 +66,7 @@ describe("Node method follows spec - install", () => {
             multisigAddress,
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
-          // FIXME: multisigAddress is undefined
-          assertProposeMessage(nodeA.publicIdentifier, msg, {
-            ...proposeInstallParams,
-            multisigAddress,
-          });
+          assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
@@ -122,6 +118,7 @@ describe("Node method follows spec - install", () => {
           nodeA,
           nodeB,
           TicTacToeApp,
+          multisigAddress,
           undefined,
           One,
           CONVENTION_FOR_ETH_TOKEN_ADDRESS,
@@ -153,8 +150,7 @@ describe("Node method follows spec - install", () => {
             multisigAddress,
             erc20TokenAddress,
           );
-          // FIXME: multisigAddress is undefined
-          assertProposeMessage(nodeA.publicIdentifier, msg, { ...proposedParams, multisigAddress });
+          assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
@@ -183,6 +179,7 @@ describe("Node method follows spec - install", () => {
           nodeA,
           nodeB,
           TicTacToeApp,
+          multisigAddress,
           undefined,
           One,
           erc20TokenAddress,
@@ -195,6 +192,7 @@ describe("Node method follows spec - install", () => {
       it("sends proposal with null initial state", async () => {
         const appContext = getAppContext(TicTacToeApp);
         const appInstanceProposalReq = constructAppProposalRpc(
+          multisigAddress,
           nodeB.publicIdentifier,
           appContext.appDefinition,
           appContext.abiEncodings,

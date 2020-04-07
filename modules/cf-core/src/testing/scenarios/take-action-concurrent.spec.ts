@@ -59,6 +59,7 @@ describe("Node method follows spec - toke action", () => {
       const proposeRpc = makeProposeCall(
         nodeB,
         TicTacToeApp,
+        multisigAddress,
         /* initialState */ undefined,
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,

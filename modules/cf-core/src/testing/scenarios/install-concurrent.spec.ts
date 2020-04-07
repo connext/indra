@@ -62,6 +62,7 @@ describe(`Node method follows spec - install`, () => {
         const rpc = makeProposeCall(
           nodeB,
           TicTacToeApp,
+          multisigAddress,
           /* initialState */ undefined,
           One,
           CONVENTION_FOR_ETH_TOKEN_ADDRESS,
