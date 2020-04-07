@@ -41,7 +41,7 @@ describe("StateChannel::uninstallApp", () => {
         [xkeyKthAddress(xpubs[0], 0)]: Zero,
         [xkeyKthAddress(xpubs[1], 0)]: Zero,
       },
-    }, xpubs[0], xpubs[1]);
+    });
 
     sc2 = sc1.uninstallApp(testApp, {
       [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {

@@ -53,7 +53,7 @@ describe("StateChannel::uninstallApp", () => {
         [xkeyKthAddress(xpubs[0], 0)]: WeiPerEther,
         [xkeyKthAddress(xpubs[1], 0)]: WeiPerEther,
       },
-    }, xpubs[0], xpubs[1]);
+    });
   });
 
   it("should not alter any of the base properties", () => {

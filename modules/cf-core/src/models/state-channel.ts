@@ -359,25 +359,29 @@ export class StateChannel {
   public installApp(
     appInstance: AppInstance,
     tokenIndexedDecrements: TokenIndexedCoinTransferMap,
-    initiatorXpub: string, 
-    responderXpub: string,
   ) {
     // Verify appInstance has expected signingkeys
-
-    const [initiator, responder] = this.getSigningKeysFor(
-      initiatorXpub, 
-      responderXpub, 
-      appInstance.appSeqNo,
-    );
-
-    if (appInstance.initiator !== initiator || appInstance.responder !== responder) {
-      throw new Error(
-        `AppInstance passed to installApp has incorrect participants. Got ${
-          JSON.stringify(appInstance.identity.participants)
-        } but expected ${
-          JSON.stringify([initiator, responder])
-        }`,
+    const proposal = 
+      this.proposedAppInstances.has(appInstance.identityHash) 
+        ? this.proposedAppInstances.get(appInstance.identityHash) 
+        : undefined;
+        
+    if (proposal) {
+      const [initiator, responder] = this.getSigningKeysFor(
+        proposal.proposedByIdentifier, 
+        proposal.proposedToIdentifier, 
+        appInstance.appSeqNo,
       );
+  
+      if (appInstance.initiator !== initiator || appInstance.responder !== responder) {
+        throw new Error(
+          `AppInstance passed to installApp has incorrect participants. Got ${
+            JSON.stringify(appInstance.identity.participants)
+          } but expected ${
+            JSON.stringify([initiator, responder])
+          }`,
+        );
+      }
     }
 
     /// Add modified FB and new AppInstance to appInstances
@@ -385,17 +389,9 @@ export class StateChannel {
 
     appInstances.set(appInstance.identityHash, appInstance);
 
-    // If the app is in the proposed apps, make sure it is
-    // removed (otherwise channel is persisted with proposal +
-    // installed application after protocol)
-    // NOTE: `deposit` will install an app, but never propose it
-
-    let proposedAppInstances;
-    if (this.proposedAppInstances.has(appInstance.identityHash)) {
-      const withoutProposal = this.removeProposal(appInstance.identityHash);
-      proposedAppInstances = withoutProposal.proposedAppInstances;
-    }
-
+    const proposedAppInstances = !!proposal
+      ? this.removeProposal(appInstance.identityHash).proposedAppInstances
+      : this.proposedAppInstances;
     return this.build({
       appInstances,
       proposedAppInstances,

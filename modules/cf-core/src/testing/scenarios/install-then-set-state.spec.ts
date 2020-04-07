@@ -142,7 +142,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
           [multisigOwnerKeys[0].address]: Zero,
           [multisigOwnerKeys[1].address]: WeiPerEther,
         },
-      }, xpubs[0], xpubs[1]);
+      });
 
       const setStateCommitment = getSetStateCommitment(context, identityAppInstance);
 
