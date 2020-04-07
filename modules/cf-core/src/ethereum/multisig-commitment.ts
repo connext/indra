@@ -1,6 +1,5 @@
 import { EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
-import { defaultAbiCoder, Interface, keccak256, solidityKeccak256, id } from "ethers/utils";
-import { verifyChannelMessage } from "@connext/crypto";
+import { defaultAbiCoder, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
 
 import { MinimumViableMultisig } from "../contracts";
 
@@ -36,7 +35,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   }
 
   public async getSignedTransaction(): Promise<MinimalTransaction> {
-    this.assertSignatures(true);
+    this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
@@ -62,21 +61,9 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
-  private async assertSignatures(presenceOnly: boolean = false) {
+  private async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
-    }
-    if (presenceOnly) {
-      return;
-    }
-    for (const idx in this.signatures) {
-      const signer = await verifyChannelMessage(
-        this.hashToSign(),
-        this.signatures[idx],
-      );
-      if (signer !== this.multisigOwners[idx]) {
-        throw new Error(`Got ${signer} and expected ${this.multisigOwners[idx]} in multisig commitment. Idx: ${idx}`);
-      }
     }
   }
 }
