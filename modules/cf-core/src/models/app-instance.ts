@@ -172,7 +172,10 @@ export class AppInstance {
   @Memoize()
   public get identity(): AppIdentity {
     return {
-      participants: [this.initiator, this.responder],
+      // NOTE: There is a requirement in the contract that
+      // these be sorted alphabetically
+      // signatures should *also* be sorted this way
+      participants: [this.initiator, this.responder].sort(),
       multisigAddress: this.multisigAddress,
       appDefinition: this.appInterface.addr,
       defaultTimeout: (this.defaultTimeout).toString(),

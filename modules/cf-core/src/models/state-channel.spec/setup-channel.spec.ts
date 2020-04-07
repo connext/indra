@@ -41,7 +41,7 @@ describe("StateChannel::setupChannel", () => {
 
   it("should not alter any of the base properties", () => {
     expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userNeuteredExtendedKeys).toBe(xpubs);
+    expect(sc.userNeuteredExtendedKeys).toMatchObject(xpubs);
   });
 
   it("should have bumped the sequence number", () => {

@@ -9,20 +9,21 @@ import { StateChannel } from "../state-channel";
 describe("StateChannel", () => {
   it("should be able to instantiate", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const xpubs = getRandomExtendedPubKeys(2);
+    const [initiator, responder] = getRandomExtendedPubKeys(2);
 
     const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
     const sc = new StateChannel(
       multisigAddress,
       { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
-      xpubs,
+      initiator,
+      responder,
     );
 
     expect(sc).not.toBe(null);
     expect(sc).not.toBe(undefined);
     expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userNeuteredExtendedKeys).toBe(xpubs);
+    expect(sc.userNeuteredExtendedKeys).toMatchObject([initiator, responder]);
     expect(sc.numActiveApps).toBe(0);
     expect(sc.numProposedApps).toBe(0);
   });

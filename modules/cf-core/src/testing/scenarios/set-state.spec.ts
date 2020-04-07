@@ -9,9 +9,8 @@ import { FreeBalanceClass, StateChannel } from "../../models";
 
 import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
-import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "../random-signing-keys";
+import { getRandomExtendedPrvKeys } from "../random-signing-keys";
 import { xkeyKthHDNode } from "../../xkeys";
-import { SigningKey } from "ethers/utils";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -37,16 +36,16 @@ describe("set state on free balance", () => {
     const xprvs = getRandomExtendedPrvKeys(2);
 
     const multisigOwnerKeys = [
-      new SigningKey(xkeyKthHDNode(xprvs[0], 0).privateKey),
-      new SigningKey(xkeyKthHDNode(xprvs[1], 0).privateKey),
+      xkeyKthHDNode(xprvs[0], "0"),
+      xkeyKthHDNode(xprvs[1], "0"),
     ];
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       AddressZero,
-      extendedPrvKeyToExtendedPubKey(xprvs[0]),
-      extendedPrvKeyToExtendedPubKey(xprvs[1]),
+      multisigOwnerKeys[0].neuter().extendedKey,
+      multisigOwnerKeys[1].neuter().extendedKey,
     ).setFreeBalance(
       FreeBalanceClass.createWithFundedTokenAmounts(
         multisigOwnerKeys.map<string>(key => key.address),

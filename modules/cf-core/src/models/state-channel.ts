@@ -30,7 +30,8 @@ export class StateChannel {
   constructor(
     public readonly multisigAddress: string,
     public readonly addresses: CriticalStateChannelAddresses,
-    public readonly userNeuteredExtendedKeys: string[],
+    public readonly initiatorExtendedKey: string, // initator
+    public readonly responderExtendedKey: string, // initator
     readonly proposedAppInstances: ReadonlyMap<string, AppInstanceProposal> = new Map<
       string,
       AppInstanceProposal
@@ -40,11 +41,11 @@ export class StateChannel {
     private readonly monotonicNumProposedApps: number = 0,
     public readonly schemaVersion: number = StateSchemaVersion,
   ) {
-    userNeuteredExtendedKeys.forEach(xpub => {
+    [initiatorExtendedKey, responderExtendedKey].forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
         throw new Error(
           `StateChannel constructor given invalid extended keys: ${stringify(
-            userNeuteredExtendedKeys,
+            [initiatorExtendedKey, responderExtendedKey],
           )}`,
         );
       }
@@ -53,10 +54,14 @@ export class StateChannel {
 
   public get multisigOwners() {
     return this.getSigningKeysFor(
-      /* initiatorXpub */ this.userNeuteredExtendedKeys[0],
-      /* responderXpub */ this.userNeuteredExtendedKeys[1],
+      /* initiatorXpub */ this.initiatorExtendedKey,
+      /* responderXpub */ this.responderExtendedKey,
       /* appSeqNo */ 0,
     );
+  }
+
+  public get userNeuteredExtendedKeys() {
+    return [this.initiatorExtendedKey, this.responderExtendedKey];
   }
 
   public get numProposedApps() {
@@ -198,7 +203,8 @@ export class StateChannel {
   private build = (args: {
     multisigAddress?: string;
     addresses?: CriticalStateChannelAddresses;
-    userNeuteredExtendedKeys?: string[];
+    initiatorExtendedKey?: string,
+    responderExtendedKey?: string,
     appInstances?: ReadonlyMap<string, AppInstance>;
     proposedAppInstances?: ReadonlyMap<string, AppInstanceProposal>;
     freeBalanceAppInstance?: AppInstance;
@@ -208,7 +214,8 @@ export class StateChannel {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
       args.addresses || this.addresses,
-      args.userNeuteredExtendedKeys || this.userNeuteredExtendedKeys,
+      args.initiatorExtendedKey || this.initiatorExtendedKey,
+      args.responderExtendedKey || this.responderExtendedKey,
       args.proposedAppInstances || this.proposedAppInstances,
       args.appInstances || this.appInstances,
       args.freeBalanceAppInstance || this.freeBalanceAppInstance,
@@ -258,7 +265,8 @@ export class StateChannel {
     return new StateChannel(
       multisigAddress,
       addresses,
-      [initiatorXpub, responderXpub],
+      initiatorXpub,
+      responderXpub,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>([]),
       createFreeBalance(
@@ -281,7 +289,8 @@ export class StateChannel {
     return new StateChannel(
       multisigAddress,
       addresses,
-      [initiatorXpub, responderXpub],
+      initiatorXpub,
+      responderXpub,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>(),
       // Note that this FreeBalance is undefined because a channel technically
@@ -454,7 +463,8 @@ export class StateChannel {
       return new StateChannel(
         json.multisigAddress,
         json.addresses,
-        json.userNeuteredExtendedKeys,
+        json.userNeuteredExtendedKeys[0], // initiator
+        json.userNeuteredExtendedKeys[1], // responder
         new Map(
           [...Object.values(dropNulls(json.proposedAppInstances) || [])].map((proposal): [
             string,
