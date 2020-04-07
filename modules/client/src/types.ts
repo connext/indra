@@ -1,6 +1,7 @@
 import { JsonRpcProvider } from "ethers/providers";
 import {
   AppRegistry,
+  IMessagingService,
   Contract,
   GetConfigResponse,
   IChannelProvider,
@@ -13,8 +14,15 @@ import {
 } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 
-// This type is only ever used inside the client,
-// No need to keep it in the global types package.
+export interface NodeInitializationParameters {
+  nodeUrl: string;
+  messaging: IMessagingService;
+  logger?: ILoggerService;
+  userPublicIdentifier?: Xpub;
+  nodePublicIdentifier?: Xpub;
+  channelProvider?: IChannelProvider;
+}
+
 export type InternalClientOptions = {
   appRegistry: AppRegistry;
   channelProvider: IChannelProvider;

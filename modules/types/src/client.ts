@@ -6,22 +6,8 @@ import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvid
 import { EventNames } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
-import {
-  GetHashLockTransferResponse,
-  GetSignedTransferResponse,
-  RebalanceProfile,
-  GetChannelResponse,
-  CreateChannelResponse,
-  GetConfigResponse,
-  RequestCollateralResponse,
-  TransferInfo,
-  GetLinkedTransferResponse,
-} from "./node";
-import {
-  MethodResults,
-  MethodParams,
-  MethodName,
-} from "./methods";
+import { NodeResponses } from "./node";
+import { MethodResults, MethodParams, MethodName } from "./methods";
 import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
 import { PublicParams, PublicResults } from "./public";
 
@@ -50,7 +36,7 @@ export interface IConnextClient {
   // Properties
 
   appRegistry: AppRegistry;
-  config: GetConfigResponse;
+  config: NodeResponses.GetConfig;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
   freeBalanceAddress: Address;
@@ -104,10 +90,10 @@ export interface IConnextClient {
   // NODE EASY ACCESS METHODS
   // TODO: do we really need to expose all of these?
   isAvailable(): Promise<void>;
-  getChannel(): Promise<GetChannelResponse>;
-  getLinkedTransfer(paymentId: Bytes32): Promise<GetLinkedTransferResponse>;
-  getHashLockTransfer(lockHash: Bytes32): Promise<GetHashLockTransferResponse>;
-  getSignedTransfer(lockHash: Bytes32): Promise<GetSignedTransferResponse>;
+  getChannel(): Promise<NodeResponses.GetChannel>;
+  getLinkedTransfer(paymentId: Bytes32): Promise<NodeResponses.GetLinkedTransfer>;
+  getHashLockTransfer(lockHash: Bytes32): Promise<NodeResponses.GetHashLockTransfer>;
+  getSignedTransfer(lockHash: Bytes32): Promise<NodeResponses.GetSignedTransfer>;
   getAppRegistry(
     appDetails?:
       | {
@@ -117,20 +103,20 @@ export interface IConnextClient {
       | { appDefinitionAddress: Address },
   ): Promise<AppRegistry | DefaultApp | undefined>;
   getRegisteredAppDetails(appName: string /* AppNames */): DefaultApp;
-  createChannel(): Promise<CreateChannelResponse>;
+  createChannel(): Promise<NodeResponses.CreateChannel>;
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<any>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
   unsubscribeToSwapRates(from: Address, to: Address): Promise<void>;
-  requestCollateral(tokenAddress: Address): Promise<RequestCollateralResponse | void>;
-  getRebalanceProfile(assetId?: Address): Promise<RebalanceProfile | undefined>;
-  getTransferHistory(): Promise<TransferInfo[]>;
+  requestCollateral(tokenAddress: Address): Promise<NodeResponses.RequestCollateral | void>;
+  getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile | undefined>;
+  getTransferHistory(): Promise<NodeResponses.GetTransferHistory>;
   reclaimPendingAsyncTransfers(): Promise<void>;
   reclaimPendingAsyncTransfer(
     amount: DecString,
     assetId: Address,
     paymentId: Bytes32,
     encryptedPreImage: string,
-  ): Promise<PublicResults.ResolveLinkedTransfer>;
+  ): Promise<NodeResponses.ResolveLinkedTransfer>;
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
