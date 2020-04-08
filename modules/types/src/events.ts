@@ -85,6 +85,7 @@ const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 type CreateMultisigEventData = {
   owners: Address[];
   multisigAddress: Address;
+  counterpartyIdentifier?: ChannelPubId;
 };
 
 ////////////////////////////////////////
