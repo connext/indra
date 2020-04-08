@@ -16,6 +16,7 @@ type CreateChannelParams = {
 
 type CreateChannelResult = {
   multisigAddress: Address;
+  owners?: Address[];
 };
 
 ////////////////////////////////////////
