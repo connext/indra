@@ -126,7 +126,9 @@ export interface IRpcConnection extends ConnextEventEmitter {
   close(): Promise<void>;
 }
 
-// TODO: this interface may change,
-// important thing is it has a `signMessage` and `address` and that
-// tests pass so use ethers Wallet
-export type IChannelSigner = Wallet;
+export interface IChannelSigner {
+  privateKey: string;
+  publicKey: string;
+  address: string;
+  signMessage(message: string): Promise<string>;
+}
