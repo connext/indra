@@ -1,4 +1,5 @@
 import { EthSignature } from "@connext/types";
+import bs58check from "bs58check";
 import {
   sign,
   encrypt,
@@ -21,7 +22,8 @@ import {
 export * from "eccrypto-js";
 
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
-export const CHAN_SIGN_PREFIX = "\x18Channel Signed Message:\n";
+export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
+export const INDRA_PUB_ID_PREFIX = "indra";
 
 export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
@@ -31,6 +33,13 @@ export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
     : !Buffer.isBuffer(input)
     ? arrayToBuffer(new Uint8Array(input))
     : input;
+}
+
+export function getChannelPublicIdentifier(multisigAddress: string, signerAddress: string): string {
+  return (
+    INDRA_PUB_ID_PREFIX +
+    bs58check.encode(concatBuffers(hexToBuffer(multisigAddress), hexToBuffer(signerAddress)))
+  );
 }
 
 export function getLowerCaseAddress(publicKey: Buffer | string): string {
@@ -109,7 +118,7 @@ export async function signChannelMessage(
   privateKey: Buffer | string,
   message: Buffer | string,
 ): Promise<string> {
-  return signMessage(privateKey, message, CHAN_SIGN_PREFIX);
+  return signMessage(privateKey, message, INDRA_SIGN_PREFIX);
 }
 
 export async function recoverPublicKey(
@@ -147,7 +156,7 @@ export async function verifyChannelMessage(
   message: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return verifyMessage(message, sig, CHAN_SIGN_PREFIX);
+  return verifyMessage(message, sig, INDRA_SIGN_PREFIX);
 }
 
 export async function encryptWithPublicKey(publicKey: string, message: string): Promise<string> {
