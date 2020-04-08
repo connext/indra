@@ -27,7 +27,7 @@ import {
   createMinimalTransaction,
 } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
-import { sortAddresses, AppInstanceJson, xkeyKthAddress } from "../util";
+import { AppInstanceJson, xkeyKthAddress } from "../util";
 import { getConnection } from "typeorm";
 import { bigNumberify } from "ethers/utils";
 
@@ -79,7 +79,8 @@ const createTestChannelWithAppInstance = async (
   const appInstance = createAppInstanceJson({
     identityHash: appProposal.identityHash,
     multisigAddress,
-    participants: sortAddresses([userParticipantAddr, nodeParticipantAddr]),
+    initiator: userParticipantAddr,
+    responder: nodeParticipantAddr,
   });
   const updatedFreeBalance: AppInstanceJson = {
     ...channelJson.freeBalanceAppInstance!,
@@ -232,7 +233,8 @@ describe("CFCoreStore", () => {
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,
         multisigAddress,
-        participants: sortAddresses([userParticipantAddr, nodeParticipantAddr]),
+        initiator: userParticipantAddr,
+        responder: nodeParticipantAddr,
       });
       const updatedFreeBalance: AppInstanceJson = {
         ...channelJson.freeBalanceAppInstance!,
@@ -269,7 +271,8 @@ describe("CFCoreStore", () => {
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,
         multisigAddress,
-        participants: sortAddresses([userParticipantAddr, nodeParticipantAddr]),
+        initiator: userParticipantAddr,
+        responder: nodeParticipantAddr,
       });
       await cfCoreStore.createAppInstance(
         multisigAddress,
