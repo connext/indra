@@ -1,8 +1,8 @@
 import { providers } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, Bytes32, DecString, Xpub } from "./basic";
-import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
+import { Address, Bytes32, DecString, ChannelPubId } from "./basic";
+import { ChannelProviderConfig, IChannelProvider, ChannelWallet } from "./channelProvider";
 import { EventNames } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
@@ -18,9 +18,8 @@ export interface ClientOptions {
   backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
-  keyGen?: KeyGen;
-  mnemonic?: string;
-  xpub?: Xpub;
+  mnemonic?: string; // TODO: keep as a quick-start option?
+  signer?: ChannelWallet;
   store?: IClientStore;
   storeType?: StoreTypes;
   logger?: ILogger;
@@ -41,9 +40,9 @@ export interface IConnextClient {
   ethProvider: providers.JsonRpcProvider;
   freeBalanceAddress: Address;
   multisigAddress: Address;
-  nodePublicIdentifier: Xpub;
+  nodeIdentifier: ChannelPubId;
   nodeFreeBalanceAddress: Address;
-  publicIdentifier: Xpub;
+  identifier: ChannelPubId; // channelIdentifier?
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;

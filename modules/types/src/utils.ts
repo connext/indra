@@ -5,9 +5,10 @@ import {
   randomBytes,
   SigningKey,
   joinSignature,
-  bigNumberify,
 } from "ethers/utils";
 import { isBN, toBN } from "./math";
+import { ETHEREUM_NAMESPACE } from "./constants";
+import { AddressZero } from "ethers/constants";
 
 // stolen from https://github.com/microsoft/TypeScript/issues/3192#issuecomment-261720275
 export const enumify = <T extends { [index: string]: U }, U extends string>(x: T): T => x;
@@ -63,24 +64,20 @@ export async function signDigestWithEthers(privateKey: string, digest: string) {
   return joinSignature(signingKey.signDigest(arrayify(digest)));
 }
 
-export function sortByAddress(a: string, b: string) {
-  return toBN(a).lt(toBN(b)) ? -1 : 1;
-}
+// chain id and deployed address
+// defaults to ETH
+export const getAssetId = (
+  chainId: number,
+  address: string = AddressZero,
+  namespace: string = ETHEREUM_NAMESPACE,
+) => {
+  return `${address}@${namespace}:${chainId.toString()}`;
+};
 
-export function sortAddresses(addrs: string[]) {
-  return addrs.sort(sortByAddress);
-}
-
-export async function sortSignaturesBySignerAddress(
-  digest: string,
-  signatures: string[],
-  recoverAddressFn: any = recoverAddressWithEthers,
-): Promise<string[]> {
-  return (
-    await Promise.all(
-      signatures.map(async sig => ({ sig, addr: await recoverAddressFn(digest, sig) })),
-    )
-  )
-    .sort((a, b) => sortByAddress(a.addr, b.addr))
-    .map(x => x.sig);
-}
+export const getPublicIdentifier = (
+  chainId: number, 
+  address: string, 
+  namespace: string = ETHEREUM_NAMESPACE,
+) => {
+  return `${address}@${namespace}:${chainId.toString()}`;
+};

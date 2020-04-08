@@ -1,12 +1,12 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType, ChannelPubId } from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {
-  initiatorXpub: Xpub;
+  initiatorIdentifier: ChannelPubId;
   initiatorDepositTokenAddress: Address;
-  responderXpub: Xpub;
+  responderIdentifier: ChannelPubId;
   responderDepositTokenAddress: Address;
   multisigAddress: Address;
   initiatorBalanceDecrement: BigNumber;
@@ -32,8 +32,8 @@ type InstallProtocolParams = {
 
 type ProposeProtocolParams = {
   multisigAddress: Address;
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: ChannelPubId;
+  responderIdentifier: ChannelPubId;
   appDefinition: Address;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
@@ -48,14 +48,14 @@ type ProposeProtocolParams = {
 };
 
 type SetupProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: ChannelPubId;
+  responderIdentifier: ChannelPubId;
   multisigAddress: Address;
 };
 
 type TakeActionProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: ChannelPubId;
+  responderIdentifier: ChannelPubId;
   multisigAddress: Address;
   appIdentityHash: Address;
   action: SolidityValueType;
@@ -64,15 +64,15 @@ type TakeActionProtocolParams = {
 
 type UninstallProtocolParams = {
   appIdentityHash: Bytes32;
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: ChannelPubId;
+  responderIdentifier: ChannelPubId;
   multisigAddress: Address;
   blockNumberToUseIfNecessary?: number;
 };
 
 type UpdateProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: ChannelPubId;
+  responderIdentifier: ChannelPubId;
   multisigAddress: Address;
   appIdentityHash: Address;
   newState: SolidityValueType;

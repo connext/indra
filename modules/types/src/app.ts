@@ -4,7 +4,6 @@ import {
   DecString,
   HexString,
   SolidityValueType,
-  Xpub,
 } from "./basic";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,

@@ -1,5 +1,5 @@
 import { EventNames, EventPayloads } from "./events";
-import { Bytes32, DecString, Xpub, Address } from "./basic";
+import { Bytes32, DecString, Address, ChannelPubId } from "./basic";
 import { ILoggerService } from "./logger";
 import { MethodResults, MethodParams } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
@@ -17,7 +17,7 @@ export type ProtocolMessageData = {
   processID: string; // uuid?
   protocol: ProtocolName;
   params?: ProtocolParam;
-  to: Address;
+  to: ChannelPubId;
   seq: number;
   // customData: Additional data which depends on the protocol (or even the specific message
   // number in a protocol) lives here. Includes signatures

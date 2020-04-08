@@ -1,7 +1,7 @@
 import { TransactionResponse } from "ethers/providers";
 import { BigNumberish } from "ethers/utils";
 
-import { Address, BigNumber, Bytes32, HexString, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, HexString, ChannelPubId } from "./basic";
 import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 
@@ -41,7 +41,7 @@ type HashLockTransferParameters = {
   amount: BigNumberish;
   timelock: BigNumberish;
   lockHash: Bytes32;
-  recipient: Xpub;
+  recipient: ChannelPubId;
   assetId?: Address;
   meta?: object;
 };
@@ -57,7 +57,7 @@ type ResolveHashLockTransferParameters = {
 
 type ResolveHashLockTransferResponse = {
   appIdentityHash: Bytes32;
-  sender: Xpub;
+  sender: ChannelPubId;
   amount: BigNumber;
   assetId: Address;
   meta?: object;
@@ -72,7 +72,7 @@ type LinkedTransferParameters = {
   assetId?: Address;
   paymentId: Bytes32;
   preImage: Bytes32;
-  recipient?: Xpub;
+  recipient?: ChannelPubId;
   meta?: object;
 };
 
@@ -90,7 +90,7 @@ type ResolveLinkedTransferParameters = {
 
 type ResolveLinkedTransferResponse = {
   appIdentityHash: Bytes32;
-  sender: Xpub;
+  sender: ChannelPubId;
   paymentId: Bytes32;
   amount: BigNumber;
   assetId: Address;
@@ -106,7 +106,7 @@ type SignedTransferParameters = {
   assetId: Address;
   paymentId: Bytes32;
   signer: Address;
-  recipient?: Xpub;
+  recipient?: ChannelPubId;
   meta?: any;
 };
 
@@ -126,7 +126,7 @@ type ResolveSignedTransferResponse = {
   appIdentityHash: Bytes32;
   assetId: Address;
   amount: BigNumber;
-  sender: Xpub;
+  sender: ChannelPubId;
   meta?: any;
 };
 
@@ -168,8 +168,8 @@ type SwapParameters = {
 
 type SwapResponse = {
   id: number;
-  nodePublicIdentifier: Xpub;
-  userPublicIdentifier: Xpub;
+  nodeIdentifier: ChannelPubId;
+  userIdentifier: ChannelPubId;
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: { [assetId: string]: boolean };
@@ -193,7 +193,7 @@ type WithdrawResponse = {
 // transfer
 
 type TransferParameters = MethodParams.Deposit & {
-  recipient: Address;
+  recipient: ChannelPubId;
   meta?: object;
   paymentId?: Bytes32;
 };

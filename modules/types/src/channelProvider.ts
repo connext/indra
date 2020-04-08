@@ -1,4 +1,4 @@
-import { Address, Bytes32, DecString, Xpub } from "./basic";
+import { Address, Bytes32, DecString, ChannelPubId } from "./basic";
 import { ContractAddresses } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
@@ -13,6 +13,7 @@ import {
   MinimalTransaction,
 } from "./commitments";
 import { Wallet } from "ethers";
+import { JsonRpcProvider } from "ethers/providers";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -84,21 +85,19 @@ export type ChannelProviderConfig = {
   freeBalanceAddress: Address;
   multisigAddress?: Address; // may not be deployed yet
   nodeUrl: string;
-  userPublicIdentifier: Xpub;
+  userIdentifier: ChannelPubId;
 };
 
-export type KeyGen = (index: string) => Promise<string>;
-
 export interface CFChannelProviderOptions {
-  ethProvider: any; // TODO: replace w real type
-  keyGen: KeyGen;
+  ethProvider: JsonRpcProvider;
+  signer: ChannelWallet;
   lockService?: ILockService;
   logger?: ILoggerService;
   messaging: any;
   contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
-  xpub: Xpub;
+  channelIdentifier: ChannelPubId;
   store: IClientStore;
 }
 

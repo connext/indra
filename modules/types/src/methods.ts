@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType, ChannelPubId } from "./basic";
 import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
@@ -11,13 +11,13 @@ import { enumify } from "./utils";
 ////////////////////////////////////////
 
 type CreateChannelParams = {
-  owners: Xpub[];
+  owners: ChannelPubId[];
 };
 
 type CreateChannelResult = {
   multisigAddress: Address;
-  owners?: Xpub[];
-  counterpartyXpub?: Xpub;
+  owners?: Address[]; // multisigOwners on chain
+  counterpartyIdentifier?: ChannelPubId;
 };
 
 ////////////////////////////////////////
@@ -160,7 +160,7 @@ type ProposeInstallParams = {
   initiatorDepositTokenAddress: Address;
   meta?: Object;
   outcomeType: OutcomeType;
-  proposedToIdentifier: Xpub;
+  proposedToIdentifier: ChannelPubId;
   responderDeposit: BigNumber;
   responderDepositTokenAddress: Address;
   stateTimeout?: BigNumber;

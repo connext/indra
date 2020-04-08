@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, ChannelPubId } from "./basic";
 import { enumify } from "./utils";
 
 export type Collateralizations = { [assetId: string]: boolean };
@@ -14,7 +14,7 @@ export type RebalanceProfile = {
 // wtf is this?
 export interface VerifyNonceDtoType {
   sig: string;
-  userPublicIdentifier: Xpub;
+  userIdentifier: ChannelPubId;
 }
 
 // used to verify channel is in sequence

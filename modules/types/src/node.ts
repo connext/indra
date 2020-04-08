@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, DecString, Network, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, DecString, Network, ChannelPubId } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
@@ -15,8 +15,8 @@ type GetRebalanceProfileResponse = RebalanceProfile;
 
 type GetHashLockTransferResponse =
   | {
-      senderPublicIdentifier: Xpub;
-      receiverPublicIdentifier?: Xpub;
+      senderIdentifier: ChannelPubId;
+      receiverIdentifier?: ChannelPubId;
       assetId: Address;
       amount: DecString;
       lockHash: Bytes32;
@@ -26,8 +26,8 @@ type GetHashLockTransferResponse =
   | undefined;
 
 type GetSignedTransferResponse = {
-  senderPublicIdentifier: Xpub;
-  receiverPublicIdentifier?: Xpub;
+  senderIdentifier: ChannelPubId;
+  receiverIdentifier?: ChannelPubId;
   assetId: Address;
   amount: DecString;
   paymentId: Bytes32;
@@ -39,23 +39,23 @@ type GetTransferResponse = {
   paymentId: Bytes32;
   amount: BigNumber;
   assetId: Address;
-  senderPublicIdentifier: Xpub;
-  receiverPublicIdentifier: Xpub;
+  senderIdentifier: ChannelPubId;
+  receiverIdentifier: ChannelPubId;
   meta: any;
 };
 
 type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
-  nodePublicIdentifier: Xpub;
+  nodeIdentifier: ChannelPubId;
   messagingUrl: string[];
   supportedTokenAddresses: Address[];
 };
 
 type GetChannelResponse = {
   id: number;
-  nodePublicIdentifier: Xpub;
-  userPublicIdentifier: Xpub;
+  nodeIdentifier: ChannelPubId;
+  userIdentifier: ChannelPubId;
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: Collateralizations;
@@ -82,8 +82,8 @@ type FetchedLinkedTransfer = {
   createdAt: Date;
   amount: BigNumber;
   assetId: Address;
-  senderPublicIdentifier: Xpub;
-  receiverPublicIdentifier?: Xpub;
+  senderIdentifier: ChannelPubId;
+  receiverIdentifier?: ChannelPubId;
   status: LinkedTransferStatus;
   meta: any;
   encryptedPreImage?: string;

@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, ChannelPubId } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,
@@ -44,8 +44,8 @@ export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTy
   appIdentityHash: Bytes32;
   assetId: Address;
   paymentId?: Bytes32;
-  sender: Xpub;
-  recipient?: Xpub;
+  sender: ChannelPubId;
+  recipient?: ChannelPubId;
   meta: any;
   type: T;
   transferMeta: T extends LinkedTransfer
@@ -64,8 +64,8 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   amount: HexObject;
   assetId: Address;
   paymentId?: Bytes32;
-  sender: Xpub;
-  recipient?: Xpub;
+  sender: ChannelPubId;
+  recipient?: ChannelPubId;
   meta: any;
   type: T;
 };
