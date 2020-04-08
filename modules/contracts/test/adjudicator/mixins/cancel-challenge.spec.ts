@@ -10,11 +10,12 @@ import {
   AppWithCounterState,
   computeCancelChallengeHash,
   AppWithCounterClass,
+  sortSignaturesBySignerAddress,
 } from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
-import { sortSignaturesBySignerAddress, toBN } from "@connext/types";
+import { toBN } from "@connext/types";
 import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
 
 describe("cancelChallenge", () => {
@@ -112,14 +113,10 @@ describe("cancelChallenge", () => {
     await setState(versionNumber);
 
     const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
-    const signatures = await sortSignaturesBySignerAddress(
-      digest,
-      [
-        await signChannelMessage(wallet.privateKey, digest),
-        await signChannelMessage(bob.privateKey, digest),
-      ],
-      verifyChannelMessage,
-    );
+    const signatures = await sortSignaturesBySignerAddress(digest, [
+      await signChannelMessage(wallet.privateKey, digest),
+      await signChannelMessage(bob.privateKey, digest),
+    ]);
     await expect(cancelChallenge(versionNumber, signatures)).to.be.revertedWith(
       "Invalid signature",
     );

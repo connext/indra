@@ -3,7 +3,6 @@ import {
   AppChallengeBigNumber,
   toBN,
   ChallengeStatus,
-  sortSignaturesBySignerAddress,
   createRandom32ByteHexString,
   ChallengeEvents,
   createRandomAddress,
@@ -27,6 +26,7 @@ import {
   encodeOutcome,
   computeCancelChallengeHash,
 } from "./index";
+import { sortSignaturesBySignerAddress } from "../../utils";
 
 export const setupContext = async (
   appRegistry: Contract,
@@ -118,14 +118,10 @@ export const setupContext = async (
     signers?: string[],
   ) => {
     if (!signatures) {
-      signatures = await sortSignaturesBySignerAddress(
-        digest,
-        [
-          await signChannelMessage(bob.privateKey, digest),
-          await signChannelMessage(alice.privateKey, digest),
-        ],
-        verifyChannelMessage,
-      );
+      signatures = await sortSignaturesBySignerAddress(digest, [
+        await signChannelMessage(bob.privateKey, digest),
+        await signChannelMessage(alice.privateKey, digest),
+      ]);
     }
 
     if (!signers) {
@@ -183,14 +179,10 @@ export const setupContext = async (
       versionNumber,
       appStateHash: stateHash,
       timeout,
-      signatures: await sortSignaturesBySignerAddress(
-        digest,
-        [
-          await signChannelMessage(alice.privateKey, digest),
-          await signChannelMessage(bob.privateKey, digest),
-        ],
-        verifyChannelMessage,
-      ),
+      signatures: await sortSignaturesBySignerAddress(digest, [
+        await signChannelMessage(alice.privateKey, digest),
+        await signChannelMessage(bob.privateKey, digest),
+      ]),
     });
     await wrapInEventVerification(call, {
       status: ChallengeStatus.IN_DISPUTE,
@@ -329,14 +321,10 @@ export const setupContext = async (
         versionNumber,
         appStateHash: stateHash,
         timeout,
-        signatures: await sortSignaturesBySignerAddress(
-          stateDigest,
-          [
-            await signChannelMessage(alice.privateKey, stateDigest),
-            await signChannelMessage(bob.privateKey, stateDigest),
-          ],
-          verifyChannelMessage,
-        ),
+        signatures: await sortSignaturesBySignerAddress(stateDigest, [
+          await signChannelMessage(alice.privateKey, stateDigest),
+          await signChannelMessage(bob.privateKey, stateDigest),
+        ]),
       },
       encodeState(state),
       {
@@ -349,14 +337,10 @@ export const setupContext = async (
   const cancelChallenge = async (versionNumber: number, signatures?: string[]): Promise<void> => {
     const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
     if (!signatures) {
-      signatures = await sortSignaturesBySignerAddress(
-        digest,
-        [
-          await signChannelMessage(alice.privateKey, digest),
-          await signChannelMessage(bob.privateKey, digest),
-        ],
-        verifyChannelMessage,
-      );
+      signatures = await sortSignaturesBySignerAddress(digest, [
+        await signChannelMessage(alice.privateKey, digest),
+        await signChannelMessage(bob.privateKey, digest),
+      ]);
     }
     // TODO: why does event verification fail?
     // await wrapInEventVerification(
