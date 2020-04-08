@@ -1,5 +1,5 @@
 /* global before */
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import {
   CoinTransfer,
@@ -27,10 +27,7 @@ const decodeTransfers = (encodedTransfers: string): CoinTransfer[] =>
 const decodeAppState = (encodedAppState: string): WithdrawAppState =>
   defaultAbiCoder.decode([WithdrawAppStateEncoding], encodedAppState)[0];
 
-const encodeAppState = (
-  state: WithdrawAppState,
-  onlyCoinTransfers: boolean = false,
-): string => {
+const encodeAppState = (state: WithdrawAppState, onlyCoinTransfers: boolean = false): string => {
   if (!onlyCoinTransfers) return defaultAbiCoder.encode([WithdrawAppStateEncoding], [state]);
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.transfers]);
 };
@@ -53,11 +50,7 @@ describe("WithdrawApp", async () => {
 
   before(async () => {
     wallet = (await provider.getWallets())[2];
-    withdrawApp = await new ContractFactory(
-      WithdrawApp.abi,
-      WithdrawApp.bytecode,
-      wallet,
-    ).deploy();
+    withdrawApp = await new ContractFactory(WithdrawApp.abi, WithdrawApp.bytecode, wallet).deploy();
   });
 
   // helpers
@@ -66,10 +59,7 @@ describe("WithdrawApp", async () => {
   };
 
   const applyAction = async (state: any, action: WithdrawAppAction): Promise<string> => {
-    return await withdrawApp.functions.applyAction(
-      encodeAppState(state),
-      encodeAppAction(action),
-    );
+    return await withdrawApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
   };
 
   const createInitialState = async (): Promise<WithdrawAppState> => {
@@ -84,7 +74,7 @@ describe("WithdrawApp", async () => {
           to: counterpartyWallet.address,
         },
       ],
-      signatures: [await signDigest(withdrawerSigningKey.privateKey, data), HashZero],
+      signatures: [await signChannelMessage(withdrawerSigningKey.privateKey, data), HashZero],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
       data,
       nonce: hexlify(randomBytes(32)),
@@ -94,7 +84,7 @@ describe("WithdrawApp", async () => {
 
   const createAction = async (): Promise<WithdrawAppAction> => {
     return {
-      signature: await signDigest(counterpartySigningKey.privateKey, data),
+      signature: await signChannelMessage(counterpartySigningKey.privateKey, data),
     };
   };
 

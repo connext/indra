@@ -1,8 +1,8 @@
 pragma solidity 0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../shared/libs/LibChannelCrypto.sol";
 import "./LibDispute.sol";
 
 /// @title LibStateChannelApp
@@ -10,7 +10,7 @@ import "./LibDispute.sol";
 /// @notice Contains the structures and enums needed when disputing apps
 contract LibStateChannelApp is LibDispute {
 
-    using ECDSA for bytes32;
+    using LibChannelCrypto for bytes32;
     using SafeMath for uint256;
 
     // A minimal structure that uniquely identifies a single instance of an App
@@ -133,7 +133,7 @@ contract LibStateChannelApp is LibDispute {
         address lastSigner = address(0);
         for (uint256 i = 0; i < signers.length; i++) {
             require(
-                signers[i] == txHash.recover(signatures[i]),
+                signers[i] == txHash.verifyChannelMessage(signatures[i]),
                 "Invalid signature"
             );
             require(signers[i] > lastSigner, "Signers not in alphanumeric order");

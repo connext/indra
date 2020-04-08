@@ -5,6 +5,7 @@ import {
   stringify,
   deBigNumberifyJson,
   IStoreService,
+  sortAddresses,
 } from "@connext/types";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
@@ -14,7 +15,7 @@ import { xkeyKthAddress } from "../xkeys";
 import { AppInstanceProposal } from "./app-instance-proposal";
 import { AppInstance } from "./app-instance";
 import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
-import { flipTokenIndexedBalances, sortAddresses } from "./utils";
+import { flipTokenIndexedBalances } from "./utils";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,
@@ -333,7 +334,6 @@ export class StateChannel {
   }
 
   public setState(appInstance: AppInstance, state: SolidityValueType) {
-
     const appInstances = new Map<string, AppInstance>(this.appInstances.entries());
 
     appInstances.set(appInstance.identityHash, appInstance.setState(state));
@@ -350,11 +350,9 @@ export class StateChannel {
 
     if (!participants.every((v, idx) => v === appInstance.participants[idx])) {
       throw new Error(
-        `AppInstance passed to installApp has incorrect participants. Got ${
-          JSON.stringify(appInstance.participants)
-        } but expected ${
-          JSON.stringify(participants)
-        }`,
+        `AppInstance passed to installApp has incorrect participants. Got ${JSON.stringify(
+          appInstance.participants,
+        )} but expected ${JSON.stringify(participants)}`,
       );
     }
 
@@ -397,7 +395,10 @@ export class StateChannel {
 
     return this.build({
       appInstances,
-    }).removeActiveAppAndIncrementFreeBalance(appToBeUninstalled.identityHash, tokenIndexedIncrements);
+    }).removeActiveAppAndIncrementFreeBalance(
+      appToBeUninstalled.identityHash,
+      tokenIndexedIncrements,
+    );
   }
 
   toJson(): StateChannelJSON {
@@ -462,9 +463,7 @@ export class StateChannel {
         json.schemaVersion,
       );
     } catch (e) {
-      throw new Error(
-        `could not create state channel from json: ${stringify(json)}. Error: ${e}`,
-      );
+      throw new Error(`could not create state channel from json: ${stringify(json)}. Error: ${e}`);
     }
   }
 
@@ -475,7 +474,9 @@ export class StateChannel {
   ): Promise<string[]> {
     const stateChannel = await store.getStateChannel(multisigAddress);
     if (!stateChannel) {
-      throw new Error(`[getPeersAddressFromChannel] No state channel found in store for ${multisigAddress}`);
+      throw new Error(
+        `[getPeersAddressFromChannel] No state channel found in store for ${multisigAddress}`,
+      );
     }
     const owners = stateChannel.userNeuteredExtendedKeys;
     return owners.filter(owner => owner !== myIdentifier);

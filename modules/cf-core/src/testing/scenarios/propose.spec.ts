@@ -1,4 +1,4 @@
-import { deBigNumberifyJson, MethodParams, ProposeMessage } from "@connext/types";
+import { deBigNumberifyJson, ProposeMessage, ProtocolParams, MethodParams } from "@connext/types";
 
 import { Node } from "../../node";
 
@@ -53,9 +53,10 @@ describe("Node method follows spec - propose install", () => {
     });
 
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
-      const rpc = makeProposeCall(nodeB, TicTacToeApp);
+      const rpc = makeProposeCall(nodeB, TicTacToeApp, multisigAddress);
       const params = {
         ...(rpc.parameters as MethodParams.ProposeInstall),
+        multisigAddress: undefined,
         meta: {
           info: "Provided meta",
         },

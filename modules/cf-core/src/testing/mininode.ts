@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { HDNode } from "ethers/utils/hdnode";
-import { signDigest } from "@connext/crypto";
+import { signChannelMessage } from "@connext/crypto";
 
 import { Opcode, PersistAppType } from "../types";
 import { ProtocolRunner } from "../machine";
@@ -27,7 +27,7 @@ const makeSigner = (hdNode: HDNode) => {
 
     const privateKey = hdNode.derivePath(`${keyIndex}`).privateKey;
 
-    return await signDigest(privateKey, commitmentHash);
+    return await signChannelMessage(privateKey, commitmentHash);
   };
 };
 
@@ -86,19 +86,12 @@ export class MiniNode {
           }
 
           case PersistAppType.UpdateInstance: {
-            await this.store.updateAppInstance(
-              multisigAddress,
-              (app as AppInstance).toJson(),
-            );
+            await this.store.updateAppInstance(multisigAddress, (app as AppInstance).toJson());
             break;
           }
 
           case PersistAppType.RemoveInstance: {
-            await this.store.removeAppInstance(
-              multisigAddress,
-              identityHash,
-              freeBalance.toJson(),
-            );
+            await this.store.removeAppInstance(multisigAddress, identityHash, freeBalance.toJson());
             break;
           }
 

@@ -2,7 +2,6 @@ export {
   getCreate2MultisigAddress,
   Node as CFCore,
   scanForCriticalAddresses,
-  sortAddresses,
   xkeyKthAddress,
   xkeysToSortedKthAddresses,
 } from "@connext/cf-core";
@@ -21,4 +20,5 @@ export {
   RejectProposalMessage,
   UninstallMessage,
   UpdateStateMessage,
+  sortAddresses,
 } from "@connext/types";

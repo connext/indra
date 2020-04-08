@@ -17,7 +17,6 @@ export const ChannelMethods = enumify({
   ...MethodNames,
   chan_config: "chan_config",
   chan_signMessage: "chan_signMessage",
-  chan_signDigest: "chan_signDigest",
   chan_restoreState: "chan_restoreState",
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
@@ -27,7 +26,7 @@ export const ChannelMethods = enumify({
   chan_createSetStateCommitment: "chan_createSetStateCommitment",
   chan_createConditionalCommitment: "chan_createConditionalCommitment",
 });
-export type ChannelMethods = (typeof ChannelMethods)[keyof typeof ChannelMethods];
+export type ChannelMethods = typeof ChannelMethods[keyof typeof ChannelMethods];
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -58,7 +57,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
   ///////////////////////////////////
   // SIGNING METHODS
   signMessage(message: string): Promise<string>;
-  signDigest(message: string): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS
@@ -70,9 +68,9 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // TRANSFER METHODS
   walletTransfer(params: WalletTransferParams): Promise<string>;
   setStateChannel(state: StateChannelJSON): Promise<void>;
-  createSetupCommitment(multisigAddress: Address, commitment: MinimalTransaction): Promise<void>;
+  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   createSetStateCommitment(
-    appIdentityHash: Bytes32,
+    appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
   createConditionalCommitment(
