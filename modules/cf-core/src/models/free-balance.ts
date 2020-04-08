@@ -1,9 +1,8 @@
-import { stringify, toBN } from "@connext/types";
+import { AppInterface, OutcomeType, stringify, toBN } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
-import { AppInterface, OutcomeType } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 
 import { AppInstance } from "./app-instance";

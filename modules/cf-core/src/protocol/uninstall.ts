@@ -1,17 +1,24 @@
-import { ProtocolNames, ProtocolParams, ILoggerService, ProtocolRoles, UninstallMiddlewareContext } from "@connext/types";
+import {
+  ILoggerService,
+  Opcode,
+  ProtocolMessageData,
+  ProtocolNames,
+  ProtocolParams,
+  ProtocolRoles,
+  UninstallMiddlewareContext,
+} from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
+import { AppInstance, StateChannel } from "../models";
+import { logTime } from "../utils";
 import {
   Context,
-  Opcode,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
   PersistAppType,
   PersistCommitmentType,
+  ProtocolExecutionFlow,
 } from "../types";
-import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import {
@@ -19,8 +26,7 @@ import {
   computeTokenIndexedFreeBalanceIncrements,
   stateChannelClassFromStoreByMultisig,
 } from "./utils";
-import { StateChannel } from "..";
-import { AppInstance } from "../models/app-instance";
+
 
 const protocol = ProtocolNames.uninstall;
 const {
@@ -98,7 +104,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: responderXpub,
         customData: { signature: mySignature },
         seq: 1,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     checkpoint = Date.now();
@@ -239,7 +245,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: mySignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 100ms

@@ -152,17 +152,17 @@ type RequestDepositRightsResult = {
 ////////////////////////////////////////
 
 type ProposeInstallParams = {
-  appDefinition: Address;
   abiEncodings: AppABIEncodings;
-  initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress: Address;
-  responderDeposit: BigNumber;
-  responderDepositTokenAddress: Address;
+  appDefinition: Address;
   defaultTimeout: BigNumber;
   initialState: AppState;
-  proposedToIdentifier: Xpub;
-  outcomeType: OutcomeType;
+  initiatorDeposit: BigNumber;
+  initiatorDepositTokenAddress: Address;
   meta?: Object;
+  outcomeType: OutcomeType;
+  proposedToIdentifier: Xpub;
+  responderDeposit: BigNumber;
+  responderDepositTokenAddress: Address;
   stateTimeout?: BigNumber;
 };
 

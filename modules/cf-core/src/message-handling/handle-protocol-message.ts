@@ -1,11 +1,15 @@
 import {
   bigNumberifyJson,
   EventNames,
+  IStoreService,
+  Message,
+  NetworkContext,
+  ProtocolMessage,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
-  IStoreService,
+  SolidityValueType,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -13,26 +17,20 @@ import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
-import {
-  EventEmittedMessage,
-  NetworkContext,
-  NodeMessageWrappedProtocolMessage,
-  SolidityValueType,
-} from "../types";
 import { StateChannel, AppInstance } from "../models";
 
 /**
- * Forwards all received NodeMessages that are for the machine's internal
+ * Forwards all received Messages that are for the machine's internal
  * protocol execution directly to the protocolRunner's message handler:
  * `runProtocolWithMessage`
  */
 export async function handleReceivedProtocolMessage(
   requestHandler: RequestHandler,
-  msg: NodeMessageWrappedProtocolMessage,
+  msg: ProtocolMessage,
 ) {
   const { protocolRunner, store, router, networkContext, publicIdentifier } = requestHandler;
 
-  const { data } = bigNumberifyJson(msg) as NodeMessageWrappedProtocolMessage;
+  const { data } = bigNumberifyJson(msg) as ProtocolMessage;
 
   const { protocol, seq, params } = data;
 
@@ -53,7 +51,7 @@ export async function handleReceivedProtocolMessage(
   }
 
   if (protocol !== ProtocolNames.install) {
-    await emitOutgoingNodeMessage(router, outgoingEventData);
+    await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
 
@@ -62,13 +60,13 @@ export async function handleReceivedProtocolMessage(
       (outgoingEventData!.data as any).params["appIdentityHash"];
 
   if (!appIdentityHash) {
-    await emitOutgoingNodeMessage(router, outgoingEventData);
+    await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
 
   const proposal = await store.getAppProposal(appIdentityHash);
   if (!proposal) {
-    await emitOutgoingNodeMessage(router, outgoingEventData);
+    await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
 
@@ -81,10 +79,10 @@ export async function handleReceivedProtocolMessage(
   await store.removeAppProposal(channel.multisigAddress, proposal.identityHash);
 
   // finally, emit message
-  await emitOutgoingNodeMessage(router, outgoingEventData);
+  await emitOutgoingMessage(router, outgoingEventData);
 }
 
-function emitOutgoingNodeMessage(router: RpcRouter, msg: EventEmittedMessage) {
+function emitOutgoingMessage(router: RpcRouter, msg: Message) {
   return router.emit(msg["type"], msg, "outgoing");
 }
 
@@ -94,7 +92,7 @@ async function getOutgoingEventDataFromProtocol(
   networkContext: NetworkContext,
   store: IStoreService,
   publicIdentifier: string,
-): Promise<EventEmittedMessage | undefined> {
+): Promise<Message | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorXpub };
 
@@ -135,7 +133,11 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appIdentityHash: StateChannel.fromJson(retrieved).mostRecentlyInstalledAppInstance().identityHash,
+            appIdentityHash:
+              StateChannel
+                .fromJson(retrieved)
+                .mostRecentlyInstalledAppInstance()
+                .identityHash,
           },
         },
       };
@@ -183,11 +185,11 @@ function getStateUpdateEventData(
 ) {
   // note: action does not exist on type `ProtocolParams.Update`
   // so use any cast
-  const { appIdentityHash: appIdentityHash, action } = params as any;
+  const { appIdentityHash, action } = params as any;
   return { newState, appIdentityHash, action };
 }
 
-function getUninstallEventData({ appIdentityHash: appIdentityHash }: ProtocolParams.Uninstall) {
+function getUninstallEventData({ appIdentityHash }: ProtocolParams.Uninstall) {
   return { appIdentityHash };
 }
 

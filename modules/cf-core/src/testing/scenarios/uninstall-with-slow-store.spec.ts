@@ -1,7 +1,6 @@
-import { delay } from "@connext/types";
+import { delay, UninstallMessage } from "@connext/types";
 
 import { Node } from "../../node";
-import { UninstallMessage } from "../../types";
 
 import { NetworkContextForTestSuite } from "../contracts";
 import { SetupContext, setup } from "../setup";

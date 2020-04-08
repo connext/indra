@@ -1,17 +1,20 @@
-import { ProtocolNames, ProtocolParams, ProtocolRoles, SetupMiddlewareContext, } from "@connext/types";
+import {
+  Opcode,
+  ProtocolMessageData,
+  ProtocolNames,
+  ProtocolParams,
+  ProtocolRoles,
+  SetupMiddlewareContext,
+} from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
-
 import { StateChannel } from "../models";
 import {
   Context,
-  Opcode,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
   PersistCommitmentType,
+  ProtocolExecutionFlow,
 } from "../types";
-
 import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
@@ -90,7 +93,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setupSignature: mySetupSignature,
           setStateSignature: mySignatureOnFreeBalanceState,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
     logTime(log, substart, `Received responder's sig`);
 
@@ -235,7 +238,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setupSignature: mySetupSignature,
           setStateSignature: mySignatureOnFreeBalanceState,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
     logTime(log, start, `Finished responding`);
   },

@@ -1,8 +1,13 @@
-import { EventNames, MethodNames, MethodParams, MethodResults } from "@connext/types";
+import {
+  CreateChannelMessage,
+  EventNames,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+} from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import { CreateChannelMessage } from "../../types";
 
 import { NodeController } from "../controller";
 import { getCreate2MultisigAddress } from "../../utils";

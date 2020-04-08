@@ -1,15 +1,14 @@
-import { EventNames } from "@connext/types";
+import { EventNames, UninstallMessage } from "@connext/types";
 import { One, Two, Zero } from "ethers/constants";
 
 import { Node } from "../../node";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
-import { UninstallMessage } from "../../types";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
-  assertNodeMessage,
+  assertMessage,
   collateralizeChannel,
   constructUninstallRpc,
   createChannel,
@@ -24,7 +23,7 @@ expect.extend({ toBeEq });
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
 
 function assertUninstallMessage(senderId: string, appIdentityHash: string, msg: UninstallMessage) {
-  assertNodeMessage(msg, {
+  assertMessage(msg, {
     from: senderId,
     type: EventNames.UNINSTALL_EVENT,
     data: {

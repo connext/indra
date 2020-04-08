@@ -1,5 +1,12 @@
-import { delay, MethodNames, MethodParams, MethodResults, stringify } from "@connext/types";
-import { ILoggerService } from "@connext/types";
+import {
+  delay,
+  ILoggerService,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  NetworkContext,
+  stringify,
+} from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
@@ -17,7 +24,6 @@ import {
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { NetworkContext } from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";

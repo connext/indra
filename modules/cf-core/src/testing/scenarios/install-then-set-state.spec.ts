@@ -243,7 +243,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         ),
       ];
 
-      const multisigDelegateCallTx2 = await freeBalanceConditionalTransaction.getSignedTransaction();
+      const multisigDelegateCallTx2 =
+        await freeBalanceConditionalTransaction.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...multisigDelegateCallTx2,

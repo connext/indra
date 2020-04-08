@@ -1,3 +1,4 @@
+import { sortByAddress, sortAddresses } from "@connext/types";
 import { Wallet } from "ethers";
 import { fromExtendedKey, fromMnemonic, HDNode } from "ethers/utils/hdnode";
 import memoize from "memoizee";

@@ -1,16 +1,21 @@
-import { ProtocolNames, ProtocolParams, ProtocolRoles, TakeActionMiddlewareContext } from "@connext/types";
+import {
+  Opcode,
+  ProtocolMessageData,
+  ProtocolNames,
+  ProtocolParams,
+  ProtocolRoles,
+  TakeActionMiddlewareContext,
+} from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
+import { logTime } from "../utils";
 import {
   Context,
-  Opcode,
   PersistAppType,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
   PersistCommitmentType,
+  ProtocolExecutionFlow,
 } from "../types";
-import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
@@ -99,7 +104,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: mySignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 10ms
@@ -228,7 +233,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: mySignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 149ms

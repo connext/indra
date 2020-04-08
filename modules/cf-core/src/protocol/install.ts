@@ -1,4 +1,15 @@
-import { ProtocolNames, ProtocolParams, ProtocolRoles, InstallMiddlewareContext, delay } from "@connext/types";
+import {
+  InstallMiddlewareContext,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  Opcode,
+  OutcomeType,
+  ProtocolMessageData,
+  ProtocolNames,
+  ProtocolParams,
+  ProtocolRoles,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParams,
+} from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -8,15 +19,9 @@ import { getConditionalTransactionCommitment, getSetStateCommitment } from "../e
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  Opcode,
-  OutcomeType,
   PersistAppType,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcomeInterpreterParams,
   PersistCommitmentType,
+  ProtocolExecutionFlow,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -137,7 +142,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignatureOnConditionalTransaction,
         },
         seq: 1,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 7ms
@@ -219,7 +224,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignatureOnFreeBalanceStateUpdate,
         },
         seq: UNASSIGNED_SEQ_NO,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
     
     // 335ms
@@ -357,7 +362,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
           signature2: mySignatureOnFreeBalanceStateUpdate,
         },
         seq: UNASSIGNED_SEQ_NO,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 7ms
@@ -403,7 +408,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         dataPersisted: true,
       },
       seq: UNASSIGNED_SEQ_NO,
-    } as ProtocolMessage;
+    } as ProtocolMessageData;
 
     // 0ms
     yield [IO_SEND, m4];

@@ -1,15 +1,16 @@
-import { MultisigOperation } from "@connext/types";
+import {
+  ConditionalTransactionCommitmentJSON,
+  MultisigOperation,
+  NetworkContext,
+  OutcomeType,
+} from "@connext/types";
+  
 import { AddressZero } from "ethers/constants";
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { AppInstance, StateChannel } from "../models";
-import {
-  ConditionalTransactionCommitmentJSON,
-  Context,
-  NetworkContext,
-  OutcomeType,
-} from "../types";
+import { Context } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 

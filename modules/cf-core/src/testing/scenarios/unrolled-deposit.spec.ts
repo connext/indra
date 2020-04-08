@@ -6,6 +6,7 @@ import { Node } from "../../node";
 import { xkeyKthAddress } from "../../xkeys";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
+import { DolphinCoin } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
   createChannel,
@@ -16,7 +17,6 @@ import {
   getDepositApps,
   getMultisigBalance,
 } from "../utils";
-import { DolphinCoin } from "../contracts";
 
 expect.extend({ toBeLt, toBeEq });
 

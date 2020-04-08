@@ -1,5 +1,6 @@
+import { Opcode } from "@connext/types";
+
 import { Deferred } from "../deferred";
-import { Opcode } from "../types";
 
 import { MiniNode } from "./mininode";
 
