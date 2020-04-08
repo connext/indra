@@ -5,7 +5,7 @@ import { Node } from "../../node";
 
 import { setup, SetupContext } from "../setup";
 import {
-  assertNodeMessage,
+  assertMessage,
   confirmChannelCreation,
   constructChannelCreationRpc,
   getChannelAddresses,
@@ -39,13 +39,13 @@ describe("Node can create multisig, other owners get notified", () => {
     let assertionCount = 0;
 
     nodeA.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-      assertNodeMessage(msg, expectedMsg, ["data.multisigAddress"]);
+      assertMessage(msg, expectedMsg, ["data.multisigAddress"]);
       assertionCount += 1;
       if (assertionCount === 2) done();
     });
 
     nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-      assertNodeMessage(
+      assertMessage(
         msg,
         {
           ...expectedMsg,

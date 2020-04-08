@@ -1,11 +1,15 @@
-import { ProtocolParams, delay } from "@connext/types";
+import {
+  delay,
+  InstallMessage,
+  ProposeMessage,
+  ProtocolParams,
+} from "@connext/types";
 import { One } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
 
 import { Node } from "../../node";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
-import { InstallMessage, ProposeMessage } from "../../types";
 
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../bignumber-jest-matcher";

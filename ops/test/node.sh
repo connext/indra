@@ -148,8 +148,8 @@ docker run \
     bash ops/wait-for.sh -t 60 $INDRA_PG_HOST:$INDRA_PG_PORT 2> /dev/null
     echo "Waiting for ${INDRA_NATS_SERVERS#*://}..."
     bash ops/wait-for.sh -t 60 ${INDRA_NATS_SERVERS#*://} 2> /dev/null
-    echo "Waiting for $redis_host:6379..."
-    bash ops/wait-for.sh -t 60 $redis_host:6379 2> /dev/null
+    echo "Waiting for ${INDRA_REDIS_URL#*://}..."
+    bash ops/wait-for.sh -t 60 ${INDRA_REDIS_URL#*://} 2> /dev/null
     echo
 
     cd modules/node

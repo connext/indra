@@ -1,5 +1,14 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
+import {
+  IStoreService,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  SolidityValueType,
+} from "@connext/types";
+import { Zero } from "ethers/constants";
 import { INVALID_ARGUMENT } from "ethers/errors";
+import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -11,12 +20,9 @@ import {
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import { SolidityValueType } from "../../types";
 import { getFirstElementInListNotEqualTo } from "../../utils";
 import { NodeController } from "../controller";
 import { AppInstance } from "../../models";
-import { BigNumber } from "ethers/utils";
-import { Zero } from "ethers/constants";
 
 export class UpdateStateController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_updateState)

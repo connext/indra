@@ -89,10 +89,11 @@ restart-prod:
 clean: stop
 	docker container prune -f
 	rm -rf .flags/*
-	rm -rf node_modules/@connext modules/**/node_modules/@connext
-	rm -rf node_modules/@walletconnect modules/**/node_modules/@walletconnect
-	rm -rf modules/**/node_modules/**/.git
-	rm -rf modules/**/build modules/**/cache modules/**/dist
+	rm -rf node_modules/@connext modules/*/node_modules/@connext
+	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
+	rm -rf modules/*/node_modules/*/.git
+	rm -rf modules/*/build modules/*/dist
+	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/*/cache
 
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
@@ -331,7 +332,7 @@ types: node-modules $(shell find modules/types $(find_options))
 ########################################
 # Common Prerequisites
 
-node-modules: builder package.json $(shell ls modules/**/package.json)
+node-modules: builder package.json $(shell ls modules/*/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
 	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205

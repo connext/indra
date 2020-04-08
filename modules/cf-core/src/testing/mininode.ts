@@ -1,17 +1,17 @@
 import {
   AppInstanceProposal,
-  EthereumCommitment,
+  IStoreService,
   NetworkContext,
   nullLogger,
-  IStoreService,
+  Opcode,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { HDNode } from "ethers/utils/hdnode";
 import { signChannelMessage } from "@connext/crypto";
 
-import { Opcode, PersistAppType } from "../types";
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
+import { PersistAppType } from "../types";
 
 import { getRandomHDNodes } from "./random-signing-keys";
 

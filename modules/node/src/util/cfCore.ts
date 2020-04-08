@@ -14,7 +14,7 @@ export {
   DepositFailedMessage,
   DepositStartedMessage,
   InstallMessage,
-  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
   OutcomeType,
   ProposeMessage,
   RejectProposalMessage,

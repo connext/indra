@@ -1,4 +1,12 @@
-import { AppInstanceProposal, ProtocolNames, ProtocolParams, ProtocolRoles, ProposeMiddlewareContext } from "@connext/types";
+import {
+  AppInstanceProposal,
+  Opcode,
+  ProposeMiddlewareContext,
+  ProtocolMessageData,
+  ProtocolNames,
+  ProtocolParams,
+  ProtocolRoles,
+} from "@connext/types";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
@@ -6,11 +14,9 @@ import { getSetStateCommitment } from "../ethereum";
 import { AppInstance } from "../models";
 import {
   Context,
-  Opcode,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
   PersistAppType,
   PersistCommitmentType,
+  ProtocolExecutionFlow,
 } from "../types";
 import { appIdentityToHash, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
@@ -141,7 +147,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: {
         signature: initiatorSignatureOnInitialState,
       },
-    } as ProtocolMessage;
+    } as ProtocolMessageData;
 
     substart = Date.now();
 
@@ -152,7 +158,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const {
       customData: { signature: responderSignatureOnInitialState },
-    } = m2! as ProtocolMessage;
+    } = m2! as ProtocolMessageData;
 
     substart = Date.now();
     await assertIsValidSignature(
@@ -315,7 +321,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: responderSignatureOnInitialState,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     setStateCommitment.signatures = [

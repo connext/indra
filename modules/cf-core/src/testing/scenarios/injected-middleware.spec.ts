@@ -1,8 +1,15 @@
-import { ValidationMiddleware, ProtocolNames, ProtocolRoles, ProtocolName, SetupMiddlewareContext } from "@connext/types";
-import { SetupContext, setup } from "../setup";
+import {
+  Opcode,
+  ProtocolName,
+  ProtocolNames,
+  ProtocolRoles,
+  SetupMiddlewareContext,
+  ValidationMiddleware,
+} from "@connext/types";
 import { Node } from "../../node";
 import { getCreate2MultisigAddress } from "../../utils";
-import { Opcode } from "../../types";
+
+import { SetupContext, setup } from "../setup";
 import { createChannel } from "../utils";
 
 describe("injected validation middleware", () => {

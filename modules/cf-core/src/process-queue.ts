@@ -1,8 +1,8 @@
+import { ILockService } from "@connext/types";
 import Queue, { Task } from "p-queue";
 
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { addToManyQueues } from "./methods";
-import { ILockService } from "./types";
 
 class QueueWithLockingServiceConnection extends Queue {
   constructor(

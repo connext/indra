@@ -1,32 +1,30 @@
 import {
-  bigNumberifyJson,
-  deBigNumberifyJson,
-  isBN,
-  stringify,
-  sortAddresses,
-  HexString,
-} from "@connext/types";
-import { Contract } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
-import { defaultAbiCoder, keccak256, BigNumber } from "ethers/utils";
-import { Memoize } from "typescript-memoize";
-
-import { CounterfactualApp } from "../contracts";
-import {
   AppIdentity,
   AppInstanceJson,
   AppInterface,
+  bigNumberifyJson,
+  deBigNumberifyJson,
+  HexString,
+  isBN,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   SolidityValueType,
+  sortAddresses,
+  stringify,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-} from "../types";
-import { appIdentityToHash } from "../utils";
+} from "@connext/types";
+import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
+import { JsonRpcProvider } from "ethers/providers";
+import { defaultAbiCoder, keccak256, BigNumber } from "ethers/utils";
+import { Memoize } from "typescript-memoize";
+
+import { CounterfactualApp } from "../contracts";
+import { appIdentityToHash } from "../utils";
 
 /**
  * Representation of an AppInstance.
@@ -64,9 +62,12 @@ export class AppInstance {
     public readonly outcomeType: OutcomeType,
     public readonly multisigAddress: string,
     public readonly meta?: object,
-    private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
-    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
-    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
+    private readonly twoPartyOutcomeInterpreterParamsInternal?:
+      TwoPartyFixedOutcomeInterpreterParams,
+    private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?:
+      MultiAssetMultiPartyCoinTransferInterpreterParams,
+    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?:
+      SingleAssetTwoPartyCoinTransferInterpreterParams,
   ) {
     this.participants = sortAddresses(this.participants);
   }
@@ -109,16 +110,18 @@ export class AppInstance {
             deserialized.twoPartyOutcomeInterpreterParams,
           ) as TwoPartyFixedOutcomeInterpreterParams)
         : undefined,
-      singleAssetTwoPartyCoinTransferInterpreterParams: deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
-        ? (bigNumberifyJson(
-            deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
-          ) as SingleAssetTwoPartyCoinTransferInterpreterParams)
-        : undefined,
-      multiAssetMultiPartyCoinTransferInterpreterParams: deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
-        ? (bigNumberifyJson(
-            deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
-          ) as MultiAssetMultiPartyCoinTransferInterpreterParams)
-        : undefined,
+      singleAssetTwoPartyCoinTransferInterpreterParams:
+        deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
+          ? (bigNumberifyJson(
+              deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+            ) as SingleAssetTwoPartyCoinTransferInterpreterParams)
+          : undefined,
+      multiAssetMultiPartyCoinTransferInterpreterParams:
+        deserialized.multiAssetMultiPartyCoinTransferInterpreterParams
+          ? (bigNumberifyJson(
+              deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
+            ) as MultiAssetMultiPartyCoinTransferInterpreterParams)
+          : undefined,
     };
 
     return new AppInstance(

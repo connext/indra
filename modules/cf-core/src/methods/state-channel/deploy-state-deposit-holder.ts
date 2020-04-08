@@ -1,9 +1,16 @@
-import { delay, MethodNames, MethodParams, MethodResults, stringify } from "@connext/types";
+import {
+  delay,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  NetworkContext,
+  stringify,
+} from "@connext/types";
 import { ILoggerService, sortAddresses } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
-import { Interface, keccak256, solidityKeccak256 } from "ethers/utils";
+import { Interface, solidityKeccak256 } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -17,7 +24,6 @@ import {
 import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
-import { NetworkContext } from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
 import { xkeysToSortedKthAddresses } from "../../xkeys";
 
@@ -132,7 +138,7 @@ async function sendMultisigDeployTx(
         // hash chainId plus nonce for x-chain replay protection
         solidityKeccak256(
           ["uint256", "uint256"],
-          [provider.network.chainId, 0]
+          [provider.network.chainId, 0],
         ), // TODO: Increment nonce as needed
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,

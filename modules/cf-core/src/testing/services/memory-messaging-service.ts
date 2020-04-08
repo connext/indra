@@ -1,14 +1,14 @@
-import { IMessagingService, NodeMessage } from "@connext/types";
+import { IMessagingService, Message } from "@connext/types";
 import { EventEmitter } from "events";
 
 export class MemoryMessagingService implements IMessagingService {
   private readonly eventEmitter: EventEmitter = new EventEmitter();
 
-  async send(to: string, msg: NodeMessage): Promise<void> {
+  async send(to: string, msg: Message): Promise<void> {
     this.eventEmitter.emit(to, msg);
   }
 
-  async onReceive(address: string, callback: (msg: NodeMessage) => void) {
+  async onReceive(address: string, callback: (msg: Message) => void) {
     this.eventEmitter.on(address, msg => {
       callback(msg);
     });
@@ -24,7 +24,7 @@ export class MemoryMessagingService implements IMessagingService {
     data: object,
     callback?: (response: any) => any,
   ) {};
-  async subscribe(subject: string, callback: (msg: NodeMessage) => void) {};
+  async subscribe(subject: string, callback: (msg: Message) => void) {};
   async unsubscribe(subject: string) {};
 }
 

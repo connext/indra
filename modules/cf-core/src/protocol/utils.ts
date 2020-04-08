@@ -1,4 +1,13 @@
-import { IStoreService, ILoggerService } from "@connext/types";
+import {
+  ILoggerService,
+  IStoreService,
+  multiAssetMultiPartyCoinTransferEncoding,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  OutcomeType,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcome,
+  TwoPartyFixedOutcomeInterpreterParams,
+} from "@connext/types";
 import { verifyChannelMessage } from "@connext/crypto";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
@@ -10,14 +19,6 @@ import {
   TokenIndexedCoinTransferMap,
   StateChannel,
 } from "../models";
-import {
-  multiAssetMultiPartyCoinTransferEncoding,
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  OutcomeType,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcome,
-  TwoPartyFixedOutcomeInterpreterParams,
-} from "../types";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 import { logTime } from "../utils";
 

@@ -30,7 +30,7 @@ import {
   InstallMessage,
   MethodNames,
   MethodParams,
-  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
   SimpleLinkedTransferAppName,
@@ -125,7 +125,7 @@ export class ConnextListener extends ConnextEventEmitter {
       this.handleAppProposal(params, appIdentityHash, from);
       this.log.info(`Done processing propose install event ${time()}`);
     },
-    PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
+    PROTOCOL_MESSAGE_EVENT: (msg: ProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
     },
     REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {

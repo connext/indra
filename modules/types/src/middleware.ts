@@ -3,7 +3,7 @@ import { ProtocolParams, ProtocolName } from "./protocol";
 import { AppInstanceProposal, AppInstanceJson } from "./app";
 import { StateChannelJSON } from "./state";
 
-// TODO: move into cf-core bc nothing besides that module needs these
+// Note: these are also used in the node so shouldn't be moved into cf-core
 
 export type GenericMiddleware = {
   (args: any): any;

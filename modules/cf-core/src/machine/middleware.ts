@@ -1,5 +1,4 @@
-import { GenericMiddleware } from "@connext/types";
-import { Opcode } from "../types";
+import { GenericMiddleware, Opcode } from "@connext/types";
 
 export class MiddlewareContainer {
   public readonly middlewares: { [I in Opcode]: GenericMiddleware[] } = {
