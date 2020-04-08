@@ -110,6 +110,10 @@ export class Node {
     this.protocolRunner = this.buildProtocolRunner();
   }
 
+  get publicIdentifier() {
+    return this.signer.identifier;
+  }
+
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
     this.log.info(`Node signer address: ${this.signer.address}`);
     this.requestHandler = new RequestHandler(

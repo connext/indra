@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, SolidityValueType, ChannelPubId } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType, ChannelPubId, AssetId } from "./basic";
 import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
@@ -155,12 +155,12 @@ type ProposeInstallParams = {
   defaultTimeout: BigNumber;
   initialState: AppState;
   initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress: Address;
+  initiatorDepositAssetId: AssetId;
   meta?: Object;
   outcomeType: OutcomeType;
   proposedToIdentifier: ChannelPubId;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress: Address;
+  responderDepositAssetId: AssetId;
   stateTimeout?: BigNumber;
 };
 

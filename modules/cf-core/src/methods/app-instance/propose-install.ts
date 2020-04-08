@@ -58,8 +58,8 @@ export class ProposeInstallAppInstanceController extends NodeController {
     }
 
     const {
-      initiatorDepositTokenAddress: initiatorDepositTokenAddressParam,
-      responderDepositTokenAddress: responderDepositTokenAddressParam,
+      initiatorDepositAssetId: initiatorDepositTokenAddressParam,
+      responderDepositAssetId: responderDepositTokenAddressParam,
     } = params;
 
     const initiatorDepositTokenAddress =
@@ -68,8 +68,8 @@ export class ProposeInstallAppInstanceController extends NodeController {
     const responderDepositTokenAddress =
       responderDepositTokenAddressParam || getAssetId(chainId);
 
-    params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
-    params.responderDepositTokenAddress = responderDepositTokenAddress;
+    params.initiatorDepositAssetId = initiatorDepositTokenAddress;
+    params.responderDepositAssetId = responderDepositTokenAddress;
   }
 
   protected async executeMethodImplementation(

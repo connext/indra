@@ -1,4 +1,4 @@
-import { MethodNames, MethodParams, MethodResults, getChainIdFromIdentifier, getAssetId, getTokenAddressFromAssetId } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, getTokenAddressFromAssetId } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
