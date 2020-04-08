@@ -8,8 +8,6 @@ import {
   IMessagingService,
   IStoreService,
   MethodName,
-  MethodRequest,
-  MethodResponse,
   MiddlewareContext,
   MinimalTransaction,
   NetworkContext,
@@ -44,6 +42,8 @@ import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import {
   IPrivateKeyGenerator,
+  MethodRequest,
+  MethodResponse,
   PersistAppType,
   PersistCommitmentType,
 } from "./types";

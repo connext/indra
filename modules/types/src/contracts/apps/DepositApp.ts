@@ -1,10 +1,7 @@
 import { BigNumber } from "ethers/utils";
 
 import { CoinTransfer } from "../funding";
-import {
-  singleAssetTwoPartyCoinTransferEncoding,
-  tidy,
-} from "../misc";
+import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
 import { Address } from "../../basic";
 
 export const DepositAppName = "DepositApp";

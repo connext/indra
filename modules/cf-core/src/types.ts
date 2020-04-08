@@ -2,6 +2,9 @@ import {
   enumify,
   ILoggerService,
   IStoreService,
+  MethodName,
+  MethodParam,
+  MethodResult,
   NetworkContext,
   Opcode,
   ProtocolMessage,
@@ -46,3 +49,19 @@ export interface Context {
   message: ProtocolMessage;
   network: NetworkContext;
 }
+
+////////////////////////////////////////
+// Messages
+
+export type MethodMessage = {
+  type: MethodName;
+  requestId: string; // uuid?
+};
+
+export type MethodRequest = MethodMessage & {
+  params: MethodParam;
+};
+
+export type MethodResponse = MethodMessage & {
+  result: MethodResult;
+};

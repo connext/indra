@@ -1,27 +1,8 @@
 import { EventNames, EventPayloads } from "./events";
 import { DecString, Xpub } from "./basic";
 import { ILoggerService } from "./logger";
-import {
-  MethodName,
-  MethodResult,
-  MethodResults,
-  MethodParam,
-  MethodParams,
-} from "./methods";
+import { MethodResults, MethodParams } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
-
-export type MethodMessage = {
-  type: MethodName;
-  requestId: string; // uuid?
-};
-
-export type MethodRequest = MethodMessage & {
-  params: MethodParam;
-};
-
-export type MethodResponse = MethodMessage & {
-  result: MethodResult;
-};
 
 ////////////////////////////////////////
 // Message Metadata & Wrappers
@@ -37,47 +18,13 @@ export type ProtocolMessage = {
   customData: { [key: string]: any };
 };
 
-export type Message = MethodRequest | MethodResponse | Event;
-
-// The message type for Nodes to communicate with each other.
-
-export const CF_CORE_MESSAGING_PREFIX = "INDRA";
-
-export const getMessagingPrefix = (chainId: number) => `${CF_CORE_MESSAGING_PREFIX}.${chainId}`;
-
 export type NodeMessage = {
   from: string; // Xpub?
   type: EventNames;
 };
 
-type JsonRpcProtocolV2 = {
-  jsonrpc: "2.0";
-};
-
-type RpcParameters =
-  | {
-      [key: string]: any;
-    }
-  | any[];
-
-export type JsonRpcNotification = JsonRpcProtocolV2 & {
-  result: any;
-};
-
-export type JsonRpcResponse = JsonRpcNotification & {
-  id: number;
-};
-
-export type Rpc = {
-  methodName: string; // MethodNames?
-  parameters: RpcParameters;
-  id?: number;
-};
-
-export interface IRpcNodeProvider {
-  onMessage(callback: (message: JsonRpcResponse | JsonRpcNotification) => void): any;
-  sendMessage(message: Rpc): any;
-}
+////////////////////////////////////////
+// Messaging Service
 
 export interface MessagingConfig {
   clusterId?: string;
@@ -89,12 +36,7 @@ export interface MessagingConfig {
   token?: string;
 }
 
-export interface CFMessagingService {
-  send(to: string, msg: NodeMessage): Promise<void>;
-  onReceive(address: string, callback: (msg: NodeMessage) => void): any;
-}
-
-export interface IMessagingService extends CFMessagingService {
+export interface IMessagingService {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   flush(): Promise<void>;

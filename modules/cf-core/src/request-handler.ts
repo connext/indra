@@ -5,8 +5,6 @@ import {
   IMessagingService,
   IStoreService,
   MethodName,
-  MethodRequest,
-  MethodResponse,
   NetworkContext,
   NodeMessage,
   NodeMessageWrappedProtocolMessage,
@@ -19,8 +17,8 @@ import { eventNameToImplementation, methodNameToImplementation } from "./methods
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
+import { MethodRequest, MethodResponse } from "./types"; 
 import { logTime } from "./utils";
-
 /**
  * This class registers handlers for requests to get or set some information
  * about app instances and channels for this Node and any relevant peer Nodes.
