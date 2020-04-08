@@ -31,7 +31,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
       if (recovered === this.multisigOwners[0]) {
         this.initiatorSignature = sig;
       } else if (recovered === this.multisigOwners[1]) {
-        this.initiatorSignature = sig;
+        this.responderSignature = sig;
       } else {
         throw new Error(`Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`);
       }
