@@ -66,11 +66,11 @@ const createTestChannelWithAppInstance = async (
 
   const channelJson = createStateChannelJSON({
     multisigAddress,
-    userNeuteredExtendedKeys: [nodePublicIdentifier, userPublicIdentifier].sort(),
+    userNeuteredExtendedKeys: [nodePublicIdentifier, userPublicIdentifier],
   });
   await cfCoreStore.createStateChannel(channelJson);
 
-  const appProposal = createAppInstanceProposal();
+  const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
   await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
 
   const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
@@ -132,20 +132,23 @@ describe("CFCoreStore", () => {
 
   describe("Channel", () => {
     it("should create a state channel", async () => {
+      const nodePublicIdentifier = configService.getPublicIdentifier();
       const { multisigAddress, channelJson } = await createTestChannel(
         cfCoreStore,
-        configService.getPublicIdentifier(),
+        nodePublicIdentifier,
       );
 
       let channel = await cfCoreStore.getStateChannel(multisigAddress);
-
+      const userIdentifier = channelJson.userNeuteredExtendedKeys.find(
+        x => x !== nodePublicIdentifier,
+      );
       expect(channel).toMatchObject({
         ...channelJson,
-        userNeuteredExtendedKeys: channelJson.userNeuteredExtendedKeys,
+        userNeuteredExtendedKeys: [nodePublicIdentifier, userIdentifier],
         freeBalanceAppInstance: {
           ...channelJson.freeBalanceAppInstance,
-          initiator: xkeyKthAddress(channelJson.userNeuteredExtendedKeys[0]),
-          responder: xkeyKthAddress(channelJson.userNeuteredExtendedKeys[1]),
+          initiator: xkeyKthAddress(nodePublicIdentifier, 0),
+          responder: xkeyKthAddress(userIdentifier, 0),
         },
       });
     });
@@ -158,7 +161,7 @@ describe("CFCoreStore", () => {
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceProposal();
+      const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
 
       const received = await cfCoreStore.getAppProposal(appProposal.identityHash);
@@ -221,7 +224,7 @@ describe("CFCoreStore", () => {
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceProposal();
+      const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
 
       const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
@@ -259,7 +262,7 @@ describe("CFCoreStore", () => {
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceProposal();
+      const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
 
       const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
