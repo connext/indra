@@ -67,6 +67,8 @@ contract MinimumViableMultisig is MultisigData {
             "Transacation has already been executed"
         );
 
+        isExecuted[transactionHash] = true;
+
         for (uint256 i = 0; i < _owners.length; i++) {
             require(
                 _owners[i] == transactionHash.verifyChannelMessage(signatures[i]),
@@ -80,8 +82,6 @@ contract MinimumViableMultisig is MultisigData {
             data,
             operation
         );
-
-        isExecuted[transactionHash] = true;
     }
 
     /// @notice Compute a unique transaction hash for a particular (to, value, data, op) tuple
