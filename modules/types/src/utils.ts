@@ -5,10 +5,13 @@ import {
   randomBytes,
   SigningKey,
   joinSignature,
+  isHexString,
+  getAddress,
 } from "ethers/utils";
 import { isBN, toBN } from "./math";
 import { ETHEREUM_NAMESPACE } from "./constants";
 import { AddressZero } from "ethers/constants";
+import { Address, AssetId } from "./basic";
 
 // stolen from https://github.com/microsoft/TypeScript/issues/3192#issuecomment-261720275
 export const enumify = <T extends { [index: string]: U }, U extends string>(x: T): T => x;
@@ -74,10 +77,49 @@ export const getAssetId = (
   return `${address}@${namespace}:${chainId.toString()}`;
 };
 
+export const getTokenAddressFromAssetId = (assetId: AssetId): string => {
+  return getAddressFromIdentifier(assetId);
+};
+
+
 export const getPublicIdentifier = (
   chainId: number, 
   address: string, 
   namespace: string = ETHEREUM_NAMESPACE,
 ) => {
   return `${address}@${namespace}:${chainId.toString()}`;
+};
+
+export const verifyPublicIdentifier = (
+  identifier: string,
+) => {
+  const { address, namespace } = parseChannelIdentifier(identifier);
+  if (
+    !isHexString(address) ||
+    namespace !== ETHEREUM_NAMESPACE
+  ) {
+    throw new Error(`Invalid public identfier: ${identifier}`);
+  }
+};
+
+export const parseChannelIdentifier = (
+  identifier: string,
+): { chainId: number, address: Address, namespace: string} => {
+  const [address, res] = identifier.split("@");
+  const [namespace, chainId] = res.split(":");
+  return {
+    chainId: parseInt(chainId),
+    address: getAddress(address),
+    namespace,
+  };
+};
+
+export const getAddressFromIdentifier = (identifer: string): string => {
+  const { address } = parseChannelIdentifier(identifer);
+  return address;
+};
+
+export const getChainIdFromIdentifier = (identifer: string): number => {
+  const { chainId } = parseChannelIdentifier(identifer);
+  return chainId;
 };
