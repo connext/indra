@@ -22,6 +22,11 @@ import {
   toBN,
   UninstallMessage,
   getAssetId,
+  getAddressFromIdentifier,
+  ChannelPubId,
+  AssetId,
+  getTokenAddressFromAssetId,
+  Address,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -31,7 +36,6 @@ import { JsonRpcResponse, Rpc } from "rpc-server";
 
 import { Node } from "../node";
 import { AppInstance, StateChannel } from "../models";
-import { computeRandomExtendedPrvKey, xkeyKthAddress } from "../xkeys";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
@@ -40,10 +44,11 @@ import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { initialTransferState, transferAbiEncodings } from "./unidirectional-transfer";
 import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
+import { getRandomChannelSigner } from "./random-signing-keys";
 
 export const GANACHE_CHAIN_ID = 4447;
 
-export const CONVENTION_FOR_ETH_TOKEN_ADDRESS_GANACHE = getAssetId(GANACHE_CHAIN_ID);
+export const CONVENTION_FOR_ETH_ASSET_ID_GANACHE = getAssetId(GANACHE_CHAIN_ID);
 
 interface AppContext {
   appDefinition: string;
@@ -69,8 +74,8 @@ export const newWallet = (wallet: Wallet) =>
 export function createAppInstanceProposalForTest(appIdentityHash: string): AppInstanceProposal {
   return {
     identityHash: appIdentityHash,
-    proposedByIdentifier: computeRandomExtendedPrvKey(),
-    proposedToIdentifier: computeRandomExtendedPrvKey(),
+    initiatorIdentifier: getRandomChannelSigner().identifier,
+    responderIdentifier: getRandomChannelSigner().identifier,
     appDefinition: AddressZero,
     abiEncodings: {
       stateEncoding: "tuple(address foo, uint256 bar)",
@@ -86,17 +91,16 @@ export function createAppInstanceProposalForTest(appIdentityHash: string): AppIn
     } as SolidityValueType,
     appSeqNo: 0,
     outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    initiatorDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-    responderDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+    responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+    initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   };
 }
 
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
   const [initiator, responder] = stateChannel
     ? stateChannel.getSigningKeysFor(
-        stateChannel!.userNeuteredExtendedKeys[0],
-        stateChannel!.userNeuteredExtendedKeys[1],
-        stateChannel!.numProposedApps,
+        stateChannel!.userChannelIdentifiers[0],
+        stateChannel!.userChannelIdentifiers[1],
       )
     : [
         getAddress(hexlify(randomBytes(20))),
@@ -134,13 +138,13 @@ export async function requestDepositRights(
   depositor: Node,
   counterparty: Node,
   multisigAddress: string,
-  tokenAddress: string = AddressZero,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ) {
   const proposeParams = await getProposeDepositAppParams(
     multisigAddress,
     depositor.publicIdentifier,
     counterparty.publicIdentifier,
-    tokenAddress,
+    assetId,
   );
   const [appIdentityHash] = await installApp(
     depositor,
@@ -149,9 +153,9 @@ export async function requestDepositRights(
     proposeParams.appDefinition,
     proposeParams.initialState,
     proposeParams.initiatorDeposit,
-    proposeParams.initiatorDepositTokenAddress,
+    proposeParams.initiatorDepositAssetId,
     proposeParams.responderDeposit,
-    proposeParams.responderDepositTokenAddress,
+    proposeParams.responderDepositAssetId,
     proposeParams.defaultTimeout,
     proposeParams.stateTimeout,
   );
@@ -162,12 +166,12 @@ export async function rescindDepositRights(
   node: Node,
   counterparty: Node,
   multisigAddress: string,
-  tokenAddress: string = AddressZero,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ) {
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositApp = apps.filter(app => 
     app.appInterface.addr === global[`network`][`DepositApp`] &&
-    (app.latestState as DepositAppState).assetId === tokenAddress,
+    (app.latestState as DepositAppState).assetId === getTokenAddressFromAssetId(assetId),
   )[0];
   if (!depositApp) {
     // no apps to uninstall, return
@@ -231,8 +235,8 @@ export function assertProposeMessage(
 ) {
   const {
     multisigAddress,
-    initiatorXpub,
-    responderXpub: proposedToIdentifier,
+    initiatorIdentifier,
+    responderIdentifier: proposedToIdentifier,
     ...emittedParams
   } = params;
   assertMessage(
@@ -353,7 +357,7 @@ export async function getAppInstanceProposal(
 export async function getFreeBalanceState(
   node: Node,
   multisigAddress: string,
-  tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ): Promise<MethodResults.GetFreeBalanceState> {
   const {
     result: { result },
@@ -362,7 +366,7 @@ export async function getFreeBalanceState(
     methodName: MethodNames.chan_getFreeBalanceState,
     parameters: {
       multisigAddress,
-      tokenAddress,
+      assetId,
     },
   });
 
@@ -448,26 +452,26 @@ export async function getProposeDepositAppParams(
   multisigAddress: string,
   proposedByIdentifier: string,
   proposedToIdentifier: string,
-  tokenAddress: string = AddressZero,
+  assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ): Promise<MethodParams.ProposeInstall> {
   const startingTotalAmountWithdrawn = await getMultisigAmountWithdrawn(
     multisigAddress,
-    tokenAddress,
+    assetId,
   );
-  const startingMultisigBalance = await getMultisigBalance(multisigAddress, tokenAddress);
+  const startingMultisigBalance = await getMultisigBalance(multisigAddress, assetId);
   const initialState: DepositAppState = {
     multisigAddress,
-    assetId: tokenAddress,
+    assetId: getTokenAddressFromAssetId(assetId),
     startingTotalAmountWithdrawn,
     startingMultisigBalance,
     transfers: [
       {
         amount: Zero,
-        to: xkeyKthAddress(proposedByIdentifier),
+        to: getAddressFromIdentifier(proposedByIdentifier),
       },
       {
         amount: Zero,
-        to: xkeyKthAddress(proposedToIdentifier),
+        to: getAddressFromIdentifier(proposedToIdentifier),
       },
     ],
   };
@@ -480,11 +484,11 @@ export async function getProposeDepositAppParams(
     appDefinition: DepositApp,
     initialState,
     initiatorDeposit: Zero,
-    initiatorDepositTokenAddress: tokenAddress,
+    initiatorDepositAssetId: assetId,
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     proposedToIdentifier,
     responderDeposit: Zero,
-    responderDepositTokenAddress: tokenAddress,
+    responderDepositAssetId: assetId,
     defaultTimeout: Zero,
     stateTimeout: Zero,
   };
@@ -495,22 +499,22 @@ export async function deposit(
   multisigAddress: string,
   amount: BigNumber = One,
   proposedToNode: Node,
-  tokenAddress?: string,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ) {
   // get rights
-  await requestDepositRights(node, proposedToNode, multisigAddress, tokenAddress);
+  await requestDepositRights(node, proposedToNode, multisigAddress, assetId);
   const wallet = global["wallet"] as Wallet;
   // send a deposit to the multisig
-  const tx = (tokenAddress || AddressZero) === AddressZero
+  const tx = getTokenAddressFromAssetId(assetId) === AddressZero
     ? await wallet.sendTransaction({
         value: amount,
         to: multisigAddress,
       })
-    : await new Contract(tokenAddress || AddressZero, ERC20.abi, wallet)
+    : await new Contract(getTokenAddressFromAssetId(assetId), ERC20.abi, wallet)
         .transfer(multisigAddress, amount);
   expect(tx.hash).toBeDefined();
   // rescind rights
-  await rescindDepositRights(node, proposedToNode, multisigAddress, tokenAddress);
+  await rescindDepositRights(node, proposedToNode, multisigAddress, assetId);
 }
 
 export async function deployStateDepositHolder(node: Node, multisigAddress: string) {
@@ -548,14 +552,14 @@ export function constructRejectInstallRpc(appIdentityHash: string): Rpc {
 
 export function constructAppProposalRpc(
   multisigAddress: string,
-  proposedToIdentifier: string,
+  proposedToIdentifier: ChannelPubId,
   appDefinition: string,
   abiEncodings: AppABIEncodings,
   initialState: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
-  initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   responderDeposit: BigNumber = Zero,
-  responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   defaultTimeout: BigNumber = Zero,
   stateTimeout: BigNumber = defaultTimeout,
 ): Rpc {
@@ -564,12 +568,11 @@ export function constructAppProposalRpc(
     id: Date.now(),
     methodName: MethodNames.chan_proposeInstall,
     parameters: deBigNumberifyJson({
-      multisigAddress,
       proposedToIdentifier,
       initiatorDeposit,
-      initiatorDepositTokenAddress,
+      initiatorDepositAssetId,
       responderDeposit,
-      responderDepositTokenAddress,
+      responderDepositAssetId,
       appDefinition,
       initialState,
       abiEncodings,
@@ -660,19 +663,19 @@ export async function collateralizeChannel(
   node1: Node,
   node2: Node,
   amount: BigNumber = One,
-  tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   collateralizeNode2: boolean = true,
 ): Promise<void> {
-  await deposit(node1, multisigAddress, amount, node2, tokenAddress);
+  await deposit(node1, multisigAddress, amount, node2, assetId);
   if (collateralizeNode2) {
-    await deposit(node2, multisigAddress, amount, node1, tokenAddress);
+    await deposit(node2, multisigAddress, amount, node1, assetId);
   }
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
   const sortedOwners = [
-    xkeyKthAddress(nodeA.publicIdentifier, 0),
-    xkeyKthAddress(nodeB.publicIdentifier, 0),
+    nodeA.freeBalanceAddress,
+    nodeB.freeBalanceAddress,
   ];
   const [multisigAddress]: any = await Promise.all([
     new Promise(async resolve => {
@@ -727,9 +730,9 @@ export async function installApp(
   appDefinition: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
-  initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   responderDeposit: BigNumber = Zero,
-  responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   defaultTimeout: BigNumber = Zero,
   stateTimeout: BigNumber = defaultTimeout,
 ): Promise<[string, ProtocolParams.Propose]> {
@@ -742,9 +745,9 @@ export async function installApp(
     appContext.abiEncodings,
     appContext.initialState,
     initiatorDeposit,
-    initiatorDepositTokenAddress,
+    initiatorDepositAssetId,
     responderDeposit,
-    responderDepositTokenAddress,
+    responderDepositAssetId,
     defaultTimeout,
     stateTimeout,
   );
@@ -795,15 +798,17 @@ export async function installApp(
 export async function confirmChannelCreation(
   nodeA: Node,
   nodeB: Node,
-  ownersFreeBalanceAddress: string[],
   data: MethodResults.CreateChannel,
+  owners: Address[], // free balance addr[]
 ) {
   const openChannelsNodeA = await getChannelAddresses(nodeA);
   const openChannelsNodeB = await getChannelAddresses(nodeB);
 
   expect(openChannelsNodeA.has(data.multisigAddress)).toBeTruthy();
   expect(openChannelsNodeB.has(data.multisigAddress)).toBeTruthy();
-  expect(data.owners!.sort()).toEqual(ownersFreeBalanceAddress.sort());
+  if (data.owners) {
+    expect(data.owners).toMatchObject(owners);
+  }
 }
 
 export async function confirmAppInstanceInstallation(
@@ -829,9 +834,9 @@ export function makeProposeCall(
   multisigAddress: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
-  initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   responderDeposit: BigNumber = Zero,
-  responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ): Rpc {
   const appContext = getAppContext(appDefinition, initialState);
   return constructAppProposalRpc(
@@ -841,9 +846,9 @@ export function makeProposeCall(
     appContext.abiEncodings,
     appContext.initialState,
     initiatorDeposit,
-    initiatorDepositTokenAddress,
+    initiatorDepositAssetId,
     responderDeposit,
-    responderDepositTokenAddress,
+    responderDepositAssetId,
   );
 }
 
@@ -854,9 +859,9 @@ export async function makeAndSendProposeCall(
   multisigAddress: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
-  initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   responderDeposit: BigNumber = Zero,
-  responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ): Promise<{
   appIdentityHash: string;
   params: ProtocolParams.Propose;
@@ -867,9 +872,9 @@ export async function makeAndSendProposeCall(
     multisigAddress,
     initialState,
     initiatorDeposit,
-    initiatorDepositTokenAddress,
+    initiatorDepositAssetId,
     responderDeposit,
-    responderDepositTokenAddress,
+    responderDepositAssetId,
   );
 
   const {
@@ -1015,11 +1020,11 @@ export async function getBalances(
 ): Promise<[BigNumber, BigNumber]> {
   let tokenFreeBalanceState = await getFreeBalanceState(nodeA, multisigAddress, tokenAddress);
 
-  const tokenBalanceNodeA = tokenFreeBalanceState[xkeyKthAddress(nodeA.publicIdentifier, 0)];
+  const tokenBalanceNodeA = tokenFreeBalanceState[nodeA.freeBalanceAddress];
 
   tokenFreeBalanceState = await getFreeBalanceState(nodeB, multisigAddress, tokenAddress);
 
-  const tokenBalanceNodeB = tokenFreeBalanceState[xkeyKthAddress(nodeB.publicIdentifier, 0)];
+  const tokenBalanceNodeB = tokenFreeBalanceState[nodeB.freeBalanceAddress];
 
   return [tokenBalanceNodeA, tokenBalanceNodeB];
 }

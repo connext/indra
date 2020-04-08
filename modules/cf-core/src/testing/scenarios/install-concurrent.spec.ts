@@ -1,9 +1,8 @@
 import { ProposeMessage } from "@connext/types";
-import { One } from "ethers/constants";
+import { One, AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../node";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
@@ -65,9 +64,9 @@ describe(`Node method follows spec - install`, () => {
           multisigAddress,
           /* initialState */ undefined,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+          AddressZero,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+          AddressZero,
         );
 
         nodeA.rpcRouter.dispatch(rpc);

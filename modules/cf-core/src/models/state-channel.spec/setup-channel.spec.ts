@@ -1,9 +1,9 @@
-import { Zero } from "ethers/constants";
+import { Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { AppInstanceProposal, createRandomAddress, toBN } from "@connext/types";
+import { AppInstanceProposal, createRandomAddress, toBN, getAddressFromIdentifier } from "@connext/types";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../../constants";
-import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
+import { HARD_CODED_ASSUMPTIONS } from "../../constants";
+import { getRandomChannelIdentifiers } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
@@ -11,7 +11,7 @@ import { StateChannel } from "../state-channel";
 
 describe("StateChannel::setupChannel", () => {
   const multisigAddress = getAddress(createRandomAddress());
-  const xpubs = getRandomExtendedPubKeys(2);
+  const ids = getRandomChannelIdentifiers(2);
 
   let sc: StateChannel;
 
@@ -25,8 +25,8 @@ describe("StateChannel::setupChannel", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs[0],
-      xpubs[1],
+      ids[0],
+      ids[1],
     );
   });
 
@@ -40,7 +40,7 @@ describe("StateChannel::setupChannel", () => {
 
   it("should not alter any of the base properties", () => {
     expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userNeuteredExtendedKeys).toMatchObject(xpubs);
+    expect(sc.userChannelIdentifiers).toMatchObject(ids);
   });
 
   it("should have bumped the sequence number", () => {
@@ -78,7 +78,10 @@ describe("StateChannel::setupChannel", () => {
     });
 
     it("should use the multisig owners as the participants", () => {
-      expect([fb.initiator, fb.responder]).toEqual(sc.multisigOwners);
+      expect([
+        getAddressFromIdentifier(fb.initiatorIdentifier),
+        getAddressFromIdentifier(fb.responderIdentifier),
+      ]).toEqual(sc.multisigOwners);
     });
 
     it("should use the FreeBalanceAppApp as the app target", () => {
@@ -94,7 +97,10 @@ describe("StateChannel::setupChannel", () => {
 
     it("should have 0 balances for Alice and Bob", () => {
       for (const amount of Object.values(
-        sc.getFreeBalanceClass().withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {},
+        sc.getFreeBalanceClass()
+          .withTokenAddress(
+            AddressZero,
+          ) || {},
       )) {
         expect(amount).toEqual(Zero);
       }

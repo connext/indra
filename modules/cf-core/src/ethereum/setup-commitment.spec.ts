@@ -1,7 +1,6 @@
 import { createRandomAddress, MultisigTransaction } from "@connext/types";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
-import { getRandomExtendedPubKey } from "../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../testing/mocks";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
@@ -10,6 +9,7 @@ import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import { getSetupCommitment } from "./setup-commitment";
+import { getRandomChannelSigner } from "../testing/random-signing-keys";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according
@@ -27,8 +27,8 @@ describe("SetupCommitment", () => {
 
   // General interaction testing values
   const interaction = {
-    sender: getRandomExtendedPubKey(),
-    receiver: getRandomExtendedPubKey(),
+    sender: getRandomChannelSigner().identifier,
+    receiver: getRandomChannelSigner().identifier,
   };
 
   // State channel testing values

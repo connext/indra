@@ -1,5 +1,5 @@
 import { SigningKey } from "ethers/utils";
-import { createRandom32ByteHexString, getPublicIdentifier } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/types";
 
 import { ChannelSigner } from "@connext/crypto";
 import { Wallet } from "ethers";
@@ -18,11 +18,14 @@ export function getRandomChannelSigner(): ChannelSigner {
   );
 }
 
-export function getRandomChannelIdentifiers(length: number): string[] {
+export function getRandomChannelSigners(length: number): ChannelSigner[] {
   return Array(length)
-    .fill(getRandomChannelSigner)
-    .map(
-      (signer: ChannelSigner) => getPublicIdentifier(GANACHE_CHAIN_ID, signer.address),
-    );
+    .fill(0)
+    .map(getRandomChannelSigner);
+}
+
+export function getRandomChannelIdentifiers(length: number): string[] {
+  return getRandomChannelSigners(length)
+    .map((signer) => signer.identifier);
 }
 

@@ -1,15 +1,12 @@
-import { signChannelMessage } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
-import { WeiPerEther, Zero } from "ethers/constants";
+import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { Interface, keccak256, SigningKey } from "ethers/utils";
+import { Interface, keccak256 } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { SetStateCommitment, getSetupCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
 import { getCreate2MultisigAddress } from "../../utils";
-import { xkeyKthHDNode } from "../../xkeys";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import {
@@ -18,7 +15,7 @@ import {
   NetworkContextForTestSuite,
   ProxyFactory,
 } from "../contracts";
-import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "../random-signing-keys";
+import { getRandomChannelSigners } from "../random-signing-keys";
 
 expect.extend({ toBeEq });
 jest.setTimeout(10000);
@@ -53,12 +50,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
   });
 
   it("should distribute funds in ETH free balance when put on chain", async done => {
-    const xprvs = getRandomExtendedPrvKeys(2);
-
-    const multisigOwnerKeys = [
-      new SigningKey(xkeyKthHDNode(xprvs[0], 0).privateKey),
-      new SigningKey(xkeyKthHDNode(xprvs[1], 0).privateKey),
-    ];
+    const [initiator, responder] = getRandomChannelSigners(2);
 
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 
@@ -66,8 +58,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       // TODO: Test this separately
       expect(proxy).toBe(
         await getCreate2MultisigAddress(
-          xprvs[0],
-          xprvs[1],
+          initiator.identifier,
+          responder.identifier,
           {
             proxyFactory: network.ProxyFactory,
             multisigMastercopy: network.MinimumViableMultisig,
@@ -80,14 +72,14 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         network.IdentityApp,
         { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
         proxy, // used as multisig
-        extendedPrvKeyToExtendedPubKey(xprvs[0]),
-        extendedPrvKeyToExtendedPubKey(xprvs[1]),
+        initiator.identifier,
+        responder.identifier,
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
-          multisigOwnerKeys.map<string>(key => key.address),
+          [initiator, responder].map<string>(key => key.address),
           WeiPerEther,
-          [CONVENTION_FOR_ETH_TOKEN_ADDRESS],
+          [AddressZero],
         ),
       );
 
@@ -102,8 +94,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       );
       const setStateCommitmentHash = setStateCommitment.hashToSign();
       setStateCommitment.signatures = [
-        await signChannelMessage(multisigOwnerKeys[0].privateKey, setStateCommitmentHash),
-        await signChannelMessage(multisigOwnerKeys[1].privateKey, setStateCommitmentHash),
+        await initiator.signMessage(setStateCommitmentHash),
+        await responder.signMessage(setStateCommitmentHash),
       ];
 
       const setStateTx = await setStateCommitment.getSignedTransaction();
@@ -124,8 +116,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       const setupCommitmentHash = setupCommitment.hashToSign();
 
       setupCommitment.signatures = [
-        await signChannelMessage(multisigOwnerKeys[0].privateKey, setupCommitmentHash),
-        await signChannelMessage(multisigOwnerKeys[1].privateKey, setupCommitmentHash),
+        await initiator.signMessage(setStateCommitmentHash),
+        await responder.signMessage(setStateCommitmentHash),
       ];
 
       const setupTx = await setupCommitment.getSignedTransaction();
@@ -139,9 +131,9 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
 
       expect(await provider.getBalance(proxy)).toBeEq(Zero);
 
-      expect(await provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
+      expect(await provider.getBalance(initiator.address)).toBeEq(WeiPerEther);
 
-      expect(await provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(WeiPerEther);
+      expect(await provider.getBalance(responder.address)).toBeEq(WeiPerEther);
 
       done();
     });
@@ -149,7 +141,7 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
     await proxyFactory.functions.createProxyWithNonce(
       network.MinimumViableMultisig,
       new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-        multisigOwnerKeys.map(x => x.address),
+        [initiator, responder].map(x => x.address),
       ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },

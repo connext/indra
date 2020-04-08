@@ -6,33 +6,27 @@ import {
   Opcode,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { HDNode } from "ethers/utils/hdnode";
-import { signChannelMessage } from "@connext/crypto";
+import { ChannelSigner } from "@connext/crypto";
 
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { PersistAppType } from "../types";
-
-import { getRandomHDNodes } from "./random-signing-keys";
+import { getRandomChannelSigner } from "./random-signing-keys";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
-const makeSigner = (hdNode: HDNode) => {
+const makeSigner = (signer: ChannelSigner) => {
   return async (args: any[]) => {
-    if (args.length !== 1 && args.length !== 2) {
+    if (args.length !== 1) {
       throw new Error("OP_SIGN middleware received wrong number of arguments.");
     }
 
-    const [commitmentHash, overrideKeyIndex] = args;
-    const keyIndex = overrideKeyIndex || 0;
-
-    const privateKey = hdNode.derivePath(`${keyIndex}`).privateKey;
-
-    return await signChannelMessage(privateKey, commitmentHash);
+    const [commitmentHash] = args;
+    return signer.signMessage(commitmentHash);
   };
 };
 
 export class MiniNode {
-  private readonly hdNode: HDNode;
+  private readonly signer: ChannelSigner;
   public readonly protocolRunner: ProtocolRunner;
   public scm: Map<string, StateChannel>;
   public readonly xpub: string;
@@ -42,11 +36,11 @@ export class MiniNode {
     readonly provider: JsonRpcProvider,
     readonly store: IStoreService,
   ) {
-    [this.hdNode] = getRandomHDNodes(1);
-    this.xpub = this.hdNode.neuter().extendedKey;
+    this.signer = getRandomChannelSigner();
+    this.xpub = this.signer.identifier;
     this.protocolRunner = new ProtocolRunner(networkContext, provider, store, nullLogger);
     this.scm = new Map<string, StateChannel>();
-    this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.hdNode));
+    this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.signer));
     this.protocolRunner.register(Opcode.PERSIST_COMMITMENT, () => {});
     this.protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
       const [stateChannels] = args;

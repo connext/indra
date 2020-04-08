@@ -4,11 +4,10 @@ import {
   ProposeMessage,
   ProtocolParams,
 } from "@connext/types";
-import { One } from "ethers/constants";
+import { One, AddressZero } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
 
 import { Node } from "../../node";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
 
 import { NetworkContextForTestSuite } from "../contracts";
@@ -70,7 +69,7 @@ describe("Node method follows spec - install", () => {
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+            AddressZero,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
           makeInstallCall(nodeB, msg.data.appIdentityHash);
@@ -101,7 +100,7 @@ describe("Node method follows spec - install", () => {
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+            AddressZero,
           );
 
           expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
@@ -126,9 +125,9 @@ describe("Node method follows spec - install", () => {
           multisigAddress,
           undefined,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+          AddressZero,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+          AddressZero,
         );
         proposeInstallParams = params;
       });

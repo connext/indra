@@ -1,4 +1,4 @@
-import { OutcomeType, createRandomAddress, toBN } from "@connext/types";
+import { OutcomeType, createRandomAddress, toBN, getPublicIdentifier, getAddressFromIdentifier } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
@@ -6,7 +6,10 @@ import { AppInstance } from "./app-instance";
 
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {
-    const participants = [getAddress(createRandomAddress()), getAddress(createRandomAddress())];
+    const participants = [
+      getPublicIdentifier(4447, getAddress(createRandomAddress())),
+      getPublicIdentifier(4447, getAddress(createRandomAddress())),
+    ];
 
     const appInstance = new AppInstance(
       /* initiator */ participants[0],
@@ -34,8 +37,12 @@ describe("AppInstance", () => {
 
     expect(appInstance).not.toBe(null);
     expect(appInstance).not.toBe(undefined);
-    expect(appInstance.initiator).toBe(participants[0]);
-    expect(appInstance.responder).toBe(participants[1]);
+    expect(
+      getAddressFromIdentifier(appInstance.initiatorIdentifier),
+    ).toBe(participants[0]);
+    expect(
+      getAddressFromIdentifier(appInstance.responderIdentifier),
+    ).toBe(participants[1]);
 
     // TODO: moar tests pl0x
   });

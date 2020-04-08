@@ -1,10 +1,9 @@
 import { DepositConfirmationMessage, MethodParams, DepositStartedMessage } from "@connext/types";
 import { Contract } from "ethers";
-import { One, Two, Zero } from "ethers/constants";
+import { One, Two, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../node";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
@@ -149,7 +148,7 @@ async function confirmEthAndERC20FreeBalances(
 ) {
   const tokenIndexedFreeBalances = await getTokenIndexedFreeBalanceStates(node, multisigAddress);
 
-  expect(Object.values(tokenIndexedFreeBalances[CONVENTION_FOR_ETH_TOKEN_ADDRESS])).toMatchObject([
+  expect(Object.values(tokenIndexedFreeBalances[AddressZero])).toMatchObject([
     Zero,
     Zero,
   ]);

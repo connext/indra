@@ -10,7 +10,6 @@ import {
 } from "ethers/utils";
 
 import { createAppInstanceForTest } from "../testing/utils";
-import { getRandomHDNodes } from "../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../testing/mocks";
 
 import { ChallengeRegistry } from "../contracts";
@@ -19,8 +18,8 @@ import { appIdentityToHash } from "../utils";
 
 import { getSetStateCommitment, SetStateCommitment } from "./set-state-commitment";
 import { StateChannel, FreeBalanceClass } from "../models";
-import { WeiPerEther } from "ethers/constants";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
+import { WeiPerEther, AddressZero } from "ethers/constants";
+import { getRandomChannelSigners } from "../testing/random-signing-keys";
 
 /**
  * This test suite decodes a constructed SetState Commitment transaction object
@@ -33,7 +32,7 @@ describe("Set State Commitment", () => {
 
   const context = { network: generateRandomNetworkContext() } as Context;
 
-  const [initiator, responder] = getRandomHDNodes(2);
+  const [initiator, responder] = getRandomChannelSigners(2);
 
   // State channel testing values
   let stateChannel = StateChannel.setupChannel(
@@ -43,31 +42,25 @@ describe("Set State Commitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    initiator.neuter().extendedKey,
-    responder.neuter().extendedKey,
+    initiator.identifier,
+    responder.identifier,
   );
 
-  expect(stateChannel.userNeuteredExtendedKeys[0]).toEqual(initiator.neuter().extendedKey);
-  expect(stateChannel.userNeuteredExtendedKeys[1]).toEqual(responder.neuter().extendedKey);
+  expect(stateChannel.userChannelIdentifiers[0]).toEqual(initiator.identifier);
+  expect(stateChannel.userChannelIdentifiers[1]).toEqual(responder.identifier);
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(
     FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
-      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      AddressZero,
     ]),
   );
 
   const appInstance = createAppInstanceForTest(stateChannel);
 
-  const signWithEphemeralKey = async (hash: string, path: number | string) => {
-    const initiatorSig = await signChannelMessage(
-      initiator.derivePath(path.toString()).privateKey,
-      hash,
-    );
-    const responderSig = await signChannelMessage(
-      responder.derivePath(path.toString()).privateKey,
-      hash,
-    );
+  const signWithEphemeralKey = async (hash: string) => {
+    const initiatorSig = await initiator.signMessage(hash);
+    const responderSig = await responder.signMessage(hash);
     return [initiatorSig, responderSig];
   };
 
@@ -76,7 +69,7 @@ describe("Set State Commitment", () => {
     const [
       initiatorSig,
       responderSig,
-    ] = await signWithEphemeralKey(commitment.hashToSign(), appInstance.appSeqNo);
+    ] = await signWithEphemeralKey(commitment.hashToSign());
     await commitment.addSignatures(
       initiatorSig,
       responderSig,

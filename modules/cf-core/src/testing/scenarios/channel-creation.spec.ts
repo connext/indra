@@ -88,7 +88,7 @@ describe("Node can create multisig, other owners get notified", () => {
           expect(openChannelsNodeA.size).toEqual(1);
           expect(openChannelsNodeB.size).toEqual(1);
 
-          await confirmChannelCreation(nodeA, nodeB, ownersABFreeBalanceAddr, msg.data);
+          await confirmChannelCreation(nodeA, nodeB, msg.data, ownersABFreeBalanceAddr);
         } else {
           const openChannelsNodeA = await getChannelAddresses(nodeA);
           const openChannelsNodeC = await getChannelAddresses(nodeC);
@@ -96,7 +96,7 @@ describe("Node can create multisig, other owners get notified", () => {
           expect(openChannelsNodeA.size).toEqual(2);
           expect(openChannelsNodeC.size).toEqual(1);
 
-          await confirmChannelCreation(nodeA, nodeC, ownersACFreeBalanceAddr, msg.data);
+          await confirmChannelCreation(nodeA, nodeC, msg.data, ownersACFreeBalanceAddr);
 
           done();
         }

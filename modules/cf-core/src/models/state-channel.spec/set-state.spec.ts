@@ -1,12 +1,10 @@
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress } from "@connext/types";
+import { createRandomAddress, getAddressFromIdentifier } from "@connext/types";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { createAppInstanceForTest } from "../../testing/utils";
-import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
+import { getRandomChannelIdentifiers } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
-import { xkeyKthAddress } from "../../xkeys";
 
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
@@ -25,7 +23,7 @@ describe("StateChannel::setState", () => {
 
   beforeAll(() => {
     const multisigAddress = getAddress(createRandomAddress());
-    const xpubs = getRandomExtendedPubKeys(2);
+    const ids = getRandomChannelIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,
@@ -34,16 +32,16 @@ describe("StateChannel::setState", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs[0],
-      xpubs[1],
+      ids[0],
+      ids[1],
     );
 
     testApp = createAppInstanceForTest(sc1);
 
     sc1 = sc1.installApp(testApp, {
-      [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-        [xkeyKthAddress(xpubs[0], 0)]: Zero,
-        [xkeyKthAddress(xpubs[1], 0)]: Zero,
+      [AddressZero]: {
+        [getAddressFromIdentifier(ids[0])]: Zero,
+        [getAddressFromIdentifier(ids[1])]: Zero,
       },
     });
 
@@ -52,7 +50,7 @@ describe("StateChannel::setState", () => {
 
   it("should not alter any of the base properties", () => {
     expect(sc2.multisigAddress).toBe(sc1.multisigAddress);
-    expect(sc2.userNeuteredExtendedKeys).toMatchObject(sc1.userNeuteredExtendedKeys);
+    expect(sc2.userChannelIdentifiers).toMatchObject(sc1.userChannelIdentifiers);
   });
 
   it("should not have bumped the sequence number", () => {

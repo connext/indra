@@ -1,15 +1,14 @@
-import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
+import { OutcomeType, ProtocolNames, ProtocolParams, getAddressFromIdentifier } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { StateChannel } from "../../models";
-import { xkeyKthAddress } from "../../xkeys";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { AppWithAction } from "../contracts";
 import { TestRunner } from "../test-runner";
+import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE } from "../utils";
 
 let wallet: Wallet;
 let appWithAction: Contract;
@@ -39,8 +38,8 @@ describe("Three mininodes", () => {
     await tr.setup();
 
     const proposalParams: ProtocolParams.Propose = {
-      initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeB.xpub,
+      initiatorIdentifier: tr.mininodeA.xpub,
+      responderIdentifier: tr.mininodeB.xpub,
       defaultTimeout: bigNumberify(100),
       stateTimeout: Zero,
       appDefinition: appWithAction.address,
@@ -53,8 +52,8 @@ describe("Three mininodes", () => {
       },
       initiatorDeposit: bigNumberify(0),
       responderDeposit: bigNumberify(0),
-      initiatorDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      responderDepositTokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+      responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       multisigAddress: tr.multisigAB,
     };
@@ -70,10 +69,10 @@ describe("Three mininodes", () => {
     expect(proposal).toBeTruthy();
 
     const installParams: ProtocolParams.Install = {
-      initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeB.xpub,
-      initiatorDepositTokenAddress: proposal.initiatorDepositTokenAddress,
-      responderDepositTokenAddress: proposal.responderDepositTokenAddress,
+      initiatorIdentifier: tr.mininodeA.xpub,
+      responderIdentifier: tr.mininodeB.xpub,
+      initiatorDepositAssetId: proposal.initiatorDepositAssetId,
+      responderDepositAssetId: proposal.responderDepositAssetId,
       multisigAddress: tr.multisigAB,
       initiatorBalanceDecrement: bigNumberify(0),
       responderBalanceDecrement: bigNumberify(0),
@@ -83,8 +82,8 @@ describe("Three mininodes", () => {
         stateEncoding: proposal.abiEncodings.stateEncoding,
         actionEncoding: proposal.abiEncodings.actionEncoding,
       },
-      appInitiatorAddress: xkeyKthAddress(proposal.proposedByIdentifier, proposal.appSeqNo),
-      appResponderAddress: xkeyKthAddress(proposal.proposedToIdentifier, proposal.appSeqNo),
+      appInitiatorIdentifier: getAddressFromIdentifier(proposal.initiatorIdentifier),
+      appResponderIdentifier: getAddressFromIdentifier(proposal.responderIdentifier),
       defaultTimeout: bigNumberify(100),
       stateTimeout: Zero,
       appSeqNo: proposal.appSeqNo,
@@ -99,8 +98,8 @@ describe("Three mininodes", () => {
     const [appInstance] = [...StateChannel.fromJson(postInstallChannel!).appInstances.values()];
 
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.update, {
-      initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeB.xpub,
+      initiatorIdentifier: tr.mininodeA.xpub,
+      responderIdentifier: tr.mininodeB.xpub,
       multisigAddress: tr.multisigAB,
       appIdentityHash: appInstance.identityHash,
       newState: {
@@ -109,8 +108,8 @@ describe("Three mininodes", () => {
     });
 
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
-      initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeB.xpub,
+      initiatorIdentifier: tr.mininodeA.xpub,
+      responderIdentifier: tr.mininodeB.xpub,
       multisigAddress: tr.multisigAB,
       appIdentityHash: appInstance.identityHash,
       action: {
@@ -120,8 +119,8 @@ describe("Three mininodes", () => {
     });
 
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
-      initiatorXpub: tr.mininodeA.xpub,
-      responderXpub: tr.mininodeB.xpub,
+      initiatorIdentifier: tr.mininodeA.xpub,
+      responderIdentifier: tr.mininodeB.xpub,
       appIdentityHash: appInstance.identityHash,
       multisigAddress: tr.multisigAB,
     });

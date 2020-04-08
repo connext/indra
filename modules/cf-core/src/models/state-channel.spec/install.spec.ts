@@ -1,15 +1,13 @@
-import { WeiPerEther, Zero } from "ethers/constants";
+import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress } from "@connext/types";
+import { createRandomAddress, getAssetId, getAddressFromIdentifier } from "@connext/types";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
-import { xkeyKthAddress } from "../../xkeys";
 import { createAppInstanceForTest } from "../../testing/utils";
-import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
 import { FreeBalanceClass } from "../free-balance";
+import { getRandomChannelIdentifiers } from "../../testing/random-signing-keys";
 
 describe("StateChannel::uninstallApp", () => {
   const networkContext = generateRandomNetworkContext();
@@ -19,9 +17,11 @@ describe("StateChannel::uninstallApp", () => {
 
   let appIdentityHash: string;
 
+  const CONVENTION_FOR_ETH_TOKEN_ADDRESS = getAssetId(4447);
+
   beforeAll(() => {
     const multisigAddress = getAddress(createRandomAddress());
-    const xpubs = getRandomExtendedPubKeys(2);
+    const ids = getRandomChannelIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,
@@ -30,8 +30,8 @@ describe("StateChannel::uninstallApp", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs[0],
-      xpubs[1],
+      ids[0],
+      ids[1],
     );
 
     const appInstance = createAppInstanceForTest(sc1);
@@ -42,23 +42,23 @@ describe("StateChannel::uninstallApp", () => {
 
     sc1 = sc1.setFreeBalance(
       FreeBalanceClass.createWithFundedTokenAmounts(
-        [xkeyKthAddress(xpubs[0], 0), xkeyKthAddress(xpubs[1], 0)],
+        [getAddressFromIdentifier(ids[0]), getAddressFromIdentifier(ids[1])],
         WeiPerEther,
-        [CONVENTION_FOR_ETH_TOKEN_ADDRESS],
+        [AddressZero],
       ),
     );
 
     sc2 = sc1.installApp(appInstance, {
       [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-        [xkeyKthAddress(xpubs[0], 0)]: WeiPerEther,
-        [xkeyKthAddress(xpubs[1], 0)]: WeiPerEther,
+        [getAddressFromIdentifier(ids[0])]: WeiPerEther,
+        [getAddressFromIdentifier(ids[1])]: WeiPerEther,
       },
     });
   });
 
   it("should not alter any of the base properties", () => {
     expect(sc2.multisigAddress).toBe(sc1.multisigAddress);
-    expect(sc2.userNeuteredExtendedKeys).toMatchObject(sc1.userNeuteredExtendedKeys);
+    expect(sc2.userChannelIdentifiers).toMatchObject(sc1.userChannelIdentifiers);
   });
 
   it("should have added something at the id of thew new app", () => {
@@ -74,7 +74,7 @@ describe("StateChannel::uninstallApp", () => {
 
     it("should have updated balances for Alice and Bob", () => {
       for (const amount of Object.values(
-        fb.withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {},
+        fb.withTokenAddress(AddressZero) || {},
       )) {
         expect(amount).toEqual(Zero);
       }

@@ -1,9 +1,8 @@
-import { DepositAppState, BigNumber } from "@connext/types";
+import { DepositAppState, BigNumber, getAddressFromIdentifier } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../node";
-import { xkeyKthAddress } from "../../xkeys";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
 import { DolphinCoin } from "../contracts";
@@ -47,8 +46,8 @@ describe(`Node method follows spec - install deposit app`, () => {
     expect(appsA.length).toBe(1);
     expect(appsA[0].identityHash).toBe(appIdentityHash);
     const transfers = (appsA[0].latestState as DepositAppState).transfers;
-    expect(transfers[0].to).toBe(xkeyKthAddress(nodeA.publicIdentifier));
-    expect(transfers[1].to).toBe(xkeyKthAddress(nodeB.publicIdentifier));
+    expect(transfers[0].to).toBe(getAddressFromIdentifier(nodeA.publicIdentifier));
+    expect(transfers[1].to).toBe(getAddressFromIdentifier(nodeB.publicIdentifier));
 
     // validate post-deposit free balance
     const [preSendBalA, preSendBalB] = await getBalances(
