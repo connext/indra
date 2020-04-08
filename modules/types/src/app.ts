@@ -4,6 +4,8 @@ import {
   DecString,
   HexString,
   SolidityValueType,
+  ChannelPubId,
+  AssetId,
 } from "./basic";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
@@ -39,8 +41,8 @@ export type AppABIEncodings = {
 export type AppInstanceJson = {
   identityHash: HexString;
   multisigAddress: Address;
-  initiator: Address;
-  responder: Address;
+  initiatorIdentifier: ChannelPubId;
+  responderIdentifier: ChannelPubId;
   defaultTimeout: HexString;
   appInterface: AppInterface;
   appSeqNo: number;
@@ -65,12 +67,12 @@ export type AppInstanceProposal = {
   identityHash: HexString;
   initialState: SolidityValueType;
   initiatorDeposit: DecString;
-  initiatorDepositTokenAddress: Address;
+  initiatorDepositAssetId: AssetId;
   outcomeType: OutcomeType;
-  initiator: Address;
-  responder: Address;
+  initiatorIdentifier: ChannelPubId;
+  responderIdentifier: ChannelPubId;
   responderDeposit: DecString;
-  responderDepositTokenAddress: Address;
+  responderDepositAssetId: AssetId;
   defaultTimeout: HexString;
   stateTimeout: HexString;
   meta?: object;
