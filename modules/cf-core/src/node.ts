@@ -18,7 +18,7 @@ import {
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
-  ChannelWallet,
+  IChannelSigner,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -37,12 +37,7 @@ import { StateChannel, AppInstance } from "./models";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import {
-  MethodRequest,
-  MethodResponse,
-  PersistAppType,
-  PersistCommitmentType,
-} from "./types";
+import { MethodRequest, MethodResponse, PersistAppType, PersistCommitmentType } from "./types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -76,7 +71,7 @@ export class Node {
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
-    signer: ChannelWallet,
+    signer: IChannelSigner,
     lockService?: ILockService,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
@@ -98,7 +93,7 @@ export class Node {
   }
 
   private constructor(
-    private readonly signer: ChannelWallet,
+    private readonly signer: IChannelSigner,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
@@ -124,7 +119,7 @@ export class Node {
       this.messagingService,
       this.protocolRunner,
       this.networkContext,
-      this.provider, 
+      this.provider,
       this.signer,
       // // TODO: should the below be replaced by signer?
       // new AutoNonceWallet(
@@ -153,17 +148,11 @@ export class Node {
    * Attaches middleware for the chosen opcode. Currently, only `OP_VALIDATE`
    * is accepted as an injected middleware
    */
-  public injectMiddleware(
-    opcode: Opcode,
-    middleware: ValidationMiddleware,
-  ): void {
+  public injectMiddleware(opcode: Opcode, middleware: ValidationMiddleware): void {
     if (opcode !== Opcode.OP_VALIDATE) {
       throw new Error(`Cannot inject middleware for opcode: ${opcode}`);
     }
-    this.protocolRunner.register(
-      opcode,
-      async (args: [ProtocolName, MiddlewareContext],
-    ) => {
+    this.protocolRunner.register(opcode, async (args: [ProtocolName, MiddlewareContext]) => {
       const [protocol, context] = args;
       return middleware(protocol, context);
     });
