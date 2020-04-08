@@ -54,6 +54,8 @@ export class DepositController extends AbstractController {
       });
       this.log.debug(`Sent deposit transaction to chain: ${hash}`);
       transactionHash = hash;
+      const tx = await this.ethProvider.getTransaction(hash)
+      await tx.wait();
     } catch (e) {
       this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
         amount: amount.toString(),
