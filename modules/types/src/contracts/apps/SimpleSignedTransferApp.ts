@@ -1,10 +1,7 @@
 import { Address, Bytes32 } from "../../basic";
 
 import { CoinTransfer } from "../funding";
-import {
-  singleAssetTwoPartyCoinTransferEncoding,
-  tidy,
-} from "../misc";
+import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
 
 export const SimpleSignedTransferAppName = "SimpleSignedTransferApp";
 

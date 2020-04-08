@@ -1,5 +1,16 @@
-import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, toBN } from "@connext/types";
+import {
+  EventNames,
+  IStoreService,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  SolidityValueType,
+  toBN,
+  UpdateStateMessage,
+} from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
+import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -12,13 +23,11 @@ import {
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import { SolidityValueType, UpdateStateMessage } from "../../types";
+import { } from "../../types";
 import { getFirstElementInListNotEqualTo } from "../../utils";
 
 import { NodeController } from "../controller";
 import { AppInstance } from "../../models";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 
 export class TakeActionController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_takeAction)

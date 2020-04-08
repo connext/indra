@@ -1,12 +1,11 @@
-import { EventNames } from "@connext/types";
+import { EventNames, ProposeMessage, RejectProposalMessage } from "@connext/types";
 
 import { Node } from "../../node";
-import { ProposeMessage, RejectProposalMessage } from "../../types";
 
 import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
-  assertNodeMessage,
+  assertMessage,
   collateralizeChannel,
   constructRejectInstallRpc,
   createChannel,
@@ -38,7 +37,7 @@ describe("Node method follows spec - rejectInstall", () => {
 
       let proposedAppId: string;
       nodeA.on(EventNames.REJECT_INSTALL_EVENT, async (msg: RejectProposalMessage) => {
-        assertNodeMessage(msg, {
+        assertMessage(msg, {
           from: nodeB.publicIdentifier,
           type: EventNames.REJECT_INSTALL_EVENT,
           data: {
@@ -72,7 +71,7 @@ describe("Node method follows spec - rejectInstall", () => {
 
       let proposedAppId: string;
       nodeB.on(EventNames.REJECT_INSTALL_EVENT, async (msg: RejectProposalMessage) => {
-        assertNodeMessage(msg, {
+        assertMessage(msg, {
           from: nodeA.publicIdentifier,
           type: EventNames.REJECT_INSTALL_EVENT,
           data: {

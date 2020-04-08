@@ -6,7 +6,7 @@ import {
   delay,
   IMessagingService,
   MessagingConfig,
-  NodeMessage,
+  Message,
   VerifyNonceDtoType,
 } from "@connext/types";
 
@@ -228,9 +228,9 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
   ////////////////////////////////////////
   // IMessagingService Methods
-  async onReceive(subject: string, callback: (msg: NodeMessage) => void): Promise<void> {
+  async onReceive(subject: string, callback: (msg: Message) => void): Promise<void> {
     // return connection callback
-    return await this.connection.onReceive(subject, async (msg: NodeMessage) => {
+    return await this.connection.onReceive(subject, async (msg: Message) => {
       this.emit(RECEIVED, { subject, data: msg } as MessagingEventData);
       // wait out delay
       await this.awaitDelay();
@@ -275,7 +275,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     });
   }
 
-  async send(to: string, msg: NodeMessage): Promise<void> {
+  async send(to: string, msg: Message): Promise<void> {
     this.emit(SEND, { subject: to, data: msg } as MessagingEventData);
     // wait out delay
     await this.awaitDelay(true);
@@ -367,7 +367,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     return await this.connection.request(subject, timeout, data);
   }
 
-  async subscribe(subject: string, callback: (msg: NodeMessage) => void): Promise<void> {
+  async subscribe(subject: string, callback: (msg: Message) => void): Promise<void> {
     return await this.connection.subscribe(subject, callback);
   }
 

@@ -15,7 +15,7 @@ import {
   getFreeBalanceState,
   getTokenIndexedFreeBalanceStates,
   transferERC20Tokens,
-  assertNodeMessage,
+  assertMessage,
   deposit,
 } from "../utils";
 
@@ -42,15 +42,15 @@ export function confirmDepositMessages(
   };
 
   initiator.once("DEPOSIT_STARTED_EVENT", (msg: DepositStartedMessage) => {
-    assertNodeMessage(msg, startedMsg, ["data.txHash"]);
+    assertMessage(msg, startedMsg, ["data.txHash"]);
   });
 
   initiator.once("DEPOSIT_CONFIRMED_EVENT", (msg: DepositConfirmationMessage) => {
-    assertNodeMessage(msg, confirmMsg);
+    assertMessage(msg, confirmMsg);
   });
 
   responder.once("DEPOSIT_CONFIRMED_EVENT", (msg: DepositConfirmationMessage) => {
-    assertNodeMessage(msg, confirmMsg);
+    assertMessage(msg, confirmMsg);
   });
 }
 

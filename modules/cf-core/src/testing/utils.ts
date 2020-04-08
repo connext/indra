@@ -6,20 +6,21 @@ import {
   ContractABI,
   CreateChannelMessage,
   deBigNumberifyJson,
+  DepositAppState,
+  DepositAppStateEncoding,
+  Message,
   EventNames,
   InstallMessage,
   MethodNames,
-  MethodParams,
   MethodParam,
+  MethodParams,
   MethodResults,
   OutcomeType,
   ProposeMessage,
   ProtocolParams,
   SolidityValueType,
-  UninstallMessage,
-  DepositAppStateEncoding,
-  DepositAppState,
   toBN,
+  UninstallMessage,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -31,9 +32,6 @@ import { Node } from "../node";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { AppInstance, StateChannel } from "../models";
 import { computeRandomExtendedPrvKey, xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
-import {
-  EventEmittedMessage,
-} from "../types";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
@@ -195,8 +193,8 @@ export async function getDepositApps(
  * @param shouldExist array of keys to check existence of if value not known
  * for `expected` (e.g `appIdentityHash`s)
  */
-export function assertNodeMessage(
-  msg: EventEmittedMessage,
+export function assertMessage(
+  msg: Message,
   expected: any, // should be partial of nested types
   shouldExist: string[] = [],
 ): void {
@@ -224,7 +222,7 @@ export function assertProposeMessage(
     responderXpub: proposedToIdentifier,
     ...emittedParams
   } = params;
-  assertNodeMessage(
+  assertMessage(
     msg,
     {
       from: senderId,
@@ -240,8 +238,12 @@ export function assertProposeMessage(
   );
 }
 
-export function assertInstallMessage(senderId: string, msg: InstallMessage, appIdentityHash: string) {
-  assertNodeMessage(msg, {
+export function assertInstallMessage(
+  senderId: string,
+  msg: InstallMessage,
+  appIdentityHash: string,
+) {
+  assertMessage(msg, {
     from: senderId,
     type: `INSTALL_EVENT`,
     data: {
@@ -297,7 +299,10 @@ export async function getChannelAddresses(node: Node): Promise<Set<string>> {
   return new Set(multisigAddresses);
 }
 
-export async function getAppInstance(node: Node, appIdentityHash: string): Promise<AppInstanceJson> {
+export async function getAppInstance(
+  node: Node,
+  appIdentityHash: string,
+): Promise<AppInstanceJson> {
   const {
     result: {
       result: { appInstance },
@@ -659,7 +664,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
   const [multisigAddress]: any = await Promise.all([
     new Promise(async resolve => {
       nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-        assertNodeMessage(
+        assertMessage(
           msg,
           {
             from: nodeA.publicIdentifier,
@@ -677,7 +682,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
     }),
     new Promise(resolve => {
       nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
-        assertNodeMessage(
+        assertMessage(
           msg,
           {
             from: nodeA.publicIdentifier,
@@ -967,7 +972,11 @@ export async function takeAppAction(node: Node, appIdentityHash: string, action:
   return res.result.result;
 }
 
-export async function uninstallApp(node: Node, counterparty: Node, appIdentityHash: string): Promise<string> {
+export async function uninstallApp(
+  node: Node,
+  counterparty: Node,
+  appIdentityHash: string,
+): Promise<string> {
   await Promise.all([
     node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash)),
     new Promise(resolve => {

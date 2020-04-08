@@ -1,4 +1,4 @@
-import { AppAction, EventNames, MethodNames, NodeMessage } from "@connext/types";
+import { AppAction, EventNames, MethodNames, Message } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
 import { AddressZero } from "ethers/constants";
@@ -15,7 +15,7 @@ import {
   DepositFailedMessage,
   DepositStartedMessage,
   InstallMessage,
-  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
   UninstallMessage,
@@ -65,7 +65,7 @@ export default class ListenerService implements OnModuleInit {
     this.log.setContext("ListenerService");
   }
 
-  logEvent(event: EventNames, res: NodeMessage & { data: any }): void {
+  logEvent(event: EventNames, res: Message & { data: any }): void {
     this.log.debug(
       `${event} event fired from ${res && res.from ? res.from : null}, data: ${
         res ? JSON.stringify(res.data) : `event did not have a result`
@@ -115,7 +115,7 @@ export default class ListenerService implements OnModuleInit {
           data.from,
         );
       },
-      PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
+      PROTOCOL_MESSAGE_EVENT: (data: ProtocolMessage): void => {
         this.logEvent(PROTOCOL_MESSAGE_EVENT, data);
       },
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {

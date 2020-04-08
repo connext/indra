@@ -1,4 +1,14 @@
-import { ILoggerService, NetworkContext, ProtocolMessage, enumify, IStoreService, Opcode } from "@connext/types";
+import {
+  enumify,
+  ILoggerService,
+  IStoreService,
+  MethodName,
+  MethodParam,
+  MethodResult,
+  NetworkContext,
+  Opcode,
+  ProtocolMessageData,
+} from "@connext/types";
 
 export const PersistAppType = enumify({
   CreateProposal: "CreateProposal",
@@ -19,7 +29,8 @@ export const PersistCommitmentType = enumify({
   CreateWithdrawal: "CreateWithdrawal",
   UpdateWithdrawal: "UpdateWithdrawal",
 });
-export type PersistCommitmentType = typeof PersistCommitmentType[keyof typeof PersistCommitmentType];
+export type PersistCommitmentType =
+  typeof PersistCommitmentType[keyof typeof PersistCommitmentType];
 
 export interface IPrivateKeyGenerator {
   (s: string): Promise<string>;
@@ -35,61 +46,22 @@ export type Instruction = Function | Opcode;
 export interface Context {
   store: IStoreService;
   log: ILoggerService;
-  message: ProtocolMessage;
+  message: ProtocolMessageData;
   network: NetworkContext;
 }
 
-export {
-  AppABIEncodings,
-  AppIdentity,
-  AppInstanceJson,
-  AppInstanceProposal,
-  AppInterface,
-  ConditionalTransactionCommitmentJSON,
-  CreateChannelMessage,
-  DepositConfirmationMessage,
-  DepositFailedMessage,
-  DepositStartedMessage,
-  Event,
-  EventEmittedMessage,
-  EventNames,
-  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
-  ILockService,
-  IMessagingService,
-  InstallMessage,
-  IStoreService,
-  MethodName,
-  MethodNames,
-  MethodParam,
-  MethodParams,
-  MethodRequest,
-  MethodResponse,
-  MethodResult,
-  MethodResults,
-  MinimalTransaction,
-  multiAssetMultiPartyCoinTransferEncoding,
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
-  NetworkContext,
-  NodeMessage,
-  NodeMessageWrappedProtocolMessage,
-  OutcomeType,
-  Opcode,
-  ProposeMessage,
-  ProtocolMessage,
-  ProtocolName,
-  ProtocolNames,
-  ProtocolParam,
-  ProtocolParams,
-  RejectProposalMessage,
-  SetStateCommitmentJSON,
-  SignedAppChallengeUpdate,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
-  SolidityValueType,
-  TwoPartyFixedOutcome,
-  TwoPartyFixedOutcomeInterpreterParams,
-  twoPartyFixedOutcomeInterpreterParamsEncoding,
-  UninstallMessage,
-  UpdateStateMessage,
-} from "@connext/types";
+////////////////////////////////////////
+// Messages
+
+export type MethodMessage = {
+  type: MethodName;
+  requestId: string; // uuid?
+};
+
+export type MethodRequest = MethodMessage & {
+  params: MethodParam;
+};
+
+export type MethodResponse = MethodMessage & {
+  result: MethodResult;
+};

@@ -1,4 +1,12 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, toBN } from "@connext/types";
+import {
+  AppInstanceProposal,
+  IStoreService,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  toBN,
+} from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -8,9 +16,6 @@ import {
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import {
-  AppInstanceProposal,
-} from "../../types";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
 

@@ -6,7 +6,7 @@ import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";
 import {
-  assertNodeMessage,
+  assertMessage,
   collateralizeChannel,
   createChannel,
   getAppInstanceProposal,
@@ -71,7 +71,7 @@ describe("Node method follows spec - propose install", () => {
 
       nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         // make sure message has the right structure
-        assertNodeMessage(msg, expectedMessageB, ["data.appIdentityHash"]);
+        assertMessage(msg, expectedMessageB, ["data.appIdentityHash"]);
         // both nodes should have 1 app, they should be the same
         await assertEqualProposedApps(nodeA, nodeB, multisigAddress, [msg.data.appIdentityHash]);
         done();

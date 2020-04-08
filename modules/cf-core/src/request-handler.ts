@@ -3,8 +3,11 @@ import {
   EventNames,
   ILoggerService,
   IMessagingService,
-  MethodName,
   IStoreService,
+  MethodName,
+  NetworkContext,
+  Message,
+  ProtocolMessage,
 } from "@connext/types";
 import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -14,15 +17,8 @@ import { eventNameToImplementation, methodNameToImplementation } from "./methods
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
-import {
-  MethodRequest,
-  MethodResponse,
-  NetworkContext,
-  NodeMessage,
-  NodeMessageWrappedProtocolMessage,
-} from "./types";
+import { MethodRequest, MethodResponse } from "./types"; 
 import { logTime } from "./utils";
-
 /**
  * This class registers handlers for requests to get or set some information
  * about app instances and channels for this Node and any relevant peer Nodes.
@@ -109,7 +105,7 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: EventNames, msg: NodeMessage) {
+  public async callEvent(event: EventNames, msg: Message) {
     const start = Date.now();
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);
@@ -138,7 +134,7 @@ export class RequestHandler {
       `Event ${
         event !== EventNames.PROTOCOL_MESSAGE_EVENT
           ? event
-          : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
+          : `for ${(msg as ProtocolMessage).data.protocol} protocol`
       } was processed`,
     );
     this.router.emit(event, msg);

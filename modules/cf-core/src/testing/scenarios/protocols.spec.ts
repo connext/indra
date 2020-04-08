@@ -1,15 +1,15 @@
 import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
+import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
+import { StateChannel } from "../../models";
 import { xkeyKthAddress } from "../../xkeys";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { AppWithAction } from "../contracts";
 import { TestRunner } from "../test-runner";
-import { StateChannel } from "../../models";
-import { Zero } from "ethers/constants";
 
 let wallet: Wallet;
 let appWithAction: Contract;
@@ -64,7 +64,9 @@ describe("Three mininodes", () => {
     const postProposalStateChannel = await tr.mininodeA.store.getStateChannel(tr.multisigAB);
     expect(postProposalStateChannel).toBeDefined;
 
-    const [proposal] = [...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values()];
+    const [proposal] = [
+      ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
+    ];
     expect(proposal).toBeTruthy();
 
     const installParams: ProtocolParams.Install = {

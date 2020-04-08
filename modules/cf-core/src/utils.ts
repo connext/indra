@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, ILoggerService, sortByAddress } from "@connext/types";
+import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, sortByAddress } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -11,13 +11,12 @@ import {
   solidityKeccak256,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
+import memoize from "memoizee";
 
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
 import { xkeyKthAddress } from "./xkeys";
-import { AppIdentity } from "./types";
-import memoize from "memoizee";
 
 export const logTime = (log: ILoggerService, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -108,7 +107,7 @@ export const getCreate2MultisigAddress = async (
             solidityKeccak256(
               ["uint256", "uint256"],
               [ethProvider.network.chainId, 0],
-            )
+            ),
           ],
         ),
         solidityKeccak256(

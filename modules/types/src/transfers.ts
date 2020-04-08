@@ -1,4 +1,4 @@
-import { BigNumber } from "./basic";
+import { Address, BigNumber, Bytes32 } from "./basic";
 import { enumify } from "./utils";
 
 ////////////////////////////////////////
@@ -11,6 +11,21 @@ export const ConditionalTransferTypes = enumify({
 });
 export type ConditionalTransferTypes =
   (typeof ConditionalTransferTypes)[keyof typeof ConditionalTransferTypes];
+
+////////////////////////////////////////
+// Metadata
+
+export type CreatedLinkedTransferMeta = {
+  encryptedPreImage?: string;
+};
+
+export type CreatedHashLockTransferMeta = {
+  lockHash: Bytes32;
+};
+
+export type CreatedSignedTransferMeta = {
+  signer: Address;
+};
 
 ////////////////////////////////////////
 // Statuses
