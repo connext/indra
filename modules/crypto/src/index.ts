@@ -21,7 +21,7 @@ import {
 export * from "eccrypto-js";
 
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
-export const CHAN_SIGN_PREFIX = "\x18Channel Signed Message:\n";
+export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
 export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
@@ -109,7 +109,7 @@ export async function signChannelMessage(
   privateKey: Buffer | string,
   message: Buffer | string,
 ): Promise<string> {
-  return signMessage(privateKey, message, CHAN_SIGN_PREFIX);
+  return signMessage(privateKey, message, INDRA_SIGN_PREFIX);
 }
 
 export async function recoverPublicKey(
@@ -147,7 +147,7 @@ export async function verifyChannelMessage(
   message: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return verifyMessage(message, sig, CHAN_SIGN_PREFIX);
+  return verifyMessage(message, sig, INDRA_SIGN_PREFIX);
 }
 
 export async function encryptWithPublicKey(publicKey: string, message: string): Promise<string> {
