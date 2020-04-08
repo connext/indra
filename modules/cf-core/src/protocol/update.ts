@@ -46,6 +46,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderXpub,
       newState,
+      stateTimeout,
     } = params as ProtocolParams.Update;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
@@ -68,6 +69,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preProtocolAppInstance,
       newState,
+      stateTimeout,
     );
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -144,6 +146,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       initiatorXpub,
       newState,
+      stateTimeout,
     } = params as ProtocolParams.Update;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
@@ -165,6 +168,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       preProtocolAppInstance,
       newState,
+      stateTimeout,
     );
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);

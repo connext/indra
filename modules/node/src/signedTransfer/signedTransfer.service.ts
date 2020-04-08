@@ -1,3 +1,4 @@
+import { SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   bigNumberifyJson,
   Bytes32,
@@ -141,6 +142,7 @@ export class SignedTransferService {
       assetId,
       SimpleSignedTransferAppName,
       senderApp.meta,
+      SIGNED_TRANSFER_STATE_TIMEOUT,
     );
 
 

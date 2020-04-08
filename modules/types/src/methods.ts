@@ -158,11 +158,12 @@ type ProposeInstallParams = {
   initiatorDepositTokenAddress: Address;
   responderDeposit: BigNumber;
   responderDepositTokenAddress: Address;
-  timeout: BigNumber;
+  defaultTimeout: BigNumber;
   initialState: AppState;
   proposedToIdentifier: Xpub;
   outcomeType: OutcomeType;
   meta?: Object;
+  stateTimeout?: BigNumber;
 };
 
 type ProposeInstallResult = {
@@ -182,6 +183,7 @@ type RejectInstallResult = {};
 type UpdateStateParams = {
   appIdentityHash: Bytes32;
   newState: SolidityValueType;
+  stateTimeout?: BigNumber;
 };
 
 type UpdateStateResult = {
@@ -193,6 +195,7 @@ type UpdateStateResult = {
 type TakeActionParams = {
   appIdentityHash: Bytes32;
   action: SolidityValueType;
+  stateTimeout?: BigNumber;
 };
 
 type TakeActionResult = {

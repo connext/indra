@@ -1,5 +1,4 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
-import { bigNumberify } from "ethers/utils";
+import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, toBN } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -87,8 +86,8 @@ export async function install(
       initiatorXpub === proposal.proposedToIdentifier
         ? proposal.proposedByIdentifier
         : proposal.proposedToIdentifier,
-    initiatorBalanceDecrement: bigNumberify(proposal.initiatorDeposit),
-    responderBalanceDecrement: bigNumberify(proposal.responderDeposit),
+    initiatorBalanceDecrement: toBN(proposal.initiatorDeposit),
+    responderBalanceDecrement: toBN(proposal.responderDeposit),
     multisigAddress: stateChannel.multisigAddress,
     participants: stateChannel.getSigningKeysFor(proposal.appSeqNo),
     initialState: proposal.initialState,
@@ -97,12 +96,13 @@ export async function install(
       addr: proposal.appDefinition,
     },
     appSeqNo: proposal.appSeqNo,
-    defaultTimeout: bigNumberify(proposal.timeout).toNumber(),
+    defaultTimeout: toBN(proposal.defaultTimeout),
     outcomeType: proposal.outcomeType,
     initiatorDepositTokenAddress: proposal.initiatorDepositTokenAddress,
     responderDepositTokenAddress: proposal.responderDepositTokenAddress,
     disableLimit: false,
     meta: proposal.meta,
+    stateTimeout: toBN(proposal.stateTimeout),
   });
   stateChannel.removeProposal(appIdentityHash);
   await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);

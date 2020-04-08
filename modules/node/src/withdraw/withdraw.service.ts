@@ -1,3 +1,4 @@
+import { WITHDRAW_STATE_TIMEOUT } from "@connext/apps";
 import { signChannelMessage } from "@connext/crypto";
 import {
   AppInstanceJson,
@@ -240,6 +241,8 @@ export class WithdrawService {
       Zero,
       assetId,
       WithdrawAppName,
+      { reason: "Node withdrawal" },
+      WITHDRAW_STATE_TIMEOUT,
     );
 
     await this.saveWithdrawal(

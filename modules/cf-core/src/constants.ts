@@ -13,8 +13,8 @@ export const UNASSIGNED_SEQ_NO = -1;
 export const JSON_STRINGIFY_SPACE = 2;
 
 export const HARD_CODED_ASSUMPTIONS = {
-  freeBalanceDefaultTimeout: 172800,
-  freeBalanceInitialStateTimeout: 172800,
+  freeBalanceDefaultTimeout: 8640, // 24h
+  freeBalanceInitialStateTimeout: 8640,
   // We assume the Free Balance is the first app ever installed
   appSequenceNumberForFreeBalance: 0,
 };

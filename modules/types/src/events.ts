@@ -5,6 +5,7 @@ import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, Xpub } from 
 import { ChannelMethods } from "./channelProvider";
 import { ConditionalTransferTypes } from "./transfers";
 import { enumify } from "./utils";
+import { ProtocolParams } from "./protocol";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -112,6 +113,11 @@ type InstallEventData = {
 ////////////////////////////////////////
 const PROPOSE_INSTALL_EVENT = "PROPOSE_INSTALL_EVENT";
 
+type ProposeEventData = {
+  params: ProtocolParams.Propose;
+  appInstanceId: string;
+};
+
 ////////////////////////////////////////
 const PROTOCOL_MESSAGE_EVENT = "PROTOCOL_MESSAGE_EVENT";
 
@@ -201,6 +207,7 @@ export namespace EventPayloads {
     HashLockTransfer | LinkedTransfer | SignedTransfer
   >;
   export type Install = InstallEventData;
+  export type Propose = ProposeEventData;
   export type RejectInstall = RejectInstallEventData;
   export type Uninstall = UninstallEventData;
   export type UpdateState = UpdateStateEventData;
@@ -208,6 +215,7 @@ export namespace EventPayloads {
 
 export type EventPayload =
   | InstallEventData
+  | ProposeEventData
   | RejectInstallEventData
   | UpdateStateEventData
   | UninstallEventData

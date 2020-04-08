@@ -5,6 +5,7 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   StoreTypes,
+  toBN,
 } from "@connext/types";
 import { Client as DBClient } from "pg";
 import { before } from "mocha";
@@ -34,8 +35,8 @@ import {
 } from "./examples";
 
 const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
-  const removeIsVirtualTag = (obj: any) => {
-    const { isVirtualApp, ...ret } = obj;
+  const removeIsVirtualTagAndTimeouts = (obj: any) => {
+    const { isVirtualApp, latestTimeout, timeout, ...ret } = obj;
     return ret;
   };
   return {
@@ -43,11 +44,25 @@ const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
     monotonicNumProposedApps: oldChannel.monotonicNumProposedApps,
     multisigAddress: oldChannel.multisigAddress,
     userNeuteredExtendedKeys: oldChannel.userNeuteredExtendedKeys.sort(),
-    proposedAppInstances: oldChannel.proposedAppInstances || [],
+    proposedAppInstances: oldChannel.proposedAppInstances 
+      ? oldChannel.proposedAppInstances.map(([id, proposal]) => [
+          id,
+          {
+            ...removeIsVirtualTagAndTimeouts(proposal),
+            defaultTimeout: toBN(proposal.timeout).toHexString(),
+            stateTimeout: toBN(proposal.timeout).toHexString(),
+          },
+        ])
+      : [],
     appInstances: oldChannel.appInstances
       ? oldChannel.appInstances.map(([id, appJson]) => [
           id,
-          { ...removeIsVirtualTag(appJson), multisigAddress: oldChannel.multisigAddress },
+          { 
+            ...removeIsVirtualTagAndTimeouts(appJson), 
+            multisigAddress: oldChannel.multisigAddress, 
+            defaultTimeout: toBN(appJson.defaultTimeout).toHexString(),
+            stateTimeout: toBN(appJson.latestTimeout).toHexString(),
+          },
         ])
       : [],
     freeBalanceAppInstance: {
@@ -55,7 +70,9 @@ const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
       multiAssetMultiPartyCoinTransferInterpreterParams: null,
       singleAssetTwoPartyCoinTransferInterpreterParams: null,
       twoPartyOutcomeInterpreterParams: null,
-      ...removeIsVirtualTag(oldChannel.freeBalanceAppInstance),
+      ...removeIsVirtualTagAndTimeouts(oldChannel.freeBalanceAppInstance),
+      defaultTimeout: toBN(oldChannel.freeBalanceAppInstance.defaultTimeout).toHexString(),
+      stateTimeout: toBN(oldChannel.freeBalanceAppInstance.latestTimeout).toHexString(),
       appInterface: {
         ...oldChannel.freeBalanceAppInstance.appInterface,
         actionEncoding: null,

@@ -1,4 +1,4 @@
-import { WithdrawCommitment } from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT, WITHDRAW_STATE_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
   AppInstanceJson,
   ChannelMethods,
@@ -95,9 +95,13 @@ export class WithdrawalController extends AbstractController {
     // Dont need to validate anything because we already did it during the propose flow
     const counterpartySignatureOnWithdrawCommitment =
       await this.connext.channelProvider.signMessage(hash);
-    await this.connext.takeAction(appInstance.identityHash, {
-      signature: counterpartySignatureOnWithdrawCommitment,
-    } as WithdrawAppAction);
+    await this.connext.takeAction(
+      appInstance.identityHash, 
+      {
+        signature: counterpartySignatureOnWithdrawCommitment,
+      } as WithdrawAppAction,
+      WITHDRAW_STATE_TIMEOUT,
+    );
     await this.connext.uninstallApp(appInstance.identityHash);
   }
 
@@ -169,7 +173,8 @@ export class WithdrawalController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: WITHDRAW_STATE_TIMEOUT,
     };
     return await this.proposeAndInstallLedgerApp(installParams);
   }

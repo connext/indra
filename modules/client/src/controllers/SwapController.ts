@@ -1,3 +1,4 @@
+import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
 import {
   calculateExchange,
   DefaultApp,
@@ -154,7 +155,8 @@ export class SwapController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: swappedAmount,
       responderDepositTokenAddress: toAssetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: SWAP_STATE_TIMEOUT,
     };
 
     const appIdentityHash = await this.proposeAndInstallLedgerApp(params);

@@ -1,5 +1,4 @@
 export { AppInstance } from "./app-instance";
-export { AppInstanceProposal } from "./app-instance-proposal";
 export {
   CoinTransfer,
   CoinTransferMap,

@@ -57,7 +57,7 @@ describe("set state on free balance", () => {
       freeBalanceETH.identity,
       freeBalanceETH.hashOfLatestState,
       freeBalanceETH.versionNumber,
-      freeBalanceETH.timeout,
+      freeBalanceETH.stateTimeout,
     );
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 

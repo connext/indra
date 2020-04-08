@@ -15,7 +15,8 @@ type InstallProtocolParams = {
   initialState: SolidityValueType;
   appInterface: AppInterface;
   meta?: Object;
-  defaultTimeout: number;
+  defaultTimeout: BigNumber;
+  stateTimeout: BigNumber;
   appSeqNo: number;
   // Outcome Type returned by the app instance, as defined by `appInterface`
   outcomeType: OutcomeType;
@@ -35,8 +36,9 @@ type ProposeProtocolParams = {
   initiatorDeposit: BigNumber;
   initiatorDepositTokenAddress: Address;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress: Address;
-  timeout: BigNumber;
+  responderDepositTokenAddress: string;
+  defaultTimeout: BigNumber;
+  stateTimeout: BigNumber; // optional in api, but should be defined in protocol
   initialState: SolidityValueType;
   outcomeType: OutcomeType;
   meta?: Object;
@@ -54,6 +56,7 @@ type TakeActionProtocolParams = {
   multisigAddress: Address;
   appIdentityHash: Address;
   action: SolidityValueType;
+  stateTimeout: BigNumber;
 };
 
 type UninstallProtocolParams = {
@@ -70,6 +73,7 @@ type UpdateProtocolParams = {
   multisigAddress: Address;
   appIdentityHash: Address;
   newState: SolidityValueType;
+  stateTimeout: BigNumber;
 };
 
 ////////////////////////////////////////
