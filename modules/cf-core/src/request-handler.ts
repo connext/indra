@@ -9,6 +9,7 @@ import {
   Message,
   ProtocolMessage,
   IChannelSigner,
+  ChannelPubId,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -30,6 +31,7 @@ export class RequestHandler {
   router!: RpcRouter;
 
   constructor(
+    readonly publicIdentifier: ChannelPubId,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
     readonly store: IStoreService,
@@ -49,10 +51,6 @@ export class RequestHandler {
     this.router = router;
     this.mapPublicApiMethods();
     this.mapEventHandlers();
-  }
-
-  get address() {
-    return this.signer.address;
   }
 
   /**
