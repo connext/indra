@@ -32,12 +32,16 @@ import {
   XPUB_V0_3,
   XPUB_V0_4,
 } from "./examples";
+import { xkeyKthAddress } from "@connext/cf-core";
 
-const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
-  const removeIsVirtualTag = (obj: any) => {
-    const { isVirtualApp, ...ret } = obj;
+const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): StateChannelJSON => {
+  const removeIsVirtualParticipantsTag = (obj: any) => {
+    const { isVirtualApp, participants, ...ret } = obj;
     return ret;
   };
+  const userXpub = oldChannel.userNeuteredExtendedKeys.find(
+    x => x !== nodeXpub,
+  );
   return {
     schemaVersion: STORE_SCHEMA_VERSION,
     monotonicNumProposedApps: oldChannel.monotonicNumProposedApps,
@@ -47,7 +51,12 @@ const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
     appInstances: oldChannel.appInstances
       ? oldChannel.appInstances.map(([id, appJson]) => [
           id,
-          { ...removeIsVirtualTag(appJson), multisigAddress: oldChannel.multisigAddress },
+          { 
+            ...removeIsVirtualParticipantsTag(appJson),
+            multisigAddress: oldChannel.multisigAddress,
+            initiator: xkeyKthAddress(nodeXpub, appJson.appSeqNo),
+            responder: xkeyKthAddress(userXpub, appJson.appSeqNo),
+          },
         ])
       : [],
     freeBalanceAppInstance: {
@@ -55,11 +64,13 @@ const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
       multiAssetMultiPartyCoinTransferInterpreterParams: null,
       singleAssetTwoPartyCoinTransferInterpreterParams: null,
       twoPartyOutcomeInterpreterParams: null,
-      ...removeIsVirtualTag(oldChannel.freeBalanceAppInstance),
+      ...removeIsVirtualParticipantsTag(oldChannel.freeBalanceAppInstance),
       appInterface: {
         ...oldChannel.freeBalanceAppInstance.appInterface,
         actionEncoding: null,
       },
+      initiator: xkeyKthAddress(nodeXpub),
+      responder: xkeyKthAddress(userXpub),
     } as AppInstanceJson,
     addresses: oldChannel.addresses,
   };
