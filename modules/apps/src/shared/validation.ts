@@ -121,11 +121,11 @@ export const commonAppProposalValidation = (
   appProposalMatchesRegistry(params, appRegistryInfo);
 
   if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
-    throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
+    throw new Error(`Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}`);
   }
 
   if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
+    throw new Error(`Unsupported responderDepositTokenAddress: ${responderDepositTokenAddress}`);
   }
 
   // NOTE: may need to remove this condition if we start working

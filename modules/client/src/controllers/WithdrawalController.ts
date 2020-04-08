@@ -5,32 +5,35 @@ import {
   EventNames,
   MethodParams,
   MinimalTransaction,
+  PublicParams,
+  PublicResults,
   toBN,
-  WithdrawAppName,
   WithdrawAppAction,
+  WithdrawAppName,
   WithdrawAppState,
-  WithdrawParameters,
-  WithdrawResponse,
 } from "@connext/types";
+import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { formatEther, hexlify, randomBytes } from "ethers/utils";
+import { formatEther, getAddress, hexlify, randomBytes } from "ethers/utils";
 
-import { stringify, xpubToAddress } from "../lib";
+import { stringify } from "../lib";
 import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
-  public async withdraw(params: WithdrawParameters): Promise<WithdrawResponse> {
+  public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
     //Set defaults
     if (!params.assetId) {
       params.assetId = AddressZero;
     }
+    params.assetId = getAddress(params.assetId);
 
     if (!params.recipient) {
       params.recipient = this.connext.freeBalanceAddress;
     }
+    params.recipient = getAddress(params.recipient);
 
     if (!params.nonce) {
       params.nonce = hexlify(randomBytes(32));
@@ -86,13 +89,12 @@ export class WithdrawalController extends AbstractController {
       assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
       recipient: state.transfers[0].to,
       nonce: state.nonce,
-    } as WithdrawParameters);
+    } as PublicParams.Withdraw);
     const hash = generatedCommitment.hashToSign();
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
-      hash,
-    );
+    const counterpartySignatureOnWithdrawCommitment =
+      await this.connext.channelProvider.signMessage(hash);
     await this.connext.takeAction(
       appInstance.identityHash, 
       {
@@ -114,7 +116,9 @@ export class WithdrawalController extends AbstractController {
     await this.connext.rescindDepositRights({ assetId });
   }
 
-  private async createWithdrawCommitment(params: WithdrawParameters): Promise<WithdrawCommitment> {
+  private async createWithdrawCommitment(
+    params: PublicParams.Withdraw,
+  ): Promise<WithdrawCommitment> {
     const { assetId, amount, nonce, recipient } = params;
     const channel = await this.connext.getStateChannel();
     return new WithdrawCommitment(
@@ -129,7 +133,7 @@ export class WithdrawalController extends AbstractController {
   }
 
   private async proposeWithdrawApp(
-    params: WithdrawParameters,
+    params: PublicParams.Withdraw,
     withdrawCommitmentHash: string,
     withdrawerSignatureOnWithdrawCommitment: string,
   ): Promise<string> {
@@ -176,7 +180,7 @@ export class WithdrawalController extends AbstractController {
   }
 
   public async saveWithdrawCommitmentToStore(
-    params: WithdrawParameters,
+    params: PublicParams.Withdraw,
     signatures: string[],
   ): Promise<void> {
     // set the withdrawal tx in the store

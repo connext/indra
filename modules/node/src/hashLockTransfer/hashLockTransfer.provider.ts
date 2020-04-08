@@ -1,10 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import {
-  bigNumberifyJson,
-  GetHashLockTransferResponse,
-  HashLockTransferAppState,
-  ResolveHashLockTransferResponse,
-} from "@connext/types";
+import { bigNumberifyJson, HashLockTransferAppState, NodeResponses } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -31,7 +26,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
   async getHashLockTransferByLockHash(
     pubId: string,
     data: { lockHash: string },
-  ): Promise<GetHashLockTransferResponse> {
+  ): Promise<NodeResponses.GetHashLockTransfer> {
     const { lockHash } = data;
     if (!lockHash) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);

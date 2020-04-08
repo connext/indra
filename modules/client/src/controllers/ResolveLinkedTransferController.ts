@@ -1,11 +1,11 @@
 import {
-  deBigNumberifyJson,
   ConditionalTransferTypes,
+  deBigNumberifyJson,
   EventNames,
   EventPayloads,
+  PublicParams,
+  PublicResults,
 } from "@connext/types";
-
-import { ResolveLinkedTransferParameters, ResolveLinkedTransferResponse } from "../types";
 
 import { AbstractController } from "./AbstractController";
 
@@ -20,15 +20,15 @@ export class ResolveLinkedTransferController extends AbstractController {
   };
 
   public resolveLinkedTransfer = async (
-    params: ResolveLinkedTransferParameters,
-  ): Promise<ResolveLinkedTransferResponse> => {
+    params: PublicParams.ResolveLinkedTransfer,
+  ): Promise<PublicResults.ResolveLinkedTransfer> => {
     // because this function is only used internally, it is safe to add
     // the amount / assetId to the api params without breaking interfaces
     const { paymentId, preImage } = params;
 
     this.log.info(`Resolving link transfer with id ${params.paymentId}`);
 
-    let resolveRes: ResolveLinkedTransferResponse;
+    let resolveRes: PublicResults.ResolveLinkedTransfer;
     try {
       // node installs app, validation happens in listener
       resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);

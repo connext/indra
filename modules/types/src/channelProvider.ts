@@ -1,4 +1,5 @@
 import { Address, Bytes32, DecString, Xpub } from "./basic";
+import { ContractAddresses } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
@@ -11,7 +12,6 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
-import { ContractAddresses } from "./node";
 
 export const ChannelMethods = enumify({
   ...MethodNames,

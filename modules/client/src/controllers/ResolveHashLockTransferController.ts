@@ -1,12 +1,11 @@
 import {
+  ConditionalTransferTypes,
   deBigNumberifyJson,
   EventNames,
   EventPayloads,
-  ResolveHashLockTransferParameters,
-  ResolveHashLockTransferResponse,
-  ConditionalTransferTypes,
   HashLockTransferAppState,
-  HashLockTransfer,
+  PublicParams,
+  PublicResults,
 } from "@connext/types";
 import { HashZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
@@ -15,8 +14,8 @@ import { AbstractController } from "./AbstractController";
 
 export class ResolveHashLockTransferController extends AbstractController {
   public resolveHashLockTransfer = async (
-    params: ResolveHashLockTransferParameters,
-  ): Promise<ResolveHashLockTransferResponse> => {
+    params: PublicParams.ResolveHashLockTransfer,
+  ): Promise<PublicResults.ResolveHashLockTransfer> => {
     const { preImage } = params;
 
     this.log.info(`Resolving hash lock transfer with preImage ${preImage}`);
@@ -45,7 +44,7 @@ export class ResolveHashLockTransferController extends AbstractController {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
         error: e.stack || e.message,
         paymentId: lockHash,
-        type: ConditionalTransferTypes[HashLockTransfer],
+        type: ConditionalTransferTypes[ConditionalTransferTypes.HashLockTransfer],
       } as EventPayloads.HashLockTransferFailed);
       throw e;
     }

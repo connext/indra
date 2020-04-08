@@ -1,7 +1,7 @@
 import { LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   LinkedTransferStatus,
-  ResolveLinkedTransferResponse,
+  NodeResponses,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
@@ -63,7 +63,7 @@ export class LinkedTransferService {
   async resolveLinkedTransfer(
     userPublicIdentifier: string,
     paymentId: string,
-  ): Promise<ResolveLinkedTransferResponse> {
+  ): Promise<NodeResponses.ResolveLinkedTransfer> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
@@ -148,7 +148,7 @@ export class LinkedTransferService {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    const returnRes: ResolveLinkedTransferResponse = {
+    const returnRes: NodeResponses.ResolveLinkedTransfer = {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
       sender: senderApp.channel.userPublicIdentifier,
       meta: senderApp.meta,

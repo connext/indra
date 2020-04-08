@@ -5,9 +5,9 @@ import {
   EventPayloads,
   HashLockTransferAppName,
   HashLockTransferAppState,
-  HashLockTransferParameters,
-  HashLockTransferResponse,
   MethodParams,
+  PublicParams,
+  PublicResults,
   toBN,
 } from "@connext/types";
 import { DEFAULT_APP_TIMEOUT, HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
@@ -17,8 +17,8 @@ import { AbstractController } from "./AbstractController";
 
 export class HashLockTransferController extends AbstractController {
   public hashLockTransfer = async (
-    params: HashLockTransferParameters,
-  ): Promise<HashLockTransferResponse> => {
+    params: PublicParams.HashLockTransfer,
+  ): Promise<PublicResults.HashLockTransfer> => {
     // convert params + validate
     const amount = toBN(params.amount);
     const timelock = toBN(params.timelock);

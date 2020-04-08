@@ -1,3 +1,4 @@
+export * from "./api";
 export * from "./app";
 export * from "./basic";
 export * from "./channelProvider";
@@ -18,6 +19,7 @@ export {
   MethodResult,
   MethodResults,
 } from "./methods";
+export * from "./misc";
 export * from "./node";
 export {
   ProtocolName,
@@ -27,6 +29,8 @@ export {
   Opcode,
 } from "./protocol";
 export * from "./middleware";
+export * from "./public";
 export * from "./state";
 export * from "./store";
+export * from "./transfers";
 export * from "./utils";

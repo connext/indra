@@ -73,7 +73,7 @@ export class OnchainTransactionService {
         errors[attempt] = e.message;
         const knownErr = KNOWN_ERRORS.filter(err => e.message.includes(err))[0];
         if (!knownErr) {
-          this.log.error(`Transaction failed to send with unknown error: ${stringify(e)}`);
+          this.log.error(`Transaction failed to send with unknown error: ${e.message}`);
           throw new Error(e.stack || e.message);
         }
         // known error, retry

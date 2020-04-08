@@ -1,4 +1,4 @@
-import { utils } from "@connext/client";
+import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
@@ -25,8 +25,6 @@ import {
 import { BigNumber } from "ethers/utils";
 
 import * as lolex from "lolex";
-
-const { xpubToAddress } = utils;
 
 let clock: any;
 
@@ -66,7 +64,7 @@ const fundChannelAndSwap = async (opts: {
   await requestCollateral(client, output.assetId);
   // swap call back
   const swapCb = async () =>
-    await swapAsset(client, input, output, xpubToAddress(client.nodePublicIdentifier));
+    await swapAsset(client, input, output, xkeyKthAddress(client.nodePublicIdentifier));
   // try to swap, first check if test must be fast forwarded
   if (fastForward) {
     // fast forward the clock for tests with delay

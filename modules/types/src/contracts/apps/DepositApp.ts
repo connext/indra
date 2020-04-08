@@ -1,4 +1,4 @@
-import { BigNumberish, BigNumber } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { CoinTransfer } from "../funding";
 import {
@@ -28,18 +28,3 @@ export const DepositAppStateEncoding = tidy(`tuple(
   uint256 startingTotalAmountWithdrawn,
   uint256 startingMultisigBalance,
 )`);
-
-////////////////////////////////////////
-// Off-chain app types
-
-// Input/output
-export type DepositParameters = {
-  amount: BigNumberish;
-  assetId?: Address; // if not provided, will default to 0x0 (Eth)
-};
-
-export type DepositResponse = {
-  freeBalance: {
-    [s: string]: BigNumber;
-  };
-};

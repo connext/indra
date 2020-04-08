@@ -1,9 +1,16 @@
 import { MessagingService } from "@connext/messaging";
 import {
-  ChannelMethods,
-  MethodResults,
   CF_PATH,
+  ChannelMethods,
+  ClientOptions,
+  ConnextClientStorePrefix,
+  CreateChannelMessage,
   EventNames,
+  IChannelProvider,
+  IConnextClient,
+  INodeApiClient,
+  MethodResults,
+  NodeResponses,
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
 } from "@connext/types";
@@ -13,7 +20,6 @@ import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
-import { createMessagingService } from "./messaging";
 import { ConnextClient } from "./connext";
 import {
   delayAndThrow,
@@ -24,16 +30,8 @@ import {
   stringify,
   isWalletProvided,
 } from "./lib";
+import { createMessagingService } from "./messaging";
 import { NodeApiClient } from "./node";
-import {
-  ClientOptions,
-  ConnextClientStorePrefix,
-  CreateChannelMessage,
-  GetConfigResponse,
-  IChannelProvider,
-  IConnextClient,
-  INodeApiClient,
-} from "./types";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -65,7 +63,7 @@ export const connect = async (
 
   // setup messaging and node api
   let node: INodeApiClient;
-  let config: GetConfigResponse;
+  let config: NodeResponses.GetConfig;
 
   // setup channelProvider
   let channelProvider: IChannelProvider;

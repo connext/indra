@@ -7,10 +7,10 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
+  PublicParams,
   StateChannelJSON,
   stringify,
   toBN,
-  WithdrawParameters,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -129,7 +129,7 @@ export class CFCoreService {
   }
 
   async createWithdrawCommitment(
-    params: WithdrawParameters,
+    params: PublicParams.Withdraw,
     multisigAddress: string,
   ): Promise<WithdrawCommitment> {
     const amount = toBN(params.amount);

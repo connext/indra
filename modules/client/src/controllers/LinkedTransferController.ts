@@ -4,9 +4,9 @@ import {
   deBigNumberifyJson,
   EventNames,
   EventPayloads,
-  LinkedTransferParameters,
-  LinkedTransferResponse,
   MethodParams,
+  PublicParams,
+  PublicResults,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
@@ -26,8 +26,8 @@ import { AbstractController } from "./AbstractController";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
-    params: LinkedTransferParameters,
-  ): Promise<LinkedTransferResponse> => {
+    params: PublicParams.LinkedTransfer,
+  ): Promise<PublicResults.LinkedTransfer> => {
     const amount = toBN(params.amount);
     const {
       assetId,

@@ -4,8 +4,8 @@ import {
   MethodParams,
   EventNames,
   EventPayloads,
-  SignedTransferParameters,
-  SignedTransferResponse,
+  PublicParams,
+  PublicResults,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
   toBN,
@@ -17,8 +17,8 @@ import { AbstractController } from "./AbstractController";
 
 export class SignedTransferController extends AbstractController {
   public signedTransfer = async (
-    params: SignedTransferParameters,
-  ): Promise<SignedTransferResponse> => {
+    params: PublicParams.SignedTransfer,
+  ): Promise<PublicResults.SignedTransfer> => {
     // convert params + validate
     const amount = toBN(params.amount);
     const { meta, paymentId, signer, assetId, recipient } = params;

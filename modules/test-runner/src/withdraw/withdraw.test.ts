@@ -1,4 +1,4 @@
-import { utils } from "@connext/client";
+import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import { IConnextClient, EventNames, BigNumberish } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -16,8 +16,6 @@ import {
   ZERO_ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { MinimumViableMultisig } from "@connext/contracts";
-
-const { xpubToAddress } = utils;
 
 describe("Withdrawal", () => {
   let client: IConnextClient;

@@ -1,89 +1,67 @@
 import { SupportedApplications } from "@connext/apps";
+import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import { MessagingService } from "@connext/messaging";
 import {
   Address,
   AppAction,
+  AppInstanceJson,
   AppInstanceProposal,
+  AppRegistry,
   AppState,
   ChannelMethods,
-  ConditionalTransferParameters,
-  ConditionalTransferResponse,
+  ChannelProviderConfig,
   ConditionalTransferTypes,
+  ConnextClientStorePrefix,
   createRandom32ByteHexString,
-  DepositParameters,
-  DepositResponse,
+  DefaultApp,
+  DepositAppName,
+  DepositAppState,
   EventNames,
-  GetHashLockTransferResponse,
-  GetLinkedTransferResponse,
-  GetSignedTransferResponse,
   IChannelProvider,
   IClientStore,
+  IConnextClient,
   ILoggerService,
-  LinkedTransferResponse,
+  INodeApiClient,
+  KeyGen,
   MethodNames,
   MethodParams,
   MethodResults,
   MinimalTransaction,
-  RequestDepositRightsParameters,
-  RescindDepositRightsParameters,
-  RescindDepositRightsResponse,
-  TransactionResponse,
-  WithdrawParameters,
-  WithdrawResponse,
-  SimpleTwoPartySwapAppName,
+  NodeResponses,
+  PublicParams,
+  PublicResults,
+  RebalanceProfile,
   SimpleLinkedTransferAppName,
+  SimpleTwoPartySwapAppName,
   WithdrawAppName,
-  DepositAppName,
-  DepositAppState,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
+import { TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
-import { LinkedTransferController } from "./controllers/LinkedTransferController";
-import { DepositController } from "./controllers/DepositController";
-import { SwapController } from "./controllers/SwapController";
-import { WithdrawalController } from "./controllers/WithdrawalController";
-import { stringify, withdrawalKey, xpubToAddress } from "./lib";
-import { ConnextListener } from "./listener";
 import {
-  AppInstanceJson,
-  AppRegistry,
-  ChannelProviderConfig,
-  CheckDepositRightsParameters,
-  CheckDepositRightsResponse,
-  ConnextClientStorePrefix,
-  CreateChannelResponse,
-  DefaultApp,
-  GetChannelResponse,
-  GetConfigResponse,
-  IConnextClient,
-  INodeApiClient,
-  InternalClientOptions,
-  KeyGen,
-  RebalanceProfile,
-  RequestCollateralResponse,
-  ResolveConditionParameters,
-  ResolveConditionResponse,
-  ResolveLinkedTransferResponse,
-  SwapParameters,
-  SwapResponse,
-  TransferInfo,
-  TransferParameters,
-} from "./types";
-import { ResolveLinkedTransferController } from "./controllers/ResolveLinkedTransferController";
-import { HashLockTransferController } from "./controllers/HashLockTransferController";
-import { ResolveHashLockTransferController } from "./controllers/ResolveHashLockTransferController";
-import { SignedTransferController } from "./controllers/SignedTransferController";
-import { ResolveSignedTransferController } from "./controllers/ResolveSignedTransferController";
+  DepositController,
+  HashLockTransferController,
+  LinkedTransferController,
+  ResolveHashLockTransferController,
+  ResolveLinkedTransferController,
+  ResolveSignedTransferController,
+  SignedTransferController,
+  SwapController,
+  WithdrawalController,
+} from "./controllers";
+import { stringify, withdrawalKey } from "./lib";
+import { ConnextListener } from "./listener";
+import { InternalClientOptions } from "./types";
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
   public channelProvider: IChannelProvider;
-  public config: GetConfigResponse;
+  public config: NodeResponses.GetConfig;
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;
   public listener: ConnextListener;
@@ -221,13 +199,13 @@ export class ConnextClient implements IConnextClient {
     await this.isAvailable();
   };
 
-  public getChannel = async (): Promise<GetChannelResponse> => {
+  public getChannel = async (): Promise<NodeResponses.GetChannel> => {
     return await this.node.getChannel();
   };
 
   public requestCollateral = async (
     tokenAddress: string,
-  ): Promise<RequestCollateralResponse | void> => {
+  ): Promise<NodeResponses.RequestCollateral | void> => {
     const res = await this.node.requestCollateral(tokenAddress);
     return res;
   };
@@ -236,11 +214,15 @@ export class ConnextClient implements IConnextClient {
     return this.channelProvider.config;
   };
 
-  public getLinkedTransfer = async (paymentId: string): Promise<GetLinkedTransferResponse> => {
+  public getLinkedTransfer = async (
+    paymentId: string,
+  ): Promise<NodeResponses.GetLinkedTransfer> => {
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
-  public getSignedTransfer = async (paymentId: string): Promise<GetSignedTransferResponse> => {
+  public getSignedTransfer = async (
+    paymentId: string,
+  ): Promise<NodeResponses.GetSignedTransfer> => {
     return await this.node.fetchSignedTransfer(paymentId);
   };
 
@@ -271,7 +253,7 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  public createChannel = async (): Promise<CreateChannelResponse> => {
+  public createChannel = async (): Promise<NodeResponses.CreateChannel> => {
     return this.node.createChannel();
   };
 
@@ -291,32 +273,32 @@ export class ConnextClient implements IConnextClient {
     return await this.node.getRebalanceProfile(assetId);
   };
 
-  public getTransferHistory = async (): Promise<TransferInfo[]> => {
+  public getTransferHistory = async (): Promise<NodeResponses.GetTransferHistory> => {
     return await this.node.getTransferHistory();
   };
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
 
-  public deposit = async (params: DepositParameters): Promise<DepositResponse> => {
+  public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
     return this.depositController.deposit(params);
   };
 
   public requestDepositRights = async (
-    params: RequestDepositRightsParameters,
+    params: PublicParams.RequestDepositRights,
   ): Promise<MethodResults.RequestDepositRights> => {
     return this.depositController.requestDepositRights(params);
   };
 
   public rescindDepositRights = async (
-    params: RescindDepositRightsParameters,
-  ): Promise<RescindDepositRightsResponse> => {
+    params: PublicParams.RescindDepositRights,
+  ): Promise<PublicResults.RescindDepositRights> => {
     return this.depositController.rescindDepositRights(params);
   };
 
   public checkDepositRights = async (
-    params: CheckDepositRightsParameters,
-  ): Promise<CheckDepositRightsResponse> => {
+    params: PublicParams.CheckDepositRights,
+  ): Promise<PublicResults.CheckDepositRights> => {
     const app = await this.depositController.getDepositApp(params);
     if (!app) {
       return { appIdentityHash: undefined };
@@ -324,7 +306,7 @@ export class ConnextClient implements IConnextClient {
     return { appIdentityHash: app.identityHash };
   };
 
-  public swap = async (params: SwapParameters): Promise<SwapResponse> => {
+  public swap = async (params: PublicParams.Swap): Promise<PublicResults.Swap> => {
     const res = await this.swapController.swap(params);
     return res;
   };
@@ -333,7 +315,9 @@ export class ConnextClient implements IConnextClient {
    * Transfer currently uses the conditionalTransfer LinkedTransfer so that
    * async payments are the default transfer.
    */
-  public transfer = async (params: TransferParameters): Promise<LinkedTransferResponse> => {
+  public transfer = async (
+    params: PublicParams.Transfer,
+  ): Promise<PublicResults.LinkedTransfer> => {
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
       assetId: params.assetId || AddressZero,
@@ -342,10 +326,10 @@ export class ConnextClient implements IConnextClient {
       paymentId: params.paymentId || createRandom32ByteHexString(),
       preImage: createRandom32ByteHexString(),
       recipient: params.recipient,
-    }) as Promise<LinkedTransferResponse>;
+    }) as Promise<PublicResults.LinkedTransfer>;
   };
 
-  public withdraw = async (params: WithdrawParameters): Promise<WithdrawResponse> => {
+  public withdraw = async (params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> => {
     return await this.withdrawalController.withdraw(params);
   };
 
@@ -354,15 +338,15 @@ export class ConnextClient implements IConnextClient {
   };
 
   public saveWithdrawCommitmentToStore = async (
-    params: WithdrawParameters,
+    params: PublicParams.Withdraw,
     signatures: string[],
   ): Promise<void> => {
     return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
   };
 
   public resolveCondition = async (
-    params: ResolveConditionParameters,
-  ): Promise<ResolveConditionResponse> => {
+    params: PublicParams.ResolveCondition,
+  ): Promise<PublicResults.ResolveCondition> => {
     switch (params.conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.resolveLinkedTransferController.resolveLinkedTransfer(params);
@@ -379,8 +363,8 @@ export class ConnextClient implements IConnextClient {
   };
 
   public conditionalTransfer = async (
-    params: ConditionalTransferParameters,
-  ): Promise<ConditionalTransferResponse> => {
+    params: PublicParams.ConditionalTransfer,
+  ): Promise<PublicResults.ConditionalTransfer> => {
     switch (params.conditionType) {
       case ConditionalTransferTypes.LinkedTransfer: {
         return this.linkedTransferController.linkedTransfer(params);
@@ -396,7 +380,9 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
-  public getHashLockTransfer = async (lockHash: string): Promise<GetHashLockTransferResponse> => {
+  public getHashLockTransfer = async (
+    lockHash: string,
+  ): Promise<NodeResponses.GetHashLockTransfer> => {
     return await this.node.getHashLockTransfer(lockHash);
   };
 
@@ -706,7 +692,7 @@ export class ConnextClient implements IConnextClient {
   public reclaimPendingAsyncTransfer = async (
     paymentId: string,
     encryptedPreImage: string,
-  ): Promise<ResolveLinkedTransferResponse> => {
+  ): Promise<PublicResults.ResolveLinkedTransfer> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
     let privateKey = await this.keyGen("0");
