@@ -1,5 +1,5 @@
 import { EventNames, EventPayloads } from "./events";
-import { Bytes32, DecString, Xpub } from "./basic";
+import { Bytes32, DecString, Xpub, Address } from "./basic";
 import { ILoggerService } from "./logger";
 import { MethodResults, MethodParams } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
@@ -9,7 +9,7 @@ import { ProtocolName, ProtocolParam } from "./protocol";
 
 export type Message<T = any> = {
   data: T;
-  from: Xpub;
+  from: Address;
   type: EventNames;
 };
 
@@ -17,7 +17,7 @@ export type ProtocolMessageData = {
   processID: string; // uuid?
   protocol: ProtocolName;
   params?: ProtocolParam;
-  toXpub: Xpub;
+  to: Address;
   seq: number;
   // customData: Additional data which depends on the protocol (or even the specific message
   // number in a protocol) lives here. Includes signatures

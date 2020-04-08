@@ -40,7 +40,7 @@ export type AppABIEncodings = {
 export type AppInstanceJson = {
   identityHash: HexString;
   multisigAddress: Address;
-  participants: Xpub[];
+  participants: Address[];
   defaultTimeout: HexString;
   appInterface: AppInterface;
   appSeqNo: number;
@@ -67,8 +67,8 @@ export type AppInstanceProposal = {
   initiatorDeposit: DecString;
   initiatorDepositTokenAddress: Address;
   outcomeType: OutcomeType;
-  proposedByIdentifier: Xpub;
-  proposedToIdentifier: Xpub;
+  initiator: Address;
+  responder: Address;
   responderDeposit: DecString;
   responderDepositTokenAddress: Address;
   defaultTimeout: HexString;

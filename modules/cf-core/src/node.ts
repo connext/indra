@@ -1,4 +1,3 @@
-import { signChannelMessage } from "@connext/crypto";
 import {
   AppInstanceProposal,
   delay,
@@ -19,14 +18,13 @@ import {
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
+  ChannelWallet,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
 import { createRpcRouter } from "./methods";
-import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import {
@@ -35,13 +33,11 @@ import {
   ConditionalTransactionCommitment,
 } from "./ethereum";
 import { ProtocolRunner } from "./machine";
-import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
-import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
+import { StateChannel, AppInstance } from "./models";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import {
-  IPrivateKeyGenerator,
   MethodRequest,
   MethodResponse,
   PersistAppType,
@@ -71,7 +67,6 @@ export class Node {
    * via `create` which immediately calls `asynchronouslySetupUsingRemoteServices`, these are
    * always non-null when the Node is being used.
    */
-  private signer!: SigningKey;
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
 
@@ -81,21 +76,14 @@ export class Node {
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
+    signer: ChannelWallet,
     lockService?: ILockService,
-    publicExtendedKey?: string,
-    privateKeyGenerator?: IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
   ): Promise<Node> {
-    const [privateKeysGenerator, extendedPubKey] = await getPrivateKeysGeneratorAndXPubOrThrow(
-      storeService,
-      privateKeyGenerator,
-      publicExtendedKey,
-    );
-
+    // TODO: private key validation
     const node = new Node(
-      extendedPubKey,
-      privateKeysGenerator,
+      signer,
       messagingService,
       storeService,
       nodeConfig,
@@ -110,8 +98,7 @@ export class Node {
   }
 
   private constructor(
-    private readonly publicExtendedKey: string,
-    private readonly privateKeyGetter: PrivateKeysGetter,
+    private readonly signer: ChannelWallet,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
@@ -129,24 +116,23 @@ export class Node {
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
-    this.signer = new SigningKey(await this.privateKeyGetter.getPrivateKey("0"));
     this.log.info(`Node signer address: ${this.signer.address}`);
-    this.log.info(`Node public identifier: ${this.publicIdentifier}`);
     this.requestHandler = new RequestHandler(
-      this.publicIdentifier,
       this.incoming,
       this.outgoing,
       this.storeService,
       this.messagingService,
       this.protocolRunner,
       this.networkContext,
-      this.provider,
-      new AutoNonceWallet(
-        this.signer.privateKey,
-        // Creating copy of the provider fixes a mysterious big, details:
-        // https://github.com/ethers-io/ethers.js/issues/761
-        new JsonRpcProvider(this.provider.connection.url),
-      ),
+      this.provider, 
+      this.signer,
+      // // TODO: should the below be replaced by signer?
+      // new AutoNonceWallet(
+      //   this.signer.privateKey,
+      //   // Creating copy of the provider fixes a mysterious big, details:
+      //   // https://github.com/ethers-io/ethers.js/issues/761
+      //   new JsonRpcProvider(this.provider.connection.url),
+      // ),
       this.blocksNeededForConfirmation!,
       new ProcessQueue(this.lockService),
       this.log,
@@ -157,14 +143,10 @@ export class Node {
     return this;
   }
 
-  @Memoize()
-  get publicIdentifier(): string {
-    return this.publicExtendedKey;
-  }
-
+  // TODO: rename?
   @Memoize()
   get freeBalanceAddress(): string {
-    return getFreeBalanceAddress(this.publicIdentifier);
+    return this.signer.address;
   }
 
   /**
@@ -200,33 +182,27 @@ export class Node {
     );
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
-      if (args.length !== 1 && args.length !== 2) {
+      if (args.length !== 1) {
         throw new Error("OP_SIGN middleware received wrong number of arguments.");
       }
 
-      const [commitmentHash, overrideKeyIndex] = args;
-      const keyIndex = overrideKeyIndex || 0;
+      const [commitmentHash] = args;
 
-      const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
-
-      return signChannelMessage(privateKey, commitmentHash);
+      return this.signer.signMessage(commitmentHash);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessageData]) => {
       const [data] = args;
-      const fromXpub = this.publicIdentifier;
-      const to = data.toXpub;
 
-      await this.messagingService.send(to, {
+      await this.messagingService.send(data.to, {
         data,
-        from: fromXpub,
+        from: this.signer.address,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
     });
 
     protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [ProtocolMessageData]) => {
       const [data] = args;
-      const to = data.toXpub;
 
       const deferral = new Deferred<ProtocolMessage>();
 
@@ -234,9 +210,9 @@ export class Node {
 
       const counterpartyResponse = deferral.promise;
 
-      await this.messagingService.send(to, {
+      await this.messagingService.send(data.to, {
         data,
-        from: this.publicIdentifier,
+        from: this.signer.address,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
 
@@ -460,7 +436,7 @@ export class Node {
    * subscribed (i.e. consumers of the Node).
    */
   private registerMessagingConnection() {
-    this.messagingService.onReceive(this.publicIdentifier, async (msg: Message) => {
+    this.messagingService.onReceive(this.freeBalanceAddress, async (msg: Message) => {
       await this.handleReceivedMessage(msg);
       this.rpcRouter.emit(msg.type, msg, "outgoing");
     });

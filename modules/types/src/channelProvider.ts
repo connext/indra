@@ -12,6 +12,7 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
+import { Wallet } from "ethers";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -125,3 +126,8 @@ export interface IRpcConnection extends ConnextEventEmitter {
   open(): Promise<void>;
   close(): Promise<void>;
 }
+
+// TODO: this interface may change,
+// important thing is it has a `signMessage` and `address` and that
+// tests pass so use ethers Wallet
+export type ChannelWallet = Wallet;

@@ -15,7 +15,6 @@ export type Address = string; // aka HexString of length 42
 export type Bytes32 = string; // aka HexString of length 66
 export type DecString = string; // eg "3.14"
 export type HexString = string; // eg "0xabc123" of arbitrary length
-export type Xpub = string; // eg "xpub6AbC...123" (str length = 111)
 
 export type BigNumber = ethersBN;
 export const BigNumber = ethersBN;

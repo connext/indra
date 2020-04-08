@@ -8,8 +8,8 @@ import {
   NetworkContext,
   Message,
   ProtocolMessage,
+  ChannelWallet,
 } from "@connext/types";
-import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
@@ -30,7 +30,6 @@ export class RequestHandler {
   router!: RpcRouter;
 
   constructor(
-    readonly publicIdentifier: string,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
     readonly store: IStoreService,
@@ -38,7 +37,7 @@ export class RequestHandler {
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
     readonly provider: JsonRpcProvider,
-    readonly wallet: Signer,
+    readonly wallet: ChannelWallet,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
     public readonly log: ILoggerService,
@@ -50,6 +49,10 @@ export class RequestHandler {
     this.router = router;
     this.mapPublicApiMethods();
     this.mapEventHandlers();
+  }
+
+  get address() {
+    return this.wallet.address;
   }
 
   /**
@@ -144,12 +147,12 @@ export class RequestHandler {
     return this.events.has(event);
   }
 
-  public async getSigner(): Promise<Signer> {
+  public getSigner(): ChannelWallet {
     return this.wallet;
   }
 
   public async getSignerAddress(): Promise<string> {
-    const signer = await this.getSigner();
-    return await signer.getAddress();
+    const signer = this.getSigner();
+    return signer.getAddress();
   }
 }
