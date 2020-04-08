@@ -42,6 +42,16 @@ export function getChannelPublicIdentifier(multisigAddress: string, signerAddres
   );
 }
 
+export function parseChannelPublicIdentifier(
+  publicIdentifier: string,
+): { multisigAddress: string; signerAddress: string } {
+  const buf: Buffer = bs58check.decode(publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""));
+  return {
+    multisigAddress: bufferToHex(buf.slice(0, 20), true),
+    signerAddress: bufferToHex(buf.slice(20, 40), true),
+  };
+}
+
 export function getLowerCaseAddress(publicKey: Buffer | string): string {
   const buf = bufferify(publicKey);
   const hex = addHexPrefix(bufferToHex(buf).slice(2));
