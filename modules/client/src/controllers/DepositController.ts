@@ -11,9 +11,11 @@ import {
   DefaultApp,
   toBN,
   EventNames,
+  DepositAppState,
+  DepositAppName,
 } from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
-import { DepositAppName, DepositAppState } from "@connext/types";
+import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
@@ -221,7 +223,8 @@ export class DepositController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: DEPOSIT_STATE_TIMEOUT,
     };
 
     return await this.proposeAndInstallLedgerApp(params);

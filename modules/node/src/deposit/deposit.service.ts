@@ -1,3 +1,4 @@
+import { DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { MinimumViableMultisig } from "@connext/contracts";
 import {
   BigNumber,
@@ -168,6 +169,8 @@ export class DepositService {
         Zero,
         assetId,
         DepositAppName,
+        { reason: "Node deposit" }, // meta
+        DEPOSIT_STATE_TIMEOUT,
     );
     return res ? res.appIdentityHash : undefined;
   };

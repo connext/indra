@@ -120,7 +120,7 @@ export class CFCoreStore implements IStoreService {
       appInterface: { stateEncoding, actionEncoding, addr },
       outcomeType,
       latestState,
-      latestTimeout,
+      stateTimeout,
       defaultTimeout,
       latestVersionNumber,
       appSeqNo,
@@ -136,8 +136,8 @@ export class CFCoreStore implements IStoreService {
     freeBalanceApp.appSeqNo = appSeqNo;
     freeBalanceApp.latestState = latestState as any;
     freeBalanceApp.latestVersionNumber = latestVersionNumber;
-    freeBalanceApp.timeout = defaultTimeout;
-    freeBalanceApp.latestTimeout = latestTimeout;
+    freeBalanceApp.defaultTimeout = defaultTimeout;
+    freeBalanceApp.stateTimeout = stateTimeout;
 
     // app proposal defaults
     freeBalanceApp.initiatorDeposit = Zero;
@@ -167,7 +167,7 @@ export class CFCoreStore implements IStoreService {
       identityHash,
       participants,
       latestState,
-      latestTimeout,
+      stateTimeout,
       latestVersionNumber,
       meta,
       outcomeType,
@@ -194,7 +194,7 @@ export class CFCoreStore implements IStoreService {
 
     proposal.initialState = latestState;
     proposal.latestState = latestState;
-    proposal.latestTimeout = latestTimeout;
+    proposal.stateTimeout = stateTimeout;
     proposal.latestVersionNumber = latestVersionNumber;
 
     // interpreter params
@@ -222,7 +222,7 @@ export class CFCoreStore implements IStoreService {
         .update(AppInstance)
         .set({
           latestState: freeBalanceAppInstance.latestState as any,
-          latestTimeout: freeBalanceAppInstance.latestTimeout,
+          stateTimeout: freeBalanceAppInstance.stateTimeout,
           latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
         })
         .where("identityHash = :identityHash", {
@@ -233,7 +233,7 @@ export class CFCoreStore implements IStoreService {
   }
 
   async updateAppInstance(multisigAddress: string, appJson: AppInstanceJson): Promise<void> {
-    const { identityHash, latestState, latestTimeout, latestVersionNumber } = appJson;
+    const { identityHash, latestState, stateTimeout, latestVersionNumber } = appJson;
     const app = await this.appInstanceRepository.findByIdentityHash(identityHash);
 
     if (!app) {
@@ -250,7 +250,7 @@ export class CFCoreStore implements IStoreService {
         .update(AppInstance)
         .set({
           latestState: latestState as any,
-          latestTimeout,
+          stateTimeout,
           latestVersionNumber,
         })
         .where("identityHash = :identityHash", { identityHash })
@@ -282,7 +282,7 @@ export class CFCoreStore implements IStoreService {
         .update(AppInstance)
         .set({
           latestState: freeBalanceAppInstance.latestState as any,
-          latestTimeout: freeBalanceAppInstance.latestTimeout,
+          stateTimeout: freeBalanceAppInstance.stateTimeout,
           latestVersionNumber: freeBalanceAppInstance.latestVersionNumber,
         })
         .where("identityHash = :identityHash", {
@@ -319,14 +319,14 @@ export class CFCoreStore implements IStoreService {
     app.initiatorDepositTokenAddress = appProposal.initiatorDepositTokenAddress;
     app.responderDeposit = bigNumberify(appProposal.responderDeposit);
     app.responderDepositTokenAddress = appProposal.responderDepositTokenAddress;
-    app.timeout = bigNumberify(appProposal.timeout).toNumber();
+    app.defaultTimeout = appProposal.defaultTimeout;
+    app.stateTimeout = appProposal.stateTimeout;
     app.proposedToIdentifier = appProposal.proposedToIdentifier;
     app.proposedByIdentifier = appProposal.proposedByIdentifier;
     app.outcomeType = appProposal.outcomeType;
     app.meta = appProposal.meta;
     app.initialState = appProposal.initialState;
     app.latestState = appProposal.initialState;
-    app.latestTimeout = bigNumberify(appProposal.timeout).toNumber();
     app.latestVersionNumber = 0;
 
     channel.monotonicNumProposedApps = numProposedApps;
@@ -396,7 +396,7 @@ export class CFCoreStore implements IStoreService {
     entity.appStateHash = commitment.appStateHash;
     entity.challengeRegistryAddress = commitment.challengeRegistryAddress;
     entity.signatures = commitment.signatures;
-    entity.timeout = commitment.timeout;
+    entity.stateTimeout = commitment.stateTimeout;
     entity.versionNumber = commitment.versionNumber;
     await this.setStateCommitmentRepository.save(entity);
   }
@@ -409,7 +409,7 @@ export class CFCoreStore implements IStoreService {
       appStateHash,
       challengeRegistryAddress,
       signatures,
-      timeout,
+      stateTimeout,
       versionNumber,
     } = commitment;
 
@@ -425,7 +425,7 @@ export class CFCoreStore implements IStoreService {
         appStateHash,
         challengeRegistryAddress,
         signatures,
-        timeout,
+        stateTimeout,
         versionNumber,
       })
       .where('set_state_commitment."appId" = (' + subQuery.getQuery() + ")")

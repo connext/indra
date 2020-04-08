@@ -1,4 +1,4 @@
-import { OutcomeType, createRandomAddress } from "@connext/types";
+import { OutcomeType, createRandomAddress, toBN } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
@@ -9,26 +9,26 @@ describe("AppInstance", () => {
     const participants = [getAddress(createRandomAddress()), getAddress(createRandomAddress())];
 
     const appInstance = new AppInstance(
-      participants,
-      Math.ceil(Math.random() * 2e10),
-      {
+      /* participants */ participants,
+      /* defaultTimeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
+      /* appInterface */ {
         addr: getAddress(createRandomAddress()),
         stateEncoding: "tuple(address foo, uint256 bar)",
         actionEncoding: undefined,
       },
-      Math.ceil(Math.random() * 2e10),
-      { foo: getAddress(createRandomAddress()), bar: 0 },
-      /* versionNumber */ 999,
-      Math.ceil(1000 * Math.random()),
-      OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-      getAddress(createRandomAddress()),
-      {
+      /* appSeqNo */ Math.ceil(Math.random() * 2e10),
+      /* latestState */ { foo: getAddress(createRandomAddress()), bar: 0 },
+      /* latestVersionNumber */ 999,
+      /* stateTimeout */ toBN(Math.ceil(1000 * Math.random())).toHexString(),
+      /* outcomeType */ OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+      /* multisigAddress */ getAddress(createRandomAddress()),
+      /* twoPartyOutcomeInterpreterParamsInternal */ {
         playerAddrs: [AddressZero, AddressZero],
         amount: Zero,
         tokenAddress: AddressZero,
       },
-      undefined,
-      undefined,
+      /* multiAssetMultiPartyCoinTransferInterpreterParamsInternal */ undefined,
+      /* singleAssetTwoPartyCoinTransferInterpreterParamsInternal */ undefined,
     );
 
     expect(appInstance).not.toBe(null);

@@ -32,7 +32,6 @@ export type InternalClientOptions = {
 
 export {
   Address,
-  AppInstanceInfo,
   AppInstanceJson,
   AppRegistry,
   calculateExchange,

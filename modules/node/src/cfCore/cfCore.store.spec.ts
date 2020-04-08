@@ -30,6 +30,7 @@ import { ConfigService } from "../config/config.service";
 import { sortAddresses, AppInstanceJson, xkeyKthAddress } from "../util";
 import { getConnection } from "typeorm";
 import { bigNumberify } from "ethers/utils";
+import { toBN } from "@connext/types";
 
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
@@ -280,7 +281,8 @@ describe("CFCoreStore", () => {
         ...appInstance,
         latestState: { updated: "updated app instance" },
         latestVersionNumber: 42,
-        latestTimeout: 1337,
+        stateTimeout: toBN(1142).toHexString(),
+        defaultTimeout: "0x00",
       });
 
       await cfCoreStore.updateAppInstance(multisigAddress, updated);
@@ -351,7 +353,7 @@ describe("CFCoreStore", () => {
         ...setStateCommitment,
         appStateHash: mkHash("0xfeef"),
         versionNumber: 42,
-        timeout: 1337,
+        stateTimeout: bigNumberify(1337).toHexString(),
       });
       await cfCoreStore.updateSetStateCommitment(setStateCommitment.appIdentityHash, updated);
 

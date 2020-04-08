@@ -9,6 +9,7 @@ import { toBeEq } from "../bignumber-jest-matcher";
 import { AppWithAction } from "../contracts";
 import { TestRunner } from "../test-runner";
 import { StateChannel } from "../../models";
+import { Zero } from "ethers/constants";
 
 let wallet: Wallet;
 let appWithAction: Contract;
@@ -40,7 +41,8 @@ describe("Three mininodes", () => {
     const proposalParams: ProtocolParams.Propose = {
       initiatorXpub: tr.mininodeA.xpub,
       responderXpub: tr.mininodeB.xpub,
-      timeout: bigNumberify(100),
+      defaultTimeout: bigNumberify(100),
+      stateTimeout: Zero,
       appDefinition: appWithAction.address,
       abiEncodings: {
         stateEncoding: "tuple(uint256 counter)",
@@ -83,7 +85,8 @@ describe("Three mininodes", () => {
         stateEncoding: proposal.abiEncodings.stateEncoding,
         actionEncoding: proposal.abiEncodings.actionEncoding,
       },
-      defaultTimeout: 100,
+      defaultTimeout: bigNumberify(100),
+      stateTimeout: Zero,
       appSeqNo: proposal.appSeqNo,
       outcomeType: proposal.outcomeType,
       disableLimit: false,

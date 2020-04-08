@@ -608,6 +608,7 @@ export class ConnextClient implements IConnextClient {
   public takeAction = async (
     appIdentityHash: string,
     action: AppAction,
+    stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appIdentityHash);
@@ -623,6 +624,7 @@ export class ConnextClient implements IConnextClient {
     return await this.channelProvider.send(MethodNames.chan_takeAction, {
       action,
       appIdentityHash,
+      stateTimeout,
     } as MethodParams.TakeAction);
   };
 

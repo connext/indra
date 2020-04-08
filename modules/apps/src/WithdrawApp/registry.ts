@@ -6,6 +6,7 @@ import {
 } from "@connext/types";
 
 import { AppRegistryInfo } from "../shared";
+import { Zero } from "ethers/constants";
 
 export const WithdrawAppRegistryInfo: AppRegistryInfo = {
   allowNodeInstall: true,
@@ -14,3 +15,6 @@ export const WithdrawAppRegistryInfo: AppRegistryInfo = {
   stateEncoding: WithdrawAppStateEncoding,
   actionEncoding: WithdrawAppActionEncoding,
 };
+
+// timeout default values
+export const WITHDRAW_STATE_TIMEOUT = Zero;

@@ -37,6 +37,8 @@ type SolidityABIEncoderV2Struct = {
   [x: string]: SolidityValueType;
 };
 
+// TODO: fix circular type def
+// @ts-ignore
 type SolidityABIEncoderV2SArray = Array<SolidityValueType>;
 
 // The application-specific state of an app instance, to be interpreted by the
@@ -44,6 +46,9 @@ type SolidityABIEncoderV2SArray = Array<SolidityValueType>;
 // around in protocol messages and include this in transaction data in challenges,
 // we impose some restrictions on the type; they must be serializable both as
 // JSON and as solidity structs.
+
+// TODO: fix circular type def
+// @ts-ignore
 export type SolidityValueType =
   | SolidityPrimitiveType
   | SolidityABIEncoderV2Struct

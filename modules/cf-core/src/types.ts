@@ -83,7 +83,7 @@ export {
   ProtocolParams,
   RejectProposalMessage,
   SetStateCommitmentJSON,
-  SignedStateHashUpdate,
+  SignedAppChallengeUpdate,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   SolidityValueType,
