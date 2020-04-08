@@ -9,7 +9,7 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import {
-  AppInstanceProposal,
+  AppInstanceProposal, ProtocolParams,
 } from "../../types";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";

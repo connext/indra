@@ -36,7 +36,7 @@ import {
 import { xkeyKthAddress } from "@connext/cf-core";
 
 const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): StateChannelJSON => {
-  const removeIsVirtualParticipantsTag = (obj: any) => {
+  const removeIsVirtualTagAndTimeouts = (obj: any) => {
     const { isVirtualApp, participants, latestTimeout, timeout, ...ret } = obj;
     return ret;
   };
@@ -62,7 +62,7 @@ const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): S
       ? oldChannel.appInstances.map(([id, appJson]) => [
           id,
           {
-            ...removeIsVirtualParticipantsTag(appJson),
+            ...removeIsVirtualTagAndTimeouts(appJson),
             multisigAddress: oldChannel.multisigAddress,
             initiator: xkeyKthAddress(nodeXpub, appJson.appSeqNo),
             responder: xkeyKthAddress(userXpub, appJson.appSeqNo),
