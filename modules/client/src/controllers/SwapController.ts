@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, formatEther, getAddress, parseEther } from "ethers/utils";
 
 import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import {
@@ -25,7 +25,9 @@ import { AbstractController } from "./AbstractController";
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
     const amount = toBN(params.amount);
-    const { toAssetId, fromAssetId, swapRate } = params;
+    const { swapRate } = params;
+    const toAssetId = getAddress(params.toAssetId);
+    const fromAssetId = getAddress(params.fromAssetId);
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];

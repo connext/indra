@@ -161,9 +161,9 @@ type ResolveConditionResponse =
 
 type SwapParameters = {
   amount: BigNumberish;
+  fromAssetId: Address;
   swapRate: string; // DecString?
   toAssetId: Address;
-  fromAssetId: Address;
 }
 
 type SwapResponse = {
