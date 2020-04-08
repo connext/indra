@@ -4,6 +4,8 @@ import {
   ProtocolMessage,
   ProtocolNames,
   ProtocolParams,
+  ProtocolRoles,
+  UninstallMiddlewareContext,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
@@ -16,8 +18,6 @@ import {
   PersistAppType,
   PersistCommitmentType,
   ProtocolExecutionFlow,
-  ProtocolRoles,
-  UninstallMiddlewareContext,
 } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 

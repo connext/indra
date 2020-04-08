@@ -1,4 +1,5 @@
 import {
+  GenericMiddleware,
   ILoggerService,
   IStoreService,
   NetworkContext,
@@ -13,7 +14,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { v4 as uuid } from "uuid";
 
 import { getProtocolFromName } from "../protocol";
-import { Context, GenericMiddleware } from "../types";
+import { Context } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
 

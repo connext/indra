@@ -1,5 +1,5 @@
 import { EventNames, EventPayloads } from "./events";
-import { Bytes32, DecString, Xpub } from "./basic";
+import { DecString, Xpub } from "./basic";
 import { ILoggerService } from "./logger";
 import {
   MethodName,
@@ -9,20 +9,6 @@ import {
   MethodParams,
 } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
-
-type NatsResponse = {
-  data: string;
-} & (errorResponse | successResponse);
-
-// nats stuff
-type successResponse = {
-  status: "success";
-};
-
-type errorResponse = {
-  status: "error";
-  message: string;
-};
 
 export type MethodMessage = {
   type: MethodName;
@@ -51,22 +37,7 @@ export type ProtocolMessage = {
   customData: { [key: string]: any };
 };
 
-export enum ErrorType {
-  ERROR = "error",
-}
-
-export type Error = {
-  type: ErrorType;
-  requestId?: string; // uuid?
-  data: {
-    errorName: string;
-    message?: string;
-    appIdentityHash?: Bytes32;
-    extra?: { [k: string]: string | number | boolean | object };
-  };
-};
-
-export type Message = MethodRequest | MethodResponse | Event | Error;
+export type Message = MethodRequest | MethodResponse | Event;
 
 // The message type for Nodes to communicate with each other.
 

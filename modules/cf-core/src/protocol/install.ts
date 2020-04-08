@@ -1,10 +1,12 @@
 import {
+  InstallMiddlewareContext,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   Opcode,
   OutcomeType,
   ProtocolMessage,
   ProtocolNames,
   ProtocolParams,
+  ProtocolRoles,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
@@ -17,11 +19,9 @@ import { getConditionalTransactionCommitment, getSetStateCommitment } from "../e
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
-  InstallMiddlewareContext,
   PersistAppType,
   PersistCommitmentType,
   ProtocolExecutionFlow,
-  ProtocolRoles,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";

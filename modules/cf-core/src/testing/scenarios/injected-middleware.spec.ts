@@ -2,14 +2,12 @@ import {
   Opcode,
   ProtocolName,
   ProtocolNames,
-} from "@connext/types";
-import { Node } from "../../node";
-import { getCreate2MultisigAddress } from "../../utils";
-import {
   ProtocolRoles,
   SetupMiddlewareContext,
   ValidationMiddleware,
-} from "../../types";
+} from "@connext/types";
+import { Node } from "../../node";
+import { getCreate2MultisigAddress } from "../../utils";
 
 import { SetupContext, setup } from "../setup";
 import { createChannel } from "../utils";

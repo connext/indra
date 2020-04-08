@@ -10,6 +10,7 @@ import {
   MethodName,
   MethodRequest,
   MethodResponse,
+  MiddlewareContext,
   MinimalTransaction,
   NetworkContext,
   NodeMessage,
@@ -19,6 +20,7 @@ import {
   ProtocolMessage,
   ProtocolName,
   STORE_SCHEMA_VERSION,
+  ValidationMiddleware,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
@@ -42,10 +44,8 @@ import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import {
   IPrivateKeyGenerator,
-  MiddlewareContext,
   PersistAppType,
   PersistCommitmentType,
-  ValidationMiddleware,
 } from "./types";
 
 export interface NodeConfig {

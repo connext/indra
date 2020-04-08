@@ -3,6 +3,8 @@ import {
   ProtocolMessage,
   ProtocolNames,
   ProtocolParams,
+  ProtocolRoles,
+  TakeActionMiddlewareContext,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -13,8 +15,6 @@ import {
   PersistAppType,
   PersistCommitmentType,
   ProtocolExecutionFlow,
-  ProtocolRoles,
-  TakeActionMiddlewareContext,
 } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 

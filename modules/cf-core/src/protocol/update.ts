@@ -3,6 +3,8 @@ import {
   ProtocolMessage,
   ProtocolNames,
   ProtocolParams,
+  ProtocolRoles,
+  UpdateMiddlewareContext,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -10,11 +12,9 @@ import { getSetStateCommitment } from "../ethereum";
 import { logTime } from "../utils";
 import {
   Context,
-  UpdateMiddlewareContext,
   PersistAppType,
   PersistCommitmentType,
   ProtocolExecutionFlow,
-  ProtocolRoles,
 } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 

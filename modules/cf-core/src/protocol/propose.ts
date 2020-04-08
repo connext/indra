@@ -1,9 +1,11 @@
 import {
   AppInstanceProposal,
   Opcode,
+  ProposeMiddlewareContext,
   ProtocolMessage,
   ProtocolNames,
   ProtocolParams,
+  ProtocolRoles,
 } from "@connext/types";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
@@ -14,9 +16,7 @@ import {
   Context,
   PersistAppType,
   PersistCommitmentType,
-  ProposeMiddlewareContext,
   ProtocolExecutionFlow,
-  ProtocolRoles,
 } from "../types";
 import { appIdentityToHash, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
