@@ -1,13 +1,13 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType, ChannelPubId } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType, ChannelPubId, AssetId } from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {
   initiatorIdentifier: ChannelPubId;
-  initiatorDepositTokenAddress: Address;
+  initiatorDepositAssetId: Address;
   responderIdentifier: ChannelPubId;
-  responderDepositTokenAddress: Address;
+  responderDepositAssetId: Address;
   multisigAddress: Address;
   initiatorBalanceDecrement: BigNumber;
   responderBalanceDecrement: BigNumber;
@@ -26,8 +26,8 @@ type InstallProtocolParams = {
   disableLimit: boolean;
   // these are set during the proposal for the app instance
   // set state commitment generation
-  appInitiatorAddress: string;
-  appResponderAddress: string;
+  appInitiatorIdentifier: string;
+  appResponderIdentifier: string;
 };
 
 type ProposeProtocolParams = {
@@ -37,9 +37,9 @@ type ProposeProtocolParams = {
   appDefinition: Address;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress: Address;
+  initiatorDepositAssetId: AssetId;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress: string;
+  responderDepositAssetId: AssetId;
   defaultTimeout: BigNumber;
   stateTimeout: BigNumber; // optional in api, but should be defined in protocol
   initialState: SolidityValueType;
