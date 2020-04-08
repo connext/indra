@@ -19,39 +19,9 @@ export type ProtocolMessage = {
 };
 
 export type NodeMessage = {
-  from: string; // Xpub?
+  from: Xpub;
   type: EventNames;
 };
-
-////////////////////////////////////////
-// Messaging Service
-
-export interface MessagingConfig {
-  clusterId?: string;
-  logger?: ILoggerService;
-  messagingUrl: string | string[];
-  options?: any;
-  privateKey?: string; // HexString or openssl keyfile?
-  publicKey?: string; // HexString or openssl keyfile?
-  token?: string;
-}
-
-export interface IMessagingService {
-  connect(): Promise<void>;
-  disconnect(): Promise<void>;
-  flush(): Promise<void>;
-  onReceive(subject: string, callback: (msg: NodeMessage) => void): Promise<void>;
-  publish(subject: string, data: any): Promise<void>;
-  request(
-    subject: string,
-    timeout: number,
-    data: object,
-    callback?: (response: any) => any,
-  ): Promise<any>;
-  send(to: string, msg: NodeMessage): Promise<void>;
-  subscribe(subject: string, callback: (msg: NodeMessage) => void): Promise<void>;
-  unsubscribe(subject: string): Promise<void>;
-}
 
 ////////////////////////////////////////
 // Message Contents
@@ -120,3 +90,33 @@ export type EventEmittedMessage =
   | DepositFailedMessage
   | CreateChannelMessage
   | NodeMessageWrappedProtocolMessage;
+
+////////////////////////////////////////
+// Messaging Service
+
+export interface MessagingConfig {
+  clusterId?: string;
+  logger?: ILoggerService;
+  messagingUrl: string | string[];
+  options?: any;
+  privateKey?: string; // HexString or openssl keyfile?
+  publicKey?: string; // HexString or openssl keyfile?
+  token?: string;
+}
+
+export interface IMessagingService {
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  flush(): Promise<void>;
+  onReceive(subject: string, callback: (msg: NodeMessage) => void): Promise<void>;
+  publish(subject: string, data: any): Promise<void>;
+  request(
+    subject: string,
+    timeout: number,
+    data: object,
+    callback?: (response: any) => any,
+  ): Promise<any>;
+  send(to: string, msg: NodeMessage): Promise<void>;
+  subscribe(subject: string, callback: (msg: NodeMessage) => void): Promise<void>;
+  unsubscribe(subject: string): Promise<void>;
+}
