@@ -4,9 +4,9 @@ import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {
-  initiatorXpub: Xpub;
+  initiatorXpub: string;
   initiatorDepositTokenAddress: Address;
-  responderXpub: Xpub;
+  responderXpub: string;
   responderDepositTokenAddress: Address;
   multisigAddress: Address;
   initiatorBalanceDecrement: BigNumber;
@@ -29,8 +29,8 @@ type InstallProtocolParams = {
 
 type ProposeProtocolParams = {
   multisigAddress: Address;
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorXpub: string;
+  responderXpub: string;
   appDefinition: Address;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
@@ -45,14 +45,14 @@ type ProposeProtocolParams = {
 };
 
 type SetupProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorXpub: string;
+  responderXpub: string;
   multisigAddress: Address;
 };
 
 type TakeActionProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorXpub: string;
+  responderXpub: string;
   multisigAddress: Address;
   appIdentityHash: Address;
   action: SolidityValueType;
@@ -61,15 +61,15 @@ type TakeActionProtocolParams = {
 
 type UninstallProtocolParams = {
   appIdentityHash: Bytes32;
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorXpub: string;
+  responderXpub: string;
   multisigAddress: Address;
   blockNumberToUseIfNecessary?: number;
 };
 
 type UpdateProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorXpub: string;
+  responderXpub: string;
   multisigAddress: Address;
   appIdentityHash: Address;
   newState: SolidityValueType;

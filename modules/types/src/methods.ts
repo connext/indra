@@ -11,13 +11,13 @@ import { enumify } from "./utils";
 ////////////////////////////////////////
 
 type CreateChannelParams = {
-  owners: Xpub[];
+  owners: string[];
 };
 
 type CreateChannelResult = {
   multisigAddress: Address;
-  owners?: Xpub[];
-  counterpartyXpub?: Xpub;
+  owners?: string[];
+  counterpartyXpub?: string;
 };
 
 ////////////////////////////////////////
@@ -160,7 +160,7 @@ type ProposeInstallParams = {
   initiatorDepositTokenAddress: Address;
   meta?: Object;
   outcomeType: OutcomeType;
-  proposedToIdentifier: Xpub;
+  proposedToIdentifier: string;
   responderDeposit: BigNumber;
   responderDepositTokenAddress: Address;
   stateTimeout?: BigNumber;

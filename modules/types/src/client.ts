@@ -20,7 +20,7 @@ export interface ClientOptions {
   ethProviderUrl: string;
   keyGen?: KeyGen;
   mnemonic?: string;
-  xpub?: Xpub;
+  xpub?: string;
   store?: IClientStore;
   storeType?: StoreTypes;
   logger?: ILogger;
@@ -41,9 +41,9 @@ export interface IConnextClient {
   ethProvider: providers.JsonRpcProvider;
   freeBalanceAddress: Address;
   multisigAddress: Address;
-  nodePublicIdentifier: Xpub;
+  nodePublicIdentifier: string;
   nodeFreeBalanceAddress: Address;
-  publicIdentifier: Xpub;
+  publicIdentifier: string;
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;

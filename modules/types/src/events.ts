@@ -44,8 +44,8 @@ export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTy
   appIdentityHash: Bytes32;
   assetId: Address;
   paymentId?: Bytes32;
-  sender: Xpub;
-  recipient?: Xpub;
+  sender: string;
+  recipient?: string;
   meta: any;
   type: T;
   transferMeta: T extends LinkedTransfer
@@ -64,8 +64,8 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   amount: HexObject;
   assetId: Address;
   paymentId?: Bytes32;
-  sender: Xpub;
-  recipient?: Xpub;
+  sender: string;
+  recipient?: string;
   meta: any;
   type: T;
 };

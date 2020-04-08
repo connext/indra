@@ -83,7 +83,7 @@ export type ChannelProviderConfig = {
   freeBalanceAddress: Address;
   multisigAddress?: Address; // may not be deployed yet
   nodeUrl: string;
-  userPublicIdentifier: Xpub;
+  userPublicIdentifier: string;
 };
 
 export type KeyGen = (index: string) => Promise<string>;
@@ -97,7 +97,7 @@ export interface CFChannelProviderOptions {
   contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
-  xpub: Xpub;
+  xpub: string;
   store: IClientStore;
 }
 

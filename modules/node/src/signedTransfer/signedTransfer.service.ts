@@ -63,7 +63,7 @@ export class SignedTransferService {
   }
 
   async installSignedTransferReceiverApp(
-    userPublicIdentifier: Xpub,
+    userPublicIdentifier: string,
     paymentId: Bytes32,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
@@ -105,7 +105,9 @@ export class SignedTransferService {
         amount,
       );
       if (!depositReceipt) {
-        throw new Error(`Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userPublicIdentifier}`);
+        throw new Error(
+          `Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userPublicIdentifier}`,
+        );
       }
     } else {
       // request collateral normally without awaiting
@@ -144,7 +146,6 @@ export class SignedTransferService {
       senderApp.meta,
       SIGNED_TRANSFER_STATE_TIMEOUT,
     );
-
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);

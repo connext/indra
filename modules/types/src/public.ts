@@ -41,7 +41,7 @@ type HashLockTransferParameters = {
   amount: BigNumberish;
   timelock: BigNumberish;
   lockHash: Bytes32;
-  recipient: Xpub;
+  recipient: string;
   assetId?: Address;
   meta?: object;
 };
@@ -57,7 +57,7 @@ type ResolveHashLockTransferParameters = {
 
 type ResolveHashLockTransferResponse = {
   appIdentityHash: Bytes32;
-  sender: Xpub;
+  sender: string;
   amount: BigNumber;
   assetId: Address;
   meta?: object;
@@ -72,7 +72,7 @@ type LinkedTransferParameters = {
   assetId?: Address;
   paymentId: Bytes32;
   preImage: Bytes32;
-  recipient?: Xpub;
+  recipient?: string;
   meta?: object;
 };
 
@@ -90,7 +90,7 @@ type ResolveLinkedTransferParameters = {
 
 type ResolveLinkedTransferResponse = {
   appIdentityHash: Bytes32;
-  sender: Xpub;
+  sender: string;
   paymentId: Bytes32;
   amount: BigNumber;
   assetId: Address;
@@ -106,7 +106,7 @@ type SignedTransferParameters = {
   assetId: Address;
   paymentId: Bytes32;
   signer: Address;
-  recipient?: Xpub;
+  recipient?: string;
   meta?: any;
 };
 
@@ -126,7 +126,7 @@ type ResolveSignedTransferResponse = {
   appIdentityHash: Bytes32;
   assetId: Address;
   amount: BigNumber;
-  sender: Xpub;
+  sender: string;
   meta?: any;
 };
 
@@ -168,8 +168,8 @@ type SwapParameters = {
 
 type SwapResponse = {
   id: number;
-  nodePublicIdentifier: Xpub;
-  userPublicIdentifier: Xpub;
+  nodePublicIdentifier: string;
+  userPublicIdentifier: string;
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: { [assetId: string]: boolean };

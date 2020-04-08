@@ -1,11 +1,4 @@
-import {
-  ABIEncoding,
-  Address,
-  DecString,
-  HexString,
-  SolidityValueType,
-  Xpub,
-} from "./basic";
+import { ABIEncoding, Address, DecString, HexString, SolidityValueType } from "./basic";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   MultiAssetMultiPartyCoinTransferInterpreterParamsJson,
@@ -50,12 +43,9 @@ export type AppInstanceJson = {
   outcomeType: string;
   meta?: object;
   // Interpreter Params
-  twoPartyOutcomeInterpreterParams?:
-    TwoPartyFixedOutcomeInterpreterParamsJson
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParamsJson
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParamsJson
+  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParamsJson;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParamsJson;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
 };
 
 export type AppInstanceProposal = {
@@ -75,12 +65,9 @@ export type AppInstanceProposal = {
   stateTimeout: HexString;
   meta?: object;
   // Interpreter Params
-  twoPartyOutcomeInterpreterParams?:
-    TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
 ////////////////////////////////////

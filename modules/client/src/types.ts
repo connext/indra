@@ -18,8 +18,8 @@ export interface NodeInitializationParameters {
   nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
-  userPublicIdentifier?: Xpub;
-  nodePublicIdentifier?: Xpub;
+  userPublicIdentifier?: string;
+  nodePublicIdentifier?: string;
   channelProvider?: IChannelProvider;
 }
 
@@ -35,5 +35,5 @@ export type InternalClientOptions = {
   node: INodeApiClient;
   store: IClientStore;
   token: Contract;
-  xpub: Xpub;
+  xpub: string;
 };
