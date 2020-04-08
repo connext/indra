@@ -3,7 +3,6 @@ export {
   Node as CFCore,
   scanForCriticalAddresses,
   xkeyKthAddress,
-  xkeysToSortedKthAddresses,
 } from "@connext/cf-core";
 
 export {
@@ -20,5 +19,4 @@ export {
   RejectProposalMessage,
   UninstallMessage,
   UpdateStateMessage,
-  sortAddresses,
 } from "@connext/types";

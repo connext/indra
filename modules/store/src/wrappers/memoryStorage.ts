@@ -52,13 +52,14 @@ export class MemoryStorage implements IClientStore {
       // TODO: this is broken, does not scope to current multisig
       appInstances: [...this.appInstances.entries()],
       proposedAppInstances: [...this.proposedApps.entries()],
-      freeBalanceAppInstance: this.freeBalances.get(multisigAddress),
+      freeBalanceAppInstance: { ...this.freeBalances.get(multisigAddress) },
     });
   }
 
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     const channel = [...this.channels.values()].find(
-      channel => channel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString(),
+      channel => [...channel.userNeuteredExtendedKeys].sort().toString() 
+        === owners.sort().toString(),
     );
     if (!channel) {
       return Promise.resolve(undefined);

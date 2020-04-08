@@ -34,7 +34,8 @@ export class StateChannel {
   constructor(
     public readonly multisigAddress: string,
     public readonly addresses: CriticalStateChannelAddresses,
-    public readonly userNeuteredExtendedKeys: string[],
+    public readonly initiatorExtendedKey: string, // initator
+    public readonly responderExtendedKey: string, // initator
     readonly proposedAppInstances: ReadonlyMap<string, AppInstanceProposal> = new Map<
       string,
       AppInstanceProposal
@@ -44,11 +45,11 @@ export class StateChannel {
     private readonly monotonicNumProposedApps: number = 0,
     public readonly schemaVersion: number = StateSchemaVersion,
   ) {
-    userNeuteredExtendedKeys.forEach(xpub => {
+    [initiatorExtendedKey, responderExtendedKey].forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
         throw new Error(
           `StateChannel constructor given invalid extended keys: ${stringify(
-            userNeuteredExtendedKeys,
+            [initiatorExtendedKey, responderExtendedKey],
           )}`,
         );
       }
@@ -56,7 +57,15 @@ export class StateChannel {
   }
 
   public get multisigOwners() {
-    return this.getSigningKeysFor(0);
+    return this.getSigningKeysFor(
+      /* initiatorXpub */ this.initiatorExtendedKey,
+      /* responderXpub */ this.responderExtendedKey,
+      /* appSeqNo */ 0,
+    );
+  }
+
+  public get userNeuteredExtendedKeys() {
+    return [this.initiatorExtendedKey, this.responderExtendedKey];
   }
 
   public get numProposedApps() {
@@ -143,14 +152,15 @@ export class StateChannel {
     return this.appInstances.has(appIdentityHash);
   }
 
-  public getSigningKeysFor(addressIndex: number): string[] {
-    return sortAddresses(
-      this.userNeuteredExtendedKeys.map(xpub => xkeyKthAddress(xpub, addressIndex)),
-    );
-  }
-
-  public getNextSigningKeys(): string[] {
-    return this.getSigningKeysFor(this.monotonicNumProposedApps);
+  public getSigningKeysFor(
+    initiatorXpub: string, 
+    responderXpub: string, 
+    addressIndex: number,
+  ): string[] {
+    return [
+      xkeyKthAddress(initiatorXpub, addressIndex),
+      xkeyKthAddress(responderXpub, addressIndex),
+    ];
   }
 
   public get hasFreeBalance(): boolean {
@@ -166,21 +176,18 @@ export class StateChannel {
   }
 
   public getMultisigOwnerAddrOf(xpub: string): string {
-    const [alice, bob] = this.multisigOwners;
-
-    const topLevelKey = xkeyKthAddress(xpub, 0);
-
-    if (topLevelKey !== alice && topLevelKey !== bob) {
+    if (!this.userNeuteredExtendedKeys.find(k => k === xpub)) {
       throw new Error(
         `getMultisigOwnerAddrOf received invalid xpub not in multisigOwners: ${xpub}`,
       );
     }
 
-    return topLevelKey;
+    return xkeyKthAddress(xpub, 0);
   }
 
   public getFreeBalanceAddrOf(xpub: string): string {
-    const [alice, bob] = this.freeBalanceAppInstance!.participants;
+    const alice = this.freeBalanceAppInstance!.initiator;
+    const bob = this.freeBalanceAppInstance!.responder;
 
     const topLevelKey = xkeyKthAddress(xpub, 0);
 
@@ -200,7 +207,8 @@ export class StateChannel {
   private build = (args: {
     multisigAddress?: string;
     addresses?: CriticalStateChannelAddresses;
-    userNeuteredExtendedKeys?: string[];
+    initiatorExtendedKey?: string,
+    responderExtendedKey?: string,
     appInstances?: ReadonlyMap<string, AppInstance>;
     proposedAppInstances?: ReadonlyMap<string, AppInstanceProposal>;
     freeBalanceAppInstance?: AppInstance;
@@ -210,7 +218,8 @@ export class StateChannel {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
       args.addresses || this.addresses,
-      args.userNeuteredExtendedKeys || this.userNeuteredExtendedKeys,
+      args.initiatorExtendedKey || this.initiatorExtendedKey,
+      args.responderExtendedKey || this.responderExtendedKey,
       args.proposedAppInstances || this.proposedAppInstances,
       args.appInstances || this.appInstances,
       args.freeBalanceAppInstance || this.freeBalanceAppInstance,
@@ -253,17 +262,20 @@ export class StateChannel {
     freeBalanceAppAddress: string,
     addresses: CriticalStateChannelAddresses,
     multisigAddress: string,
-    userNeuteredExtendedKeys: string[],
+    initiatorXpub: string,
+    responderXpub: string,
     freeBalanceTimeout?: number,
   ) {
     return new StateChannel(
       multisigAddress,
       addresses,
-      userNeuteredExtendedKeys,
+      initiatorXpub,
+      responderXpub,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>([]),
       createFreeBalance(
-        userNeuteredExtendedKeys,
+        initiatorXpub,
+        responderXpub,
         freeBalanceAppAddress,
         freeBalanceTimeout || HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout,
         multisigAddress,
@@ -275,12 +287,14 @@ export class StateChannel {
   public static createEmptyChannel(
     multisigAddress: string,
     addresses: CriticalStateChannelAddresses,
-    userNeuteredExtendedKeys: string[],
+    initiatorXpub: string,
+    responderXpub: string,
   ) {
     return new StateChannel(
       multisigAddress,
       addresses,
-      userNeuteredExtendedKeys,
+      initiatorXpub,
+      responderXpub,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>(),
       // Note that this FreeBalance is undefined because a channel technically
@@ -354,17 +368,32 @@ export class StateChannel {
     });
   }
 
-  public installApp(appInstance: AppInstance, tokenIndexedDecrements: TokenIndexedCoinTransferMap) {
+  public installApp(
+    appInstance: AppInstance,
+    tokenIndexedDecrements: TokenIndexedCoinTransferMap,
+  ) {
     // Verify appInstance has expected signingkeys
-
-    const participants = this.getSigningKeysFor(appInstance.appSeqNo);
-
-    if (!participants.every((v, idx) => v === appInstance.participants[idx])) {
-      throw new Error(
-        `AppInstance passed to installApp has incorrect participants. Got ${JSON.stringify(
-          appInstance.participants,
-        )} but expected ${JSON.stringify(participants)}`,
+    const proposal = 
+      this.proposedAppInstances.has(appInstance.identityHash) 
+        ? this.proposedAppInstances.get(appInstance.identityHash) 
+        : undefined;
+        
+    if (!!proposal) {
+      const [initiator, responder] = this.getSigningKeysFor(
+        proposal.proposedByIdentifier, 
+        proposal.proposedToIdentifier, 
+        appInstance.appSeqNo,
       );
+  
+      if (appInstance.initiator !== initiator || appInstance.responder !== responder) {
+        throw new Error(
+          `AppInstance passed to installApp has incorrect participants. Got ${
+            JSON.stringify(appInstance.identity.participants)
+          } but expected ${
+            JSON.stringify([initiator, responder])
+          }`,
+        );
+      }
     }
 
     /// Add modified FB and new AppInstance to appInstances
@@ -372,17 +401,9 @@ export class StateChannel {
 
     appInstances.set(appInstance.identityHash, appInstance);
 
-    // If the app is in the proposed apps, make sure it is
-    // removed (otherwise channel is persisted with proposal +
-    // installed application after protocol)
-    // NOTE: `deposit` will install an app, but never propose it
-
-    let proposedAppInstances;
-    if (this.proposedAppInstances.has(appInstance.identityHash)) {
-      const withoutProposal = this.removeProposal(appInstance.identityHash);
-      proposedAppInstances = withoutProposal.proposedAppInstances;
-    }
-
+    const proposedAppInstances = !!proposal
+      ? this.removeProposal(appInstance.identityHash).proposedAppInstances
+      : this.proposedAppInstances;
     return this.build({
       appInstances,
       proposedAppInstances,
@@ -452,7 +473,8 @@ export class StateChannel {
       return new StateChannel(
         json.multisigAddress,
         json.addresses,
-        json.userNeuteredExtendedKeys,
+        json.userNeuteredExtendedKeys[0], // initiator
+        json.userNeuteredExtendedKeys[1], // responder
         new Map(
           [...Object.values(dropNulls(json.proposedAppInstances) || [])].map((proposal): [
             string,

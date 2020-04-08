@@ -9,8 +9,9 @@ describe("AppInstance", () => {
     const participants = [getAddress(createRandomAddress()), getAddress(createRandomAddress())];
 
     const appInstance = new AppInstance(
-      /* participants */ participants,
-      /* defaultTimeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
+      /* initiator */ participants[0],
+      /* responder*/ participants[1],
+      /* default timeout */ toBN(Math.ceil(Math.random() * 2e10)).toHexString(),
       /* appInterface */ {
         addr: getAddress(createRandomAddress()),
         stateEncoding: "tuple(address foo, uint256 bar)",
@@ -33,7 +34,8 @@ describe("AppInstance", () => {
 
     expect(appInstance).not.toBe(null);
     expect(appInstance).not.toBe(undefined);
-    expect(appInstance.participants).toBe(participants);
+    expect(appInstance.initiator).toBe(participants[0]);
+    expect(appInstance.responder).toBe(participants[1]);
 
     // TODO: moar tests pl0x
   });

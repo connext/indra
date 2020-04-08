@@ -8,7 +8,6 @@ import {
   toBN,
 } from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
-import { sortSignaturesBySignerAddress } from "@connext/types";
 import { verifyChannelMessage } from "@connext/crypto";
 
 import { ChallengeRegistry } from "../contracts";
@@ -37,20 +36,27 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly versionNumber: number, // app nonce
     public readonly stateTimeout: HexString,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
-    private participantSignatures: string[] = [],
+    private initiatorSignature?: string,
+    private responderSignature?: string,
   ) {}
 
   get signatures(): string[] {
-    return this.participantSignatures;
+    if (!this.initiatorSignature && !this.responderSignature) {
+      return [];
+    }
+    return [this.initiatorSignature!, this.responderSignature!];
+  }
+
+  public async addSignatures(
+    initiatorSignature: string,
+    responderSignature: string,
+  ): Promise<void> {
+    this.initiatorSignature = initiatorSignature;
+    this.responderSignature = responderSignature;
   }
 
   set signatures(sigs: string[]) {
-    if (sigs.length < 2) {
-      throw new Error(
-        `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
-      );
-    }
-    this.participantSignatures = sigs;
+    throw new Error(`Use "addSignatures" to ensure the correct sorting`);
   }
 
   public encode(): string {
@@ -102,22 +108,22 @@ export class SetStateCommitment implements EthereumCommitment {
       json.versionNumber,
       json.stateTimeout,
       json.appIdentityHash,
-      json.signatures,
+      json.signatures[0],
+      json.signatures[1],
     );
   }
 
   private async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
     this.assertSignatures();
-    const hash = this.hashToSign();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
       timeout: toBN(this.stateTimeout).toNumber(), // this is a *state-specific* timeout (defaults to defaultTimeout)
-      signatures: await sortSignaturesBySignerAddress(hash, this.signatures, verifyChannelMessage),
+      signatures: this.signatures,
     };
   }
 
-  private assertSignatures() {
+  private async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }
@@ -126,6 +132,13 @@ export class SetStateCommitment implements EthereumCommitment {
       throw new Error(
         `Incorrect number of signatures supplied. Expected at least 2, got ${this.signatures.length}`,
       );
+    }
+
+    for (const idx in this.signatures) {
+      const signer = await verifyChannelMessage(this.hashToSign(), this.signatures[idx]);
+      if (signer !== this.appIdentity.participants[idx]) {
+        throw new Error(`Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`);
+      }
     }
   }
 }

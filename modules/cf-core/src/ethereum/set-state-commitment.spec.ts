@@ -1,11 +1,12 @@
 import { signChannelMessage } from "@connext/crypto";
-import { MinimalTransaction } from "@connext/types";
+import { MinimalTransaction, createRandomAddress } from "@connext/types";
 import {
   bigNumberify,
   Interface,
   keccak256,
   solidityPack,
   TransactionDescription,
+  getAddress,
 } from "ethers/utils";
 
 import { createAppInstanceForTest } from "../testing/utils";
@@ -17,6 +18,9 @@ import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import { getSetStateCommitment, SetStateCommitment } from "./set-state-commitment";
+import { StateChannel, FreeBalanceClass } from "../models";
+import { WeiPerEther } from "ethers/constants";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 
 /**
  * This test suite decodes a constructed SetState Commitment transaction object
@@ -29,17 +33,54 @@ describe("Set State Commitment", () => {
 
   const context = { network: generateRandomNetworkContext() } as Context;
 
-  const appInstance = createAppInstanceForTest();
+  const [initiator, responder] = getRandomHDNodes(2);
 
-  const hdNodes = getRandomHDNodes(2);
+  // State channel testing values
+  let stateChannel = StateChannel.setupChannel(
+    context.network.IdentityApp,
+    {
+      proxyFactory: context.network.ProxyFactory,
+      multisigMastercopy: context.network.MinimumViableMultisig,
+    },
+    getAddress(createRandomAddress()),
+    initiator.neuter().extendedKey,
+    responder.neuter().extendedKey,
+  );
+
+  expect(stateChannel.userNeuteredExtendedKeys[0]).toEqual(initiator.neuter().extendedKey);
+  expect(stateChannel.userNeuteredExtendedKeys[1]).toEqual(responder.neuter().extendedKey);
+
+  // Set the state to some test values
+  stateChannel = stateChannel.setFreeBalance(
+    FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
+      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+    ]),
+  );
+
+  const appInstance = createAppInstanceForTest(stateChannel);
+
+  const signWithEphemeralKey = async (hash: string, path: number | string) => {
+    const initiatorSig = await signChannelMessage(
+      initiator.derivePath(path.toString()).privateKey,
+      hash,
+    );
+    const responderSig = await signChannelMessage(
+      responder.derivePath(path.toString()).privateKey,
+      hash,
+    );
+    return [initiatorSig, responderSig];
+  };
 
   beforeAll(async () => {
     commitment = getSetStateCommitment(context, appInstance);
-    const commitmentHash = commitment.hashToSign();
-    commitment.signatures = [
-      await signChannelMessage(hdNodes[0].privateKey, commitmentHash),
-      await signChannelMessage(hdNodes[1].privateKey, commitmentHash),
-    ];
+    const [
+      initiatorSig,
+      responderSig,
+    ] = await signWithEphemeralKey(commitment.hashToSign(), appInstance.appSeqNo);
+    await commitment.addSignatures(
+      initiatorSig,
+      responderSig,
+    );
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
     //       directly to the app registry?

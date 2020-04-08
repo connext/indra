@@ -1,6 +1,5 @@
 import { EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
 import { defaultAbiCoder, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
-import { sortSignaturesBySignerAddress } from "@connext/types";
 import { verifyChannelMessage } from "@connext/crypto";
 
 import { MinimumViableMultisig } from "../contracts";
@@ -10,40 +9,49 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   constructor(
     readonly multisigAddress: string,
     readonly multisigOwners: string[],
-    private participantSignatures: string[] = [],
+    private initiatorSignature?: string,
+    private responderSignature?: string,
   ) {}
 
   abstract getTransactionDetails(): MultisigTransaction;
 
   get signatures(): string[] {
-    return this.participantSignatures;
+    if (!this.initiatorSignature && !this.responderSignature) {
+      return [];
+    }
+    return [this.initiatorSignature!, this.responderSignature!];
+  }
+
+  public async addSignatures(
+    signature1: string,
+    signature2: string,
+  ): Promise<void> {
+    for (const sig of [signature1, signature2]) {
+      const recovered = await verifyChannelMessage(this.hashToSign(), sig);
+      if (recovered === this.multisigOwners[0]) {
+        this.initiatorSignature = sig;
+      } else if (recovered === this.multisigOwners[1]) {
+        this.responderSignature = sig;
+      } else {
+        throw new Error(`Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`);
+      }
+    }
   }
 
   set signatures(sigs: string[]) {
-    if (sigs.length < 2) {
-      throw new Error(
-        `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
-      );
-    }
-    this.participantSignatures = sigs;
+    throw new Error(`Use "addSignatures" to ensure the correct sorting`);
   }
 
   public async getSignedTransaction(): Promise<MinimalTransaction> {
     this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
-    const hash = this.hashToSign();
-    const signaturesList = await sortSignaturesBySignerAddress(
-      hash,
-      this.signatures,
-      verifyChannelMessage,
-    );
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,
       multisigInput.value,
       multisigInput.data,
       multisigInput.operation,
-      signaturesList,
+      this.signatures,
     ]);
 
     return { to: this.multisigAddress, value: 0, data: txData };
@@ -61,7 +69,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
-  private assertSignatures() {
+  private async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }

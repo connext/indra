@@ -149,7 +149,10 @@ export class ConnextListener extends ConnextEventEmitter {
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
           nonce: state.nonce,
         };
-        await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
+        await this.connext.saveWithdrawCommitmentToStore(
+          params,
+          state.signatures,
+        );
       }
     },
     WITHDRAWAL_CONFIRMED_EVENT: (msg: UninstallMessage): void => {
