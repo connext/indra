@@ -19,5 +19,4 @@ export {
   RejectProposalMessage,
   UninstallMessage,
   UpdateStateMessage,
-  sortAddresses,
 } from "@connext/types";

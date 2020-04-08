@@ -3,7 +3,6 @@ import {
   deBigNumberifyJson,
   isBN,
   stringify,
-  sortAddresses,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
