@@ -1,5 +1,8 @@
 import {
-  MethodNames, MethodParams, MethodResults, ProtocolNames,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -11,7 +14,6 @@ import { RequestHandler } from "../../request-handler";
 
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
-import { Zero } from "ethers/constants";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -32,7 +34,10 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
     const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
     if (!json) {
-      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, proposedToIdentifier].toString()));
+      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([
+        publicIdentifier,
+        proposedToIdentifier,
+      ].toString()));
     }
 
     return [json.multisigAddress];
@@ -73,7 +78,10 @@ export class ProposeInstallAppInstanceController extends NodeController {
 
     const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
     if (!json) {
-      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([publicIdentifier, proposedToIdentifier].toString()));
+      throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([
+        publicIdentifier,
+        proposedToIdentifier,
+      ].toString()));
     }
 
     await protocolRunner.initiateProtocol(ProtocolNames.propose, {
@@ -87,7 +95,10 @@ export class ProposeInstallAppInstanceController extends NodeController {
     const updated = await store.getStateChannel(json.multisigAddress);
 
     return {
-      appIdentityHash: StateChannel.fromJson(updated!).mostRecentlyProposedAppInstance().identityHash,
+      appIdentityHash: StateChannel
+        .fromJson(updated!)
+        .mostRecentlyProposedAppInstance()
+        .identityHash,
     };
   }
 }

@@ -1,17 +1,24 @@
-import { ProtocolNames, ProtocolParams, ILoggerService, ProtocolRoles, UninstallMiddlewareContext } from "@connext/types";
+import {
+  ILoggerService,
+  Opcode,
+  ProtocolMessage,
+  ProtocolNames,
+  ProtocolParams,
+} from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
+import { AppInstance, StateChannel } from "../models";
+import { logTime } from "../utils";
 import {
   Context,
-  Opcode,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
   PersistAppType,
   PersistCommitmentType,
+  ProtocolExecutionFlow,
+  ProtocolRoles,
+  UninstallMiddlewareContext,
 } from "../types";
-import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import {
@@ -19,8 +26,7 @@ import {
   computeTokenIndexedFreeBalanceIncrements,
   stateChannelClassFromStoreByMultisig,
 } from "./utils";
-import { StateChannel } from "..";
-import { AppInstance } from "../models/app-instance";
+
 
 const protocol = ProtocolNames.uninstall;
 const {

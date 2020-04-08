@@ -3,14 +3,22 @@ import {
   AppInstanceProposal,
   delay,
   EventNames,
+  ILockService,
   ILoggerService,
+  IMessagingService,
+  IStoreService,
   MethodName,
+  MethodRequest,
+  MethodResponse,
   MinimalTransaction,
+  NetworkContext,
+  NodeMessage,
+  NodeMessageWrappedProtocolMessage,
   nullLogger,
-  STORE_SCHEMA_VERSION,
+  Opcode,
+  ProtocolMessage,
   ProtocolName,
-  ValidationMiddleware,
-  MiddlewareContext,
+  STORE_SCHEMA_VERSION,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
@@ -33,19 +41,11 @@ import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import {
-  ILockService,
-  IMessagingService,
   IPrivateKeyGenerator,
-  IStoreService,
-  MethodRequest,
-  MethodResponse,
-  NetworkContext,
-  NodeMessage,
-  NodeMessageWrappedProtocolMessage,
-  Opcode,
-  ProtocolMessage,
+  MiddlewareContext,
   PersistAppType,
   PersistCommitmentType,
+  ValidationMiddleware,
 } from "./types";
 
 export interface NodeConfig {

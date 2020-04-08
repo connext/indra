@@ -1,8 +1,8 @@
+import { sortByAddress, sortAddresses } from "@connext/types";
 import { Wallet } from "ethers";
 import { SigningKey } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic, HDNode } from "ethers/utils/hdnode";
 import memoize from "memoizee";
-import { sortByAddress, sortAddresses } from "@connext/types";
 
 /**
  * BIP-32 specified HD Wallets

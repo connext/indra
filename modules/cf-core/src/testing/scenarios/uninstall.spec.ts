@@ -1,9 +1,8 @@
-import { EventNames } from "@connext/types";
+import { EventNames, UninstallMessage } from "@connext/types";
 import { One, Two, Zero } from "ethers/constants";
 
 import { Node } from "../../node";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
-import { UninstallMessage } from "../../types";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";

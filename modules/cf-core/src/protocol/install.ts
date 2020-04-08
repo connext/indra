@@ -1,4 +1,13 @@
-import { ProtocolNames, ProtocolParams, ProtocolRoles, InstallMiddlewareContext } from "@connext/types";
+import {
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  Opcode,
+  OutcomeType,
+  ProtocolMessage,
+  ProtocolNames,
+  ProtocolParams,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParams,
+} from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -8,15 +17,11 @@ import { getConditionalTransactionCommitment, getSetStateCommitment } from "../e
 import { AppInstance, StateChannel, TokenIndexedCoinTransferMap } from "../models";
 import {
   Context,
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  Opcode,
-  OutcomeType,
+  InstallMiddlewareContext,
   PersistAppType,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcomeInterpreterParams,
   PersistCommitmentType,
+  ProtocolExecutionFlow,
+  ProtocolRoles,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";

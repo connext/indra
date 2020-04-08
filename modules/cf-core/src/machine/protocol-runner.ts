@@ -1,22 +1,19 @@
 import {
-  GenericMiddleware,
   ILoggerService,
+  IStoreService,
+  NetworkContext,
+  Opcode,
+  ProtocolMessage,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
-  IStoreService,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { v4 as uuid } from "uuid";
 
 import { getProtocolFromName } from "../protocol";
-import {
-  Context,
-  NetworkContext,
-  Opcode,
-  ProtocolMessage,
-} from "../types";
+import { Context, GenericMiddleware } from "../types";
 
 import { MiddlewareContainer } from "./middleware";
 

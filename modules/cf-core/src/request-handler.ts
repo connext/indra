@@ -3,8 +3,13 @@ import {
   EventNames,
   ILoggerService,
   IMessagingService,
-  MethodName,
   IStoreService,
+  MethodName,
+  MethodRequest,
+  MethodResponse,
+  NetworkContext,
+  NodeMessage,
+  NodeMessageWrappedProtocolMessage,
 } from "@connext/types";
 import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -14,13 +19,6 @@ import { eventNameToImplementation, methodNameToImplementation } from "./methods
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
-import {
-  MethodRequest,
-  MethodResponse,
-  NetworkContext,
-  NodeMessage,
-  NodeMessageWrappedProtocolMessage,
-} from "./types";
 import { logTime } from "./utils";
 
 /**

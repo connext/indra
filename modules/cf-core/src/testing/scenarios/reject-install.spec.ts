@@ -1,7 +1,6 @@
-import { EventNames } from "@connext/types";
+import { EventNames, ProposeMessage, RejectProposalMessage } from "@connext/types";
 
 import { Node } from "../../node";
-import { ProposeMessage, RejectProposalMessage } from "../../types";
 
 import { NetworkContextForTestSuite } from "../contracts";
 import { setup, SetupContext } from "../setup";

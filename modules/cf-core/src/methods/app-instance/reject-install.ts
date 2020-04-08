@@ -1,10 +1,14 @@
-import { EventNames, MethodNames, MethodParams, MethodResults } from "@connext/types";
+import {
+  EventNames,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  RejectProposalMessage,
+} from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import {
-  RejectProposalMessage,
-} from "../../types";
+
 import { NodeController } from "../controller";
 import { NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH, NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH } from "../../errors";
 

@@ -6,20 +6,21 @@ import {
   ContractABI,
   CreateChannelMessage,
   deBigNumberifyJson,
+  DepositAppState,
+  DepositAppStateEncoding,
+  EventEmittedMessage,
   EventNames,
   InstallMessage,
   MethodNames,
-  MethodParams,
   MethodParam,
+  MethodParams,
   MethodResults,
   OutcomeType,
   ProposeMessage,
   ProtocolParams,
   SolidityValueType,
-  UninstallMessage,
-  DepositAppStateEncoding,
-  DepositAppState,
   toBN,
+  UninstallMessage,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -31,9 +32,6 @@ import { Node } from "../node";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { AppInstance, StateChannel } from "../models";
 import { computeRandomExtendedPrvKey, xkeyKthAddress, xkeysToSortedKthAddresses } from "../xkeys";
-import {
-  EventEmittedMessage,
-} from "../types";
 
 import { DolphinCoin, NetworkContextForTestSuite } from "./contracts";
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
@@ -240,7 +238,11 @@ export function assertProposeMessage(
   );
 }
 
-export function assertInstallMessage(senderId: string, msg: InstallMessage, appIdentityHash: string) {
+export function assertInstallMessage(
+  senderId: string,
+  msg: InstallMessage,
+  appIdentityHash: string,
+) {
   assertNodeMessage(msg, {
     from: senderId,
     type: `INSTALL_EVENT`,
@@ -297,7 +299,10 @@ export async function getChannelAddresses(node: Node): Promise<Set<string>> {
   return new Set(multisigAddresses);
 }
 
-export async function getAppInstance(node: Node, appIdentityHash: string): Promise<AppInstanceJson> {
+export async function getAppInstance(
+  node: Node,
+  appIdentityHash: string,
+): Promise<AppInstanceJson> {
   const {
     result: {
       result: { appInstance },
@@ -967,7 +972,11 @@ export async function takeAppAction(node: Node, appIdentityHash: string, action:
   return res.result.result;
 }
 
-export async function uninstallApp(node: Node, counterparty: Node, appIdentityHash: string): Promise<string> {
+export async function uninstallApp(
+  node: Node,
+  counterparty: Node,
+  appIdentityHash: string,
+): Promise<string> {
   await Promise.all([
     node.rpcRouter.dispatch(constructUninstallRpc(appIdentityHash)),
     new Promise(resolve => {

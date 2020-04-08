@@ -1,4 +1,10 @@
-import { AppInstanceProposal, ProtocolNames, ProtocolParams, ProtocolRoles, ProposeMiddlewareContext } from "@connext/types";
+import {
+  AppInstanceProposal,
+  Opcode,
+  ProtocolMessage,
+  ProtocolNames,
+  ProtocolParams,
+} from "@connext/types";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
@@ -6,11 +12,11 @@ import { getSetStateCommitment } from "../ethereum";
 import { AppInstance } from "../models";
 import {
   Context,
-  Opcode,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
   PersistAppType,
   PersistCommitmentType,
+  ProposeMiddlewareContext,
+  ProtocolExecutionFlow,
+  ProtocolRoles,
 } from "../types";
 import { appIdentityToHash, logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";

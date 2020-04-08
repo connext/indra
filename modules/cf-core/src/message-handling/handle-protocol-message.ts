@@ -1,11 +1,15 @@
 import {
   bigNumberifyJson,
+  EventEmittedMessage,
   EventNames,
+  IStoreService,
+  NetworkContext,
+  NodeMessageWrappedProtocolMessage,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
-  IStoreService,
+  SolidityValueType,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -13,12 +17,6 @@ import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
 
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
-import {
-  EventEmittedMessage,
-  NetworkContext,
-  NodeMessageWrappedProtocolMessage,
-  SolidityValueType,
-} from "../types";
 import { StateChannel, AppInstance } from "../models";
 
 /**
@@ -135,7 +133,11 @@ async function getOutgoingEventDataFromProtocol(
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
           params: {
-            appIdentityHash: StateChannel.fromJson(retrieved).mostRecentlyInstalledAppInstance().identityHash,
+            appIdentityHash:
+              StateChannel
+                .fromJson(retrieved)
+                .mostRecentlyInstalledAppInstance()
+                .identityHash,
           },
         },
       };
@@ -183,11 +185,11 @@ function getStateUpdateEventData(
 ) {
   // note: action does not exist on type `ProtocolParams.Update`
   // so use any cast
-  const { appIdentityHash: appIdentityHash, action } = params as any;
+  const { appIdentityHash, action } = params as any;
   return { newState, appIdentityHash, action };
 }
 
-function getUninstallEventData({ appIdentityHash: appIdentityHash }: ProtocolParams.Uninstall) {
+function getUninstallEventData({ appIdentityHash }: ProtocolParams.Uninstall) {
   return { appIdentityHash };
 }
 

@@ -1,16 +1,19 @@
-import { MinimalTransaction, EthereumCommitment, HexString, toBN } from "@connext/types";
+import {
+  AppIdentity,
+  EthereumCommitment,
+  HexString,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+  SignedAppChallengeUpdate,
+  toBN,
+} from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
 import { sortSignaturesBySignerAddress } from "@connext/types";
 import { verifyChannelMessage } from "@connext/crypto";
 
 import { ChallengeRegistry } from "../contracts";
 import { AppInstance } from "../models";
-import {
-  AppIdentity,
-  Context,
-  SignedAppChallengeUpdate,
-  SetStateCommitmentJSON,
-} from "../types";
+import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);

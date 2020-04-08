@@ -1,4 +1,6 @@
-import { ProtocolName, ProtocolNames, ProtocolExecutionFlow } from "../types";
+import { ProtocolName, ProtocolNames } from "@connext/types";
+
+import { ProtocolExecutionFlow } from "../types";
 
 import { INSTALL_PROTOCOL } from "./install";
 import { PROPOSE_PROTOCOL } from "./propose";

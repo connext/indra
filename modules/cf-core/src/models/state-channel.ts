@@ -1,23 +1,24 @@
 import {
+  AppInstanceJson,
+  AppInstanceProposal,
   CriticalStateChannelAddresses,
+  deBigNumberifyJson,
+  IStoreService,
+  SolidityValueType,
+  sortAddresses,
   StateChannelJSON,
   StateSchemaVersion,
   stringify,
-  deBigNumberifyJson,
-  IStoreService,
-  AppInstanceProposal,
   toBN,
-  sortAddresses,
 } from "@connext/types";
+import { BigNumber } from "ethers/utils";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
-import { AppInstanceJson, SolidityValueType } from "../types";
 import { xkeyKthAddress } from "../xkeys";
 
 import { AppInstance } from "./app-instance";
 import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
 import { flipTokenIndexedBalances } from "./utils";
-import { BigNumber } from "ethers/utils";
 
 const ERRORS = {
   APPS_NOT_EMPTY: (size: number) => `Expected the appInstances list to be empty but size ${size}`,

@@ -1,3 +1,4 @@
+import { ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
@@ -5,7 +6,6 @@ import { BigNumber } from "ethers/utils";
 import { Node } from "../../node";
 import { generatePrivateKeyGeneratorAndXPubPair } from "../../private-keys-generator";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
-import { ProposeMessage } from "../../types";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";

@@ -1,13 +1,10 @@
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { Memoize } from "typescript-memoize";
 
-import {
-  IPrivateKeyGenerator,
-  IStoreService,
-} from "./types";
+import { IPrivateKeyGenerator } from "./types";
 
 export class PrivateKeysGetter {
   private appIdentityHashToPrivateKey: Map<string, string> = new Map();

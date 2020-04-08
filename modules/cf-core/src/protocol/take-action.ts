@@ -1,16 +1,21 @@
-import { ProtocolNames, ProtocolParams, ProtocolRoles, TakeActionMiddlewareContext } from "@connext/types";
+import {
+  Opcode,
+  ProtocolMessage,
+  ProtocolNames,
+  ProtocolParams,
+} from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
+import { logTime } from "../utils";
 import {
   Context,
-  Opcode,
   PersistAppType,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
   PersistCommitmentType,
+  ProtocolExecutionFlow,
+  ProtocolRoles,
+  TakeActionMiddlewareContext,
 } from "../types";
-import { logTime } from "../utils";
 import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
