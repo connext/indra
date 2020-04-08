@@ -1,4 +1,4 @@
-import { EthSignature } from "@connext/types";
+import { EthSignature, IChannelSigner } from "@connext/types";
 import {
   sign,
   encrypt,
@@ -167,7 +167,7 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
   return bufferToUtf8(decrypted);
 }
 
-export class ChannelSigner {
+export class ChannelSigner implements IChannelSigner {
   public privateKey: string;
   public publicKey: string;
   public address: string;
@@ -178,7 +178,7 @@ export class ChannelSigner {
     this.address = getChecksumAddress(this.publicKey);
   }
 
-  public sign(message: string): Promise<string> {
+  public signMessage(message: string): Promise<string> {
     return signChannelMessage(this.privateKey, message);
   }
 }
