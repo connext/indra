@@ -16,6 +16,7 @@ import {
   isHexString,
   arrayToBuffer,
   removeHexPrefix,
+  getPublic,
 } from "eccrypto-js";
 
 export * from "eccrypto-js";
@@ -57,6 +58,11 @@ export function toChecksumAddress(address: string): string {
 export function getChecksumAddress(publicKey: Buffer | string): string {
   const address = getLowerCaseAddress(publicKey);
   return toChecksumAddress(address);
+}
+
+export function getPublicKeyFromPrivate(privateKey: string): string {
+  const publicKey = getPublic(bufferify(privateKey));
+  return bufferToHex(publicKey, true);
 }
 
 export function hashMessage(message: Buffer | string, prefix: string): string {
@@ -159,4 +165,20 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
   const encrypted = deserialize(hexToBuffer(message));
   const decrypted = await decrypt(hexToBuffer(privateKey), encrypted);
   return bufferToUtf8(decrypted);
+}
+
+export class ChannelSigner {
+  public privateKey: string;
+  public publicKey: string;
+  public address: string;
+
+  constructor(privateKey: string) {
+    this.privateKey = privateKey;
+    this.publicKey = getPublicKeyFromPrivate(this.privateKey);
+    this.address = getChecksumAddress(this.publicKey);
+  }
+
+  public sign(message: string): Promise<string> {
+    return signChannelMessage(this.privateKey, message);
+  }
 }
