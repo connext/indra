@@ -75,33 +75,6 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
         );
     }
 
-    /// @notice Compute a unique hash for an action used in this channel application
-    /// @param turnTaker The address of the user taking the action
-    /// @param previousState The hash of a state this action is being taken on
-    /// @param action The ABI encoded version of the action being taken
-    /// @param versionNumber The versionNumber of the state this action is being taken on
-    /// @return A bytes32 hash of the arguments
-    function computeActionHash(
-        address turnTaker,
-        bytes32 previousState,
-        bytes memory action,
-        uint256 versionNumber
-    )
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encodePacked(
-                byte(0x19),
-                turnTaker,
-                previousState,
-                action,
-                versionNumber
-            )
-        );
-    }
-
     /// @notice Compute a unique hash for the state of a channelized app instance
     /// @param identityHash The unique hash of an `AppIdentity`
     /// @param versionNumber The versionNumber corresponding to the version of the state
@@ -145,6 +118,29 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
           (
               appChallenge.status == ChallengeStatus.EXPLICITLY_FINALIZED
           )
+        );
+    }
+
+    function correctKeysSignedAppChallengeUpdate(
+        bytes32 identityHash,
+        address[] memory participants,
+        SignedAppChallengeUpdate memory req
+    )
+        public
+        pure
+        returns (bool)
+    {
+        bytes32 digest = computeAppChallengeHash(
+            identityHash,
+            req.appStateHash,
+            req.versionNumber,
+            req.timeout
+        );
+
+        return verifySignatures(
+            req.signatures,
+            digest,
+            participants
         );
     }
 
