@@ -185,19 +185,7 @@ export class WithdrawalController extends AbstractController {
   ): Promise<void> {
     // set the withdrawal tx in the store
     const commitment = await this.createWithdrawCommitment(params);
-    const recovered = await verifyChannelMessage(commitment.hashToSign(), signatures[0]);
-    // NOTE: withdrawal commitments extend the multisig commitment
-    // type, which means that as they add signatures they have
-    // to be in the same order as the `multisigOwners`. The node
-    // will always call `create`, so will always be multisigOwner[0]
-    // meaning their signature must be included fist on the withdrawal
-    // commitment
-    await commitment.addSignatures(
-      recovered === this.connext.nodeFreeBalanceAddress
-        ? signatures[0] : signatures[1],
-      recovered === this.connext.nodeFreeBalanceAddress
-        ? signatures[1] : signatures[0],
-    );
+    await commitment.addSignatures(...signatures);
     const minTx: MinimalTransaction = await commitment.getSignedTransaction();
     const value = { tx: minTx, retry: 0 };
     await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, { ...value });

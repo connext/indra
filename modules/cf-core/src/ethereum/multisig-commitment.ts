@@ -23,12 +23,19 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   }
 
   public async addSignatures(
-    initiatorSignature: string,
-    responderSignature: string,
+    signature1: string,
+    signature2: string,
   ): Promise<void> {
-    this.initiatorSignature = initiatorSignature;
-    this.responderSignature = responderSignature;
-    await this.assertSignatures();
+    for (const sig of [signature1, signature2]) {
+      const recovered = await verifyChannelMessage(this.hashToSign(), sig);
+      if (recovered === this.multisigOwners[0]) {
+        this.initiatorSignature = sig;
+      } else if (recovered === this.multisigOwners[1]) {
+        this.initiatorSignature = sig;
+      } else {
+        throw new Error(`Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`);
+      }
+    }
   }
 
   set signatures(sigs: string[]) {
@@ -36,7 +43,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
   }
 
   public async getSignedTransaction(): Promise<MinimalTransaction> {
-    this.assertSignatures(true);
+    this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
@@ -62,23 +69,9 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return keccak256(this.encode());
   }
 
-  private async assertSignatures(presenceOnly: boolean = false) {
+  private async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
-    }
-    if (presenceOnly) {
-      return;
-    }
-    // NOTE: withdrawal commitments require that the
-    // signers are in opposite order.
-    for (const idx in this.signatures) {
-      const signer = await verifyChannelMessage(
-        this.hashToSign(),
-        this.signatures[idx],
-      );
-      if (signer !== this.multisigOwners[idx]) {
-        throw new Error(`Got ${signer} and expected ${this.multisigOwners[idx]} in multisig commitment`);
-      }
     }
   }
 }
