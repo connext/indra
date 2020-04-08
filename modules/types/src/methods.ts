@@ -16,8 +16,6 @@ type CreateChannelParams = {
 
 type CreateChannelResult = {
   multisigAddress: Address;
-  owners?: Address[]; // multisigOwners on chain
-  counterpartyIdentifier?: ChannelPubId;
 };
 
 ////////////////////////////////////////
@@ -79,7 +77,7 @@ type GetStateDepositHolderAddressResult = {
 
 type GetFreeBalanceStateParams = {
   multisigAddress: Address;
-  tokenAddress?: Address;
+  assetId?: Address;
 };
 
 type GetFreeBalanceStateResult = {
