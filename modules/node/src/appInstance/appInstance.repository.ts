@@ -11,7 +11,6 @@ import { Channel } from "../channel/channel.entity";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
-import { bigNumberify } from "ethers/utils";
 import { HashZero } from "ethers/constants";
 import { safeJsonParse, xkeyKthAddress } from "../util";
 
@@ -51,10 +50,10 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
       addr: app.appDefinition,
     },
     appSeqNo: app.appSeqNo,
-    defaultTimeout: bigNumberify(app.timeout).toNumber(),
+    defaultTimeout: app.defaultTimeout,
     identityHash: app.identityHash,
     latestState: app.latestState,
-    latestTimeout: app.latestTimeout,
+    stateTimeout: app.stateTimeout,
     latestVersionNumber: app.latestVersionNumber,
     multisigAddress: channel.multisigAddress,
     outcomeType: app.outcomeType,
@@ -113,7 +112,8 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
     proposedToIdentifier: app.proposedToIdentifier,
     responderDeposit: app.responderDeposit.toHexString(),
     responderDepositTokenAddress: app.responderDepositTokenAddress,
-    timeout: bigNumberify(app.timeout).toHexString(),
+    defaultTimeout: app.defaultTimeout,
+    stateTimeout: app.stateTimeout,
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,
     twoPartyOutcomeInterpreterParams,

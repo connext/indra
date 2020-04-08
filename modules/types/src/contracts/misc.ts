@@ -37,6 +37,11 @@ export type AddressHistory = {
   };
 };
 
+export type ContractAddresses = NetworkContext & {
+  Token: Address;
+  [SupportedApplication: string]: Address;
+};
+
 export interface NetworkContext {
   ChallengeRegistry: Address;
   ConditionalTransactionDelegateTarget: Address;

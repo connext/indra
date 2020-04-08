@@ -15,6 +15,8 @@ import { SolidityValueType } from "../../types";
 import { getFirstElementInListNotEqualTo } from "../../utils";
 import { NodeController } from "../controller";
 import { AppInstance } from "../../models";
+import { BigNumber } from "ethers/utils";
+import { Zero } from "ethers/constants";
 
 export class UpdateStateController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_updateState)
@@ -59,7 +61,7 @@ export class UpdateStateController extends NodeController {
     params: MethodParams.UpdateState,
   ): Promise<MethodResults.UpdateState> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
-    const { appIdentityHash, newState } = params;
+    const { appIdentityHash, newState, stateTimeout } = params;
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
@@ -78,6 +80,7 @@ export class UpdateStateController extends NodeController {
       publicIdentifier,
       responderXpub,
       newState,
+      stateTimeout,
     );
 
     return { newState };
@@ -91,6 +94,7 @@ async function runUpdateStateProtocol(
   initiatorXpub: string,
   responderXpub: string,
   newState: SolidityValueType,
+  stateTimeout: BigNumber = Zero,
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
   if (!stateChannel) {
@@ -103,5 +107,6 @@ async function runUpdateStateProtocol(
     appIdentityHash,
     newState,
     multisigAddress: stateChannel.multisigAddress,
+    stateTimeout,
   });
 }

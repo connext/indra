@@ -66,15 +66,26 @@ export class SwapRateService implements OnModuleInit {
     // check rate based on configured price oracle
     let newRate: string;
     try {
-      switch (priceOracleType) {
-        case "UNISWAP":
-          newRate = await this.getUniswapRate(from, to);
-          break;
-        default:
-          throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
-      }
+      newRate = await Promise.race([
+        new Promise(async (resolve, reject): Promise<void> => {
+          switch (priceOracleType) {
+            case "UNISWAP":
+              resolve(await this.getUniswapRate(from, to));
+              break;
+            default:
+              throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
+          }
+        }),
+        new Promise((res: any, rej: any): void => {
+          const timeout = 15_000;
+          setTimeout(
+            ():void => rej(new Error(`Took longer than ${timeout/1000}s`)),
+            timeout,
+          );
+        }),
+      ]) as string;
     } catch (e) {
-      this.log.warn(`Failed to fetch swap rate from ${priceOracleType} for ${from} to ${to}`);
+      this.log.warn(`Failed to fetch swap rate from ${priceOracleType} for ${from} to ${to}: ${e.message}`);
       if (process.env.NODE_ENV === "development") {
         newRate = await this.config.getDefaultSwapRate(from, to);
         if (!newRate) {

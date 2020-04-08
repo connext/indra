@@ -3,11 +3,10 @@ import {
   ConditionalTransferTypes,
   createRandom32ByteHexString,
   EventNames,
-  GetHashLockTransferResponse,
-  HashLockTransferParameters,
   HashLockTransferStatus,
   IConnextClient,
-  ResolveHashLockTransferParameters,
+  NodeResponses,
+  PublicParams,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
@@ -73,7 +72,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
-      } as HashLockTransferParameters),
+      } as PublicParams.HashLockTransfer),
       new Promise(res => {
         const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
         clientB.messaging.subscribe(subject, res);
@@ -100,7 +99,7 @@ describe("HashLock Transfers", () => {
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
-      } as ResolveHashLockTransferParameters);
+      } as PublicParams.ResolveHashLockTransfer);
       const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
@@ -125,7 +124,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
-      } as HashLockTransferParameters),
+      } as PublicParams.HashLockTransfer),
       new Promise(res => {
         const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
         clientB.messaging.subscribe(subject, res);
@@ -152,7 +151,7 @@ describe("HashLock Transfers", () => {
       await clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
-      } as ResolveHashLockTransferParameters);
+      } as PublicParams.ResolveHashLockTransfer);
       const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
@@ -177,7 +176,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
-      } as HashLockTransferParameters),
+      } as PublicParams.HashLockTransfer),
       new Promise(res => {
         const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
         clientB.messaging.subscribe(subject, res);
@@ -193,7 +192,7 @@ describe("HashLock Transfers", () => {
       receiverPublicIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
       meta: { foo: "bar" },
-    } as GetHashLockTransferResponse);
+    } as NodeResponses.GetHashLockTransfer);
   });
 
   it("gets a completed hashlock transfer by lock hash", async () => {
@@ -213,7 +212,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
-      } as HashLockTransferParameters),
+      } as PublicParams.HashLockTransfer),
       new Promise(res => {
         clientA.once(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, res);
       }),
@@ -237,7 +236,7 @@ describe("HashLock Transfers", () => {
       receiverPublicIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
       meta: { foo: "bar" },
-    } as GetHashLockTransferResponse);
+    } as NodeResponses.GetHashLockTransfer);
   });
 
   it("cannot resolve a hashlock transfer if pre image is wrong", async () => {
@@ -256,7 +255,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
-      } as HashLockTransferParameters),
+      } as PublicParams.HashLockTransfer),
       new Promise(res => {
         const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
         clientB.messaging.subscribe(subject, res);
@@ -268,7 +267,7 @@ describe("HashLock Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage: badPreImage,
-      } as ResolveHashLockTransferParameters),
+      } as PublicParams.ResolveHashLockTransfer),
     ).to.eventually.be.rejectedWith(/Hashlock app has not been installed/);
   });
 
@@ -288,7 +287,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
-      } as HashLockTransferParameters),
+      } as PublicParams.HashLockTransfer),
       new Promise(res => {
         const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
         clientB.messaging.subscribe(subject, res);
@@ -301,7 +300,7 @@ describe("HashLock Transfers", () => {
       clientB.resolveCondition({
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
-      } as ResolveHashLockTransferParameters),
+      } as PublicParams.ResolveHashLockTransfer),
     ).to.be.rejectedWith(/Cannot take action if timelock is expired/);
   });
 
@@ -340,7 +339,7 @@ describe("HashLock Transfers", () => {
         assetId: transfer.assetId,
         meta: { foo: "bar" },
         recipient: clientB.publicIdentifier,
-      } as HashLockTransferParameters),
+      } as PublicParams.HashLockTransfer),
       // eslint-disable-next-line no-loop-func
       new Promise(res => {
         const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
@@ -356,7 +355,7 @@ describe("HashLock Transfers", () => {
         await clientB.resolveCondition({
           conditionType: ConditionalTransferTypes.HashLockTransfer,
           preImage,
-        } as ResolveHashLockTransferParameters);
+        } as PublicParams.ResolveHashLockTransfer);
       });
 
       // Stop timer and add to sum

@@ -1,9 +1,9 @@
-import { ProtocolNames, ProtocolParams, ProtocolRoles, ProposeMiddlewareContext } from "@connext/types";
+import { AppInstanceProposal, ProtocolNames, ProtocolParams, ProtocolRoles, ProposeMiddlewareContext } from "@connext/types";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { AppInstance, AppInstanceProposal } from "../models";
+import { AppInstance } from "../models";
 import {
   Context,
   Opcode,
@@ -51,7 +51,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress,
       responderDeposit,
       responderDepositTokenAddress,
-      timeout,
+      defaultTimeout,
+      stateTimeout,
       initialState,
       outcomeType,
       meta,
@@ -70,7 +71,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
       initiatorDeposit: initiatorDeposit.toHexString(),
       responderDeposit: responderDeposit.toHexString(),
-      timeout: timeout.toHexString(),
+      defaultTimeout: defaultTimeout.toHexString(),
+      stateTimeout: stateTimeout.toHexString(),
       identityHash: appIdentityToHash({
         appDefinition,
         channelNonce: bigNumberify(preProtocolStateChannel.numProposedApps + 1).toString(),
@@ -80,7 +82,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
-        defaultTimeout: timeout.toString(),
+        defaultTimeout: defaultTimeout.toHexString(),
       }),
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
@@ -114,13 +116,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
-        defaultTimeout: timeout.toString(),
+        defaultTimeout: defaultTimeout.toHexString(),
       },
       hashOfLatestState: keccak256(
         defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
       ),
       versionNumber: 0,
-      timeout: timeout.toNumber(),
+      stateTimeout: stateTimeout.toHexString(),
     };
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
@@ -213,10 +215,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress,
       responderDeposit,
       responderDepositTokenAddress,
-      timeout,
+      defaultTimeout,
       initialState,
       outcomeType,
       meta,
+      stateTimeout,
     } = params as ProtocolParams.Propose;
 
     const {
@@ -243,9 +246,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
-        defaultTimeout: timeout.toString(),
+        defaultTimeout: defaultTimeout.toHexString(),
       }),
-      timeout: timeout.toHexString(),
+      defaultTimeout: defaultTimeout.toHexString(),
+      stateTimeout: stateTimeout.toHexString(),
       initiatorDeposit: responderDeposit.toHexString(),
       responderDeposit: initiatorDeposit.toHexString(),
       proposedByIdentifier: initiatorXpub,
@@ -277,13 +281,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
-        defaultTimeout: timeout.toString(),
+        defaultTimeout: defaultTimeout.toHexString(),
       },
       hashOfLatestState: keccak256(
         defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState]),
       ),
       versionNumber: 0,
-      timeout: timeout.toNumber(),
+      stateTimeout: stateTimeout.toHexString(),
     };
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);

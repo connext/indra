@@ -1,15 +1,18 @@
-import { MethodParams, SimpleSwapAppState, toBN } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther, parseEther } from "ethers/utils";
-
-import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
-import { xpubToAddress } from "../lib/cfCore";
+import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
 import {
   calculateExchange,
   DefaultApp,
-  SwapParameters,
-  SwapResponse,
-} from "../types";
+  MethodParams,
+  PublicParams,
+  PublicResults,
+  SimpleSwapAppState,
+  toBN,
+} from "@connext/types";
+import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
+import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber, formatEther, getAddress, parseEther } from "ethers/utils";
+
+import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import {
   invalidAddress,
   notGreaterThan,
@@ -21,9 +24,11 @@ import {
 import { AbstractController } from "./AbstractController";
 
 export class SwapController extends AbstractController {
-  public async swap(params: SwapParameters): Promise<SwapResponse> {
+  public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
     const amount = toBN(params.amount);
-    const { toAssetId, fromAssetId, swapRate } = params;
+    const { swapRate } = params;
+    const toAssetId = getAddress(params.toAssetId);
+    const fromAssetId = getAddress(params.fromAssetId);
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
@@ -91,7 +96,7 @@ export class SwapController extends AbstractController {
     const res = await this.connext.getChannel();
 
     // TODO: fix the state / types!!
-    return res as SwapResponse;
+    return res as PublicResults.Swap;
   }
 
   /////////////////////////////////
@@ -150,7 +155,8 @@ export class SwapController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: swappedAmount,
       responderDepositTokenAddress: toAssetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: SWAP_STATE_TIMEOUT,
     };
 
     const appIdentityHash = await this.proposeAndInstallLedgerApp(params);

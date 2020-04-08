@@ -1,15 +1,12 @@
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
-import { Address, Bytes32, DecString, Xpub } from "../../basic";
-import { enumify } from "../../utils";
+import { Bytes32 } from "../../basic";
 
 import { CoinTransfer } from "../funding";
 import {
   singleAssetTwoPartyCoinTransferEncoding,
   tidy,
 } from "../misc";
-
-import { HashLockTransfer } from "./common";
 
 export const HashLockTransferAppName = "HashLockTransferApp";
 
@@ -41,65 +38,3 @@ export type HashLockTransferAppAction = {
 export const HashLockTransferAppActionEncoding = tidy(`tuple(
   bytes32 preImage
 )`);
-
-////////////////////////////////////////
-// Off-chain app types
-
-// statuses
-export const HashLockTransferStatus = enumify({
-  PENDING: "PENDING",
-  EXPIRED: "EXPIRED",
-  COMPLETED: "COMPLETED",
-  FAILED: "FAILED",
-});
-export type HashLockTransferStatus =
-  (typeof HashLockTransferStatus)[keyof typeof HashLockTransferStatus];
-
-// Client Controller Params
-export type HashLockTransferParameters = {
-  conditionType: typeof HashLockTransfer;
-  amount: BigNumberish;
-  timelock: BigNumberish;
-  lockHash: Bytes32;
-  recipient: Xpub;
-  assetId?: Address;
-  meta?: object;
-};
-
-// Client Controller Response
-export type HashLockTransferResponse = {
-  appIdentityHash: Bytes32;
-};
-
-// Client Resolve Params
-export type ResolveHashLockTransferParameters = {
-  conditionType: typeof HashLockTransfer;
-  preImage: Bytes32;
-};
-
-// Client Resolve Response
-export type ResolveHashLockTransferResponse = {
-  appIdentityHash: Bytes32;
-  sender: Xpub;
-  amount: BigNumber;
-  assetId: Address;
-  meta?: object;
-};
-
-// Getter
-export type GetHashLockTransferResponse =
-  | {
-      senderPublicIdentifier: Xpub;
-      receiverPublicIdentifier?: Xpub;
-      assetId: Address;
-      amount: DecString;
-      lockHash: Bytes32;
-      status: HashLockTransferStatus;
-      meta?: any;
-    }
-  | undefined;
-
-// Event Data
-export type CreatedHashLockTransferMeta = {
-  lockHash: Bytes32;
-};

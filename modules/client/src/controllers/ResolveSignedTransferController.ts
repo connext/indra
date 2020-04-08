@@ -5,8 +5,8 @@ import {
   deBigNumberifyJson,
   EventNames,
   EventPayloads,
-  ResolveSignedTransferParameters,
-  ResolveSignedTransferResponse,
+  PublicParams,
+  PublicResults,
   SimpleSignedTransferAppAction,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
@@ -17,13 +17,13 @@ import { BigNumber } from "ethers/utils";
 
 export class ResolveSignedTransferController extends AbstractController {
   public resolveSignedTransfer = async (
-    params: ResolveSignedTransferParameters,
-  ): Promise<ResolveSignedTransferResponse> => {
+    params: PublicParams.ResolveSignedTransfer,
+  ): Promise<PublicResults.ResolveSignedTransfer> => {
     const { paymentId, data, signature } = params;
 
     this.log.info(`Resolving signed lock transfer with paymentId ${paymentId}`);
 
-    let resolveRes: ResolveSignedTransferResponse;
+    let resolveRes: PublicResults.ResolveSignedTransfer;
     const installedApps = await this.connext.getAppInstances();
     const existing = installedApps.find(
       app =>

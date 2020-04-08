@@ -3,6 +3,8 @@ import {
   CriticalStateChannelAddresses,
   StateChannelJSON,
   OutcomeType,
+  toBN,
+  stringify,
 } from "@connext/types";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 import { HashZero, AddressZero, Zero } from "ethers/constants";
@@ -267,11 +269,48 @@ export class AdminService implements OnApplicationBootstrap {
         } else {
           this.log.log(`Channel does not exist, building new: ${channelJSON.multisigAddress}`);
         }
-        await this.cfCoreStore.createStateChannel(channelJSON);
+        // handle `timeout` --> `defaultTimeout` and
+        // `latestTimeout` --> `stateTimeout` cases
+        const getProperTimeouts = (obj: any) => {
+          const isUndefinedOrNull = (val: any) => val === undefined || val === null;
+          let stateTimeoutKey = undefined;
+          for (const k of ["stateTimeout", "latestTimeout", "timeout"]) {
+            if (!isUndefinedOrNull(stateTimeoutKey)) continue;
+            if (!isUndefinedOrNull(obj[k])) {
+              stateTimeoutKey = k;
+            }
+          }
+          if (isUndefinedOrNull(stateTimeoutKey)) {
+            throw new Error(`Could not determine state timeout key for ${stringify(obj, 2)}`);
+          }
+          const stateTimeout = toBN(obj[stateTimeoutKey]).toHexString();
+
+          const defaultTimeoutKey = !isUndefinedOrNull(obj.defaultTimeout)
+            ? "defaultTimeout"
+            : "timeout";
+          
+          if (isUndefinedOrNull(obj[defaultTimeoutKey])) {
+            throw new Error(`Could not determine default timeout key for ${stringify(obj, 2)}`);
+          }
+          const defaultTimeout = toBN(obj[defaultTimeoutKey]).toHexString();
+          return { stateTimeout, defaultTimeout };
+        };
+
+        await this.cfCoreStore.createStateChannel({ 
+          ...channelJSON, 
+          freeBalanceAppInstance: {
+            ...channelJSON.freeBalanceAppInstance,
+            ...getProperTimeouts(channelJSON.freeBalanceAppInstance),
+          }, 
+        });
         for (const [, proposedApp] of channelJSON.proposedAppInstances || []) {
+          const proposal = {
+            ...proposedApp,
+            ...getProperTimeouts(proposedApp),
+          };
           await this.cfCoreStore.createAppProposal(
             channelJSON.multisigAddress,
-            proposedApp,
+            proposal,
             channelJSON.monotonicNumProposedApps,
           );
         }
@@ -279,48 +318,55 @@ export class AdminService implements OnApplicationBootstrap {
         for (const [, appInstance] of channelJSON.appInstances || []) {
           const existing = await this.cfCoreStore.getAppInstance(appInstance.identityHash);
           if (existing) {
-            await this.cfCoreStore.updateAppInstance(appInstance.identityHash, appInstance);
+            await this.cfCoreStore.updateAppInstance(appInstance.identityHash, {
+              ...appInstance,
+              ...getProperTimeouts(appInstance),
+            });
           } else {
+            const proposal = {
+              ...getProperTimeouts(appInstance),
+              abiEncodings: {
+                actionEncoding: appInstance.appInterface.actionEncoding,
+                stateEncoding: appInstance.appInterface.stateEncoding,
+              },
+              appDefinition: appInstance.appInterface.addr,
+              appSeqNo: appInstance.appSeqNo,
+              identityHash: appInstance.identityHash,
+              initialState: appInstance.latestState,
+              initiatorDeposit: "0",
+              initiatorDepositTokenAddress: AddressZero,
+              outcomeType: appInstance.outcomeType as OutcomeType,
+              proposedByIdentifier: channelJSON.userNeuteredExtendedKeys[0],
+              proposedToIdentifier: channelJSON.userNeuteredExtendedKeys[1],
+              responderDeposit: "0",
+              responderDepositTokenAddress: AddressZero,
+              meta: appInstance.meta,
+              multiAssetMultiPartyCoinTransferInterpreterParams: 
+                appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
+              singleAssetTwoPartyCoinTransferInterpreterParams: 
+                appInstance.singleAssetTwoPartyCoinTransferInterpreterParams as any,
+              twoPartyOutcomeInterpreterParams: 
+                appInstance.twoPartyOutcomeInterpreterParams as any,
+            };
             await this.cfCoreStore.createAppProposal(
               channelJSON.multisigAddress,
-              {
-                abiEncodings: {
-                  actionEncoding: appInstance.appInterface.actionEncoding,
-                  stateEncoding: appInstance.appInterface.stateEncoding,
-                },
-                appDefinition: appInstance.appInterface.addr,
-                appSeqNo: appInstance.appSeqNo,
-                identityHash: appInstance.identityHash,
-                initialState: appInstance.latestState,
-                initiatorDeposit: "0",
-                initiatorDepositTokenAddress: AddressZero,
-                outcomeType: appInstance.outcomeType as OutcomeType,
-                proposedByIdentifier: channelJSON.userNeuteredExtendedKeys[0],
-                proposedToIdentifier: channelJSON.userNeuteredExtendedKeys[1],
-                responderDeposit: "0",
-                responderDepositTokenAddress: AddressZero,
-                timeout: appInstance.latestTimeout.toString(),
-                meta: appInstance.meta,
-                multiAssetMultiPartyCoinTransferInterpreterParams:
-                  appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,
-                singleAssetTwoPartyCoinTransferInterpreterParams:
-                  appInstance.singleAssetTwoPartyCoinTransferInterpreterParams as any,
-                twoPartyOutcomeInterpreterParams:
-                  appInstance.twoPartyOutcomeInterpreterParams as any,
-              },
+              proposal,
               channelJSON.monotonicNumProposedApps,
             );
+            const app = {
+              ...appInstance,
+              ...getProperTimeouts(appInstance),
+            };
             await this.cfCoreStore.createAppInstance(
               channelJSON.multisigAddress,
-              appInstance,
-              channelJSON.freeBalanceAppInstance,
+              app,
+              {
+                ...channelJSON.freeBalanceAppInstance,
+                ...getProperTimeouts(channelJSON.freeBalanceAppInstance),
+              },
             );
           }
         }
-        await this.cfCoreStore.updateFreeBalance(
-          channelJSON.multisigAddress,
-          channelJSON.freeBalanceAppInstance,
-        );
 
         this.log.log(`Migrated channel: ${channelJSON.multisigAddress}`);
         // delete old channel record

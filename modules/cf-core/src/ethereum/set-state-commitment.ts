@@ -1,22 +1,29 @@
-import { MinimalTransaction, EthereumCommitment } from "@connext/types";
+import { MinimalTransaction, EthereumCommitment, HexString, toBN } from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
 import { verifyChannelMessage } from "@connext/crypto";
 
 import { ChallengeRegistry } from "../contracts";
 import { AppInstance } from "../models";
-import { AppIdentity, Context, SignedStateHashUpdate, SetStateCommitmentJSON } from "../types";
+import {
+  AppIdentity,
+  Context,
+  SignedAppChallengeUpdate,
+  SetStateCommitmentJSON,
+} from "../types";
 import { appIdentityToHash } from "../utils";
 
 const iface = new Interface(ChallengeRegistry.abi);
 
-export const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
-  new SetStateCommitment(
-    context.network.ChallengeRegistry,
-    appInstance.identity,
-    appInstance.hashOfLatestState,
-    appInstance.versionNumber,
-    appInstance.timeout,
-  );
+export const getSetStateCommitment = (
+  context: Context,
+  appInstance: AppInstance,
+) => new SetStateCommitment(
+  context.network.ChallengeRegistry,
+  appInstance.identity,
+  appInstance.hashOfLatestState,
+  appInstance.versionNumber,
+  appInstance.stateTimeout,
+);
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
@@ -24,7 +31,7 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly appIdentity: AppIdentity,
     public readonly appStateHash: string,
     public readonly versionNumber: number, // app nonce
-    public readonly timeout: number,
+    public readonly stateTimeout: HexString,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
     private initiatorSignature?: string,
     private responderSignature?: string,
@@ -57,7 +64,7 @@ export class SetStateCommitment implements EthereumCommitment {
         "0x19",
         appIdentityToHash(this.appIdentity),
         this.versionNumber,
-        this.timeout,
+        toBN(this.stateTimeout),
         this.appStateHash,
       ],
     );
@@ -74,7 +81,7 @@ export class SetStateCommitment implements EthereumCommitment {
       value: 0,
       data: iface.functions.setState.encode([
         this.appIdentity,
-        await this.getSignedStateHashUpdate(),
+        await this.getSignedAppChallengeUpdate(),
       ]),
     };
   }
@@ -86,7 +93,7 @@ export class SetStateCommitment implements EthereumCommitment {
       appStateHash: this.appStateHash,
       challengeRegistryAddress: this.challengeRegistryAddress,
       signatures: this.signatures,
-      timeout: this.timeout,
+      stateTimeout: this.stateTimeout,
       versionNumber: this.versionNumber,
     };
   }
@@ -97,19 +104,19 @@ export class SetStateCommitment implements EthereumCommitment {
       json.appIdentity,
       json.appStateHash,
       json.versionNumber,
-      json.timeout,
+      json.stateTimeout,
       json.appIdentityHash,
       json.signatures[0],
       json.signatures[1],
     );
   }
 
-  private async getSignedStateHashUpdate(): Promise<SignedStateHashUpdate> {
-    this.assertSignatures(true);
+  private async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
+    this.assertSignatures();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
-      timeout: this.timeout,
+      timeout: toBN(this.stateTimeout).toNumber(), // this is a *state-specific* timeout (defaults to defaultTimeout)
       signatures: this.signatures,
     };
   }

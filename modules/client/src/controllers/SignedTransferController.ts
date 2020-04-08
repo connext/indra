@@ -4,20 +4,21 @@ import {
   MethodParams,
   EventNames,
   EventPayloads,
-  SignedTransferParameters,
-  SignedTransferResponse,
+  PublicParams,
+  PublicResults,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
   toBN,
 } from "@connext/types";
+import { DEFAULT_APP_TIMEOUT, SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import { Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
 
 export class SignedTransferController extends AbstractController {
   public signedTransfer = async (
-    params: SignedTransferParameters,
-  ): Promise<SignedTransferResponse> => {
+    params: PublicParams.SignedTransfer,
+  ): Promise<PublicResults.SignedTransfer> => {
     // convert params + validate
     const amount = toBN(params.amount);
     const { meta, paymentId, signer, assetId, recipient } = params;
@@ -60,7 +61,8 @@ export class SignedTransferController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: SIGNED_TRANSFER_STATE_TIMEOUT,
     };
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 

@@ -3,10 +3,11 @@ import {
   deBigNumberifyJson,
   isBN,
   stringify,
+  HexString,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
-import { defaultAbiCoder, keccak256 } from "ethers/utils";
+import { defaultAbiCoder, keccak256, BigNumber } from "ethers/utils";
 import { Memoize } from "typescript-memoize";
 
 import { CounterfactualApp } from "../contracts";
@@ -24,6 +25,7 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
 } from "../types";
 import { appIdentityToHash } from "../utils";
+import { Zero } from "ethers/constants";
 
 /**
  * Representation of an AppInstance.
@@ -40,7 +42,7 @@ import { appIdentityToHash } from "../utils";
 
  * @property latestVersionNumber The versionNumber of the latest signed state update.
 
- * @property latestTimeout The timeout used in the latest signed state update.
+ * @property stateTimeout The timeout used in the latest signed state update.
 
  * @property multiAssetMultiPartyCoinTransferInterpreterParams The limit / maximum amount of funds
  *           to be distributed for an app where the interpreter type is COIN_TRANSFER
@@ -53,12 +55,12 @@ export class AppInstance {
   constructor(
     public readonly initiator: string, // eth addr at appSeqNp idx
     public readonly responder: string, // eth addr at appSeqNp idx
-    public readonly defaultTimeout: number,
+    public readonly defaultTimeout: HexString,
     public readonly appInterface: AppInterface,
     public readonly appSeqNo: number, // channel nonce at app proposal
     public readonly latestState: any,
     public readonly latestVersionNumber: number, // app nonce
-    public readonly latestTimeout: number,
+    public readonly stateTimeout: HexString,
     public readonly outcomeType: OutcomeType,
     public readonly multisigAddress: string,
     public readonly meta?: object,
@@ -128,7 +130,7 @@ export class AppInstance {
       deserialized.appSeqNo,
       deserialized.latestState,
       deserialized.latestVersionNumber,
-      deserialized.latestTimeout,
+      deserialized.stateTimeout,
       deserialized.outcomeType as any, // OutcomeType is enum, so gives attitude
       deserialized.multisigAddress,
       deserialized.meta,
@@ -154,7 +156,7 @@ export class AppInstance {
       appSeqNo: this.appSeqNo,
       latestState: this.latestState,
       latestVersionNumber: this.latestVersionNumber,
-      latestTimeout: this.latestTimeout,
+      stateTimeout: this.stateTimeout,
       outcomeType: this.outcomeType,
       multisigAddress: this.multisigAddress,
       meta: this.meta,
@@ -233,10 +235,10 @@ export class AppInstance {
   }
 
   public get timeout() {
-    return this.latestTimeout;
+    return this.stateTimeout;
   }
 
-  public setState(newState: SolidityValueType, timeout: number = this.defaultTimeout) {
+  public setState(newState: SolidityValueType, stateTimeout: BigNumber = Zero) {
     try {
       defaultAbiCoder.encode([this.appInterface.stateEncoding], [newState]);
     } catch (e) {
@@ -255,7 +257,7 @@ export class AppInstance {
       ...this.toJson(),
       latestState: newState,
       latestVersionNumber: this.versionNumber + 1,
-      latestTimeout: timeout,
+      stateTimeout: stateTimeout.toHexString(),
     });
   }
 

@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { SupportedApplications, WithdrawCommitment } from "@connext/apps";
+import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
   ConnextNodeStorePrefix,
@@ -7,10 +7,10 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
+  PublicParams,
   StateChannelJSON,
   stringify,
   toBN,
-  WithdrawParameters,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -129,7 +129,7 @@ export class CFCoreService {
   }
 
   async createWithdrawCommitment(
-    params: WithdrawParameters,
+    params: PublicParams.Withdraw,
     multisigAddress: string,
   ): Promise<WithdrawCommitment> {
     const amount = toBN(params.amount);
@@ -174,6 +174,7 @@ export class CFCoreService {
     responderDepositTokenAddress: string,
     app: string,
     meta: object = {},
+    stateTimeout: BigNumber = Zero,
   ): Promise<MethodResults.ProposeInstall | undefined> {
     let boundReject: (reason?: any) => void;
     let boundResolve: (reason?: any) => void;
@@ -202,7 +203,8 @@ export class CFCoreService {
       proposedToIdentifier: channel.userPublicIdentifier,
       responderDeposit,
       responderDepositTokenAddress,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout,
     };
 
     let proposeRes: MethodResults.ProposeInstall;
@@ -260,13 +262,14 @@ export class CFCoreService {
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
-  async takeAction(appIdentityHash: string, action: AppAction): Promise<MethodResults.TakeAction> {
+  async takeAction(appIdentityHash: string, action: AppAction, stateTimeout?: BigNumber): Promise<MethodResults.TakeAction> {
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_takeAction,
       parameters: {
         action,
         appIdentityHash,
+        stateTimeout,
       } as MethodParams.TakeAction,
     });
 

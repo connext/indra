@@ -4,7 +4,8 @@ import {
     OutcomeType,
   } from "@connext/types";
   
-  import { AppRegistryInfo } from "../shared";
+  import { AppRegistryInfo, DEFAULT_APP_TIMEOUT } from "../shared";
+import { Zero } from "ethers/constants";
   
   export const DepositAppRegistryInfo: AppRegistryInfo = {
     allowNodeInstall: true,
@@ -13,3 +14,5 @@ import {
     stateEncoding: DepositAppStateEncoding,
   };
   
+// timeout default values
+export const DEPOSIT_STATE_TIMEOUT = DEFAULT_APP_TIMEOUT;

@@ -11,6 +11,7 @@ import {
 
 import { Channel } from "../channel/channel.entity";
 import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
+import { HexString } from "../../../types/src/basic";
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
@@ -52,9 +53,6 @@ export class AppInstance<T extends AppState = any> {
   latestState!: T;
 
   @Column("integer")
-  latestTimeout!: number;
-
-  @Column("integer")
   latestVersionNumber!: number;
 
   @Column("text", {
@@ -92,8 +90,11 @@ export class AppInstance<T extends AppState = any> {
   @IsEthAddress()
   responderDepositTokenAddress!: string;
 
-  @Column("integer")
-  timeout!: number;
+  @Column("text")
+  defaultTimeout!: HexString;
+
+  @Column("text")
+  stateTimeout!: HexString;
 
   // assigned a value on installation not proposal
   @Column("text", { nullable: true })

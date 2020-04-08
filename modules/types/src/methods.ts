@@ -1,8 +1,9 @@
 import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
-import { AppState, DepositParameters, DepositResponse } from "./contracts";
+import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
 import { OutcomeType } from "./contracts";
+import { PublicParams, PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { MinimalTransaction } from "./commitments";
 import { enumify } from "./utils";
@@ -21,9 +22,9 @@ type CreateChannelResult = {
 
 ////////////////////////////////////////
 
-type DepositParams = DepositParameters;
+type DepositParams = PublicParams.Deposit;
 
-type DepositResult = DepositResponse;
+type DepositResult = PublicResults.Deposit;
 
 ////////////////////////////////////////
 
@@ -157,11 +158,12 @@ type ProposeInstallParams = {
   initiatorDepositTokenAddress: Address;
   responderDeposit: BigNumber;
   responderDepositTokenAddress: Address;
-  timeout: BigNumber;
+  defaultTimeout: BigNumber;
   initialState: AppState;
   proposedToIdentifier: Xpub;
   outcomeType: OutcomeType;
   meta?: Object;
+  stateTimeout?: BigNumber;
 };
 
 type ProposeInstallResult = {
@@ -181,6 +183,7 @@ type RejectInstallResult = {};
 type UpdateStateParams = {
   appIdentityHash: Bytes32;
   newState: SolidityValueType;
+  stateTimeout?: BigNumber;
 };
 
 type UpdateStateResult = {
@@ -192,6 +195,7 @@ type UpdateStateResult = {
 type TakeActionParams = {
   appIdentityHash: Bytes32;
   action: SolidityValueType;
+  stateTimeout?: BigNumber;
 };
 
 type TakeActionResult = {
@@ -271,7 +275,7 @@ export type MethodName = keyof typeof MethodNames;
 export namespace MethodParams {
   export type CreateChannel = CreateChannelParams;
   export type DeployStateDepositHolder = DeployStateDepositHolderParams;
-  export type Deposit = DepositParameters;
+  export type Deposit = DepositParams;
   export type GetAppInstanceDetails = GetAppInstanceDetailsParams;
   export type GetAppInstances = GetAppInstancesParams
   export type GetChannelAddresses = GetChannelAddressesParams;

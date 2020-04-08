@@ -56,7 +56,7 @@ export const CashoutCard = style(
       setWithdrawing(true);
       console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
       const result = await channel.withdraw({
-        amount: balance.channel.token.wad.toString(),
+        amount: balance.channel.token.wad,
         assetId: token.address,
         recipient: value,
       });
@@ -79,7 +79,7 @@ export const CashoutCard = style(
       if (balance.channel.token.wad.gt(Zero)) {
         await channel.requestCollateral(AddressZero);
         await channel.swap({
-          amount: balance.channel.token.wad.toString(),
+          amount: balance.channel.token.wad,
           fromAssetId: token.address,
           swapRate: inverse(swapRate),
           toAssetId: AddressZero,

@@ -27,7 +27,7 @@ export const inverse = (bn: any) => formatEther(toWad(toWad(`1`)).div(toWad(bn))
 
 export const calculateExchange = (amount: BigNumber, swapRate: DecString): BigNumber => {
   const [integer, fractional] = swapRate.split(".");
-  const safeSwapRate = [integer, fractional.substring(0, 18)].join(".");
+  const safeSwapRate = [integer, (fractional || "0").substring(0, 18)].join(".");
   return bigNumberify(formatEther(amount.mul(parseEther(safeSwapRate))).replace(/\.[0-9]*$/, ""));
 };
 

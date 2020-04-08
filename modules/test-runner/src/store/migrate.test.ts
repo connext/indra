@@ -5,6 +5,7 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   StoreTypes,
+  toBN,
 } from "@connext/types";
 import { Client as DBClient } from "pg";
 import { before } from "mocha";
@@ -36,7 +37,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 
 const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): StateChannelJSON => {
   const removeIsVirtualParticipantsTag = (obj: any) => {
-    const { isVirtualApp, participants, ...ret } = obj;
+    const { isVirtualApp, participants, latestTimeout, timeout, ...ret } = obj;
     return ret;
   };
   const userXpub = oldChannel.userNeuteredExtendedKeys.find(
@@ -47,15 +48,26 @@ const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): S
     monotonicNumProposedApps: oldChannel.monotonicNumProposedApps,
     multisigAddress: oldChannel.multisigAddress,
     userNeuteredExtendedKeys: oldChannel.userNeuteredExtendedKeys.sort(),
-    proposedAppInstances: oldChannel.proposedAppInstances || [],
+    proposedAppInstances: oldChannel.proposedAppInstances 
+      ? oldChannel.proposedAppInstances.map(([id, proposal]) => [
+          id,
+          {
+            ...removeIsVirtualTagAndTimeouts(proposal),
+            defaultTimeout: toBN(proposal.timeout).toHexString(),
+            stateTimeout: toBN(proposal.timeout).toHexString(),
+          },
+        ])
+      : [],
     appInstances: oldChannel.appInstances
       ? oldChannel.appInstances.map(([id, appJson]) => [
           id,
-          { 
+          {
             ...removeIsVirtualParticipantsTag(appJson),
             multisigAddress: oldChannel.multisigAddress,
             initiator: xkeyKthAddress(nodeXpub, appJson.appSeqNo),
             responder: xkeyKthAddress(userXpub, appJson.appSeqNo),
+            defaultTimeout: toBN(appJson.defaultTimeout).toHexString(),
+            stateTimeout: toBN(appJson.latestTimeout).toHexString(),
           },
         ])
       : [],
@@ -64,7 +76,9 @@ const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): S
       multiAssetMultiPartyCoinTransferInterpreterParams: null,
       singleAssetTwoPartyCoinTransferInterpreterParams: null,
       twoPartyOutcomeInterpreterParams: null,
-      ...removeIsVirtualParticipantsTag(oldChannel.freeBalanceAppInstance),
+      ...removeIsVirtualTagAndTimeouts(oldChannel.freeBalanceAppInstance),
+      defaultTimeout: toBN(oldChannel.freeBalanceAppInstance.defaultTimeout).toHexString(),
+      stateTimeout: toBN(oldChannel.freeBalanceAppInstance.latestTimeout).toHexString(),
       appInterface: {
         ...oldChannel.freeBalanceAppInstance.appInterface,
         actionEncoding: null,

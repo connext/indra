@@ -1,8 +1,6 @@
 import {
   MethodResults,
-  ChannelAppSequences,
-  GetChannelResponse,
-  ChannelRestoreResponse,
+  NodeResponses,
 } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
@@ -36,12 +34,13 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
     private readonly setupCommitmentRepository: SetupCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
-    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository:
+      ConditionalTransactionCommitmentRepository,
   ) {
     super(log, messaging);
   }
 
-  async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse | undefined> {
+  async getChannel(pubId: string, data?: unknown): Promise<NodeResponses.GetChannel | undefined> {
     return this.channelService.getByUserPublicIdentifier(pubId);
   }
 
@@ -80,7 +79,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(pubId);
   }
 
-  async getChannelInformationForRestore(pubId: string): Promise<ChannelRestoreResponse> {
+  async getChannelInformationForRestore(pubId: string): Promise<NodeResponses.ChannelRestore> {
     const channel = await this.channelService.getStateChannel(pubId);
     if (!channel) {
       throw new Error(`No channel found for user: ${pubId}`);

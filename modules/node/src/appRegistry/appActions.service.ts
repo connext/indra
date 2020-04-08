@@ -17,7 +17,6 @@ import {
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { soliditySha256 } from "ethers/utils";
-import { AddressZero, Zero } from "ethers/constants";
 
 import { LoggerService } from "../logger/logger.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -99,9 +98,12 @@ export class AppActionsService {
 
     // take action and uninstall
     this.log.log(`Unlocking transfer ${senderApp.identityHash}`);
-    await this.cfCoreService.takeAction(senderApp.identityHash, {
-      preImage: action.preImage,
-    } as SimpleLinkedTransferAppAction);
+    await this.cfCoreService.takeAction(
+      senderApp.identityHash,
+      {
+        preImage: action.preImage,
+      } as SimpleLinkedTransferAppAction,
+    );
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
     this.log.log(`Unlocked transfer ${senderApp.identityHash}`);
@@ -159,9 +161,12 @@ export class AppActionsService {
     }
 
     // take action and uninstall
-    await this.cfCoreService.takeAction(senderApp.identityHash, {
-      preImage: action.preImage,
-    } as HashLockTransferAppAction);
+    await this.cfCoreService.takeAction(
+      senderApp.identityHash,
+      {
+        preImage: action.preImage,
+      } as HashLockTransferAppAction,
+    );
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
     this.log.info(`Unlocked transfer ${senderApp.identityHash}`);
@@ -182,10 +187,13 @@ export class AppActionsService {
     }
 
     // take action and uninstall
-    await this.cfCoreService.takeAction(senderApp.identityHash, {
-      data: action.data,
-      signature: action.signature,
-    } as SimpleSignedTransferAppAction);
+    await this.cfCoreService.takeAction(
+      senderApp.identityHash, 
+      {
+        data: action.data,
+        signature: action.signature,
+      } as SimpleSignedTransferAppAction,
+    );
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
     this.log.info(`Unlocked transfer ${senderApp.identityHash}`);

@@ -1,7 +1,6 @@
 import {
   ABIEncoding,
   Address,
-  BigNumber,
   DecString,
   HexString,
   SolidityValueType,
@@ -26,7 +25,7 @@ export type AppInterface = {
   actionEncoding: ABIEncoding | undefined;
 };
 
-export type SignedStateHashUpdate = {
+export type SignedAppChallengeUpdate = {
   appStateHash: HexString;
   versionNumber: number;
   timeout: number;
@@ -38,38 +37,18 @@ export type AppABIEncodings = {
   actionEncoding: ABIEncoding | undefined;
 };
 
-export type AppInstanceInfo = {
-  identityHash: HexString;
-  appDefinition: Address;
-  abiEncodings: AppABIEncodings;
-  initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress: Address;
-  responderDeposit: BigNumber;
-  responderDepositTokenAddress: Address;
-  timeout: BigNumber;
-  proposedByIdentifier: Xpub;
-  proposedToIdentifier: Xpub;
-  // Interpreter Params
-  twoPartyOutcomeInterpreterParams?:
-    TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
-};
-
 export type AppInstanceJson = {
   identityHash: HexString;
   multisigAddress: Address;
   initiator: Address;
   responder: Address;
-  defaultTimeout: number;
+  defaultTimeout: HexString;
   appInterface: AppInterface;
   appSeqNo: number;
   latestState: SolidityValueType;
   latestVersionNumber: number;
-  latestTimeout: number;
-  outcomeType: OutcomeType;
+  stateTimeout: HexString;
+  outcomeType: string;
   meta?: object;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?:
@@ -93,7 +72,8 @@ export type AppInstanceProposal = {
   proposedToIdentifier: Xpub;
   responderDeposit: DecString;
   responderDepositTokenAddress: Address;
-  timeout: HexString;
+  defaultTimeout: HexString;
+  stateTimeout: HexString;
   meta?: object;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?:

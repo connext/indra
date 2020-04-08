@@ -1,6 +1,7 @@
+import { LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   LinkedTransferStatus,
-  ResolveLinkedTransferResponse,
+  NodeResponses,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
@@ -62,7 +63,7 @@ export class LinkedTransferService {
   async resolveLinkedTransfer(
     userPublicIdentifier: string,
     paymentId: string,
-  ): Promise<ResolveLinkedTransferResponse> {
+  ): Promise<NodeResponses.ResolveLinkedTransfer> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
@@ -139,13 +140,15 @@ export class LinkedTransferService {
       Zero,
       assetId,
       SimpleLinkedTransferAppName,
+      senderApp.meta,
+      LINKED_TRANSFER_STATE_TIMEOUT,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    const returnRes: ResolveLinkedTransferResponse = {
+    const returnRes: NodeResponses.ResolveLinkedTransfer = {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
       sender: senderApp.channel.userPublicIdentifier,
       meta: senderApp.meta,
@@ -248,9 +251,12 @@ export class LinkedTransferService {
         const preImage: string = senderApp.latestState["preImage"];
         if (preImage === HashZero) {
           // no action has been taken, but is not uninstalled
-          await this.cfCoreService.takeAction(senderApp.identityHash, {
-            preImage,
-          });
+          await this.cfCoreService.takeAction(
+            senderApp.identityHash,
+            {
+              preImage,
+            },
+          );
         }
         await this.cfCoreService.uninstallApp(senderApp.identityHash);
         unlockedAppIds.push(senderApp.identityHash);

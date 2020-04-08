@@ -4,13 +4,14 @@ import {
   deBigNumberifyJson,
   EventNames,
   EventPayloads,
-  LinkedTransferParameters,
-  LinkedTransferResponse,
   MethodParams,
+  PublicParams,
+  PublicResults,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
 } from "@connext/types";
+import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import { encryptWithPublicKey } from "@connext/crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -25,8 +26,8 @@ import { AbstractController } from "./AbstractController";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
-    params: LinkedTransferParameters,
-  ): Promise<LinkedTransferResponse> => {
+    params: PublicParams.LinkedTransfer,
+  ): Promise<PublicResults.LinkedTransfer> => {
     const amount = toBN(params.amount);
     const {
       assetId,
@@ -93,7 +94,8 @@ export class LinkedTransferController extends AbstractController {
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
-      timeout: Zero,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: LINKED_TRANSFER_STATE_TIMEOUT,
     };
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 

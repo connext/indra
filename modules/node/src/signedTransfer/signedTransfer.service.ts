@@ -1,10 +1,11 @@
+import { SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   bigNumberifyJson,
-  ResolveSignedTransferResponse,
+  Bytes32,
+  NodeResponses,
   SignedTransferStatus,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  Bytes32,
   Xpub,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
@@ -64,7 +65,7 @@ export class SignedTransferService {
   async installSignedTransferReceiverApp(
     userPublicIdentifier: Xpub,
     paymentId: Bytes32,
-  ): Promise<ResolveSignedTransferResponse> {
+  ): Promise<NodeResponses.ResolveSignedTransfer> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userPublicIdentifier,
@@ -141,6 +142,7 @@ export class SignedTransferService {
       assetId,
       SimpleSignedTransferAppName,
       senderApp.meta,
+      SIGNED_TRANSFER_STATE_TIMEOUT,
     );
 
 

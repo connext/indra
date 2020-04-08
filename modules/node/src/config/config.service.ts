@@ -143,10 +143,10 @@ export class ConfigService implements OnModuleInit {
   async getDefaultSwapRate(from: string, to: string): Promise<string | undefined> {
     const tokenAddress = await this.getTokenAddress();
     if (from === AddressZero && to === tokenAddress) {
-      return "100.00";
+      return "100.0";
     }
     if (from === tokenAddress && to === tokenAddress) {
-      return "0.005";
+      return "0.01";
     }
     return undefined;
   }

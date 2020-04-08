@@ -1,4 +1,4 @@
-import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
+import { EventNames, MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, toBN } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -17,6 +17,8 @@ import { getFirstElementInListNotEqualTo } from "../../utils";
 
 import { NodeController } from "../controller";
 import { AppInstance } from "../../models";
+import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 
 export class TakeActionController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_takeAction)
@@ -67,12 +69,17 @@ export class TakeActionController extends NodeController {
     params: MethodParams.TakeAction,
   ): Promise<MethodResults.TakeAction> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
-    const { appIdentityHash, action } = params;
+    const { appIdentityHash, action, stateTimeout } = params;
 
     const sc = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!sc) {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
+    const app = await store.getAppInstance(appIdentityHash);
+    if (!app) {
+      throw new Error(NO_APP_INSTANCE_FOR_GIVEN_HASH);
+    }
+    const defaultTimeout = app.defaultTimeout;
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
@@ -86,6 +93,7 @@ export class TakeActionController extends NodeController {
       publicIdentifier,
       responderXpub,
       action,
+      stateTimeout || toBN(defaultTimeout),
     );
 
     const appInstance = await store.getAppInstance(appIdentityHash);
@@ -125,6 +133,7 @@ async function runTakeActionProtocol(
   initiatorXpub: string,
   responderXpub: string,
   action: SolidityValueType,
+  stateTimeout: BigNumber,
 ) {
   const stateChannel = await store.getStateChannelByAppIdentityHash(appIdentityHash);
     if (!stateChannel) {
@@ -138,6 +147,7 @@ async function runTakeActionProtocol(
       appIdentityHash,
       action,
       multisigAddress: stateChannel.multisigAddress,
+      stateTimeout,
     });
   } catch (e) {
     if (e.toString().indexOf(`VM Exception`) !== -1) {

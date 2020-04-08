@@ -9,7 +9,7 @@ import {
 } from "@connext/types";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { Wallet } from "ethers";
-import { HDNode, hexlify } from "ethers/utils";
+import { HDNode, hexlify, bigNumberify } from "ethers/utils";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { randomBytes } from "crypto";
 
@@ -32,10 +32,10 @@ export const createAppInstanceJson = (
       stateEncoding: "",
     },
     appSeqNo: 0,
-    defaultTimeout: 0,
+    defaultTimeout: Zero.toHexString(),
     identityHash: generateRandomBytes32(),
     latestState: {},
-    latestTimeout: 1000,
+    stateTimeout: bigNumberify(1000).toHexString(),
     latestVersionNumber: 0,
     multisigAddress: generateRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
@@ -66,7 +66,8 @@ export const createAppInstanceProposal = (
     proposedToIdentifier: generateRandomXpub(),
     responderDeposit: "0x00",
     responderDepositTokenAddress: AddressZero,
-    timeout: "0x00",
+    defaultTimeout: "0x00",
+    stateTimeout: "0x00",
     multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
     singleAssetTwoPartyCoinTransferInterpreterParams: null,
     twoPartyOutcomeInterpreterParams: undefined,
@@ -119,7 +120,7 @@ export const createSetStateCommitmentJSON = (
     appStateHash: generateRandomBytes32(),
     challengeRegistryAddress: AddressZero,
     signatures: [generateRandomSignature(), generateRandomSignature()],
-    timeout: 0,
+    stateTimeout: Zero.toHexString(),
     versionNumber: 0,
     ...overrides,
   };

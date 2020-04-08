@@ -1,27 +1,4 @@
 import {
-  bigNumberifyJson,
-  DepositAppName,
-  EventNames,
-  EventPayloads,
-  HashLockTransferAppName,
-  ILoggerService,
-  MethodNames,
-  MethodParams,
-  SimpleLinkedTransferAppName,
-  SimpleSignedTransferAppName,
-  WithdrawAppName,
-  WithdrawAppState,
-  SimpleSignedTransferAppState,
-  deBigNumberifyJson,
-  CreatedSignedTransferMeta,
-  ConditionalTransferTypes,
-  SignedTransfer,
-  SimpleLinkedTransferAppState,
-  CreatedLinkedTransferMeta,
-  CreatedHashLockTransferMeta,
-  HashLockTransferAppState,
-} from "@connext/types";
-import {
   commonAppProposalValidation,
   SupportedApplications,
   validateSimpleLinkedTransferApp,
@@ -30,24 +7,44 @@ import {
   validateSignedTransferApp,
   validateDepositApp,
 } from "@connext/apps";
-
-import { ConnextClient } from "./connext";
-import { stringify } from "./lib";
 import {
-  CreateChannelMessage,
+  bigNumberifyJson,
+  ConditionalTransferTypes,
   ConnextEventEmitter,
+  CreateChannelMessage,
+  CreatedHashLockTransferMeta,
+  CreatedLinkedTransferMeta,
+  CreatedSignedTransferMeta,
+  deBigNumberifyJson,
   DefaultApp,
+  DepositAppName,
   DepositConfirmationMessage,
   DepositFailedMessage,
   DepositStartedMessage,
+  EventNames,
+  EventPayloads,
+  HashLockTransferAppName,
+  HashLockTransferAppState,
   IChannelProvider,
+  ILoggerService,
   InstallMessage,
+  MethodNames,
+  MethodParams,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
+  SimpleLinkedTransferAppName,
+  SimpleLinkedTransferAppState,
+  SimpleSignedTransferAppName,
+  SimpleSignedTransferAppState,
   UninstallMessage,
   UpdateStateMessage,
-} from "./types";
+  WithdrawAppName,
+  WithdrawAppState,
+} from "@connext/types";
+
+import { ConnextClient } from "./connext";
+import { stringify } from "./lib";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,
@@ -380,7 +377,7 @@ export class ConnextListener extends ConnextEventEmitter {
             transferMeta: {
               signer: initalState.signer,
             } as CreatedSignedTransferMeta,
-            type: ConditionalTransferTypes[SignedTransfer],
+            type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
             paymentId: initalState.paymentId,
             recipient: meta["recipient"],
           }) as EventPayloads.SignedTransferReceived,
@@ -402,7 +399,7 @@ export class ConnextListener extends ConnextEventEmitter {
             transferMeta: {
               lockHash: initalState.lockHash,
             } as CreatedHashLockTransferMeta,
-            type: ConditionalTransferTypes[SignedTransfer],
+            type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
             paymentId: initalState.lockHash,
             recipient: meta["recipient"],
           }) as EventPayloads.SignedTransferReceived,
@@ -424,7 +421,7 @@ export class ConnextListener extends ConnextEventEmitter {
             transferMeta: {
               encryptedPreImage: meta["encryptedPreImage"],
             } as CreatedLinkedTransferMeta,
-            type: ConditionalTransferTypes[SignedTransfer],
+            type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
             paymentId: initalState.paymentId,
             recipient: meta["recipient"],
           }) as EventPayloads.LinkedTransferReceived,

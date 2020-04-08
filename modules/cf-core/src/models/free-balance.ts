@@ -1,4 +1,4 @@
-import { stringify } from "@connext/types";
+import { stringify, toBN } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
@@ -222,12 +222,12 @@ export function createFreeBalance(
   return new AppInstance(
     /* initiator */ initiator,
     /* responder */ responder,
-    /* defaultTimeout */ freeBalanceTimeout,
+    /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
     /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
     /* latestState */ serializeFreeBalanceState(initialState),
     /* latestVersionNumber */ 0,
-    /* latestTimeout */ HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout,
+    /* latestTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
     /* multisigAddr */ multisigAddress,
   );

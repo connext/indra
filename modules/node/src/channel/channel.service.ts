@@ -2,9 +2,9 @@ import {
   ChannelAppSequences,
   maxBN,
   MethodResults,
+  NodeResponses,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
-  GetChannelResponse,
   stringify,
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
@@ -64,7 +64,7 @@ export class ChannelService {
   // repository at that level, there is some ordering weirdness
   // where an empty array is returned from the query call, then
   // the provider method returns, and the query is *ACTUALLY* executed
-  async getByUserPublicIdentifier(userPublicIdentifier: string): Promise<GetChannelResponse | undefined> {
+  async getByUserPublicIdentifier(userPublicIdentifier: string): Promise<NodeResponses.GetChannel | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     return (!channel || !channel.id) ? undefined : ({
       id: channel.id,
