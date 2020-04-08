@@ -90,7 +90,7 @@ export type ChannelProviderConfig = {
 
 export interface CFChannelProviderOptions {
   ethProvider: JsonRpcProvider;
-  signer: ChannelWallet;
+  signer: IChannelSigner;
   lockService?: ILockService;
   logger?: ILoggerService;
   messaging: any;
@@ -112,7 +112,7 @@ export type WalletTransferParams = {
   amount: DecString;
   assetId: Address;
   recipient: Address;
-}
+};
 
 export interface IRpcConnection extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -129,4 +129,4 @@ export interface IRpcConnection extends ConnextEventEmitter {
 // TODO: this interface may change,
 // important thing is it has a `signMessage` and `address` and that
 // tests pass so use ethers Wallet
-export type ChannelWallet = Wallet;
+export type IChannelSigner = Wallet;

@@ -8,7 +8,7 @@ import {
   NetworkContext,
   Message,
   ProtocolMessage,
-  ChannelWallet,
+  IChannelSigner,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -17,7 +17,7 @@ import { eventNameToImplementation, methodNameToImplementation } from "./methods
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
-import { MethodRequest, MethodResponse } from "./types"; 
+import { MethodRequest, MethodResponse } from "./types";
 import { logTime } from "./utils";
 /**
  * This class registers handlers for requests to get or set some information
@@ -37,7 +37,7 @@ export class RequestHandler {
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
     readonly provider: JsonRpcProvider,
-    readonly wallet: ChannelWallet,
+    readonly signer: IChannelSigner,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
     public readonly log: ILoggerService,
@@ -52,7 +52,7 @@ export class RequestHandler {
   }
 
   get address() {
-    return this.wallet.address;
+    return this.signer.address;
   }
 
   /**
@@ -61,10 +61,7 @@ export class RequestHandler {
    * @param method
    * @param req
    */
-  public async callMethod(
-    method: MethodName,
-    req: MethodRequest,
-  ): Promise<MethodResponse> {
+  public async callMethod(method: MethodName, req: MethodRequest): Promise<MethodResponse> {
     const start = Date.now();
     const result: MethodResponse = {
       type: req.type,
@@ -147,12 +144,12 @@ export class RequestHandler {
     return this.events.has(event);
   }
 
-  public getSigner(): ChannelWallet {
-    return this.wallet;
+  public getSigner(): IChannelSigner {
+    return this.signer;
   }
 
   public async getSignerAddress(): Promise<string> {
     const signer = this.getSigner();
-    return signer.getAddress();
+    return signer.address;
   }
 }
