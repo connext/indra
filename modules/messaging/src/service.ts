@@ -1,5 +1,5 @@
 import {
-  NodeMessage,
+  Message,
   ILoggerService,
   IMessagingService,
   MessagingConfig,
@@ -61,7 +61,7 @@ export class MessagingService implements IMessagingService {
 
   async onReceive(
     subject: string,
-    callback: (msg: NodeMessage) => void,
+    callback: (msg: Message) => void,
   ): Promise<void> {
     await this.service!.subscribe(this.prependKey(`${subject}.>`), (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
@@ -69,12 +69,12 @@ export class MessagingService implements IMessagingService {
       } else {
         const data = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
         this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-        callback(data as NodeMessage);
+        callback(data as Message);
       }
     });
   }
 
-  async send(to: string, msg: NodeMessage): Promise<void> {
+  async send(to: string, msg: Message): Promise<void> {
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
     this.service!.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
@@ -96,7 +96,7 @@ export class MessagingService implements IMessagingService {
 
   async subscribe(
     subject: string,
-    callback: (msg: NodeMessage) => void,
+    callback: (msg: Message) => void,
   ): Promise<void> {
     await this.service!.subscribe(subject, (msg: any, err?: any): void => {
       if (err || !msg || !msg.data) {
@@ -106,7 +106,7 @@ export class MessagingService implements IMessagingService {
         const parsedData = typeof msg.data === `string` ? JSON.parse(msg.data) : msg.data;
         parsedMsg.data = parsedData;
         this.log.debug(`Subscription for ${subject}: ${JSON.stringify(parsedMsg)}`);
-        callback(parsedMsg as NodeMessage);
+        callback(parsedMsg as Message);
       }
     });
   }

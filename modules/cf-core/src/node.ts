@@ -11,7 +11,7 @@ import {
   MiddlewareContext,
   MinimalTransaction,
   NetworkContext,
-  NodeMessage,
+  Message,
   ProtocolMessage,
   nullLogger,
   Opcode,
@@ -460,7 +460,7 @@ export class Node {
    * subscribed (i.e. consumers of the Node).
    */
   private registerMessagingConnection() {
-    this.messagingService.onReceive(this.publicIdentifier, async (msg: NodeMessage) => {
+    this.messagingService.onReceive(this.publicIdentifier, async (msg: Message) => {
       await this.handleReceivedMessage(msg);
       this.rpcRouter.emit(msg.type, msg, "outgoing");
     });
@@ -469,25 +469,25 @@ export class Node {
   /**
    * Messages received by the Node fit into one of three categories:
    *
-   * (a) A NodeMessage which is _not_ a ProtocolMessage;
+   * (a) A Message which is _not_ a ProtocolMessage;
    *     this is a standard received message which is handled by a named
    *     controller in the _events_ folder.
    *
-   * (b) A NodeMessage which is a ProtocolMessage _and_
+   * (b) A Message which is a ProtocolMessage _and_
    *     has no registered _ioSendDeferral_ callback. In this case, it means
    *     it will be sent to the protocol message event controller to dispatch
    *     the received message to the instruction executor.
    *
-   * (c) A NodeMessage which is a ProtocolMessage _and_
+   * (c) A Message which is a ProtocolMessage _and_
    *     _does have_ an _ioSendDeferral_, in which case the message is dispatched
    *     solely to the deffered promise's resolve callback.
    */
-  private async handleReceivedMessage(msg: NodeMessage) {
+  private async handleReceivedMessage(msg: Message) {
     if (!Object.values(EventNames).includes(msg.type)) {
       this.log.error(`Received message with unknown event type: ${msg.type}`);
     }
 
-    const isProtocolMessage = (msg: NodeMessage) => msg.type === EventNames.PROTOCOL_MESSAGE_EVENT;
+    const isProtocolMessage = (msg: Message) => msg.type === EventNames.PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: ProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);

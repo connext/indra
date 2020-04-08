@@ -1,8 +1,8 @@
 import {
   bigNumberifyJson,
-  EventEmittedMessage,
   EventNames,
   IStoreService,
+  Message,
   NetworkContext,
   ProtocolMessage,
   ProtocolName,
@@ -20,7 +20,7 @@ import RpcRouter from "../rpc-router";
 import { StateChannel, AppInstance } from "../models";
 
 /**
- * Forwards all received NodeMessages that are for the machine's internal
+ * Forwards all received Messages that are for the machine's internal
  * protocol execution directly to the protocolRunner's message handler:
  * `runProtocolWithMessage`
  */
@@ -51,7 +51,7 @@ export async function handleReceivedProtocolMessage(
   }
 
   if (protocol !== ProtocolNames.install) {
-    await emitOutgoingNodeMessage(router, outgoingEventData);
+    await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
 
@@ -60,13 +60,13 @@ export async function handleReceivedProtocolMessage(
       (outgoingEventData!.data as any).params["appIdentityHash"];
 
   if (!appIdentityHash) {
-    await emitOutgoingNodeMessage(router, outgoingEventData);
+    await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
 
   const proposal = await store.getAppProposal(appIdentityHash);
   if (!proposal) {
-    await emitOutgoingNodeMessage(router, outgoingEventData);
+    await emitOutgoingMessage(router, outgoingEventData);
     return;
   }
 
@@ -79,10 +79,10 @@ export async function handleReceivedProtocolMessage(
   await store.removeAppProposal(channel.multisigAddress, proposal.identityHash);
 
   // finally, emit message
-  await emitOutgoingNodeMessage(router, outgoingEventData);
+  await emitOutgoingMessage(router, outgoingEventData);
 }
 
-function emitOutgoingNodeMessage(router: RpcRouter, msg: EventEmittedMessage) {
+function emitOutgoingMessage(router: RpcRouter, msg: Message) {
   return router.emit(msg["type"], msg, "outgoing");
 }
 
@@ -92,7 +92,7 @@ async function getOutgoingEventDataFromProtocol(
   networkContext: NetworkContext,
   store: IStoreService,
   publicIdentifier: string,
-): Promise<EventEmittedMessage | undefined> {
+): Promise<Message | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorXpub };
 

@@ -8,7 +8,7 @@ import {
   deBigNumberifyJson,
   DepositAppState,
   DepositAppStateEncoding,
-  EventEmittedMessage,
+  Message,
   EventNames,
   InstallMessage,
   MethodNames,
@@ -193,8 +193,8 @@ export async function getDepositApps(
  * @param shouldExist array of keys to check existence of if value not known
  * for `expected` (e.g `appIdentityHash`s)
  */
-export function assertNodeMessage(
-  msg: EventEmittedMessage,
+export function assertMessage(
+  msg: Message,
   expected: any, // should be partial of nested types
   shouldExist: string[] = [],
 ): void {
@@ -222,7 +222,7 @@ export function assertProposeMessage(
     responderXpub: proposedToIdentifier,
     ...emittedParams
   } = params;
-  assertNodeMessage(
+  assertMessage(
     msg,
     {
       from: senderId,
@@ -243,7 +243,7 @@ export function assertInstallMessage(
   msg: InstallMessage,
   appIdentityHash: string,
 ) {
-  assertNodeMessage(msg, {
+  assertMessage(msg, {
     from: senderId,
     type: `INSTALL_EVENT`,
     data: {
@@ -664,7 +664,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
   const [multisigAddress]: any = await Promise.all([
     new Promise(async resolve => {
       nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
-        assertNodeMessage(
+        assertMessage(
           msg,
           {
             from: nodeA.publicIdentifier,
@@ -682,7 +682,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
     }),
     new Promise(resolve => {
       nodeA.once(EventNames.CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
-        assertNodeMessage(
+        assertMessage(
           msg,
           {
             from: nodeA.publicIdentifier,

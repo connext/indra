@@ -6,7 +6,7 @@ import {
   IStoreService,
   MethodName,
   NetworkContext,
-  NodeMessage,
+  Message,
   ProtocolMessage,
 } from "@connext/types";
 import { Signer } from "ethers";
@@ -105,7 +105,7 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: EventNames, msg: NodeMessage) {
+  public async callEvent(event: EventNames, msg: Message) {
     const start = Date.now();
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);

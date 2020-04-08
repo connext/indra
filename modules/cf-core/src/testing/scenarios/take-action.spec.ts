@@ -12,7 +12,7 @@ import {
   constructTakeActionRpc,
   createChannel,
   installApp,
-  assertNodeMessage,
+  assertMessage,
 } from "../utils";
 
 const { TicTacToeApp } = global["network"] as NetworkContextForTestSuite;
@@ -29,10 +29,10 @@ function confirmMessages(
     data: expectedData,
   };
   // initiator.once(EventNames.UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
-  //   assertNodeMessage(msg, expected);
+  //   assertMessage(msg, expected);
   // });
   responder.once(EventNames.UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
-    assertNodeMessage(msg, expected);
+    assertMessage(msg, expected);
   });
 }
 

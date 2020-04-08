@@ -7,7 +7,7 @@ import { ProtocolName, ProtocolParam } from "./protocol";
 ////////////////////////////////////////
 // Message Contents
 
-export type NodeMessage<T = any> = {
+export type Message<T = any> = {
   data: T;
   from: Xpub;
   type: EventNames;
@@ -24,31 +24,21 @@ export type ProtocolMessageData = {
   customData: { [key: string]: any };
 };
 
-export type CreateChannelMessage = NodeMessage<MethodResults.CreateChannel>;
-export type DepositConfirmationMessage = NodeMessage<MethodParams.Deposit>;
-export type DepositFailedMessage = NodeMessage<{ params: MethodParams.Deposit; errors: string[]; }>;
-export type DepositStartedMessage = NodeMessage<{ value: DecString; txHash: Bytes32; }>;
-export type InstallMessage = NodeMessage<{ params: MethodParams.Install; }>;
-export type ProtocolMessage = NodeMessage<ProtocolMessageData>;
-export type ProposeMessage = NodeMessage<{
+type ProposeInstallMessageData = {
   params: MethodParams.ProposeInstall;
   appIdentityHash: Bytes32;
-}>;
-export type RejectProposalMessage = NodeMessage<{ appIdentityHash: Bytes32; }>;
-export type UninstallMessage = NodeMessage<EventPayloads.Uninstall>;
-export type UpdateStateMessage = NodeMessage<EventPayloads.UpdateState>;
+}
 
-export type EventEmittedMessage =
-  | CreateChannelMessage
-  | DepositConfirmationMessage
-  | DepositFailedMessage
-  | DepositStartedMessage
-  | InstallMessage
-  | ProtocolMessage
-  | ProposeMessage
-  | RejectProposalMessage
-  | UninstallMessage
-  | UpdateStateMessage;
+export type CreateChannelMessage = Message<MethodResults.CreateChannel>;
+export type DepositConfirmationMessage = Message<MethodParams.Deposit>;
+export type DepositFailedMessage = Message<{ params: MethodParams.Deposit; errors: string[]; }>;
+export type DepositStartedMessage = Message<{ value: DecString; txHash: Bytes32; }>;
+export type InstallMessage = Message<{ params: MethodParams.Install; }>;
+export type ProtocolMessage = Message<ProtocolMessageData>;
+export type ProposeMessage = Message<ProposeInstallMessageData>;
+export type RejectProposalMessage = Message<{ appIdentityHash: Bytes32; }>;
+export type UninstallMessage = Message<EventPayloads.Uninstall>;
+export type UpdateStateMessage = Message<EventPayloads.UpdateState>;
 
 ////////////////////////////////////////
 // Messaging Service
@@ -67,7 +57,7 @@ export interface IMessagingService {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   flush(): Promise<void>;
-  onReceive(subject: string, callback: (msg: NodeMessage) => void): Promise<void>;
+  onReceive(subject: string, callback: (msg: Message) => void): Promise<void>;
   publish(subject: string, data: any): Promise<void>;
   request(
     subject: string,
@@ -75,7 +65,7 @@ export interface IMessagingService {
     data: object,
     callback?: (response: any) => any,
   ): Promise<any>;
-  send(to: string, msg: NodeMessage): Promise<void>;
-  subscribe(subject: string, callback: (msg: NodeMessage) => void): Promise<void>;
+  send(to: string, msg: Message): Promise<void>;
+  subscribe(subject: string, callback: (msg: Message) => void): Promise<void>;
   unsubscribe(subject: string): Promise<void>;
 }
