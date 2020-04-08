@@ -12,7 +12,6 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
-import { Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
 export const ChannelMethods = enumify({
@@ -128,7 +127,7 @@ export interface IRpcConnection extends ConnextEventEmitter {
 
 export interface IChannelSigner {
   privateKey: string;
-  publicKey: string;
-  address: string;
+  identifier: ChannelPubId;
+  address: Address;
   signMessage(message: string): Promise<string>;
 }
