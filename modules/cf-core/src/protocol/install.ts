@@ -153,10 +153,15 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     );
 
-    conditionalTxCommitment.signatures = [
-      mySignatureOnConditionalTransaction,
-      counterpartySignatureOnConditionalTransaction,
-    ];
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderFreeBalanceAddress;
+    await conditionalTxCommitment.addSignatures(
+      isChannelInitiator 
+        ? mySignatureOnConditionalTransaction as any
+        : counterpartySignatureOnConditionalTransaction,
+      isChannelInitiator
+        ? counterpartySignatureOnConditionalTransaction
+        : mySignatureOnConditionalTransaction as any,
+    );
 
     // 12ms
     yield [
@@ -182,10 +187,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateDataHash];
 
     // add signatures to commitment
-    freeBalanceUpdateData.signatures = [
-      mySignatureOnFreeBalanceStateUpdate,
-      counterpartySignatureOnFreeBalanceStateUpdate,
-    ];
+    await freeBalanceUpdateData.addSignatures(
+      isChannelInitiator 
+        ? mySignatureOnFreeBalanceStateUpdate as any
+        : counterpartySignatureOnFreeBalanceStateUpdate,
+      isChannelInitiator 
+        ? counterpartySignatureOnFreeBalanceStateUpdate
+        : mySignatureOnFreeBalanceStateUpdate as any,
+    );
 
     // 10ms
     yield [
@@ -314,10 +323,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
-    conditionalTxCommitment.signatures = [
-      mySignatureOnConditionalTransaction,
-      counterpartySignatureOnConditionalTransaction,
-    ];
+    // add signatures to commitment
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== initiatorFreeBalanceAddress;
+    await conditionalTxCommitment.addSignatures(
+      isChannelInitiator 
+        ? mySignatureOnConditionalTransaction as any
+        : counterpartySignatureOnConditionalTransaction,
+      isChannelInitiator
+        ? counterpartySignatureOnConditionalTransaction
+        : mySignatureOnConditionalTransaction as any,
+    );
 
     // 12ms
     yield [
@@ -359,10 +374,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // add signature
-    freeBalanceUpdateData.signatures = [
-      mySignatureOnFreeBalanceStateUpdate,
-      counterpartySignatureOnFreeBalanceStateUpdate,
-    ];
+    await freeBalanceUpdateData.addSignatures(
+      isChannelInitiator 
+        ? mySignatureOnFreeBalanceStateUpdate as any
+        : counterpartySignatureOnFreeBalanceStateUpdate,
+      isChannelInitiator 
+        ? counterpartySignatureOnFreeBalanceStateUpdate
+        : mySignatureOnFreeBalanceStateUpdate as any,
+    );
 
     // 13ms
     yield [
@@ -419,7 +438,6 @@ function computeStateChannelTransition(
     responderDepositTokenAddress,
     initiatorXpub,
     responderXpub,
-    participants,
     initialState,
     appInterface,
     defaultTimeout,
@@ -428,6 +446,8 @@ function computeStateChannelTransition(
     outcomeType,
     disableLimit,
     meta,
+    appInitiatorAddress,
+    appResponderAddress,
   } = params;
 
   const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorXpub);
@@ -449,7 +469,8 @@ function computeStateChannelTransition(
   );
 
   const appInstanceToBeInstalled = new AppInstance(
-    /* participants */ participants,
+    /* initiator */ appInitiatorAddress,
+    /* responder */ appResponderAddress,
     /* defaultTimeout */ defaultTimeout.toHexString(),
     /* appInterface */ appInterface,
     /* appSeqNo */ appSeqNo,
@@ -486,7 +507,10 @@ function computeStateChannelTransition(
     };
   }
 
-  return stateChannel.installApp(appInstanceToBeInstalled, tokenIndexedBalanceDecrement);
+  return stateChannel.installApp(
+    appInstanceToBeInstalled,
+    tokenIndexedBalanceDecrement,
+  );
 }
 
 /**

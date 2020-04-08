@@ -24,14 +24,15 @@ export class GetStateDepositHolderAddressController extends NodeController {
     // the `getMultisigAddressWithCounterparty` function will default
     // to using any existing multisig address for the provided
     // owners before creating one
-    const { multisigAddress: storedMultisig } =
-      await store.getStateChannelByOwners(owners) || { multisigAddress: undefined };
+    const { multisigAddress: storedMultisig } = await store
+      .getStateChannelByOwners(owners) || { multisigAddress: undefined };
     if (!networkContext.provider && !storedMultisig) {
       throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
     }
     const address = storedMultisig || await getCreate2MultisigAddress(
-      owners,
-      {
+      owners[0],
+      owners[1],
+      { 
         proxyFactory: networkContext.ProxyFactory,
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },

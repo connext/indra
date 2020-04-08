@@ -40,7 +40,8 @@ export type AppABIEncodings = {
 export type AppInstanceJson = {
   identityHash: HexString;
   multisigAddress: Address;
-  participants: Address[];
+  initiator: Address;
+  responder: Address;
   defaultTimeout: HexString;
   appInterface: AppInterface;
   appSeqNo: number;

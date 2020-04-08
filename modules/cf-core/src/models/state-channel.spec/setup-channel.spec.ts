@@ -25,7 +25,8 @@ describe("StateChannel::setupChannel", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs,
+      xpubs[0],
+      xpubs[1],
     );
   });
 
@@ -39,7 +40,7 @@ describe("StateChannel::setupChannel", () => {
 
   it("should not alter any of the base properties", () => {
     expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userNeuteredExtendedKeys).toBe(xpubs);
+    expect(sc.userNeuteredExtendedKeys).toMatchObject(xpubs);
   });
 
   it("should have bumped the sequence number", () => {
@@ -77,7 +78,7 @@ describe("StateChannel::setupChannel", () => {
     });
 
     it("should use the multisig owners as the participants", () => {
-      expect(fb.participants).toEqual(sc.multisigOwners);
+      expect([fb.initiator, fb.responder]).toEqual(sc.multisigOwners);
     });
 
     it("should use the FreeBalanceAppApp as the app target", () => {

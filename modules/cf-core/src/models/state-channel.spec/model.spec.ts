@@ -9,27 +9,28 @@ import { StateChannel } from "../state-channel";
 describe("StateChannel", () => {
   it("should be able to instantiate", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const xpubs = getRandomExtendedPubKeys(2);
+    const [initiator, responder] = getRandomExtendedPubKeys(2);
 
     const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
     const sc = new StateChannel(
       multisigAddress,
       { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
-      xpubs,
+      initiator,
+      responder,
     );
 
     expect(sc).not.toBe(null);
     expect(sc).not.toBe(undefined);
     expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userNeuteredExtendedKeys).toBe(xpubs);
+    expect(sc.userNeuteredExtendedKeys).toMatchObject([initiator, responder]);
     expect(sc.numActiveApps).toBe(0);
     expect(sc.numProposedApps).toBe(0);
   });
 
   describe("should be able to write a channel to a json", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const xpubs = getRandomExtendedPubKeys(2);
+    const [initiator, responder] = getRandomExtendedPubKeys(2);
 
     let sc: StateChannel;
     let json: StateChannelJSON;
@@ -42,7 +43,8 @@ describe("StateChannel", () => {
         IdentityApp,
         { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
         multisigAddress,
-        xpubs,
+        initiator,
+        responder,
       );
       json = sc.toJson();
     });
@@ -60,7 +62,8 @@ describe("StateChannel", () => {
     });
 
     it("should not change the user xpubs", () => {
-      expect(json.userNeuteredExtendedKeys).toEqual(xpubs);
+      expect(json.userNeuteredExtendedKeys[0]).toEqual(initiator);
+      expect(json.userNeuteredExtendedKeys[1]).toEqual(responder);
     });
 
     it("should not change the multisig address", () => {
@@ -77,7 +80,7 @@ describe("StateChannel", () => {
 
   describe("should be able to rehydrate from json", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const xpubs = getRandomExtendedPubKeys(2);
+    const [initiator, responder] = getRandomExtendedPubKeys(2);
 
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
@@ -91,7 +94,8 @@ describe("StateChannel", () => {
         IdentityApp,
         { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
         multisigAddress,
-        xpubs,
+        initiator,
+        responder,
       );
       json = sc.toJson();
       rehydrated = StateChannel.fromJson(json);
@@ -122,7 +126,8 @@ describe("StateChannel", () => {
     });
 
     it("should not change the user xpubs", () => {
-      expect(rehydrated.userNeuteredExtendedKeys).toEqual(sc.userNeuteredExtendedKeys);
+      expect(rehydrated.userNeuteredExtendedKeys[0]).toEqual(initiator);
+      expect(rehydrated.userNeuteredExtendedKeys[1]).toEqual(responder);
     });
 
     it("should not change the multisig address", () => {

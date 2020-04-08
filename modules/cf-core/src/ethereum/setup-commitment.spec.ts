@@ -39,7 +39,8 @@ describe("SetupCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    [interaction.sender, interaction.receiver],
+    interaction.sender,
+    interaction.receiver,
   );
 
   const freeBalance = stateChannel.freeBalance;

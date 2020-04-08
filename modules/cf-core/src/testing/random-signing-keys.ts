@@ -1,14 +1,13 @@
 import { HDNode, SigningKey } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
-import { createRandom32ByteHexString, sortByAddress } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/types";
 
 import { computeRandomExtendedPrvKey } from "../xkeys";
 
-export function getSortedRandomSigningKeys(length: number) {
+export function getRandomSigningKeys(length: number) {
   return Array(length)
     .fill(0)
-    .map(_ => new SigningKey(createRandom32ByteHexString()))
-    .sort((a, b) => sortByAddress(a.address, b.address));
+    .map(_ => new SigningKey(createRandom32ByteHexString()));
 }
 
 export function extendedPrvKeyToExtendedPubKey(extendedPrvKey: string): string {
