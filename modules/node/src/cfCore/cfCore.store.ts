@@ -241,7 +241,7 @@ export class CFCoreStore implements IStoreService {
       throw new Error(`No app found when trying to update. AppId: ${identityHash}`);
     }
 
-    if (app.type !== AppType.INSTANCE) {
+    if (app.type !== AppType.INSTANCE && app.type !== AppType.FREE_BALANCE) {
       throw new Error(`App is not of correct type, type: ${app.type}`);
     }
 
