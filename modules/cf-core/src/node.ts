@@ -12,10 +12,10 @@ import {
   MinimalTransaction,
   NetworkContext,
   NodeMessage,
-  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
   nullLogger,
   Opcode,
-  ProtocolMessage,
+  ProtocolMessageData,
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
@@ -62,7 +62,7 @@ export class Node {
 
   private readonly protocolRunner: ProtocolRunner;
 
-  private readonly ioSendDeferrals = new Map<string, Deferred<NodeMessageWrappedProtocolMessage>>();
+  private readonly ioSendDeferrals = new Map<string, Deferred<ProtocolMessage>>();
 
   /**
    * These properties don't have initializers in the constructor, since they must be initialized
@@ -212,7 +212,7 @@ export class Node {
       return signChannelMessage(privateKey, commitmentHash);
     });
 
-    protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {
+    protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessageData]) => {
       const [data] = args;
       const fromXpub = this.publicIdentifier;
       const to = data.toXpub;
@@ -221,14 +221,14 @@ export class Node {
         data,
         from: fromXpub,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
-      } as NodeMessageWrappedProtocolMessage);
+      } as ProtocolMessage);
     });
 
-    protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [ProtocolMessage]) => {
+    protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [ProtocolMessageData]) => {
       const [data] = args;
       const to = data.toXpub;
 
-      const deferral = new Deferred<NodeMessageWrappedProtocolMessage>();
+      const deferral = new Deferred<ProtocolMessage>();
 
       this.ioSendDeferrals.set(data.processID, deferral);
 
@@ -238,12 +238,12 @@ export class Node {
         data,
         from: this.publicIdentifier,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
-      } as NodeMessageWrappedProtocolMessage);
+      } as ProtocolMessage);
 
       // 90 seconds is the default lock acquiring time time
       const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
 
-      if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
+      if (!msg || !("data" in (msg as ProtocolMessage))) {
         throw new Error(
           `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`,
         );
@@ -255,7 +255,7 @@ export class Node {
       // per counterparty at the moment.
       this.ioSendDeferrals.delete(data.processID);
 
-      return (msg as NodeMessageWrappedProtocolMessage).data;
+      return (msg as ProtocolMessage).data;
     });
 
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
@@ -469,16 +469,16 @@ export class Node {
   /**
    * Messages received by the Node fit into one of three categories:
    *
-   * (a) A NodeMessage which is _not_ a NodeMessageWrappedProtocolMessage;
+   * (a) A NodeMessage which is _not_ a ProtocolMessage;
    *     this is a standard received message which is handled by a named
    *     controller in the _events_ folder.
    *
-   * (b) A NodeMessage which is a NodeMessageWrappedProtocolMessage _and_
+   * (b) A NodeMessage which is a ProtocolMessage _and_
    *     has no registered _ioSendDeferral_ callback. In this case, it means
    *     it will be sent to the protocol message event controller to dispatch
    *     the received message to the instruction executor.
    *
-   * (c) A NodeMessage which is a NodeMessageWrappedProtocolMessage _and_
+   * (c) A NodeMessage which is a ProtocolMessage _and_
    *     _does have_ an _ioSendDeferral_, in which case the message is dispatched
    *     solely to the deffered promise's resolve callback.
    */
@@ -489,10 +489,10 @@ export class Node {
 
     const isProtocolMessage = (msg: NodeMessage) => msg.type === EventNames.PROTOCOL_MESSAGE_EVENT;
 
-    const isExpectingResponse = (msg: NodeMessageWrappedProtocolMessage) =>
+    const isExpectingResponse = (msg: ProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);
-    if (isProtocolMessage(msg) && isExpectingResponse(msg as NodeMessageWrappedProtocolMessage)) {
-      await this.handleIoSendDeferral(msg as NodeMessageWrappedProtocolMessage);
+    if (isProtocolMessage(msg) && isExpectingResponse(msg as ProtocolMessage)) {
+      await this.handleIoSendDeferral(msg as ProtocolMessage);
     } else if (this.requestHandler.isLegacyEvent(msg.type)) {
       await this.requestHandler.callEvent(msg.type, msg);
     } else {
@@ -500,7 +500,7 @@ export class Node {
     }
   }
 
-  private async handleIoSendDeferral(msg: NodeMessageWrappedProtocolMessage) {
+  private async handleIoSendDeferral(msg: ProtocolMessage) {
     const key = msg.data.processID;
 
     if (!this.ioSendDeferrals.has(key)) {

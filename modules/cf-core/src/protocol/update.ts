@@ -1,6 +1,6 @@
 import {
   Opcode,
-  ProtocolMessage,
+  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -102,7 +102,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: initiatorSignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
     logTime(log, substart, `Received responder's sig`);
 
@@ -221,7 +221,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: responderSignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
     logTime(log, start, `Finished responding`);
   },

@@ -1,7 +1,7 @@
 import {
   ILoggerService,
   Opcode,
-  ProtocolMessage,
+  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -104,7 +104,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: responderXpub,
         customData: { signature },
         seq: 1,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     checkpoint = Date.now();
@@ -225,7 +225,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: responderSignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 100ms

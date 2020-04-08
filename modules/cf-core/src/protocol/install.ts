@@ -3,7 +3,7 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   Opcode,
   OutcomeType,
-  ProtocolMessage,
+  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -142,7 +142,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignatureOnConditionalTransaction,
         },
         seq: 1,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 7ms
@@ -215,7 +215,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
           signature: mySignatureOnFreeBalanceStateUpdate,
         },
         seq: UNASSIGNED_SEQ_NO,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
     
     // 335ms
@@ -347,7 +347,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
           signature2: mySignatureOnFreeBalanceStateUpdate,
         },
         seq: UNASSIGNED_SEQ_NO,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 7ms
@@ -389,7 +389,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         dataPersisted: true,
       },
       seq: UNASSIGNED_SEQ_NO,
-    } as ProtocolMessage;
+    } as ProtocolMessageData;
 
     // 0ms
     yield [IO_SEND, m4];

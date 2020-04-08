@@ -4,7 +4,7 @@ import {
   EventNames,
   IStoreService,
   NetworkContext,
-  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
@@ -26,11 +26,11 @@ import { StateChannel, AppInstance } from "../models";
  */
 export async function handleReceivedProtocolMessage(
   requestHandler: RequestHandler,
-  msg: NodeMessageWrappedProtocolMessage,
+  msg: ProtocolMessage,
 ) {
   const { protocolRunner, store, router, networkContext, publicIdentifier } = requestHandler;
 
-  const { data } = bigNumberifyJson(msg) as NodeMessageWrappedProtocolMessage;
+  const { data } = bigNumberifyJson(msg) as ProtocolMessage;
 
   const { protocol, seq, params } = data;
 

@@ -7,7 +7,7 @@ import {
   MethodResult,
   NetworkContext,
   Opcode,
-  ProtocolMessage,
+  ProtocolMessageData,
 } from "@connext/types";
 
 export const PersistAppType = enumify({
@@ -46,7 +46,7 @@ export type Instruction = Function | Opcode;
 export interface Context {
   store: IStoreService;
   log: ILoggerService;
-  message: ProtocolMessage;
+  message: ProtocolMessageData;
   network: NetworkContext;
 }
 

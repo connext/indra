@@ -4,7 +4,7 @@ import {
   IStoreService,
   NetworkContext,
   Opcode,
-  ProtocolMessage,
+  ProtocolMessageData,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
@@ -45,7 +45,7 @@ export class ProtocolRunner {
   /// Starts executing a protocol in response to a message received. This
   /// function should not be called with messages that are waited for by
   /// `IO_SEND_AND_WAIT`
-  public async runProtocolWithMessage(msg: ProtocolMessage) {
+  public async runProtocolWithMessage(msg: ProtocolMessageData) {
     const protocol = getProtocolFromName(msg.protocol);
     const step = protocol[msg.seq];
     if (typeof step === "undefined") {
@@ -79,7 +79,7 @@ export class ProtocolRunner {
 
   private async runProtocol(
     instruction: (context: Context) => AsyncIterableIterator<any>,
-    message: ProtocolMessage,
+    message: ProtocolMessageData,
   ): Promise<void> {
     const context: Context = {
       log: this.log,

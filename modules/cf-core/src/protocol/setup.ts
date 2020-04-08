@@ -1,6 +1,6 @@
 import {
   Opcode,
-  ProtocolMessage,
+  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -92,7 +92,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setupSignature: mySetupSignature,
           setStateSignature: mySignatureOnFreeBalanceState,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
     logTime(log, substart, `Received responder's sig`);
 
@@ -225,7 +225,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
           setupSignature: mySetupSignature,
           setStateSignature: mySignatureOnFreeBalanceState,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
     logTime(log, start, `Finished responding`);
   },

@@ -15,7 +15,7 @@ import {
   DepositFailedMessage,
   DepositStartedMessage,
   InstallMessage,
-  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
   UninstallMessage,
@@ -115,7 +115,7 @@ export default class ListenerService implements OnModuleInit {
           data.from,
         );
       },
-      PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
+      PROTOCOL_MESSAGE_EVENT: (data: ProtocolMessage): void => {
         this.logEvent(PROTOCOL_MESSAGE_EVENT, data);
       },
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {

@@ -1,13 +1,19 @@
 import { EventNames, EventPayloads } from "./events";
-import { DecString, Xpub } from "./basic";
+import { Bytes32, DecString, Xpub } from "./basic";
 import { ILoggerService } from "./logger";
 import { MethodResults, MethodParams } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
 
 ////////////////////////////////////////
-// Message Metadata & Wrappers
+// Message Contents
 
-export type ProtocolMessage = {
+export type NodeMessage<T = any> = {
+  data: T;
+  from: Xpub;
+  type: EventNames;
+};
+
+export type ProtocolMessageData = {
   processID: string; // uuid?
   protocol: ProtocolName;
   params?: ProtocolParam;
@@ -18,78 +24,31 @@ export type ProtocolMessage = {
   customData: { [key: string]: any };
 };
 
-export type NodeMessage = {
-  from: Xpub;
-  type: EventNames;
-};
-
-////////////////////////////////////////
-// Message Contents
-
-export interface NodeMessageWrappedProtocolMessage extends NodeMessage {
-  data: ProtocolMessage;
-}
-
-export interface CreateChannelMessage extends NodeMessage {
-  data: MethodResults.CreateChannel;
-}
-
-export interface DepositConfirmationMessage extends NodeMessage {
-  data: MethodParams.Deposit;
-}
-
-export interface DepositFailedMessage extends NodeMessage {
-  data: {
-    params: MethodParams.Deposit;
-    errors: string[];
-  };
-}
-
-export interface DepositStartedMessage extends NodeMessage {
-  data: {
-    value: DecString;
-    txHash: string;
-  };
-}
-
-export interface InstallMessage extends NodeMessage {
-  data: {
-    params: MethodParams.Install;
-  };
-}
-
-export interface ProposeMessage extends NodeMessage {
-  data: {
-    params: MethodParams.ProposeInstall;
-    appIdentityHash: string;
-  };
-}
-
-export interface RejectProposalMessage extends NodeMessage {
-  data: {
-    appIdentityHash: string;
-  };
-}
-
-export interface UninstallMessage extends NodeMessage {
-  data: EventPayloads.Uninstall;
-}
-
-export interface UpdateStateMessage extends NodeMessage {
-  data: EventPayloads.UpdateState;
-}
+export type CreateChannelMessage = NodeMessage<MethodResults.CreateChannel>;
+export type DepositConfirmationMessage = NodeMessage<MethodParams.Deposit>;
+export type DepositFailedMessage = NodeMessage<{ params: MethodParams.Deposit; errors: string[]; }>;
+export type DepositStartedMessage = NodeMessage<{ value: DecString; txHash: Bytes32; }>;
+export type InstallMessage = NodeMessage<{ params: MethodParams.Install; }>;
+export type ProtocolMessage = NodeMessage<ProtocolMessageData>;
+export type ProposeMessage = NodeMessage<{
+  params: MethodParams.ProposeInstall;
+  appIdentityHash: Bytes32;
+}>;
+export type RejectProposalMessage = NodeMessage<{ appIdentityHash: Bytes32; }>;
+export type UninstallMessage = NodeMessage<EventPayloads.Uninstall>;
+export type UpdateStateMessage = NodeMessage<EventPayloads.UpdateState>;
 
 export type EventEmittedMessage =
+  | CreateChannelMessage
+  | DepositConfirmationMessage
+  | DepositFailedMessage
+  | DepositStartedMessage
+  | InstallMessage
+  | ProtocolMessage
+  | ProposeMessage
   | RejectProposalMessage
   | UninstallMessage
-  | UpdateStateMessage
-  | InstallMessage
-  | ProposeMessage
-  | DepositConfirmationMessage
-  | DepositStartedMessage
-  | DepositFailedMessage
-  | CreateChannelMessage
-  | NodeMessageWrappedProtocolMessage;
+  | UpdateStateMessage;
 
 ////////////////////////////////////////
 // Messaging Service

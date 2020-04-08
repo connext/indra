@@ -7,7 +7,7 @@ import {
   MethodName,
   NetworkContext,
   NodeMessage,
-  NodeMessageWrappedProtocolMessage,
+  ProtocolMessage,
 } from "@connext/types";
 import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -134,7 +134,7 @@ export class RequestHandler {
       `Event ${
         event !== EventNames.PROTOCOL_MESSAGE_EVENT
           ? event
-          : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
+          : `for ${(msg as ProtocolMessage).data.protocol} protocol`
       } was processed`,
     );
     this.router.emit(event, msg);

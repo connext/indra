@@ -1,6 +1,6 @@
 import {
   Opcode,
-  ProtocolMessage,
+  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -104,7 +104,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: initiatorSignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 10ms
@@ -217,7 +217,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: responderSignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     // 149ms

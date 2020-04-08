@@ -2,7 +2,7 @@ import {
   AppInstanceProposal,
   Opcode,
   ProposeMiddlewareContext,
-  ProtocolMessage,
+  ProtocolMessageData,
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
@@ -147,7 +147,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: {
         signature: initiatorSignatureOnInitialState,
       },
-    } as ProtocolMessage;
+    } as ProtocolMessageData;
 
     substart = Date.now();
 
@@ -158,7 +158,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const {
       customData: { signature: responderSignatureOnInitialState },
-    } = m2! as ProtocolMessage;
+    } = m2! as ProtocolMessageData;
 
     substart = Date.now();
     await assertIsValidSignature(
@@ -321,7 +321,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         customData: {
           signature: responderSignatureOnInitialState,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
     setStateCommitment.signatures = [
