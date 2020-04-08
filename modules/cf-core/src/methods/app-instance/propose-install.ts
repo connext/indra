@@ -3,10 +3,11 @@ import {
   MethodParams,
   MethodResults,
   ProtocolNames,
+  getChainIdFromIdentifier,
+  getAssetId,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import {
   NULL_INITIAL_STATE_FOR_PROPOSAL, NO_STATE_CHANNEL_FOR_OWNERS,
 } from "../../errors";
@@ -48,6 +49,9 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
   ): Promise<void> {
     const { initialState } = params;
+    const { publicIdentifier } = requestHandler;
+
+    const chainId = getChainIdFromIdentifier(publicIdentifier);
 
     if (!initialState) {
       throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
@@ -59,10 +63,10 @@ export class ProposeInstallAppInstanceController extends NodeController {
     } = params;
 
     const initiatorDepositTokenAddress =
-      initiatorDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+      initiatorDepositTokenAddressParam || getAssetId(chainId);
 
     const responderDepositTokenAddress =
-      responderDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+      responderDepositTokenAddressParam || getAssetId(chainId);
 
     params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
     params.responderDepositTokenAddress = responderDepositTokenAddress;
@@ -88,8 +92,8 @@ export class ProposeInstallAppInstanceController extends NodeController {
       ...params,
       stateTimeout: stateTimeout || defaultTimeout,
       multisigAddress: json.multisigAddress,
-      initiatorXpub: publicIdentifier,
-      responderXpub: proposedToIdentifier,
+      initiatorIdentifier: publicIdentifier,
+      responderIdentifier: proposedToIdentifier,
     });
 
     const updated = await store.getStateChannel(json.multisigAddress);

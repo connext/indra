@@ -1,8 +1,9 @@
-import { HDNode, SigningKey } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { createRandom32ByteHexString } from "@connext/types";
+import { SigningKey } from "ethers/utils";
+import { createRandom32ByteHexString, getPublicIdentifier } from "@connext/types";
 
-import { computeRandomExtendedPrvKey } from "../xkeys";
+import { ChannelSigner } from "@connext/crypto";
+import { Wallet } from "ethers";
+import { GANACHE_CHAIN_ID } from "./utils";
 
 export function getRandomSigningKeys(length: number) {
   return Array(length)
@@ -10,26 +11,18 @@ export function getRandomSigningKeys(length: number) {
     .map(_ => new SigningKey(createRandom32ByteHexString()));
 }
 
-export function extendedPrvKeyToExtendedPubKey(extendedPrvKey: string): string {
-  return fromExtendedKey(extendedPrvKey).neuter().extendedKey;
+export function getRandomChannelSigner(): ChannelSigner {
+  return new ChannelSigner(
+    Wallet.createRandom().privateKey,
+    GANACHE_CHAIN_ID,
+  );
 }
 
-export function getRandomExtendedPubKey(): string {
-  return extendedPrvKeyToExtendedPubKey(computeRandomExtendedPrvKey());
-}
-
-export function getRandomExtendedPubKeys(length: number): string[] {
+export function getRandomChannelIdentifiers(length: number): string[] {
   return Array(length)
-    .fill(0)
-    .map(getRandomExtendedPubKey);
+    .fill(getRandomChannelSigner)
+    .map(
+      (signer: ChannelSigner) => getPublicIdentifier(GANACHE_CHAIN_ID, signer.address),
+    );
 }
 
-export function getRandomExtendedPrvKeys(length: number): string[] {
-  return Array(length)
-    .fill(0)
-    .map(computeRandomExtendedPrvKey);
-}
-
-export function getRandomHDNodes(length: number): HDNode.HDNode[] {
-  return getRandomExtendedPrvKeys(length).map(x => fromExtendedKey(x));
-}

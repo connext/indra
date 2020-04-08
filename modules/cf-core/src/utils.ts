@@ -1,4 +1,4 @@
-import { AppIdentity, CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
+import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, getAddressFromIdentifier } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -16,7 +16,6 @@ import memoize from "memoizee";
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
-import { xkeyKthAddress } from "./xkeys";
 
 export const logTime = (log: ILoggerService, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -208,8 +207,11 @@ export function assertSufficientFundsWithinFreeBalance(
   depositAmount: BigNumber,
 ): void {
   const freeBalanceForToken =
-    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
-    Zero;
+    channel.getFreeBalanceClass()
+      .getBalance(
+        tokenAddress, 
+        getAddressFromIdentifier(publicIdentifier),
+      ) || Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw new Error(

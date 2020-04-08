@@ -8,6 +8,7 @@ import {
   SolidityValueType,
   toBN,
   UpdateStateMessage,
+  ChannelPubId,
 } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
@@ -92,7 +93,7 @@ export class TakeActionController extends NodeController {
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      sc.userNeuteredExtendedKeys,
+      sc.userChannelIdentifiers,
     );
 
     await runTakeActionProtocol(
@@ -139,8 +140,8 @@ async function runTakeActionProtocol(
   appIdentityHash: string,
   store: IStoreService,
   protocolRunner: ProtocolRunner,
-  initiatorXpub: string,
-  responderXpub: string,
+  initiatorIdentifier: ChannelPubId,
+  responderIdentifier: ChannelPubId,
   action: SolidityValueType,
   stateTimeout: BigNumber,
 ) {
@@ -151,8 +152,8 @@ async function runTakeActionProtocol(
 
   try {
     await protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
-      initiatorXpub,
-      responderXpub,
+      initiatorIdentifier,
+      responderIdentifier,
       appIdentityHash,
       action,
       multisigAddress: stateChannel.multisigAddress,

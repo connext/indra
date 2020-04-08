@@ -6,6 +6,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
   UninstallMiddlewareContext,
+  getAddressFromIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
@@ -19,7 +20,6 @@ import {
   PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
-import { xkeyKthAddress } from "../xkeys";
 
 import {
   assertIsValidSignature,
@@ -50,7 +50,11 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     log.debug(`Initiation started for uninstall`);
 
     const { params, processID } = message;
-    const { responderXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
+    const {
+      responderIdentifier,
+      appIdentityHash,
+      multisigAddress,
+    } = params as ProtocolParams.Uninstall;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
       multisigAddress,
@@ -79,7 +83,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const responderFreeBalanceKey = xkeyKthAddress(responderXpub);
+    const responderFreeBalanceKey = getAddressFromIdentifier(responderIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
       context,
@@ -101,7 +105,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         protocol,
         processID,
         params,
-        toXpub: responderXpub,
+        to: responderIdentifier,
         customData: { signature: mySignature },
         seq: 1,
       } as ProtocolMessageData,
@@ -154,7 +158,11 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     log.debug(`Response started for uninstall`);
 
     const { params, processID } = message;
-    const { initiatorXpub, appIdentityHash, multisigAddress } = params as ProtocolParams.Uninstall;
+    const {
+      initiatorIdentifier,
+      appIdentityHash,
+      multisigAddress,
+    } = params as ProtocolParams.Uninstall;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
       multisigAddress,
@@ -183,7 +191,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const initiatorFreeBalanceKey = xkeyKthAddress(initiatorXpub);
+    const initiatorFreeBalanceKey = getAddressFromIdentifier(initiatorIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
       context,
@@ -240,7 +248,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       {
         protocol,
         processID,
-        toXpub: initiatorXpub,
+        to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
           signature: mySignature,

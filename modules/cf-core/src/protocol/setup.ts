@@ -5,6 +5,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
   SetupMiddlewareContext,
+  getAddressFromIdentifier,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -16,7 +17,6 @@ import {
   ProtocolExecutionFlow,
 } from "../types";
 import { logTime } from "../utils";
-import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature } from "./utils";
 
@@ -46,7 +46,11 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { processID, params } = message;
 
-    const { multisigAddress, responderXpub, initiatorXpub } = params as ProtocolParams.Setup;
+    const {
+      multisigAddress,
+      responderIdentifier,
+      initiatorIdentifier,
+    } = params as ProtocolParams.Setup;
 
     yield [
       OP_VALIDATE,
@@ -59,8 +63,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       multisigAddress,
-      initiatorXpub,
-      responderXpub,
+      initiatorIdentifier,
+      responderIdentifier,
     );
 
     const setupCommitment = getSetupCommitment(context, stateChannel);
@@ -88,7 +92,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         params,
         seq: 1,
-        toXpub: responderXpub,
+        to: responderIdentifier,
         customData: {
           setupSignature: mySetupSignature,
           setStateSignature: mySignatureOnFreeBalanceState,
@@ -101,7 +105,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 68 ms
     substart = Date.now();
-    const responderAddr = xkeyKthAddress(responderXpub, 0);
+    const responderAddr = getAddressFromIdentifier(responderIdentifier);
     await assertIsValidSignature(
       responderAddr,
       setupCommitment.hashToSign(),
@@ -160,7 +164,11 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } = message;
 
-    const { multisigAddress, initiatorXpub, responderXpub } = params as ProtocolParams.Setup;
+    const {
+      multisigAddress,
+      initiatorIdentifier,
+      responderIdentifier,
+    } = params as ProtocolParams.Setup;
 
     yield [
       OP_VALIDATE,
@@ -173,8 +181,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       multisigAddress,
-      initiatorXpub,
-      responderXpub,
+      initiatorIdentifier,
+      responderIdentifier,
     );
 
     const setupCommitment = getSetupCommitment(context, stateChannel);
@@ -184,7 +192,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
     substart = Date.now();
-    const initatorAddr = xkeyKthAddress(initiatorXpub, 0);
+    const initatorAddr = getAddressFromIdentifier(initiatorIdentifier);
     await assertIsValidSignature(
       initatorAddr,
       setupCommitment.hashToSign(),
@@ -232,7 +240,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       {
         protocol,
         processID,
-        toXpub: initiatorXpub,
+        to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
           setupSignature: mySetupSignature,

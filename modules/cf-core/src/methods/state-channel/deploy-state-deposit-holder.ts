@@ -6,8 +6,10 @@ import {
   MethodResults,
   NetworkContext,
   stringify,
+  getAddressFromIdentifier,
+  ChannelPubId,
 } from "@connext/types";
-import { Contract, Signer } from "ethers";
+import { Contract, Signer, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { Interface, solidityKeccak256 } from "ethers/utils";
@@ -27,7 +29,6 @@ import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";
-import { xkeyKthAddress } from "../../xkeys";
 
 // Estimate based on rinkeby transaction:
 // 0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec
@@ -59,8 +60,8 @@ export class DeployStateDepositController extends NodeController {
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userNeuteredExtendedKeys[0],
-      channel.userNeuteredExtendedKeys[1],
+      channel.userChannelIdentifiers[0],
+      channel.userChannelIdentifiers[1],
       channel.addresses,
       provider,
     );
@@ -75,7 +76,7 @@ export class DeployStateDepositController extends NodeController {
     params: MethodParams.DeployStateDepositHolder,
   ): Promise<MethodResults.DeployStateDepositHolder> {
     const { multisigAddress, retryCount } = params;
-    const { log, networkContext, store, provider, wallet } = requestHandler;
+    const { log, networkContext, store, provider, signer } = requestHandler;
 
     // By default, if the contract has been deployed and
     // DB has records of it, controller will return HashZero
@@ -89,8 +90,8 @@ export class DeployStateDepositController extends NodeController {
 
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userNeuteredExtendedKeys[0],
-      channel.userNeuteredExtendedKeys[1],
+      channel.userChannelIdentifiers[0],
+      channel.userChannelIdentifiers[1],
       channel.addresses,
       provider,
     );
@@ -101,7 +102,13 @@ export class DeployStateDepositController extends NodeController {
 
     // Check if the contract has already been deployed on-chain
     if ((await provider.getCode(multisigAddress)) === `0x`) {
-      tx = await sendMultisigDeployTx(wallet, channel, networkContext, retryCount, log);
+      tx = await sendMultisigDeployTx(
+        new Wallet(signer.privateKey, provider),
+        channel,
+        networkContext,
+        retryCount,
+        log,
+      );
     }
 
     return { transactionHash: tx.hash! };
@@ -119,7 +126,7 @@ async function sendMultisigDeployTx(
   // used when the channel was created
   const proxyFactory = new Contract(stateChannel.addresses.proxyFactory, ProxyFactory.abi, signer);
 
-  const owners = stateChannel.userNeuteredExtendedKeys;
+  const owners = stateChannel.userChannelIdentifiers;
 
   const provider = signer.provider as JsonRpcProvider;
 
@@ -186,7 +193,7 @@ async function sendMultisigDeployTx(
 async function checkForCorrectOwners(
   tx: TransactionResponse,
   provider: JsonRpcProvider,
-  xpubs: string[], // [initiator, responder]
+  identifiers: ChannelPubId[], // [initiator, responder]
   multisigAddress: string,
 ): Promise<boolean> {
   await tx.wait();
@@ -194,8 +201,8 @@ async function checkForCorrectOwners(
   const contract = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
 
   const expectedOwners = [
-    xkeyKthAddress(xpubs[0], 0),
-    xkeyKthAddress(xpubs[1], 0),
+    getAddressFromIdentifier(identifiers[0]),
+    getAddressFromIdentifier(identifiers[1]),
   ];
 
   const actualOwners = await contract.functions.getOwners();

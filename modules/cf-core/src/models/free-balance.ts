@@ -1,9 +1,8 @@
-import { AppInterface, OutcomeType, stringify, toBN } from "@connext/types";
+import { AppInterface, OutcomeType, stringify, toBN, getAssetId, getAddressFromIdentifier, parseChannelIdentifier, AssetId } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, HARD_CODED_ASSUMPTIONS } from "../constants";
-import { xkeyKthAddress } from "../xkeys";
+import { HARD_CODED_ASSUMPTIONS } from "../constants";
 
 import { AppInstance } from "./app-instance";
 import { merge } from "./utils";
@@ -138,7 +137,7 @@ export class FreeBalanceClass {
     if (Object.keys(balances).length === 0) {
       const addresses = Object.keys(
         convertCoinTransfersToCoinTransfersMap(
-          this.balancesIndexedByToken[CONVENTION_FOR_ETH_TOKEN_ADDRESS],
+          this.balancesIndexedByToken[tokenAddress],
         ),
       );
       for (const address of addresses) {
@@ -195,15 +194,19 @@ export class FreeBalanceClass {
  * and only converted to more complex types (i.e. BigNumber) upon usage.
  */
 export function createFreeBalance(
-  initiatorXpub: string,
-  responderXpub: string,
+  initiatorId: string,
+  responderId: string,
   coinBucketAddress: string,
   freeBalanceTimeout: number,
   multisigAddress: string,
 ) {
 
-  const initiator = xkeyKthAddress(initiatorXpub, 0);
-  const responder = xkeyKthAddress(responderXpub, 0);
+  const { address: initiator, chainId: initiatorChainId } = parseChannelIdentifier(initiatorId);
+  const { address: responder, chainId: responderChainId } = parseChannelIdentifier(responderId);
+
+  if (initiatorChainId !== responderChainId) {
+    throw new Error(`Attempting to create a free balance state with assets on different chain (as determined by identifiers). ResponderId: ${responderId}, initiatorId: ${initiatorId}`);
+  }
 
   const initialState: FreeBalanceState = {
     activeAppsMap: {},
@@ -211,7 +214,7 @@ export function createFreeBalance(
       // NOTE: Extremely important to understand that the default
       // addresses of the recipients are the "top level keys" as defined
       // as the 0th derived children of the xpubs.
-      [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: [
+      [getAssetId(initiatorChainId)]: [
         { to: initiator, amount: Zero },
         { to: responder, amount: Zero },
       ],
@@ -219,8 +222,8 @@ export function createFreeBalance(
   };
 
   return new AppInstance(
-    /* initiator */ initiator,
-    /* responder */ responder,
+    /* initiator */ initiatorId,
+    /* responder */ responderId,
     /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
     /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
@@ -286,5 +289,5 @@ function convertCoinTransfersMapToCoinTransfers(coinTransfersMap: CoinTransferMa
  * Address used for a Node's free balance
  */
 export function getFreeBalanceAddress(publicIdentifier: string) {
-  return xkeyKthAddress(publicIdentifier, 0);
+  return getAddressFromIdentifier(publicIdentifier);
 }

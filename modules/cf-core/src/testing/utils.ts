@@ -21,6 +21,7 @@ import {
   SolidityValueType,
   toBN,
   UninstallMessage,
+  getAssetId,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -29,7 +30,6 @@ import { BigNumber, bigNumberify, getAddress, hexlify, randomBytes } from "ether
 import { JsonRpcResponse, Rpc } from "rpc-server";
 
 import { Node } from "../node";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { AppInstance, StateChannel } from "../models";
 import { computeRandomExtendedPrvKey, xkeyKthAddress } from "../xkeys";
 
@@ -40,6 +40,10 @@ import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { initialTransferState, transferAbiEncodings } from "./unidirectional-transfer";
 import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
+
+export const GANACHE_CHAIN_ID = 4447;
+
+export const CONVENTION_FOR_ETH_TOKEN_ADDRESS_GANACHE = getAssetId(GANACHE_CHAIN_ID);
 
 interface AppContext {
   appDefinition: string;

@@ -5,6 +5,7 @@ import {
   MethodResults,
   ProtocolNames,
   SolidityValueType,
+  ChannelPubId,
 } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { INVALID_ARGUMENT } from "ethers/errors";
@@ -76,7 +77,7 @@ export class UpdateStateController extends NodeController {
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      sc.userNeuteredExtendedKeys,
+      sc.userChannelIdentifiers,
     );
 
     await runUpdateStateProtocol(
@@ -97,8 +98,8 @@ async function runUpdateStateProtocol(
   appIdentityHash: string,
   store: IStoreService,
   protocolRunner: ProtocolRunner,
-  initiatorXpub: string,
-  responderXpub: string,
+  initiatorIdentifier: ChannelPubId,
+  responderIdentifier: ChannelPubId,
   newState: SolidityValueType,
   stateTimeout: BigNumber = Zero,
 ) {
@@ -108,8 +109,8 @@ async function runUpdateStateProtocol(
   }
 
   await protocolRunner.initiateProtocol(ProtocolNames.update, {
-    initiatorXpub,
-    responderXpub,
+    initiatorIdentifier,
+    responderIdentifier,
     appIdentityHash,
     newState,
     multisigAddress: stateChannel.multisigAddress,

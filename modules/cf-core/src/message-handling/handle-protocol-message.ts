@@ -3,13 +3,14 @@ import {
   EventNames,
   IStoreService,
   Message,
-  NetworkContext,
   ProtocolMessage,
   ProtocolName,
   ProtocolNames,
   ProtocolParam,
   ProtocolParams,
   SolidityValueType,
+  EventPayloads,
+  Address,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -28,7 +29,7 @@ export async function handleReceivedProtocolMessage(
   requestHandler: RequestHandler,
   msg: ProtocolMessage,
 ) {
-  const { protocolRunner, store, router, networkContext, publicIdentifier } = requestHandler;
+  const { protocolRunner, store, router } = requestHandler;
 
   const { data } = bigNumberifyJson(msg) as ProtocolMessage;
 
@@ -41,9 +42,7 @@ export async function handleReceivedProtocolMessage(
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
     params!,
-    networkContext,
     store,
-    publicIdentifier,
   );
 
   if (!outgoingEventData) {
@@ -89,19 +88,17 @@ function emitOutgoingMessage(router: RpcRouter, msg: Message) {
 async function getOutgoingEventDataFromProtocol(
   protocol: ProtocolName,
   params: ProtocolParam,
-  networkContext: NetworkContext,
   store: IStoreService,
-  publicIdentifier: string,
 ): Promise<Message | undefined> {
   // default to the pubId that initiated the protocol
-  const baseEvent = { from: params.initiatorXpub };
+  const baseEvent = { from: params.initiatorIdentifier };
 
   switch (protocol) {
     case ProtocolNames.propose:
       const {
         multisigAddress,
-        initiatorXpub,
-        responderXpub,
+        initiatorIdentifier,
+        responderIdentifier,
         ...emittedParams
       } = params as ProtocolParams.Propose;
       const json = await store.getStateChannel(multisigAddress);
@@ -115,7 +112,7 @@ async function getOutgoingEventDataFromProtocol(
         data: {
           params: {
             ...emittedParams,
-            proposedToIdentifier: responderXpub,
+            responderIdentifier,
           },
           appIdentityHash: app.identityHash,
         },
@@ -194,8 +191,8 @@ function getUninstallEventData({ appIdentityHash }: ProtocolParams.Uninstall) {
 }
 
 function getSetupEventData(
-  { initiatorXpub: counterpartyXpub, multisigAddress }: ProtocolParams.Setup,
-  owners: string[],
-) {
-  return { multisigAddress, owners, counterpartyXpub };
+  { multisigAddress }: ProtocolParams.Setup,
+  owners: Address[],
+): EventPayloads.CreateMultisig {
+  return { multisigAddress, owners };
 }

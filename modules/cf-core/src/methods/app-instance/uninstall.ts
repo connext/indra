@@ -1,4 +1,4 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, ChannelPubId } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -84,7 +84,7 @@ export class UninstallController extends NodeController {
 
     const to = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      stateChannel.userNeuteredExtendedKeys,
+      stateChannel.userChannelIdentifiers,
     );
 
     await uninstallAppInstanceFromChannel(
@@ -102,8 +102,8 @@ export class UninstallController extends NodeController {
 export async function uninstallAppInstanceFromChannel(
   store: IStoreService,
   protocolRunner: ProtocolRunner,
-  initiatorXpub: string,
-  responderXpub: string,
+  initiatorIdentifier: ChannelPubId,
+  responderIdentifier: ChannelPubId,
   appIdentityHash: string,
 ): Promise<void> {
   const json = await store.getStateChannelByAppIdentityHash(appIdentityHash);
@@ -115,8 +115,8 @@ export async function uninstallAppInstanceFromChannel(
   const appInstance = stateChannel.getAppInstance(appIdentityHash);
 
   await protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
-    initiatorXpub,
-    responderXpub,
+    initiatorIdentifier,
+    responderIdentifier,
     multisigAddress: stateChannel.multisigAddress,
     appIdentityHash: appInstance.identityHash,
   });

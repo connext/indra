@@ -7,6 +7,8 @@ import {
   ProtocolNames,
   ProtocolParams,
   toBN,
+  ChannelPubId,
+  getAddressFromIdentifier,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -19,7 +21,6 @@ import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
-import { xkeyKthAddress } from "../../xkeys";
 
 /**
  * This converts a proposed app instance to an installed app instance while
@@ -68,7 +69,7 @@ export async function install(
   store: IStoreService,
   protocolRunner: ProtocolRunner,
   params: MethodParams.Install,
-  initiatorXpub: string,
+  initiatorIdentifier: ChannelPubId,
 ): Promise<AppInstanceProposal> {
   const { appIdentityHash } = params;
 
@@ -88,11 +89,12 @@ export async function install(
   const stateChannel = StateChannel.fromJson(json);
 
   await protocolRunner.initiateProtocol(ProtocolNames.install, {
-    initiatorXpub,
-    responderXpub:
-      initiatorXpub === proposal.proposedToIdentifier
-        ? proposal.proposedByIdentifier
-        : proposal.proposedToIdentifier,
+    initiatorIdentifier,
+    initiatorDepositAssetId: proposal.initiatorDepositAssetId,
+    responderIdentifier:
+      initiatorIdentifier === proposal.initiatorIdentifier
+        ? proposal.responderIdentifier
+        : proposal.initiatorIdentifier,
     initiatorBalanceDecrement: toBN(proposal.initiatorDeposit),
     responderBalanceDecrement: toBN(proposal.responderDeposit),
     multisigAddress: stateChannel.multisigAddress,
@@ -104,19 +106,18 @@ export async function install(
     appSeqNo: proposal.appSeqNo,
     defaultTimeout: toBN(proposal.defaultTimeout),
     outcomeType: proposal.outcomeType,
-    initiatorDepositTokenAddress: proposal.initiatorDepositTokenAddress,
-    responderDepositTokenAddress: proposal.responderDepositTokenAddress,
+    responderDepositAssetId: proposal.responderDepositAssetId,
     disableLimit: false,
     meta: proposal.meta,
-    appInitiatorAddress: xkeyKthAddress(
-      proposal.proposedByIdentifier,
-      proposal.appSeqNo,
+    appInitiatorAddress: getAddressFromIdentifier(
+      proposal.initiatorIdentifier,
     ),
-    appResponderAddress: xkeyKthAddress(
-      proposal.proposedToIdentifier,
-      proposal.appSeqNo,
+    appResponderAddress: getAddressFromIdentifier(
+      proposal.responderIdentifier,
     ),
     stateTimeout: toBN(proposal.stateTimeout),
+    appInitiatorIdentifier: proposal.initiatorIdentifier,
+    appResponderIdentifier: proposal.responderIdentifier,
   } as ProtocolParams.Install);
   
   stateChannel.removeProposal(appIdentityHash);
