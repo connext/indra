@@ -53,7 +53,6 @@ export class SetStateCommitment implements EthereumCommitment {
   ): Promise<void> {
     this.initiatorSignature = initiatorSignature;
     this.responderSignature = responderSignature;
-    await this.assertSignatures();
   }
 
   set signatures(sigs: string[]) {
@@ -124,7 +123,7 @@ export class SetStateCommitment implements EthereumCommitment {
     };
   }
 
-  private async assertSignatures(presenceOnly: boolean = false) {
+  private async assertSignatures() {
     if (!this.signatures || this.signatures.length === 0) {
       throw new Error(`No signatures detected`);
     }
@@ -135,9 +134,6 @@ export class SetStateCommitment implements EthereumCommitment {
       );
     }
 
-    if (presenceOnly) {
-      return;
-    }
     for (const idx in this.signatures) {
       const signer = await verifyChannelMessage(this.hashToSign(), this.signatures[idx]);
       if (signer !== this.appIdentity.participants[idx]) {
