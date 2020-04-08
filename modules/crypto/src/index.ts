@@ -1,4 +1,4 @@
-import { EthSignature, IChannelSigner } from "@connext/types";
+import { EthSignature, IChannelSigner, getPublicIdentifier, ETHEREUM_NAMESPACE } from "@connext/types";
 import {
   sign,
   encrypt,
@@ -168,14 +168,20 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
 }
 
 export class ChannelSigner implements IChannelSigner {
-  public privateKey: string;
   public publicKey: string;
   public address: string;
 
-  constructor(privateKey: string) {
+  constructor(
+    public readonly privateKey: string, 
+    public readonly chainId: number,
+  ) {
     this.privateKey = privateKey;
     this.publicKey = getPublicKeyFromPrivate(this.privateKey);
     this.address = getChecksumAddress(this.publicKey);
+  }
+
+  get identifier(): string {
+    return getPublicIdentifier(this.chainId, this.publicKey, ETHEREUM_NAMESPACE);
   }
 
   public signMessage(message: string): Promise<string> {
