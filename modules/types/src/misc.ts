@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32 } from "./basic";
 import { enumify } from "./utils";
 
 export type Collateralizations = { [assetId: string]: boolean };
@@ -42,7 +42,7 @@ export type AllowedSwap = {
 export const PriceOracleTypes = enumify({
   UNISWAP: "UNISWAP",
 });
-export type PriceOracleTypes = (typeof PriceOracleTypes)[keyof typeof PriceOracleTypes];
+export type PriceOracleTypes = typeof PriceOracleTypes[keyof typeof PriceOracleTypes];
 export type PriceOracleType = keyof typeof PriceOracleTypes;
 
 export type SwapRate = AllowedSwap & {

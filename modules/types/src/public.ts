@@ -1,7 +1,7 @@
 import { TransactionResponse } from "ethers/providers";
 import { BigNumberish } from "ethers/utils";
 
-import { Address, BigNumber, Bytes32, HexString, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, HexString } from "./basic";
 import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 
@@ -86,7 +86,7 @@ type ResolveLinkedTransferParameters = {
   conditionType: typeof ConditionalTransferTypes.LinkedTransfer;
   paymentId: Bytes32;
   preImage: Bytes32;
-}
+};
 
 type ResolveLinkedTransferResponse = {
   appIdentityHash: Bytes32;
@@ -164,7 +164,7 @@ type SwapParameters = {
   fromAssetId: Address;
   swapRate: string; // DecString?
   toAssetId: Address;
-}
+};
 
 type SwapResponse = {
   id: number;
@@ -173,7 +173,7 @@ type SwapResponse = {
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: { [assetId: string]: boolean };
-}
+};
 
 ////////////////////////////////////////
 // withdraw
@@ -221,7 +221,7 @@ export namespace PublicParams {
   export type Withdraw = WithdrawParameters;
 }
 
-export type PublicParam = 
+export type PublicParam =
   | CheckDepositRightsParameters
   | ConditionalTransferParameters
   | DepositParameters
@@ -256,7 +256,7 @@ export namespace PublicResults {
   export type Withdraw = WithdrawResponse;
 }
 
-export type PublicResult = 
+export type PublicResult =
   | CheckDepositRightsResponse
   | ConditionalTransferResponse
   | DepositResponse

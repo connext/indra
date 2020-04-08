@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, HexObject, SolidityValueType } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,

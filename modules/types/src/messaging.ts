@@ -1,5 +1,5 @@
 import { EventNames, EventPayloads } from "./events";
-import { Bytes32, DecString, Xpub, Address } from "./basic";
+import { Bytes32, DecString, Address } from "./basic";
 import { ILoggerService } from "./logger";
 import { MethodResults, MethodParams } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
@@ -27,16 +27,16 @@ export type ProtocolMessageData = {
 type ProposeInstallMessageData = {
   params: MethodParams.ProposeInstall;
   appIdentityHash: Bytes32;
-}
+};
 
 export type CreateChannelMessage = Message<MethodResults.CreateChannel>;
 export type DepositConfirmationMessage = Message<MethodParams.Deposit>;
-export type DepositFailedMessage = Message<{ params: MethodParams.Deposit; errors: string[]; }>;
-export type DepositStartedMessage = Message<{ value: DecString; txHash: Bytes32; }>;
-export type InstallMessage = Message<{ params: MethodParams.Install; }>;
+export type DepositFailedMessage = Message<{ params: MethodParams.Deposit; errors: string[] }>;
+export type DepositStartedMessage = Message<{ value: DecString; txHash: Bytes32 }>;
+export type InstallMessage = Message<{ params: MethodParams.Install }>;
 export type ProtocolMessage = Message<ProtocolMessageData>;
 export type ProposeMessage = Message<ProposeInstallMessageData>;
-export type RejectProposalMessage = Message<{ appIdentityHash: Bytes32; }>;
+export type RejectProposalMessage = Message<{ appIdentityHash: Bytes32 }>;
 export type UninstallMessage = Message<EventPayloads.Uninstall>;
 export type UpdateStateMessage = Message<EventPayloads.UpdateState>;
 

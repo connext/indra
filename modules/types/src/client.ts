@@ -1,7 +1,7 @@
 import { providers } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, Bytes32, DecString, Xpub } from "./basic";
+import { Address, Bytes32, DecString } from "./basic";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { EventNames } from "./events";
 import { ILogger, ILoggerService } from "./logger";
@@ -59,26 +59,23 @@ export interface IConnextClient {
   on(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
   once(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
   emit(event: EventNames | MethodName, data: any): boolean;
-  removeListener(
-    event: EventNames | MethodName,
-    callback: (...args: any[]) => void,
-  ): void;
+  removeListener(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   checkDepositRights(
-    params: PublicParams.CheckDepositRights
+    params: PublicParams.CheckDepositRights,
   ): Promise<PublicResults.CheckDepositRights>;
   conditionalTransfer(
-    params: PublicParams.ConditionalTransfer
+    params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer>;
   deposit(params: PublicParams.Deposit): Promise<PublicResults.Deposit>;
   requestDepositRights(
-    params: PublicParams.RequestDepositRights
+    params: PublicParams.RequestDepositRights,
   ): Promise<MethodResults.RequestDepositRights>;
   rescindDepositRights(
-    params: PublicParams.RescindDepositRights
+    params: PublicParams.RescindDepositRights,
   ): Promise<PublicResults.RescindDepositRights>;
   resolveCondition(params: PublicParams.ResolveCondition): Promise<PublicResults.ResolveCondition>;
   restoreState(): Promise<void>;
@@ -131,9 +128,7 @@ export interface IConnextClient {
   getProposedAppInstance(
     appIdentityHash: Bytes32,
   ): Promise<MethodResults.GetProposedAppInstance | undefined>;
-  proposeInstallApp(
-    params: MethodParams.ProposeInstall,
-  ): Promise<MethodResults.ProposeInstall>;
+  proposeInstallApp(params: MethodParams.ProposeInstall): Promise<MethodResults.ProposeInstall>;
   installApp(appIdentityHash: Bytes32): Promise<MethodResults.Install>;
   rejectInstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
   takeAction(appIdentityHash: Bytes32, action: any): Promise<MethodResults.TakeAction>;

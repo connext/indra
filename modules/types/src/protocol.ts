@@ -1,5 +1,5 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
@@ -105,7 +105,7 @@ export const ProtocolNames = enumify({
   uninstall: "uninstall",
   update: "update",
 });
-export type ProtocolNames = (typeof ProtocolNames)[keyof typeof ProtocolNames];
+export type ProtocolNames = typeof ProtocolNames[keyof typeof ProtocolNames];
 export type ProtocolName = keyof typeof ProtocolNames;
 
 export namespace ProtocolParams {

@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
 import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
@@ -269,7 +269,7 @@ export const MethodNames = enumify({
   chan_withdraw: "chan_withdraw",
   chan_withdrawCommitment: "chan_withdrawCommitment",
 });
-type MethodNames = (typeof MethodNames)[keyof typeof MethodNames];
+type MethodNames = typeof MethodNames[keyof typeof MethodNames];
 export type MethodName = keyof typeof MethodNames;
 
 export namespace MethodParams {
@@ -277,7 +277,7 @@ export namespace MethodParams {
   export type DeployStateDepositHolder = DeployStateDepositHolderParams;
   export type Deposit = DepositParams;
   export type GetAppInstanceDetails = GetAppInstanceDetailsParams;
-  export type GetAppInstances = GetAppInstancesParams
+  export type GetAppInstances = GetAppInstancesParams;
   export type GetChannelAddresses = GetChannelAddressesParams;
   export type GetFreeBalanceState = GetFreeBalanceStateParams;
   export type GetProposedAppInstance = GetProposedAppInstanceParams;
@@ -326,7 +326,7 @@ export namespace MethodResults {
   export type DeployStateDepositHolder = DeployStateDepositHolderResult;
   export type Deposit = DepositResult;
   export type GetAppInstanceDetails = GetAppInstanceDetailsResult;
-  export type GetAppInstances = GetAppInstancesResult
+  export type GetAppInstances = GetAppInstancesResult;
   export type GetChannelAddresses = GetChannelAddressesResult;
   export type GetFreeBalanceState = GetFreeBalanceStateResult;
   export type GetProposedAppInstance = GetProposedAppInstanceResult;
