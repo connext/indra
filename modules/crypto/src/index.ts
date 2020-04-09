@@ -24,6 +24,8 @@ export * from "eccrypto-js";
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 export const INDRA_PUB_ID_PREFIX = "indra";
+export const INDRA_PUB_ID_HASH_SIZE = 15;
+export const INDRA_PUB_ID_CHAR_LENGTH = 70;
 
 export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
@@ -35,16 +37,41 @@ export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
     : input;
 }
 
+export function padString(str: string, length: number, left: boolean, padding = "0") {
+  const diff = length - str.length;
+  let result = str;
+  if (diff > 0) {
+    const pad = padding.repeat(diff);
+    result = left ? pad + str : str + pad;
+  }
+  return result;
+}
+
+export function padLeft(str: string, length: number, padding: string) {
+  return padString(str, length, true, padding);
+}
+
+export function padRight(str: string, length: number, padding: string) {
+  return padString(str, length, false, padding);
+}
+
+export function ensureBase58Length(str: string, length: number) {
+  return str.length === length ? str : padLeft(str, length, "1");
+}
+
 export function getChannelPublicIdentifier(seed: string, publicKey: string): string {
   const id = bs58check.encode(
-    concatBuffers(keccak256(bufferify(seed)).slice(15), hexToBuffer(publicKey)),
+    concatBuffers(keccak256(bufferify(seed)).slice(INDRA_PUB_ID_HASH_SIZE), hexToBuffer(publicKey)),
   );
-  return INDRA_PUB_ID_PREFIX + (id.length === 64 ? `1${id}` : id);
+  return (
+    INDRA_PUB_ID_PREFIX +
+    ensureBase58Length(id, INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length)
+  );
 }
 
 export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): string {
   const buf: Buffer = bs58check.decode(publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""));
-  return bufferToHex(buf.slice(buf.length === 48 ? 16 : 15, buf.length), true);
+  return bufferToHex(buf.slice(buf.length - INDRA_PUB_ID_HASH_SIZE, buf.length), true);
 }
 
 export function getLowerCaseAddress(publicKey: Buffer | string): string {
