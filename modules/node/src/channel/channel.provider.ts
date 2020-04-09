@@ -113,27 +113,27 @@ class ChannelMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.channel.get",
-      this.authService.parseAddress(this.getChannel.bind(this)),
+      this.authService.parseIdentifier(this.getChannel.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.create",
-      this.authService.parseAddress(this.createChannel.bind(this)),
+      this.authService.parseIdentifier(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.request-collateral",
-      this.authService.parseAddress(this.requestCollateral.bind(this)),
+      this.authService.parseIdentifier(this.requestCollateral.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.get-profile",
-      this.authService.parseAddress(this.getRebalanceProfile.bind(this)),
+      this.authService.parseIdentifier(this.getRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.restore",
-      this.authService.parseAddress(this.getChannelInformationForRestore.bind(this)),
+      this.authService.parseIdentifier(this.getChannelInformationForRestore.bind(this)),
     );
     await super.connectRequestReponse(
       "*.channel.latestWithdrawal",
-      this.authService.parseAddress(this.getLatestWithdrawal.bind(this)),
+      this.authService.parseIdentifier(this.getLatestWithdrawal.bind(this)),
     );
   }
 }

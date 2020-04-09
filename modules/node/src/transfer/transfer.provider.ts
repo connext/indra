@@ -36,12 +36,12 @@ export class TransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.get-history",
-      this.authService.parseAddress(this.getTransferHistory.bind(this)),
+      this.authService.parseIdentifier(this.getTransferHistory.bind(this)),
     );
 
     await super.connectRequestReponse(
       "*.client.check-in",
-      this.authService.parseAddress(this.clientCheckIn.bind(this)),
+      this.authService.parseIdentifier(this.clientCheckIn.bind(this)),
     );
   }
 }

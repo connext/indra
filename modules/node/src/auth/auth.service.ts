@@ -1,21 +1,20 @@
 import { MessagingAuthService } from "@connext/messaging";
 import { Injectable, Inject } from "@nestjs/common";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { createRandomBytesHexString } from "@connext/types";
+import { createRandomBytesHexString, getAddressFromIdentifier, PublicIdentifier } from "@connext/types";
 import { verifyChannelMessage } from "@connext/crypto";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 
-import { isAddress } from "../util";
+import { isValidIdentifier, isAddress } from "../util";
 import { MessagingAuthProviderId } from "../constants";
 
 const nonceLen = 32;
 const nonceTTL = 24 * 60 * 60 * 1000; // 1 day
 
-export function getAuthAddressFromAddress(address: string): string {
-  return fromExtendedKey(address).derivePath("0").address;
+export function getAuthAddressFromIdentifier(id: PublicIdentifier): string {
+  return getAddressFromIdentifier(id);
 }
 
 @Injectable()
@@ -52,17 +51,17 @@ export class AuthService {
       return this.vendAdminToken(userPublicIdentifier);
     }
 
-    const addressAddress = getAuthAddressFromAddress(userPublicIdentifier);
-    this.log.debug(`Got address ${addressAddress} from address ${userPublicIdentifier}`);
+    const address = getAddressFromIdentifier(userPublicIdentifier);
+    this.log.debug(`Got address ${address} from userPublicIdentifier ${userPublicIdentifier}`);
 
     if (!this.nonces[userPublicIdentifier]) {
       throw new Error(`User hasn't requested a nonce yet`);
     }
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
-    const addr = await verifyChannelMessage(nonce, signedNonce);
-    if (addr !== addressAddress) {
-      throw new Error(`Verification failed`);
+    const recovered = await verifyChannelMessage(nonce, signedNonce);
+    if (recovered !== address) {
+      throw new Error(`Verification failed, expected ${address}, got ${recovered}`);
     }
     if (Date.now() > expiry) {
       throw new Error(`Verification failed... nonce expired for address: ${userPublicIdentifier}`);
@@ -109,6 +108,17 @@ export class AuthService {
         throw new Error(`Subject's first item isn't a valid address: ${subject}`);
       }
       return callback(address, data);
+    };
+  }
+
+  parseIdentifier(callback: any): any {
+    return async (subject: string, data: any): Promise<string> => {
+      // Get & validate address from subject
+      const identifier = subject.split(".")[0]; // first item of subscription is address
+      if (!identifier || !isValidIdentifier(identifier)) {
+        throw new Error(`Subject's first item isn't a valid identifier: ${identifier}`);
+      }
+      return callback(identifier, data);
     };
   }
 
