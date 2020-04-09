@@ -1,4 +1,5 @@
 import {
+  Address,
   AppInstanceProposal,
   delay,
   EventNames,
@@ -18,8 +19,8 @@ import {
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
-  IChannelSigner,
 } from "@connext/types";
+import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
@@ -71,14 +72,16 @@ export class Node {
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
-    signer: IChannelSigner,
+    signer: Signer,
     lockService?: ILockService,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
   ): Promise<Node> {
     // TODO: private key validation
+    const address = await signer.getAddress();
     const node = new Node(
       signer,
+      address,
       messagingService,
       storeService,
       nodeConfig,
@@ -93,7 +96,8 @@ export class Node {
   }
 
   private constructor(
-    private readonly signer: IChannelSigner,
+    private readonly signer: Signer,
+    private readonly address: Address,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
@@ -111,13 +115,19 @@ export class Node {
   }
 
   get publicIdentifier() {
-    return this.signer.identifier;
+    return this.address; // TODO: replace w real pub id
+  }
+
+  // TODO: rename?
+  @Memoize()
+  get signerAddress(): string {
+    return this.address;
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
-    this.log.info(`Node signer address: ${this.signer.address}`);
+    this.log.info(`Node signer address: ${await this.signer.getAddress()}`);
     this.requestHandler = new RequestHandler(
-      this.signer.identifier,
+      await this.signer.getAddress(),
       this.incoming,
       this.outgoing,
       this.storeService,
@@ -141,12 +151,6 @@ export class Node {
     this.rpcRouter = createRpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
     return this;
-  }
-
-  // TODO: rename?
-  @Memoize()
-  get signerAddress(): string {
-    return this.signer.address;
   }
 
   /**
@@ -190,7 +194,7 @@ export class Node {
 
       await this.messagingService.send(data.to, {
         data,
-        from: this.signer.identifier,
+        from: await this.signer.getAddress(),
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
     });
@@ -206,7 +210,7 @@ export class Node {
 
       await this.messagingService.send(data.to, {
         data,
-        from: this.signer.identifier,
+        from: await this.signer.getAddress(),
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
 

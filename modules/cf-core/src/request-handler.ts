@@ -8,9 +8,9 @@ import {
   NetworkContext,
   Message,
   ProtocolMessage,
-  IChannelSigner,
   PublicIdentifier,
 } from "@connext/types";
+import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
@@ -39,7 +39,7 @@ export class RequestHandler {
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
     readonly provider: JsonRpcProvider,
-    readonly signer: IChannelSigner,
+    readonly signer: Signer,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
     public readonly log: ILoggerService,
@@ -142,12 +142,12 @@ export class RequestHandler {
     return this.events.has(event);
   }
 
-  public getSigner(): IChannelSigner {
+  public getSigner(): Signer {
     return this.signer;
   }
 
   public async getSignerAddress(): Promise<string> {
     const signer = this.getSigner();
-    return signer.address;
+    return await signer.getAddress();
   }
 }

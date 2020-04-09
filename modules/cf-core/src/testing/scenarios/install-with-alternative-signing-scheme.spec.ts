@@ -1,3 +1,4 @@
+import { Wallet } from "ethers";
 import { ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -21,10 +22,8 @@ import {
   makeInstallCall,
   makeProposeCall,
   newWallet,
-  GANACHE_CHAIN_ID,
   CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 } from "../utils";
-import { ChannelSigner } from "@connext/crypto";
 
 expect.extend({ toBeLt });
 
@@ -54,10 +53,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           global[`network`],
           nodeConfig,
           provider,
-          new ChannelSigner(
-            A_PRIVATE_KEY,
-            GANACHE_CHAIN_ID,
-          ),
+          new Wallet(A_PRIVATE_KEY),
           lockService,
         );
 
@@ -68,10 +64,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           global[`network`],
           nodeConfig,
           provider,
-          new ChannelSigner(
-            B_PRIVATE_KEY,
-            GANACHE_CHAIN_ID,
-          ),
+          new Wallet(B_PRIVATE_KEY),
           lockService,
         );
 

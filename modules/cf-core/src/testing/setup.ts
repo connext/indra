@@ -12,7 +12,6 @@ import {
   C_PRIVATE_KEY,
 } from "./test-constants.jest";
 import { Logger } from "./logger";
-import { ChannelSigner } from "@connext/crypto";
 
 export const env = {
   logLevel: process.env.LOG_LEVEL ? parseInt(process.env.LOG_LEVEL, 10) : 0,
@@ -52,10 +51,7 @@ export async function setup(
 
   const lockService = new MemoryLockService();
 
-  const channelSignerA = new ChannelSigner(
-    prvKeyA,
-    (await provider.getNetwork()).chainId,
-  );
+  const channelSignerA = new Wallet(prvKeyA);
 
   const storeServiceA = storeServiceFactory.createStoreService();
   const nodeA = await Node.create(
@@ -75,10 +71,7 @@ export async function setup(
     store: storeServiceA,
   };
 
-  const channelSignerB = new ChannelSigner(
-    prvKeyB,
-    provider.network.chainId,
-  );
+  const channelSignerB = new Wallet(prvKeyB);
   const storeServiceB = storeServiceFactory.createStoreService();
   const nodeB = await Node.create(
     messagingService,
@@ -98,10 +91,7 @@ export async function setup(
 
   let nodeC: Node;
   if (nodeCPresent) {
-    const channelSignerC = new ChannelSigner(
-      C_PRIVATE_KEY,
-      provider.network.chainId,
-    );
+    const channelSignerC = new Wallet(C_PRIVATE_KEY);
     const storeServiceC = storeServiceFactory.createStoreService();
     nodeC = await Node.create(
       messagingService,

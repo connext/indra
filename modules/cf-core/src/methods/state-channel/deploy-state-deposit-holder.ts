@@ -9,7 +9,7 @@ import {
   getAddressFromIdentifier,
   PublicIdentifier,
 } from "@connext/types";
-import { Contract, Signer, Wallet } from "ethers";
+import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { Interface, solidityKeccak256 } from "ethers/utils";
@@ -103,7 +103,7 @@ export class DeployStateDepositController extends NodeController {
     // Check if the contract has already been deployed on-chain
     if ((await provider.getCode(multisigAddress)) === `0x`) {
       tx = await sendMultisigDeployTx(
-        new Wallet(signer.privateKey, provider),
+        signer,
         channel,
         networkContext,
         retryCount,
