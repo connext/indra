@@ -131,4 +131,6 @@ export interface IChannelSigner {
   identifier: PublicIdentifier;
   address: Address;
   signMessage(message: string): Promise<string>;
+  encrypt(message: string, publicKey: string): Promise<string>;
+  decrypt(message: string): Promise<string>;
 }
