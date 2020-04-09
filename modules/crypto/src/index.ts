@@ -18,6 +18,7 @@ import {
   arrayToBuffer,
   removeHexPrefix,
   getPublic,
+  randomBytes,
 } from "eccrypto-js";
 import { TransactionResponse, TransactionRequest } from "ethers/providers";
 
@@ -170,6 +171,11 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
 }
 
 export class ChannelSigner implements IChannelSigner {
+  async createRandom() {
+    const privateKey = bufferToHex(randomBytes(32), true);
+    return new ChannelSigner(privateKey);
+  }
+
   public address: string;
   public publicKey: string;
   public readonly provider?: JsonRpcProvider;
@@ -180,16 +186,11 @@ export class ChannelSigner implements IChannelSigner {
   // https://github.com/ethers-io/ethers.js/issues/779
   private readonly _ethersType = "Signer";
 
-  constructor(
-    private readonly privateKey: string,
-    ethUrl?: string,
-  ) {
-    this.provider = !!ethUrl
-      ? new JsonRpcProvider(ethUrl)
-      : undefined;
-    const wallet = new Wallet(privateKey, this.provider);
+  constructor(private readonly privateKey: string, ethUrl?: string) {
+    this.provider = !!ethUrl ? new JsonRpcProvider(ethUrl) : undefined;
     this.privateKey = privateKey;
-    this.address = wallet.address;
+    this.publicKey = getPublicKeyFromPrivate(this.privateKey);
+    this.address = getChecksumAddress(this.publicKey);
   }
 
   public async encrypt(message: string, publicKey: string): Promise<string> {
@@ -209,13 +210,13 @@ export class ChannelSigner implements IChannelSigner {
     return this.address;
   }
 
-  public async sendTransaction(
-    transaction: TransactionRequest,
-  ): Promise<TransactionResponse> {
+  public async sendTransaction(transaction: TransactionRequest): Promise<TransactionResponse> {
     if (!this.provider) {
-      throw new Error(`ChannelSigner can't send transactions without being connected to a provider`);
+      throw new Error(
+        `ChannelSigner can't send transactions without being connected to a provider`,
+      );
     }
-    const wallet = new Wallet(this.privateKey, this.provider);
+    const wallet = new Wallet(this.privateKey, this.provider as any);
     return wallet.sendTransaction(transaction);
   }
 }
