@@ -128,7 +128,6 @@ export interface IRpcConnection extends ConnextEventEmitter {
 }
 
 export interface IChannelSigner {
-  privateKey: string;
   identifier: PublicIdentifier;
   address: Address;
   signMessage(message: string): Promise<string>;
