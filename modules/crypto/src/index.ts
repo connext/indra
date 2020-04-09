@@ -36,15 +36,15 @@ export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
 }
 
 export function getChannelPublicIdentifier(seed: string, publicKey: string): string {
-  return (
-    INDRA_PUB_ID_PREFIX +
-    bs58check.encode(concatBuffers(keccak256(bufferify(seed)).slice(20), hexToBuffer(publicKey)))
+  const id = bs58check.encode(
+    concatBuffers(keccak256(bufferify(seed)).slice(20), hexToBuffer(publicKey)),
   );
+  return INDRA_PUB_ID_PREFIX + (id.length === 64 ? `1${id}` : id);
 }
 
 export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): string {
   const buf: Buffer = bs58check.decode(publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""));
-  return bufferToHex(buf.slice(20, buf.length), true);
+  return bufferToHex(buf.slice(buf.length === 48 ? 21 : 20, buf.length), true);
 }
 
 export function getLowerCaseAddress(publicKey: Buffer | string): string {
