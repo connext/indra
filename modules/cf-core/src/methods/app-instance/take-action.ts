@@ -8,7 +8,7 @@ import {
   SolidityValueType,
   toBN,
   UpdateStateMessage,
-  ChannelPubId,
+  PublicIdentifier,
 } from "@connext/types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
@@ -140,8 +140,8 @@ async function runTakeActionProtocol(
   appIdentityHash: string,
   store: IStoreService,
   protocolRunner: ProtocolRunner,
-  initiatorIdentifier: ChannelPubId,
-  responderIdentifier: ChannelPubId,
+  initiatorIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   action: SolidityValueType,
   stateTimeout: BigNumber,
 ) {

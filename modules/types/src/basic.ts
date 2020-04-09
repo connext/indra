@@ -15,7 +15,7 @@ export type Address = string; // aka HexString of length 42
 export type Bytes32 = string; // aka HexString of length 66
 export type DecString = string; // eg "3.14"
 export type HexString = string; // eg "0xabc123" of arbitrary length
-export type ChannelPubId = string; // TODO: finalize format
+export type PublicIdentifier = string; // TODO: finalize format
 export type AssetId = string; // CAIP-10 format: ${address}@${namespace}:${chainId}
 
 export type BigNumber = ethersBN;

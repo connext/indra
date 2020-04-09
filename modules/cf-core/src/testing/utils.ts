@@ -23,7 +23,7 @@ import {
   UninstallMessage,
   getAssetId,
   getAddressFromIdentifier,
-  ChannelPubId,
+  PublicIdentifier,
   AssetId,
   getTokenAddressFromAssetId,
   Address,
@@ -560,7 +560,7 @@ export function constructRejectInstallRpc(appIdentityHash: string): Rpc {
 
 export function constructAppProposalRpc(
   multisigAddress: string,
-  proposedToIdentifier: ChannelPubId,
+  proposedToIdentifier: PublicIdentifier,
   appDefinition: string,
   abiEncodings: AppABIEncodings,
   initialState: SolidityValueType,

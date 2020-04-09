@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, ChannelPubId } from "./basic";
+import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, PublicIdentifier } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,
@@ -44,8 +44,8 @@ export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTy
   appIdentityHash: Bytes32;
   assetId: Address;
   paymentId?: Bytes32;
-  sender: ChannelPubId;
-  recipient?: ChannelPubId;
+  sender: PublicIdentifier;
+  recipient?: PublicIdentifier;
   meta: any;
   type: T;
   transferMeta: T extends LinkedTransfer
@@ -64,8 +64,8 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   amount: HexObject;
   assetId: Address;
   paymentId?: Bytes32;
-  sender: ChannelPubId;
-  recipient?: ChannelPubId;
+  sender: PublicIdentifier;
+  recipient?: PublicIdentifier;
   meta: any;
   type: T;
 };
@@ -85,7 +85,7 @@ const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 type CreateMultisigEventData = {
   owners: Address[];
   multisigAddress: Address;
-  counterpartyIdentifier?: ChannelPubId;
+  counterpartyIdentifier?: PublicIdentifier;
 };
 
 ////////////////////////////////////////

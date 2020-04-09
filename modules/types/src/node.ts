@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, DecString, Network, ChannelPubId } from "./basic";
+import { Address, BigNumber, Bytes32, DecString, Network, PublicIdentifier } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
@@ -15,8 +15,8 @@ type GetRebalanceProfileResponse = RebalanceProfile;
 
 type GetHashLockTransferResponse =
   | {
-      senderIdentifier: ChannelPubId;
-      receiverIdentifier?: ChannelPubId;
+      senderIdentifier: PublicIdentifier;
+      receiverIdentifier?: PublicIdentifier;
       assetId: Address;
       amount: DecString;
       lockHash: Bytes32;
@@ -26,8 +26,8 @@ type GetHashLockTransferResponse =
   | undefined;
 
 type GetSignedTransferResponse = {
-  senderIdentifier: ChannelPubId;
-  receiverIdentifier?: ChannelPubId;
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier?: PublicIdentifier;
   assetId: Address;
   amount: DecString;
   paymentId: Bytes32;
@@ -39,23 +39,23 @@ type GetTransferResponse = {
   paymentId: Bytes32;
   amount: BigNumber;
   assetId: Address;
-  senderIdentifier: ChannelPubId;
-  receiverIdentifier: ChannelPubId;
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier: PublicIdentifier;
   meta: any;
 };
 
 type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
-  nodeIdentifier: ChannelPubId;
+  nodeIdentifier: PublicIdentifier;
   messagingUrl: string[];
   supportedTokenAddresses: Address[];
 };
 
 type GetChannelResponse = {
   id: number;
-  nodeIdentifier: ChannelPubId;
-  userIdentifier: ChannelPubId;
+  nodeIdentifier: PublicIdentifier;
+  userIdentifier: PublicIdentifier;
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: Collateralizations;
@@ -82,8 +82,8 @@ type FetchedLinkedTransfer = {
   createdAt: Date;
   amount: BigNumber;
   assetId: Address;
-  senderIdentifier: ChannelPubId;
-  receiverIdentifier?: ChannelPubId;
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier?: PublicIdentifier;
   status: LinkedTransferStatus;
   meta: any;
   encryptedPreImage?: string;

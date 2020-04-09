@@ -1,4 +1,4 @@
-import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, getAddressFromIdentifier, ChannelPubId } from "@connext/types";
+import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, getAddressFromIdentifier, PublicIdentifier } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -67,8 +67,8 @@ export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
  * existing channels
  */
 export const getCreate2MultisigAddress = async (
-  initiatorIdentifier: ChannelPubId,
-  responderIdentifier: ChannelPubId,
+  initiatorIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   addresses: CriticalStateChannelAddresses,
   ethProvider: JsonRpcProvider,
   legacyKeygen?: boolean,
@@ -119,8 +119,8 @@ const memoizedGetAddress = memoize((params: string): string => getAddress(params
 });
 
 export const scanForCriticalAddresses = async (
-  initiatorIdentifier: ChannelPubId,
-  responderIdentifier: ChannelPubId,
+  initiatorIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   expectedMultisig: string,
   ethProvider: JsonRpcProvider,
   moreAddressHistory?: {

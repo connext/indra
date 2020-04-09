@@ -15,7 +15,7 @@ import {
   stringify,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  ChannelPubId,
+  PublicIdentifier,
   getAddressFromIdentifier,
   getChainIdFromIdentifier,
 } from "@connext/types";
@@ -54,8 +54,8 @@ import { appIdentityToHash } from "../utils";
  */
 export class AppInstance {
   constructor(
-    public readonly initiatorIdentifier: ChannelPubId, // eth addr at appSeqNp idx
-    public readonly responderIdentifier: ChannelPubId, // eth addr at appSeqNp idx
+    public readonly initiatorIdentifier: PublicIdentifier, // eth addr at appSeqNp idx
+    public readonly responderIdentifier: PublicIdentifier, // eth addr at appSeqNp idx
     public readonly defaultTimeout: HexString,
     public readonly appInterface: AppInterface,
     public readonly appSeqNo: number, // channel nonce at app proposal

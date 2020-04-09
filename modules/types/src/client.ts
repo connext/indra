@@ -1,7 +1,7 @@
 import { providers } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, Bytes32, DecString, ChannelPubId } from "./basic";
+import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
 import { ChannelProviderConfig, IChannelProvider, IChannelSigner } from "./channelProvider";
 import { EventNames } from "./events";
 import { ILogger, ILoggerService } from "./logger";
@@ -40,9 +40,9 @@ export interface IConnextClient {
   ethProvider: providers.JsonRpcProvider;
   signerAddress: Address;
   multisigAddress: Address;
-  nodeIdentifier: ChannelPubId;
+  nodeIdentifier: PublicIdentifier;
   nodeSignerAddress: Address;
-  identifier: ChannelPubId; // channelIdentifier?
+  identifier: PublicIdentifier; // channelIdentifier?
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;

@@ -9,7 +9,7 @@ import {
   Message,
   ProtocolMessage,
   IChannelSigner,
-  ChannelPubId,
+  PublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -31,7 +31,7 @@ export class RequestHandler {
   router!: RpcRouter;
 
   constructor(
-    readonly publicIdentifier: ChannelPubId,
+    readonly publicIdentifier: PublicIdentifier,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
     readonly store: IStoreService,

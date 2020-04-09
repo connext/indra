@@ -1,12 +1,12 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType, ChannelPubId, AssetId } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType, PublicIdentifier, AssetId } from "./basic";
 import { OutcomeType } from "./contracts";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {
-  initiatorIdentifier: ChannelPubId;
+  initiatorIdentifier: PublicIdentifier;
   initiatorDepositAssetId: Address;
-  responderIdentifier: ChannelPubId;
+  responderIdentifier: PublicIdentifier;
   responderDepositAssetId: Address;
   multisigAddress: Address;
   initiatorBalanceDecrement: BigNumber;
@@ -32,8 +32,8 @@ type InstallProtocolParams = {
 
 type ProposeProtocolParams = {
   multisigAddress: Address;
-  initiatorIdentifier: ChannelPubId;
-  responderIdentifier: ChannelPubId;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   appDefinition: Address;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
@@ -48,14 +48,14 @@ type ProposeProtocolParams = {
 };
 
 type SetupProtocolParams = {
-  initiatorIdentifier: ChannelPubId;
-  responderIdentifier: ChannelPubId;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
 };
 
 type TakeActionProtocolParams = {
-  initiatorIdentifier: ChannelPubId;
-  responderIdentifier: ChannelPubId;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
   appIdentityHash: Address;
   action: SolidityValueType;
@@ -64,15 +64,15 @@ type TakeActionProtocolParams = {
 
 type UninstallProtocolParams = {
   appIdentityHash: Bytes32;
-  initiatorIdentifier: ChannelPubId;
-  responderIdentifier: ChannelPubId;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
   blockNumberToUseIfNecessary?: number;
 };
 
 type UpdateProtocolParams = {
-  initiatorIdentifier: ChannelPubId;
-  responderIdentifier: ChannelPubId;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
   appIdentityHash: Address;
   newState: SolidityValueType;

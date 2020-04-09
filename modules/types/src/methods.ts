@@ -1,4 +1,4 @@
-import { Address, BigNumber, Bytes32, SolidityValueType, ChannelPubId, AssetId } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType, PublicIdentifier, AssetId } from "./basic";
 import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
@@ -11,7 +11,7 @@ import { enumify } from "./utils";
 ////////////////////////////////////////
 
 type CreateChannelParams = {
-  owners: ChannelPubId[];
+  owners: PublicIdentifier[];
 };
 
 type CreateChannelResult = {
@@ -159,7 +159,7 @@ type ProposeInstallParams = {
   initiatorDepositAssetId: AssetId;
   meta?: Object;
   outcomeType: OutcomeType;
-  proposedToIdentifier: ChannelPubId;
+  proposedToIdentifier: PublicIdentifier;
   responderDeposit: BigNumber;
   responderDepositAssetId: AssetId;
   stateTimeout?: BigNumber;

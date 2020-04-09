@@ -1,4 +1,4 @@
-import { Address, Bytes32, DecString, ChannelPubId } from "./basic";
+import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
 import { ContractAddresses } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
@@ -84,7 +84,7 @@ export type ChannelProviderConfig = {
   signerAddress: Address;
   multisigAddress?: Address; // may not be deployed yet
   nodeUrl: string;
-  userIdentifier: ChannelPubId;
+  userIdentifier: PublicIdentifier;
 };
 
 export interface CFChannelProviderOptions {
@@ -96,7 +96,7 @@ export interface CFChannelProviderOptions {
   contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
-  channelIdentifier: ChannelPubId;
+  channelIdentifier: PublicIdentifier;
   store: IClientStore;
 }
 
@@ -127,7 +127,7 @@ export interface IRpcConnection extends ConnextEventEmitter {
 
 export interface IChannelSigner {
   privateKey: string;
-  identifier: ChannelPubId;
+  identifier: PublicIdentifier;
   address: Address;
   signMessage(message: string): Promise<string>;
 }

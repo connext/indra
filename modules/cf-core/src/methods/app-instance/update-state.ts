@@ -5,7 +5,7 @@ import {
   MethodResults,
   ProtocolNames,
   SolidityValueType,
-  ChannelPubId,
+  PublicIdentifier,
 } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { INVALID_ARGUMENT } from "ethers/errors";
@@ -98,8 +98,8 @@ async function runUpdateStateProtocol(
   appIdentityHash: string,
   store: IStoreService,
   protocolRunner: ProtocolRunner,
-  initiatorIdentifier: ChannelPubId,
-  responderIdentifier: ChannelPubId,
+  initiatorIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   newState: SolidityValueType,
   stateTimeout: BigNumber = Zero,
 ) {

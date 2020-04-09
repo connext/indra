@@ -4,7 +4,7 @@ import {
   DecString,
   HexString,
   SolidityValueType,
-  ChannelPubId,
+  PublicIdentifier,
   AssetId,
 } from "./basic";
 import {
@@ -41,8 +41,8 @@ export type AppABIEncodings = {
 export type AppInstanceJson = {
   identityHash: HexString;
   multisigAddress: Address;
-  initiatorIdentifier: ChannelPubId;
-  responderIdentifier: ChannelPubId;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   defaultTimeout: HexString;
   appInterface: AppInterface;
   appSeqNo: number;
@@ -69,8 +69,8 @@ export type AppInstanceProposal = {
   initiatorDeposit: DecString;
   initiatorDepositAssetId: AssetId;
   outcomeType: OutcomeType;
-  initiatorIdentifier: ChannelPubId;
-  responderIdentifier: ChannelPubId;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   responderDeposit: DecString;
   responderDepositAssetId: AssetId;
   defaultTimeout: HexString;

@@ -7,7 +7,7 @@ import {
   ProtocolNames,
   ProtocolParams,
   toBN,
-  ChannelPubId,
+  PublicIdentifier,
   getAddressFromIdentifier,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
@@ -69,7 +69,7 @@ export async function install(
   store: IStoreService,
   protocolRunner: ProtocolRunner,
   params: MethodParams.Install,
-  initiatorIdentifier: ChannelPubId,
+  initiatorIdentifier: PublicIdentifier,
 ): Promise<AppInstanceProposal> {
   const { appIdentityHash } = params;
 

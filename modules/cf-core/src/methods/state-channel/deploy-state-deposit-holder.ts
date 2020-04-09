@@ -7,7 +7,7 @@ import {
   NetworkContext,
   stringify,
   getAddressFromIdentifier,
-  ChannelPubId,
+  PublicIdentifier,
 } from "@connext/types";
 import { Contract, Signer, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -193,7 +193,7 @@ async function sendMultisigDeployTx(
 async function checkForCorrectOwners(
   tx: TransactionResponse,
   provider: JsonRpcProvider,
-  identifiers: ChannelPubId[], // [initiator, responder]
+  identifiers: PublicIdentifier[], // [initiator, responder]
   multisigAddress: string,
 ): Promise<boolean> {
   await tx.wait();
