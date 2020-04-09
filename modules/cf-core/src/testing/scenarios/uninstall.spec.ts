@@ -14,6 +14,7 @@ import {
   getFreeBalanceState,
   getInstalledAppInstances,
   installApp,
+  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 } from "../utils";
 import { isHexString } from "ethers/utils";
 
@@ -79,9 +80,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         TicTacToeApp,
         initialState,
         depositAmount,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
         depositAmount,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
       );
 
       await Promise.all([
@@ -132,9 +133,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         TicTacToeApp,
         initialState,
         depositAmount,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
         depositAmount,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
       );
 
       await Promise.all([
@@ -184,9 +185,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         TicTacToeApp,
         initialState,
         depositAmount,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
         depositAmount,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
       );
 
       await Promise.all([

@@ -2,7 +2,6 @@ import { IMessagingService, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
 import { JsonRpcProvider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { Node } from "../node";
 
@@ -100,7 +99,7 @@ export async function setup(
   let nodeC: Node;
   if (nodeCPresent) {
     const channelSignerC = new ChannelSigner(
-      fromExtendedKey(C_PRIVATE_KEY).privateKey,
+      C_PRIVATE_KEY,
       provider.network.chainId,
     );
     const storeServiceC = storeServiceFactory.createStoreService();

@@ -1,4 +1,4 @@
-import { DepositAppState, BigNumber, getAddressFromIdentifier } from "@connext/types";
+import { DepositAppState, BigNumber, getAddressFromIdentifier, getAssetId, getTokenAddressFromAssetId } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
@@ -15,6 +15,8 @@ import {
   transferERC20Tokens,
   getDepositApps,
   getMultisigBalance,
+  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  GANACHE_CHAIN_ID,
 } from "../utils";
 
 expect.extend({ toBeLt, toBeEq });
@@ -35,13 +37,21 @@ describe(`Node method follows spec - install deposit app`, () => {
   });
 
   const runUnrolledDepositTest = async (
-    assetId: string = AddressZero,
+    assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
     depositAmt: BigNumber = new BigNumber(1000),
   ) => {
     // request rights
     const appIdentityHash = await requestDepositRights(nodeA, nodeB, multisigAddress, assetId);
-    const appsA = await getDepositApps(nodeA, multisigAddress, [assetId]);
-    const appsB = await getDepositApps(nodeB, multisigAddress, [assetId]);
+    const appsA = await getDepositApps(
+      nodeA, 
+      multisigAddress, 
+      [getTokenAddressFromAssetId(assetId)],
+    );
+    const appsB = await getDepositApps(
+      nodeB, 
+      multisigAddress, 
+      [getTokenAddressFromAssetId(assetId)],
+    );
     expect(appsA.length).toBe(appsB.length);
     expect(appsA.length).toBe(1);
     expect(appsA[0].identityHash).toBe(appIdentityHash);
@@ -60,25 +70,39 @@ describe(`Node method follows spec - install deposit app`, () => {
     expect(preSendBalB).toBeEq(0);
 
     // send tx
-    const preDepositMultisig = await getMultisigBalance(multisigAddress, assetId);
-    assetId === AddressZero
+    const preDepositMultisig = await getMultisigBalance(
+      multisigAddress,
+      getTokenAddressFromAssetId(assetId),
+    );
+    assetId === CONVENTION_FOR_ETH_ASSET_ID_GANACHE
       ? await provider.getSigner().sendTransaction({
           to: multisigAddress,
           value: depositAmt,
         })
       : await transferERC20Tokens(
           multisigAddress,
-          assetId,
+          getTokenAddressFromAssetId(assetId),
           DolphinCoin.abi,
           depositAmt,
         );
-    const multisigBalance = await getMultisigBalance(multisigAddress, assetId);
+    const multisigBalance = await getMultisigBalance(
+      multisigAddress, 
+      getTokenAddressFromAssetId(assetId),
+    );
     expect(multisigBalance).toBeEq(preDepositMultisig.add(depositAmt));
 
     // rescind rights
     await rescindDepositRights(nodeA, nodeB, multisigAddress, assetId);
-    const postRescindA = await getDepositApps(nodeA, multisigAddress, [assetId]);
-    const postRescindB = await getDepositApps(nodeA, multisigAddress, [assetId]);
+    const postRescindA = await getDepositApps(
+      nodeA, 
+      multisigAddress, 
+      [getTokenAddressFromAssetId(assetId)],
+    );
+    const postRescindB = await getDepositApps(
+      nodeA, 
+      multisigAddress, 
+      [getTokenAddressFromAssetId(assetId)],
+    );
     expect(postRescindA.length).toBe(postRescindB.length);
     expect(postRescindA.length).toBe(0);
 
@@ -99,13 +123,13 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   it(`install app with tokens, sending tokens should increase free balance`, async () => {
     const depositAmt = new BigNumber(1000);
-    const assetId = global[`network`].DolphinCoin;
+    const assetId = getAssetId(GANACHE_CHAIN_ID, global[`network`].DolphinCoin);
 
     await runUnrolledDepositTest(assetId, depositAmt);;
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
-    const erc20TokenAddress = global[`network`].DolphinCoin;
+    const erc20AssetId = getAssetId(GANACHE_CHAIN_ID, global[`network`].DolphinCoin);
     const depositAmtToken = new BigNumber(1000);
     const depositAmtEth = new BigNumber(500);
 
@@ -119,7 +143,7 @@ describe(`Node method follows spec - install deposit app`, () => {
       nodeA,
       nodeB,
       multisigAddress,
-      erc20TokenAddress,
+      erc20AssetId,
     );
 
     // pre-deposit free balances
@@ -127,7 +151,7 @@ describe(`Node method follows spec - install deposit app`, () => {
       nodeA,
       nodeB,
       multisigAddress,
-      erc20TokenAddress,
+      erc20AssetId,
     );
     expect(preSendBalAToken).toBeEq(0);
     expect(preSendBalBToken).toBeEq(0);
@@ -136,13 +160,18 @@ describe(`Node method follows spec - install deposit app`, () => {
       nodeA,
       nodeB,
       multisigAddress,
-      AddressZero,
+      CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
     );
     expect(preSendBalAEth).toBeEq(0);
     expect(preSendBalBEth).toBeEq(0);
 
     // send onchain transactions
-    await transferERC20Tokens(multisigAddress, erc20TokenAddress, DolphinCoin.abi, depositAmtToken);
+    await transferERC20Tokens(
+      multisigAddress,
+      getTokenAddressFromAssetId(erc20AssetId), 
+      DolphinCoin.abi, 
+      depositAmtToken,
+    );
     const tx = await provider.getSigner().sendTransaction({
       to: multisigAddress,
       value: depositAmtEth,
@@ -151,14 +180,14 @@ describe(`Node method follows spec - install deposit app`, () => {
 
     // rescind rights
     await rescindDepositRights(nodeA, nodeB, multisigAddress);
-    await rescindDepositRights(nodeA, nodeB, multisigAddress, erc20TokenAddress);
+    await rescindDepositRights(nodeA, nodeB, multisigAddress, erc20AssetId);
 
     // post-deposit free balances
     const [postSendBalAEth, postSendBalBEth] = await getBalances(
       nodeA,
       nodeB,
       multisigAddress,
-      AddressZero,
+      CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
     );
     expect(postSendBalAEth).toBeEq(depositAmtEth);
     expect(postSendBalBEth).toBeEq(0);
@@ -166,7 +195,7 @@ describe(`Node method follows spec - install deposit app`, () => {
       nodeA,
       nodeB,
       multisigAddress,
-      erc20TokenAddress,
+      erc20AssetId,
     );
     expect(postSendBalAToken).toBeEq(depositAmtToken);
     expect(postSendBalBToken).toBeEq(0);

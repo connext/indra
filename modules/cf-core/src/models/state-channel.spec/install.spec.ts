@@ -1,6 +1,6 @@
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress, getAssetId, getAddressFromIdentifier } from "@connext/types";
+import { createRandomAddress, getAddressFromIdentifier } from "@connext/types";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
@@ -16,8 +16,6 @@ describe("StateChannel::uninstallApp", () => {
   let sc2: StateChannel;
 
   let appIdentityHash: string;
-
-  const CONVENTION_FOR_ETH_TOKEN_ADDRESS = getAssetId(4447);
 
   beforeAll(() => {
     const multisigAddress = getAddress(createRandomAddress());
@@ -49,7 +47,7 @@ describe("StateChannel::uninstallApp", () => {
     );
 
     sc2 = sc1.installApp(appInstance, {
-      [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
+      [AddressZero]: {
         [getAddressFromIdentifier(ids[0])]: WeiPerEther,
         [getAddressFromIdentifier(ids[1])]: WeiPerEther,
       },

@@ -27,6 +27,7 @@ import {
   AssetId,
   getTokenAddressFromAssetId,
   Address,
+  getPublicIdentifier,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -98,13 +99,19 @@ export function createAppInstanceProposalForTest(appIdentityHash: string): AppIn
 
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
   const [initiator, responder] = stateChannel
-    ? stateChannel.getSigningKeysFor(
-        stateChannel!.userChannelIdentifiers[0],
-        stateChannel!.userChannelIdentifiers[1],
-      )
+    ? [
+      stateChannel!.userChannelIdentifiers[0], 
+      stateChannel!.userChannelIdentifiers[1],
+    ]
     : [
-        getAddress(hexlify(randomBytes(20))),
-        getAddress(hexlify(randomBytes(20))),
+        getPublicIdentifier(
+          GANACHE_CHAIN_ID,
+          getAddress(hexlify(randomBytes(20))),
+        ),
+        getPublicIdentifier(
+          GANACHE_CHAIN_ID,
+          getAddress(hexlify(randomBytes(20))),
+        ),
       ];
   return new AppInstance(
     /* initiator */ initiator,
@@ -184,7 +191,7 @@ export async function rescindDepositRights(
 export async function getDepositApps(
   node: Node,
   multisigAddr: string,
-  assetIds: string[] = [],
+  tokenAddresses: string[] = [],
 ): Promise<AppInstanceJson[]> {
   const apps = await getInstalledAppInstances(node, multisigAddr);
   if (apps.length === 0) {
@@ -193,11 +200,11 @@ export async function getDepositApps(
   const depositApps = apps.filter(app => 
     app.appInterface.addr === global[`network`][`DepositApp`],
   );
-  if (assetIds.length === 0) {
+  if (tokenAddresses.length === 0) {
     return depositApps;
   }
   return depositApps.filter(app =>
-    assetIds.includes((app.latestState as DepositAppState).assetId),
+    tokenAddresses.includes((app.latestState as DepositAppState).assetId),
   );
 }
 

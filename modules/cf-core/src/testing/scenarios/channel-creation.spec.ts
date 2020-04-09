@@ -32,7 +32,6 @@ describe("Node can create multisig, other owners get notified", () => {
       type: EventNames.CREATE_CHANNEL_EVENT,
       data: {
         owners: [nodeB.freeBalanceAddress, nodeA.freeBalanceAddress],
-        counterpartyXpub: nodeB.publicIdentifier,
       },
     };
 
@@ -47,13 +46,7 @@ describe("Node can create multisig, other owners get notified", () => {
     nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertMessage(
         msg,
-        {
-          ...expectedMsg,
-          data: {
-            ...expectedMsg.data,
-            counterpartyXpub: nodeA.publicIdentifier,
-          },
-        },
+        expectedMsg,
         ["data.multisigAddress"],
       );
       assertionCount += 1;
@@ -64,7 +57,9 @@ describe("Node can create multisig, other owners get notified", () => {
       result: {
         result: { multisigAddress },
       },
-    } = await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
+    } = await nodeB.rpcRouter.dispatch(
+      constructChannelCreationRpc(owners),
+    );
     expect(isHexString(multisigAddress)).toBeTruthy();
     assertionCount += 1;
     if (assertionCount === 3) done();

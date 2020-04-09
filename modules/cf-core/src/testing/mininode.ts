@@ -38,7 +38,12 @@ export class MiniNode {
   ) {
     this.signer = getRandomChannelSigner();
     this.xpub = this.signer.identifier;
-    this.protocolRunner = new ProtocolRunner(networkContext, provider, store, nullLogger);
+    this.protocolRunner = new ProtocolRunner(
+      networkContext, 
+      provider, 
+      store,
+      nullLogger,
+    );
     this.scm = new Map<string, StateChannel>();
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.signer));
     this.protocolRunner.register(Opcode.PERSIST_COMMITMENT, () => {});

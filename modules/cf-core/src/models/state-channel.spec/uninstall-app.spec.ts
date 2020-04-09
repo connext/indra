@@ -19,7 +19,7 @@ describe("StateChannel::uninstallApp", () => {
 
   beforeAll(() => {
     const multisigAddress = getAddress(createRandomAddress());
-    const xpubs = getRandomChannelIdentifiers(2);
+    const ids = getRandomChannelIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,
@@ -28,23 +28,23 @@ describe("StateChannel::uninstallApp", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs[0],
-      xpubs[1],
+      ids[0],
+      ids[1],
     );
 
     testApp = createAppInstanceForTest(sc1);
 
     sc1 = sc1.installApp(testApp, {
       [AddressZero]: {
-        [getAddressFromIdentifier(xpubs[0])]: Zero,
-        [getAddressFromIdentifier(xpubs[1])]: Zero,
+        [getAddressFromIdentifier(ids[0])]: Zero,
+        [getAddressFromIdentifier(ids[1])]: Zero,
       },
     });
 
     sc2 = sc1.uninstallApp(testApp, {
       [AddressZero]: {
-        [getAddressFromIdentifier(xpubs[0])]: Zero,
-        [getAddressFromIdentifier(xpubs[1])]: Zero,
+        [getAddressFromIdentifier(ids[0])]: Zero,
+        [getAddressFromIdentifier(ids[1])]: Zero,
       },
     });
   });

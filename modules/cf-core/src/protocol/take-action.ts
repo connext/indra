@@ -195,7 +195,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     await assertIsValidSignature(initiatorAddr, setStateCommitmentHash, counterpartySignature);
 
     // 7ms
-    const mySignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
+    const mySignature = yield [OP_SIGN, setStateCommitmentHash];
 
     // add signatures and write commitment to store
     const isAppInitiator = appInstance.initiatorIdentifier !== initiatorIdentifier;

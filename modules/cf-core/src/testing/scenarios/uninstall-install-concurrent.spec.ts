@@ -1,5 +1,5 @@
 import { InstallMessage, ProposeMessage } from "@connext/types";
-import { One, AddressZero } from "ethers/constants";
+import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../node";
@@ -14,6 +14,7 @@ import {
   createChannel,
   makeInstallCall,
   makeProposeCall,
+  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 } from "../utils";
 
 expect.extend({ toBeLt });
@@ -50,9 +51,9 @@ describe("Node method follows spec when happening concurrently - install / unins
         multisigAddress,
         /* initialState */ undefined,
         One,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
         One,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
       );
 
       // install the first app
@@ -94,9 +95,9 @@ describe("Node method follows spec when happening concurrently - install / unins
         multisigAddress,
         /* initialState */ undefined,
         One,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
         One,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
       );
 
       nodeA.rpcRouter.dispatch(installCall);
@@ -127,9 +128,9 @@ describe("Node method follows spec when happening concurrently - install / unins
         multisigAddress,
         /* initialState */ undefined,
         One,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
         One,
-        AddressZero,
+        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
       );
 
       nodeA.rpcRouter.dispatch(installCall);

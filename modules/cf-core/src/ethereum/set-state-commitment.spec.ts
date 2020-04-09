@@ -1,4 +1,3 @@
-import { signChannelMessage } from "@connext/crypto";
 import { MinimalTransaction, createRandomAddress } from "@connext/types";
 import {
   bigNumberify,

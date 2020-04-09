@@ -1,4 +1,4 @@
-import { AppInterface, OutcomeType, stringify, toBN, getAssetId, getAddressFromIdentifier, parseChannelIdentifier, AssetId } from "@connext/types";
+import { AppInterface, OutcomeType, stringify, toBN, getAddressFromIdentifier, parseChannelIdentifier } from "@connext/types";
 import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
@@ -133,11 +133,15 @@ export class FreeBalanceClass {
 
   public withTokenAddress(tokenAddress: string): CoinTransferMap {
     let balances: CoinTransferMap = {};
-    balances = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
+    balances = convertCoinTransfersToCoinTransfersMap(
+      this.balancesIndexedByToken[tokenAddress],
+    );
     if (Object.keys(balances).length === 0) {
+      // get addresses from default token mapping and
+      // return 0 values
       const addresses = Object.keys(
         convertCoinTransfersToCoinTransfersMap(
-          this.balancesIndexedByToken[tokenAddress],
+          this.balancesIndexedByToken[AddressZero],
         ),
       );
       for (const address of addresses) {

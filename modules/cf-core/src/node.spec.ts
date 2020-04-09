@@ -5,6 +5,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { Node } from "./node";
 import { memoryMessagingService } from "./testing/services";
 import { ChannelSigner } from "@connext/crypto";
+import { GANACHE_CHAIN_ID } from "./testing/utils";
 
 describe("Node", () => {
   it("is defined", () => {
@@ -21,7 +22,7 @@ describe("Node", () => {
       provider,
       new ChannelSigner(
         Wallet.createRandom().privateKey,
-        provider.network.chainId,
+        GANACHE_CHAIN_ID,
       ),
     );
 

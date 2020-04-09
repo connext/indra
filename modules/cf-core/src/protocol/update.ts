@@ -200,7 +200,6 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const mySignature = yield [
       OP_SIGN,
       setStateCommitment.hashToSign(),
-      appInstance.appSeqNo,
     ];
 
     // add signatures and write commitment to store

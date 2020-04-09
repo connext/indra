@@ -1,4 +1,4 @@
-import { DepositConfirmationMessage, MethodParams, DepositStartedMessage } from "@connext/types";
+import { DepositConfirmationMessage, MethodParams, DepositStartedMessage, getAssetId, getTokenAddressFromAssetId } from "@connext/types";
 import { Contract } from "ethers";
 import { One, Two, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -16,6 +16,7 @@ import {
   transferERC20Tokens,
   assertMessage,
   deposit,
+  GANACHE_CHAIN_ID,
 } from "../utils";
 
 expect.extend({ toBeEq });
@@ -72,13 +73,16 @@ describe("Node method follows spec - deposit", () => {
   });
 
   it("has the right balance before an ERC20 deposit has been made", async () => {
-    const erc20ContractAddress = (global["network"] as NetworkContextForTestSuite)
-      .DolphinCoin;
+    const erc20AssetId = getAssetId(
+      GANACHE_CHAIN_ID, 
+      (global["network"] as NetworkContextForTestSuite)
+        .DolphinCoin,
+    );
 
     const freeBalanceState = await getFreeBalanceState(
       nodeA,
       multisigAddress,
-      erc20ContractAddress,
+      erc20AssetId,
     );
 
     expect(Object.values(freeBalanceState)).toMatchObject([Zero, Zero]);
@@ -98,11 +102,13 @@ describe("Node method follows spec - deposit", () => {
   });
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {
-    const erc20ContractAddress = (global["network"] as NetworkContextForTestSuite)
-      .DolphinCoin;
+    const erc20AssetId = getAssetId(
+      GANACHE_CHAIN_ID,
+      (global["network"] as NetworkContextForTestSuite)
+        .DolphinCoin);
 
     const erc20Contract = new Contract(
-      erc20ContractAddress,
+      getTokenAddressFromAssetId(erc20AssetId),
       DolphinCoin.abi,
       global["wallet"].provider,
     );
@@ -113,8 +119,8 @@ describe("Node method follows spec - deposit", () => {
     let preDepositBalance = await provider.getBalance(multisigAddress);
     const preDepositERC20Balance = await erc20Contract.functions.balanceOf(multisigAddress);
 
-    await deposit(nodeA, multisigAddress, One, nodeB, erc20ContractAddress);
-    await deposit(nodeB, multisigAddress, One, nodeA, erc20ContractAddress);
+    await deposit(nodeA, multisigAddress, One, nodeB, erc20AssetId);
+    await deposit(nodeB, multisigAddress, One, nodeA, erc20AssetId);
 
     expect(await provider.getBalance(multisigAddress)).toEqual(preDepositBalance);
 
@@ -122,9 +128,17 @@ describe("Node method follows spec - deposit", () => {
       preDepositERC20Balance.add(Two),
     );
 
-    await confirmEthAndERC20FreeBalances(nodeA, multisigAddress, erc20ContractAddress);
+    await confirmEthAndERC20FreeBalances(
+      nodeA, 
+      multisigAddress, 
+      getTokenAddressFromAssetId(erc20AssetId),
+    );
 
-    await confirmEthAndERC20FreeBalances(nodeB, multisigAddress, erc20ContractAddress);
+    await confirmEthAndERC20FreeBalances(
+      nodeB, 
+      multisigAddress, 
+      getTokenAddressFromAssetId(erc20AssetId),
+    );
 
     // now deposits ETH
 

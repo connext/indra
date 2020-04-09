@@ -1,4 +1,4 @@
-import { OutcomeType, createRandomAddress, toBN, getPublicIdentifier, getAddressFromIdentifier } from "@connext/types";
+import { OutcomeType, createRandomAddress, toBN, getPublicIdentifier } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
@@ -37,12 +37,8 @@ describe("AppInstance", () => {
 
     expect(appInstance).not.toBe(null);
     expect(appInstance).not.toBe(undefined);
-    expect(
-      getAddressFromIdentifier(appInstance.initiatorIdentifier),
-    ).toBe(participants[0]);
-    expect(
-      getAddressFromIdentifier(appInstance.responderIdentifier),
-    ).toBe(participants[1]);
+    expect(appInstance.initiatorIdentifier).toBe(participants[0]);
+    expect(appInstance.responderIdentifier).toBe(participants[1]);
 
     // TODO: moar tests pl0x
   });

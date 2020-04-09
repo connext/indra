@@ -1,5 +1,5 @@
 import { ProposeMessage } from "@connext/types";
-import { One, AddressZero } from "ethers/constants";
+import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../node";
@@ -12,6 +12,7 @@ import {
   createChannel,
   makeInstallCall,
   makeProposeCall,
+  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 } from "../utils";
 
 expect.extend({ toBeLt });
@@ -64,9 +65,9 @@ describe(`Node method follows spec - install`, () => {
           multisigAddress,
           /* initialState */ undefined,
           One,
-          AddressZero,
+          CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
           One,
-          AddressZero,
+          CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
         );
 
         nodeA.rpcRouter.dispatch(rpc);

@@ -1,4 +1,4 @@
-import { OutcomeType, ProtocolNames, ProtocolParams, getAddressFromIdentifier } from "@connext/types";
+import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -82,8 +82,8 @@ describe("Three mininodes", () => {
         stateEncoding: proposal.abiEncodings.stateEncoding,
         actionEncoding: proposal.abiEncodings.actionEncoding,
       },
-      appInitiatorIdentifier: getAddressFromIdentifier(proposal.initiatorIdentifier),
-      appResponderIdentifier: getAddressFromIdentifier(proposal.responderIdentifier),
+      appInitiatorIdentifier: proposal.initiatorIdentifier,
+      appResponderIdentifier: proposal.responderIdentifier,
       defaultTimeout: bigNumberify(100),
       stateTimeout: Zero,
       appSeqNo: proposal.appSeqNo,
