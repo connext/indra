@@ -74,7 +74,7 @@ contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
 
         require(
             req.versionNumber == challenge.versionNumber.add(1),
-            "setState was called with outdated state"
+            "progressState was called with outdated state"
         );
 
         // Update challenge
