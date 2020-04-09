@@ -2,13 +2,12 @@ import { signChannelMessage } from "@connext/crypto";
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import {
   createRandomAddress,
-  createRandom32ByteHexString,
   MultisigTransaction,
 } from "@connext/types";
 import { WeiPerEther } from "ethers/constants";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
-import { getRandomExtendedPubKey, getRandomHDNodes } from "../testing/random-signing-keys";
+import { getRandomHDNodes } from "../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../testing/mocks";
 import { createAppInstanceForTest } from "../testing/utils";
 
@@ -22,6 +21,7 @@ import {
   getConditionalTransactionCommitment,
   ConditionalTransactionCommitment,
 } from "./conditional-tx-commitment";
+import { HDNode } from "ethers/utils/hdnode";
 
 describe("ConditionalTransactionCommitment", () => {
   let tx: MultisigTransaction;
@@ -31,13 +31,7 @@ describe("ConditionalTransactionCommitment", () => {
   const context = { network: generateRandomNetworkContext() } as Context;
 
   // signing keys
-  const hdNodes = getRandomHDNodes(2);
-
-  // General interaction testing values
-  const interaction = {
-    sender: getRandomExtendedPubKey(),
-    receiver: getRandomExtendedPubKey(),
-  };
+  const [initiator, responder] = getRandomHDNodes(2);
 
   // State channel testing values
   let stateChannel = StateChannel.setupChannel(
@@ -47,8 +41,12 @@ describe("ConditionalTransactionCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    [interaction.sender, interaction.receiver],
+    initiator.neuter().extendedKey,
+    responder.neuter().extendedKey,
   );
+
+  expect(stateChannel.userNeuteredExtendedKeys[0]).toEqual(initiator.neuter().extendedKey);
+  expect(stateChannel.userNeuteredExtendedKeys[1]).toEqual(responder.neuter().extendedKey);
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(
@@ -76,15 +74,18 @@ describe("ConditionalTransactionCommitment", () => {
 
   describe("storage", () => {
     it("should be stored correctly", async () => {
+      const signWithFreeBalance = async (hash: string, hd: HDNode) => {
+        const derived = hd.derivePath("0");
+        return await signChannelMessage(derived.privateKey, hash);
+      };
       const store = new MemoryStoreService();
       await store.createConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);
-      const hash = createRandom32ByteHexString();
-      commitment.signatures = [
-        await signChannelMessage(hdNodes[0].privateKey, hash),
-        await signChannelMessage(hdNodes[1].privateKey, hash),
-      ];
+      await commitment.addSignatures(
+        await signWithFreeBalance(commitment.hashToSign(), initiator),
+        await signWithFreeBalance(commitment.hashToSign(), responder),
+      );
       await store.updateConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(signed).toMatchObject(commitment);

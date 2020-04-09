@@ -12,7 +12,7 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
 import { HashZero } from "ethers/constants";
-import { safeJsonParse, sortAddresses } from "../util";
+import { safeJsonParse, xkeyKthAddress } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
@@ -57,7 +57,9 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     latestVersionNumber: app.latestVersionNumber,
     multisigAddress: channel.multisigAddress,
     outcomeType: app.outcomeType,
-    participants: sortAddresses([app.userParticipantAddress, app.nodeParticipantAddress]),
+    // TODO: should we add initatior/responder to the app instance table?
+    initiator: xkeyKthAddress(app.proposedByIdentifier, app.appSeqNo),
+    responder: xkeyKthAddress(app.proposedToIdentifier, app.appSeqNo),
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,
     twoPartyOutcomeInterpreterParams,

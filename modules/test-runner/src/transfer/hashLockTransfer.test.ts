@@ -7,10 +7,11 @@ import {
   IConnextClient,
   NodeResponses,
   PublicParams,
+  EventPayloads,
 } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
-import { soliditySha256 } from "ethers/utils";
+import { soliditySha256, bigNumberify } from "ethers/utils";
 import { providers } from "ethers";
 
 import {
@@ -74,8 +75,23 @@ describe("HashLock Transfers", () => {
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
+        clientB.on(
+          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          (eventPayload: EventPayloads.HashLockTransferReceived) => {
+            expect(eventPayload).to.deep.contain({
+              amount: transfer.amount,
+              assetId: transfer.assetId,
+              type: ConditionalTransferTypes.HashLockTransfer,
+              paymentId: lockHash,
+              recipient: clientB.publicIdentifier,
+            } as EventPayloads.HashLockTransferReceived);
+            expect(eventPayload.transferMeta).to.deep.eq({
+              lockHash,
+              timelock: bigNumberify(timelock).sub(100),
+            });
+            res();
+          },
+        );
       }),
     ]);
 
@@ -126,8 +142,23 @@ describe("HashLock Transfers", () => {
         recipient: clientB.publicIdentifier,
       } as PublicParams.HashLockTransfer),
       new Promise(res => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
+        clientB.on(
+          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+          (eventPayload: EventPayloads.HashLockTransferReceived) => {
+            expect(eventPayload).to.deep.contain({
+              amount: transfer.amount,
+              assetId: transfer.assetId,
+              type: ConditionalTransferTypes.HashLockTransfer,
+              paymentId: lockHash,
+              recipient: clientB.publicIdentifier,
+            } as EventPayloads.HashLockTransferReceived);
+            expect(eventPayload.transferMeta).to.deep.eq({
+              lockHash,
+              timelock: bigNumberify(timelock).sub(100),
+            });
+            res();
+          },
+        );
       }),
     ]);
 
@@ -275,7 +306,7 @@ describe("HashLock Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const preImage = createRandom32ByteHexString();
-    const timelock = await provider.getBlockNumber() + 101;
+    const timelock = (await provider.getBlockNumber()) + 101;
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
     await Promise.all([
@@ -330,22 +361,22 @@ describe("HashLock Transfers", () => {
       const start = Date.now();
 
       // both sender + receiver apps installed, sender took action
-    await Promise.all([
-      clientA.conditionalTransfer({
-        amount: transfer.amount.toString(),
-        conditionType: ConditionalTransferTypes.HashLockTransfer,
-        lockHash,
-        timelock,
-        assetId: transfer.assetId,
-        meta: { foo: "bar" },
-        recipient: clientB.publicIdentifier,
-      } as PublicParams.HashLockTransfer),
-      // eslint-disable-next-line no-loop-func
-      new Promise(res => {
-        const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
-        clientB.messaging.subscribe(subject, res);
-      }),
-    ]);
+      await Promise.all([
+        clientA.conditionalTransfer({
+          amount: transfer.amount.toString(),
+          conditionType: ConditionalTransferTypes.HashLockTransfer,
+          lockHash,
+          timelock,
+          assetId: transfer.assetId,
+          meta: { foo: "bar" },
+          recipient: clientB.publicIdentifier,
+        } as PublicParams.HashLockTransfer),
+        // eslint-disable-next-line no-loop-func
+        new Promise(res => {
+          const subject = `${clientB.publicIdentifier}.channel.${clientB.multisigAddress}.app-instance.*.install`;
+          clientB.messaging.subscribe(subject, res);
+        }),
+      ]);
 
       // eslint-disable-next-line no-loop-func
       await new Promise(async res => {

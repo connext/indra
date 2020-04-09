@@ -5,7 +5,6 @@ import {
   randomBytes,
   SigningKey,
   joinSignature,
-  bigNumberify,
 } from "ethers/utils";
 import { isBN, toBN } from "./math";
 

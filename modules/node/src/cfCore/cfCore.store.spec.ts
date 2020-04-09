@@ -27,7 +27,7 @@ import {
   createMinimalTransaction,
 } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
-import { sortAddresses, AppInstanceJson, xkeyKthAddress } from "../util";
+import { AppInstanceJson, xkeyKthAddress } from "../util";
 import { getConnection } from "typeorm";
 import { bigNumberify } from "ethers/utils";
 import { toBN } from "@connext/types";
@@ -46,7 +46,7 @@ const createTestChannel = async (
 
   const channelJson = createStateChannelJSON({
     multisigAddress,
-    userNeuteredExtendedKeys: [nodePublicIdentifier, userPublicIdentifier].sort(),
+    userNeuteredExtendedKeys: [nodePublicIdentifier, userPublicIdentifier],
   });
   await cfCoreStore.createStateChannel(channelJson);
 
@@ -67,11 +67,11 @@ const createTestChannelWithAppInstance = async (
 
   const channelJson = createStateChannelJSON({
     multisigAddress,
-    userNeuteredExtendedKeys: [nodePublicIdentifier, userPublicIdentifier].sort(),
+    userNeuteredExtendedKeys: [nodePublicIdentifier, userPublicIdentifier],
   });
   await cfCoreStore.createStateChannel(channelJson);
 
-  const appProposal = createAppInstanceProposal();
+  const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
   await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
 
   const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
@@ -80,7 +80,8 @@ const createTestChannelWithAppInstance = async (
   const appInstance = createAppInstanceJson({
     identityHash: appProposal.identityHash,
     multisigAddress,
-    participants: sortAddresses([userParticipantAddr, nodeParticipantAddr]),
+    initiator: userParticipantAddr,
+    responder: nodeParticipantAddr,
   });
   const updatedFreeBalance: AppInstanceJson = {
     ...channelJson.freeBalanceAppInstance!,
@@ -132,19 +133,23 @@ describe("CFCoreStore", () => {
 
   describe("Channel", () => {
     it("should create a state channel", async () => {
+      const nodePublicIdentifier = configService.getPublicIdentifier();
       const { multisigAddress, channelJson } = await createTestChannel(
         cfCoreStore,
-        configService.getPublicIdentifier(),
+        nodePublicIdentifier,
       );
 
       let channel = await cfCoreStore.getStateChannel(multisigAddress);
-
+      const userIdentifier = channelJson.userNeuteredExtendedKeys.find(
+        x => x !== nodePublicIdentifier,
+      );
       expect(channel).toMatchObject({
         ...channelJson,
-        userNeuteredExtendedKeys: channelJson.userNeuteredExtendedKeys.sort(),
+        userNeuteredExtendedKeys: [nodePublicIdentifier, userIdentifier],
         freeBalanceAppInstance: {
           ...channelJson.freeBalanceAppInstance,
-          participants: sortAddresses(channelJson.freeBalanceAppInstance!.participants),
+          initiator: xkeyKthAddress(nodePublicIdentifier, 0),
+          responder: xkeyKthAddress(userIdentifier, 0),
         },
       });
     });
@@ -157,7 +162,7 @@ describe("CFCoreStore", () => {
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceProposal();
+      const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
 
       const received = await cfCoreStore.getAppProposal(appProposal.identityHash);
@@ -215,13 +220,19 @@ describe("CFCoreStore", () => {
     });
 
     it("should create app instance", async () => {
+      const APP_SEQ_NO = 2;
+
       const { multisigAddress, channelJson, userPublicIdentifier } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceProposal();
-      await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
+      const appProposal = createAppInstanceProposal({
+        appSeqNo: APP_SEQ_NO,
+        proposedByIdentifier: userPublicIdentifier,
+        proposedToIdentifier: configService.getPublicIdentifier(),
+      });
+      await cfCoreStore.createAppProposal(multisigAddress, appProposal, APP_SEQ_NO);
 
       const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
       const nodeParticipantAddr = xkeyKthAddress(
@@ -232,7 +243,9 @@ describe("CFCoreStore", () => {
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,
         multisigAddress,
-        participants: sortAddresses([userParticipantAddr, nodeParticipantAddr]),
+        initiator: userParticipantAddr,
+        responder: nodeParticipantAddr,
+        appSeqNo: APP_SEQ_NO,
       });
       const updatedFreeBalance: AppInstanceJson = {
         ...channelJson.freeBalanceAppInstance!,
@@ -252,13 +265,19 @@ describe("CFCoreStore", () => {
     });
 
     it("should update app instance", async () => {
+      const APP_SEQ_NO = 2;
+
       const { multisigAddress, channelJson, userPublicIdentifier } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
 
-      const appProposal = createAppInstanceProposal();
-      await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
+      const appProposal = createAppInstanceProposal({
+        appSeqNo: APP_SEQ_NO,
+        proposedByIdentifier: userPublicIdentifier,
+        proposedToIdentifier: configService.getPublicIdentifier(),
+      });
+      await cfCoreStore.createAppProposal(multisigAddress, appProposal, APP_SEQ_NO);
 
       const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
       const nodeParticipantAddr = xkeyKthAddress(
@@ -269,7 +288,9 @@ describe("CFCoreStore", () => {
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,
         multisigAddress,
-        participants: sortAddresses([userParticipantAddr, nodeParticipantAddr]),
+        initiator: userParticipantAddr,
+        responder: nodeParticipantAddr,
+        appSeqNo: APP_SEQ_NO,
       });
       await cfCoreStore.createAppInstance(
         multisigAddress,

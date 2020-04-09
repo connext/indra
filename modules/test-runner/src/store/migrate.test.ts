@@ -33,12 +33,16 @@ import {
   XPUB_V0_3,
   XPUB_V0_4,
 } from "./examples";
+import { xkeyKthAddress } from "@connext/cf-core";
 
-const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
+const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): StateChannelJSON => {
   const removeIsVirtualTagAndTimeouts = (obj: any) => {
-    const { isVirtualApp, latestTimeout, timeout, ...ret } = obj;
+    const { isVirtualApp, participants, latestTimeout, timeout, ...ret } = obj;
     return ret;
   };
+  const userXpub = oldChannel.userNeuteredExtendedKeys.find(
+    x => x !== nodeXpub,
+  );
   return {
     schemaVersion: STORE_SCHEMA_VERSION,
     monotonicNumProposedApps: oldChannel.monotonicNumProposedApps,
@@ -57,9 +61,11 @@ const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
     appInstances: oldChannel.appInstances
       ? oldChannel.appInstances.map(([id, appJson]) => [
           id,
-          { 
-            ...removeIsVirtualTagAndTimeouts(appJson), 
-            multisigAddress: oldChannel.multisigAddress, 
+          {
+            ...removeIsVirtualTagAndTimeouts(appJson),
+            multisigAddress: oldChannel.multisigAddress,
+            initiator: xkeyKthAddress(nodeXpub, appJson.appSeqNo),
+            responder: xkeyKthAddress(userXpub, appJson.appSeqNo),
             defaultTimeout: toBN(appJson.defaultTimeout).toHexString(),
             stateTimeout: toBN(appJson.latestTimeout).toHexString(),
           },
@@ -77,6 +83,8 @@ const convertV0toV1JSON = (oldChannel: any): StateChannelJSON => {
         ...oldChannel.freeBalanceAppInstance.appInterface,
         actionEncoding: null,
       },
+      initiator: xkeyKthAddress(nodeXpub),
+      responder: xkeyKthAddress(userXpub),
     } as AppInstanceJson,
     addresses: oldChannel.addresses,
   };

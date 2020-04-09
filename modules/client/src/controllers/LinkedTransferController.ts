@@ -103,7 +103,7 @@ export class LinkedTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    const eventData = deBigNumberifyJson({
+    const eventData = {
       type: ConditionalTransferTypes.LinkedTransfer,
       amount,
       assetId,
@@ -112,7 +112,7 @@ export class LinkedTransferController extends AbstractController {
       recipient,
       meta,
       transferMeta: {},
-    }) as EventPayloads.LinkedTransferCreated;
+    } as EventPayloads.LinkedTransferCreated;
 
     this.log.info(`Emitting event data: ${JSON.stringify(eventData)}`);
 

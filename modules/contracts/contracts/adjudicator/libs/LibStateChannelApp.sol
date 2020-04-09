@@ -130,14 +130,11 @@ contract LibStateChannelApp is LibDispute {
             signers.length == signatures.length,
             "Signers and signatures should be of equal length"
         );
-        address lastSigner = address(0);
         for (uint256 i = 0; i < signers.length; i++) {
             require(
                 signers[i] == txHash.verifyChannelMessage(signatures[i]),
                 "Invalid signature"
             );
-            require(signers[i] > lastSigner, "Signers not in alphanumeric order");
-            lastSigner = signers[i];
         }
         return true;
     }

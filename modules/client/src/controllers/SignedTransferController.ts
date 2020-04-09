@@ -70,7 +70,7 @@ export class SignedTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    const eventData = deBigNumberifyJson({
+    const eventData = {
       type: ConditionalTransferTypes.SignedTransfer,
       amount,
       assetId,
@@ -79,7 +79,7 @@ export class SignedTransferController extends AbstractController {
       transferMeta: {
         signer,
       },
-    }) as EventPayloads.SignedTransferCreated;
+    } as EventPayloads.SignedTransferCreated;
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
     return {

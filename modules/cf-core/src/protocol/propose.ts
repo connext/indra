@@ -83,6 +83,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: bigNumberify(preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
+          initiatorXpub,
+          responderXpub,
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
@@ -115,6 +117,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
+          initiatorXpub,
+          responderXpub,
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
@@ -169,10 +173,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Asserted valid signture initiator propose`);
 
     // add signatures to commitment and save
-    setStateCommitment.signatures = [
-      initiatorSignatureOnInitialState,
+    await setStateCommitment.addSignatures(
+      initiatorSignatureOnInitialState as any,
       responderSignatureOnInitialState,
-    ];
+    );
 
     substart = Date.now();
 
@@ -243,6 +247,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
+          initiatorXpub,
+          responderXpub,
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
@@ -276,6 +282,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
+          initiatorXpub,
+          responderXpub,
           preProtocolStateChannel.numProposedApps + 1,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
@@ -324,10 +332,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessageData,
     ];
 
-    setStateCommitment.signatures = [
+    await setStateCommitment.addSignatures(
       initiatorSignatureOnInitialState,
-      responderSignatureOnInitialState,
-    ];
+      responderSignatureOnInitialState as any,
+    );
 
     substart = Date.now();
 
