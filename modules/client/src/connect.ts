@@ -12,6 +12,7 @@ import {
   NodeResponses,
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
+  getPublicIdentifier,
 } from "@connext/types";
 import { Contract, providers, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -89,7 +90,6 @@ export const connect = async (
         log,
         nodeUrl,
         userPublicIdentifier,
-        network.chainId,
         getSignature,
         messagingUrl,
       );
@@ -98,12 +98,17 @@ export const connect = async (
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ channelProvider, logger: log, messaging, nodeUrl });
+    node = new NodeApiClient({
+      channelProvider,
+      logger: log,
+      messaging,
+      nodeUrl,
+    });
     config = await node.config();
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userPublicIdentifier = await signer.getAddress(); // make this a real UserId at some point
+    node.userPublicIdentifier = userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
     isInjected = true;
@@ -125,8 +130,7 @@ export const connect = async (
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        address,
-        network.chainId,
+        getPublicIdentifier(network.chainId, address),
         (msg: string) => signer.signMessage(msg),
         messagingUrl,
       );
