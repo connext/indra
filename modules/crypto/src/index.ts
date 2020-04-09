@@ -44,7 +44,7 @@ export function getChannelPublicIdentifier(seed: string, publicKey: string): str
 
 export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): string {
   const buf: Buffer = bs58check.decode(publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""));
-  return bufferToHex(buf.slice(20, 40), true);
+  return bufferToHex(buf.slice(20, buf.length), true);
 }
 
 export function getLowerCaseAddress(publicKey: Buffer | string): string {
