@@ -21,6 +21,8 @@ import {
   decompress,
   padLeft,
   trimRight,
+  isCompressed,
+  isDecompressed,
 } from "eccrypto-js";
 
 export * from "eccrypto-js";
@@ -53,7 +55,8 @@ export function ensureBase58Length(str: string, length: number) {
 
 export function getChannelPublicIdentifier(seed: string, publicKey: string): string {
   const seedHash = trimRight(keccak256(bufferify(seed)), INDRA_PUB_ID_HASH_SIZE);
-  const compressedPubKey = compress(hexToBuffer(publicKey));
+  const buf = hexToBuffer(publicKey);
+  const compressedPubKey = isCompressed(buf) ? buf : compress(buf);
   const base58id = bs58check.encode(concatBuffers(seedHash, compressedPubKey));
   const base58length = INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length;
   return INDRA_PUB_ID_PREFIX + ensureBase58Length(base58id, base58length);
@@ -73,10 +76,10 @@ export function getSignerAddressFromPublicIdentifier(publicIdentifier: string): 
 }
 
 export function getLowerCaseAddress(publicKey: Buffer | string): string {
-  const buf = bufferify(publicKey);
-  const hex = addHexPrefix(bufferToHex(buf).slice(2));
-  const hash = keccak256(hexToBuffer(hex));
-  return addHexPrefix(bufferToHex(hash).substring(24));
+  const buf = typeof publicKey === "string" ? hexToBuffer(publicKey) : publicKey;
+  const pubKey = isDecompressed(buf) ? buf : decompress(buf);
+  const hash = keccak256(pubKey.slice(1));
+  return addHexPrefix(bufferToHex(hash.slice(12)));
 }
 
 export function toChecksumAddress(address: string): string {
