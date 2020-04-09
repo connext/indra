@@ -158,6 +158,10 @@ export class ConfigService implements OnModuleInit {
     return this.publicIdentifier;
   }
 
+  async getSignerAddress(): Promise<string> {
+    return this.signer.getAddress();
+  }
+
   getLogLevel(): number {
     return parseInt(this.get(`INDRA_LOG_LEVEL`) || `3`, 10);
   }

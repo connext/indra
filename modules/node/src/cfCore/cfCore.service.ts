@@ -11,6 +11,9 @@ import {
   StateChannelJSON,
   stringify,
   toBN,
+  getPublicIdentifier,
+  getAddressFromIdentifier,
+  AssetId,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -53,7 +56,7 @@ export class CFCoreService {
   async getFreeBalance(
     userPubId: string,
     multisigAddress: string,
-    assetId: string = AddressZero,
+    assetId?: string,
   ): Promise<MethodResults.GetFreeBalanceState> {
     try {
       const freeBalance = await this.cfCore.rpcRouter.dispatch({
@@ -61,7 +64,10 @@ export class CFCoreService {
         methodName: MethodNames.chan_getFreeBalanceState,
         parameters: {
           multisigAddress,
-          tokenAddress: assetId,
+          tokenAddress: assetId || getPublicIdentifier(
+            (await this.configService.getEthNetwork()).chainId,
+            AddressZero,
+          ),
         },
       });
       return freeBalance.result.result as MethodResults.GetFreeBalanceState;
@@ -73,7 +79,7 @@ export class CFCoreService {
         // but need the free balance address in the multisig
         const obj = {};
         obj[this.cfCore.signerAddress] = Zero;
-        obj[userPubId] = Zero;
+        obj[getAddressFromIdentifier(userPubId)] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);
@@ -168,9 +174,9 @@ export class CFCoreService {
     channel: Channel,
     initialState: any,
     initiatorDeposit: BigNumber,
-    initiatorDepositAssetId: string,
+    initiatorDepositAssetId: AssetId,
     responderDeposit: BigNumber,
-    responderDepositAssetId: string,
+    responderDepositAssetId: AssetId,
     app: string,
     meta: object = {},
     stateTimeout: BigNumber = Zero,

@@ -1,5 +1,5 @@
 import { DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
-import { MinimumViableMultisig } from "@connext/contracts";
+import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 import {
   BigNumber,
   MinimalTransaction,
@@ -9,10 +9,12 @@ import {
   TransactionResponse,
   TransactionReceipt,
   stringify,
+  getAddressFromIdentifier,
+  getPublicIdentifier,
+  Address,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero, AddressZero } from "ethers/constants";
-import tokenAbi from "human-standard-token-abi";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
@@ -33,7 +35,7 @@ export class DepositService {
     this.log.setContext("DepositService");
   }
 
-  async deposit(channel: Channel, amount: BigNumber, assetId: string): Promise<TransactionReceipt> {
+  async deposit(channel: Channel, amount: BigNumber, tokenAddress: string): Promise<TransactionReceipt> {
     // don't allow deposit if user's balance refund app is installed
     const depositRegistry = await this.appRegistryRepository
       .findByNameAndNetwork(
@@ -42,7 +44,7 @@ export class DepositService {
       );
     const depositApp = channel.appInstances.filter(
       app => app.appDefinition === depositRegistry.appDefinitionAddress
-        && app.latestState.assetId === assetId,
+        && app.latestState.assetId === tokenAddress,
     )[0];
     this.log.debug(`Found deposit app: ${stringify(depositApp, 2)}`);
     if (
@@ -50,20 +52,20 @@ export class DepositService {
       depositApp.latestState.transfers[0].to === channel.userPublicIdentifier
     ) {
       throw new Error(
-        `Cannot deposit, user has deposit app installed for asset ${assetId}, app: ${depositApp.identityHash}`,
+        `Cannot deposit, user has deposit app installed for asset ${tokenAddress}, app: ${depositApp.identityHash}`,
       );
     }
 
     let appIdentityHash;
     if (!depositApp) {
       this.log.info(`Requesting deposit rights before depositing`);
-      appIdentityHash = await this.requestDepositRights(channel, assetId);
+      appIdentityHash = await this.requestDepositRights(channel, tokenAddress);
     }
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
     let receipt;
     try { 
-      const tx = await this.sendDepositToChain(channel, amount, assetId);
+      const tx = await this.sendDepositToChain(channel, amount, tokenAddress);
       receipt = await tx.wait();
     } catch (e) {
       throw new Error(e.stack || e.message);
@@ -73,11 +75,13 @@ export class DepositService {
     return receipt;
   }
 
-  async requestDepositRights(channel: Channel, assetIdParam: string): Promise<string | undefined> {
-    const assetId = assetIdParam || AddressZero;
-    const appIdentityHash = await this.proposeDepositInstall(channel, assetId);
+  async requestDepositRights(
+    channel: Channel,
+    tokenAddress: string = AddressZero,
+  ): Promise<string | undefined> {
+    const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
-      throw new Error(`Failed to install deposit app for ${assetId} in channel ${channel.multisigAddress}`);
+      throw new Error(`Failed to install deposit app for ${tokenAddress} in channel ${channel.multisigAddress}`);
     }
     return appIdentityHash;
   }
@@ -88,23 +92,27 @@ export class DepositService {
   }
 
   private async sendDepositToChain(
-      channel: Channel,
-      amount: BigNumber,
-      assetId: string,
+    channel: Channel,
+    amount: BigNumber,
+    tokenAddress: Address,
   ): Promise<TransactionResponse> {
     // derive the proper minimal transaction for the 
     // onchain transaction service
     let tx: MinimalTransaction;
-    if (assetId === AddressZero) {
+    if (tokenAddress === AddressZero) {
       tx = {
         to: channel.multisigAddress,
         value: amount,
         data: "0x",
       };
     } else {
-      const token = new Contract(assetId, tokenAbi, this.configService.getEthProvider());
+      const token = new Contract(
+        tokenAddress, 
+        ERC20.abi, 
+        this.configService.getEthProvider(),
+      );
       tx = {
-        to: token.address,
+        to: tokenAddress,
         value: 0,
         data: await token.interface.functions.transfer.encode([
           channel.multisigAddress,
@@ -117,16 +125,15 @@ export class DepositService {
 
   private async proposeDepositInstall (
     channel: Channel,
-    assetId: string,
+    tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
     const ethProvider = this.configService.getEthProvider();
-    const token = new Contract(assetId!, tokenAbi, ethProvider);
 
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
     let startingTotalAmountWithdrawn: BigNumber;
     try {
-      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(assetId);
+      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
       const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${channel.multisigAddress}"`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
@@ -139,26 +146,35 @@ export class DepositService {
 
     // generate starting multisig balance
     const startingMultisigBalance =
-      assetId === AddressZero
+      tokenAddress === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
-        : await token.functions.balanceOf(channel.multisigAddress);
+        : await new Contract(
+            tokenAddress,
+            ERC20.abi,
+            this.configService.getSigner(),
+          ).functions.balanceOf(channel.multisigAddress);
 
     const initialState: DepositAppState = {
       transfers: [
         {
           amount: Zero,
-          to: this.configService.getPublicIdentifier(),
+          to: await this.configService.getSignerAddress(),
         },
         {
           amount: Zero,
-          to: channel.userPublicIdentifier,
+          to: getAddressFromIdentifier(channel.userPublicIdentifier),
         },
       ],
       multisigAddress: channel.multisigAddress,
-      assetId,
+      assetId: tokenAddress,
       startingTotalAmountWithdrawn, 
       startingMultisigBalance,
     };
+
+    const assetId = getPublicIdentifier(
+      (await this.configService.getEthNetwork()).chainId,
+      tokenAddress,
+    );
 
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(
         channel,
