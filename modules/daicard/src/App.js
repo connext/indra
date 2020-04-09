@@ -242,7 +242,10 @@ class App extends React.Component {
       }
 
 
-      const signer = new ChannelSigner(eth.Wallet.fromMnemonic(mnemonic).privateKey);
+      const signer = new ChannelSigner(
+        eth.Wallet.fromMnemonic(mnemonic).privateKey,
+        ethProviderUrl,
+      );
       const address = await signer.getAddress();
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,

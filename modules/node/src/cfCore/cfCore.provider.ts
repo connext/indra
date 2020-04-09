@@ -37,7 +37,10 @@ export const cfCoreProviderFactory: Provider = {
       contractAddresses,
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
-      new ChannelSigner(await config.getPrivateKey()),
+      new ChannelSigner(
+        await config.getPrivateKey(),
+        await config.getEthProvider().connection.url,
+      ),
       { acquireLock: lockService.lockedOperation.bind(lockService) },
       undefined,
       log.newContext("CFCore"),

@@ -20,6 +20,7 @@ import {
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
+  getPublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -114,11 +115,13 @@ export class Node {
     this.protocolRunner = this.buildProtocolRunner();
   }
 
-  get publicIdentifier() {
-    return this.address; // TODO: replace w real pub id
+  get publicIdentifier(): string {
+    return getPublicIdentifier(
+      this.provider.network.chainId,
+      this.signer.address,
+    );
   }
 
-  // TODO: rename?
   @Memoize()
   get signerAddress(): string {
     return this.address;
