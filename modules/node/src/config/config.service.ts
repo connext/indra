@@ -1,11 +1,12 @@
-import { ContractAddresses, SwapRate, MessagingConfig } from "@connext/types";
+import { ContractAddresses, SwapRate, MessagingConfig, getPublicIdentifier } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Signer, Wallet } from "ethers";
+import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+import { ChannelSigner } from "@connext/crypto";
 
 type PostgresConfig = {
   database: string;
@@ -26,16 +27,21 @@ type TokenConfig = {
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
   private readonly ethProvider: JsonRpcProvider;
-  private signer: Signer;
+  private signer: ChannelSigner;
   public publicIdentifier: string;
-  public signerAddress: string;
 
   constructor() {
     this.envConfig = process.env;
     this.ethProvider = new JsonRpcProvider(this.getEthRpcUrl());
-    this.signer = new Wallet(this.getPrivateKey()).connect(this.getEthProvider());
-    this.signerAddress = (this.signer as Wallet).address;
-    this.publicIdentifier = this.signerAddress; // TODO: make a real pub id
+    this.signer = new ChannelSigner(
+      this.getPrivateKey(),
+      this.getEthRpcUrl(),
+    );
+    // TODO: chainid synchronously?
+    this.publicIdentifier = getPublicIdentifier(
+      this.ethProvider.network ? this.ethProvider.network.chainId : 4447, 
+      this.signer.address,
+    );
     console.log(`ConfigService launched w pub id: ${this.publicIdentifier}`);
   }
 
@@ -51,9 +57,7 @@ export class ConfigService implements OnModuleInit {
     return this.ethProvider;
   }
 
-  getSigner(): Signer {
-    if (!this.signer) {
-    }
+  getSigner(): ChannelSigner {
     return this.signer;
   }
 
