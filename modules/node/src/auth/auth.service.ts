@@ -114,7 +114,7 @@ export class AuthService {
   parseIdentifier(callback: any): any {
     return async (subject: string, data: any): Promise<string> => {
       // Get & validate address from subject
-      const identifier = subject.split(".")[0]; // first item of subscription is address
+      const identifier = subject.split(".")[0]; // first item of subscription is id
       if (!identifier || !isValidIdentifier(identifier)) {
         throw new Error(`Subject's first item isn't a valid identifier: ${identifier}`);
       }
