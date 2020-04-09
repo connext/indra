@@ -4,6 +4,7 @@ import {
   calculateExchange,
   stringify,
   SwapRate,
+  getTokenAddressFromAssetId,
 } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
@@ -17,9 +18,14 @@ export const validateSimpleSwapApp = (
   const {
     responderDeposit,
     initiatorDeposit,
-    initiatorDepositTokenAddress,
-    responderDepositTokenAddress,
+    initiatorDepositAssetId,
+    responderDepositAssetId,
   } = params;
+
+  const initiatorDepositTokenAddress = 
+    getTokenAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = 
+    getTokenAddressFromAssetId(responderDepositAssetId);
 
   if (
     !allowedSwaps.find(

@@ -1,9 +1,9 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import {
   MethodParams,
   CoinTransfer,
   SimpleLinkedTransferAppState,
   stringify,
+  getAddressFromIdentifier,
 } from "@connext/types";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
@@ -16,8 +16,8 @@ export const validateSimpleLinkedTransferApp = (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as SimpleLinkedTransferAppState;
 
-  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+  const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
+  const responderFreeBalanceAddress = getAddressFromIdentifier(responderPublicIdentifier);
 
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === initiatorFreeBalanceAddress;

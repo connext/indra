@@ -1,6 +1,5 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { verifyChannelMessage } from "@connext/crypto";
-import { bigNumberifyJson, MethodParams, WithdrawAppState } from "@connext/types";
+import { bigNumberifyJson, MethodParams, WithdrawAppState, getAddressFromIdentifier } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
@@ -13,8 +12,8 @@ export const validateWithdrawApp = async (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = bigNumberifyJson(params.initialState) as WithdrawAppState;
 
-  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+  const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
+  const responderFreeBalanceAddress = getAddressFromIdentifier(responderPublicIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];

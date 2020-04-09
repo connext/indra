@@ -3,6 +3,7 @@ import {
   MethodParams,
   stringify,
   DepositAppName,
+  getTokenAddressFromAssetId,
 } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -113,12 +114,17 @@ export const commonAppProposalValidation = (
 ): void => {
   const {
     initiatorDeposit,
-    initiatorDepositTokenAddress,
+    initiatorDepositAssetId,
     responderDeposit,
-    responderDepositTokenAddress,
+    responderDepositAssetId,
   } = params;
 
   appProposalMatchesRegistry(params, appRegistryInfo);
+
+  const initiatorDepositTokenAddress = 
+    getTokenAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = 
+    getTokenAddressFromAssetId(responderDepositAssetId);
 
   if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
     throw new Error(`Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}`);

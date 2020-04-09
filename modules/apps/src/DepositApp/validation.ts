@@ -1,10 +1,11 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import {
   MethodParams,
   DepositAppState,
   stringify,
   UninstallMiddlewareContext,
   ProtocolRoles,
+  getTokenAddressFromAssetId,
+  getAddressFromIdentifier,
 } from "@connext/types";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
@@ -23,8 +24,8 @@ export const validateDepositApp = async (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as DepositAppState;
 
-  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+  const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
+  const responderFreeBalanceAddress = getAddressFromIdentifier(responderPublicIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];
@@ -53,10 +54,10 @@ export const validateDepositApp = async (
   }
 
   if (
-    initialState.assetId !== params.initiatorDepositTokenAddress
-    || initialState.assetId !== params.responderDepositTokenAddress
+    initialState.assetId !== getTokenAddressFromAssetId(params.initiatorDepositAssetId)
+    || initialState.assetId !== getTokenAddressFromAssetId(params.responderDepositAssetId)
   ) {
-    throw new Error(`Cannot install deposit app with invalid token address. Expected ${params.initiatorDepositTokenAddress}, got ${initialState.assetId}`);
+    throw new Error(`Cannot install deposit app with invalid token address. Expected ${getTokenAddressFromAssetId(params.initiatorDepositAssetId)}, got ${initialState.assetId}`);
   }
 
   const startingMultisigBalance = initialState.assetId === AddressZero
@@ -114,7 +115,7 @@ export const uninstallDepositMiddleware = async (
 
   if (
     role === ProtocolRoles.initiator
-    && latestState.transfers[0].to !== xkeyKthAddress(params.initiatorXpub)
+    && latestState.transfers[0].to !== getAddressFromIdentifier(params.initiatorIdentifier)
   ) {
     throw new Error(`Cannot uninstall deposit app without being the initiator`);
   }

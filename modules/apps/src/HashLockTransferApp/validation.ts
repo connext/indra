@@ -1,5 +1,4 @@
-import { xkeyKthAddress } from "@connext/cf-core";
-import { MethodParams, CoinTransfer, HashLockTransferAppState } from "@connext/types";
+import { MethodParams, CoinTransfer, HashLockTransferAppState, getAddressFromIdentifier } from "@connext/types";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
@@ -12,8 +11,8 @@ export const validateHashLockTransferApp = (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as HashLockTransferAppState;
 
-  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+  const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
+  const responderFreeBalanceAddress = getAddressFromIdentifier(responderPublicIdentifier);
 
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === initiatorFreeBalanceAddress;
