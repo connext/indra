@@ -171,7 +171,7 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
 }
 
 export class ChannelSigner implements IChannelSigner {
-  async createRandom() {
+  public static async createRandom() {
     const privateKey = bufferToHex(randomBytes(32), true);
     return new ChannelSigner(privateKey);
   }
