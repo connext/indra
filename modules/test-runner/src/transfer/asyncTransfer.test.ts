@@ -1,8 +1,5 @@
-import { xkeyKthAddress } from "@connext/cf-core";
-import { utils } from "@connext/client";
 import { ConnextStore } from "@connext/store";
 import {
-  CF_PATH,
   ConditionalTransferTypes,
   createRandom32ByteHexString,
   IConnextClient,
@@ -79,9 +76,7 @@ describe("Async Transfers", () => {
 
   it("happy case: client A successfully transfers to an address that doesn’t have a channel", async () => {
     const receiverMnemonic = Wallet.createRandom().mnemonic;
-    const receiverAddress = HDNode.fromMnemonic(receiverMnemonic)
-      .derivePath(CF_PATH)
-      .neuter().extendedKey;
+    const receiverAddress = Wallet.fromMnemonic(receiverMnemonic).address;
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
     await clientA.transfer({
       amount: ETH_AMOUNT_SM.toString(),
@@ -142,7 +137,7 @@ describe("Async Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const receiverBal = await clientB.getFreeBalance(transfer.assetId);
-    expect(receiverBal[xkeyKthAddress(clientB.nodePublicIdentifier)].lt(transfer.amount)).to.be.true;
+    expect(receiverBal[clientB.nodePublicIdentifier].lt(transfer.amount)).to.be.true;
 
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });

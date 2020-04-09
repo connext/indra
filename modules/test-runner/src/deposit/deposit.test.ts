@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import {
   IConnextClient,
   BigNumberish,
@@ -54,7 +53,7 @@ describe("Deposits", () => {
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    nodeSignerAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
+    nodeSignerAddress = client.config.nodePublicIdentifier;
   });
 
   afterEach(async () => {

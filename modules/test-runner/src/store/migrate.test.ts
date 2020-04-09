@@ -33,7 +33,6 @@ import {
   XPUB_V0_3,
   XPUB_V0_4,
 } from "./examples";
-import { xkeyKthAddress } from "@connext/cf-core";
 
 const convertV0toV1JSON = (oldChannel: any, nodeAddress: string = env.nodePubId): StateChannelJSON => {
   const removeIsVirtualTagAndTimeouts = (obj: any) => {
@@ -64,8 +63,8 @@ const convertV0toV1JSON = (oldChannel: any, nodeAddress: string = env.nodePubId)
           {
             ...removeIsVirtualTagAndTimeouts(appJson),
             multisigAddress: oldChannel.multisigAddress,
-            initiator: xkeyKthAddress(nodeAddress, appJson.appSeqNo),
-            responder: xkeyKthAddress(userAddress, appJson.appSeqNo),
+            initiator: nodeAddress,
+            responder: userAddress,
             defaultTimeout: toBN(appJson.defaultTimeout).toHexString(),
             stateTimeout: toBN(appJson.latestTimeout).toHexString(),
           },
@@ -83,8 +82,8 @@ const convertV0toV1JSON = (oldChannel: any, nodeAddress: string = env.nodePubId)
         ...oldChannel.freeBalanceAppInstance.appInterface,
         actionEncoding: null,
       },
-      initiator: xkeyKthAddress(nodeAddress),
-      responder: xkeyKthAddress(userAddress),
+      initiator: nodeAddress,
+      responder: userAddress,
     } as AppInstanceJson,
     addresses: oldChannel.addresses,
   };

@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
@@ -18,7 +17,7 @@ export async function asyncTransferAsset(
   nats: Client,
 ): Promise<ExistingBalancesAsyncTransfer> {
   const SENDER_INPUT_META = { hello: "world" };
-  const nodeSignerAddress = xkeyKthAddress(clientA.nodePublicIdentifier);
+  const nodeSignerAddress = clientA.nodePublicIdentifier;
   const {
     [clientA.signerAddress]: preTransferFreeBalanceClientA,
     [nodeSignerAddress]: preTransferFreeBalanceNodeA,

@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { calculateExchange, IConnextClient, PublicParams } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
@@ -28,7 +27,7 @@ describe("Swaps", () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
     nodePublicIdentifier = client.config.nodePublicIdentifier;
-    nodeSignerAddress = xkeyKthAddress(nodePublicIdentifier);
+    nodeSignerAddress = nodePublicIdentifier;
   });
 
   afterEach(async () => {

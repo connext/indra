@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
@@ -18,7 +17,7 @@ describe("Collateral", () => {
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    nodeSignerAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
+    nodeSignerAddress = client.config.nodePublicIdentifier;
   });
 
   afterEach(async () => {

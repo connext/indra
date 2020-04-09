@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { createRandom32ByteHexString, EventNames, IConnextClient, toBN } from "@connext/types";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -24,7 +23,7 @@ describe("Reclaim", () => {
     clientA = await createClient();
     clientB = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
-    nodeSignerAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
+    nodeSignerAddress = clientA.config.nodePublicIdentifier;
   });
 
   afterEach(async () => {

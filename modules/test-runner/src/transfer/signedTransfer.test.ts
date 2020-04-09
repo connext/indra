@@ -10,7 +10,6 @@ import {
   EventPayloads,
 } from "@connext/types";
 import { signChannelMessage } from "@connext/crypto";
-import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { providers, Wallet } from "ethers";
@@ -100,7 +99,7 @@ describe("Signed Transfers", () => {
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,
-      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+      [clientA.nodePublicIdentifier]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
@@ -113,7 +112,7 @@ describe("Signed Transfers", () => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
           [clientA.signerAddress]: clientAPostReclaimBal,
-          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+          [clientA.nodePublicIdentifier]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -173,7 +172,7 @@ describe("Signed Transfers", () => {
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,
-      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+      [clientA.nodePublicIdentifier]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
@@ -186,7 +185,7 @@ describe("Signed Transfers", () => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
           [clientA.signerAddress]: clientAPostReclaimBal,
-          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+          [clientA.nodePublicIdentifier]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -226,7 +225,7 @@ describe("Signed Transfers", () => {
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       paymentId,
-      senderPublicIdentifier: clientA.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
       status: SignedTransferStatus.PENDING,
       meta: { foo: "bar" },
     } as NodeResponses.GetSignedTransfer);
@@ -270,8 +269,8 @@ describe("Signed Transfers", () => {
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       paymentId,
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.COMPLETED,
       meta: { foo: "bar" },
     } as NodeResponses.GetSignedTransfer);

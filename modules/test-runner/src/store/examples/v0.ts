@@ -1,15 +1,6 @@
 /////////////////////////////////////////////////////////////
 
 import { env } from "../../util";
-import { xkeyKthAddress } from "@connext/cf-core";
-
-// from past cf
-const sortAddresses = (addrs: string[]): string[] =>
-  addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-
-const xkeysToSortedKthAddresses = (xkeys: string[], k: number | string = "0"): string[] =>
-  sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
-
 
 // Don't import from types in case types change
 export const ConnextClientStorePrefixV0 = "INDRA_CLIENT_CF_CORE";
@@ -31,7 +22,7 @@ export const CHANNEL_VALUE_VO_1 = {
     userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_1],
     appInstances: [],
     freeBalanceAppInstance: {
-      participants: xkeysToSortedKthAddresses([NODE_PUB_ID, XPUB_V0_1]),
+      participants: [NODE_PUB_ID, XPUB_V0_1].sort(),
       defaultTimeout: 172800,
       appInterface: {
         addr: "0xde8d1288e2c7eC3e0b7279F8395b87A996Cc02f4",
@@ -44,8 +35,8 @@ export const CHANNEL_VALUE_VO_1 = {
         tokenAddresses: ["0x0000000000000000000000000000000000000000"],
         balances: [
           [
-            { to: xkeyKthAddress(NODE_PUB_ID), amount: { _hex: "0x00" } },
-            { to: xkeyKthAddress(XPUB_V0_1), amount: { _hex: "0x00" } },
+            { to: NODE_PUB_ID, amount: { _hex: "0x00" } },
+            { to: XPUB_V0_1, amount: { _hex: "0x00" } },
           ],
         ],
       },
@@ -78,7 +69,7 @@ export const CHANNEL_VALUE_VO_2 = {
     userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_2],
     appInstances: [],
     freeBalanceAppInstance: {
-      participants: xkeysToSortedKthAddresses([NODE_PUB_ID, XPUB_V0_2]),
+      participants: [NODE_PUB_ID, XPUB_V0_2].sort(),
       defaultTimeout: 172800,
       appInterface: {
         addr: "0xde8d1288e2c7eC3e0b7279F8395b87A996Cc02f4",
@@ -94,16 +85,16 @@ export const CHANNEL_VALUE_VO_2 = {
         ],
         balances: [
           [
-            { to: xkeyKthAddress(NODE_PUB_ID), amount: { _hex: "0x00" } },
-            { to: xkeyKthAddress(XPUB_V0_2), amount: { _hex: "0x00" } },
+            { to: NODE_PUB_ID, amount: { _hex: "0x00" } },
+            { to: XPUB_V0_2, amount: { _hex: "0x00" } },
           ],
           [
             {
-              to: xkeyKthAddress(NODE_PUB_ID),
+              to: NODE_PUB_ID,
               amount: { _hex: "0x68155a43676e0000" },
             },
             {
-              to: xkeyKthAddress(XPUB_V0_2),
+              to: XPUB_V0_2,
               amount: { _hex: "0x22b1c8c1227a0000" },
             },
           ],
@@ -171,14 +162,14 @@ export const CHANNEL_VALUE_VO_3 = {
           responderIdentifier:
             "address6Ew7ALFHU48CVUjJwS8Z5dPLzDq5B45nCQWXR94oMQdzMkbBsgDyScK7VpFSobRp87StcoLJJDUj2mh1bRfMAJFkKjBCf4nDnvtrvAA5HYa",
           appSeqNo: 3,
-          initiatorDepositTokenAddress: "0xaFF4481D10270F50f203E0763e2597776068CBc5",
-          responderDepositTokenAddress: "0xaFF4481D10270F50f203E0763e2597776068CBc5",
+          initiatorDepositAssetId: "0xaFF4481D10270F50f203E0763e2597776068CBc5",
+          responderDepositAssetId: "0xaFF4481D10270F50f203E0763e2597776068CBc5",
         },
       ],
     ],
     appInstances: [],
     freeBalanceAppInstance: {
-      participants: xkeysToSortedKthAddresses([NODE_PUB_ID, XPUB_V0_3]),
+      participants: [NODE_PUB_ID, XPUB_V0_3].sort(),
       defaultTimeout: 172800,
       appInterface: {
         addr: "0xde8d1288e2c7eC3e0b7279F8395b87A996Cc02f4",
@@ -197,13 +188,13 @@ export const CHANNEL_VALUE_VO_3 = {
         balances: [
           [
             {
-              to: xkeyKthAddress(XPUB_V0_1),
+              to: XPUB_V0_1,
               amount: {
                 _hex: "0x00",
               },
             },
             {
-              to: xkeyKthAddress(NODE_PUB_ID),
+              to: NODE_PUB_ID,
               amount: {
                 _hex: "0x01a901f111d5d000",
               },
@@ -211,13 +202,13 @@ export const CHANNEL_VALUE_VO_3 = {
           ],
           [
             {
-              to: xkeyKthAddress(NODE_PUB_ID),
+              to: NODE_PUB_ID,
               amount: {
                 _hex: "0xb312881391b1d800",
               },
             },
             {
-              to: xkeyKthAddress(XPUB_V0_3),
+              to: XPUB_V0_3,
               amount: {
                 _hex: "0x627bbdf5821e2800",
               },
@@ -225,13 +216,13 @@ export const CHANNEL_VALUE_VO_3 = {
           ],
           [
             {
-              to: xkeyKthAddress(NODE_PUB_ID),
+              to: NODE_PUB_ID,
               amount: {
                 _hex: "0x022238f30c36dc59a1",
               },
             },
             {
-              to: xkeyKthAddress(XPUB_V0_3),
+              to: XPUB_V0_3,
               amount: {
                 _hex: "0xfec9f64f7ba859a1",
               },
@@ -274,7 +265,7 @@ export const CHANNEL_VALUE_VO_4 = {
       [
         "0xd5e8fed193710fd5261d00c0ceba8d6ffe8e454fc96c70161366b28c6bb1dd6d",
         {
-          participants: xkeysToSortedKthAddresses([NODE_PUB_ID, XPUB_V0_4], 6),
+          participants: [NODE_PUB_ID, XPUB_V0_4].sort(),
           defaultTimeout: 0,
           appInterface: {
             actionEncoding: "tuple(bytes32 preImage)",
@@ -294,13 +285,13 @@ export const CHANNEL_VALUE_VO_4 = {
                 amount: {
                   _hex: "0x0de0b6b3a7640000",
                 },
-                to: `${xkeyKthAddress(XPUB_V0_4)}`,
+                to: `${XPUB_V0_4}`,
               },
               {
                 amount: {
                   _hex: "0x00",
                 },
-                to: `${xkeyKthAddress(NODE_PUB_ID)}`,
+                to: `${NODE_PUB_ID}`,
               },
             ],
             linkedHash: "0x5a92ffed328b7391ddfe63fc55eaddc7e4e4d751936a25342800f03f32d70945",
@@ -322,7 +313,7 @@ export const CHANNEL_VALUE_VO_4 = {
       [
         "0xb5ada5765aceab979dbb36f6d8511f2b07b992a73d496bd196bf949d2df8c262",
         {
-          participants: xkeysToSortedKthAddresses([NODE_PUB_ID, XPUB_V0_4], 7),
+          participants: [NODE_PUB_ID, XPUB_V0_4].sort(),
           defaultTimeout: 0,
           appInterface: {
             actionEncoding: "tuple(bytes32 preImage)",
@@ -342,13 +333,13 @@ export const CHANNEL_VALUE_VO_4 = {
                 amount: {
                   _hex: "0x0de0b6b3a7640000",
                 },
-                to: `${xkeyKthAddress(XPUB_V0_4)}`,
+                to: `${XPUB_V0_4}`,
               },
               {
                 amount: {
                   _hex: "0x00",
                 },
-                to: `${xkeyKthAddress(NODE_PUB_ID)}`,
+                to: `${NODE_PUB_ID}`,
               },
             ],
             linkedHash: "0xe41e4ddb5a183920232126597ab0c4fc407ebd2294dfd7e1da114eef8e24f106",
@@ -369,7 +360,7 @@ export const CHANNEL_VALUE_VO_4 = {
       ],
     ],
     freeBalanceAppInstance: {
-      participants: xkeysToSortedKthAddresses([NODE_PUB_ID, XPUB_V0_4]),
+      participants: [NODE_PUB_ID, XPUB_V0_4].sort(),
       defaultTimeout: 172800,
       appInterface: {
         addr: "0x9Df07A7f9251b48C8caB45c7ff61669746aAA908",
@@ -390,13 +381,13 @@ export const CHANNEL_VALUE_VO_4 = {
         balances: [
           [
             {
-              to: `${xkeyKthAddress(NODE_PUB_ID)}`,
+              to: `${NODE_PUB_ID}`,
               amount: {
                 _hex: "0x00",
               },
             },
             {
-              to: `${xkeyKthAddress(XPUB_V0_4)}`,
+              to: `${XPUB_V0_4}`,
               amount: {
                 _hex: "0x01a9150a83602000",
               },
@@ -404,13 +395,13 @@ export const CHANNEL_VALUE_VO_4 = {
           ],
           [
             {
-              to: `${xkeyKthAddress(NODE_PUB_ID)}`,
+              to: `${NODE_PUB_ID}`,
               amount: {
                 _hex: "0x014e4ac8febb905fd0",
               },
             },
             {
-              to: `${xkeyKthAddress(XPUB_V0_4)}`,
+              to: `${XPUB_V0_4}`,
               amount: {
                 _hex: "0xb32f9ef875e3a030",
               },

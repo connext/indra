@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient, EventNames } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
@@ -26,7 +25,7 @@ describe("ChannelProvider", () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodePublicIdentifier = client.config.nodePublicIdentifier;
-    nodeSignerAddress = xkeyKthAddress(nodePublicIdentifier);
+    nodeSignerAddress = nodePublicIdentifier;
     tokenAddress = client.config.contractAddresses.Token;
   });
 
@@ -37,7 +36,7 @@ describe("ChannelProvider", () => {
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
     const _nodePublicIdentifier = remoteClient.config.nodePublicIdentifier;
-    const _nodeSignerAddress = xkeyKthAddress(nodePublicIdentifier);
+    const _nodeSignerAddress = nodePublicIdentifier;
     expect(_tokenAddress).to.be.eq(tokenAddress);
     expect(_nodePublicIdentifier).to.be.eq(nodePublicIdentifier);
     expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);

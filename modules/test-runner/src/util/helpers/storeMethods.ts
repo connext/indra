@@ -36,8 +36,8 @@ export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0
 export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   identityHash: "identityHashApp",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
-  initiator: "sender",
-  responder: "receiver",
+  initiatorIdentifier: "sender",
+  responderIdentifier: "receiver",
   defaultTimeout: "0x00",
   appInterface: {
     addr: TEST_STORE_ETH_ADDRESS,
@@ -70,12 +70,12 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
     counter: 4,
   },
   initiatorDeposit: "10",
-  initiatorDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
+  initiatorDepositAssetId: TEST_STORE_ETH_ADDRESS,
   outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
   initiatorIdentifier: "address1",
   responderIdentifier: "address2",
   responderDeposit: "11",
-  responderDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
+  responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
   defaultTimeout: "0x01",
   stateTimeout: "0x00",
   singleAssetTwoPartyCoinTransferInterpreterParams: {
@@ -107,7 +107,7 @@ export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentity: {
     channelNonce: TEST_STORE_APP_INSTANCE.appSeqNo.toString(),
-    participants: [TEST_STORE_APP_INSTANCE.initiator, TEST_STORE_APP_INSTANCE.responder],
+    participants: [TEST_STORE_APP_INSTANCE.initiatorIdentifier, TEST_STORE_APP_INSTANCE.responderIdentifier],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
     appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
     defaultTimeout: "35",

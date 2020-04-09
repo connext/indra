@@ -1,7 +1,6 @@
 import { MessagingService } from "@connext/messaging";
 import { signChannelMessage } from "@connext/crypto";
 import {
-  CF_PATH,
   ConnextEventEmitter,
   delay,
   IMessagingService,
@@ -9,10 +8,10 @@ import {
   Message,
   VerifyNonceDtoType,
 } from "@connext/types";
+import { Wallet } from "ethers";
 
 import { env } from "./env";
 import { combineObjects } from "./misc";
-import { fromMnemonic } from "ethers/utils/hdnode";
 import { Logger } from "./logger";
 
 import axios, { AxiosResponse } from "axios";
@@ -146,13 +145,13 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       mnemonic: opts.mnemonic!,
     };
 
-    const hdNode = fromMnemonic(this.options.mnemonic).derivePath(CF_PATH);
+    const wallet = Wallet.fromMnemonic(this.options.mnemonic);
     const getSignature = async (message: string) => {
-      const { privateKey } = hdNode.derivePath("0");
-      const sig = await signChannelMessage(privateKey, message);
+      const sig = await signChannelMessage(wallet.privateKey, message);
       return sig;
     };
-    const address = hdNode.neuter().extendedKey;
+
+    const address = wallet.address;
 
     const getBearerToken = async (
       address: string,

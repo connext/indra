@@ -557,22 +557,22 @@ function computeInterpreterParameters(
   singleAssetTwoPartyCoinTransferInterpreterParams?:
     SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
-  const initiatorDepositTokenAddress = getTokenAddressFromAssetId(initiatorAssetId);
-  const responderDepositTokenAddress = getTokenAddressFromAssetId(responderAssetId);
+  const initiatorDepositAssetId = getTokenAddressFromAssetId(initiatorAssetId);
+  const responderDepositAssetId = getTokenAddressFromAssetId(responderAssetId);
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-      if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
+      if (initiatorDepositAssetId !== responderDepositAssetId) {
         throw new Error(
           TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
-            initiatorDepositTokenAddress,
-            responderDepositTokenAddress,
+            initiatorDepositAssetId,
+            responderDepositAssetId,
           ),
         );
       }
 
       return {
         twoPartyOutcomeInterpreterParams: {
-          tokenAddress: initiatorDepositTokenAddress,
+          tokenAddress: initiatorDepositAssetId,
           playerAddrs: [initiatorFbAddress, responderFbAddress],
           amount: initiatorBalanceDecrement.add(responderBalanceDecrement),
         },
@@ -580,27 +580,27 @@ function computeInterpreterParameters(
     }
 
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-      return initiatorDepositTokenAddress === responderDepositTokenAddress
+      return initiatorDepositAssetId === responderDepositAssetId
         ? {
             multiAssetMultiPartyCoinTransferInterpreterParams: {
               limit: [initiatorBalanceDecrement.add(responderBalanceDecrement)],
-              tokenAddresses: [initiatorDepositTokenAddress],
+              tokenAddresses: [initiatorDepositAssetId],
             },
           }
         : {
             multiAssetMultiPartyCoinTransferInterpreterParams: {
               limit: [initiatorBalanceDecrement, responderBalanceDecrement],
-              tokenAddresses: [initiatorDepositTokenAddress, responderDepositTokenAddress],
+              tokenAddresses: [initiatorDepositAssetId, responderDepositAssetId],
             },
           };
     }
 
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-      if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
+      if (initiatorDepositAssetId !== responderDepositAssetId) {
         throw new Error(
           TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
-            initiatorDepositTokenAddress,
-            responderDepositTokenAddress,
+            initiatorDepositAssetId,
+            responderDepositAssetId,
           ),
         );
       }
@@ -610,7 +610,7 @@ function computeInterpreterParameters(
           limit: disableLimit
             ? MaxUint256
             : initiatorBalanceDecrement.add(responderBalanceDecrement),
-          tokenAddress: initiatorDepositTokenAddress,
+          tokenAddress: initiatorDepositAssetId,
         },
       };
     }

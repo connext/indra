@@ -8,7 +8,6 @@ import {
   NodeResponses,
   PublicParams,
 } from "@connext/types";
-import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
 import { providers } from "ethers";
@@ -81,7 +80,7 @@ describe("HashLock Transfers", () => {
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,
-      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+      [clientA.nodePublicIdentifier]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
@@ -90,7 +89,7 @@ describe("HashLock Transfers", () => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
           [clientA.signerAddress]: clientAPostReclaimBal,
-          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+          [clientA.nodePublicIdentifier]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -133,7 +132,7 @@ describe("HashLock Transfers", () => {
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,
-      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+      [clientA.nodePublicIdentifier]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
@@ -142,7 +141,7 @@ describe("HashLock Transfers", () => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
           [clientA.signerAddress]: clientAPostReclaimBal,
-          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+          [clientA.nodePublicIdentifier]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -188,8 +187,8 @@ describe("HashLock Transfers", () => {
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       lockHash,
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
       meta: { foo: "bar" },
     } as NodeResponses.GetHashLockTransfer);
@@ -232,8 +231,8 @@ describe("HashLock Transfers", () => {
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       lockHash,
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
       meta: { foo: "bar" },
     } as NodeResponses.GetHashLockTransfer);

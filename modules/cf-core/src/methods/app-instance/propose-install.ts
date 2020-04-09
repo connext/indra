@@ -58,18 +58,18 @@ export class ProposeInstallAppInstanceController extends NodeController {
     }
 
     const {
-      initiatorDepositAssetId: initiatorDepositTokenAddressParam,
-      responderDepositAssetId: responderDepositTokenAddressParam,
+      initiatorDepositAssetId: initiatorDepositAssetIdParam,
+      responderDepositAssetId: responderDepositAssetIdParam,
     } = params;
 
-    const initiatorDepositTokenAddress =
-      initiatorDepositTokenAddressParam || getAssetId(chainId);
+    const initiatorDepositAssetId =
+      initiatorDepositAssetIdParam || getAssetId(chainId);
 
-    const responderDepositTokenAddress =
-      responderDepositTokenAddressParam || getAssetId(chainId);
+    const responderDepositAssetId =
+      responderDepositAssetIdParam || getAssetId(chainId);
 
-    params.initiatorDepositAssetId = initiatorDepositTokenAddress;
-    params.responderDepositAssetId = responderDepositTokenAddress;
+    params.initiatorDepositAssetId = initiatorDepositAssetId;
+    params.responderDepositAssetId = responderDepositAssetId;
   }
 
   protected async executeMethodImplementation(

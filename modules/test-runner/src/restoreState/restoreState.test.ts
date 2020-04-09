@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
@@ -15,7 +14,7 @@ describe("Restore State", () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
-    nodeSignerAddress = xkeyKthAddress(nodePublicIdentifier);
+    nodeSignerAddress = nodePublicIdentifier;
   });
 
   afterEach(async () => {
