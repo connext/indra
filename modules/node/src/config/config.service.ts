@@ -33,6 +33,10 @@ export class ConfigService implements OnModuleInit {
   constructor() {
     this.envConfig = process.env;
     this.ethProvider = new JsonRpcProvider(this.getEthRpcUrl());
+    this.signer = new Wallet(this.getPrivateKey()).connect(this.getEthProvider());
+    this.signerAddress = (this.signer as Wallet).address;
+    this.publicIdentifier = this.signerAddress; // TODO: make a real pub id
+    console.log(`ConfigService launched w pub id: ${this.publicIdentifier}`);
   }
 
   get(key: string): string {
@@ -49,7 +53,6 @@ export class ConfigService implements OnModuleInit {
 
   getSigner(): Signer {
     if (!this.signer) {
-      this.signer = new Wallet(this.getPrivateKey()).connect(this.getEthProvider());
     }
     return this.signer;
   }
@@ -226,9 +229,5 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  async onModuleInit(): Promise<void> {
-    this.signer = this.getSigner();
-    this.publicIdentifier = await this.signer.getAddress();
-    this.signerAddress = await this.signer.getAddress();
-  }
+  async onModuleInit(): Promise<void> {}
 }
