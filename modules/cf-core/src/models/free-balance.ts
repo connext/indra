@@ -205,8 +205,8 @@ export function createFreeBalance(
   multisigAddress: string,
 ) {
 
-  const initiator = initiatorId;
-  const responder = responderId;
+  const initiator = getAddressFromIdentifier(initiatorId);
+  const responder = getAddressFromIdentifier(responderId);
 
   const initialState: FreeBalanceState = {
     activeAppsMap: {},

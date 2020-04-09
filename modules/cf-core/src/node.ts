@@ -130,7 +130,7 @@ export class Node {
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
     this.log.info(`Node signer address: ${await this.signer.getAddress()}`);
     this.requestHandler = new RequestHandler(
-      await this.signer.getAddress(),
+      this.publicIdentifier,
       this.incoming,
       this.outgoing,
       this.storeService,
@@ -197,7 +197,7 @@ export class Node {
 
       await this.messagingService.send(data.to, {
         data,
-        from: await this.signer.getAddress(),
+        from: this.publicIdentifier,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
     });
@@ -213,7 +213,7 @@ export class Node {
 
       await this.messagingService.send(data.to, {
         data,
-        from: await this.signer.getAddress(),
+        from: this.publicIdentifier,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
 

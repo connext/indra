@@ -78,8 +78,7 @@ export const getAssetId = (
 };
 
 export const getTokenAddressFromAssetId = (assetId: AssetId): string => {
-  const { address } = parsePublicIdentifier(assetId);
-  return address;
+  return parsePublicIdentifier(assetId).address;
 };
 
 

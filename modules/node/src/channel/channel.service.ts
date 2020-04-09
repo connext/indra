@@ -1,11 +1,11 @@
 import {
-  ChannelAppSequences,
   maxBN,
   MethodResults,
   NodeResponses,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
   stringify,
+  getAddressFromIdentifier,
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -330,8 +330,12 @@ export class ChannelService {
       );
     }
     if (
-      !creationData.data.owners.includes(existing.nodePublicIdentifier) ||
-      !creationData.data.owners.includes(existing.userPublicIdentifier)
+      !creationData.data.owners.includes(
+        getAddressFromIdentifier(existing.nodePublicIdentifier),
+      ) ||
+      !creationData.data.owners.includes(
+        getAddressFromIdentifier(existing.userPublicIdentifier),
+      )
     ) {
       throw new Error(
         `Channel has already been created with different owners! ${stringify(
