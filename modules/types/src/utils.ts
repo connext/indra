@@ -116,9 +116,9 @@ export const parsePublicIdentifier = (
 };
 
 export const getAddressFromIdentifier = (identifer: string): string => {
-  return identifer; // TODO: replace w real pub id fn
+  return parsePublicIdentifier(identifer).address;
 };
 
 export const getChainIdFromIdentifier = (identifer: string): number => {
-  return 1; // TODO: replace w real pub id fn
+  return parsePublicIdentifier(identifer).chainId;
 };
