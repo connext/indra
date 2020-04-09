@@ -17,14 +17,19 @@ import {
   isHexString,
   arrayToBuffer,
   removeHexPrefix,
+  compress,
+  decompress,
 } from "eccrypto-js";
 
 export * from "eccrypto-js";
 
+// signing contants
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
+
+// publicIdentifier contants
 export const INDRA_PUB_ID_PREFIX = "indra";
-export const INDRA_PUB_ID_HASH_SIZE = 15;
+export const INDRA_PUB_ID_HASH_SIZE = 10;
 export const INDRA_PUB_ID_CHAR_LENGTH = 70;
 
 export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
@@ -56,22 +61,31 @@ export function padRight(str: string, length: number, padding: string) {
 }
 
 export function ensureBase58Length(str: string, length: number) {
-  return str.length === length ? str : padLeft(str, length, "1");
+  if (str.length > length) {
+    throw new Error(`Provided string has length (${str.length}) greater than ${length}`);
+  }
+  return padLeft(str, length, "1");
 }
 
 export function getChannelPublicIdentifier(seed: string, publicKey: string): string {
-  const id = bs58check.encode(
-    concatBuffers(keccak256(bufferify(seed)).slice(INDRA_PUB_ID_HASH_SIZE), hexToBuffer(publicKey)),
-  );
-  return (
-    INDRA_PUB_ID_PREFIX +
-    ensureBase58Length(id, INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length)
-  );
+  const seedHash = keccak256(bufferify(seed)).slice(0, INDRA_PUB_ID_HASH_SIZE);
+  const compressedPubKey = compress(hexToBuffer(publicKey));
+  const base58id = bs58check.encode(concatBuffers(seedHash, compressedPubKey));
+  const base58length = INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length;
+  return INDRA_PUB_ID_PREFIX + ensureBase58Length(base58id, base58length);
 }
 
 export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): string {
-  const buf: Buffer = bs58check.decode(publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""));
-  return bufferToHex(buf.slice(buf.length - INDRA_PUB_ID_HASH_SIZE, buf.length), true);
+  publicIdentifier = publicIdentifier.replace(INDRA_PUB_ID_PREFIX, "");
+  publicIdentifier = publicIdentifier.replace(/^1+/, "");
+  const buf: Buffer = bs58check.decode(publicIdentifier);
+  const publicKey = decompress(buf.slice(INDRA_PUB_ID_HASH_SIZE, buf.length));
+  return bufferToHex(publicKey);
+}
+
+export function getSignerAddressFromPublicIdentifier(publicIdentifier: string): string {
+  const publicKey = getPublicKeyFromPublicIdentifier(publicIdentifier);
+  return getChecksumAddress(publicKey);
 }
 
 export function getLowerCaseAddress(publicKey: Buffer | string): string {
