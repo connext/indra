@@ -35,8 +35,13 @@ export const logTime = (log: ILoggerService, start: number, msg: string) => {
 export function appIdentityToHash(appIdentity: AppIdentity): string {
   return keccak256(
     defaultAbiCoder.encode(
-      ["uint256", "address"],
-      [appIdentity.channelNonce, appIdentity.multisigAddress],
+      ["uint256", "address[]", "address", "address", "uint256"],
+      [
+        appIdentity.channelNonce, 
+        appIdentity.participants, 
+        appIdentity.multisigAddress, 
+        appIdentity.appDefinition, 
+        appIdentity.defaultTimeout],
     ),
   );
 }
