@@ -37,8 +37,8 @@ export async function setup(
   const setupContext: SetupContext = {};
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
-  const provider = new JsonRpcProvider(global["wallet"].provider.connection.url);
-
+  const ethUrl = global["network"]["provider"].connection.url;
+  const provider = new JsonRpcProvider(ethUrl);
   const prvKeyA = A_PRIVATE_KEY;
   let prvKeyB = B_PRIVATE_KEY;
 
@@ -52,7 +52,7 @@ export async function setup(
 
   const lockService = new MemoryLockService();
 
-  const channelSignerA = new ChannelSigner(prvKeyA);
+  const channelSignerA = new ChannelSigner(prvKeyA, ethUrl);
 
   const storeServiceA = storeServiceFactory.createStoreService();
   const nodeA = await Node.create(
@@ -72,7 +72,7 @@ export async function setup(
     store: storeServiceA,
   };
 
-  const channelSignerB = new ChannelSigner(prvKeyB);
+  const channelSignerB = new ChannelSigner(prvKeyB, ethUrl);
   const storeServiceB = storeServiceFactory.createStoreService();
   const nodeB = await Node.create(
     messagingService,
@@ -92,7 +92,7 @@ export async function setup(
 
   let nodeC: Node;
   if (nodeCPresent) {
-    const channelSignerC = new ChannelSigner(C_PRIVATE_KEY);
+    const channelSignerC = new ChannelSigner(C_PRIVATE_KEY, ethUrl);
     const storeServiceC = storeServiceFactory.createStoreService();
     nodeC = await Node.create(
       messagingService,

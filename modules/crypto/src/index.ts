@@ -1,5 +1,5 @@
 import { Wallet } from "ethers";
-import { EthSignature, IChannelSigner } from "@connext/types";
+import { EthSignature, IChannelSigner, JsonRpcProvider } from "@connext/types";
 import {
   sign,
   encrypt,
@@ -19,6 +19,7 @@ import {
   removeHexPrefix,
   getPublic,
 } from "eccrypto-js";
+import { TransactionResponse, TransactionRequest } from "ethers/providers";
 
 export * from "eccrypto-js";
 
@@ -171,9 +172,22 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
 export class ChannelSigner implements IChannelSigner {
   public address: string;
   public publicKey: string;
+  public readonly provider?: JsonRpcProvider;
 
-  constructor(private readonly privateKey: string) {
-    const wallet = new Wallet(privateKey);
+  // NOTE: without this property, the Signer.isSigner
+  // function will not return true, even though this class
+  // extends / implements the signer interface. See:
+  // https://github.com/ethers-io/ethers.js/issues/779
+  private readonly _ethersType = "Signer";
+
+  constructor(
+    private readonly privateKey: string,
+    ethUrl?: string,
+  ) {
+    this.provider = !!ethUrl
+      ? new JsonRpcProvider(ethUrl)
+      : undefined;
+    const wallet = new Wallet(privateKey, this.provider);
     this.privateKey = privateKey;
     this.address = wallet.address;
   }
@@ -195,7 +209,13 @@ export class ChannelSigner implements IChannelSigner {
     return this.address;
   }
 
-  public async sendTransaction(transaction: any): Promise<any> {
-    throw new Error(`ChannelSigner can't send transactions`);
+  public async sendTransaction(
+    transaction: TransactionRequest,
+  ): Promise<TransactionResponse> {
+    if (!this.provider) {
+      throw new Error(`ChannelSigner can't send transactions without being connected to a provider`);
+    }
+    const wallet = new Wallet(this.privateKey, this.provider);
+    return wallet.sendTransaction(transaction);
   }
 }

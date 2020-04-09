@@ -10,7 +10,7 @@ import {
   PublicIdentifier,
   stringify,
 } from "@connext/types";
-import { Contract } from "ethers";
+import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { Interface, solidityKeccak256 } from "ethers/utils";
@@ -123,17 +123,20 @@ async function sendMultisigDeployTx(
   retryCount: number = 1,
   log: ILoggerService,
 ): Promise<TransactionResponse> {
+  if (!signer.provider || !Signer.isSigner(signer)) {
+    throw new Error(`Signer must be connected to provider`);
+  }
+  const provider = signer.provider!;
+
   // make sure that the proxy factory used to deploy is the same as the one
   // used when the channel was created
-  const proxyFactory = new Contract(stateChannel.addresses.proxyFactory, ProxyFactory.abi, signer);
+  const proxyFactory = new Contract(
+    stateChannel.addresses.proxyFactory, 
+    ProxyFactory.abi, 
+    signer,
+  );
 
   const owners = stateChannel.userPublicIdentifiers;
-
-  const provider = signer.provider as JsonRpcProvider;
-
-  if (!provider) {
-    throw new Error(`wallet must have a provider`);
-  }
 
   const signerAddress = await signer.getAddress();
 
@@ -148,12 +151,12 @@ async function sendMultisigDeployTx(
         // hash chainId plus nonce for x-chain replay protection
         solidityKeccak256(
           ["uint256", "uint256"],
-          [provider.network.chainId, 0],
+          [(await provider.getNetwork()).chainId, 0],
         ), // TODO: Increment nonce as needed
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,
           gasPrice: provider.getGasPrice(),
-          nonce: await provider.getTransactionCount(signerAddress),
+          nonce: provider.getTransactionCount(signerAddress),
         },
       );
 
@@ -163,7 +166,7 @@ async function sendMultisigDeployTx(
 
       const ownersAreCorrectlySet = await checkForCorrectOwners(
         tx!,
-        provider,
+        provider as JsonRpcProvider,
         owners,
         stateChannel.multisigAddress,
       );
