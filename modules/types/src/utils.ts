@@ -78,7 +78,8 @@ export const getAssetId = (
 };
 
 export const getTokenAddressFromAssetId = (assetId: AssetId): string => {
-  return getAddressFromIdentifier(assetId);
+  const { address } = parsePublicIdentifier(assetId);
+  return address;
 };
 
 
@@ -115,9 +116,9 @@ export const parsePublicIdentifier = (
 };
 
 export const getAddressFromIdentifier = (identifer: string): string => {
-  return identifer; // TODO: re-implement once we decide on pub ids
+  return identifer; // TODO: replace w real pub id fn
 };
 
 export const getChainIdFromIdentifier = (identifer: string): number => {
-  return 1; // TODO: re-implement once we decide on pub ids
+  return 1; // TODO: replace w real pub id fn
 };
