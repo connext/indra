@@ -43,15 +43,15 @@ export const formatMessagingUrl = (nodeUrl: string) => {
 
 export const getBearerToken = async (
   nodeUrl: string,
-  xpub: string,
+  address: string,
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<string> => {
-  const nonceResponse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${xpub}`);
+  const nonceResponse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${address}`);
   const nonce = nonceResponse.data;
   const sig = await getSignature(nonce);
   const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth`, {
     sig,
-    userPublicIdentifier: xpub,
+    userPublicIdentifier: address,
   } as VerifyNonceDtoType);
   return verifyResponse.data;
 };
@@ -59,7 +59,7 @@ export const getBearerToken = async (
 export const createMessagingService = async (
   logger: ILoggerService,
   nodeUrl: string,
-  xpub: string,
+  address: string,
   chainId: number,
   getSignature: (nonce: string) => Promise<string>,
   messagingUrl?: string,
@@ -74,7 +74,7 @@ export const createMessagingService = async (
   // create a messaging service client
   // do not specify a prefix so that clients can publish to node
   const messaging = new MessagingService(config, key, () =>
-    getBearerToken(nodeUrl, xpub, getSignature),
+    getBearerToken(nodeUrl, address, getSignature),
   );
   await messaging.connect();
   return messaging;

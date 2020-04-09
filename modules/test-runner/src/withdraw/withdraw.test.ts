@@ -1,4 +1,4 @@
-import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
+import { xkeyKthAddress as addressToAddress } from "@connext/cf-core";
 import { IConnextClient, EventNames, BigNumberish } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -103,7 +103,7 @@ describe("Withdrawal", () => {
     client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
       // make sure node free balance increases
       const freeBalance = await client.getFreeBalance(AddressZero);
-      expect(freeBalance[xpubToAddress(client.nodePublicIdentifier)]).to.be.above(Zero);
+      expect(freeBalance[addressToAddress(client.nodePublicIdentifier)]).to.be.above(Zero);
       eventsCaught += 1;
       if (eventsCaught === 2) {
         done();

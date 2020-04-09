@@ -83,7 +83,7 @@ export class CFCoreStore implements IStoreService {
 
     const nodePublicIdentifier = this.configService.getPublicIdentifier();
     const userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.find(
-      xpub => xpub !== this.configService.getPublicIdentifier(),
+      address => address !== this.configService.getPublicIdentifier(),
     );
 
     const {

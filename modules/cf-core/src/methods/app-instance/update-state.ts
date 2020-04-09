@@ -75,7 +75,7 @@ export class UpdateStateController extends NodeController {
       throw new Error(NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH(appIdentityHash));
     }
 
-    const responderXpub = getFirstElementInListNotEqualTo(
+    const responderAddress = getFirstElementInListNotEqualTo(
       publicIdentifier,
       sc.userChannelIdentifiers,
     );
@@ -85,7 +85,7 @@ export class UpdateStateController extends NodeController {
       store,
       protocolRunner,
       publicIdentifier,
-      responderXpub,
+      responderAddress,
       newState,
       stateTimeout,
     );

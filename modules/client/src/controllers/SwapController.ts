@@ -8,7 +8,7 @@ import {
   SimpleSwapAppState,
   toBN,
 } from "@connext/types";
-import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
+import { xkeyKthAddress as addressToAddress } from "@connext/cf-core";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, getAddress, parseEther } from "ethers/utils";
 
@@ -134,7 +134,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount: swappedAmount,
-            to: xpubToAddress(this.connext.nodePublicIdentifier),
+            to: addressToAddress(this.connext.nodePublicIdentifier),
           },
         ],
       ],

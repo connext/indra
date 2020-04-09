@@ -13,7 +13,7 @@ import { HDNode, hexlify, bigNumberify } from "ethers/utils";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { randomBytes } from "crypto";
 
-export const generateRandomXpub = () =>
+export const generateRandomAddress = () =>
   HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
 
 export const generateRandomAddress = () => Wallet.createRandom().address;
@@ -62,8 +62,8 @@ export const createAppInstanceProposal = (
     initialState: {},
     initiatorDeposit: "0x00",
     initiatorDepositTokenAddress: AddressZero,
-    proposedByIdentifier: generateRandomXpub(),
-    proposedToIdentifier: generateRandomXpub(),
+    proposedByIdentifier: generateRandomAddress(),
+    proposedToIdentifier: generateRandomAddress(),
     responderDeposit: "0x00",
     responderDepositTokenAddress: AddressZero,
     defaultTimeout: "0x00",
@@ -79,7 +79,7 @@ export const createAppInstanceProposal = (
 export const createStateChannelJSON = (
   overrides: Partial<StateChannelJSON> = {},
 ): StateChannelJSON => {
-  const userNeuteredExtendedKeys = [generateRandomXpub(), generateRandomXpub()];
+  const userNeuteredExtendedKeys = [generateRandomAddress(), generateRandomAddress()];
   const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
       multisigMastercopy: "",

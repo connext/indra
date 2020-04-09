@@ -17,7 +17,7 @@ import { AddressZero } from "ethers/constants";
 import { mkHash, mkAddress } from "../test/utils";
 import {
   createStateChannelJSON,
-  generateRandomXpub,
+  generateRandomAddress,
   createAppInstanceProposal,
   createAppInstanceJson,
   generateRandomAddress,
@@ -35,7 +35,7 @@ import { toBN } from "@connext/types";
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
   nodePublicIdentifier: string,
-  userPublicIdentifier: string = generateRandomXpub(),
+  userPublicIdentifier: string = generateRandomAddress(),
   multisigAddress: string = generateRandomAddress(),
 ) => {
   await cfCoreStore.createSetupCommitment(multisigAddress, {
@@ -56,7 +56,7 @@ const createTestChannel = async (
 const createTestChannelWithAppInstance = async (
   cfCoreStore: CFCoreStore,
   nodePublicIdentifier: string,
-  userPublicIdentifier: string = generateRandomXpub(),
+  userPublicIdentifier: string = generateRandomAddress(),
   multisigAddress: string = generateRandomAddress(),
 ) => {
   await cfCoreStore.createSetupCommitment(multisigAddress, {

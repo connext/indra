@@ -217,7 +217,7 @@ export function createFreeBalance(
     balancesIndexedByToken: {
       // NOTE: Extremely important to understand that the default
       // addresses of the recipients are the "top level keys" as defined
-      // as the 0th derived children of the xpubs.
+      // as the 0th derived children of the addresss.
       [AddressZero]: [
         { to: initiator, amount: Zero },
         { to: responder, amount: Zero },

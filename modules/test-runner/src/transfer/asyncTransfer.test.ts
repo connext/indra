@@ -77,19 +77,19 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
+  it("happy case: client A successfully transfers to an address that doesn’t have a channel", async () => {
     const receiverMnemonic = Wallet.createRandom().mnemonic;
-    const receiverXpub = HDNode.fromMnemonic(receiverMnemonic)
+    const receiverAddress = HDNode.fromMnemonic(receiverMnemonic)
       .derivePath(CF_PATH)
       .neuter().extendedKey;
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
     await clientA.transfer({
       amount: ETH_AMOUNT_SM.toString(),
       assetId: tokenAddress,
-      recipient: receiverXpub,
+      recipient: receiverAddress,
     });
     const receiverClient = await createClient({ mnemonic: receiverMnemonic }, false);
-    expect(receiverClient.publicIdentifier).to.eq(receiverXpub);
+    expect(receiverClient.publicIdentifier).to.eq(receiverAddress);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.freeBalanceAddress]).to.be.above(0);
     receiverClient.messaging.disconnect();
@@ -215,7 +215,7 @@ describe("Async Transfers", () => {
     // because the node maintains the valid tokens list
   });
 
-  it("Bot A tries to transfer with invalid recipient xpub", async () => {
+  it("Bot A tries to transfer with invalid recipient address", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     const recipient = "nope";
@@ -225,7 +225,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient,
       }),
-    ).to.be.rejectedWith(`Value "${recipient}" must start with "xpub"`);
+    ).to.be.rejectedWith(`Value "${recipient}" must start with "address"`);
   });
 
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {

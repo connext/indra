@@ -5,7 +5,7 @@ import { One, AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { mkHash, mkXpub, mkAddress } from "../test/utils";
+import { mkHash, mkAddress, mkAddress } from "../test/utils";
 
 import { Channel } from "./channel.entity";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -35,8 +35,8 @@ class MockChannelRepository extends ChannelRepository {
     channel.available = true;
     channel.activeCollateralizations = { [AddressZero]: false };
     channel.multisigAddress = mkAddress("0xAAA");
-    channel.nodePublicIdentifier = mkXpub("xpubAAA");
-    channel.userPublicIdentifier = mkXpub("xpubBBB");
+    channel.nodePublicIdentifier = mkAddress("addressAAA");
+    channel.userPublicIdentifier = mkAddress("addressBBB");
     channel.id = 1;
     return channel;
   }
@@ -113,6 +113,6 @@ describe.skip("Channel Service", () => {
   });
 
   it("should add deposits to the onchain transaction table", async () => {
-    await channelService.rebalance(mkXpub("0xXpub"), AddressZero, RebalanceType.COLLATERALIZE, One);
+    await channelService.rebalance(mkAddress("0xAddress"), AddressZero, RebalanceType.COLLATERALIZE, One);
   });
 });

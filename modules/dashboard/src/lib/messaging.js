@@ -26,11 +26,11 @@
 //       localStorage.setItem("mnemonic", mnemonic);
 //     }
 //     const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-//     this.xpub = hdNode.neuter().extendedKey;
+//     this.address = hdNode.neuter().extendedKey;
 //     this.signer = new Wallet(hdNode.derivePath("0"));
 //     console.log(`adminToken: ${this.adminToken}`);
 //     console.log(`address: ${this.signer.address}`);
-//     console.log(`xpub: ${this.xpub}`);
+//     console.log(`address: ${this.address}`);
 //   }
 
 //   ///////////////////////////////////////
@@ -47,7 +47,7 @@
 //   }
 
 //   async getStateChannelByUserPubId(userPublicIdentifier) {
-//     return await this.send("admin.get-state-channel-by-xpub", {
+//     return await this.send("admin.get-state-channel-by-address", {
 //       userPublicIdentifier,
 //     });
 //   }
@@ -74,7 +74,7 @@
 //   }
 
 //   async getLinkedTransferByPaymentId(paymentId) {
-//     return await this.send(`transfer.get-linked.${this.xpub}`, {
+//     return await this.send(`transfer.get-linked.${this.address}`, {
 //       paymentId,
 //     });
 //   }

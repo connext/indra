@@ -1,4 +1,4 @@
-export function mkXpub(prefix: string = "xpub"): string {
+export function mkAddress(prefix: string = "address"): string {
   return prefix.padEnd(111, "0");
 }
 

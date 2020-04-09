@@ -46,11 +46,11 @@ describe("Create Channel", () => {
 
   it("Creating a channel with mainnet network string fails if no mnemonic is provided", async () => {
     await expect(createDefaultClient("mainnet", { mnemonic: undefined })).to.be.rejectedWith(
-      "Must provide mnemonic or xpub + keygen",
+      "Must provide mnemonic or address + keygen",
     );
   });
 
-  it("Creating a channel fails if user xpub and node xpub are the same", async () => {
+  it("Creating a channel fails if user address and node address are the same", async () => {
     const nodeMnemonic: string =
       "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
     await expect(createClient({ mnemonic: nodeMnemonic })).to.be.rejectedWith(

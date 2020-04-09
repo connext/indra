@@ -18,7 +18,7 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { createLinkedHash, stringify } from "../lib";
 import {
-  invalidXpub,
+  invalidAddress,
   validate,
 } from "../validation";
 
@@ -40,7 +40,7 @@ export class LinkedTransferController extends AbstractController {
     const submittedMeta = { ...(meta || {}) } as CreatedLinkedTransferMeta;
     
     if (recipient) {
-      validate(invalidXpub(recipient));
+      validate(invalidAddress(recipient));
       // set recipient and encrypted pre-image on linked transfer
       const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
       const encryptedPreImage = await encryptWithPublicKey(

@@ -35,13 +35,13 @@ import {
 } from "./examples";
 import { xkeyKthAddress } from "@connext/cf-core";
 
-const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): StateChannelJSON => {
+const convertV0toV1JSON = (oldChannel: any, nodeAddress: string = env.nodePubId): StateChannelJSON => {
   const removeIsVirtualTagAndTimeouts = (obj: any) => {
     const { isVirtualApp, participants, latestTimeout, timeout, ...ret } = obj;
     return ret;
   };
-  const userXpub = oldChannel.userNeuteredExtendedKeys.find(
-    x => x !== nodeXpub,
+  const userAddress = oldChannel.userNeuteredExtendedKeys.find(
+    x => x !== nodeAddress,
   );
   return {
     schemaVersion: STORE_SCHEMA_VERSION,
@@ -64,8 +64,8 @@ const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): S
           {
             ...removeIsVirtualTagAndTimeouts(appJson),
             multisigAddress: oldChannel.multisigAddress,
-            initiator: xkeyKthAddress(nodeXpub, appJson.appSeqNo),
-            responder: xkeyKthAddress(userXpub, appJson.appSeqNo),
+            initiator: xkeyKthAddress(nodeAddress, appJson.appSeqNo),
+            responder: xkeyKthAddress(userAddress, appJson.appSeqNo),
             defaultTimeout: toBN(appJson.defaultTimeout).toHexString(),
             stateTimeout: toBN(appJson.latestTimeout).toHexString(),
           },
@@ -83,8 +83,8 @@ const convertV0toV1JSON = (oldChannel: any, nodeXpub: string = env.nodePubId): S
         ...oldChannel.freeBalanceAppInstance.appInterface,
         actionEncoding: null,
       },
-      initiator: xkeyKthAddress(nodeXpub),
-      responder: xkeyKthAddress(userXpub),
+      initiator: xkeyKthAddress(nodeAddress),
+      responder: xkeyKthAddress(userAddress),
     } as AppInstanceJson,
     addresses: oldChannel.addresses,
   };
@@ -97,7 +97,7 @@ const oldClientChannels: [string, { [k: string]: any }][] = [
   [CHANNEL_KEY_VO_4, CHANNEL_VALUE_VO_4],
 ];
 
-const oldClientXpubs: string[] = [XPUB_V0_1, XPUB_V0_2, XPUB_V0_3, XPUB_V0_4];
+const oldClientAddresss: string[] = [XPUB_V0_1, XPUB_V0_2, XPUB_V0_3, XPUB_V0_4];
 
 describe("Store Migrations", () => {
   let dbClient: DBClient;
@@ -118,7 +118,7 @@ describe("Store Migrations", () => {
       // update prefixes + pubIds
       let nodeKey = key
         .replace(ConnextClientStorePrefixV0, ConnextNodeStorePrefixV0)
-        .replace(oldClientXpubs[idx], nodePubId);
+        .replace(oldClientAddresss[idx], nodePubId);
       await dbClient.query(SQL`
         INSERT INTO node_records VALUES
         (
@@ -128,7 +128,7 @@ describe("Store Migrations", () => {
       `);
       await dbClient.query(SQL`
         INSERT INTO "channel" ("userPublicIdentifier", "nodePublicIdentifier", "multisigAddress") VALUES (
-          ${oldClientXpubs[idx]},
+          ${oldClientAddresss[idx]},
           ${nodePubId},
           ${json.multisigAddress}
         );
@@ -147,7 +147,7 @@ describe("Store Migrations", () => {
       const json = oldVal[oldKey];
       const nodeKey = oldKey
         .replace(ConnextClientStorePrefixV0, ConnextNodeStorePrefixV0)
-        .replace(oldClientXpubs[idx], nodePubId);
+        .replace(oldClientAddresss[idx], nodePubId);
       expect(row.path).to.eq(nodeKey);
       expect(row.value).to.containSubset({ [nodeKey]: json });
     });
@@ -162,7 +162,7 @@ describe("Store Migrations", () => {
       const [oldKey, oldVal] = oldClientChannels[idx];
       const json = oldVal[oldKey];
       expect(channelRow).to.containSubset({
-        userPublicIdentifier: oldClientXpubs[idx],
+        userPublicIdentifier: oldClientAddresss[idx],
         nodePublicIdentifier: nodePubId,
         multisigAddress: json.multisigAddress,
       });

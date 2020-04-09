@@ -45,7 +45,7 @@ export class AdminService implements OnApplicationBootstrap {
   /////////////////////////////////////////
   ///// GENERAL PURPOSE ADMIN FNS
 
-  /**  Get channels by xpub */
+  /**  Get channels by address */
   async getStateChannelByUserPublicIdentifier(
     userPublicIdentifier: string,
   ): Promise<StateChannelJSON> {
@@ -85,30 +85,30 @@ export class AdminService implements OnApplicationBootstrap {
    *
    * Some channels do not have a `freeBalanceAppInstance` key stored in their
    * state channel object at the path:
-   * `{prefix}/{nodeXpub}/channel/{multisigAddress}`, meaning any attempts that
+   * `{prefix}/{nodeAddress}/channel/{multisigAddress}`, meaning any attempts that
    * rely on checking the free balance (read: all app protocols) will fail.
    *
    * Additionally, any `restoreState` or state migration methods will fail
    * since they will be migrating corrupted states.
    *
-   * This method will return the userXpub and the multisig address for all
+   * This method will return the userAddress and the multisig address for all
    * channels that fit this description.
    */
-  async getNoFreeBalance(): Promise<{ multisigAddress: string; userXpub: string; error: any }[]> {
+  async getNoFreeBalance(): Promise<{ multisigAddress: string; userAddress: string; error: any }[]> {
     // get all available channels, meaning theyre deployed
     const channels = await this.channelService.findAll();
     const corrupted = [];
     for (const channel of channels) {
       // try to get the free balance of eth
-      const { id, multisigAddress, userPublicIdentifier: userXpub } = channel;
+      const { id, multisigAddress, userPublicIdentifier: userAddress } = channel;
       try {
-        await this.cfCoreService.getFreeBalance(userXpub, multisigAddress);
+        await this.cfCoreService.getFreeBalance(userAddress, multisigAddress);
       } catch (error) {
         corrupted.push({
           error: error.message,
           id,
           multisigAddress,
-          userXpub,
+          userAddress,
         });
       }
     }
@@ -135,7 +135,7 @@ export class AdminService implements OnApplicationBootstrap {
       const mergeInfo = {
         channelId: chan.id,
         records: { oldPrefix, currPrefix },
-        userXpub: chan.userPublicIdentifier,
+        userAddress: chan.userPublicIdentifier,
       };
       toMerge.push(mergeInfo);
     }

@@ -14,7 +14,7 @@ import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
 import { NodeInitializationParameters } from "./types";
-import { invalidXpub } from "./validation";
+import { invalidAddress } from "./validation";
 
 const sendFailed = "Failed to send message";
 
@@ -60,16 +60,16 @@ export class NodeApiClient implements INodeApiClient {
     return this._userPublicIdentifier;
   }
 
-  set userPublicIdentifier(userXpub: string) {
-    this._userPublicIdentifier = userXpub;
+  set userPublicIdentifier(userAddress: string) {
+    this._userPublicIdentifier = userAddress;
   }
 
   get nodePublicIdentifier(): string | undefined {
     return this._nodePublicIdentifier;
   }
 
-  set nodePublicIdentifier(nodeXpub: string) {
-    this._nodePublicIdentifier = nodeXpub;
+  set nodePublicIdentifier(nodeAddress: string) {
+    this._nodePublicIdentifier = nodeAddress;
   }
 
   ////////////////////////////////////////
@@ -197,7 +197,7 @@ export class NodeApiClient implements INodeApiClient {
   };
 
   public setUserPublicIdentifier(publicIdentifier: string): void {
-    const ret = invalidXpub(publicIdentifier);
+    const ret = invalidAddress(publicIdentifier);
     if (ret !== undefined) {
       throw new Error(ret);
     }
@@ -205,7 +205,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public setNodePublicIdentifier(publicIdentifier: string): void {
-    const ret = invalidXpub(publicIdentifier);
+    const ret = invalidAddress(publicIdentifier);
     if (ret !== undefined) {
       throw new Error(ret);
     }

@@ -91,7 +91,7 @@ export class TakeActionController extends NodeController {
     }
     const defaultTimeout = app.defaultTimeout;
 
-    const responderXpub = getFirstElementInListNotEqualTo(
+    const responderAddress = getFirstElementInListNotEqualTo(
       publicIdentifier,
       sc.userChannelIdentifiers,
     );
@@ -101,7 +101,7 @@ export class TakeActionController extends NodeController {
       store,
       protocolRunner,
       publicIdentifier,
-      responderXpub,
+      responderAddress,
       action,
       stateTimeout || toBN(defaultTimeout),
     );

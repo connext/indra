@@ -152,20 +152,20 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
       const sig = await signChannelMessage(privateKey, message);
       return sig;
     };
-    const xpub = hdNode.neuter().extendedKey;
+    const address = hdNode.neuter().extendedKey;
 
     const getBearerToken = async (
-      xpub: string,
+      address: string,
       getSignature: (nonce: string) => Promise<string>,
     ): Promise<string> => {
       try {
-        const nonce = await axios.get(`${this.options.nodeUrl}/auth/${xpub}`);
+        const nonce = await axios.get(`${this.options.nodeUrl}/auth/${address}`);
         const sig = await getSignature(nonce.data);
         const bearerToken: AxiosResponse<string> = await axios.post(
           `${this.options.nodeUrl}/auth`,
           {
             sig,
-            userPublicIdentifier: xpub,
+            userPublicIdentifier: address,
           } as VerifyNonceDtoType,
         );
         return bearerToken.data;
@@ -177,7 +177,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
     const key = `INDRA.4447`;
     this.connection = new MessagingService(this.options.messagingConfig, key, () =>
-      getBearerToken(xpub, getSignature),
+      getBearerToken(address, getSignature),
     );
     this.protocolDefaults = this.options.protocolDefaults;
     this.countInternal = this.options.count;

@@ -6,7 +6,7 @@ import {
   SignedTransferStatus,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  Xpub,
+  Address,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -63,7 +63,7 @@ export class SignedTransferService {
   }
 
   async installSignedTransferReceiverApp(
-    userPublicIdentifier: Xpub,
+    userPublicIdentifier: Address,
     paymentId: Bytes32,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
     this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);

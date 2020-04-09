@@ -241,7 +241,7 @@ class App extends React.Component {
       }
 
       const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-      const xpub = hdNode.neuter().extendedKey;
+      const address = hdNode.neuter().extendedKey;
       const keyGen = index => {
         const res = hdNode.derivePath(index);
         return Promise.resolve(res.privateKey);
@@ -252,10 +252,10 @@ class App extends React.Component {
         logLevel: LOG_LEVEL,
         nodeUrl: urls.nodeUrl,
         store,
-        xpub,
+        address,
       });
       console.log(`mnemonic address: ${wallet.address} (path: ${wallet.path})`);
-      console.log(`xpub address: ${eth.utils.computeAddress(fromExtendedKey(xpub).publicKey)}`);
+      console.log(`address address: ${eth.utils.computeAddress(fromExtendedKey(address).publicKey)}`);
       console.log(
         `keygen address: ${new eth.Wallet(await keyGen("1")).address} (path ${
           new eth.Wallet(await keyGen("1")).path
@@ -556,7 +556,7 @@ class App extends React.Component {
       return;
     }
 
-    const hubFBAddress = connext.utils.xpubToAddress(channel.nodePublicIdentifier);
+    const hubFBAddress = connext.utils.addressToAddress(channel.nodePublicIdentifier);
     // in swap, collateral needed is just weiToToken(availableWeiToSwap)
     const tokensForWei = weiToToken(availableWeiToSwap, swapRate);
     let collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
@@ -722,7 +722,7 @@ class App extends React.Component {
                   setWalletConnext={this.setWalletConnext}
                   getWalletConnext={this.getWalletConnext}
                   store={channel ? channel.store : undefined}
-                  xpub={channel ? channel.publicIdentifier : "Unknown"}
+                  address={channel ? channel.publicIdentifier : "Unknown"}
                 />
               )}
             />
@@ -731,7 +731,7 @@ class App extends React.Component {
               render={props => (
                 <RequestCard
                   {...props}
-                  xpub={channel ? channel.publicIdentifier : "Unknown"}
+                  address={channel ? channel.publicIdentifier : "Unknown"}
                   maxDeposit={maxDeposit}
                 />
               )}

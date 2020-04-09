@@ -361,7 +361,7 @@ export class CFCoreService {
 
   /**
    * Returns value from `node_records` table stored at:
-   * `{prefix}/{nodeXpub}/channel/{multisig}`
+   * `{prefix}/{nodeAddress}/channel/{multisig}`
    */
   async getChannelRecord(multisig: string, prefix: string = ConnextNodeStorePrefix): Promise<any> {
     const path = `${prefix}/${this.cfCore.publicIdentifier}/channel/${multisig}`;

@@ -26,7 +26,7 @@ export const cfCoreProviderFactory: Provider = {
     const publicExtendedKey = config.getPublicIdentifier();
     const provider = config.getEthProvider();
     log.setContext("CFCoreProvider");
-    log.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
+    log.info(`Derived address from mnemonic: ${publicExtendedKey}`);
 
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();

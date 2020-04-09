@@ -10,7 +10,7 @@ import {
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
-import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
+import { IsEthAddress, IsKeccak256Hash, IsAddress } from "../util";
 import { HexString } from "../../../types/src/basic";
 
 export enum AppType {
@@ -71,11 +71,11 @@ export class AppInstance<T extends AppState = any> {
   outcomeType!: OutcomeType;
 
   @Column("text")
-  @IsXpub()
+  @IsAddress()
   proposedByIdentifier!: string;
 
   @Column("text")
-  @IsXpub()
+  @IsAddress()
   proposedToIdentifier!: string;
 
   @Column("text", {

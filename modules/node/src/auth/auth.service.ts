@@ -8,14 +8,14 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 
-import { isXpub } from "../util";
+import { isAddress } from "../util";
 import { MessagingAuthProviderId } from "../constants";
 
 const nonceLen = 32;
 const nonceTTL = 24 * 60 * 60 * 1000; // 1 day
 
-export function getAuthAddressFromXpub(xpub: string): string {
-  return fromExtendedKey(xpub).derivePath("0").address;
+export function getAuthAddressFromAddress(address: string): string {
+  return fromExtendedKey(address).derivePath("0").address;
 }
 
 @Injectable()
@@ -36,7 +36,7 @@ export class AuthService {
     // FIXME-- store nonce in redis instead of here...
     this.nonces[userPublicIdentifier] = { expiry, nonce };
     this.log.debug(
-      `getNonce: Gave xpub ${userPublicIdentifier} a nonce that expires at ${expiry}: ${nonce}`,
+      `getNonce: Gave address ${userPublicIdentifier} a nonce that expires at ${expiry}: ${nonce}`,
     );
     return nonce;
   }
@@ -52,8 +52,8 @@ export class AuthService {
       return this.vendAdminToken(userPublicIdentifier);
     }
 
-    const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
-    this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
+    const addressAddress = getAuthAddressFromAddress(userPublicIdentifier);
+    this.log.debug(`Got address ${addressAddress} from address ${userPublicIdentifier}`);
 
     if (!this.nonces[userPublicIdentifier]) {
       throw new Error(`User hasn't requested a nonce yet`);
@@ -61,16 +61,16 @@ export class AuthService {
 
     const { nonce, expiry } = this.nonces[userPublicIdentifier];
     const addr = await verifyChannelMessage(nonce, signedNonce);
-    if (addr !== xpubAddress) {
+    if (addr !== addressAddress) {
       throw new Error(`Verification failed`);
     }
     if (Date.now() > expiry) {
-      throw new Error(`Verification failed... nonce expired for xpub: ${userPublicIdentifier}`);
+      throw new Error(`Verification failed... nonce expired for address: ${userPublicIdentifier}`);
     }
 
     const network = await this.configService.getEthNetwork();
 
-    // Try to get latest published OR move everything under xpub route.
+    // Try to get latest published OR move everything under address route.
     let permissions = {
       publish: {
         allow: [`${userPublicIdentifier}.>`, `INDRA.${network.chainId}.>`],
@@ -101,14 +101,14 @@ export class AuthService {
     return jwt;
   }
 
-  parseXpub(callback: any): any {
+  parseAddress(callback: any): any {
     return async (subject: string, data: any): Promise<string> => {
-      // Get & validate xpub from subject
-      const xpub = subject.split(".")[0]; // first item of subscription is xpub
-      if (!xpub || !isXpub(xpub)) {
-        throw new Error(`Subject's first item isn't a valid xpub: ${subject}`);
+      // Get & validate address from subject
+      const address = subject.split(".")[0]; // first item of subscription is address
+      if (!address || !isAddress(address)) {
+        throw new Error(`Subject's first item isn't a valid address: ${subject}`);
       }
-      return callback(xpub, data);
+      return callback(address, data);
     };
   }
 
@@ -120,8 +120,8 @@ export class AuthService {
       //      holding off on this right now because it will be *much* easier to iterate through
       //      all appIdentityHashs after our store refactor.
 
-      // const xpub = subject.split(".")[0]; // first item of subscription is xpub
-      // const channel = await this.channelRepo.findByUserPublicIdentifier(xpub);
+      // const address = subject.split(".")[0]; // first item of subscription is address
+      // const channel = await this.channelRepo.findByUserPublicIdentifier(address);
       // if (lockName !== channel.multisigAddress || lockName !== ) {
       //   return this.badSubject(`Subject's last item isn't a valid lockName: ${subject}`);
       // }

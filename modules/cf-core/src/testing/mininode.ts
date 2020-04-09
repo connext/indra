@@ -29,7 +29,7 @@ export class MiniNode {
   private readonly signer: ChannelSigner;
   public readonly protocolRunner: ProtocolRunner;
   public scm: Map<string, StateChannel>;
-  public readonly xpub: string;
+  public readonly address: string;
 
   constructor(
     readonly networkContext: NetworkContext,
@@ -37,7 +37,7 @@ export class MiniNode {
     readonly store: IStoreService,
   ) {
     this.signer = getRandomChannelSigner();
-    this.xpub = this.signer.identifier;
+    this.address = this.signer.identifier;
     this.protocolRunner = new ProtocolRunner(
       networkContext, 
       provider, 

@@ -92,18 +92,18 @@ export function IsBytes32(validationOptions?: ValidationOptions): Function {
   };
 }
 
-export const isXpub = (xpub: string): boolean => /^xpub[a-zA-Z0-9]{107}$/.test(xpub);
+export const isAddress = (address: string): boolean => /^address[a-zA-Z0-9]{107}$/.test(address);
 
-export function IsXpub(validationOptions?: ValidationOptions): Function {
+export function IsAddress(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
     registerDecorator({
-      name: "isXpub",
+      name: "isAddress",
       options: validationOptions,
       propertyName,
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isXpub(value);
+          return isAddress(value);
         },
       },
     });

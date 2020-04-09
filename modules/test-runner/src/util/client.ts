@@ -16,9 +16,9 @@ import { ethWallet } from "./ethprovider";
 import { Logger } from "./logger";
 import { MessageCounter, TestMessagingService } from "./messaging";
 
-let mnemonics: { [xpub: string]: string } = {};
-export const getMnemonic = (xpub: string): string => {
-  return mnemonics[xpub] || "";
+let mnemonics: { [address: string]: string } = {};
+export const getMnemonic = (address: string): string => {
+  return mnemonics[address] || "";
 };
 
 export const createClient = async (

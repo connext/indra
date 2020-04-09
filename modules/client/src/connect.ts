@@ -50,7 +50,7 @@ export const connect = async (
     logLevel,
     mnemonic,
   } = opts;
-  let { xpub, keyGen, store, messaging, nodeUrl, messagingUrl } = opts;
+  let { address, keyGen, store, messaging, nodeUrl, messagingUrl } = opts;
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -115,13 +115,13 @@ export const connect = async (
 
     if (mnemonic) {
       log.debug(`Creating channelProvider with mnemonic: ${mnemonic}`);
-      // Convert mnemonic into xpub + keyGen if provided
+      // Convert mnemonic into address + keyGen if provided
       const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-      xpub = hdNode.neuter().extendedKey;
+      address = hdNode.neuter().extendedKey;
       keyGen = (index: string): Promise<string> =>
         Promise.resolve(hdNode.derivePath(index).privateKey);
     } else {
-      log.debug(`Creating channelProvider with xpub: ${xpub}`);
+      log.debug(`Creating channelProvider with address: ${address}`);
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
     const getSignature = async message => {
@@ -133,7 +133,7 @@ export const connect = async (
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        xpub,
+        address,
         network.chainId,
         getSignature,
         messagingUrl,
@@ -146,8 +146,8 @@ export const connect = async (
     node = new NodeApiClient({ logger: log, messaging, nodeUrl });
     config = await node.config();
 
-    // ensure that node and user xpub are different
-    if (config.nodePublicIdentifier === xpub) {
+    // ensure that node and user address are different
+    if (config.nodePublicIdentifier === address) {
       throw new Error(
         "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
       );
@@ -162,7 +162,7 @@ export const connect = async (
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
       store,
-      xpub,
+      address,
       logger: log,
     });
 
@@ -173,7 +173,7 @@ export const connect = async (
     node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
-    throw new Error("Must provide mnemonic or xpub + keygen");
+    throw new Error("Must provide mnemonic or address + keygen");
   }
 
   // setup multisigAddress + assign to channelProvider
@@ -227,7 +227,7 @@ export const connect = async (
     node,
     store,
     token,
-    xpub,
+    address,
   });
 
   log.debug(`Done creating connext client`);

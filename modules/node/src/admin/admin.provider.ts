@@ -28,16 +28,16 @@ class AdminMessaging extends AbstractMessagingProvider {
    *
    * Some channels do not have a `freeBalanceAppInstance` key stored in their
    * state channel object at the path:
-   * `{prefix}/{nodeXpub}/channel/{multisigAddress}`, meaning any attempts that
+   * `{prefix}/{nodeAddress}/channel/{multisigAddress}`, meaning any attempts that
    * rely on checking the free balance (read: all app protocols) will fail.
    *
    * Additionally, any `restoreState` or state migration methods will fail
    * since they will be migrating corrupted states.
    *
-   * This method will return the userXpub and the multisig address for all
+   * This method will return the userAddress and the multisig address for all
    * channels that fit this description.
    */
-  async getNoFreeBalance(): Promise<{ multisigAddress: string; userXpub: string; error: any }[]> {
+  async getNoFreeBalance(): Promise<{ multisigAddress: string; userAddress: string; error: any }[]> {
     return await this.adminService.getNoFreeBalance();
   }
 
@@ -91,9 +91,9 @@ class AdminMessaging extends AbstractMessagingProvider {
   }
 
   async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
-    const xpub = subject.split(".")[1];
+    const address = subject.split(".")[1];
     const profile = bigNumberifyJson(data.profile) as RebalanceProfile;
-    await this.channelService.addRebalanceProfileToChannel(xpub, profile);
+    await this.channelService.addRebalanceProfileToChannel(address, profile);
   }
 
   async setupSubscriptions(): Promise<void> {
@@ -103,7 +103,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     );
 
     await super.connectRequestReponse(
-      "admin.get-state-channel-by-xpub",
+      "admin.get-state-channel-by-address",
       this.getStateChannelByUserPublicIdentifier.bind(this),
     );
 

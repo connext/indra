@@ -10,7 +10,7 @@ import {
   INodeApiClient,
   KeyGen,
   Network,
-  Xpub,
+  Address,
 } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
 
@@ -18,8 +18,8 @@ export interface NodeInitializationParameters {
   nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
-  userPublicIdentifier?: Xpub;
-  nodePublicIdentifier?: Xpub;
+  userPublicIdentifier?: Address;
+  nodePublicIdentifier?: Address;
   channelProvider?: IChannelProvider;
 }
 
@@ -35,5 +35,5 @@ export type InternalClientOptions = {
   node: INodeApiClient;
   store: IClientStore;
   token: Contract;
-  xpub: Xpub;
+  address: Address;
 };

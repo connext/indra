@@ -1,5 +1,5 @@
 import { generateValidationMiddleware } from "@connext/apps";
-import { Node as CFCore, xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
+import { Node as CFCore, xkeyKthAddress as addressToAddress } from "@connext/cf-core";
 import {
   CFChannelProviderOptions,
   ChannelMethods,
@@ -36,7 +36,7 @@ export const createCFChannelProvider = async ({
   nodeConfig,
   nodeUrl,
   store,
-  xpub,
+  address,
   logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
@@ -46,7 +46,7 @@ export const createCFChannelProvider = async ({
     nodeConfig,
     ethProvider,
     lockService,
-    xpub,
+    address,
     keyGen,
     undefined,
     logger,
@@ -62,9 +62,9 @@ export const createCFChannelProvider = async ({
   );
 
   const channelProviderConfig: ChannelProviderConfig = {
-    freeBalanceAddress: xpubToAddress(xpub),
+    freeBalanceAddress: addressToAddress(address),
     nodeUrl,
-    userPublicIdentifier: xpub,
+    userPublicIdentifier: address,
   };
   const wallet = new Wallet(await keyGen("0")).connect(ethProvider);
   const connection = new CFCoreRpcConnection(cfCore, store, wallet);

@@ -284,12 +284,12 @@ export function assertInstallMessage(
  * ensure a channel has been instantiated and to get its multisig address
  * back in the event data.
  */
-export async function getMultisigCreationAddress(node: Node, xpubs: string[]): Promise<string> {
+export async function getMultisigCreationAddress(node: Node, addresss: string[]): Promise<string> {
   const {
     result: {
       result: { multisigAddress },
     },
-  } = await node.rpcRouter.dispatch(constructChannelCreationRpc(xpubs));
+  } = await node.rpcRouter.dispatch(constructChannelCreationRpc(addresss));
   return multisigAddress;
 }
 

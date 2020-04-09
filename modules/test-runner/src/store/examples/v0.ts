@@ -22,7 +22,7 @@ const NODE_PUB_ID = env.nodePubId;
 export const MNEMONIC_V0_1 =
   "usual sense execute bleak giant school runway age wash alien virus vibrant";
 export const XPUB_V0_1 =
-  "xpub661MyMwAqRbcGxL2is6iyms2GhezmMXThyEZpvTGPfNvfiUq5hAyKGtch3TEGpM8SQA3EKun4mvSUVJekMgMVuNozJeALrrdUVhcNCpgAeG";
+  "address661MyMwAqRbcGxL2is6iyms2GhezmMXThyEZpvTGPfNvfiUq5hAyKGtch3TEGpM8SQA3EKun4mvSUVJekMgMVuNozJeALrrdUVhcNCpgAeG";
 export const CHANNEL_KEY_VO_1 = `${ConnextClientStorePrefixV0}/${XPUB_V0_1}/channel/0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994`;
 
 export const CHANNEL_VALUE_VO_1 = {
@@ -69,7 +69,7 @@ export const CHANNEL_VALUE_VO_1 = {
 // Description -- free balance app installed, no active apps
 export const MNEMONIC_V0_2 = "wet topic erase object they fat trial tent rebuild area joy ceiling";
 export const XPUB_V0_2 =
-  "xpub6EBMQUSnGZBHh7xMmcP2u26v7zp1b69QgtCqV6WNWYfzTi5BioRGQYW1Js9ua1BmkzWJipKqLmGwcYUmXAKveWKQCNUg5rfXgC6gpDyYraS";
+  "address6EBMQUSnGZBHh7xMmcP2u26v7zp1b69QgtCqV6WNWYfzTi5BioRGQYW1Js9ua1BmkzWJipKqLmGwcYUmXAKveWKQCNUg5rfXgC6gpDyYraS";
 export const CHANNEL_KEY_VO_2 = `${ConnextClientStorePrefixV0}/${XPUB_V0_2}/channel/0x9E746946146Da59D4d0daBfEA159ed791FB42FD1`;
 
 export const CHANNEL_VALUE_VO_2 = {
@@ -132,7 +132,7 @@ export const MNEMONIC_V0_3 =
   "loud skin cement buffalo target laugh swarm paper jelly swear near coconut";
 
 export const XPUB_V0_3 =
-  "xpub661MyMwAqRbcFKi9JLCi2PSBniGziyoPeYDjQN5gYuNJ7xDAW6Mmxh7M3Jn8NJ4w262nFwtBefFy8Um21zqvStxt2V7aowSfXtcSBN1jmTv";
+  "address661MyMwAqRbcFKi9JLCi2PSBniGziyoPeYDjQN5gYuNJ7xDAW6Mmxh7M3Jn8NJ4w262nFwtBefFy8Um21zqvStxt2V7aowSfXtcSBN1jmTv";
 
 export const CHANNEL_KEY_VO_3 = `${ConnextClientStorePrefixV0}/${XPUB_V0_3}/channel/0x7353b879FCd7d9269d3d95D843B4CC754d98F1e1`;
 
@@ -167,9 +167,9 @@ export const CHANNEL_VALUE_VO_3 = {
           timeout: "0x00",
           identityHash: "0x090482fe110e64b6ab59356c62bdd23d57caf4b528ab3b3d0e99f73da377d12e",
           proposedByIdentifier:
-            "xpub6DZv6JzHGBAqDnJ8CLgy3cuVLsMYTeK4vRuycDEdYcmTo3cehiDg46iShdwzyWEG11DUbTQKETGVqPhAa9Ns7gbjFE7ajmW9n8fQj6XmSQa",
+            "address6DZv6JzHGBAqDnJ8CLgy3cuVLsMYTeK4vRuycDEdYcmTo3cehiDg46iShdwzyWEG11DUbTQKETGVqPhAa9Ns7gbjFE7ajmW9n8fQj6XmSQa",
           proposedToIdentifier:
-            "xpub6Ew7ALFHU48CVUjJwS8Z5dPLzDq5B45nCQWXR94oMQdzMkbBsgDyScK7VpFSobRp87StcoLJJDUj2mh1bRfMAJFkKjBCf4nDnvtrvAA5HYa",
+            "address6Ew7ALFHU48CVUjJwS8Z5dPLzDq5B45nCQWXR94oMQdzMkbBsgDyScK7VpFSobRp87StcoLJJDUj2mh1bRfMAJFkKjBCf4nDnvtrvAA5HYa",
           appSeqNo: 3,
           initiatorDepositTokenAddress: "0xaFF4481D10270F50f203E0763e2597776068CBc5",
           responderDepositTokenAddress: "0xaFF4481D10270F50f203E0763e2597776068CBc5",
@@ -257,7 +257,7 @@ export const MNEMONIC_V0_4 =
   "useless exhibit spray catalog craft arrive walk hedgehog harsh either dignity trial";
 
 export const XPUB_V0_4 =
-  "xpub661MyMwAqRbcGJ5NH5QFLegmPAtmmh5N6Cf79puaDW7gsHvxvhKqRjzsiKpPMT7ozThARSY6RajUKZRo5Tw7NocoRnjxxkyqpvktJ2mnxCa";
+  "address661MyMwAqRbcGJ5NH5QFLegmPAtmmh5N6Cf79puaDW7gsHvxvhKqRjzsiKpPMT7ozThARSY6RajUKZRo5Tw7NocoRnjxxkyqpvktJ2mnxCa";
 
 export const CHANNEL_KEY_VO_4 = `${ConnextClientStorePrefixV0}/${XPUB_V0_4}/channel/0xfd01aA324932B2D97Cf2064f94ac97E85c8BA788`;
 

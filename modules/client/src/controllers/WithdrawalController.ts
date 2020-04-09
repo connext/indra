@@ -12,7 +12,7 @@ import {
   WithdrawAppName,
   WithdrawAppState,
 } from "@connext/types";
-import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
+import { xkeyKthAddress as addressToAddress } from "@connext/cf-core";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { formatEther, getAddress, hexlify, randomBytes } from "ethers/utils";
@@ -149,7 +149,7 @@ export class WithdrawalController extends AbstractController {
     const initialState: WithdrawAppState = {
       transfers: [
         { amount: amount, to: recipient },
-        { amount: Zero, to: xpubToAddress(this.connext.nodePublicIdentifier) },
+        { amount: Zero, to: addressToAddress(this.connext.nodePublicIdentifier) },
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [

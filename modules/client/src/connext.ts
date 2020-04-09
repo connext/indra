@@ -1,5 +1,5 @@
 import { SupportedApplications } from "@connext/apps";
-import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
+import { xkeyKthAddress as addressToAddress } from "@connext/cf-core";
 import { MessagingService } from "@connext/messaging";
 import {
   Address,
@@ -107,7 +107,7 @@ export class ConnextClient implements IConnextClient {
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.nodeFreeBalanceAddress = xpubToAddress(this.nodePublicIdentifier);
+    this.nodeFreeBalanceAddress = addressToAddress(this.nodePublicIdentifier);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -170,7 +170,7 @@ export class ConnextClient implements IConnextClient {
       return;
     }
 
-    // ensure that node and user xpub are different
+    // ensure that node and user address are different
     if (this.nodePublicIdentifier === this.publicIdentifier) {
       throw new Error(
         "Client must be instantiated with a secret that is different from the node's secret",
@@ -188,7 +188,7 @@ export class ConnextClient implements IConnextClient {
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl: this.channelProvider.config.nodeUrl,
       store: this.store,
-      xpub: this.publicIdentifier,
+      address: this.publicIdentifier,
       logger: this.log.newContext("CFChannelProvider"),
     });
     // TODO: this is very confusing to have to do, lets try to figure out a better way

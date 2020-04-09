@@ -22,7 +22,7 @@ import { Currency, toBN } from "../utils";
 import { sendMachine } from "../state";
 
 import { Copyable } from "./copyable";
-import { useXpub, XpubInput } from "./input";
+import { useAddress, AddressInput } from "./input";
 import { createRandom32ByteHexString } from "@connext/types";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
@@ -56,7 +56,7 @@ export const SendCard = style(
     const [amount, setAmount] = useState({ display: "", error: null, value: null });
     const [link, setLink] = useState(undefined);
     const [paymentState, paymentAction] = useMachine(sendMachine);
-    const [recipient, setRecipient, setRecipientError] = useXpub(null, ethProvider);
+    const [recipient, setRecipient, setRecipientError] = useAddress(null, ethProvider);
 
     // need to extract token balance so it can be used as a dependency for the hook properly
     const tokenBalance = balance.channel.token.wad;
@@ -237,7 +237,7 @@ export const SendCard = style(
         </Grid>
 
         <Grid item xs={12} style={{ width: "100%" }}>
-          <XpubInput xpub={recipient} setXpub={setRecipient} />
+          <AddressInput address={recipient} setAddress={setRecipient} />
         </Grid>
 
         <Grid item xs={12}>

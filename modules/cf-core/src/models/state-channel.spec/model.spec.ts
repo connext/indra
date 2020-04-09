@@ -61,7 +61,7 @@ describe("StateChannel", () => {
       expect(json.freeBalanceAppInstance).toBeDefined();
     });
 
-    it("should not change the user xpubs", () => {
+    it("should not change the user addresss", () => {
       expect(json.userChannelIdentifiers[0]).toEqual(initiator);
       expect(json.userChannelIdentifiers[1]).toEqual(responder);
     });
@@ -125,7 +125,7 @@ describe("StateChannel", () => {
       expect(rehydrated.freeBalance).toMatchObject(bigNumberifyJson(sc.freeBalance));
     });
 
-    it("should not change the user xpubs", () => {
+    it("should not change the user addresss", () => {
       expect(rehydrated.userChannelIdentifiers[0]).toEqual(initiator);
       expect(rehydrated.userChannelIdentifiers[1]).toEqual(responder);
     });

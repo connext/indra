@@ -5,10 +5,10 @@ import { Deferred } from "../deferred";
 import { MiniNode } from "./mininode";
 
 export class MessageRouter {
-  // mapping from a mininode's xpub to the mininode
+  // mapping from a mininode's address to the mininode
   private readonly nodesMap: Map<string, MiniNode>;
 
-  // mapping from a mininode's xpub to a promise representing the future value
+  // mapping from a mininode's address to a promise representing the future value
   // of an IO_SEND_AND_WAIT call. It is expected that the protocol is awaiting
   // on this promise.
   private readonly deferrals: Map<string, Deferred<any>>;
@@ -23,7 +23,7 @@ export class MessageRouter {
     this.pendingPromises = new Set();
 
     for (const node of nodes) {
-      this.nodesMap.set(node.xpub, node);
+      this.nodesMap.set(node.address, node);
 
       node.protocolRunner.register(Opcode.IO_SEND, (args: [any]) => {
         const [message] = args;
@@ -31,12 +31,12 @@ export class MessageRouter {
       });
       node.protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [any]) => {
         const [message] = args;
-        message.fromXpub = node.xpub;
+        message.fromAddress = node.address;
 
-        this.deferrals.set(node.xpub, new Deferred());
+        this.deferrals.set(node.address, new Deferred());
         this.appendToPendingPromisesIfNotNull(this.routeMessage(message));
-        const ret = await this.deferrals.get(node.xpub)!.promise;
-        this.deferrals.delete(node.xpub);
+        const ret = await this.deferrals.get(node.address)!.promise;
+        this.deferrals.delete(node.address);
 
         return ret;
       });

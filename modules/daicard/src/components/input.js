@@ -3,7 +3,7 @@ import { arrayify, isHexString } from "ethers/utils";
 import React, { useEffect, useState } from "react";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 
-import { resolveAddress, resolveXpub } from "../utils";
+import { resolveAddress, resolveAddress } from "../utils";
 import { QRScan } from "./qrCode";
 
 const useDebounce = (value, delay) => {
@@ -127,9 +127,9 @@ export const AddressInput = ({ address, setAddress }) => {
   );
 };
 
-export const useXpub = (initialXpub, ethProvider) => {
+export const useAddress = (initialAddress, ethProvider) => {
   const [network, setNetwork] = useState(null);
-  const [display, setDisplay] = useState(initialXpub);
+  const [display, setDisplay] = useState(initialAddress);
   const [resolved, setResolved] = useState(false);
   const [value, setValue] = useState(null);
   const [error, setError] = useState(null);
@@ -144,22 +144,22 @@ export const useXpub = (initialXpub, ethProvider) => {
   useEffect(() => {
     (async () => {
       if (debounced === null) return;
-      const xpubLen = 111;
+      const addressLen = 111;
       let value = debounced;
       let error = null;
       setResolved(false);
       if (network && network.ensAddress && value.endsWith(".eth")) {
         setResolved("pending");
-        value = await resolveXpub(value, ethProvider, network);
+        value = await resolveAddress(value, ethProvider, network);
         setResolved(true);
       }
       if (value && value.endsWith(".eth")) {
         error = `Network "${network.name}" (chainId ${network.chainId}) doesn"t support ENS`;
-      } else if (!value || !value.startsWith("xpub")) {
-        error = `Invalid xpub: should start with "xpub"`;
+      } else if (!value || !value.startsWith("address")) {
+        error = `Invalid address: should start with "address"`;
       }
-      if (!error && value.length !== xpubLen) {
-        error = `Invalid length: ${value.length} (expected ${xpubLen})`;
+      if (!error && value.length !== addressLen) {
+        error = `Invalid length: ${value.length} (expected ${addressLen})`;
       }
       setValue(error ? undefined : value);
       setError(error);
@@ -168,7 +168,7 @@ export const useXpub = (initialXpub, ethProvider) => {
   return [{ display, value, error, resolved }, setDisplay, setError];
 };
 
-export const XpubInput = ({ xpub, setXpub }) => {
+export const AddressInput = ({ address, setAddress }) => {
   const [scan, setScan] = useState(false);
   return (
     <div>
@@ -177,19 +177,19 @@ export const XpubInput = ({ xpub, setXpub }) => {
         id="outlined"
         label="Recipient Public Identifier"
         type="string"
-        value={xpub.display || ""}
-        onChange={evt => setXpub(evt.target.value)}
+        value={address.display || ""}
+        onChange={evt => setAddress(evt.target.value)}
         margin="normal"
         variant="outlined"
         helperText={
-          (xpub.resolved === "pending" ? `Resolving ENS name...` : "") ||
-          xpub.error ||
-          (xpub.value && xpub.resolved === true
-            ? `ENS name resolved to: ${xpub.value.substring(0, 42)}...`
+          (address.resolved === "pending" ? `Resolving ENS name...` : "") ||
+          address.error ||
+          (address.value && address.resolved === true
+            ? `ENS name resolved to: ${address.value.substring(0, 42)}...`
             : false) ||
-          (xpub.value ? "" : "Ignored for linked payments")
+          (address.value ? "" : "Ignored for linked payments")
         }
-        error={xpub.error !== null}
+        error={address.error !== null}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -227,12 +227,12 @@ export const XpubInput = ({ xpub, setXpub }) => {
       >
         <QRScan
           handleResult={res => {
-            // Extract the xpub from a request link if necessary
-            const i = res.indexOf("=xpub");
+            // Extract the address from a request link if necessary
+            const i = res.indexOf("=address");
             if (i !== -1) {
-              setXpub(res.substring(i + 1, i + 112));
+              setAddress(res.substring(i + 1, i + 112));
             } else {
-              setXpub(res);
+              setAddress(res);
             }
             setScan(false);
           }}
