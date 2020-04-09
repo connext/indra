@@ -11,14 +11,14 @@ export const validateHashLockTransferApp = (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as HashLockTransferAppState;
 
-  const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = getAddressFromIdentifier(responderPublicIdentifier);
+  const initiatorSignerAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
+  const responderSignerAddress = getAddressFromIdentifier(responderPublicIdentifier);
 
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
-    return transfer.to === initiatorFreeBalanceAddress;
+    return transfer.to === initiatorSignerAddress;
   })[0];
   const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
-    return transfer.to === responderFreeBalanceAddress;
+    return transfer.to === responderSignerAddress;
   })[0];
 
   if (initialState.timelock.lt(blockNumber)) {

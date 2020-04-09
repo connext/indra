@@ -62,11 +62,11 @@ export class LinkedTransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: this.connext.freeBalanceAddress,
+          to: this.connext.signerAddress,
         },
         {
           amount: Zero,
-          to: this.connext.nodeFreeBalanceAddress,
+          to: this.connext.nodeSignerAddress,
         },
       ],
       linkedHash,

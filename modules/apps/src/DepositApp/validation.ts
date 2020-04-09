@@ -24,8 +24,8 @@ export const validateDepositApp = async (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as DepositAppState;
 
-  const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = getAddressFromIdentifier(responderPublicIdentifier);
+  const initiatorSignerAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
+  const responderSignerAddress = getAddressFromIdentifier(responderPublicIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];
@@ -37,12 +37,12 @@ export const validateDepositApp = async (
     responderTransfer,
   );
 
-  if (initiatorFreeBalanceAddress !== initiatorTransfer.to) {
-    throw new Error(`Cannot install deposit app with incorrect initiator transfer to address: Expected ${initiatorFreeBalanceAddress}, got ${initiatorTransfer.to}`);
+  if (initiatorSignerAddress !== initiatorTransfer.to) {
+    throw new Error(`Cannot install deposit app with incorrect initiator transfer to address: Expected ${initiatorSignerAddress}, got ${initiatorTransfer.to}`);
   }
 
-  if (responderFreeBalanceAddress !== responderTransfer.to) {
-    throw new Error(`Cannot install deposit app with incorrect responder transfer to address: Expected ${responderFreeBalanceAddress}, got ${responderTransfer.to}`);
+  if (responderSignerAddress !== responderTransfer.to) {
+    throw new Error(`Cannot install deposit app with incorrect responder transfer to address: Expected ${responderSignerAddress}, got ${responderTransfer.to}`);
   }
 
   if (!initialState.transfers[0].amount.isZero() || !initialState.transfers[1].amount.isZero()) {

@@ -8,7 +8,7 @@ export async function swapAsset(
   client: IConnextClient,
   input: AssetOptions,
   output: AssetOptions,
-  nodeFreeBalanceAddress: string,
+  nodeSignerAddress: string,
   preExistingBalances?: Partial<ExistingBalancesSwap>,
   resultingBalances?: Partial<ExistingBalancesSwap>,
 ): Promise<ExistingBalancesSwap> {
@@ -25,16 +25,16 @@ export async function swapAsset(
   };
 
   const {
-    [client.freeBalanceAddress]: preSwapFreeBalanceClientEth,
-    [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeEth,
+    [client.signerAddress]: preSwapFreeBalanceClientEth,
+    [nodeSignerAddress]: preSwapFreeBalanceNodeEth,
   } = await client.getFreeBalance(ethAssetId);
   expect(preSwapFreeBalanceClientEth).to.be.eq(preSwap.freeBalanceClientEth);
   // for backwards compatibility
   expect(preSwapFreeBalanceNodeEth).to.be.least(preSwap.freeBalanceNodeEth.div(2));
 
   const {
-    [client.freeBalanceAddress]: preSwapFreeBalanceClientToken,
-    [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeToken,
+    [client.signerAddress]: preSwapFreeBalanceClientToken,
+    [nodeSignerAddress]: preSwapFreeBalanceNodeToken,
   } = await client.getFreeBalance(tokenAssetId);
   expect(preSwapFreeBalanceClientToken).to.be.eq(preSwap.freeBalanceClientToken);
   // for backwards compatibility
@@ -54,12 +54,12 @@ export async function swapAsset(
 
   const expectedOutputSwapAmount = calculateExchange(inputSwapAmount, swapRate);
   const {
-    [client.freeBalanceAddress]: postSwapFreeBalanceClientEth,
-    [nodeFreeBalanceAddress]: postSwapFreeBalanceNodeEth,
+    [client.signerAddress]: postSwapFreeBalanceClientEth,
+    [nodeSignerAddress]: postSwapFreeBalanceNodeEth,
   } = await client.getFreeBalance(ethAssetId);
   const {
-    [client.freeBalanceAddress]: postSwapFreeBalanceClientToken,
-    [nodeFreeBalanceAddress]: postSwapFreeBalanceNodeToken,
+    [client.signerAddress]: postSwapFreeBalanceClientToken,
+    [nodeSignerAddress]: postSwapFreeBalanceNodeToken,
   } = await client.getFreeBalance(tokenAssetId);
 
   const postSwap: ExistingBalancesSwap = {

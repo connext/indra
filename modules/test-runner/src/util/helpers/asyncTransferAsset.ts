@@ -18,14 +18,14 @@ export async function asyncTransferAsset(
   nats: Client,
 ): Promise<ExistingBalancesAsyncTransfer> {
   const SENDER_INPUT_META = { hello: "world" };
-  const nodeFreeBalanceAddress = xkeyKthAddress(clientA.nodePublicIdentifier);
+  const nodeSignerAddress = xkeyKthAddress(clientA.nodePublicIdentifier);
   const {
-    [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
-    [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
+    [clientA.signerAddress]: preTransferFreeBalanceClientA,
+    [nodeSignerAddress]: preTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
   const {
-    [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
-    [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
+    [clientB.signerAddress]: preTransferFreeBalanceClientB,
+    [nodeSignerAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
 
   let paymentId: string;
@@ -75,8 +75,8 @@ export async function asyncTransferAsset(
   expect((await clientA.getAppInstances()).length).to.be.eq(0);
 
   const {
-    [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
-    [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeA,
+    [clientA.signerAddress]: postTransferFreeBalanceClientA,
+    [nodeSignerAddress]: postTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
   expect(postTransferFreeBalanceClientA).to.equal(
     preTransferFreeBalanceClientA.sub(transferAmount),
@@ -86,8 +86,8 @@ export async function asyncTransferAsset(
   );
 
   const {
-    [clientB.freeBalanceAddress]: postTransferFreeBalanceClientB,
-    [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeB,
+    [clientB.signerAddress]: postTransferFreeBalanceClientB,
+    [nodeSignerAddress]: postTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
   expect(postTransferFreeBalanceClientB).equal(preTransferFreeBalanceClientB.add(transferAmount));
 

@@ -295,7 +295,7 @@ class App extends React.Component {
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.multisigAddress}`);
-    console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
+    console.log(` - Free balance address: ${channel.signerAddress}`);
     console.log(` - Token address: ${token.address}`);
     console.log(` - Swap rate: ${swapRate}`);
 
@@ -345,7 +345,7 @@ class App extends React.Component {
     }
     const saiToken = new Contract(channel.config.contractAddresses.SAIToken, tokenAbi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
-    const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
+    const mySaiBalance = freeSaiBalance[channel.signerAddress];
     return mySaiBalance;
   };
 
@@ -405,20 +405,20 @@ class App extends React.Component {
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
     balance.onChain.ether = Currency.WEI(
-      await ethProvider.getBalance(channel.freeBalanceAddress),
+      await ethProvider.getBalance(channel.signerAddress),
       swapRate,
     ).toETH();
     balance.onChain.token = Currency.DEI(
-      await token.balanceOf(channel.freeBalanceAddress),
+      await token.balanceOf(channel.signerAddress),
       swapRate,
     ).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
     balance.channel.ether = Currency.WEI(
-      freeEtherBalance[channel.freeBalanceAddress],
+      freeEtherBalance[channel.signerAddress],
       swapRate,
     ).toETH();
     balance.channel.token = Currency.DEI(
-      freeTokenBalance[channel.freeBalanceAddress],
+      freeTokenBalance[channel.signerAddress],
       swapRate,
     ).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
@@ -653,7 +653,7 @@ class App extends React.Component {
       token,
       wallet,
     } = this.state;
-    const address = wallet ? wallet.address : channel ? channel.freeBalanceAddress : AddressZero;
+    const address = wallet ? wallet.address : channel ? channel.signerAddress : AddressZero;
     const { classes } = this.props;
     return (
       <Router>

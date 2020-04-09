@@ -682,8 +682,8 @@ export async function collateralizeChannel(
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
   const sortedOwners = [
-    nodeA.freeBalanceAddress,
-    nodeB.freeBalanceAddress,
+    nodeA.signerAddress,
+    nodeB.signerAddress,
   ];
   const [multisigAddress]: any = await Promise.all([
     new Promise(async resolve => {
@@ -1032,7 +1032,7 @@ export async function getBalances(
     assetId,
   );
 
-  const tokenBalanceNodeA = tokenFreeBalanceState[nodeA.freeBalanceAddress];
+  const tokenBalanceNodeA = tokenFreeBalanceState[nodeA.signerAddress];
 
   tokenFreeBalanceState = await getFreeBalanceState(
     nodeB,
@@ -1040,7 +1040,7 @@ export async function getBalances(
     assetId,
   );
 
-  const tokenBalanceNodeB = tokenFreeBalanceState[nodeB.freeBalanceAddress];
+  const tokenBalanceNodeB = tokenFreeBalanceState[nodeB.signerAddress];
 
   return [tokenBalanceNodeA, tokenBalanceNodeB];
 }

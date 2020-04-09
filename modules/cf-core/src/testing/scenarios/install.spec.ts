@@ -136,8 +136,8 @@ describe("Node method follows spec - install", () => {
       });
 
       it("install app with ERC20", async done => {
-        await transferERC20Tokens(await nodeA.freeBalanceAddress);
-        await transferERC20Tokens(await nodeB.freeBalanceAddress);
+        await transferERC20Tokens(await nodeA.signerAddress);
+        await transferERC20Tokens(await nodeB.signerAddress);
 
         const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
         const assetId = getAssetId(GANACHE_CHAIN_ID, erc20TokenAddress);

@@ -8,14 +8,14 @@ import { createClient, ETH_AMOUNT_SM } from "../util";
 describe("Restore State", () => {
   let clientA: IConnextClient;
   let tokenAddress: string;
-  let nodeFreeBalanceAddress: string;
+  let nodeSignerAddress: string;
   let nodePublicIdentifier: string;
 
   beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
-    nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+    nodeSignerAddress = xkeyKthAddress(nodePublicIdentifier);
   });
 
   afterEach(async () => {
@@ -30,10 +30,10 @@ describe("Restore State", () => {
     // check balances pre
     const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPre = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPre[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
-    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
+    expect(freeBalanceEthPre[clientA.signerAddress]).to.be.eq(ETH_AMOUNT_SM);
+    expect(freeBalanceEthPre[nodeSignerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[clientA.signerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
     clientA.store.clear();
@@ -51,9 +51,9 @@ describe("Restore State", () => {
     // check balances post
     const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPost = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
-    expect(freeBalanceEthPost[nodeFreeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
+    expect(freeBalanceEthPost[clientA.signerAddress]).to.be.eq(ETH_AMOUNT_SM);
+    expect(freeBalanceEthPost[nodeSignerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[clientA.signerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
   });
 });

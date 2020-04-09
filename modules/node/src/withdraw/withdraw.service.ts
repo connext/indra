@@ -205,7 +205,7 @@ export class WithdrawService {
       {
         amount,
         assetId,
-        recipient: this.cfCoreService.cfCore.freeBalanceAddress,
+        recipient: this.cfCoreService.cfCore.signerAddress,
         nonce,
       } as PublicParams.Withdraw,
       channel.multisigAddress,
@@ -217,7 +217,7 @@ export class WithdrawService {
     const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, hash);
 
     const transfers: CoinTransfer[] = [
-      { amount, to: this.cfCoreService.cfCore.freeBalanceAddress },
+      { amount, to: this.cfCoreService.cfCore.signerAddress },
       { amount: Zero, to: xkeyKthAddress(channel.userPublicIdentifier) },
     ];
 
@@ -225,7 +225,7 @@ export class WithdrawService {
       transfers: [transfers[0], transfers[1]],
       signatures: [withdrawerSignatureOnCommitment, HashZero],
       signers: [
-        this.cfCoreService.cfCore.freeBalanceAddress,
+        this.cfCoreService.cfCore.signerAddress,
         xkeyKthAddress(channel.userPublicIdentifier),
       ],
       data: hash,

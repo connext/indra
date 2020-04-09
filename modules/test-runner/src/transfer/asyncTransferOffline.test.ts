@@ -184,7 +184,7 @@ describe("Async transfer offline tests", () => {
     // an extended timeout)
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
-    expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
+    expect(reconnected.signerAddress).to.be.equal(senderClient.signerAddress);
     // make sure the transfer is properly reclaimed
     const reconnectedApps = await senderClient.getAppInstances();
     expect(reconnectedApps.length).to.be.equal(senderApps.length - 1);
@@ -251,7 +251,7 @@ describe("Async transfer offline tests", () => {
     });
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
-    expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
+    expect(reconnected.signerAddress).to.be.equal(senderClient.signerAddress);
     // make sure the transfer is properly reclaimed
     const reconnectedApps = await senderClient.getAppInstances();
     expect(reconnectedApps.length).to.be.equal(senderApps.length);

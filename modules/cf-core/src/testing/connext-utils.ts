@@ -113,7 +113,7 @@ export async function installAndRedeemLink(
     return apps.find(
       app =>
         app.appInterface.addr === linkDef &&
-        hasAddressInTransfers(app, funder.freeBalanceAddress) &&
+        hasAddressInTransfers(app, funder.signerAddress) &&
         (app.latestState as UnidirectionalLinkedTransferAppState).linkedHash === state.linkedHash,
     );
   };

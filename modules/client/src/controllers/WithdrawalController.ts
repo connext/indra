@@ -32,7 +32,7 @@ export class WithdrawalController extends AbstractController {
     params.assetId = getAddress(params.assetId);
 
     if (!params.recipient) {
-      params.recipient = this.connext.freeBalanceAddress;
+      params.recipient = this.connext.signerAddress;
     }
     params.recipient = getAddress(params.recipient);
 
@@ -153,8 +153,8 @@ export class WithdrawalController extends AbstractController {
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [
-        this.connext.freeBalanceAddress,
-        this.connext.nodeFreeBalanceAddress,
+        this.connext.signerAddress,
+        this.connext.nodeSignerAddress,
       ],
       data: withdrawCommitmentHash,
       nonce,

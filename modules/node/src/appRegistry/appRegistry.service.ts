@@ -87,7 +87,7 @@ export class AppRegistryService implements OnModuleInit {
         proposeInstallParams.responderDepositTokenAddress,
       );
       const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
-      if (freeBal[this.cfCoreService.cfCore.freeBalanceAddress].lt(responderDepositBigNumber)) {
+      if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
         const depositReceipt = await this.channelService.rebalance(
           from,
           proposeInstallParams.responderDepositTokenAddress,

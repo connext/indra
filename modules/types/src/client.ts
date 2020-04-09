@@ -38,10 +38,10 @@ export interface IConnextClient {
   config: NodeResponses.GetConfig;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
-  freeBalanceAddress: Address;
+  signerAddress: Address;
   multisigAddress: Address;
   nodeIdentifier: ChannelPubId;
-  nodeFreeBalanceAddress: Address;
+  nodeSignerAddress: Address;
   identifier: ChannelPubId; // channelIdentifier?
 
   // Expose some internal machineary for easier debugging

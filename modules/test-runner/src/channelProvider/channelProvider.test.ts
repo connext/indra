@@ -18,7 +18,7 @@ import {
 describe("ChannelProvider", () => {
   let client: IConnextClient;
   let remoteClient: IConnextClient;
-  let nodeFreeBalanceAddress: string;
+  let nodeSignerAddress: string;
   let nodePublicIdentifier: string;
   let tokenAddress: string;
 
@@ -26,7 +26,7 @@ describe("ChannelProvider", () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodePublicIdentifier = client.config.nodePublicIdentifier;
-    nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+    nodeSignerAddress = xkeyKthAddress(nodePublicIdentifier);
     tokenAddress = client.config.contractAddresses.Token;
   });
 
@@ -37,10 +37,10 @@ describe("ChannelProvider", () => {
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
     const _nodePublicIdentifier = remoteClient.config.nodePublicIdentifier;
-    const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+    const _nodeSignerAddress = xkeyKthAddress(nodePublicIdentifier);
     expect(_tokenAddress).to.be.eq(tokenAddress);
     expect(_nodePublicIdentifier).to.be.eq(nodePublicIdentifier);
-    expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
+    expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);
   });
 
   it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
@@ -54,7 +54,7 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // SWAP FLOW
-    await swapAsset(remoteClient, input, output, nodeFreeBalanceAddress);
+    await swapAsset(remoteClient, input, output, nodeSignerAddress);
 
     ////////////////////////////////////////
     // TRANSFER FLOW

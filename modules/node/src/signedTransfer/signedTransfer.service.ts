@@ -89,7 +89,7 @@ export class SignedTransferService {
     // sender amount
     const amount = senderApp.latestState.coinTransfers[0].amount;
 
-    const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
+    const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(
       userPublicIdentifier,
@@ -174,7 +174,7 @@ export class SignedTransferService {
     // node receives from sender
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     return normalizeSignedTransferAppState(app);
   }
@@ -183,7 +183,7 @@ export class SignedTransferService {
     // node sends to receiver
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndSender(
       paymentId,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     return normalizeSignedTransferAppState(app);
   }

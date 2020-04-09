@@ -113,8 +113,8 @@ describe("Node method follows spec - deposit", () => {
       global["wallet"].provider,
     );
 
-    await transferERC20Tokens(await nodeA.freeBalanceAddress);
-    await transferERC20Tokens(await nodeB.freeBalanceAddress);
+    await transferERC20Tokens(await nodeA.signerAddress);
+    await transferERC20Tokens(await nodeB.signerAddress);
 
     let preDepositBalance = await provider.getBalance(multisigAddress);
     const preDepositERC20Balance = await erc20Contract.functions.balanceOf(multisigAddress);

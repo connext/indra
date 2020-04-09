@@ -17,7 +17,7 @@ import { BigNumber } from "ethers/utils";
 
 class MockCFCoreService {
   cfCore = {
-    freeBalanceAddress: mkAddress("0xabcdef"),
+    signerAddress: mkAddress("0xabcdef"),
   };
 
   async deposit(): Promise<MethodResults.Deposit> {

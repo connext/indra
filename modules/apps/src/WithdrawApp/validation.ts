@@ -12,8 +12,8 @@ export const validateWithdrawApp = async (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = bigNumberifyJson(params.initialState) as WithdrawAppState;
 
-  const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = getAddressFromIdentifier(responderPublicIdentifier);
+  const initiatorSignerAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
+  const responderSignerAddress = getAddressFromIdentifier(responderPublicIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];
@@ -36,8 +36,8 @@ export const validateWithdrawApp = async (
   }
 
   if (
-    initialState.signers[0] !== initiatorFreeBalanceAddress ||
-    initialState.signers[1] !== responderFreeBalanceAddress
+    initialState.signers[0] !== initiatorSignerAddress ||
+    initialState.signers[1] !== responderSignerAddress
   ) {
     throw new Error(
       `Cannot install a withdraw app if signers[] do not match multisig participant addresses. Signers[]: ${initialState.signers}`,

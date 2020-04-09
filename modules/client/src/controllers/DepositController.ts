@@ -26,9 +26,9 @@ export class DepositController extends AbstractController {
     // NOTE: when the `walletTransfer` is not used, these parameters
     // do not have to be validated
     const startingBalance = assetId === AddressZero
-      ? await this.ethProvider.getBalance(this.connext.freeBalanceAddress)
+      ? await this.ethProvider.getBalance(this.connext.signerAddress)
       : await new Contract(assetId, tokenAbi, this.ethProvider)
-          .functions.balanceOf(this.connext.freeBalanceAddress);
+          .functions.balanceOf(this.connext.signerAddress);
     validate(
       invalidAddress(assetId),
       notLessThanOrEqualTo(amount, startingBalance),
@@ -98,7 +98,7 @@ export class DepositController extends AbstractController {
 
     // check if you are the initiator;
     const initiatorTransfer = latestState.transfers[0];
-    if (initiatorTransfer.to !== this.connext.freeBalanceAddress) {
+    if (initiatorTransfer.to !== this.connext.signerAddress) {
       throw new Error(`Node has unfinalized deposit, cannot request deposit rights for ${assetId}`);
     }
 
@@ -187,11 +187,11 @@ export class DepositController extends AbstractController {
       transfers: [
         {
           amount: Zero,
-          to: this.connext.freeBalanceAddress,
+          to: this.connext.signerAddress,
         },
         {
           amount: Zero,
-          to: this.connext.nodeFreeBalanceAddress,
+          to: this.connext.nodeSignerAddress,
         },
       ],
       multisigAddress: this.connext.multisigAddress,

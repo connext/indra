@@ -116,7 +116,7 @@ describe("Withdraw offline tests", () => {
     });
     expect(reconnected.publicIdentifier).to.be.equal(client.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(client.multisigAddress);
-    expect(reconnected.freeBalanceAddress).to.be.equal(client.freeBalanceAddress);
+    expect(reconnected.signerAddress).to.be.equal(client.signerAddress);
 
     await new Promise((resolve: Function) => {
       ethProvider.once(client.multisigAddress, async () => {

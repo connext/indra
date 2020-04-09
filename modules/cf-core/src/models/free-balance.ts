@@ -292,6 +292,6 @@ function convertCoinTransfersMapToCoinTransfers(coinTransfersMap: CoinTransferMa
 /**
  * Address used for a Node's free balance
  */
-export function getFreeBalanceAddress(publicIdentifier: string) {
+export function getSignerAddress(publicIdentifier: string) {
   return getAddressFromIdentifier(publicIdentifier);
 }

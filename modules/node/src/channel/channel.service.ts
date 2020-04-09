@@ -173,7 +173,7 @@ export class ChannelService {
     }
 
     const {
-      [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalance,
+      [this.cfCoreService.cfCore.signerAddress]: nodeFreeBalance,
     } = await this.cfCoreService.getFreeBalance(
       channel.userPublicIdentifier,
       channel.multisigAddress,
@@ -221,7 +221,7 @@ export class ChannelService {
       return undefined;
     }
     const {
-      [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalance,
+      [this.cfCoreService.cfCore.signerAddress]: nodeFreeBalance,
     } = await this.cfCoreService.getFreeBalance(
       channel.userPublicIdentifier,
       channel.multisigAddress,

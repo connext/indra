@@ -62,7 +62,7 @@ export const createCFChannelProvider = async ({
   );
 
   const channelProviderConfig: ChannelProviderConfig = {
-    freeBalanceAddress: addressToAddress(address),
+    signerAddress: addressToAddress(address),
     nodeUrl,
     userPublicIdentifier: address,
   };

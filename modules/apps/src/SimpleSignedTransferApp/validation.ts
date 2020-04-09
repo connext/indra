@@ -15,17 +15,17 @@ export const validateSignedTransferApp = (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as SimpleSignedTransferAppState;
 
-  const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = getAddressFromIdentifier(responderPublicIdentifier);
+  const initiatorSignerAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
+  const responderSignerAddress = getAddressFromIdentifier(responderPublicIdentifier);
 
   // initiator is sender
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
-    return transfer.to === initiatorFreeBalanceAddress;
+    return transfer.to === initiatorSignerAddress;
   })[0];
 
   // responder is receiver
   const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
-    return transfer.to === responderFreeBalanceAddress;
+    return transfer.to === responderSignerAddress;
   })[0];
 
   unidirectionalCoinTransferValidation(

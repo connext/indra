@@ -91,7 +91,7 @@ describe("Async Transfers", () => {
     const receiverClient = await createClient({ mnemonic: receiverMnemonic }, false);
     expect(receiverClient.publicIdentifier).to.eq(receiverAddress);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
-    expect(freeBalance[receiverClient.freeBalanceAddress]).to.be.above(0);
+    expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);
     receiverClient.messaging.disconnect();
   });
 
@@ -196,9 +196,9 @@ describe("Async Transfers", () => {
     expect(deployHash).to.exist;
     await ethProvider.waitForTransaction(token.deployTransaction.hash!);
     // mint token to client
-    await token.mint(clientA.freeBalanceAddress, TOKEN_AMOUNT);
+    await token.mint(clientA.signerAddress, TOKEN_AMOUNT);
     // assert sender balance
-    const senderBal = await token.balanceOf(clientA.freeBalanceAddress);
+    const senderBal = await token.balanceOf(clientA.signerAddress);
     expect(senderBal).to.equal(TOKEN_AMOUNT);
 
     // fund channel

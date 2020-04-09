@@ -93,7 +93,7 @@ export class AppActionsService {
   ): Promise<void> {
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       (newState as SimpleLinkedTransferAppState).paymentId,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
 
     // take action and uninstall
@@ -127,7 +127,7 @@ export class AppActionsService {
       {
         amount: state.transfers[0].amount,
         assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
-        recipient: this.cfCoreService.cfCore.freeBalanceAddress,
+        recipient: this.cfCoreService.cfCore.signerAddress,
       },
       appInstance.multisigAddress,
     );
@@ -152,7 +152,7 @@ export class AppActionsService {
     // TODO: move to new store
     const senderApp = apps.find(app => {
       const state = app.latestState as HashLockTransferAppState;
-      return state.coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress;
+      return state.coinTransfers[1].to === this.cfCoreService.cfCore.signerAddress;
     });
     if (!senderApp) {
       throw new Error(

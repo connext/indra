@@ -21,14 +21,14 @@ import {
 describe("Swaps", () => {
   let client: IConnextClient;
   let tokenAddress: string;
-  let nodeFreeBalanceAddress: string;
+  let nodeSignerAddress: string;
   let nodePublicIdentifier: string;
 
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
     nodePublicIdentifier = client.config.nodePublicIdentifier;
-    nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+    nodeSignerAddress = xkeyKthAddress(nodePublicIdentifier);
   });
 
   afterEach(async () => {
@@ -40,7 +40,7 @@ describe("Swaps", () => {
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
     await client.requestCollateral(output.assetId);
-    await swapAsset(client, input, output, nodeFreeBalanceAddress);
+    await swapAsset(client, input, output, nodeSignerAddress);
   });
 
   it("happy case: client swaps tokens for eth successfully", async () => {
@@ -48,7 +48,7 @@ describe("Swaps", () => {
     const output: AssetOptions = { amount: ETH_AMOUNT_MD, assetId: AddressZero };
     await fundChannel(client, input.amount, input.assetId);
     await client.requestCollateral(output.assetId);
-    await swapAsset(client, input, output, nodeFreeBalanceAddress);
+    await swapAsset(client, input, output, nodeSignerAddress);
   });
 
   it("happy case: client tries to swap with insufficient collateral on node", async () => {
@@ -65,7 +65,7 @@ describe("Swaps", () => {
       client,
       input,
       output,
-      nodeFreeBalanceAddress,
+      nodeSignerAddress,
       { freeBalanceNodeToken: Zero },
       { freeBalanceNodeToken: expectedFreeBalanceNodeToken },
     );

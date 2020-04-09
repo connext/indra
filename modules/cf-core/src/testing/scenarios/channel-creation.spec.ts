@@ -31,7 +31,7 @@ describe("Node can create multisig, other owners get notified", () => {
       from: nodeB.publicIdentifier,
       type: EventNames.CREATE_CHANNEL_EVENT,
       data: {
-        owners: [nodeB.freeBalanceAddress, nodeA.freeBalanceAddress],
+        owners: [nodeB.signerAddress, nodeA.signerAddress],
       },
     };
 
@@ -69,11 +69,11 @@ describe("Node can create multisig, other owners get notified", () => {
     it("Node A can create multiple back-to-back channels with Node B and Node C", async done => {
       const ownersABPublicIdentifiers = [nodeA.publicIdentifier, nodeB.publicIdentifier];
 
-      const ownersABFreeBalanceAddr = [nodeA.freeBalanceAddress, nodeB.freeBalanceAddress];
+      const ownersABFreeBalanceAddr = [nodeA.signerAddress, nodeB.signerAddress];
 
       const ownersACPublicIdentifiers = [nodeA.publicIdentifier, nodeC.publicIdentifier];
 
-      const ownersACFreeBalanceAddr = [nodeA.freeBalanceAddress, nodeC.freeBalanceAddress];
+      const ownersACFreeBalanceAddr = [nodeA.signerAddress, nodeC.signerAddress];
 
       nodeA.on(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
         if (msg.data.owners === ownersABPublicIdentifiers) {

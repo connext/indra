@@ -29,11 +29,11 @@ export class HashLockTransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: this.connext.freeBalanceAddress,
+          to: this.connext.signerAddress,
         },
         {
           amount: Zero,
-          to: this.connext.nodeFreeBalanceAddress,
+          to: this.connext.nodeSignerAddress,
         },
       ],
       timelock,

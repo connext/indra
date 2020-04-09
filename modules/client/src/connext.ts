@@ -63,7 +63,7 @@ export class ConnextClient implements IConnextClient {
   public channelProvider: IChannelProvider;
   public config: NodeResponses.GetConfig;
   public ethProvider: providers.JsonRpcProvider;
-  public freeBalanceAddress: string;
+  public signerAddress: string;
   public listener: ConnextListener;
   public log: ILoggerService;
   public messaging: MessagingService;
@@ -71,7 +71,7 @@ export class ConnextClient implements IConnextClient {
   public network: Network;
   public node: INodeApiClient;
   public nodePublicIdentifier: string;
-  public nodeFreeBalanceAddress: string;
+  public nodeSignerAddress: string;
   public publicIdentifier: string;
   public store: IClientStore;
   public token: Contract;
@@ -103,11 +103,11 @@ export class ConnextClient implements IConnextClient {
     this.store = opts.store;
     this.token = opts.token;
 
-    this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
+    this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.nodeFreeBalanceAddress = addressToAddress(this.nodePublicIdentifier);
+    this.nodeSignerAddress = addressToAddress(this.nodePublicIdentifier);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -557,8 +557,8 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[this.nodeFreeBalanceAddress] = new BigNumber(0);
-        obj[this.freeBalanceAddress] = new BigNumber(0);
+        obj[this.nodeSignerAddress] = new BigNumber(0);
+        obj[this.signerAddress] = new BigNumber(0);
         return obj;
       }
       throw e;
@@ -841,7 +841,7 @@ export class ConnextClient implements IConnextClient {
 
       // if we are not the initiator, continue
       const latestState = appInstance.latestState as DepositAppState;
-      if (latestState.transfers[0].to !== this.freeBalanceAddress) {
+      if (latestState.transfers[0].to !== this.signerAddress) {
         continue;
       }
 

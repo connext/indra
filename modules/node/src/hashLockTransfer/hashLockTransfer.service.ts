@@ -106,7 +106,7 @@ export class HashLockTransferService {
       );
     }
 
-    const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
+    const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
 
     const receiverFreeBal = await this.cfCoreService.getFreeBalance(
       receiverPublicIdentifier,
@@ -188,7 +188,7 @@ export class HashLockTransferService {
     // node receives from sender
     const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndReceiver(
       lockHash,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     return normalizeHashLockTransferAppState(app);
   }
@@ -197,7 +197,7 @@ export class HashLockTransferService {
     // node sends to receiver
     const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndSender(
       lockHash,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     return normalizeHashLockTransferAppState(app);
   }

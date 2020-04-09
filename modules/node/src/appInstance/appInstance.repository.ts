@@ -199,7 +199,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async findLinkedTransferAppByPaymentIdAndSender(
     paymentId: string,
-    senderFreeBalanceAddress: string,
+    senderSignerAddress: string,
   ): Promise<AppInstance> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -211,7 +211,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .where("app_registry.name = :name", { name: SimpleLinkedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderFreeBalanceAddress}"'`,
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
       )
       .getOne();
     return res;
@@ -219,7 +219,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async findLinkedTransferAppByPaymentIdAndReceiver(
     paymentId: string,
-    receiverFreeBalanceAddress: string,
+    receiverSignerAddress: string,
   ): Promise<AppInstance> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -232,7 +232,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       // receiver is recipient
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverFreeBalanceAddress}"'`,
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`,
       )
       .getOne();
     return res;
@@ -240,7 +240,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async findRedeemedLinkedTransferAppByPaymentIdFromNode(
     paymentId: string,
-    nodeFreeBalanceAddress: string,
+    nodeSignerAddress: string,
   ): Promise<AppInstance> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -255,7 +255,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
       // node is sender
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeSignerAddress}"'`,
       )
       .getOne();
     return res;
@@ -263,7 +263,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   async findActiveLinkedTransferAppsToRecipient(
     recipient: string,
-    nodeFreeBalanceAddress: string,
+    nodeSignerAddress: string,
   ): Promise<AppInstance[]> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -276,7 +276,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       // node is receiver of transfer
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeSignerAddress}"'`,
       )
       // meta for transfer recipient
       .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipient}"}'`)
@@ -287,8 +287,8 @@ export class AppInstanceRepository extends Repository<AppInstance> {
   }
 
   async findActiveLinkedTransferAppsFromSenderToNode(
-    senderFreeBalanceAddress: string,
-    nodeFreeBalanceAddress: string,
+    senderSignerAddress: string,
+    nodeSignerAddress: string,
   ): Promise<AppInstance[]> {
     const res = await this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -301,11 +301,11 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
       // sender is sender of transfer
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderFreeBalanceAddress}"'`,
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`,
       )
       // node is receiver of transfer
       .andWhere(
-        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+        `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeSignerAddress}"'`,
       )
       // preimage can be HashZero or empty, if its HashZero, then the
       // node should takeAction + uninstall. if its not HashZero, then
@@ -347,7 +347,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   findRedeemedHashLockTransferAppByLockHashFromNode(
     lockHash: string,
-    nodeFreeBalanceAddress: string,
+    nodeSignerAddress: string,
   ): Promise<AppInstance> {
     return (
       this.createQueryBuilder("app_instance")
@@ -363,7 +363,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         .andWhere(`app_instance."latestState"::JSONB @> '{ "lockHash": "${lockHash}" }'`)
         // node is sender
         .andWhere(
-          `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+          `app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${nodeSignerAddress}"'`,
         )
         .getOne()
     );
@@ -425,7 +425,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   findActiveHashLockTransferAppsToRecipient(
     recipient: string,
-    nodeFreeBalanceAddress: string,
+    nodeSignerAddress: string,
     currentBlock: number,
   ): Promise<AppInstance[]> {
     return (
@@ -440,7 +440,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         .andWhere("app_instance.type = :type", { type: AppType.INSTANCE })
         // node is receiver of transfer
         .andWhere(
-          `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+          `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeSignerAddress}"'`,
         )
         // meta for transfer recipient
         .andWhere(`app_instance."meta"::JSONB @> '{"recipient":"${recipient}"}'`)
@@ -457,7 +457,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
 
   findActiveHashLockTransferAppsFromSenderToNode(
     sender: string, // free balance addr
-    nodeFreeBalanceAddress: string,
+    nodeSignerAddress: string,
     currentBlock: number,
   ): Promise<AppInstance[]> {
     return (
@@ -474,7 +474,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
         .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${sender}"'`)
         // node is receiver of transfer
         .andWhere(
-          `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeFreeBalanceAddress}"'`,
+          `app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${nodeSignerAddress}"'`,
         )
         // and timeout hasnt passed
         .andWhere(`app_instance."latestState"->>"timeout"::NUMERIC > ${currentBlock}`)

@@ -99,7 +99,7 @@ describe("Signed Transfers", () => {
     );
 
     const {
-      [clientA.freeBalanceAddress]: clientAPostTransferBal,
+      [clientA.signerAddress]: clientAPostTransferBal,
       [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
@@ -112,7 +112,7 @@ describe("Signed Transfers", () => {
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
-          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
+          [clientA.signerAddress]: clientAPostReclaimBal,
           [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
@@ -125,7 +125,7 @@ describe("Signed Transfers", () => {
         data,
         signature,
       } as PublicParams.ResolveSignedTransfer);
-      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
       expect(clientBPostTransferBal).to.eq(transfer.amount);
@@ -172,7 +172,7 @@ describe("Signed Transfers", () => {
     );
 
     const {
-      [clientA.freeBalanceAddress]: clientAPostTransferBal,
+      [clientA.signerAddress]: clientAPostTransferBal,
       [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
@@ -185,7 +185,7 @@ describe("Signed Transfers", () => {
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
-          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
+          [clientA.signerAddress]: clientAPostReclaimBal,
           [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
@@ -198,7 +198,7 @@ describe("Signed Transfers", () => {
         data,
         signature,
       } as PublicParams.ResolveSignedTransfer);
-      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
       expect(clientBPostTransferBal).to.eq(transfer.amount);
@@ -318,11 +318,11 @@ describe("Signed Transfers", () => {
 
     for (let i = 0; i < numberOfRuns; i++) {
       const {
-        [clientA.freeBalanceAddress]: clientAPreBal,
+        [clientA.signerAddress]: clientAPreBal,
       } = await clientA.getFreeBalance(transfer.assetId);
       const {
-        [clientB.freeBalanceAddress]: clientBPreBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPreBal,
+        [clientB.signerAddress]: clientBPreBal,
+        [clientB.nodeSignerAddress]: nodeBPreBal,
       } = await clientB.getFreeBalance(transfer.assetId);
       const data = hexlify(randomBytes(32));
       const paymentId = hexlify(randomBytes(32));
@@ -368,11 +368,11 @@ describe("Signed Transfers", () => {
       sum = sum + runTime[i];
 
       const {
-        [clientA.freeBalanceAddress]: clientAPostBal,
+        [clientA.signerAddress]: clientAPostBal,
       } = await clientA.getFreeBalance(transfer.assetId);
       const {
-        [clientB.freeBalanceAddress]: clientBPostBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPostBal,
+        [clientB.signerAddress]: clientBPostBal,
+        [clientB.nodeSignerAddress]: nodeBPostBal,
       } = await clientB.getFreeBalance(transfer.assetId);
       expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
       expect(nodeBPostBal).to.eq(nodeBPreBal.sub(transfer.amount));

@@ -15,8 +15,8 @@ export const fundChannel = async (
     client.once(EventNames.DEPOSIT_CONFIRMED_EVENT, async () => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
-      const expected = prevFreeBalance[client.freeBalanceAddress].add(amount);
-      expect(freeBalance[client.freeBalanceAddress]).to.equal(expected);
+      const expected = prevFreeBalance[client.signerAddress].add(amount);
+      expect(freeBalance[client.signerAddress]).to.equal(expected);
       log.info(`Got deposit confirmed event, helper wrapper is returning`);
       resolve();
     });
@@ -71,8 +71,8 @@ export const requestCollateral = async (
             async () => {
             const currBal = await client.getFreeBalance(assetId);
             if (
-              currBal[client.nodeFreeBalanceAddress]
-                .lte(preCollateralBal[client.nodeFreeBalanceAddress])
+              currBal[client.nodeSignerAddress]
+                .lte(preCollateralBal[client.nodeSignerAddress])
             ) {
               // no increase in bal
               return;

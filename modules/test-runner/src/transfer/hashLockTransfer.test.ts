@@ -80,7 +80,7 @@ describe("HashLock Transfers", () => {
     ]);
 
     const {
-      [clientA.freeBalanceAddress]: clientAPostTransferBal,
+      [clientA.signerAddress]: clientAPostTransferBal,
       [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
@@ -89,7 +89,7 @@ describe("HashLock Transfers", () => {
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
-          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
+          [clientA.signerAddress]: clientAPostReclaimBal,
           [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
@@ -100,7 +100,7 @@ describe("HashLock Transfers", () => {
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
       } as PublicParams.ResolveHashLockTransfer);
-      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
       expect(clientBPostTransferBal).to.eq(transfer.amount);
@@ -132,7 +132,7 @@ describe("HashLock Transfers", () => {
     ]);
 
     const {
-      [clientA.freeBalanceAddress]: clientAPostTransferBal,
+      [clientA.signerAddress]: clientAPostTransferBal,
       [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
@@ -141,7 +141,7 @@ describe("HashLock Transfers", () => {
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
-          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
+          [clientA.signerAddress]: clientAPostReclaimBal,
           [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
@@ -152,7 +152,7 @@ describe("HashLock Transfers", () => {
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
       } as PublicParams.ResolveHashLockTransfer);
-      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
       expect(clientBPostTransferBal).to.eq(transfer.amount);
@@ -314,12 +314,12 @@ describe("HashLock Transfers", () => {
 
     for (let i = 0; i < numberOfRuns; i++) {
       const {
-        [clientA.freeBalanceAddress]: clientAPreBal,
-        [clientA.nodeFreeBalanceAddress]: nodeAPreBal,
+        [clientA.signerAddress]: clientAPreBal,
+        [clientA.nodeSignerAddress]: nodeAPreBal,
       } = await clientA.getFreeBalance(transfer.assetId);
       const {
-        [clientB.freeBalanceAddress]: clientBPreBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPreBal,
+        [clientB.signerAddress]: clientBPreBal,
+        [clientB.nodeSignerAddress]: nodeBPreBal,
       } = await clientB.getFreeBalance(transfer.assetId);
 
       const preImage = createRandom32ByteHexString();
@@ -364,12 +364,12 @@ describe("HashLock Transfers", () => {
       sum = sum + runTime[i];
 
       const {
-        [clientA.freeBalanceAddress]: clientAPostBal,
-        [clientA.nodeFreeBalanceAddress]: nodeAPostBal,
+        [clientA.signerAddress]: clientAPostBal,
+        [clientA.nodeSignerAddress]: nodeAPostBal,
       } = await clientA.getFreeBalance(transfer.assetId);
       const {
-        [clientB.freeBalanceAddress]: clientBPostBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPostBal,
+        [clientB.signerAddress]: clientBPostBal,
+        [clientB.nodeSignerAddress]: nodeBPostBal,
       } = await clientB.getFreeBalance(transfer.assetId);
       expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
       expect(nodeAPostBal).to.eq(nodeAPreBal.add(transfer.amount));

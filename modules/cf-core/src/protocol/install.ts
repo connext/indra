@@ -121,7 +121,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
 
     // 0ms
-    const responderFreeBalanceAddress = getAddressFromIdentifier(responderIdentifier);
+    const responderSignerAddress = getAddressFromIdentifier(responderIdentifier);
 
     // 6ms
     // free balance addr signs conditional transactions
@@ -150,12 +150,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 7ms
     // free balance addr signs conditional transactions
     await assertIsValidSignature(
-      responderFreeBalanceAddress,
+      responderSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
     );
 
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderFreeBalanceAddress;
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
     await conditionalTxCommitment.addSignatures(
       isChannelInitiator 
         ? mySignatureOnConditionalTransaction as any
@@ -179,7 +179,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 7ms
     // always use free balance key to sign free balance update
     await assertIsValidSignature(
-      responderFreeBalanceAddress,
+      responderSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
@@ -292,7 +292,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const initiatorFreeBalanceAddress = getAddressFromIdentifier(initiatorIdentifier);
+    const initiatorSignerAddress = getAddressFromIdentifier(initiatorIdentifier);
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
 
@@ -318,7 +318,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 7ms
     // multisig owner always signs conditional tx
     await assertIsValidSignature(
-      initiatorFreeBalanceAddress,
+      initiatorSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
     );
@@ -326,7 +326,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
     // add signatures to commitment
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== initiatorFreeBalanceAddress;
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== initiatorSignerAddress;
     await conditionalTxCommitment.addSignatures(
       isChannelInitiator 
         ? mySignatureOnConditionalTransaction as any
@@ -368,9 +368,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 7ms
-    // always use freeBalanceAddress to sign updates
+    // always use signerAddress to sign updates
     await assertIsValidSignature(
-      initiatorFreeBalanceAddress,
+      initiatorSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );

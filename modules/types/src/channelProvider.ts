@@ -48,7 +48,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
   isSigner: boolean;
   config: ChannelProviderConfig | undefined;
   multisigAddress: Address | undefined;
-  freeBalanceAddress: Address | undefined;
+  signerAddress: Address | undefined;
 
   ///////////////////////////////////
   // LISTENER METHODS
@@ -81,7 +81,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 }
 
 export type ChannelProviderConfig = {
-  freeBalanceAddress: Address;
+  signerAddress: Address;
   multisigAddress?: Address; // may not be deployed yet
   nodeUrl: string;
   userIdentifier: ChannelPubId;

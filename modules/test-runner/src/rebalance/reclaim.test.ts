@@ -13,7 +13,7 @@ describe("Reclaim", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
-  let nodeFreeBalanceAddress: string;
+  let nodeSignerAddress: string;
   let nats: Client;
 
   before(async () => {
@@ -24,7 +24,7 @@ describe("Reclaim", () => {
     clientA = await createClient();
     clientB = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
-    nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
+    nodeSignerAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
   });
 
   afterEach(async () => {
@@ -81,12 +81,12 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(AddressZero);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
-      freeBalancePost[nodeFreeBalanceAddress].gte(
+      freeBalancePost[nodeSignerAddress].gte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
       ),
     ).to.be.true;
     expect(
-      freeBalancePost[nodeFreeBalanceAddress].lte(
+      freeBalancePost[nodeSignerAddress].lte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
       ),
     ).to.be.true;
@@ -141,12 +141,12 @@ describe("Reclaim", () => {
     const freeBalancePost = await clientA.getFreeBalance(tokenAddress);
     // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
     expect(
-      freeBalancePost[nodeFreeBalanceAddress].gte(
+      freeBalancePost[nodeSignerAddress].gte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim),
       ),
     ).to.be.true;
     expect(
-      freeBalancePost[nodeFreeBalanceAddress].lte(
+      freeBalancePost[nodeSignerAddress].lte(
         bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One),
       ),
     ).to.be.true;

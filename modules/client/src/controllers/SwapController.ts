@@ -31,7 +31,7 @@ export class SwapController extends AbstractController {
     const fromAssetId = getAddress(params.fromAssetId);
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
+    const userBal = preSwapFromBal[this.connext.signerAddress];
     const swappedAmount = calculateExchange(amount, swapRate);
 
 
@@ -45,7 +45,7 @@ export class SwapController extends AbstractController {
 
     const error = notLessThanOrEqualTo(
       amount,
-      toBN(preSwapFromBal[this.connext.freeBalanceAddress]),
+      toBN(preSwapFromBal[this.connext.signerAddress]),
     );
     if (error) {
       throw new Error(error);
@@ -83,12 +83,12 @@ export class SwapController extends AbstractController {
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const postSwapToBal = await this.connext.getFreeBalance(toAssetId);
     // balance decreases
-    const diffFrom = preSwapFromBal[this.connext.freeBalanceAddress].sub(
-      postSwapFromBal[this.connext.freeBalanceAddress],
+    const diffFrom = preSwapFromBal[this.connext.signerAddress].sub(
+      postSwapFromBal[this.connext.signerAddress],
     );
     // balance increases
-    const diffTo = postSwapToBal[this.connext.freeBalanceAddress].sub(
-      preSwapToBal[this.connext.freeBalanceAddress],
+    const diffTo = postSwapToBal[this.connext.signerAddress].sub(
+      preSwapToBal[this.connext.signerAddress],
     );
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
@@ -128,7 +128,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount,
-            to: this.connext.freeBalanceAddress,
+            to: this.connext.signerAddress,
           },
         ],
         [

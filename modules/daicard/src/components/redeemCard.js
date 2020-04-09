@@ -111,18 +111,18 @@ export const RedeemCard = style(({ channel, classes, history, location, token })
       return;
     }
     console.log(`Attempting to redeem payment.`);
-    let hubFreeBalanceAddress;
+    let hubSignerAddress;
     try {
       // if the token profile cannot handle the amount
       // update the profile, the hub will collateralize the
       // correct amount anyway from the listeners
       // Request token collateral if we don't have any yet
       let freeTokenBalance = await channel.getFreeBalance(token.address);
-      hubFreeBalanceAddress = Object.keys(freeTokenBalance).find(
-        addr => addr.toLowerCase() !== channel.freeBalanceAddress.toLowerCase(),
+      hubSignerAddress = Object.keys(freeTokenBalance).find(
+        addr => addr.toLowerCase() !== channel.signerAddress.toLowerCase(),
       );
       // TODO: compare to default collateralization?
-      if (freeTokenBalance[hubFreeBalanceAddress].lt(link.amount.wad)) {
+      if (freeTokenBalance[hubSignerAddress].lt(link.amount.wad)) {
         takeAction(`COLLATERALIZE`);
         setMessage(`Requesting ${link.amount.format()} of collateral`);
         await channel.requestCollateral(token.address);
@@ -136,7 +136,7 @@ export const RedeemCard = style(({ channel, classes, history, location, token })
       const freeTokenBalance = await channel.getFreeBalance(token.address);
       console.log(
         `Hub has collateralized us with ${formatEther(
-          freeTokenBalance[hubFreeBalanceAddress],
+          freeTokenBalance[hubSignerAddress],
         )} tokens`,
       );
       takeAction(`REDEEM`);

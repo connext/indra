@@ -145,7 +145,7 @@ export class Node {
 
   // TODO: rename?
   @Memoize()
-  get freeBalanceAddress(): string {
+  get signerAddress(): string {
     return this.signer.address;
   }
 

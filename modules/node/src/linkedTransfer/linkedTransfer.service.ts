@@ -73,7 +73,7 @@ export class LinkedTransferService {
     // node is receiver in sender app
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     if (!senderApp) {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
@@ -86,7 +86,7 @@ export class LinkedTransferService {
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
 
-    const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
+    const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(
       userPublicIdentifier,
@@ -166,11 +166,11 @@ export class LinkedTransferService {
   > {
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
       paymentId,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     // if sender app is uninstalled, transfer has been unlocked by node
     const status = appStatusesToLinkedTransferStatus(
@@ -194,7 +194,7 @@ export class LinkedTransferService {
     const transfersFromNodeToUser =
       await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
         userPublicIdentifier,
-        this.cfCoreService.cfCore.freeBalanceAddress,
+        this.cfCoreService.cfCore.signerAddress,
       );
     const existingReceiverApps = (
       await Promise.all(
@@ -202,7 +202,7 @@ export class LinkedTransferService {
           async transfer =>
             await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndSender(
               transfer.latestState["paymentId"],
-              this.cfCoreService.cfCore.freeBalanceAddress,
+              this.cfCoreService.cfCore.signerAddress,
             ),
         ),
       )
@@ -230,13 +230,13 @@ export class LinkedTransferService {
     // eslint-disable-next-line max-len
     const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
       xkeyKthAddress(userPublicIdentifier),
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     const receiverRedeemed = await Promise.all(
       transfersFromUserToNode.map(async transfer =>
         this.appInstanceRepository.findRedeemedLinkedTransferAppByPaymentIdFromNode(
           transfer.latestState["paymentId"],
-          this.cfCoreService.cfCore.freeBalanceAddress,
+          this.cfCoreService.cfCore.signerAddress,
         ),
       ),
     );
