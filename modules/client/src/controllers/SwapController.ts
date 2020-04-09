@@ -8,7 +8,6 @@ import {
   SimpleSwapAppState,
   toBN,
 } from "@connext/types";
-import { xkeyKthAddress as addressToAddress } from "@connext/cf-core";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, getAddress, parseEther } from "ethers/utils";
 
@@ -134,7 +133,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount: swappedAmount,
-            to: addressToAddress(this.connext.nodePublicIdentifier),
+            to: this.connext.nodePublicIdentifier,
           },
         ],
       ],
@@ -150,11 +149,11 @@ export class SwapController extends AbstractController {
       appDefinition,
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: fromAssetId,
+      initiatorDepositAssetId: fromAssetId,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: swappedAmount,
-      responderDepositTokenAddress: toAssetId,
+      responderDepositAssetId: toAssetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: SWAP_STATE_TIMEOUT,
     };

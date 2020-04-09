@@ -1,12 +1,12 @@
 import { AppRegistry } from "./app";
-import { Address, Bytes32, DecString, Transaction } from "./basic";
+import { Address, Bytes32, DecString, PublicIdentifier, Transaction } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import { NodeResponses } from "./node";
 
 export interface INodeApiClient {
   channelProvider: IChannelProvider | undefined;
-  userAddress: Address | undefined;
-  nodeAddress: Address | undefined;
+  userPublicIdentifier: PublicIdentifier | undefined;
+  nodePublicIdentifier: PublicIdentifier | undefined;
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
   appRegistry(
     appDetails?:

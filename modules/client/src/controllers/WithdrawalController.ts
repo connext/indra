@@ -12,7 +12,6 @@ import {
   WithdrawAppName,
   WithdrawAppState,
 } from "@connext/types";
-import { xkeyKthAddress as addressToAddress } from "@connext/cf-core";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { formatEther, getAddress, hexlify, randomBytes } from "ethers/utils";
@@ -21,7 +20,6 @@ import { stringify } from "../lib";
 import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { verifyChannelMessage } from "@connext/crypto";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
@@ -122,8 +120,8 @@ export class WithdrawalController extends AbstractController {
       this.connext.config.contractAddresses,
       channel.multisigAddress,
       [
-        channel.freeBalanceAppInstance.initiator,
-        channel.freeBalanceAppInstance.responder,
+        channel.freeBalanceAppInstance.initiatorIdentifier,
+        channel.freeBalanceAppInstance.responderIdentifier,
       ],
       recipient,
       assetId,
@@ -149,7 +147,7 @@ export class WithdrawalController extends AbstractController {
     const initialState: WithdrawAppState = {
       transfers: [
         { amount: amount, to: recipient },
-        { amount: Zero, to: addressToAddress(this.connext.nodePublicIdentifier) },
+        { amount: Zero, to: this.connext.nodePublicIdentifier },
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [
@@ -168,11 +166,11 @@ export class WithdrawalController extends AbstractController {
       appDefinition,
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: assetId,
+      initiatorDepositAssetId: assetId,
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
+      responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: WITHDRAW_STATE_TIMEOUT,
     };

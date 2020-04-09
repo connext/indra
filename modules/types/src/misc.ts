@@ -14,7 +14,7 @@ export type RebalanceProfile = {
 // wtf is this?
 export interface VerifyNonceDtoType {
   sig: string;
-  userIdentifier: PublicIdentifier;
+  userPublicIdentifier: PublicIdentifier;
 }
 
 // used to verify channel is in sequence

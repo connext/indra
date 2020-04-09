@@ -1,5 +1,4 @@
 import { SupportedApplications } from "@connext/apps";
-import { xkeyKthAddress as addressToAddress } from "@connext/cf-core";
 import { MessagingService } from "@connext/messaging";
 import {
   Address,
@@ -22,7 +21,6 @@ import {
   IConnextClient,
   ILoggerService,
   INodeApiClient,
-  KeyGen,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -36,7 +34,7 @@ import {
   WithdrawAppName,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
-import { Contract, providers } from "ethers";
+import { Contract, providers, Signer } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
@@ -77,7 +75,7 @@ export class ConnextClient implements IConnextClient {
   public token: Contract;
 
   private opts: InternalClientOptions;
-  private keyGen: KeyGen;
+  private signer: Signer;
 
   private depositController: DepositController;
   private swapController: SwapController;
@@ -95,7 +93,7 @@ export class ConnextClient implements IConnextClient {
     this.channelProvider = opts.channelProvider;
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
-    this.keyGen = opts.keyGen;
+    this.signer = opts.signer;
     this.log = opts.logger.newContext("ConnextClient");
     this.messaging = opts.messaging;
     this.network = opts.network;
@@ -107,7 +105,7 @@ export class ConnextClient implements IConnextClient {
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.nodeSignerAddress = addressToAddress(this.nodePublicIdentifier);
+    this.nodeSignerAddress = this.nodePublicIdentifier;
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -181,14 +179,14 @@ export class ConnextClient implements IConnextClient {
     // End goal is to use this to restart the cfNode after restoring state
     const channelProvider = await createCFChannelProvider({
       ethProvider: this.ethProvider,
-      keyGen: this.keyGen,
+      signer: this.signer,
       lockService: { acquireLock: this.node.acquireLock.bind(this.node) },
       messaging: this.messaging as any,
       contractAddresses: this.config.contractAddresses,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl: this.channelProvider.config.nodeUrl,
+      publicIdentifier: await this.signer.getAddress(),
       store: this.store,
-      address: this.publicIdentifier,
       logger: this.log.newContext("CFChannelProvider"),
     });
     // TODO: this is very confusing to have to do, lets try to figure out a better way
@@ -698,7 +696,7 @@ export class ConnextClient implements IConnextClient {
   ): Promise<PublicResults.ResolveLinkedTransfer> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
-    let privateKey = await this.keyGen("0");
+    let privateKey = await (this.signer as any).privateKey; // TODO: this won't work
     const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({

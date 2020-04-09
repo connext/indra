@@ -1,4 +1,4 @@
-import { ILogger, ClientOptions, createRandom32ByteHexString } from "@connext/types";
+import { ILogger, createRandom32ByteHexString } from "@connext/types";
 import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
@@ -113,13 +113,6 @@ export function isRinkeby(network: string): boolean {
 
 export function isLocalhost(network: string): boolean {
   return network.toLowerCase() === LOCALHOST_NETWORK.toLowerCase();
-}
-
-export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
-  if (!opts) {
-    return false;
-  }
-  return !!(opts.mnemonic || (opts.address && opts.keyGen));
 }
 
 export function removeUndefinedFields<T>(obj: T): T {

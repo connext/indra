@@ -1,3 +1,6 @@
+import { Signer } from "ethers";
+import { JsonRpcProvider } from "ethers/providers";
+
 import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
 import { ContractAddresses } from "./contracts";
 import { ConnextEventEmitter } from "./events";
@@ -12,7 +15,6 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
-import { JsonRpcProvider } from "ethers/providers";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -84,19 +86,19 @@ export type ChannelProviderConfig = {
   signerAddress: Address;
   multisigAddress?: Address; // may not be deployed yet
   nodeUrl: string;
-  userIdentifier: PublicIdentifier;
+  userPublicIdentifier: PublicIdentifier;
 };
 
 export interface CFChannelProviderOptions {
   ethProvider: JsonRpcProvider;
-  signer: IChannelSigner;
+  signer: Signer;
   lockService?: ILockService;
   logger?: ILoggerService;
   messaging: any;
   contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
-  channelIdentifier: PublicIdentifier;
+  publicIdentifier: PublicIdentifier;
   store: IClientStore;
 }
 

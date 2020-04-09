@@ -1,4 +1,3 @@
-import { JsonRpcProvider } from "ethers/providers";
 import {
   AppRegistry,
   IMessagingService,
@@ -8,11 +7,12 @@ import {
   IClientStore,
   ILoggerService,
   INodeApiClient,
-  KeyGen,
   Network,
   Address,
 } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
+import { Signer } from "ethers";
+import { JsonRpcProvider } from "ethers/providers";
 
 export interface NodeInitializationParameters {
   nodeUrl: string;
@@ -28,12 +28,11 @@ export type InternalClientOptions = {
   channelProvider: IChannelProvider;
   config: NodeResponses.GetConfig;
   ethProvider: JsonRpcProvider;
-  keyGen: KeyGen;
   logger: ILoggerService;
   messaging: MessagingService;
   network: Network;
   node: INodeApiClient;
+  signer: Signer;
   store: IClientStore;
   token: Contract;
-  address: Address;
 };

@@ -1,18 +1,12 @@
 import { ConnextStore } from "@connext/store";
 import { ClientOptions, StoreTypes } from "@connext/types";
-import { Wallet } from "ethers";
 
 import {
   isMainnet,
   isRinkeby,
-  isWalletProvided,
   isLocalhost,
   removeUndefinedFields,
 } from "./utils";
-
-export function shouldGenerateMnemonic(network: string, opts?: Partial<ClientOptions>): boolean {
-  return !isMainnet(network) && !isWalletProvided(opts);
-}
 
 export function getOptionIfAvailable(option: string, opts?: Partial<ClientOptions>) {
   return opts && opts[option] ? opts[option] : undefined;
@@ -57,12 +51,7 @@ export async function getDefaultOptions(
 
   const store = getOptionIfAvailable("store", overrideOptions) || getDefaultStore(overrideOptions);
 
-  const mnemonic = shouldGenerateMnemonic(network, overrideOptions)
-    ? Wallet.createRandom().mnemonic
-    : undefined;
-
   const opts = {
-    mnemonic,
     store,
     ...urlOptions,
     ...removeUndefinedFields<Partial<ClientOptions>>(overrideOptions),

@@ -54,7 +54,7 @@ export class DepositController extends AbstractController {
       });
       this.log.debug(`Sent deposit transaction to chain: ${hash}`);
       transactionHash = hash;
-      const tx = await this.ethProvider.getTransaction(hash)
+      const tx = await this.ethProvider.getTransaction(hash);
       await tx.wait();
     } catch (e) {
       this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
@@ -215,11 +215,11 @@ export class DepositController extends AbstractController {
       appDefinition,
       initialState,
       initiatorDeposit: Zero,
-      initiatorDepositTokenAddress: assetId,
+      initiatorDepositAssetId: assetId,
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
+      responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: DEPOSIT_STATE_TIMEOUT,
     };

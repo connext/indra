@@ -47,15 +47,15 @@ type GetTransferResponse = {
 type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
-  nodeIdentifier: PublicIdentifier;
+  nodePublicIdentifier: PublicIdentifier;
   messagingUrl: string[];
   supportedTokenAddresses: Address[];
 };
 
 type GetChannelResponse = {
   id: number;
-  nodeIdentifier: PublicIdentifier;
-  userIdentifier: PublicIdentifier;
+  nodePublicIdentifier: PublicIdentifier;
+  userPublicIdentifier: PublicIdentifier;
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: Collateralizations;
