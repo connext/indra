@@ -73,7 +73,7 @@ export class HashLockTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    const eventData = deBigNumberifyJson({
+    const eventData = {
       type: ConditionalTransferTypes.HashLockTransfer,
       amount,
       assetId,
@@ -81,9 +81,10 @@ export class HashLockTransferController extends AbstractController {
       meta,
       paymentId: HashZero,
       transferMeta: {
+        timelock,
         lockHash,
       },
-    }) as EventPayloads.HashLockTransferCreated;
+    } as EventPayloads.HashLockTransferCreated;
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
     return {
