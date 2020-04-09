@@ -95,7 +95,15 @@ export const computeActionHash = (
 export class AppWithCounterClass {
   get identityHash(): string {
     return keccak256(
-      defaultAbiCoder.encode(["uint256", "address"], [this.channelNonce, this.multisigAddress]),
+      defaultAbiCoder.encode(
+        ["uint256", "address[]", "address", "address", "uint256"],
+        [
+          this.channelNonce, 
+          this.participants, 
+          this.multisigAddress, 
+          this.appDefinition, 
+          this.defaultTimeout],
+      ),
     );
   }
 
