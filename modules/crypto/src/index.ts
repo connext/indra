@@ -35,21 +35,16 @@ export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
     : input;
 }
 
-export function getChannelPublicIdentifier(multisigAddress: string, signerAddress: string): string {
+export function getChannelPublicIdentifier(seed: string, publicKey: string): string {
   return (
     INDRA_PUB_ID_PREFIX +
-    bs58check.encode(concatBuffers(hexToBuffer(multisigAddress), hexToBuffer(signerAddress)))
+    bs58check.encode(concatBuffers(keccak256(bufferify(seed)).slice(20), hexToBuffer(publicKey)))
   );
 }
 
-export function parseChannelPublicIdentifier(
-  publicIdentifier: string,
-): { multisigAddress: string; signerAddress: string } {
+export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): string {
   const buf: Buffer = bs58check.decode(publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""));
-  return {
-    multisigAddress: bufferToHex(buf.slice(0, 20), true),
-    signerAddress: bufferToHex(buf.slice(20, 40), true),
-  };
+  return bufferToHex(buf.slice(20, 40), true);
 }
 
 export function getLowerCaseAddress(publicKey: Buffer | string): string {
