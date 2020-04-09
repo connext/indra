@@ -1,4 +1,4 @@
-import { AppInterface, OutcomeType, stringify, toBN, getAddressFromIdentifier, parseChannelIdentifier } from "@connext/types";
+import { AppInterface, OutcomeType, stringify, toBN, getAddressFromIdentifier } from "@connext/types";
 import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
@@ -205,12 +205,8 @@ export function createFreeBalance(
   multisigAddress: string,
 ) {
 
-  const { address: initiator, chainId: initiatorChainId } = parseChannelIdentifier(initiatorId);
-  const { address: responder, chainId: responderChainId } = parseChannelIdentifier(responderId);
-
-  if (initiatorChainId !== responderChainId) {
-    throw new Error(`Attempting to create a free balance state with assets on different chain (as determined by identifiers). ResponderId: ${responderId}, initiatorId: ${initiatorId}`);
-  }
+  const initiator = initiatorId;
+  const responder = responderId;
 
   const initialState: FreeBalanceState = {
     activeAppsMap: {},

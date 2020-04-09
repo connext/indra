@@ -4,12 +4,12 @@ import { getAddress } from "ethers/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
-import { getRandomChannelIdentifiers } from "../../testing/random-signing-keys";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
 describe("StateChannel", () => {
   it("should be able to instantiate", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const [initiator, responder] = getRandomChannelIdentifiers(2);
+    const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
@@ -30,7 +30,7 @@ describe("StateChannel", () => {
 
   describe("should be able to write a channel to a json", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const [initiator, responder] = getRandomChannelIdentifiers(2);
+    const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     let sc: StateChannel;
     let json: StateChannelJSON;
@@ -80,7 +80,7 @@ describe("StateChannel", () => {
 
   describe("should be able to rehydrate from json", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const [initiator, responder] = getRandomChannelIdentifiers(2);
+    const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 

@@ -12,10 +12,7 @@ export function getRandomSigningKeys(length: number) {
 }
 
 export function getRandomChannelSigner(): ChannelSigner {
-  return new ChannelSigner(
-    Wallet.createRandom().privateKey,
-    GANACHE_CHAIN_ID,
-  );
+  return new ChannelSigner(Wallet.createRandom().privateKey);
 }
 
 export function getRandomChannelSigners(length: number): ChannelSigner[] {
@@ -24,7 +21,7 @@ export function getRandomChannelSigners(length: number): ChannelSigner[] {
     .map(getRandomChannelSigner);
 }
 
-export function getRandomChannelIdentifiers(length: number): string[] {
+export function getRandomPublicIdentifiers(length: number): string[] {
   return getRandomChannelSigners(length)
     .map((signer) => signer.identifier);
 }

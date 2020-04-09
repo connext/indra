@@ -17,7 +17,6 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   PublicIdentifier,
   getAddressFromIdentifier,
-  getChainIdFromIdentifier,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
@@ -178,13 +177,6 @@ export class AppInstance {
 
   @Memoize()
   public get participants() {
-    // sanity check chain ids
-    if (
-      getChainIdFromIdentifier(this.initiatorIdentifier) !==
-      getChainIdFromIdentifier(this.responderIdentifier)
-    ) {
-      throw new Error(`Got mismatching chain ids from app identifiers: ${[this.initiatorIdentifier, this.responderIdentifier]}`);
-    }
     return [
       getAddressFromIdentifier(this.initiatorIdentifier),
       getAddressFromIdentifier(this.responderIdentifier),

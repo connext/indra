@@ -153,14 +153,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       );
       const setStateCommitmentForFreeBalanceHash = setStateCommitmentForFreeBalance.hashToSign();
       setStateCommitmentForFreeBalance.signatures = [
-        await signChannelMessage(
-          signers[0].privateKey,
-          setStateCommitmentForFreeBalanceHash,
-        ),
-        await signChannelMessage(
-          signers[1].privateKey,
-          setStateCommitmentForFreeBalanceHash,
-        ),
+        await signers[0].signMessage(setStateCommitmentForFreeBalanceHash),
+        await signers[1].signMessage(setStateCommitmentForFreeBalanceHash),
       ];
 
       await wallet.sendTransaction({
@@ -190,8 +184,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       );
       const conditionalTransactionHash = conditionalTransaction.hashToSign();
       conditionalTransaction.signatures = [
-        await signChannelMessage(signers[0].privateKey, conditionalTransactionHash),
-        await signChannelMessage(signers[1].privateKey, conditionalTransactionHash),
+        await signers[0].signMessage(conditionalTransactionHash),
+        await signers[1].signMessage(conditionalTransactionHash),
       ];
       const multisigDelegateCallTx = await conditionalTransaction.getSignedTransaction();
 
@@ -222,14 +216,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
 
       freeBalanceConditionalTransaction.signatures = [
-        await signChannelMessage(
-          signers[0].privateKey,
-          freeBalanceConditionalTransaction.hashToSign(),
-        ),
-        await signChannelMessage(
-          signers[1].privateKey,
-          freeBalanceConditionalTransaction.hashToSign(),
-        ),
+        await signers[0].signMessage(freeBalanceConditionalTransaction.hashToSign()),
+        await signers[1].signMessage(freeBalanceConditionalTransaction.hashToSign()),
       ];
 
       const multisigDelegateCallTx2 =

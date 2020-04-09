@@ -93,7 +93,7 @@ export const getPublicIdentifier = (
 export const verifyPublicIdentifier = (
   identifier: string,
 ) => {
-  const { address, namespace } = parseChannelIdentifier(identifier);
+  const { address, namespace } = parsePublicIdentifier(identifier);
   if (
     !isHexString(address) ||
     namespace !== ETHEREUM_NAMESPACE
@@ -102,7 +102,7 @@ export const verifyPublicIdentifier = (
   }
 };
 
-export const parseChannelIdentifier = (
+export const parsePublicIdentifier = (
   identifier: string,
 ): { chainId: number, address: Address, namespace: string} => {
   const [address, res] = identifier.split("@");
@@ -115,11 +115,9 @@ export const parseChannelIdentifier = (
 };
 
 export const getAddressFromIdentifier = (identifer: string): string => {
-  const { address } = parseChannelIdentifier(identifer);
-  return address;
+  return identifer; // TODO: re-implement once we decide on pub ids
 };
 
 export const getChainIdFromIdentifier = (identifer: string): number => {
-  const { chainId } = parseChannelIdentifier(identifer);
-  return chainId;
+  return 1; // TODO: re-implement once we decide on pub ids
 };

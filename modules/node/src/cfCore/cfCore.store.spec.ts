@@ -20,7 +20,6 @@ import {
   generateRandomAddress,
   createAppInstanceProposal,
   createAppInstanceJson,
-  generateRandomAddress,
   createSetStateCommitmentJSON,
   createConditionalTransactionCommitmentJSON,
   generateRandomSignature,
@@ -80,8 +79,8 @@ const createTestChannelWithAppInstance = async (
   const appInstance = createAppInstanceJson({
     identityHash: appProposal.identityHash,
     multisigAddress,
-    initiator: userParticipantAddr,
-    responder: nodeParticipantAddr,
+    initiatorIdentifier: userParticipantAddr,
+    responderIdentifier: nodeParticipantAddr,
   });
   const updatedFreeBalance: AppInstanceJson = {
     ...channelJson.freeBalanceAppInstance!,
@@ -148,8 +147,8 @@ describe("CFCoreStore", () => {
         userPublicIdentifiers: [nodePublicIdentifier, userIdentifier],
         freeBalanceAppInstance: {
           ...channelJson.freeBalanceAppInstance,
-          initiator: nodePublicIdentifier,
-          responder: userIdentifier,
+          initiatorIdentifier: nodePublicIdentifier,
+          responderIdentifier: userIdentifier,
         },
       });
     });
@@ -235,13 +234,13 @@ describe("CFCoreStore", () => {
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, APP_SEQ_NO);
 
       const userParticipantAddr = userPublicIdentifier;
-      const nodeParticipantAddr = configService.getPublicIdentifier(),
+      const nodeParticipantAddr = configService.getPublicIdentifier();
 
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,
         multisigAddress,
-        initiator: userParticipantAddr,
-        responder: nodeParticipantAddr,
+        initiatorIdentifier: userParticipantAddr,
+        responderIdentifier: nodeParticipantAddr,
         appSeqNo: APP_SEQ_NO,
       });
       const updatedFreeBalance: AppInstanceJson = {
@@ -277,13 +276,13 @@ describe("CFCoreStore", () => {
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, APP_SEQ_NO);
 
       const userParticipantAddr = userPublicIdentifier;
-      const nodeParticipantAddr = configService.getPublicIdentifier(),
+      const nodeParticipantAddr = configService.getPublicIdentifier();
 
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,
         multisigAddress,
-        initiator: userParticipantAddr,
-        responder: nodeParticipantAddr,
+        initiatorIdentifier: userParticipantAddr,
+        responderIdentifier: nodeParticipantAddr,
         appSeqNo: APP_SEQ_NO,
       });
       await cfCoreStore.createAppInstance(

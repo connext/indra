@@ -25,7 +25,7 @@ import { StateChannel } from "../../models";
 import { createAppInstanceProposalForTest } from "../../testing/utils";
 
 import { install } from "./install";
-import { getRandomChannelIdentifiers } from "../../testing/random-signing-keys";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
@@ -97,7 +97,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     const appIdentityHash = createRandom32ByteHexString();
     const multisigAddress = Wallet.createRandom().address;
-    const extendedKeys = getRandomChannelIdentifiers(2);
+    const extendedKeys = getRandomPublicIdentifiers(2);
     const participants = [
       getAddressFromIdentifier(extendedKeys[0]),
       getAddressFromIdentifier(extendedKeys[1]),

@@ -9,7 +9,6 @@ import {
   StateSchemaVersion,
   stringify,
   toBN,
-  verifyPublicIdentifier,
   getAddressFromIdentifier,
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
@@ -44,11 +43,7 @@ export class StateChannel {
     private readonly freeBalanceAppInstance?: AppInstance,
     private readonly monotonicNumProposedApps: number = 0,
     public readonly schemaVersion: number = StateSchemaVersion,
-  ) {
-    [initiatorIdentifier, responderIdentifier].forEach(id => {
-      verifyPublicIdentifier(id);
-    });
-  }
+  ) {}
 
   public get multisigOwners() {
     return this.getSigningKeysFor(

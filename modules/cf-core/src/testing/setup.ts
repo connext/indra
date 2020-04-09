@@ -1,3 +1,4 @@
+import { ChannelSigner } from "@connext/crypto";
 import { IMessagingService, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
 import { JsonRpcProvider, TransactionRequest } from "ethers/providers";
@@ -51,7 +52,7 @@ export async function setup(
 
   const lockService = new MemoryLockService();
 
-  const channelSignerA = new Wallet(prvKeyA);
+  const channelSignerA = new ChannelSigner(prvKeyA);
 
   const storeServiceA = storeServiceFactory.createStoreService();
   const nodeA = await Node.create(
@@ -71,7 +72,7 @@ export async function setup(
     store: storeServiceA,
   };
 
-  const channelSignerB = new Wallet(prvKeyB);
+  const channelSignerB = new ChannelSigner(prvKeyB);
   const storeServiceB = storeServiceFactory.createStoreService();
   const nodeB = await Node.create(
     messagingService,
@@ -91,7 +92,7 @@ export async function setup(
 
   let nodeC: Node;
   if (nodeCPresent) {
-    const channelSignerC = new Wallet(C_PRIVATE_KEY);
+    const channelSignerC = new ChannelSigner(C_PRIVATE_KEY);
     const storeServiceC = storeServiceFactory.createStoreService();
     nodeC = await Node.create(
       messagingService,

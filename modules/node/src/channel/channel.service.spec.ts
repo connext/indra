@@ -5,7 +5,7 @@ import { One, AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { mkHash, mkAddress, mkAddress } from "../test/utils";
+import { mkHash, mkAddress } from "../test/utils";
 
 import { Channel } from "./channel.entity";
 import { ChannelService, RebalanceType } from "./channel.service";

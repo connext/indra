@@ -1,4 +1,5 @@
-import { EthSignature, IChannelSigner, getPublicIdentifier, ETHEREUM_NAMESPACE } from "@connext/types";
+import { Signer, Wallet } from "ethers";
+import { EthSignature } from "@connext/types";
 import {
   sign,
   encrypt,
@@ -167,24 +168,32 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
   return bufferToUtf8(decrypted);
 }
 
-export class ChannelSigner implements IChannelSigner {
-  public publicKey: string;
+export class ChannelSigner extends Signer {
+  private publicKey: string;
   public address: string;
+  public publicIdentifier: string;
 
-  constructor(
-    public readonly privateKey: string, 
-    public readonly chainId: number,
-  ) {
+  constructor(private readonly privateKey: string) {
+    super();
+    const wallet = new Wallet(privateKey);
     this.privateKey = privateKey;
-    this.publicKey = getPublicKeyFromPrivate(this.privateKey);
-    this.address = getChecksumAddress(this.publicKey);
+    this.address = wallet.address;
+    this.publicIdentifier = wallet.address; // TODO: replace w real pub id
   }
 
   get identifier(): string {
-    return getPublicIdentifier(this.chainId, this.address, ETHEREUM_NAMESPACE);
+    return this.publicIdentifier;
   }
 
-  public signMessage(message: string): Promise<string> {
+  public async getAddress(): Promise<string> {
+    return this.address;
+  }
+
+  public async signMessage(message: string): Promise<string> {
     return signChannelMessage(this.privateKey, message);
+  }
+
+  public async sendTransaction(transaction: any): Promise<any> {
+    throw new Error(`ChannelSigner can't send transactions`);
   }
 }

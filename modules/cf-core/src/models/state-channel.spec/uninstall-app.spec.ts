@@ -8,7 +8,7 @@ import { generateRandomNetworkContext } from "../../testing/mocks";
 import { AppInstance } from "../app-instance";
 import { StateChannel } from "../state-channel";
 import { FreeBalanceClass } from "../free-balance";
-import { getRandomChannelIdentifiers } from "../../testing/random-signing-keys";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
 describe("StateChannel::uninstallApp", () => {
   const networkContext = generateRandomNetworkContext();
@@ -19,7 +19,7 @@ describe("StateChannel::uninstallApp", () => {
 
   beforeAll(() => {
     const multisigAddress = getAddress(createRandomAddress());
-    const ids = getRandomChannelIdentifiers(2);
+    const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,

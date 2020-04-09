@@ -3,7 +3,7 @@ import { getAddress } from "ethers/utils";
 import { createRandomAddress, getAddressFromIdentifier } from "@connext/types";
 
 import { createAppInstanceForTest } from "../../testing/utils";
-import { getRandomChannelIdentifiers } from "../../testing/random-signing-keys";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
@@ -23,7 +23,7 @@ describe("StateChannel::setState", () => {
 
   beforeAll(() => {
     const multisigAddress = getAddress(createRandomAddress());
-    const ids = getRandomChannelIdentifiers(2);
+    const ids = getRandomPublicIdentifiers(2);
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,

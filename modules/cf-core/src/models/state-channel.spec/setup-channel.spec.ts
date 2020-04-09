@@ -3,7 +3,7 @@ import { getAddress } from "ethers/utils";
 import { AppInstanceProposal, createRandomAddress, toBN, getAddressFromIdentifier } from "@connext/types";
 
 import { HARD_CODED_ASSUMPTIONS } from "../../constants";
-import { getRandomChannelIdentifiers } from "../../testing/random-signing-keys";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { AppInstance } from "../app-instance";
@@ -11,7 +11,7 @@ import { StateChannel } from "../state-channel";
 
 describe("StateChannel::setupChannel", () => {
   const multisigAddress = getAddress(createRandomAddress());
-  const ids = getRandomChannelIdentifiers(2);
+  const ids = getRandomPublicIdentifiers(2);
 
   let sc: StateChannel;
 
