@@ -21,6 +21,7 @@ export type CreatedLinkedTransferMeta = {
 
 export type CreatedHashLockTransferMeta = {
   lockHash: Bytes32;
+  timelock: BigNumber;
 };
 
 export type CreatedSignedTransferMeta = {
