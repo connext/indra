@@ -35,6 +35,7 @@ export class TestRunner {
   public multisigAC!: string;
   public multisigBC!: string;
   public provider!: JsonRpcProvider;
+  public defaultTimeout!: BigNumber;
   private mr!: MessageRouter;
 
   async connectToGanache(): Promise<void> {
@@ -47,6 +48,8 @@ export class TestRunner {
       IdentityApp.bytecode,
       wallet,
     ).deploy();
+
+    this.defaultTimeout = bigNumberify(100);
 
     this.mininodeA = new MiniNode(network, this.provider, new MemoryStoreService());
     this.mininodeB = new MiniNode(network, this.provider, new MemoryStoreService());
@@ -205,7 +208,7 @@ export class TestRunner {
       initiatorDepositTokenAddress: tokenAddress,
       responderDeposit: One,
       responderDepositTokenAddress: tokenAddress,
-      defaultTimeout: toBN(100),
+      defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       initialState,
       outcomeType,
@@ -223,7 +226,7 @@ export class TestRunner {
         actionEncoding: undefined,
       },
       appSeqNo: proposal.appSeqNo,
-      defaultTimeout: bigNumberify(40),
+      defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       disableLimit: false,
       initialState,
@@ -293,7 +296,7 @@ export class TestRunner {
       initiatorDepositTokenAddress: tokenAddressA,
       responderDeposit: One,
       responderDepositTokenAddress: tokenAddressB,
-      defaultTimeout: bigNumberify(100),
+      defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       initialState,
       outcomeType,
@@ -318,7 +321,7 @@ export class TestRunner {
         actionEncoding: undefined,
       },
       appSeqNo: proposal.appSeqNo,
-      defaultTimeout: bigNumberify(40),
+      defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       initiatorDepositTokenAddress: tokenAddressA,
       responderDepositTokenAddress: tokenAddressB,
