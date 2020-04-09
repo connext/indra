@@ -1,4 +1,3 @@
-const { CF_PATH } = require("@connext/types");
 const fs = require("fs");
 const eth = require("ethers");
 const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Mintable.json");
@@ -214,10 +213,8 @@ const sendGift = async (address, token) => {
 
   if (chainId === ganacheId) {
     await sendGift(eth.Wallet.fromMnemonic(mnemonic).address, token);
-    await sendGift(eth.Wallet.fromMnemonic(mnemonic, `${CF_PATH}/0`).address, token);
     for (const botMnemonic of botMnemonics) {
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic).address, token);
-      await sendGift(eth.Wallet.fromMnemonic(botMnemonic, `${CF_PATH}/0`).address, token);
     }
   }
 

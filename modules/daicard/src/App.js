@@ -1,11 +1,12 @@
 import * as connext from "@connext/client";
+import { ChannelSigner } from "@connext/crypto";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
-import { CF_PATH, ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
+import { ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
@@ -199,7 +200,7 @@ class App extends React.Component {
     await ethProvider.ready;
     const network = await ethProvider.getNetwork();
     if (!useWalletConnext) {
-      wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + "/0").connect(ethProvider);
+      wallet = eth.Wallet.fromMnemonic(mnemonic).connect(ethProvider);
       this.setState({ network, wallet });
     }
 
@@ -240,27 +241,18 @@ class App extends React.Component {
         }
       }
 
-      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-      const address = hdNode.neuter().extendedKey;
-      const keyGen = index => {
-        const res = hdNode.derivePath(index);
-        return Promise.resolve(res.privateKey);
-      };
+
+      const signer = new ChannelSigner(eth.Wallet.fromMnemonic(mnemonic).privateKey);
+      const address = await signer.getAddress();
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
-        keyGen,
+        signer,
         logLevel: LOG_LEVEL,
         nodeUrl: urls.nodeUrl,
         store,
-        address,
       });
       console.log(`mnemonic address: ${wallet.address} (path: ${wallet.path})`);
       console.log(`address address: ${eth.utils.computeAddress(fromExtendedKey(address).publicKey)}`);
-      console.log(
-        `keygen address: ${new eth.Wallet(await keyGen("1")).address} (path ${
-          new eth.Wallet(await keyGen("1")).path
-        })`,
-      );
     } else if (useWalletConnext) {
       const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
