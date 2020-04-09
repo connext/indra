@@ -1,5 +1,5 @@
-import { Signer, Wallet } from "ethers";
-import { EthSignature } from "@connext/types";
+import { Wallet } from "ethers";
+import { EthSignature, IChannelSigner } from "@connext/types";
 import {
   sign,
   encrypt,
@@ -168,29 +168,31 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
   return bufferToUtf8(decrypted);
 }
 
-export class ChannelSigner extends Signer {
-  private publicKey: string;
+export class ChannelSigner implements IChannelSigner {
   public address: string;
-  public publicIdentifier: string;
+  public publicKey: string;
 
   constructor(private readonly privateKey: string) {
-    super();
     const wallet = new Wallet(privateKey);
     this.privateKey = privateKey;
     this.address = wallet.address;
-    this.publicIdentifier = wallet.address; // TODO: replace w real pub id
   }
 
-  get identifier(): string {
-    return this.publicIdentifier;
+  public async encrypt(message: string, publicKey: string): Promise<string> {
+    return encryptWithPublicKey(publicKey, message);
   }
 
-  public async getAddress(): Promise<string> {
-    return this.address;
+  public async decrypt(message: string): Promise<string> {
+    return decryptWithPrivateKey(this.privateKey, message);
   }
 
   public async signMessage(message: string): Promise<string> {
     return signChannelMessage(this.privateKey, message);
+  }
+
+  // TODO: remove below 2 fns when done refactoring
+  public async getAddress(): Promise<string> {
+    return this.address;
   }
 
   public async sendTransaction(transaction: any): Promise<any> {

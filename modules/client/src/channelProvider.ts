@@ -9,6 +9,7 @@ import {
   deBigNumberifyJson,
   EventNames,
   IChannelProvider,
+  IChannelSigner,
   IClientStore,
   IRpcConnection,
   JsonRpcRequest,
@@ -22,7 +23,7 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { Contract, Signer } from "ethers";
+import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
@@ -72,9 +73,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public store: IClientStore;
 
   // TODO: replace this when signing keys are added!
-  public signer: Signer;
+  public signer: IChannelSigner;
 
-  constructor(cfCore: CFCore, store: IClientStore, signer: Signer) {
+  constructor(cfCore: CFCore, store: IClientStore, signer: IChannelSigner) {
     super();
     this.cfCore = cfCore;
     this.signer = signer;

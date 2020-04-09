@@ -1,3 +1,4 @@
+import { ChannelSigner } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import { ConnextNodeStorePrefix, IMessagingService, Opcode, ContractAddresses } from "@connext/types";
 import { Provider } from "@nestjs/common";
@@ -36,7 +37,7 @@ export const cfCoreProviderFactory: Provider = {
       contractAddresses,
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
-      signer,
+      new ChannelSigner(await config.getPrivateKey()),
       { acquireLock: lockService.lockedOperation.bind(lockService) },
       undefined,
       log.newContext("CFCore"),

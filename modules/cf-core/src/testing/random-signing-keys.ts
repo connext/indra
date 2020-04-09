@@ -3,7 +3,6 @@ import { createRandom32ByteHexString } from "@connext/types";
 
 import { ChannelSigner } from "@connext/crypto";
 import { Wallet } from "ethers";
-import { GANACHE_CHAIN_ID } from "./utils";
 
 export function getRandomSigningKeys(length: number) {
   return Array(length)
@@ -23,6 +22,6 @@ export function getRandomChannelSigners(length: number): ChannelSigner[] {
 
 export function getRandomPublicIdentifiers(length: number): string[] {
   return getRandomChannelSigners(length)
-    .map((signer) => signer.identifier);
+    .map((signer) => signer.address);
 }
 

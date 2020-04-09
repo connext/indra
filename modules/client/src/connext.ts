@@ -17,6 +17,7 @@ import {
   DepositAppState,
   EventNames,
   IChannelProvider,
+  IChannelSigner,
   IClientStore,
   IConnextClient,
   ILoggerService,
@@ -34,7 +35,7 @@ import {
   WithdrawAppName,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
-import { Contract, providers, Signer } from "ethers";
+import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
@@ -75,7 +76,7 @@ export class ConnextClient implements IConnextClient {
   public token: Contract;
 
   private opts: InternalClientOptions;
-  private signer: Signer;
+  private signer: IChannelSigner;
 
   private depositController: DepositController;
   private swapController: SwapController;

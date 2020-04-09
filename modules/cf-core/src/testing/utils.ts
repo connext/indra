@@ -75,8 +75,8 @@ export const newWallet = (wallet: Wallet) =>
 export function createAppInstanceProposalForTest(appIdentityHash: string): AppInstanceProposal {
   return {
     identityHash: appIdentityHash,
-    initiatorIdentifier: getRandomChannelSigner().identifier,
-    responderIdentifier: getRandomChannelSigner().identifier,
+    initiatorIdentifier: getRandomChannelSigner().address,
+    responderIdentifier: getRandomChannelSigner().address,
     appDefinition: AddressZero,
     abiEncodings: {
       stateEncoding: "tuple(address foo, uint256 bar)",

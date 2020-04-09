@@ -1,15 +1,16 @@
 import {
   delay,
+  getAddressFromIdentifier,
+  IChannelSigner,
   ILoggerService,
   MethodNames,
   MethodParams,
   MethodResults,
   NetworkContext,
-  stringify,
-  getAddressFromIdentifier,
   PublicIdentifier,
+  stringify,
 } from "@connext/types";
-import { Contract, Signer } from "ethers";
+import { Contract } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { Interface, solidityKeccak256 } from "ethers/utils";
@@ -116,7 +117,7 @@ export class DeployStateDepositController extends NodeController {
 }
 
 async function sendMultisigDeployTx(
-  signer: Signer,
+  signer: IChannelSigner,
   stateChannel: StateChannel,
   networkContext: NetworkContext,
   retryCount: number = 1,

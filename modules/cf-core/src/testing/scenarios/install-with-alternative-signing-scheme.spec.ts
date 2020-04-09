@@ -1,4 +1,4 @@
-import { Wallet } from "ethers";
+import { ChannelSigner } from "@connext/crypto";
 import { ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -53,7 +53,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           global[`network`],
           nodeConfig,
           provider,
-          new Wallet(A_PRIVATE_KEY),
+          new ChannelSigner(A_PRIVATE_KEY),
           lockService,
         );
 
@@ -64,7 +64,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           global[`network`],
           nodeConfig,
           provider,
-          new Wallet(B_PRIVATE_KEY),
+          new ChannelSigner(B_PRIVATE_KEY),
           lockService,
         );
 

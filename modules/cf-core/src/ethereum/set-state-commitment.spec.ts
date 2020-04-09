@@ -41,12 +41,12 @@ describe("Set State Commitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    initiator.identifier,
-    responder.identifier,
+    initiator.address,
+    responder.address,
   );
 
-  expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiator.identifier);
-  expect(stateChannel.userPublicIdentifiers[1]).toEqual(responder.identifier);
+  expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiator.address);
+  expect(stateChannel.userPublicIdentifiers[1]).toEqual(responder.address);
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(

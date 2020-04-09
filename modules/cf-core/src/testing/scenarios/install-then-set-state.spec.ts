@@ -63,7 +63,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
   it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
     const signers = getRandomChannelSigners(2);
-    const ids = signers.map(s => s.identifier);
+    const ids = signers.map(s => s.address);
     const erc20TokenAddress = network.DolphinCoin;
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 
@@ -86,8 +86,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       // todo(xuanji): don't reuse state
       // todo(xuanji): use createAppInstance
       const identityAppInstance = new AppInstance(
-        signers[0].identifier,
-        signers[1].identifier,
+        signers[0].address,
+        signers[1].address,
         stateChannel.freeBalance.defaultTimeout, // Re-use ETH FreeBalance timeout
         {
           addr: network.IdentityApp,

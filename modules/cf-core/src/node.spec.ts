@@ -1,3 +1,4 @@
+import { ChannelSigner } from "@connext/crypto";
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -18,7 +19,7 @@ describe("Node", () => {
       global["network"],
       { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
       provider,
-      new Wallet(Wallet.createRandom().privateKey),
+      new ChannelSigner(Wallet.createRandom().privateKey),
     );
 
     expect(node).toBeDefined();

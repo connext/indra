@@ -1,17 +1,17 @@
 import {
+  Address,
   AppRegistry,
-  IMessagingService,
   Contract,
-  NodeResponses,
   IChannelProvider,
+  IChannelSigner,
   IClientStore,
   ILoggerService,
+  IMessagingService,
   INodeApiClient,
   Network,
-  Address,
+  NodeResponses,
 } from "@connext/types";
 import { MessagingService } from "@connext/messaging";
-import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
 export interface NodeInitializationParameters {
@@ -32,7 +32,7 @@ export type InternalClientOptions = {
   messaging: MessagingService;
   network: Network;
   node: INodeApiClient;
-  signer: Signer;
+  signer: IChannelSigner;
   store: IClientStore;
   token: Contract;
 };

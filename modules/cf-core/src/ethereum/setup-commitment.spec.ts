@@ -27,8 +27,8 @@ describe("SetupCommitment", () => {
 
   // General interaction testing values
   const interaction = {
-    sender: getRandomChannelSigner().identifier,
-    receiver: getRandomChannelSigner().identifier,
+    sender: getRandomChannelSigner().address,
+    receiver: getRandomChannelSigner().address,
   };
 
   // State channel testing values

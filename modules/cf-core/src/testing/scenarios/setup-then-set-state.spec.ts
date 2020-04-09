@@ -58,8 +58,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       // TODO: Test this separately
       expect(proxy).toBe(
         await getCreate2MultisigAddress(
-          initiator.identifier,
-          responder.identifier,
+          initiator.address,
+          responder.address,
           {
             proxyFactory: network.ProxyFactory,
             multisigMastercopy: network.MinimumViableMultisig,
@@ -72,8 +72,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         network.IdentityApp,
         { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
         proxy, // used as multisig
-        initiator.identifier,
-        responder.identifier,
+        initiator.address,
+        responder.address,
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
@@ -116,8 +116,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       const setupCommitmentHash = setupCommitment.hashToSign();
 
       setupCommitment.signatures = [
-        await initiator.signMessage(setStateCommitmentHash),
-        await responder.signMessage(setStateCommitmentHash),
+        await initiator.signMessage(setupCommitmentHash),
+        await responder.signMessage(setupCommitmentHash),
       ];
 
       const setupTx = await setupCommitment.getSignedTransaction();

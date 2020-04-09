@@ -3,24 +3,24 @@ import {
   AppInstanceProposal,
   delay,
   EventNames,
+  IChannelSigner,
   ILockService,
   ILoggerService,
   IMessagingService,
   IStoreService,
+  Message,
   MethodName,
   MiddlewareContext,
   MinimalTransaction,
   NetworkContext,
-  Message,
-  ProtocolMessage,
   nullLogger,
   Opcode,
+  ProtocolMessage,
   ProtocolMessageData,
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
 } from "@connext/types";
-import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
@@ -72,7 +72,7 @@ export class Node {
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
-    signer: Signer,
+    signer: IChannelSigner,
     lockService?: ILockService,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
@@ -96,7 +96,7 @@ export class Node {
   }
 
   private constructor(
-    private readonly signer: Signer,
+    private readonly signer: IChannelSigner,
     private readonly address: Address,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,

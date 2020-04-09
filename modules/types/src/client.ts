@@ -1,8 +1,8 @@
-import { providers, Signer } from "ethers";
+import { providers } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
-import { ChannelProviderConfig, IChannelProvider } from "./channelProvider";
+import { IChannelSigner, ChannelProviderConfig, IChannelProvider } from "./channelProvider";
 import { EventNames } from "./events";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
@@ -19,7 +19,7 @@ export interface ClientOptions {
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
   mnemonic?: string; // TODO: keep as a quick-start option?
-  signer?: Signer;
+  signer?: IChannelSigner;
   store?: IClientStore;
   storeType?: StoreTypes;
   logger?: ILogger;

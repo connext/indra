@@ -1,16 +1,16 @@
 import {
   bigNumberifyJson,
   EventNames,
+  IChannelSigner,
   ILoggerService,
   IMessagingService,
   IStoreService,
+  Message,
   MethodName,
   NetworkContext,
-  Message,
   ProtocolMessage,
   PublicIdentifier,
 } from "@connext/types";
-import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
@@ -39,7 +39,7 @@ export class RequestHandler {
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
     readonly provider: JsonRpcProvider,
-    readonly signer: Signer,
+    readonly signer: IChannelSigner,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
     public readonly log: ILoggerService,
@@ -142,7 +142,7 @@ export class RequestHandler {
     return this.events.has(event);
   }
 
-  public getSigner(): Signer {
+  public getSigner(): IChannelSigner {
     return this.signer;
   }
 
