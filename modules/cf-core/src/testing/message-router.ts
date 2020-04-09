@@ -49,16 +49,16 @@ export class MessageRouter {
   }
 
   private routeMessage(message: any) {
-    const { toXpub } = message;
-    if (typeof toXpub === "undefined") {
-      throw new Error("No toXpub found on message");
+    const { to } = message;
+    if (typeof to === "undefined") {
+      throw new Error("No to found on message");
     }
-    const deferred = this.deferrals.get(toXpub);
+    const deferred = this.deferrals.get(to);
 
     if (typeof deferred === "undefined") {
-      const toNode = this.nodesMap.get(toXpub);
+      const toNode = this.nodesMap.get(to);
       if (typeof toNode === "undefined") {
-        throw new Error(`No node with xpub = ${toXpub} found`);
+        throw new Error(`No node with id = ${to} found`);
       }
 
       // This returns a promise that resolves when runProtocolWithMessage

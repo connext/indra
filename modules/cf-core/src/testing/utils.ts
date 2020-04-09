@@ -420,23 +420,23 @@ export async function getProposedAppInstances(
 
 export async function getMultisigBalance(
   multisigAddr: string,
-  assetId: string = AddressZero,
+  tokenAddress: string = AddressZero,
 ): Promise<BigNumber> {
   const provider = global[`wallet`].provider;
-  return assetId === AddressZero
+  return tokenAddress === AddressZero
     ? await provider.getBalance(multisigAddr)
-    : await new Contract(assetId, ERC20.abi, provider)
+    : await new Contract(tokenAddress, ERC20.abi, provider)
         .functions.balanceOf(multisigAddr);
 }
 
 export async function getMultisigAmountWithdrawn(
   multisigAddr: string,
-  assetId: string = AddressZero,
+  tokenAddress: string = AddressZero,
 ) {
   const provider = global[`wallet`].provider;
   const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi, provider);
   try {
-    return await multisig.functions.totalAmountWithdrawn(assetId);
+    return await multisig.functions.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
       console.log(CONTRACT_NOT_DEPLOYED);
@@ -454,14 +454,15 @@ export async function getProposeDepositAppParams(
   proposedToIdentifier: string,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ): Promise<MethodParams.ProposeInstall> {
+  const tokenAddress = getTokenAddressFromAssetId(assetId);
   const startingTotalAmountWithdrawn = await getMultisigAmountWithdrawn(
     multisigAddress,
-    assetId,
+    tokenAddress,
   );
-  const startingMultisigBalance = await getMultisigBalance(multisigAddress, assetId);
+  const startingMultisigBalance = await getMultisigBalance(multisigAddress, tokenAddress);
   const initialState: DepositAppState = {
     multisigAddress,
-    assetId: getTokenAddressFromAssetId(assetId),
+    assetId: tokenAddress,
     startingTotalAmountWithdrawn,
     startingMultisigBalance,
     transfers: [
@@ -687,7 +688,6 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
             type: EventNames.CREATE_CHANNEL_EVENT,
             data: {
               owners: sortedOwners,
-              counterpartyXpub: nodeA.publicIdentifier,
             },
           },
           [`data.multisigAddress`],
@@ -705,7 +705,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
             type: EventNames.CREATE_CHANNEL_EVENT,
             data: {
               owners: sortedOwners,
-              counterpartyXpub: nodeB.publicIdentifier,
+              counterpartyIdentifier: nodeB.publicIdentifier,
             },
           },
           [`data.multisigAddress`],
@@ -718,6 +718,7 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
       nodeB.publicIdentifier,
     ]),
   ]);
+  expect(multisigAddress).toBeDefined();
   expect(await getInstalledAppInstances(nodeA, multisigAddress)).toEqual([]);
   return multisigAddress;
 }
@@ -1016,13 +1017,21 @@ export async function getBalances(
   nodeA: Node,
   nodeB: Node,
   multisigAddress: string,
-  tokenAddress: string,
+  assetId: AssetId,
 ): Promise<[BigNumber, BigNumber]> {
-  let tokenFreeBalanceState = await getFreeBalanceState(nodeA, multisigAddress, tokenAddress);
+  let tokenFreeBalanceState = await getFreeBalanceState(
+    nodeA, 
+    multisigAddress, 
+    assetId,
+  );
 
   const tokenBalanceNodeA = tokenFreeBalanceState[nodeA.freeBalanceAddress];
 
-  tokenFreeBalanceState = await getFreeBalanceState(nodeB, multisigAddress, tokenAddress);
+  tokenFreeBalanceState = await getFreeBalanceState(
+    nodeB,
+    multisigAddress,
+    assetId,
+  );
 
   const tokenBalanceNodeB = tokenFreeBalanceState[nodeB.freeBalanceAddress];
 

@@ -181,7 +181,7 @@ export class ChannelSigner implements IChannelSigner {
   }
 
   get identifier(): string {
-    return getPublicIdentifier(this.chainId, this.publicKey, ETHEREUM_NAMESPACE);
+    return getPublicIdentifier(this.chainId, this.address, ETHEREUM_NAMESPACE);
   }
 
   public signMessage(message: string): Promise<string> {

@@ -430,7 +430,7 @@ export class Node {
    * subscribed (i.e. consumers of the Node).
    */
   private registerMessagingConnection() {
-    this.messagingService.onReceive(this.freeBalanceAddress, async (msg: Message) => {
+    this.messagingService.onReceive(this.publicIdentifier, async (msg: Message) => {
       await this.handleReceivedMessage(msg);
       this.rpcRouter.emit(msg.type, msg, "outgoing");
     });

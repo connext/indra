@@ -55,7 +55,7 @@ export async function setup(
 
   const channelSignerA = new ChannelSigner(
     prvKeyA,
-    provider.network.chainId,
+    (await provider.getNetwork()).chainId,
   );
 
   const storeServiceA = storeServiceFactory.createStoreService();

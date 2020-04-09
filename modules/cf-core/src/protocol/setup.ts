@@ -76,7 +76,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 32 ms
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
-    const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData.hashToSign()];
+    const mySignatureOnFreeBalanceState = yield [
+      OP_SIGN,
+      freeBalanceUpdateData.hashToSign(),
+    ];
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
@@ -99,7 +102,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessageData,
     ];
-    logTime(log, substart, `Received responder's sig`);
+    logTime(log, substart, `Received responder's sigs`);
 
     // setup installs the free balance app, and on creation the state channel
     // will have nonce 1, so use hardcoded 0th key
@@ -128,7 +131,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       mySignatureOnFreeBalanceState as any,
       responderSignatureOnFreeBalanceState,
     );
-
     // 33 ms
     yield [
       PERSIST_COMMITMENT,

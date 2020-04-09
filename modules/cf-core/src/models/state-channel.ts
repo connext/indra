@@ -375,8 +375,8 @@ export class StateChannel {
       );
   
       if (
-        appInstance.initiatorIdentifier !== initiator 
-        || appInstance.responderIdentifier !== responder
+        appInstance.initiatorIdentifier !== proposal.initiatorIdentifier 
+        || appInstance.responderIdentifier !== proposal.responderIdentifier
       ) {
         throw new Error(
           `AppInstance passed to installApp has incorrect participants. Got ${

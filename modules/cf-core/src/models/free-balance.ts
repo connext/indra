@@ -1,5 +1,5 @@
 import { AppInterface, OutcomeType, stringify, toBN, getAssetId, getAddressFromIdentifier, parseChannelIdentifier, AssetId } from "@connext/types";
-import { Zero } from "ethers/constants";
+import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
@@ -214,7 +214,7 @@ export function createFreeBalance(
       // NOTE: Extremely important to understand that the default
       // addresses of the recipients are the "top level keys" as defined
       // as the 0th derived children of the xpubs.
-      [getAssetId(initiatorChainId)]: [
+      [AddressZero]: [
         { to: initiator, amount: Zero },
         { to: responder, amount: Zero },
       ],

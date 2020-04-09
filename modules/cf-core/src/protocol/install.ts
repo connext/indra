@@ -82,7 +82,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
       initiatorIdentifier,
-      initiatorDepositAssetId,
+      getTokenAddressFromAssetId(initiatorDepositAssetId),
       initiatorBalanceDecrement,
     );
 
@@ -90,7 +90,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
       responderIdentifier,
-      responderDepositAssetId,
+      getTokenAddressFromAssetId(responderDepositAssetId),
       responderBalanceDecrement,
     );
 
@@ -274,7 +274,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
       initiatorIdentifier,
-      initiatorDepositAssetId,
+      getTokenAddressFromAssetId(initiatorDepositAssetId),
       initiatorBalanceDecrement,
     );
 
@@ -282,7 +282,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
       responderIdentifier,
-      responderDepositAssetId,
+      getTokenAddressFromAssetId(responderDepositAssetId),
       responderBalanceDecrement,
     );
 

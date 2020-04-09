@@ -1,4 +1,4 @@
-import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, getAddressFromIdentifier } from "@connext/types";
+import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, getAddressFromIdentifier, ChannelPubId } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -10,7 +10,6 @@ import {
   keccak256,
   solidityKeccak256,
 } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 import memoize from "memoizee";
 
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
@@ -68,22 +67,14 @@ export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
  * existing channels
  */
 export const getCreate2MultisigAddress = async (
-  initiatorXpub: string,
-  responderXpub: string,
+  initiatorIdentifier: ChannelPubId,
+  responderIdentifier: ChannelPubId,
   addresses: CriticalStateChannelAddresses,
   ethProvider: JsonRpcProvider,
   legacyKeygen?: boolean,
   toxicBytecode?: string,
 ): Promise<string> => {
   const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
-
-  const xkeysToKthAddresses = xkeys =>
-    xkeys
-      .map(xkey =>
-        legacyKeygen === true
-          ? fromExtendedKey(xkey).address
-          : fromExtendedKey(xkey).derivePath("0").address,
-      );
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
@@ -99,7 +90,10 @@ export const getCreate2MultisigAddress = async (
             keccak256(
               // see encoding notes
               new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                xkeysToKthAddresses([initiatorXpub, responderXpub]),
+                [
+                  getAddressFromIdentifier(initiatorIdentifier),
+                  getAddressFromIdentifier(responderIdentifier),
+                ],
               ]),
             ),
             // hash chainId + saltNonce to ensure multisig addresses are *always* unique
@@ -125,8 +119,8 @@ const memoizedGetAddress = memoize((params: string): string => getAddress(params
 });
 
 export const scanForCriticalAddresses = async (
-  initiatorXpub: string,
-  responderXpub: string,
+  initiatorIdentifier: ChannelPubId,
+  responderIdentifier: ChannelPubId,
   expectedMultisig: string,
   ethProvider: JsonRpcProvider,
   moreAddressHistory?: {
@@ -178,8 +172,8 @@ export const scanForCriticalAddresses = async (
       for (const multisigMastercopy of mastercopies) {
         for (const proxyFactory of proxyFactories) {
           let calculated = await getCreate2MultisigAddress(
-            initiatorXpub,
-            responderXpub,
+            initiatorIdentifier,
+            responderIdentifier,
             { proxyFactory, multisigMastercopy },
             ethProvider,
             legacyKeygen,

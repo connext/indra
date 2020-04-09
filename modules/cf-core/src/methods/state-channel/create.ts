@@ -56,7 +56,7 @@ export class CreateChannelController extends NodeController {
     }
     const multisigAddress = storedMultisig || await getCreate2MultisigAddress(
       requestHandler.publicIdentifier,
-      owners.find(xpub => xpub !== requestHandler.publicIdentifier)!,
+      owners.find(id => id !== requestHandler.publicIdentifier)!,
       { 
         proxyFactory: networkContext.ProxyFactory, 
         multisigMastercopy: networkContext.MinimumViableMultisig,

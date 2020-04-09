@@ -109,12 +109,6 @@ export async function install(
     responderDepositAssetId: proposal.responderDepositAssetId,
     disableLimit: false,
     meta: proposal.meta,
-    appInitiatorAddress: getAddressFromIdentifier(
-      proposal.initiatorIdentifier,
-    ),
-    appResponderAddress: getAddressFromIdentifier(
-      proposal.responderIdentifier,
-    ),
     stateTimeout: toBN(proposal.stateTimeout),
     appInitiatorIdentifier: proposal.initiatorIdentifier,
     appResponderIdentifier: proposal.responderIdentifier,

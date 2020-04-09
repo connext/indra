@@ -148,12 +148,14 @@ async function getOutgoingEventDataFromProtocol(
       return {
         ...baseEvent,
         type: EventNames.CREATE_CHANNEL_EVENT,
-        data: getSetupEventData(
-          params as ProtocolParams.Setup,
-          StateChannel.fromJson(
-            (await store.getStateChannel((params as ProtocolParams.Setup).multisigAddress))!,
-          ).multisigOwners,
-        ),
+        data: {
+          ...getSetupEventData(
+            params as ProtocolParams.Setup,
+            StateChannel.fromJson(
+              (await store.getStateChannel((params as ProtocolParams.Setup).multisigAddress))!,
+            ).multisigOwners,
+          ),
+        },
       };
     case ProtocolNames.takeAction:
     case ProtocolNames.update:
@@ -193,6 +195,6 @@ function getUninstallEventData({ appIdentityHash }: ProtocolParams.Uninstall) {
 function getSetupEventData(
   { multisigAddress }: ProtocolParams.Setup,
   owners: Address[],
-): EventPayloads.CreateMultisig {
+): Omit<EventPayloads.CreateMultisig, "counterpartyIdentifier"> {
   return { multisigAddress, owners };
 }
