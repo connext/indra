@@ -45,7 +45,7 @@ contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
             oldAppState
         );
 
-        // build an array that contains only the turn-taker
+        // Build an array that contains only the turn-taker
         address[] memory signers = new address[](1);
         signers[0] = turnTaker;
 
