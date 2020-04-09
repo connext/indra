@@ -23,7 +23,7 @@ describe("StateChannel", () => {
     expect(sc).not.toBe(null);
     expect(sc).not.toBe(undefined);
     expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userChannelIdentifiers).toMatchObject([initiator, responder]);
+    expect(sc.userPublicIdentifiers).toMatchObject([initiator, responder]);
     expect(sc.numActiveApps).toBe(0);
     expect(sc.numProposedApps).toBe(0);
   });
@@ -62,8 +62,8 @@ describe("StateChannel", () => {
     });
 
     it("should not change the user addresss", () => {
-      expect(json.userChannelIdentifiers[0]).toEqual(initiator);
-      expect(json.userChannelIdentifiers[1]).toEqual(responder);
+      expect(json.userPublicIdentifiers[0]).toEqual(initiator);
+      expect(json.userPublicIdentifiers[1]).toEqual(responder);
     });
 
     it("should not change the multisig address", () => {
@@ -126,8 +126,8 @@ describe("StateChannel", () => {
     });
 
     it("should not change the user addresss", () => {
-      expect(rehydrated.userChannelIdentifiers[0]).toEqual(initiator);
-      expect(rehydrated.userChannelIdentifiers[1]).toEqual(responder);
+      expect(rehydrated.userPublicIdentifiers[0]).toEqual(initiator);
+      expect(rehydrated.userPublicIdentifiers[1]).toEqual(responder);
     });
 
     it("should not change the multisig address", () => {

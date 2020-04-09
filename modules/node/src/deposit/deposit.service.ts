@@ -19,7 +19,6 @@ import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { xkeyKthAddress } from "../util";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 
 @Injectable()
@@ -48,7 +47,7 @@ export class DepositService {
     this.log.debug(`Found deposit app: ${stringify(depositApp, 2)}`);
     if (
       depositApp && 
-      depositApp.latestState.transfers[0].to === xkeyKthAddress(channel.userPublicIdentifier)
+      depositApp.latestState.transfers[0].to === channel.userPublicIdentifier
     ) {
       throw new Error(
         `Cannot deposit, user has deposit app installed for asset ${assetId}, app: ${depositApp.identityHash}`,
@@ -148,11 +147,11 @@ export class DepositService {
       transfers: [
         {
           amount: Zero,
-          to: xkeyKthAddress(this.configService.getPublicIdentifier()),
+          to: this.configService.getPublicIdentifier(),
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(channel.userPublicIdentifier),
+          to: channel.userPublicIdentifier,
         },
       ],
       multisigAddress: channel.multisigAddress,

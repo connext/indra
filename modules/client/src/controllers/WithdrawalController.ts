@@ -168,7 +168,7 @@ export class WithdrawalController extends AbstractController {
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
       outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,

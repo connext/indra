@@ -25,7 +25,6 @@ import {
 } from "../conditionalCommitment/conditionalCommitment.repository";
 import { ChannelRepository, convertChannelToJSON } from "../channel/channel.repository";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
-import { xkeyKthAddress } from "../util";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
 import { Channel } from "../channel/channel.entity";
@@ -82,7 +81,7 @@ export class CFCoreStore implements IStoreService {
     );
 
     const nodePublicIdentifier = this.configService.getPublicIdentifier();
-    const userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.find(
+    const userPublicIdentifier = stateChannel.userPublicIdentifiers.find(
       address => address !== this.configService.getPublicIdentifier(),
     );
 
@@ -107,11 +106,11 @@ export class CFCoreStore implements IStoreService {
     });
     channel.activeCollateralizations = activeCollateralizations;
 
-    const userFreeBalance = xkeyKthAddress(userPublicIdentifier);
-    const nodeFreeBalance = xkeyKthAddress(this.configService.getPublicIdentifier());
+    const userFreeBalance = userPublicIdentifier;
+    const nodeFreeBalance = this.configService.getPublicIdentifier();
     const participants = [
-      freeBalanceAppInstance.initiator,
-      freeBalanceAppInstance.responder,
+      freeBalanceAppInstance.initiatorIdentifier,
+      freeBalanceAppInstance.responderIdentifier,
     ];
     const userParticipantAddress = participants.find(p => p === userFreeBalance);
     const nodeParticipantAddress = participants.find(p => p === nodeFreeBalance);
@@ -141,11 +140,11 @@ export class CFCoreStore implements IStoreService {
 
     // app proposal defaults
     freeBalanceApp.initiatorDeposit = Zero;
-    freeBalanceApp.initiatorDepositTokenAddress = AddressZero;
+    freeBalanceApp.initiatorDepositAssetId = AddressZero;
     freeBalanceApp.responderDeposit = Zero;
-    freeBalanceApp.responderDepositTokenAddress = AddressZero;
-    freeBalanceApp.proposedToIdentifier = userPublicIdentifier;
-    freeBalanceApp.proposedByIdentifier = nodePublicIdentifier;
+    freeBalanceApp.responderDepositAssetId = AddressZero;
+    freeBalanceApp.responderIdentifier = userPublicIdentifier;
+    freeBalanceApp.initiatorIdentifier = nodePublicIdentifier;
     freeBalanceApp.userParticipantAddress = userParticipantAddress;
     freeBalanceApp.nodeParticipantAddress = nodeParticipantAddress;
     freeBalanceApp.type = AppType.FREE_BALANCE;
@@ -165,8 +164,8 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     const {
       identityHash,
-      initiator,
-      responder,
+      initiatorIdentifier,
+      responderIdentifier,
       latestState,
       stateTimeout,
       latestVersionNumber,
@@ -184,12 +183,9 @@ export class CFCoreStore implements IStoreService {
     // upgrade proposal to instance
     proposal.type = AppType.INSTANCE;
     // save participants
-    const nodeAddr = xkeyKthAddress(
-      this.configService.getPublicIdentifier(),
-      proposal.appSeqNo,
-    );
-    proposal.userParticipantAddress = [initiator, responder].find(p => p !== nodeAddr);
-    proposal.nodeParticipantAddress = [initiator, responder].find(p => p === nodeAddr);
+    const nodeAddr = this.configService.getPublicIdentifier();
+    proposal.userParticipantAddress = [initiatorIdentifier, responderIdentifier].find(p => p !== nodeAddr);
+    proposal.nodeParticipantAddress = [initiatorIdentifier, responderIdentifier].find(p => p === nodeAddr);
 
     proposal.meta = meta;
 
@@ -317,13 +313,13 @@ export class CFCoreStore implements IStoreService {
     app.appDefinition = appProposal.appDefinition;
     app.appSeqNo = appProposal.appSeqNo;
     app.initiatorDeposit = bigNumberify(appProposal.initiatorDeposit);
-    app.initiatorDepositTokenAddress = appProposal.initiatorDepositTokenAddress;
+    app.initiatorDepositAssetId = appProposal.initiatorDepositAssetId;
     app.responderDeposit = bigNumberify(appProposal.responderDeposit);
-    app.responderDepositTokenAddress = appProposal.responderDepositTokenAddress;
+    app.responderDepositAssetId = appProposal.responderDepositAssetId;
     app.defaultTimeout = appProposal.defaultTimeout;
     app.stateTimeout = appProposal.stateTimeout;
-    app.proposedToIdentifier = appProposal.proposedToIdentifier;
-    app.proposedByIdentifier = appProposal.proposedByIdentifier;
+    app.responderIdentifier = appProposal.responderIdentifier;
+    app.initiatorIdentifier = appProposal.initiatorIdentifier;
     app.outcomeType = appProposal.outcomeType;
     app.meta = appProposal.meta;
     app.initialState = appProposal.initialState;

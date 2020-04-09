@@ -56,7 +56,7 @@ describe("StateChannel::uninstallApp", () => {
 
   it("should not alter any of the base properties", () => {
     expect(sc2.multisigAddress).toBe(sc1.multisigAddress);
-    expect(sc2.userChannelIdentifiers).toMatchObject(sc1.userChannelIdentifiers);
+    expect(sc2.userPublicIdentifiers).toMatchObject(sc1.userPublicIdentifiers);
   });
 
   it("should have added something at the id of thew new app", () => {

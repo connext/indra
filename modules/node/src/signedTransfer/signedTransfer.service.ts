@@ -15,7 +15,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { xkeyKthAddress } from "../util";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 
@@ -125,7 +124,7 @@ export class SignedTransferService {
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(userPublicIdentifier),
+          to: userPublicIdentifier,
         },
       ],
       paymentId,

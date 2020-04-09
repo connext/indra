@@ -31,13 +31,13 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
   ): Promise<string[]> {
     const { publicIdentifier, store } = requestHandler;
-    const { proposedToIdentifier } = params;
+    const { responderIdentifier } = params;
 
-    const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
+    const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
     if (!json) {
       throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([
         publicIdentifier,
-        proposedToIdentifier,
+        responderIdentifier,
       ].toString()));
     }
 
@@ -78,13 +78,13 @@ export class ProposeInstallAppInstanceController extends NodeController {
   ): Promise<MethodResults.ProposeInstall> {
     const { protocolRunner, publicIdentifier, store } = requestHandler;
 
-    const { proposedToIdentifier, stateTimeout, defaultTimeout } = params;
+    const { responderIdentifier, stateTimeout, defaultTimeout } = params;
 
-    const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
+    const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
     if (!json) {
       throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([
         publicIdentifier,
-        proposedToIdentifier,
+        responderIdentifier,
       ].toString()));
     }
 
@@ -93,7 +93,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
       stateTimeout: stateTimeout || defaultTimeout,
       multisigAddress: json.multisigAddress,
       initiatorIdentifier: publicIdentifier,
-      responderIdentifier: proposedToIdentifier,
+      responderIdentifier: responderIdentifier,
     });
 
     const updated = await store.getStateChannel(json.multisigAddress);

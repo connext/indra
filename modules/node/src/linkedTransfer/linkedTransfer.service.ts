@@ -14,7 +14,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { xkeyKthAddress } from "../util";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
@@ -124,7 +123,7 @@ export class LinkedTransferService {
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(userPublicIdentifier),
+          to: userPublicIdentifier,
         },
       ],
       linkedHash,
@@ -229,7 +228,7 @@ export class LinkedTransferService {
   async unlockLinkedTransfersFromUser(userPublicIdentifier: string): Promise<string[]> {
     // eslint-disable-next-line max-len
     const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
-      xkeyKthAddress(userPublicIdentifier),
+      userPublicIdentifier,
       this.cfCoreService.cfCore.signerAddress,
     );
     const receiverRedeemed = await Promise.all(

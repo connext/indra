@@ -100,8 +100,8 @@ export function createAppInstanceProposalForTest(appIdentityHash: string): AppIn
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
   const [initiator, responder] = stateChannel
     ? [
-      stateChannel!.userChannelIdentifiers[0], 
-      stateChannel!.userChannelIdentifiers[1],
+      stateChannel!.userPublicIdentifiers[0], 
+      stateChannel!.userPublicIdentifiers[1],
     ]
     : [
         getPublicIdentifier(
@@ -243,7 +243,7 @@ export function assertProposeMessage(
   const {
     multisigAddress,
     initiatorIdentifier,
-    responderIdentifier: proposedToIdentifier,
+    responderIdentifier: responderIdentifier,
     ...emittedParams
   } = params;
   assertMessage(
@@ -254,7 +254,7 @@ export function assertProposeMessage(
       data: {
         params: {
           ...emittedParams,
-          proposedToIdentifier,
+          responderIdentifier,
         },
       },
     },
@@ -457,8 +457,8 @@ export async function getMultisigAmountWithdrawn(
 
 export async function getProposeDepositAppParams(
   multisigAddress: string,
-  proposedByIdentifier: string,
-  proposedToIdentifier: string,
+  initiatorIdentifier: string,
+  responderIdentifier: string,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ): Promise<MethodParams.ProposeInstall> {
   const tokenAddress = getTokenAddressFromAssetId(assetId);
@@ -475,11 +475,11 @@ export async function getProposeDepositAppParams(
     transfers: [
       {
         amount: Zero,
-        to: getAddressFromIdentifier(proposedByIdentifier),
+        to: getAddressFromIdentifier(initiatorIdentifier),
       },
       {
         amount: Zero,
-        to: getAddressFromIdentifier(proposedToIdentifier),
+        to: getAddressFromIdentifier(responderIdentifier),
       },
     ],
   };
@@ -494,7 +494,7 @@ export async function getProposeDepositAppParams(
     initiatorDeposit: Zero,
     initiatorDepositAssetId: assetId,
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    proposedToIdentifier,
+    responderIdentifier,
     responderDeposit: Zero,
     responderDepositAssetId: assetId,
     defaultTimeout: Zero,
@@ -506,11 +506,11 @@ export async function deposit(
   node: Node,
   multisigAddress: string,
   amount: BigNumber = One,
-  proposedToNode: Node,
+  responderNode: Node,
   assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ) {
   // get rights
-  await requestDepositRights(node, proposedToNode, multisigAddress, assetId);
+  await requestDepositRights(node, responderNode, multisigAddress, assetId);
   const wallet = global["wallet"] as Wallet;
   // send a deposit to the multisig
   const tx = getTokenAddressFromAssetId(assetId) === AddressZero
@@ -522,7 +522,7 @@ export async function deposit(
         .transfer(multisigAddress, amount);
   expect(tx.hash).toBeDefined();
   // rescind rights
-  await rescindDepositRights(node, proposedToNode, multisigAddress, assetId);
+  await rescindDepositRights(node, responderNode, multisigAddress, assetId);
 }
 
 export async function deployStateDepositHolder(node: Node, multisigAddress: string) {
@@ -560,7 +560,7 @@ export function constructRejectInstallRpc(appIdentityHash: string): Rpc {
 
 export function constructAppProposalRpc(
   multisigAddress: string,
-  proposedToIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   appDefinition: string,
   abiEncodings: AppABIEncodings,
   initialState: SolidityValueType,
@@ -576,7 +576,7 @@ export function constructAppProposalRpc(
     id: Date.now(),
     methodName: MethodNames.chan_proposeInstall,
     parameters: deBigNumberifyJson({
-      proposedToIdentifier,
+      responderIdentifier,
       initiatorDeposit,
       initiatorDepositAssetId,
       responderDeposit,

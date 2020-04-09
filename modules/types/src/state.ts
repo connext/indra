@@ -18,7 +18,7 @@ export type StateChannelJSON = {
   readonly schemaVersion: number;
   readonly multisigAddress: Address; // TODO: remove & replace w getter fn?
   readonly addresses: CriticalStateChannelAddresses;
-  readonly userChannelIdentifiers: PublicIdentifier[];
+  readonly userPublicIdentifiers: PublicIdentifier[];
   readonly proposedAppInstances: [Bytes32, AppInstanceProposal][];
   readonly appInstances: [Bytes32, AppInstanceJson][];
   readonly freeBalanceAppInstance: AppInstanceJson | undefined;

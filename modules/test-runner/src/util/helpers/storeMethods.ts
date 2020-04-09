@@ -72,8 +72,8 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
   initiatorDeposit: "10",
   initiatorDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
   outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-  proposedByIdentifier: "address1",
-  proposedToIdentifier: "address2",
+  initiatorIdentifier: "address1",
+  responderIdentifier: "address2",
   responderDeposit: "11",
   responderDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
   defaultTimeout: "0x01",
@@ -91,7 +91,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
     multisigMastercopy: TEST_STORE_ETH_ADDRESS,
     proxyFactory: TEST_STORE_ETH_ADDRESS,
   },
-  userNeuteredExtendedKeys: ["address1", "address2"],
+  userPublicIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
   appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
   freeBalanceAppInstance: TEST_STORE_APP_INSTANCE,
@@ -126,7 +126,7 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
   interpreterAddr: TEST_STORE_ETH_ADDRESS,
   interpreterParams: "conditionalInterpreter",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
-  multisigOwners: TEST_STORE_CHANNEL.userNeuteredExtendedKeys,
+  multisigOwners: TEST_STORE_CHANNEL.userPublicIdentifiers,
   networkContext: {} as NetworkContext,
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };

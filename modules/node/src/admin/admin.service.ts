@@ -165,8 +165,8 @@ export class AdminService implements OnApplicationBootstrap {
         !state.addresses.multisigMastercopy ||
         state.multisigAddress !==
           (await getCreate2MultisigAddress(
-            state.userNeuteredExtendedKeys[0],
-            state.userNeuteredExtendedKeys[1],
+            state.userPublicIdentifiers[0],
+            state.userPublicIdentifiers[1],
             state.addresses,
             this.configService.getEthProvider(),
           ))
@@ -186,8 +186,8 @@ export class AdminService implements OnApplicationBootstrap {
       const state = await this.cfCoreStore.getStateChannel(brokenMultisig);
       this.log.info(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
       const criticalAddresses = await scanForCriticalAddresses(
-        state.userNeuteredExtendedKeys[0],
-        state.userNeuteredExtendedKeys[1],
+        state.userPublicIdentifiers[0],
+        state.userPublicIdentifiers[1],
         state.multisigAddress,
         this.configService.getEthProvider(),
       );
@@ -244,7 +244,7 @@ export class AdminService implements OnApplicationBootstrap {
     const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
     this.log.log(`Found ${channelJSONs.length} old channel records`);
     for (const channelJSON of channelJSONs) {
-      if (channelJSON.userNeuteredExtendedKeys.length === 3) {
+      if (channelJSON.userPublicIdentifiers.length === 3) {
         // just ignore virtual channels
         continue;
       }
@@ -334,12 +334,12 @@ export class AdminService implements OnApplicationBootstrap {
               identityHash: appInstance.identityHash,
               initialState: appInstance.latestState,
               initiatorDeposit: "0",
-              initiatorDepositTokenAddress: AddressZero,
+              initiatorDepositAssetId: AddressZero,
               outcomeType: appInstance.outcomeType as OutcomeType,
-              proposedByIdentifier: channelJSON.userNeuteredExtendedKeys[0],
-              proposedToIdentifier: channelJSON.userNeuteredExtendedKeys[1],
+              initiatorIdentifier: channelJSON.userPublicIdentifiers[0],
+              responderIdentifier: channelJSON.userPublicIdentifiers[1],
               responderDeposit: "0",
-              responderDepositTokenAddress: AddressZero,
+              responderDepositAssetId: AddressZero,
               meta: appInstance.meta,
               multiAssetMultiPartyCoinTransferInterpreterParams: 
                 appInstance.multiAssetMultiPartyCoinTransferInterpreterParams as any,

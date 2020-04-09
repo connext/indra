@@ -12,7 +12,7 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
 import { HashZero } from "ethers/constants";
-import { safeJsonParse, xkeyKthAddress } from "../util";
+import { safeJsonParse } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {
@@ -58,8 +58,8 @@ export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): Ap
     multisigAddress: channel.multisigAddress,
     outcomeType: app.outcomeType,
     // TODO: should we add initatior/responder to the app instance table?
-    initiator: xkeyKthAddress(app.proposedByIdentifier, app.appSeqNo),
-    responder: xkeyKthAddress(app.proposedToIdentifier, app.appSeqNo),
+    initiatorIdentifier: app.initiatorIdentifier,
+    responderIdentifier: app.responderIdentifier,
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,
     twoPartyOutcomeInterpreterParams,
@@ -106,12 +106,12 @@ export const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceP
     identityHash: app.identityHash,
     initialState: app.initialState,
     initiatorDeposit: app.initiatorDeposit.toHexString(),
-    initiatorDepositTokenAddress: app.initiatorDepositTokenAddress,
+    initiatorDepositAssetId: app.initiatorDepositAssetId,
     outcomeType: app.outcomeType,
-    proposedByIdentifier: app.proposedByIdentifier,
-    proposedToIdentifier: app.proposedToIdentifier,
+    initiatorIdentifier: app.initiatorIdentifier,
+    responderIdentifier: app.responderIdentifier,
     responderDeposit: app.responderDeposit.toHexString(),
-    responderDepositTokenAddress: app.responderDepositTokenAddress,
+    responderDepositAssetId: app.responderDepositAssetId,
     defaultTimeout: app.defaultTimeout,
     stateTimeout: app.stateTimeout,
     multiAssetMultiPartyCoinTransferInterpreterParams,

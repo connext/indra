@@ -65,18 +65,18 @@ export class AppInstance<T extends AppState = any> {
 
   @Column("text")
   @IsEthAddress()
-  initiatorDepositTokenAddress!: string;
+  initiatorDepositAssetId!: string;
 
   @Column({ type: "enum", enum: OutcomeType })
   outcomeType!: OutcomeType;
 
   @Column("text")
   @IsAddress()
-  proposedByIdentifier!: string;
+  initiatorIdentifier!: string;
 
   @Column("text")
   @IsAddress()
-  proposedToIdentifier!: string;
+  responderIdentifier!: string;
 
   @Column("text", {
     transformer: {
@@ -88,7 +88,7 @@ export class AppInstance<T extends AppState = any> {
 
   @Column("text")
   @IsEthAddress()
-  responderDepositTokenAddress!: string;
+  responderDepositAssetId!: string;
 
   @Column("text")
   defaultTimeout!: HexString;

@@ -1,7 +1,6 @@
 import { MessagingService } from "@connext/messaging";
-import { CF_PATH, ConnextNodeStorePrefix, IMessagingService, Opcode, ContractAddresses } from "@connext/types";
+import { ConnextNodeStorePrefix, IMessagingService, Opcode, ContractAddresses } from "@connext/types";
 import { Provider } from "@nestjs/common";
-import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
@@ -22,11 +21,11 @@ export const cfCoreProviderFactory: Provider = {
     messaging: MessagingService,
     store: CFCoreStore,
   ): Promise<CFCore> => {
-    const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
-    const publicExtendedKey = config.getPublicIdentifier();
     const provider = config.getEthProvider();
+    const signer = config.getSigner();
+    const signerAddress = await signer.getAddress();
     log.setContext("CFCoreProvider");
-    log.info(`Derived address from mnemonic: ${publicExtendedKey}`);
+    log.info(`Derived address from mnemonic: ${signerAddress}`);
 
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
@@ -37,12 +36,8 @@ export const cfCoreProviderFactory: Provider = {
       contractAddresses,
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
+      signer,
       { acquireLock: lockService.lockedOperation.bind(lockService) },
-      publicExtendedKey,
-      // key gen fn
-      (uniqueId: string): Promise<string> => {
-        return Promise.resolve(hdNode.derivePath(uniqueId).privateKey);
-      },
       undefined,
       log.newContext("CFCore"),
     );
@@ -50,7 +45,7 @@ export const cfCoreProviderFactory: Provider = {
     cfCore.injectMiddleware(
       Opcode.OP_VALIDATE,
       await generateMiddleware(
-        publicExtendedKey,
+        signerAddress,
         {
           ...contractAddresses,
           provider,
@@ -58,7 +53,6 @@ export const cfCoreProviderFactory: Provider = {
         store,
       ),
     );
-    const signerAddress = await cfCore.signerAddress;
     const balance = (await provider.getBalance(signerAddress)).toString();
     log.info(
       `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${balance}`,

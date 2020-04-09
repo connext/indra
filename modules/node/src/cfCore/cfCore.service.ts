@@ -26,7 +26,6 @@ import {
   CFCore,
   InstallMessage,
   RejectProposalMessage,
-  xkeyKthAddress,
 } from "../util";
 import { ChannelRepository } from "../channel/channel.repository";
 import { Channel } from "../channel/channel.entity";
@@ -74,7 +73,7 @@ export class CFCoreService {
         // but need the free balance address in the multisig
         const obj = {};
         obj[this.cfCore.signerAddress] = Zero;
-        obj[xkeyKthAddress(userPubId)] = Zero;
+        obj[userPubId] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);
@@ -142,8 +141,8 @@ export class CFCoreService {
       contractAddresses,
       channel.multisigAddress,
       [
-        channel.freeBalanceAppInstance.initiator,
-        channel.freeBalanceAppInstance.responder,
+        channel.freeBalanceAppInstance.initiatorIdentifier,
+        channel.freeBalanceAppInstance.responderIdentifier,
       ],
       recipient,
       assetId,
@@ -169,9 +168,9 @@ export class CFCoreService {
     channel: Channel,
     initialState: any,
     initiatorDeposit: BigNumber,
-    initiatorDepositTokenAddress: string,
+    initiatorDepositAssetId: string,
     responderDeposit: BigNumber,
-    responderDepositTokenAddress: string,
+    responderDepositAssetId: string,
     app: string,
     meta: object = {},
     stateTimeout: BigNumber = Zero,
@@ -197,12 +196,12 @@ export class CFCoreService {
       appDefinition,
       initialState,
       initiatorDeposit,
-      initiatorDepositTokenAddress,
+      initiatorDepositAssetId,
       meta,
       outcomeType,
-      proposedToIdentifier: channel.userPublicIdentifier,
+      responderIdentifier: channel.userPublicIdentifier,
       responderDeposit,
-      responderDepositTokenAddress,
+      responderDepositAssetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout,
     };
@@ -262,7 +261,11 @@ export class CFCoreService {
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
-  async takeAction(appIdentityHash: string, action: AppAction, stateTimeout?: BigNumber): Promise<MethodResults.TakeAction> {
+  async takeAction(
+    appIdentityHash: string,
+    action: AppAction,
+    stateTimeout?: BigNumber,
+  ): Promise<MethodResults.TakeAction> {
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_takeAction,

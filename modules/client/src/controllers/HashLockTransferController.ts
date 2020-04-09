@@ -61,7 +61,7 @@ export class HashLockTransferController extends AbstractController {
       initiatorDepositAssetId: assetId,
       meta,
       outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,

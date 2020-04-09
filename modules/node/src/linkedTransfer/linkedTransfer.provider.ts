@@ -51,14 +51,14 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     return {
       amount: latestState.amount,
-      meta: meta || {},
       assetId: latestState.assetId,
       createdAt: senderApp.createdAt,
-      paymentId: latestState.paymentId,
-      senderPublicIdentifier: senderApp.proposedByIdentifier,
-      status,
       encryptedPreImage: encryptedPreImage,
-      receiverPublicIdentifier: recipient,
+      meta: meta || {},
+      paymentId: latestState.paymentId,
+      receiverIdentifier: recipient,
+      senderIdentifier: senderApp.initiatorIdentifier,
+      status,
     };
   }
 
@@ -92,8 +92,8 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
         createdAt: transfer.createdAt,
         amount: state.amount,
         assetId: state.assetId,
-        senderPublicIdentifier: transfer.channel.userPublicIdentifier,
-        receiverPublicIdentifier: transfer.meta["recipient"],
+        senderIdentifier: transfer.channel.userPublicIdentifier,
+        receiverIdentifier: transfer.meta["recipient"],
         status: LinkedTransferStatus.PENDING,
         meta: transfer.meta,
         encryptedPreImage: transfer.meta["encryptedPreImage"],

@@ -12,7 +12,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { xkeyKthAddress } from "../util";
 import { TIMEOUT_BUFFER } from "../constants";
 import { ConfigService } from "../config/config.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
@@ -142,7 +141,7 @@ export class HashLockTransferService {
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(receiverPublicIdentifier),
+          to: receiverPublicIdentifier,
         },
       ],
       lockHash: appState.lockHash,

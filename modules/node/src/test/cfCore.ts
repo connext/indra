@@ -9,12 +9,8 @@ import {
 } from "@connext/types";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { Wallet } from "ethers";
-import { HDNode, hexlify, bigNumberify } from "ethers/utils";
-import { xkeyKthAddress } from "@connext/cf-core";
+import { hexlify, bigNumberify } from "ethers/utils";
 import { randomBytes } from "crypto";
-
-export const generateRandomAddress = () =>
-  HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
 
 export const generateRandomAddress = () => Wallet.createRandom().address;
 
@@ -39,8 +35,8 @@ export const createAppInstanceJson = (
     latestVersionNumber: 0,
     multisigAddress: generateRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    initiator: generateRandomAddress(),
-    responder: generateRandomAddress(),
+    initiatorIdentifier: generateRandomAddress(),
+    responderIdentifier: generateRandomAddress(),
     multiAssetMultiPartyCoinTransferInterpreterParams: null,
     singleAssetTwoPartyCoinTransferInterpreterParams: null,
     twoPartyOutcomeInterpreterParams: null,
@@ -61,11 +57,11 @@ export const createAppInstanceProposal = (
     },
     initialState: {},
     initiatorDeposit: "0x00",
-    initiatorDepositTokenAddress: AddressZero,
-    proposedByIdentifier: generateRandomAddress(),
-    proposedToIdentifier: generateRandomAddress(),
+    initiatorDepositAssetId: AddressZero,
+    initiatorIdentifier: generateRandomAddress(),
+    responderIdentifier: generateRandomAddress(),
     responderDeposit: "0x00",
-    responderDepositTokenAddress: AddressZero,
+    responderDepositAssetId: AddressZero,
     defaultTimeout: "0x00",
     stateTimeout: "0x00",
     multiAssetMultiPartyCoinTransferInterpreterParams: undefined,
@@ -79,7 +75,7 @@ export const createAppInstanceProposal = (
 export const createStateChannelJSON = (
   overrides: Partial<StateChannelJSON> = {},
 ): StateChannelJSON => {
-  const userNeuteredExtendedKeys = [generateRandomAddress(), generateRandomAddress()];
+  const userPublicIdentifiers = [generateRandomAddress(), generateRandomAddress()];
   const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
       multisigMastercopy: "",
@@ -90,7 +86,7 @@ export const createStateChannelJSON = (
     multisigAddress: generateRandomAddress(),
     proposedAppInstances: [],
     schemaVersion: 1,
-    userNeuteredExtendedKeys,
+    userPublicIdentifiers,
     ...overrides,
   };
 
@@ -98,8 +94,8 @@ export const createStateChannelJSON = (
     ...channelData,
     freeBalanceAppInstance: createAppInstanceJson({
       multisigAddress: channelData.multisigAddress,
-      initiator: xkeyKthAddress(channelData.userNeuteredExtendedKeys[0]),
-      responder: xkeyKthAddress(channelData.userNeuteredExtendedKeys[1]),
+      initiatorIdentifier: channelData.userPublicIdentifiers[0],
+      responderIdentifier: channelData.userPublicIdentifiers[1],
       ...overrides.freeBalanceAppInstance,
     }),
   };

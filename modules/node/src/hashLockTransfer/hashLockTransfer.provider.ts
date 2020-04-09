@@ -50,9 +50,9 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
       ? latestState.coinTransfers[1].amount
       : latestState.coinTransfers[0].amount;
     return {
-      receiverPublicIdentifier: receiverApp ? receiverApp.proposedToIdentifier : undefined,
-      senderPublicIdentifier: senderApp.proposedByIdentifier,
-      assetId: senderApp.initiatorDepositTokenAddress,
+      receiverIdentifier: receiverApp ? receiverApp.responderIdentifier : undefined,
+      senderIdentifier: senderApp.initiatorIdentifier,
+      assetId: senderApp.initiatorDepositAssetId,
       amount: amount.toString(),
       lockHash: latestState.lockHash,
       status: status,

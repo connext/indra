@@ -27,7 +27,7 @@ import {
   createMinimalTransaction,
 } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
-import { AppInstanceJson, xkeyKthAddress } from "../util";
+import { AppInstanceJson } from "../util";
 import { getConnection } from "typeorm";
 import { bigNumberify } from "ethers/utils";
 import { toBN } from "@connext/types";
@@ -46,7 +46,7 @@ const createTestChannel = async (
 
   const channelJson = createStateChannelJSON({
     multisigAddress,
-    userNeuteredExtendedKeys: [nodePublicIdentifier, userPublicIdentifier],
+    userPublicIdentifiers: [nodePublicIdentifier, userPublicIdentifier],
   });
   await cfCoreStore.createStateChannel(channelJson);
 
@@ -67,15 +67,15 @@ const createTestChannelWithAppInstance = async (
 
   const channelJson = createStateChannelJSON({
     multisigAddress,
-    userNeuteredExtendedKeys: [nodePublicIdentifier, userPublicIdentifier],
+    userPublicIdentifiers: [nodePublicIdentifier, userPublicIdentifier],
   });
   await cfCoreStore.createStateChannel(channelJson);
 
   const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
   await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
 
-  const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
-  const nodeParticipantAddr = xkeyKthAddress(nodePublicIdentifier, appProposal.appSeqNo);
+  const userParticipantAddr = userPublicIdentifier;
+  const nodeParticipantAddr = nodePublicIdentifier;
 
   const appInstance = createAppInstanceJson({
     identityHash: appProposal.identityHash,
@@ -140,16 +140,16 @@ describe("CFCoreStore", () => {
       );
 
       let channel = await cfCoreStore.getStateChannel(multisigAddress);
-      const userIdentifier = channelJson.userNeuteredExtendedKeys.find(
+      const userIdentifier = channelJson.userPublicIdentifiers.find(
         x => x !== nodePublicIdentifier,
       );
       expect(channel).toMatchObject({
         ...channelJson,
-        userNeuteredExtendedKeys: [nodePublicIdentifier, userIdentifier],
+        userPublicIdentifiers: [nodePublicIdentifier, userIdentifier],
         freeBalanceAppInstance: {
           ...channelJson.freeBalanceAppInstance,
-          initiator: xkeyKthAddress(nodePublicIdentifier, 0),
-          responder: xkeyKthAddress(userIdentifier, 0),
+          initiator: nodePublicIdentifier,
+          responder: userIdentifier,
         },
       });
     });
@@ -229,16 +229,13 @@ describe("CFCoreStore", () => {
 
       const appProposal = createAppInstanceProposal({
         appSeqNo: APP_SEQ_NO,
-        proposedByIdentifier: userPublicIdentifier,
-        proposedToIdentifier: configService.getPublicIdentifier(),
+        initiatorIdentifier: userPublicIdentifier,
+        responderIdentifier: configService.getPublicIdentifier(),
       });
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, APP_SEQ_NO);
 
-      const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
-      const nodeParticipantAddr = xkeyKthAddress(
-        configService.getPublicIdentifier(),
-        appProposal.appSeqNo,
-      );
+      const userParticipantAddr = userPublicIdentifier;
+      const nodeParticipantAddr = configService.getPublicIdentifier(),
 
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,
@@ -274,16 +271,13 @@ describe("CFCoreStore", () => {
 
       const appProposal = createAppInstanceProposal({
         appSeqNo: APP_SEQ_NO,
-        proposedByIdentifier: userPublicIdentifier,
-        proposedToIdentifier: configService.getPublicIdentifier(),
+        initiatorIdentifier: userPublicIdentifier,
+        responderIdentifier: configService.getPublicIdentifier(),
       });
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, APP_SEQ_NO);
 
-      const userParticipantAddr = xkeyKthAddress(userPublicIdentifier, appProposal.appSeqNo);
-      const nodeParticipantAddr = xkeyKthAddress(
-        configService.getPublicIdentifier(),
-        appProposal.appSeqNo,
-      );
+      const userParticipantAddr = userPublicIdentifier;
+      const nodeParticipantAddr = configService.getPublicIdentifier(),
 
       const appInstance = createAppInstanceJson({
         identityHash: appProposal.identityHash,

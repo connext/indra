@@ -19,7 +19,6 @@ import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { xkeyKthAddress } from "../util";
 import { CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
@@ -331,8 +330,8 @@ export class ChannelService {
       );
     }
     if (
-      !creationData.data.owners.includes(xkeyKthAddress(existing.nodePublicIdentifier)) ||
-      !creationData.data.owners.includes(xkeyKthAddress(existing.userPublicIdentifier))
+      !creationData.data.owners.includes(existing.nodePublicIdentifier) ||
+      !creationData.data.owners.includes(existing.userPublicIdentifier)
     ) {
       throw new Error(
         `Channel has already been created with different owners! ${stringify(

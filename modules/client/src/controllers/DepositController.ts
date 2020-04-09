@@ -217,7 +217,7 @@ export class DepositController extends AbstractController {
       initiatorDeposit: Zero,
       initiatorDepositAssetId: assetId,
       outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,

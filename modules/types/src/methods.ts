@@ -159,7 +159,7 @@ type ProposeInstallParams = {
   initiatorDepositAssetId: AssetId;
   meta?: Object;
   outcomeType: OutcomeType;
-  proposedToIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   responderDeposit: BigNumber;
   responderDepositAssetId: AssetId;
   stateTimeout?: BigNumber;

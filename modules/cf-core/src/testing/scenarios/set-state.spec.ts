@@ -44,8 +44,8 @@ describe("set state on free balance", () => {
       responderNode.identifier,
     );
 
-    expect(stateChannel.userChannelIdentifiers[0]).toEqual(initiatorNode.identifier);
-    expect(stateChannel.userChannelIdentifiers[1]).toEqual(responderNode.identifier);
+    expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiatorNode.identifier);
+    expect(stateChannel.userPublicIdentifiers[1]).toEqual(responderNode.identifier);
 
     // Set the state to some test values
     stateChannel = stateChannel.setFreeBalance(

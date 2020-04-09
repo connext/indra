@@ -28,7 +28,7 @@ export const CHANNEL_KEY_VO_1 = `${ConnextClientStorePrefixV0}/${XPUB_V0_1}/chan
 export const CHANNEL_VALUE_VO_1 = {
   [CHANNEL_KEY_VO_1]: {
     multisigAddress: "0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994",
-    userNeuteredExtendedKeys: [NODE_PUB_ID, XPUB_V0_1],
+    userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_1],
     appInstances: [],
     freeBalanceAppInstance: {
       participants: xkeysToSortedKthAddresses([NODE_PUB_ID, XPUB_V0_1]),
@@ -75,7 +75,7 @@ export const CHANNEL_KEY_VO_2 = `${ConnextClientStorePrefixV0}/${XPUB_V0_2}/chan
 export const CHANNEL_VALUE_VO_2 = {
   [CHANNEL_KEY_VO_2]: {
     multisigAddress: "0x9E746946146Da59D4d0daBfEA159ed791FB42FD1",
-    userNeuteredExtendedKeys: [NODE_PUB_ID, XPUB_V0_2],
+    userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_2],
     appInstances: [],
     freeBalanceAppInstance: {
       participants: xkeysToSortedKthAddresses([NODE_PUB_ID, XPUB_V0_2]),
@@ -143,7 +143,7 @@ export const CHANNEL_VALUE_VO_3 = {
       proxyFactory: "0x8eb543b35DE94B0E636402C7cA32947b22853eDF",
       multisigMastercopy: "0xe54f4EBeCE507477dFb86FA226394bdbA0b85d66",
     },
-    userNeuteredExtendedKeys: [NODE_PUB_ID, XPUB_V0_3],
+    userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_3],
     proposedAppInstances: [
       [
         "0x090482fe110e64b6ab59356c62bdd23d57caf4b528ab3b3d0e99f73da377d12e",
@@ -166,9 +166,9 @@ export const CHANNEL_VALUE_VO_3 = {
           responderDeposit: "0x00",
           timeout: "0x00",
           identityHash: "0x090482fe110e64b6ab59356c62bdd23d57caf4b528ab3b3d0e99f73da377d12e",
-          proposedByIdentifier:
+          initiatorIdentifier:
             "address6DZv6JzHGBAqDnJ8CLgy3cuVLsMYTeK4vRuycDEdYcmTo3cehiDg46iShdwzyWEG11DUbTQKETGVqPhAa9Ns7gbjFE7ajmW9n8fQj6XmSQa",
-          proposedToIdentifier:
+          responderIdentifier:
             "address6Ew7ALFHU48CVUjJwS8Z5dPLzDq5B45nCQWXR94oMQdzMkbBsgDyScK7VpFSobRp87StcoLJJDUj2mh1bRfMAJFkKjBCf4nDnvtrvAA5HYa",
           appSeqNo: 3,
           initiatorDepositTokenAddress: "0xaFF4481D10270F50f203E0763e2597776068CBc5",
@@ -268,7 +268,7 @@ export const CHANNEL_VALUE_VO_4 = {
       proxyFactory: "0xCE7cBC12c4d2b49A4c0ee77683F3fDefF721940D",
       multisigMastercopy: "0xdD7dbCCdd42d7bFC10c2D23B8A1fa8bAaE95bc69",
     },
-    userNeuteredExtendedKeys: [NODE_PUB_ID, XPUB_V0_4],
+    userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_4],
     proposedAppInstances: [],
     appInstances: [
       [

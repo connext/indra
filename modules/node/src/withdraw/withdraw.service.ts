@@ -24,7 +24,6 @@ import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { xkeyKthAddress } from "../util";
 
 import { WithdrawRepository } from "./withdraw.repository";
 import { Withdraw } from "./withdraw.entity";
@@ -75,7 +74,7 @@ export class WithdrawService {
     );
 
     // Get Private Key
-    const privateKey = this.configService.getEthWallet().privateKey;
+    const privateKey = this.configService.getPrivateKey();
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
@@ -143,7 +142,7 @@ export class WithdrawService {
     );
     this.log.debug(`Deploy multisig tx: ${deployTx}`);
 
-    const wallet = this.configService.getEthWallet();
+    const wallet = this.configService.getSigner();
     if (deployTx !== HashZero) {
       this.log.debug(`Waiting for deployment transaction...`);
       wallet.provider.waitForTransaction(deployTx);
@@ -211,14 +210,14 @@ export class WithdrawService {
       channel.multisigAddress,
     );
 
-    const privateKey = this.configService.getEthWallet().privateKey;
+    const privateKey = this.configService.getPrivateKey();
     const hash = commitment.hashToSign();
 
     const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, hash);
 
     const transfers: CoinTransfer[] = [
       { amount, to: this.cfCoreService.cfCore.signerAddress },
-      { amount: Zero, to: xkeyKthAddress(channel.userPublicIdentifier) },
+      { amount: Zero, to: channel.userPublicIdentifier },
     ];
 
     const initialState: WithdrawAppState = {
@@ -226,7 +225,7 @@ export class WithdrawService {
       signatures: [withdrawerSignatureOnCommitment, HashZero],
       signers: [
         this.cfCoreService.cfCore.signerAddress,
-        xkeyKthAddress(channel.userPublicIdentifier),
+        channel.userPublicIdentifier,
       ],
       data: hash,
       nonce,

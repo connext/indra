@@ -40,14 +40,14 @@ const convertV0toV1JSON = (oldChannel: any, nodeAddress: string = env.nodePubId)
     const { isVirtualApp, participants, latestTimeout, timeout, ...ret } = obj;
     return ret;
   };
-  const userAddress = oldChannel.userNeuteredExtendedKeys.find(
+  const userAddress = oldChannel.userPublicIdentifiers.find(
     x => x !== nodeAddress,
   );
   return {
     schemaVersion: STORE_SCHEMA_VERSION,
     monotonicNumProposedApps: oldChannel.monotonicNumProposedApps,
     multisigAddress: oldChannel.multisigAddress,
-    userNeuteredExtendedKeys: oldChannel.userNeuteredExtendedKeys.sort(),
+    userPublicIdentifiers: oldChannel.userPublicIdentifiers.sort(),
     proposedAppInstances: oldChannel.proposedAppInstances 
       ? oldChannel.proposedAppInstances.map(([id, proposal]) => [
           id,

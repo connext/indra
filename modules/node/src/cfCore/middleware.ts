@@ -10,7 +10,6 @@ import {
   ProtocolRoles,
 } from "@connext/types";
 import { generateValidationMiddleware } from "@connext/apps";
-import { xkeyKthAddress } from "@connext/cf-core";
 
 export const generateMiddleware = async (
   publicIdentifier: string,
@@ -32,7 +31,7 @@ export const generateMiddleware = async (
     // apps if node is depositor and there is an active collateralization
     const latestState = appInstance.latestState as DepositAppState;
     if (
-      latestState.transfers[0].to !== xkeyKthAddress(publicIdentifier) || 
+      latestState.transfers[0].to !== publicIdentifier || 
       role === ProtocolRoles.initiator
     ) {
       return;

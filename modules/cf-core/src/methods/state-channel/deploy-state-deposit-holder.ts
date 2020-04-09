@@ -60,8 +60,8 @@ export class DeployStateDepositController extends NodeController {
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userChannelIdentifiers[0],
-      channel.userChannelIdentifiers[1],
+      channel.userPublicIdentifiers[0],
+      channel.userPublicIdentifiers[1],
       channel.addresses,
       provider,
     );
@@ -90,8 +90,8 @@ export class DeployStateDepositController extends NodeController {
 
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userChannelIdentifiers[0],
-      channel.userChannelIdentifiers[1],
+      channel.userPublicIdentifiers[0],
+      channel.userPublicIdentifiers[1],
       channel.addresses,
       provider,
     );
@@ -126,7 +126,7 @@ async function sendMultisigDeployTx(
   // used when the channel was created
   const proxyFactory = new Contract(stateChannel.addresses.proxyFactory, ProxyFactory.abi, signer);
 
-  const owners = stateChannel.userChannelIdentifiers;
+  const owners = stateChannel.userPublicIdentifiers;
 
   const provider = signer.provider as JsonRpcProvider;
 

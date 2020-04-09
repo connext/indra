@@ -57,7 +57,7 @@ export class StateChannel {
     );
   }
 
-  public get userChannelIdentifiers(): string[] {
+  public get userPublicIdentifiers(): string[] {
     return [this.initiatorIdentifier, this.responderIdentifier];
   }
 
@@ -168,7 +168,7 @@ export class StateChannel {
   }
 
   public getMultisigOwnerAddrOf(identifer: string): string {
-    if (!this.userChannelIdentifiers.find(k => k === identifer)) {
+    if (!this.userPublicIdentifiers.find(k => k === identifer)) {
       throw new Error(
         `getMultisigOwnerAddrOf received invalid id not in multisigOwners: ${identifer}`,
       );
@@ -429,7 +429,7 @@ export class StateChannel {
     return deBigNumberifyJson({
       multisigAddress: this.multisigAddress,
       addresses: this.addresses,
-      userChannelIdentifiers: this.userChannelIdentifiers,
+      userPublicIdentifiers: this.userPublicIdentifiers,
       proposedAppInstances: [...this.proposedAppInstances.entries()],
       appInstances: [...this.appInstances.entries()].map((appInstanceEntry): [
         string,
@@ -465,8 +465,8 @@ export class StateChannel {
       return new StateChannel(
         json.multisigAddress,
         json.addresses,
-        json.userChannelIdentifiers[0], // initiator
-        json.userChannelIdentifiers[1], // responder
+        json.userPublicIdentifiers[0], // initiator
+        json.userPublicIdentifiers[1], // responder
         new Map(
           [...Object.values(dropNulls(json.proposedAppInstances) || [])].map((proposal): [
             string,
@@ -503,7 +503,7 @@ export class StateChannel {
         `[getPeersAddressFromChannel] No state channel found in store for ${multisigAddress}`,
       );
     }
-    const owners = stateChannel.userChannelIdentifiers;
+    const owners = stateChannel.userPublicIdentifiers;
     return owners.filter(owner => owner !== myIdentifier);
   }
 }

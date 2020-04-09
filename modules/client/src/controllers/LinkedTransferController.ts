@@ -91,7 +91,7 @@ export class LinkedTransferController extends AbstractController {
       initiatorDepositAssetId: assetId,
       meta: submittedMeta,
       outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,

@@ -77,7 +77,7 @@ export class UpdateStateController extends NodeController {
 
     const responderAddress = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      sc.userChannelIdentifiers,
+      sc.userPublicIdentifiers,
     );
 
     await runUpdateStateProtocol(

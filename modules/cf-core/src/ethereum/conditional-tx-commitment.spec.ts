@@ -44,8 +44,8 @@ describe("ConditionalTransactionCommitment", () => {
     responder.identifier,
   );
 
-  expect(stateChannel.userChannelIdentifiers[0]).toEqual(initiator.identifier);
-  expect(stateChannel.userChannelIdentifiers[1]).toEqual(responder.identifier);
+  expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiator.identifier);
+  expect(stateChannel.userPublicIdentifiers[1]).toEqual(responder.identifier);
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(
