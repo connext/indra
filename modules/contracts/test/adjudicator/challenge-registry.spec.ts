@@ -45,7 +45,7 @@ describe("ChallengeRegistry", () => {
   let progressState: (
     state: AppWithCounterState,
     action: AppWithCounterAction,
-    actionSig: string,
+    signer: Wallet,
   ) => Promise<void>;
   let progressStateAndVerify: (
     state: AppWithCounterState,
@@ -122,14 +122,7 @@ describe("ChallengeRegistry", () => {
     // update with `progressState` to finalized state
     // state finalizes when counter > 5
     const finalizingAction = { ...action, increment: toBN(10) };
-    const thingToSign = computeActionHash(
-      alice.address,
-      keccak256(encodeState(state1)),
-      encodeAction(finalizingAction),
-      2, // version number after action applied
-    );
-    const signature = await signChannelMessage(alice.privateKey, thingToSign);
-    await progressState(state1, finalizingAction, signature);
+    await progressState(state1, finalizingAction, alice);
     // verify explicitly finalized
     const finalState = {
       counter: state1.counter.add(finalizingAction.increment),

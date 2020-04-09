@@ -218,26 +218,43 @@ export const setupContext = async (
   const progressState = async (
     state: AppWithCounterState,
     action: AppWithCounterAction,
-    actionSig: string,
+    signer: Wallet,
   ) => {
+    const existingChallenge = await getChallenge();
     const resultingState: AppWithCounterState = {
       counter:
         action.actionType === ActionType.ACCEPT_INCREMENT
           ? state.counter
           : state.counter.add(action.increment),
     };
-    const latestVersionNumber = (await getChallenge()).versionNumber.add(1);
+    const resultingStateHash = keccak256(encodeState(resultingState));
+    const resultingStateVersionNumber = existingChallenge.versionNumber.add(One);
+    const timeout = 0;
+    const digest = computeAppChallengeHash(
+      appInstance.identityHash,
+      resultingStateHash,
+      resultingStateVersionNumber,
+      timeout,
+    );
+    const req = {
+      appStateHash: resultingStateHash,
+      versionNumber: resultingStateVersionNumber,
+      timeout,
+      signatures: [ await signChannelMessage(signer.privateKey, digest) ],
+    };
     await wrapInEventVerification(
-      appRegistry.functions.progressState(appInstance.appIdentity, encodeState(state), {
-        encodedAction: encodeAction(action),
-        signature: actionSig,
-      }),
+      appRegistry.functions.progressState(
+        appInstance.appIdentity,
+        req,
+        encodeState(state),
+        encodeAction(action),
+      ),
       {
         status: resultingState.counter.gt(5)
           ? ChallengeStatus.EXPLICITLY_FINALIZED
           : ChallengeStatus.IN_ONCHAIN_PROGRESSION,
-        appStateHash: keccak256(encodeState(resultingState)),
-        versionNumber: latestVersionNumber,
+        appStateHash: resultingStateHash,
+        versionNumber: resultingStateVersionNumber,
         // FIXME: why is this off by one?
         finalizesAt: toBN((await provider.getBlockNumber()) + appInstance.defaultTimeout + 1),
       },
@@ -250,13 +267,6 @@ export const setupContext = async (
     signer: Wallet = bob,
   ) => {
     const existingChallenge = await getChallenge();
-    const thingToSign = computeActionHash(
-      signer.address,
-      keccak256(encodeState(state)),
-      encodeAction(action),
-      existingChallenge.versionNumber.toNumber(),
-    );
-    const signature = await signChannelMessage(signer.privateKey, thingToSign);
     expect(await isProgressable()).to.be.true;
     const resultingState: AppWithCounterState = {
       counter:
@@ -264,13 +274,14 @@ export const setupContext = async (
           ? state.counter
           : state.counter.add(action.increment),
     };
+    const resultingStateHash = keccak256(encodeState(resultingState));
     const expected = {
       latestSubmitter: wallet.address,
-      appStateHash: keccak256(encodeState(resultingState)),
+      appStateHash: resultingStateHash,
       versionNumber: existingChallenge.versionNumber.add(One),
       status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
     };
-    await progressState(state, action, signature);
+    await progressState(state, action, signer);
     await verifyChallenge(expected);
     expect(await isProgressable()).to.be.true;
   };
@@ -289,12 +300,13 @@ export const setupContext = async (
           ? state.counter
           : state.counter.add(action.increment),
     };
+    const resultingStateHash = keccak256(encodeState(resultingState));
     const status = resultingState.counter.gt(5)
       ? ChallengeStatus.EXPLICITLY_FINALIZED
       : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     await verifyChallenge({
       latestSubmitter: wallet.address,
-      appStateHash: keccak256(encodeState(resultingState)),
+      appStateHash: resultingStateHash,
       versionNumber: One.add(versionNumber),
       status,
     });
@@ -317,32 +329,45 @@ export const setupContext = async (
       versionNumber,
       timeout,
     );
-    const actionDigest = computeActionHash(
-      turnTaker.address,
-      stateHash,
-      encodeAction(action),
-      versionNumber,
+    const resultingState: AppWithCounterState = {
+      counter:
+        action.actionType === ActionType.ACCEPT_INCREMENT
+          ? state.counter
+          : state.counter.add(action.increment),
+    };
+    const timeout2 = 0;
+    const resultingStateHash = keccak256(encodeState(resultingState));
+    const resultingStateDigest = computeAppChallengeHash(
+      appInstance.identityHash,
+      resultingStateHash,
+      One.add(versionNumber),
+      timeout2,
     );
+    const req1 = {
+      versionNumber,
+      appStateHash: stateHash,
+      timeout,
+      signatures: await sortSignaturesBySignerAddress(
+        stateDigest,
+        [
+          await signChannelMessage(alice.privateKey, stateDigest),
+          await signChannelMessage(bob.privateKey, stateDigest),
+        ],
+        verifyChannelMessage,
+      ),
+    };
+    const req2 = {
+      versionNumber: One.add(versionNumber),
+      appStateHash: resultingStateHash,
+      timeout: timeout2,
+      signatures: [ await signChannelMessage(turnTaker.privateKey, resultingStateDigest) ],
+    };
     await appRegistry.functions.setAndProgressState(
       appInstance.appIdentity,
-      {
-        versionNumber,
-        appStateHash: stateHash,
-        timeout,
-        signatures: await sortSignaturesBySignerAddress(
-          stateDigest,
-          [
-            await signChannelMessage(alice.privateKey, stateDigest),
-            await signChannelMessage(bob.privateKey, stateDigest),
-          ],
-          verifyChannelMessage,
-        ),
-      },
+      req1,
+      req2,
       encodeState(state),
-      {
-        encodedAction: encodeAction(action),
-        signature: await signChannelMessage(turnTaker.privateKey, actionDigest),
-      },
+      encodeAction(action),
     );
   };
 

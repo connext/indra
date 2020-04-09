@@ -42,7 +42,7 @@ describe("progressState", () => {
   let progressState: (
     state: AppWithCounterState,
     action: AppWithCounterAction,
-    actionSig: string,
+    signer: Wallet,
   ) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
@@ -111,14 +111,7 @@ describe("progressState", () => {
     await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
     await progressStateAndVerify(PRE_STATE, ACTION);
 
-    const thingToSign2 = computeActionHash(
-      ALICE.address,
-      keccak256(encodeState(POST_STATE)),
-      encodeAction(ACTION),
-      2,
-    );
-    const signature2 = await signChannelMessage(ALICE.privateKey, thingToSign2);
-    await progressState(POST_STATE, ACTION, signature2);
+    await progressState(POST_STATE, ACTION, ALICE);
   });
 
   it("Cannot call progressState with incorrect turn taker", async () => {
@@ -127,7 +120,12 @@ describe("progressState", () => {
     await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(PRE_STATE, ACTION, ALICE)).to.be.revertedWith(
-      "progressState called with action signed by incorrect turn taker",
+      /*
+       TODO: Temporary solution. Proper fix: The `verifySignatures` contract function
+       shouldn't revert, but just return `false`.
+      "Call to progressState included incorrectly signed state update",
+      */
+      "Invalid signature",
     );
   });
 
@@ -137,23 +135,15 @@ describe("progressState", () => {
     await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(POST_STATE, ACTION)).to.be.revertedWith(
-      "Tried to progress a challenge with non-agreed upon app",
+      "progressState called with oldAppState that does not match stored challenge",
     );
   });
 
   it("progressState should fail if dispute is not progressable", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    const thingToSign = computeActionHash(
-      BOB.address,
-      keccak256(encodeState(PRE_STATE)),
-      encodeAction(ACTION),
-      1,
-    );
-    const signature = await signChannelMessage(ALICE.privateKey, thingToSign);
-
     expect(await isProgressable()).to.be.false;
-    await expect(progressState(POST_STATE, ACTION, signature)).to.be.revertedWith(
+    await expect(progressState(POST_STATE, ACTION, ALICE)).to.be.revertedWith(
       "progressState called on app not in a progressable state",
     );
   });
