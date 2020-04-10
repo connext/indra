@@ -64,7 +64,7 @@ export class CFCoreService {
         methodName: MethodNames.chan_getFreeBalanceState,
         parameters: {
           multisigAddress,
-          tokenAddress: assetId || getAssetId(
+          assetId: assetId || getAssetId(
             AddressZero,
             (await this.configService.getEthNetwork()).chainId,
           ),

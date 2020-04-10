@@ -48,7 +48,6 @@ export class ConfigService implements OnModuleInit {
       this.signer.publicKey,
       this.ethProvider.network ? this.ethProvider.network.chainId : 4447, 
     );
-    console.log(`ConfigService launched w pub id: ${this.publicIdentifier}`);
   }
 
   get(key: string): string {
