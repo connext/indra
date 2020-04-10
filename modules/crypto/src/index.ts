@@ -56,11 +56,6 @@ function toChecksumAddress(address: string): string {
   return addHexPrefix(checksum);
 }
 
-function getChecksumAddress(publicKey: Buffer | string): string {
-  const address = getLowerCaseAddress(publicKey);
-  return toChecksumAddress(address);
-}
-
 function getPublicKeyFromPrivate(privateKey: string): string {
   const publicKey = getPublic(bufferify(privateKey));
   return bufferToHex(publicKey, true);
@@ -151,6 +146,10 @@ async function verifyMessage(
 
 ////////////////////////////////////////
 // exports
+export function getChecksumAddress(publicKey: Buffer | string): string {
+  const address = getLowerCaseAddress(publicKey);
+  return toChecksumAddress(address);
+}
 
 export async function verifyChannelMessage(
   message: Buffer | string,
