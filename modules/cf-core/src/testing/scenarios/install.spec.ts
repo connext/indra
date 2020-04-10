@@ -1,7 +1,7 @@
 import {
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  CONVENTION_FOR_ETH_ASSET_ID,
   delay,
-  getAssetId,
+  getAddressFromAssetId,
   InstallMessage,
   ProposeMessage,
   ProtocolParams,
@@ -71,7 +71,7 @@ describe("Node method follows spec - install", () => {
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+            CONVENTION_FOR_ETH_ASSET_ID,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
           makeInstallCall(nodeB, msg.data.appIdentityHash);
@@ -102,7 +102,7 @@ describe("Node method follows spec - install", () => {
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+            CONVENTION_FOR_ETH_ASSET_ID,
           );
 
           expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
@@ -127,9 +127,9 @@ describe("Node method follows spec - install", () => {
           multisigAddress,
           undefined,
           One,
-          CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+          CONVENTION_FOR_ETH_ASSET_ID,
           One,
-          CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+          CONVENTION_FOR_ETH_ASSET_ID,
         );
         proposeInstallParams = params;
       });
@@ -139,7 +139,7 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeB.signerAddress);
 
         const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
-        const assetId = getAssetId(erc20TokenAddress);
+        const assetId = getAddressFromAssetId(erc20TokenAddress);
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
 

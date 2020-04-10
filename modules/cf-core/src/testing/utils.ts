@@ -7,7 +7,7 @@ import {
   AssetId,
   bigNumberifyJson,
   ContractABI,
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  CONVENTION_FOR_ETH_ASSET_ID,
   CreateChannelMessage,
   deBigNumberifyJson,
   DepositAppState,
@@ -88,8 +88,8 @@ export function createAppInstanceProposalForTest(appIdentityHash: string): AppIn
     } as SolidityValueType,
     appSeqNo: 0,
     outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
-    initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+    responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
+    initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
   };
 }
 
@@ -135,7 +135,7 @@ export async function requestDepositRights(
   depositor: Node,
   counterparty: Node,
   multisigAddress: string,
-  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
   const proposeParams = await getProposeDepositAppParams(
     multisigAddress,
@@ -163,7 +163,7 @@ export async function rescindDepositRights(
   node: Node,
   counterparty: Node,
   multisigAddress: string,
-  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositApp = apps.filter(app => 
@@ -354,7 +354,7 @@ export async function getAppInstanceProposal(
 export async function getFreeBalanceState(
   node: Node,
   multisigAddress: string,
-  assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<MethodResults.GetFreeBalanceState> {
   const {
     result: { result },
@@ -449,7 +449,7 @@ export async function getProposeDepositAppParams(
   multisigAddress: string,
   initiatorIdentifier: string,
   responderIdentifier: string,
-  assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<MethodParams.ProposeInstall> {
   const tokenAddress = getAddressFromAssetId(assetId);
   const startingTotalAmountWithdrawn = await getMultisigAmountWithdrawn(
@@ -497,7 +497,7 @@ export async function deposit(
   multisigAddress: string,
   amount: BigNumber = One,
   responderNode: Node,
-  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ) {
   // get rights
   await requestDepositRights(node, responderNode, multisigAddress, assetId);
@@ -555,9 +555,9 @@ export function constructAppProposalRpc(
   abiEncodings: AppABIEncodings,
   initialState: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
-  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   responderDeposit: BigNumber = Zero,
-  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   defaultTimeout: BigNumber = Zero,
   stateTimeout: BigNumber = defaultTimeout,
 ): Rpc {
@@ -661,7 +661,7 @@ export async function collateralizeChannel(
   node1: Node,
   node2: Node,
   amount: BigNumber = One,
-  assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   collateralizeNode2: boolean = true,
 ): Promise<void> {
   await deposit(node1, multisigAddress, amount, node2, assetId);
@@ -728,9 +728,9 @@ export async function installApp(
   appDefinition: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
-  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   responderDeposit: BigNumber = Zero,
-  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   defaultTimeout: BigNumber = Zero,
   stateTimeout: BigNumber = defaultTimeout,
 ): Promise<[string, ProtocolParams.Propose]> {
@@ -832,9 +832,9 @@ export function makeProposeCall(
   multisigAddress: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
-  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   responderDeposit: BigNumber = Zero,
-  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Rpc {
   const appContext = getAppContext(appDefinition, initialState);
   return constructAppProposalRpc(
@@ -857,9 +857,9 @@ export async function makeAndSendProposeCall(
   multisigAddress: string,
   initialState?: SolidityValueType,
   initiatorDeposit: BigNumber = Zero,
-  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  initiatorDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
   responderDeposit: BigNumber = Zero,
-  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  responderDepositAssetId: string = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<{
   appIdentityHash: string;
   params: ProtocolParams.Propose;

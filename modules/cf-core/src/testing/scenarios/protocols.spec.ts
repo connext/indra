@@ -1,4 +1,4 @@
-import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID, OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -51,8 +51,8 @@ describe("Three mininodes", () => {
       },
       initiatorDeposit: bigNumberify(0),
       responderDeposit: bigNumberify(0),
-      initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
-      responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+      initiatorDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
+      responderDepositAssetId: CONVENTION_FOR_ETH_ASSET_ID,
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       multisigAddress: tr.multisigAB,
     };

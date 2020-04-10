@@ -6,10 +6,8 @@ import {
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
-  getAssetId,
-  getChainIdFromAssetId,
   getAddressFromPublicIdentifier,
-  getChainIdFromPublicIdentifier,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
@@ -97,9 +95,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
       initiatorDepositAssetId: initiatorDepositAssetId 
-        || getAssetId(AddressZero, getChainIdFromPublicIdentifier(initiatorIdentifier)),
+        || CONVENTION_FOR_ETH_ASSET_ID,
       responderDepositAssetId: responderDepositAssetId 
-        || getAssetId(AddressZero, getChainIdFromPublicIdentifier(responderIdentifier)),
+        || CONVENTION_FOR_ETH_ASSET_ID,
       meta,
     };
 
@@ -262,10 +260,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       meta,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositAssetId: initiatorDepositAssetId 
-        || getAssetId(AddressZero, getChainIdFromAssetId(initiatorIdentifier)),
+      initiatorDepositAssetId: initiatorDepositAssetId
+        || CONVENTION_FOR_ETH_ASSET_ID,
       responderDepositAssetId: responderDepositAssetId 
-        || getAssetId(AddressZero, getChainIdFromAssetId(responderIdentifier)),
+        || CONVENTION_FOR_ETH_ASSET_ID,
     };
 
     yield [

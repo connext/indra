@@ -1,9 +1,8 @@
 import {
   BigNumber,
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  CONVENTION_FOR_ETH_ASSET_ID,
   DepositAppState,
   getAddressFromPublicIdentifier,
-  getAssetId,
   getAddressFromAssetId,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
@@ -41,7 +40,7 @@ describe(`Node method follows spec - install deposit app`, () => {
   });
 
   const runUnrolledDepositTest = async (
-    assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+    assetId: string = CONVENTION_FOR_ETH_ASSET_ID,
     depositAmt: BigNumber = new BigNumber(1000),
   ) => {
     // request rights
@@ -78,7 +77,7 @@ describe(`Node method follows spec - install deposit app`, () => {
       multisigAddress,
       getAddressFromAssetId(assetId),
     );
-    assetId === CONVENTION_FOR_ETH_ASSET_ID_GANACHE
+    assetId === CONVENTION_FOR_ETH_ASSET_ID
       ? await provider.getSigner().sendTransaction({
           to: multisigAddress,
           value: depositAmt,
@@ -127,13 +126,13 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   it(`install app with tokens, sending tokens should increase free balance`, async () => {
     const depositAmt = new BigNumber(1000);
-    const assetId = getAssetId(global[`network`].DolphinCoin);
+    const assetId = getAddressFromAssetId(global[`network`].DolphinCoin);
 
     await runUnrolledDepositTest(assetId, depositAmt);;
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
-    const erc20AssetId = getAssetId(global[`network`].DolphinCoin);
+    const erc20AssetId = getAddressFromAssetId(global[`network`].DolphinCoin);
     const depositAmtToken = new BigNumber(1000);
     const depositAmtEth = new BigNumber(500);
 
@@ -164,7 +163,7 @@ describe(`Node method follows spec - install deposit app`, () => {
       nodeA,
       nodeB,
       multisigAddress,
-      CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+      CONVENTION_FOR_ETH_ASSET_ID,
     );
     expect(preSendBalAEth).toBeEq(0);
     expect(preSendBalBEth).toBeEq(0);
@@ -191,7 +190,7 @@ describe(`Node method follows spec - install deposit app`, () => {
       nodeA,
       nodeB,
       multisigAddress,
-      CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+      CONVENTION_FOR_ETH_ASSET_ID,
     );
     expect(postSendBalAEth).toBeEq(depositAmtEth);
     expect(postSendBalBEth).toBeEq(0);

@@ -1,4 +1,4 @@
-import { DepositConfirmationMessage, MethodParams, DepositStartedMessage, getAssetId, getAddressFromAssetId, deBigNumberifyJson } from "@connext/types";
+import { DepositConfirmationMessage, MethodParams, DepositStartedMessage, getAddressFromAssetId, deBigNumberifyJson } from "@connext/types";
 import { Contract } from "ethers";
 import { One, Two, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -73,7 +73,7 @@ describe("Node method follows spec - deposit", () => {
   });
 
   it("has the right balance before an ERC20 deposit has been made", async () => {
-    const erc20AssetId = getAssetId(
+    const erc20AssetId = getAddressFromAssetId(
       (global["network"] as NetworkContextForTestSuite)
         .DolphinCoin,
     );
@@ -112,7 +112,7 @@ describe("Node method follows spec - deposit", () => {
   });
 
   it("has the right balance for both parties after erc20 deposits", async () => {
-    const erc20AssetId = getAssetId(
+    const erc20AssetId = getAddressFromAssetId(
       (global["network"] as NetworkContextForTestSuite)
         .DolphinCoin);
 
@@ -153,7 +153,7 @@ describe("Node method follows spec - deposit", () => {
   });
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {
-    const erc20AssetId = getAssetId(
+    const erc20AssetId = getAddressFromAssetId(
       (global["network"] as NetworkContextForTestSuite)
         .DolphinCoin);
 
@@ -244,12 +244,12 @@ async function confirmEthAndERC20FreeBalances(
     const ethFreeBalance = await getFreeBalanceState(
       node,
       multisigAddress,
-      getAssetId(AddressZero),
+      getAddressFromAssetId(AddressZero),
     );
     const tokenFreeBalance = await getFreeBalanceState(
       node,
       multisigAddress,
-      getAssetId(tokenAddress),
+      getAddressFromAssetId(tokenAddress),
     );
     // validate eth
     expect(

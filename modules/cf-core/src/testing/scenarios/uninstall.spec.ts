@@ -1,4 +1,4 @@
-import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, EventNames, UninstallMessage } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, UninstallMessage } from "@connext/types";
 import { One, Two, Zero, AddressZero } from "ethers/constants";
 
 import { Node } from "../../node";
@@ -79,9 +79,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         TicTacToeApp,
         initialState,
         depositAmount,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
         depositAmount,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
       );
 
       await Promise.all([
@@ -132,9 +132,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         TicTacToeApp,
         initialState,
         depositAmount,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
         depositAmount,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
       );
 
       await Promise.all([
@@ -184,9 +184,9 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         TicTacToeApp,
         initialState,
         depositAmount,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
         depositAmount,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
       );
 
       await Promise.all([

@@ -1,5 +1,5 @@
 import { ChannelSigner } from "@connext/crypto";
-import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, ProposeMessage } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
@@ -83,7 +83,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+            CONVENTION_FOR_ETH_ASSET_ID,
           );
           makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
@@ -98,7 +98,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+            CONVENTION_FOR_ETH_ASSET_ID,
           );
 
           expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
@@ -115,9 +115,9 @@ describe(`Uses a provided signing key generation function to sign channel state 
             multisigAddress,
             undefined,
             One,
-            CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+            CONVENTION_FOR_ETH_ASSET_ID,
             One,
-            CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+            CONVENTION_FOR_ETH_ASSET_ID,
           ),
         );
       });

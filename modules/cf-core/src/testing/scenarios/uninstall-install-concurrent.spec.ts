@@ -1,4 +1,4 @@
-import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, InstallMessage, ProposeMessage } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID, InstallMessage, ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -50,9 +50,9 @@ describe("Node method follows spec when happening concurrently - install / unins
         multisigAddress,
         /* initialState */ undefined,
         One,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
         One,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
       );
 
       // install the first app
@@ -94,9 +94,9 @@ describe("Node method follows spec when happening concurrently - install / unins
         multisigAddress,
         /* initialState */ undefined,
         One,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
         One,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
       );
 
       nodeA.rpcRouter.dispatch(installCall);
@@ -127,9 +127,9 @@ describe("Node method follows spec when happening concurrently - install / unins
         multisigAddress,
         /* initialState */ undefined,
         One,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
         One,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
       );
 
       nodeA.rpcRouter.dispatch(installCall);

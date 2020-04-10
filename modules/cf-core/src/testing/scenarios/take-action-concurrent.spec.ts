@@ -1,4 +1,4 @@
-import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, EventNames, InstallMessage, ProposeMessage  } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID, EventNames, InstallMessage, ProposeMessage  } from "@connext/types";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -60,9 +60,9 @@ describe("Node method follows spec - toke action", () => {
         multisigAddress,
         /* initialState */ undefined,
         One,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
         One,
-        CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+        CONVENTION_FOR_ETH_ASSET_ID,
       );
 
       nodeA.rpcRouter.dispatch(proposeRpc);

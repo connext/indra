@@ -1,5 +1,5 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames, toBN, ProtocolParams, getAddressFromPublicIdentifier, getAssetId } from "@connext/types";
+import { OutcomeType, ProtocolNames, toBN, ProtocolParams, getAddressFromPublicIdentifier, getAddressFromAssetId } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -200,9 +200,9 @@ export class TestRunner {
         actionEncoding: undefined,
       },
       initiatorDeposit: One,
-      initiatorDepositAssetId: getAssetId(tokenAddress),
+      initiatorDepositAssetId: getAddressFromAssetId(tokenAddress),
       responderDeposit: One,
-      responderDepositAssetId: getAssetId(tokenAddress),
+      responderDepositAssetId: getAddressFromAssetId(tokenAddress),
       defaultTimeout: toBN(100),
       stateTimeout: Zero,
       initialState,
@@ -226,12 +226,12 @@ export class TestRunner {
       disableLimit: false,
       initialState,
       initiatorBalanceDecrement: One,
-      initiatorDepositAssetId: getAssetId(tokenAddress),
+      initiatorDepositAssetId: getAddressFromAssetId(tokenAddress),
       initiatorIdentifier: this.mininodeA.publicIdentifier,
       multisigAddress: this.multisigAB,
       outcomeType,
       responderBalanceDecrement: One,
-      responderDepositAssetId: getAssetId(tokenAddress),
+      responderDepositAssetId: getAddressFromAssetId(tokenAddress),
       responderIdentifier: this.mininodeB.publicIdentifier,
       appInitiatorIdentifier: this.mininodeA.publicIdentifier,
       appResponderIdentifier: this.mininodeB.publicIdentifier,
@@ -285,9 +285,9 @@ export class TestRunner {
         actionEncoding: undefined,
       },
       initiatorDeposit: One,
-      initiatorDepositAssetId: getAssetId(tokenAddressA),
+      initiatorDepositAssetId: getAddressFromAssetId(tokenAddressA),
       responderDeposit: One,
-      responderDepositAssetId: getAssetId(tokenAddressB),
+      responderDepositAssetId: getAddressFromAssetId(tokenAddressB),
       defaultTimeout: bigNumberify(100),
       stateTimeout: Zero,
       initialState,
@@ -315,8 +315,8 @@ export class TestRunner {
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: bigNumberify(40),
       stateTimeout: Zero,
-      initiatorDepositAssetId: getAssetId(tokenAddressA),
-      responderDepositAssetId: getAssetId(tokenAddressB),
+      initiatorDepositAssetId: getAddressFromAssetId(tokenAddressA),
+      responderDepositAssetId: getAddressFromAssetId(tokenAddressB),
       disableLimit: false,
       appInitiatorIdentifier: this.mininodeA.publicIdentifier,
       appResponderIdentifier: this.mininodeB.publicIdentifier,
