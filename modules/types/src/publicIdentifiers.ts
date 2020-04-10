@@ -1,62 +1,76 @@
-import {
-  isHexString,
-  getAddress,
-} from "ethers/utils";
-import { ETHEREUM_NAMESPACE } from "./constants";
 import { AddressZero } from "ethers/constants";
-import { Address, AssetId } from "./basic";
+import { computeAddress, getAddress, isHexString } from "ethers/utils";
 
-// chain id and deployed address
-// defaults to ETH
+import { Address, AssetId, PublicIdentifier, PublicKey } from "./basic";
+import { ETHEREUM_NAMESPACE } from "./constants";
+
+////////////////////////////////////////
+// AssetId
+
+// chain id and deployed address (defaults to ETH)
 export const getAssetId = (
   chainId: number,
-  address: string = AddressZero,
+  address: Address = AddressZero,
   namespace: string = ETHEREUM_NAMESPACE,
-) => {
+): AssetId => {
   return `${address}@${namespace}:${chainId.toString()}`;
 };
 
-export const getTokenAddressFromAssetId = (assetId: AssetId): string => {
-  const { address } = parsePublicIdentifier(assetId);
-  return address;
-};
-
-export const getPublicIdentifier = (
-  chainId: number, 
-  address: string, 
-  namespace: string = ETHEREUM_NAMESPACE,
-) => {
-  return `${address}@${namespace}:${chainId.toString()}`;
-};
-
-export const verifyPublicIdentifier = (
-  identifier: string,
-) => {
-  const { address, namespace } = parsePublicIdentifier(identifier);
-  if (
-    !isHexString(address) ||
-    namespace !== ETHEREUM_NAMESPACE
-  ) {
-    throw new Error(`Invalid public identfier: ${identifier}`);
-  }
-};
-
-export const parsePublicIdentifier = (
-  identifier: string,
+export const parseAssetId = (
+  assetId: AssetId,
 ): { chainId: number, address: Address, namespace: string} => {
-  const [address, res] = identifier.split("@");
-  const [namespace, chainId] = res.split(":");
+  const [address, rest] = assetId.split("@");
+  const [namespace, chainId] = rest.split(":");
   return {
-    chainId: parseInt(chainId),
     address: getAddress(address),
+    chainId: parseInt(chainId, 10),
     namespace,
   };
 };
 
-export const getAddressFromIdentifier = (identifer: string): string => {
-  return identifer; // TODO: replace w real pub id fn
+export const verifyAssetId = (
+  assetId: AssetId,
+) => {
+  const { address, chainId, namespace } = parseAssetId(assetId);
+  if (
+    !isHexString(address) ||
+    namespace !== ETHEREUM_NAMESPACE ||
+    typeof chainId !== "number"
+  ) {
+    throw new Error(`Invalid assetId: ${assetId}`);
+  }
 };
 
-export const getChainIdFromIdentifier = (identifer: string): number => {
-  return 1; // TODO: replace w real pub id fn
+export const getTokenAddressFromAssetId = (assetId: AssetId): string => {
+  const { address } = parseAssetId(assetId);
+  return address;
+};
+
+////////////////////////////////////////
+// PublicIdentifier
+
+export const getPublicIdentifier = (
+  publicKey: PublicKey,
+): PublicIdentifier => {
+  return publicKey;
+};
+
+export const parsePublicIdentifier = (
+  identifier: PublicIdentifier,
+): { publicKey: PublicKey } => {
+  return { publicKey: identifier };
+};
+
+export const verifyPublicIdentifier = (
+  identifier: PublicIdentifier,
+) => {
+  const { publicKey } = parsePublicIdentifier(identifier);
+  const address = computeAddress(publicKey);
+  if (!isHexString(address)) {
+    throw new Error(`Invalid public identfier: ${identifier}`);
+  }
+};
+
+export const getAddressFromIdentifier = (identifer: string): string => {
+  return computeAddress(parsePublicIdentifier(identifer).publicKey);
 };
