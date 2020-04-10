@@ -73,14 +73,6 @@ export class DepositService {
     } finally {
       await this.rescindDepositRights(appIdentityHash || depositApp.identityHash);
     }
-    console.log('free balance post collateral', await this.cfCoreService.getFreeBalance(
-      channel.userPublicIdentifier,
-      channel.multisigAddress,
-      getAssetId(
-        (await this.configService.getEthNetwork()).chainId,
-        tokenAddress,
-      ),
-    ));
     return receipt;
   }
 

@@ -144,7 +144,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount: swappedAmount,
-            to: this.connext.nodePublicIdentifier,
+            to: this.connext.nodeSignerAddress,
           },
         ],
       ],
@@ -169,6 +169,7 @@ export class SwapController extends AbstractController {
       stateTimeout: SWAP_STATE_TIMEOUT,
     };
 
+    console.log(`proposing install with params`, params)
     const appIdentityHash = await this.proposeAndInstallLedgerApp(params);
     this.log.info(`Successfully installed swap app with id ${appIdentityHash}`);
     return appIdentityHash;

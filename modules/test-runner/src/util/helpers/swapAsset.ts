@@ -50,7 +50,9 @@ export async function swapAsset(
     swapRate,
     toAssetId: output.assetId,
   };
+  console.log(`calling swap with`, swapParams);
   await client.swap(swapParams);
+  console.log(`called swap`);
 
   const expectedOutputSwapAmount = calculateExchange(inputSwapAmount, swapRate);
   const {

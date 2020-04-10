@@ -34,12 +34,13 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   getAddressFromIdentifier,
+  getAssetId,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -538,19 +539,21 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getFreeBalance = async (
-    assetId: string = AddressZero,
+    tokenAddress: string = AddressZero,
   ): Promise<MethodResults.GetFreeBalanceState> => {
-    if (typeof assetId !== "string") {
-      throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
+    if (typeof tokenAddress !== "string") {
+      throw new Error(`Token address must be a string: ${stringify(tokenAddress)}`);
     }
-    const normalizedAssetId = getAddress(assetId);
     try {
       return await this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
         multisigAddress: this.multisigAddress,
-        tokenAddress: getAddress(assetId),
+        assetId: getAssetId(
+          (await this.ethProvider.getNetwork()).chainId,
+          tokenAddress,
+        ),
       } as MethodParams.GetFreeBalanceState);
     } catch (e) {
-      const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
+      const error = `No free balance exists for the specified token: ${tokenAddress}`;
       if (e.message.includes(error)) {
         // if there is no balance, return undefined
         // NOTE: can return free balance obj with 0s,

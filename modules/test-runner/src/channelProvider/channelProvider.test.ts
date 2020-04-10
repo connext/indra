@@ -1,4 +1,4 @@
-import { IConnextClient, EventNames, getAddressFromIdentifier } from "@connext/types";
+import { IConnextClient, EventNames, getAddressFromIdentifier, deBigNumberifyJson } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
 import {
@@ -42,18 +42,24 @@ describe("ChannelProvider", () => {
     expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);
   });
 
-  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
+  it.only("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
+    console.log(`[test] funding clientA`);
     await fundChannel(client, input.amount, input.assetId);
+    console.log(`[test] remote client requesting collateral`);
     await remoteClient.requestCollateral(output.assetId);
 
     ////////////////////////////////////////
     // SWAP FLOW
+    console.log(`[test] remote client swapping`);
+    console.log(`free balance eth`, deBigNumberifyJson(await client.getFreeBalance(input.assetId)));
+    console.log(`free balance token`, deBigNumberifyJson(await client.getFreeBalance(output.assetId)));
     await swapAsset(remoteClient, input, output, nodeSignerAddress);
+    console.log(`[test] swapped!`);
 
     ////////////////////////////////////////
     // TRANSFER FLOW

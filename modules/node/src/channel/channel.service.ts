@@ -6,6 +6,8 @@ import {
   StateChannelJSON,
   stringify,
   getAddressFromIdentifier,
+  getAssetId,
+  Address,
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -160,13 +162,13 @@ export class ChannelService {
 
   private async collateralizeIfNecessary(
     channel: Channel,
-    assetId: string,
+    tokenAddress: string,
     collateralNeeded: BigNumber,
     lowerBoundCollateral: BigNumber,
   ): Promise<TransactionReceipt | undefined> {
-    if (channel.activeCollateralizations[assetId]) {
+    if (channel.activeCollateralizations[tokenAddress]) {
       this.log.warn(
-        `Collateral request is in flight for ${assetId}, try request again for user ${channel.userPublicIdentifier} later`,
+        `Collateral request is in flight for ${tokenAddress}, try request again for user ${channel.userPublicIdentifier} later`,
       );
       return undefined;
     }
@@ -176,32 +178,35 @@ export class ChannelService {
     } = await this.cfCoreService.getFreeBalance(
       channel.userPublicIdentifier,
       channel.multisigAddress,
-      assetId,
+      getAssetId(
+        (await this.configService.getEthNetwork()).chainId,
+        tokenAddress,
+      ),
     );
     if (nodeFreeBalance.gte(lowerBoundCollateral)) {
       this.log.debug(
-        `User ${channel.userPublicIdentifier} already has collateral of ${nodeFreeBalance} for asset ${assetId}`,
+        `User ${channel.userPublicIdentifier} already has collateral of ${nodeFreeBalance} for asset ${tokenAddress}`,
       );
       return undefined;
     }
 
     const amountDeposit = collateralNeeded.sub(nodeFreeBalance);
     this.log.warn(
-      `Collateralizing ${channel.userPublicIdentifier} with ${amountDeposit}, token: ${assetId}`,
+      `Collateralizing ${channel.userPublicIdentifier} with ${amountDeposit}, token: ${tokenAddress}`,
     );
 
     // set in flight so that it cant be double sent
-    this.log.debug(`Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()} of ${assetId}`);
-    await this.setCollateralizationInFlight(channel.multisigAddress, assetId);
+    this.log.debug(`Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()} of ${tokenAddress}`);
+    await this.setCollateralizationInFlight(channel.multisigAddress, tokenAddress);
     let receipt: TransactionReceipt | undefined = undefined;
     try {
-      receipt = await this.depositService.deposit(channel, amountDeposit, assetId);
+      receipt = await this.depositService.deposit(channel, amountDeposit, tokenAddress);
       this.log.info(`Channel ${channel.multisigAddress} successfully collateralized: ${receipt.transactionHash}`);
       this.log.debug(`Collateralization result: ${stringify(receipt)}`);
     } catch (e) {
       throw new Error(e.stack || e.message);
     } finally {
-      await this.clearCollateralizationInFlight(channel.multisigAddress, assetId);
+      await this.clearCollateralizationInFlight(channel.multisigAddress, tokenAddress);
     }
     return receipt;
   }
@@ -209,7 +214,7 @@ export class ChannelService {
   // collateral is reclaimed if it is above the upper bound
   private async reclaimIfNecessary(
     channel: Channel,
-    assetId: string,
+    tokenAddress: Address,
     upperBoundReclaim: BigNumber,
     lowerBoundReclaim: BigNumber,
   ): Promise<void> {
@@ -224,14 +229,17 @@ export class ChannelService {
     } = await this.cfCoreService.getFreeBalance(
       channel.userPublicIdentifier,
       channel.multisigAddress,
-      assetId,
+      getAssetId(
+        (await this.configService.getEthNetwork()).chainId,
+        tokenAddress,
+      ),
     );
     if (nodeFreeBalance.lte(upperBoundReclaim)) {
       this.log.info(
         `Collateral for channel ${channel.multisigAddress} is below upper bound, nothing to reclaim.`,
       );
       this.log.debug(
-        `Node has balance of ${nodeFreeBalance} for asset ${assetId} in channel with user ${channel.userPublicIdentifier}`,
+        `Node has balance of ${nodeFreeBalance} for asset ${tokenAddress} in channel with user ${channel.userPublicIdentifier}`,
       );
       return undefined;
     }
@@ -244,10 +252,10 @@ export class ChannelService {
     const amountWithdrawal = nodeFreeBalance.sub(lowerBoundReclaim);
     this.log.info(`Reclaiming collateral from channel ${channel.multisigAddress}`);
     this.log.debug(
-      `Reclaiming ${channel.multisigAddress}, ${amountWithdrawal.toString()}, token: ${assetId}`,
+      `Reclaiming ${channel.multisigAddress}, ${amountWithdrawal.toString()}, token: ${tokenAddress}`,
     );
 
-    await this.withdrawService.withdraw(channel, amountWithdrawal, assetId);
+    await this.withdrawService.withdraw(channel, amountWithdrawal, tokenAddress);
   }
 
   async clearCollateralizationInFlight(multisigAddress: string, assetId: string): Promise<Channel> {

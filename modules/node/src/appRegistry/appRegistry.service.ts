@@ -81,6 +81,8 @@ export class AppRegistryService implements OnModuleInit {
 
       await this.runPreInstallValidation(registryAppInfo, proposeInstallParams, from);
 
+      console.log(`registry info`, registryAppInfo);
+      console.log(`installing apps with params`, proposeInstallParams);
       // check if we need to collateralize
       const freeBal = await this.cfCoreService.getFreeBalance(
         from,
@@ -134,8 +136,12 @@ export class AppRegistryService implements OnModuleInit {
       case SimpleTwoPartySwapAppName: {
         const allowedSwaps = this.configService.getAllowedSwaps();
         const ourRate = await this.swapRateService.getOrFetchRate(
-          proposeInstallParams.initiatorDepositAssetId,
-          proposeInstallParams.responderDepositAssetId,
+          getAddressFromIdentifier(
+            proposeInstallParams.initiatorDepositAssetId,
+          ),
+          getAddressFromIdentifier(
+            proposeInstallParams.responderDepositAssetId,
+          ),
         );
         validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;
