@@ -1,7 +1,7 @@
 import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { Address, Bytes32, DecString } from "./basic";
+import { Address, Bytes32, DecString, PublicKey } from "./basic";
 import { ContractAddresses } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
@@ -21,6 +21,7 @@ export const ChannelMethods = enumify({
   ...MethodNames,
   chan_config: "chan_config",
   chan_signMessage: "chan_signMessage",
+  chan_encrypt: "chan_encrypt",
   chan_restoreState: "chan_restoreState",
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
@@ -112,8 +113,9 @@ export interface IChannelProvider extends ConnextEventEmitter {
   once(event: string, listener: (...args: any[]) => void): any;
 
   ///////////////////////////////////
-  // SIGNING METHODS
+  // SIGNER METHODS
   signMessage(message: string): Promise<string>;
+  encrypt(message: string, publicKey: PublicKey): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS
