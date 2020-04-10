@@ -21,6 +21,7 @@ import {
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
   getPublicIdentifier,
+  PublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -79,10 +80,13 @@ export class Node {
     logger?: ILoggerService,
   ): Promise<Node> {
     // TODO: private key validation
-    const address = await signer.getAddress();
+    const publicIdentifier = getPublicIdentifier(
+      (await provider.getNetwork()).chainId,
+      await signer.getAddress(),
+    );
     const node = new Node(
+      publicIdentifier,
       signer,
-      address,
       messagingService,
       storeService,
       nodeConfig,
@@ -97,8 +101,8 @@ export class Node {
   }
 
   private constructor(
+    public readonly publicIdentifier: PublicIdentifier,
     private readonly signer: IChannelSigner,
-    private readonly address: Address,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
@@ -115,16 +119,9 @@ export class Node {
     this.protocolRunner = this.buildProtocolRunner();
   }
 
-  get publicIdentifier(): string {
-    return getPublicIdentifier(
-      this.provider.network.chainId,
-      this.signer.address,
-    );
-  }
-
   @Memoize()
   get signerAddress(): string {
-    return this.address;
+    return this.signer.address;
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
