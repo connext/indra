@@ -1,5 +1,5 @@
 /* global before */
-import { signChannelMessage } from "@connext/crypto";
+import { ChannelSigner } from "@connext/crypto";
 
 import {
   CoinTransfer,
@@ -74,7 +74,10 @@ describe("WithdrawApp", async () => {
           to: counterpartyWallet.address,
         },
       ],
-      signatures: [await signChannelMessage(withdrawerSigningKey.privateKey, data), HashZero],
+      signatures: [
+        await (new ChannelSigner(withdrawerSigningKey.privateKey).signMessage(data)),
+        HashZero,
+      ],
       signers: [withdrawerWallet.address, counterpartyWallet.address],
       data,
       nonce: hexlify(randomBytes(32)),
@@ -84,7 +87,7 @@ describe("WithdrawApp", async () => {
 
   const createAction = async (): Promise<WithdrawAppAction> => {
     return {
-      signature: await signChannelMessage(counterpartySigningKey.privateKey, data),
+      signature: await (new ChannelSigner(counterpartySigningKey.privateKey).signMessage(data)),
     };
   };
 

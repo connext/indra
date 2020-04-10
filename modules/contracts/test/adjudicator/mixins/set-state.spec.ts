@@ -1,6 +1,6 @@
 /* global before */
 import { AppChallengeBigNumber, ChallengeStatus, toBN } from "@connext/types";
-import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
+import { ChannelSigner } from "@connext/crypto";
 import { One } from "ethers/constants";
 import { Contract, Wallet, ContractFactory } from "ethers";
 
@@ -146,8 +146,8 @@ describe("setState", () => {
           appStateHash: appStateToHash(state),
           timeout: ONCHAIN_CHALLENGE_TIMEOUT,
           signatures: await sortSignaturesBySignerAddress(thingToSign, [
-            await signChannelMessage(wallet.privateKey, thingToSign),
-            await signChannelMessage(bob.privateKey, thingToSign),
+            await (new ChannelSigner(wallet.privateKey).signMessage(thingToSign)),
+            await (new ChannelSigner(bob.privateKey).signMessage(thingToSign)),
           ]),
         }),
       ).to.be.revertedWith(`Invalid signature`);

@@ -1,4 +1,4 @@
-import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
+import { ChannelSigner } from "@connext/crypto";
 import {
   AppChallengeBigNumber,
   toBN,
@@ -119,8 +119,8 @@ export const setupContext = async (
   ) => {
     if (!signatures) {
       signatures = await sortSignaturesBySignerAddress(digest, [
-        await signChannelMessage(bob.privateKey, digest),
-        await signChannelMessage(alice.privateKey, digest),
+        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
+        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
       ]);
     }
 
@@ -180,8 +180,8 @@ export const setupContext = async (
       appStateHash: stateHash,
       timeout,
       signatures: await sortSignaturesBySignerAddress(digest, [
-        await signChannelMessage(alice.privateKey, digest),
-        await signChannelMessage(bob.privateKey, digest),
+        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
+        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
       ]),
     });
     await wrapInEventVerification(call, {
@@ -248,7 +248,7 @@ export const setupContext = async (
       encodeAction(action),
       existingChallenge.versionNumber.toNumber(),
     );
-    const signature = await signChannelMessage(signer.privateKey, thingToSign);
+    const signature = await (new ChannelSigner(signer.privateKey).signMessage(thingToSign));
     expect(await isProgressable()).to.be.true;
     const resultingState: AppWithCounterState = {
       counter:
@@ -322,14 +322,14 @@ export const setupContext = async (
         appStateHash: stateHash,
         timeout,
         signatures: await sortSignaturesBySignerAddress(stateDigest, [
-          await signChannelMessage(alice.privateKey, stateDigest),
-          await signChannelMessage(bob.privateKey, stateDigest),
+          await (new ChannelSigner(alice.privateKey).signMessage(stateDigest)),
+          await (new ChannelSigner(bob.privateKey).signMessage(stateDigest)),
         ]),
       },
       encodeState(state),
       {
         encodedAction: encodeAction(action),
-        signature: await signChannelMessage(turnTaker.privateKey, actionDigest),
+        signature: await (new ChannelSigner(turnTaker.privateKey).signMessage(actionDigest)),
       },
     );
   };
@@ -338,8 +338,8 @@ export const setupContext = async (
     const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
     if (!signatures) {
       signatures = await sortSignaturesBySignerAddress(digest, [
-        await signChannelMessage(alice.privateKey, digest),
-        await signChannelMessage(bob.privateKey, digest),
+        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
+        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
       ]);
     }
     // TODO: why does event verification fail?

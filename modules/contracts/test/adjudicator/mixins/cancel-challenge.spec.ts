@@ -1,4 +1,6 @@
 /* global before */
+import { ChannelSigner } from "@connext/crypto";
+import { toBN } from "@connext/types";
 import { Contract, Wallet, ContractFactory } from "ethers";
 
 import {
@@ -15,8 +17,6 @@ import {
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
-import { toBN } from "@connext/types";
-import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
 
 describe("cancelChallenge", () => {
   let appRegistry: Contract;
@@ -114,8 +114,8 @@ describe("cancelChallenge", () => {
 
     const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
     const signatures = await sortSignaturesBySignerAddress(digest, [
-      await signChannelMessage(wallet.privateKey, digest),
-      await signChannelMessage(bob.privateKey, digest),
+      await (new ChannelSigner(wallet.privateKey).signMessage(digest)),
+      await (new ChannelSigner(bob.privateKey).signMessage(digest)),
     ]);
     await expect(cancelChallenge(versionNumber, signatures)).to.be.revertedWith(
       "Invalid signature",

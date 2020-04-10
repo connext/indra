@@ -19,7 +19,7 @@ import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 import { ChallengeStatus, toBN, AppChallengeBigNumber } from "@connext/types";
 import { keccak256 } from "ethers/utils";
-import { signChannelMessage } from "@connext/crypto";
+import { ChannelSigner } from "@connext/crypto";
 
 describe("ChallengeRegistry", () => {
   let appRegistry: Contract;
@@ -128,7 +128,7 @@ describe("ChallengeRegistry", () => {
       encodeAction(finalizingAction),
       2, // version number after action applied
     );
-    const signature = await signChannelMessage(alice.privateKey, thingToSign);
+    const signature = await new ChannelSigner(alice.privateKey).signMessage(thingToSign);
     await progressState(state1, finalizingAction, signature);
     // verify explicitly finalized
     const finalState = {

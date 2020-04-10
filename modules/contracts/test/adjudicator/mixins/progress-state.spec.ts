@@ -1,6 +1,6 @@
 /* global before */
+import { ChannelSigner } from "@connext/crypto";
 import { AppChallengeBigNumber } from "@connext/types";
-import { signChannelMessage } from "@connext/crypto";
 import { Wallet, Contract, ContractFactory } from "ethers";
 import { keccak256 } from "ethers/utils";
 
@@ -117,7 +117,7 @@ describe("progressState", () => {
       encodeAction(ACTION),
       2,
     );
-    const signature2 = await signChannelMessage(ALICE.privateKey, thingToSign2);
+    const signature2 = await (new ChannelSigner(ALICE.privateKey).signMessage(thingToSign2));
     await progressState(POST_STATE, ACTION, signature2);
   });
 
@@ -150,7 +150,7 @@ describe("progressState", () => {
       encodeAction(ACTION),
       1,
     );
-    const signature = await signChannelMessage(ALICE.privateKey, thingToSign);
+    const signature = await (new ChannelSigner(ALICE.privateKey).signMessage(thingToSign));
 
     expect(await isProgressable()).to.be.false;
     await expect(progressState(POST_STATE, ACTION, signature)).to.be.revertedWith(
