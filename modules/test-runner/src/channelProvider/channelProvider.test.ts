@@ -1,4 +1,4 @@
-import { IConnextClient, EventNames, getAddressFromIdentifier } from "@connext/types";
+import { IConnextClient, EventNames, getAddressFromPublicIdentifier } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
 import {
@@ -25,7 +25,7 @@ describe("ChannelProvider", () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
-    nodeSignerAddress = getAddressFromIdentifier(nodeIdentifier);
+    nodeSignerAddress = getAddressFromPublicIdentifier(nodeIdentifier);
     tokenAddress = client.config.contractAddresses.Token;
   });
 
@@ -36,7 +36,7 @@ describe("ChannelProvider", () => {
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
     const _nodeIdentifier = remoteClient.config.nodeIdentifier;
-    const _nodeSignerAddress = nodeIdentifier;
+    const _nodeSignerAddress = getAddressFromPublicIdentifier(nodeIdentifier);
     expect(_tokenAddress).to.be.eq(tokenAddress);
     expect(_nodeIdentifier).to.be.eq(nodeIdentifier);
     expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);
@@ -49,11 +49,14 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // DEPOSIT FLOW
     await fundChannel(client, input.amount, input.assetId);
+    console.log(`PING`);
     await remoteClient.requestCollateral(output.assetId);
+    console.log(`PONG`);
 
     ////////////////////////////////////////
     // SWAP FLOW
     await swapAsset(remoteClient, input, output, nodeSignerAddress);
+    console.log(`PANG`);
 
     ////////////////////////////////////////
     // TRANSFER FLOW

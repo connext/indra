@@ -1,6 +1,6 @@
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress, getAddressFromIdentifier } from "@connext/types";
+import { createRandomAddress, getAddressFromPublicIdentifier } from "@connext/types";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
@@ -40,7 +40,7 @@ describe("StateChannel::uninstallApp", () => {
 
     sc1 = sc1.setFreeBalance(
       FreeBalanceClass.createWithFundedTokenAmounts(
-        [getAddressFromIdentifier(ids[0]), getAddressFromIdentifier(ids[1])],
+        [getAddressFromPublicIdentifier(ids[0]), getAddressFromPublicIdentifier(ids[1])],
         WeiPerEther,
         [AddressZero],
       ),
@@ -48,8 +48,8 @@ describe("StateChannel::uninstallApp", () => {
 
     sc2 = sc1.installApp(appInstance, {
       [AddressZero]: {
-        [getAddressFromIdentifier(ids[0])]: WeiPerEther,
-        [getAddressFromIdentifier(ids[1])]: WeiPerEther,
+        [getAddressFromPublicIdentifier(ids[0])]: WeiPerEther,
+        [getAddressFromPublicIdentifier(ids[1])]: WeiPerEther,
       },
     });
   });

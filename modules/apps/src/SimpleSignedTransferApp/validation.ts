@@ -2,7 +2,7 @@ import {
   MethodParams,
   CoinTransfer,
   SimpleSignedTransferAppState,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
@@ -15,8 +15,8 @@ export const validateSignedTransferApp = (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as SimpleSignedTransferAppState;
 
-  const initiatorSignerAddress = getAddressFromIdentifier(initiatorIdentifier);
-  const responderSignerAddress = getAddressFromIdentifier(responderIdentifier);
+  const initiatorSignerAddress = getAddressFromPublicIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getAddressFromPublicIdentifier(responderIdentifier);
 
   // initiator is sender
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {

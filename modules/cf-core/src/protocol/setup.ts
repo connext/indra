@@ -5,7 +5,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
   SetupMiddlewareContext,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -108,7 +108,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 68 ms
     substart = Date.now();
-    const responderAddr = getAddressFromIdentifier(responderIdentifier);
+    const responderAddr = getAddressFromPublicIdentifier(responderIdentifier);
     await assertIsValidSignature(
       responderAddr,
       setupCommitment.hashToSign(),
@@ -194,7 +194,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
     substart = Date.now();
-    const initatorAddr = getAddressFromIdentifier(initiatorIdentifier);
+    const initatorAddr = getAddressFromPublicIdentifier(initiatorIdentifier);
     await assertIsValidSignature(
       initatorAddr,
       setupCommitment.hashToSign(),

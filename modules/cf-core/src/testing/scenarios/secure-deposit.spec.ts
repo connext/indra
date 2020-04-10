@@ -1,4 +1,4 @@
-import { DepositConfirmationMessage, MethodParams, DepositStartedMessage, getAssetId, getTokenAddressFromAssetId, deBigNumberifyJson } from "@connext/types";
+import { DepositConfirmationMessage, MethodParams, DepositStartedMessage, getAssetId, getAddressFromAssetId, deBigNumberifyJson } from "@connext/types";
 import { Contract } from "ethers";
 import { One, Two, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -116,10 +116,10 @@ describe("Node method follows spec - deposit", () => {
       (global["network"] as NetworkContextForTestSuite)
         .DolphinCoin);
 
-    const tokenAddress = getTokenAddressFromAssetId(erc20AssetId);
+    const tokenAddress = getAddressFromAssetId(erc20AssetId);
 
     const erc20Contract = new Contract(
-      getTokenAddressFromAssetId(erc20AssetId),
+      getAddressFromAssetId(erc20AssetId),
       DolphinCoin.abi,
       global["wallet"].provider,
     );
@@ -157,7 +157,7 @@ describe("Node method follows spec - deposit", () => {
       (global["network"] as NetworkContextForTestSuite)
         .DolphinCoin);
 
-    const tokenAddress = getTokenAddressFromAssetId(erc20AssetId);
+    const tokenAddress = getAddressFromAssetId(erc20AssetId);
     const erc20Contract = new Contract(
       tokenAddress,
       DolphinCoin.abi,

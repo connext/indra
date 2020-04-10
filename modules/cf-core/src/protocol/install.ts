@@ -9,9 +9,9 @@ import {
   ProtocolRoles,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
   AssetId,
-  getTokenAddressFromAssetId,
+  getAddressFromAssetId,
 } from "@connext/types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -82,7 +82,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
       initiatorIdentifier,
-      getTokenAddressFromAssetId(initiatorDepositAssetId),
+      getAddressFromAssetId(initiatorDepositAssetId),
       initiatorBalanceDecrement,
     );
 
@@ -90,7 +90,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
       responderIdentifier,
-      getTokenAddressFromAssetId(responderDepositAssetId),
+      getAddressFromAssetId(responderDepositAssetId),
       responderBalanceDecrement,
     );
 
@@ -121,7 +121,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
 
     // 0ms
-    const responderSignerAddress = getAddressFromIdentifier(responderIdentifier);
+    const responderSignerAddress = getAddressFromPublicIdentifier(responderIdentifier);
 
     // 6ms
     // free balance addr signs conditional transactions
@@ -274,7 +274,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
       initiatorIdentifier,
-      getTokenAddressFromAssetId(initiatorDepositAssetId),
+      getAddressFromAssetId(initiatorDepositAssetId),
       initiatorBalanceDecrement,
     );
 
@@ -282,7 +282,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
       responderIdentifier,
-      getTokenAddressFromAssetId(responderDepositAssetId),
+      getAddressFromAssetId(responderDepositAssetId),
       responderBalanceDecrement,
     );
 
@@ -292,7 +292,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const initiatorSignerAddress = getAddressFromIdentifier(initiatorIdentifier);
+    const initiatorSignerAddress = getAddressFromPublicIdentifier(initiatorIdentifier);
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
 
@@ -487,8 +487,8 @@ function computeStateChannelTransition(
     singleAssetTwoPartyCoinTransferInterpreterParams,
   );
 
-  const initiatorDepositTokenAddress = getTokenAddressFromAssetId(initiatorDepositAssetId);
-  const responderDepositTokenAddress = getTokenAddressFromAssetId(responderDepositAssetId);
+  const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
 
   let tokenIndexedBalanceDecrement: TokenIndexedCoinTransferMap;
   if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
@@ -557,8 +557,8 @@ function computeInterpreterParameters(
   singleAssetTwoPartyCoinTransferInterpreterParams?:
     SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
-  const initiatorDepositAssetId = getTokenAddressFromAssetId(initiatorAssetId);
-  const responderDepositAssetId = getTokenAddressFromAssetId(responderAssetId);
+  const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
+  const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       if (initiatorDepositAssetId !== responderDepositAssetId) {

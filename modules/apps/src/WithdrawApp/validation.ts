@@ -1,5 +1,5 @@
 import { verifyChannelMessage } from "@connext/crypto";
-import { bigNumberifyJson, MethodParams, WithdrawAppState, getAddressFromIdentifier } from "@connext/types";
+import { bigNumberifyJson, MethodParams, WithdrawAppState, getAddressFromPublicIdentifier } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
@@ -12,8 +12,8 @@ export const validateWithdrawApp = async (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = bigNumberifyJson(params.initialState) as WithdrawAppState;
 
-  const initiatorSignerAddress = getAddressFromIdentifier(initiatorIdentifier);
-  const responderSignerAddress = getAddressFromIdentifier(responderIdentifier);
+  const initiatorSignerAddress = getAddressFromPublicIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getAddressFromPublicIdentifier(responderIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];

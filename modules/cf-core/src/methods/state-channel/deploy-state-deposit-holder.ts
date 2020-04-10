@@ -1,6 +1,6 @@
 import {
   delay,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
   IChannelSigner,
   ILoggerService,
   MethodNames,
@@ -205,8 +205,8 @@ async function checkForCorrectOwners(
   const contract = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
 
   const expectedOwners = [
-    getAddressFromIdentifier(identifiers[0]),
-    getAddressFromIdentifier(identifiers[1]),
+    getAddressFromPublicIdentifier(identifiers[0]),
+    getAddressFromPublicIdentifier(identifiers[1]),
   ];
 
   const actualOwners = await contract.functions.getOwners();

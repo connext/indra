@@ -16,7 +16,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   PublicIdentifier,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
@@ -178,8 +178,8 @@ export class AppInstance {
   @Memoize()
   public get participants() {
     return [
-      getAddressFromIdentifier(this.initiatorIdentifier),
-      getAddressFromIdentifier(this.responderIdentifier),
+      getAddressFromPublicIdentifier(this.initiatorIdentifier),
+      getAddressFromPublicIdentifier(this.responderIdentifier),
     ];
   }
 

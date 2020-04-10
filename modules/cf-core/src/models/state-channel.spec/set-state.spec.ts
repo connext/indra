@@ -1,6 +1,6 @@
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress, getAddressFromIdentifier } from "@connext/types";
+import { createRandomAddress, getAddressFromPublicIdentifier } from "@connext/types";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -40,8 +40,8 @@ describe("StateChannel::setState", () => {
 
     sc1 = sc1.installApp(testApp, {
       [AddressZero]: {
-        [getAddressFromIdentifier(ids[0])]: Zero,
-        [getAddressFromIdentifier(ids[1])]: Zero,
+        [getAddressFromPublicIdentifier(ids[0])]: Zero,
+        [getAddressFromPublicIdentifier(ids[1])]: Zero,
       },
     });
 

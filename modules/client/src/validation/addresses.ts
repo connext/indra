@@ -1,5 +1,5 @@
-import { arrayify, getAddress, isHexString } from "ethers/utils";
-import { parsePublicIdentifier } from "@connext/types";
+import { arrayify, computeAddress, getAddress, isHexString } from "ethers/utils";
+import { parseAssetId, parsePublicIdentifier } from "@connext/types";
 
 export const isValidAddress = (address: any): boolean =>
   typeof address === "string" && isHexString(address) && arrayify(address).length === 20;
@@ -13,23 +13,49 @@ export const invalidAddress = (value: string): string | undefined => {
   }
 };
 
-export const invalidIdentifier = (identifier: string): string | undefined => {
+export const invalidPublicIdentifier = (identifier: string): string | undefined => {
   let parsed;
+  let address;
   let errors: string[] = [];
   try {
     parsed = parsePublicIdentifier(identifier);
+    address = computeAddress(parsed.publicKey);
   } catch (e) {
-    errors.push(`Identifier is invalid: ${identifier}`);
+    errors.push(`PublicIdentifier is invalid: ${identifier}`);
     return errors.toString();
   }
   if (!parsed.chainId || typeof parsed.chainId !== "number") {
-    errors.push(`Identifier has invalid chainId: ${identifier}`);
+    errors.push(`PublicIdentifier has invalid chainId: ${identifier}`);
   }
   if (!parsed.namespace || typeof parsed.namespace !== "string") {
-    errors.push(`Identifier has invalid namespace: ${identifier}`);
+    errors.push(`PublicIdentifier has invalid namespace: ${identifier}`);
+  }
+  if (!parsed.publicKey || !isHexString(parsed.publicKey)) {
+    errors.push(`PublicIdentifier has invalid publicKey: ${identifier}`);
+  }
+  if (!address || invalidAddress(address)) {
+    errors.push(`PublicIdentifier has invalid address: ${identifier}`);
+  }
+  return errors.length === 0 ? undefined : errors.toString();
+};
+
+export const invalidAssetIdentifier = (identifier: string): string | undefined => {
+  let parsed;
+  let errors: string[] = [];
+  try {
+    parsed = parseAssetId(identifier);
+  } catch (e) {
+    errors.push(`AssetIdentifier is invalid: ${identifier}`);
+    return errors.toString();
+  }
+  if (!parsed.chainId || typeof parsed.chainId !== "number") {
+    errors.push(`AssetIdentifier has invalid chainId: ${identifier}`);
+  }
+  if (!parsed.namespace || typeof parsed.namespace !== "string") {
+    errors.push(`AssetIdentifier has invalid namespace: ${identifier}`);
   }
   if (!parsed.address || invalidAddress(parsed.address)) {
-    errors.push(`Identifier has invalid address: ${identifier}`);
+    errors.push(`AssetIdentifier has invalid address: ${identifier}`);
   }
   return errors.length === 0 ? undefined : errors.toString();
 };

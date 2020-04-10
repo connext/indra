@@ -5,7 +5,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
   TakeActionMiddlewareContext,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -82,7 +82,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     // 0ms
-    const responderAddr = getAddressFromIdentifier(responderIdentifier);
+    const responderAddr = getAddressFromPublicIdentifier(responderIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();
@@ -186,7 +186,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     // 0ms
-    const initiatorAddr = getAddressFromIdentifier(initiatorIdentifier);
+    const initiatorAddr = getAddressFromPublicIdentifier(initiatorIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();

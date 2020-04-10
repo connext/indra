@@ -12,7 +12,7 @@ import {
   stringify,
   toBN,
   getAssetId,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
   AssetId,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
@@ -79,7 +79,7 @@ export class CFCoreService {
         // but need the free balance address in the multisig
         const obj = {};
         obj[this.cfCore.signerAddress] = Zero;
-        obj[getAddressFromIdentifier(userPubId)] = Zero;
+        obj[getAddressFromPublicIdentifier(userPubId)] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);

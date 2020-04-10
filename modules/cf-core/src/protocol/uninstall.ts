@@ -6,7 +6,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
   UninstallMiddlewareContext,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
@@ -83,7 +83,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const responderFreeBalanceKey = getAddressFromIdentifier(responderIdentifier);
+    const responderFreeBalanceKey = getAddressFromPublicIdentifier(responderIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
       context,
@@ -191,7 +191,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const initiatorFreeBalanceKey = getAddressFromIdentifier(initiatorIdentifier);
+    const initiatorFreeBalanceKey = getAddressFromPublicIdentifier(initiatorIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
       context,

@@ -4,7 +4,7 @@ import {
   DepositAppName,
   DepositAppState,
   EventNames,
-  getAddressFromIdentifier,
+  getAddressFromAssetId,
   getAssetId,
   MethodParams,
   PublicParams,
@@ -19,7 +19,7 @@ import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
-import { validate, notLessThanOrEqualTo, notGreaterThan, invalidIdentifier } from "../validation";
+import { validate, notLessThanOrEqualTo, notGreaterThan, invalidAssetIdentifier } from "../validation";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
@@ -28,10 +28,10 @@ export class DepositController extends AbstractController {
       params.assetId || AddressZero,
       await this.ethProvider.network.chainId,
     );
-    validate(invalidIdentifier(assetId));
+    validate(invalidAssetIdentifier(assetId));
     // NOTE: when the `walletTransfer` is not used, these parameters
     // do not have to be validated
-    const tokenAddress = getAddressFromIdentifier(assetId);
+    const tokenAddress = getAddressFromAssetId(assetId);
     const startingBalance = tokenAddress === AddressZero
       ? await this.ethProvider.getBalance(this.connext.signerAddress)
       : await new Contract(tokenAddress, tokenAbi, this.ethProvider)
@@ -91,8 +91,8 @@ export class DepositController extends AbstractController {
       params.assetId || AddressZero,
       await this.ethProvider.network.chainId,
     );
-    validate(invalidIdentifier(assetId));
-    const tokenAddress = getAddressFromIdentifier(assetId);
+    validate(invalidAssetIdentifier(assetId));
+    const tokenAddress = getAddressFromAssetId(assetId);
     const depositApp = await this.getDepositApp({ assetId: tokenAddress });
     
     if (!depositApp) {
@@ -127,8 +127,8 @@ export class DepositController extends AbstractController {
       params.assetId || AddressZero,
       await this.ethProvider.network.chainId,
     );
-    validate(invalidIdentifier(assetId));
-    const tokenAddress = getAddressFromIdentifier(assetId);
+    validate(invalidAssetIdentifier(assetId));
+    const tokenAddress = getAddressFromAssetId(assetId);
     // get the app instance
     const app = await this.getDepositApp({ assetId: tokenAddress });
     if (!app) {
@@ -171,7 +171,7 @@ export class DepositController extends AbstractController {
   private proposeDepositInstall = async (
     assetId: string,
   ): Promise<string> => {
-    const tokenAddress = getAddressFromIdentifier(assetId);
+    const tokenAddress = getAddressFromAssetId(assetId);
 
     // generate initial totalAmountWithdrawn
     const multisig = new Contract(

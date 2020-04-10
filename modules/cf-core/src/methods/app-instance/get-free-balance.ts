@@ -1,4 +1,4 @@
-import { MethodNames, MethodParams, MethodResults, getTokenAddressFromAssetId } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, getAddressFromAssetId } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
@@ -20,7 +20,7 @@ export class GetFreeBalanceStateController extends NodeController {
 
     // NOTE: We default to ETH in case of undefined tokenAddress param
     const tokenAddress = assetId
-      ? getTokenAddressFromAssetId(assetId) 
+      ? getAddressFromAssetId(assetId) 
       : AddressZero;
 
     if (!multisigAddress) {

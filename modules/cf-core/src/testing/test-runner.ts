@@ -1,5 +1,5 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames, toBN, ProtocolParams, getAddressFromIdentifier, getAssetId } from "@connext/types";
+import { OutcomeType, ProtocolNames, toBN, ProtocolParams, getAddressFromPublicIdentifier, getAssetId } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -356,7 +356,7 @@ export class TestRunner {
           mininode.scm
             .get(multisig)!
             .getFreeBalanceClass()
-            .getBalance(tokenAddress, getAddressFromIdentifier(mininode.publicIdentifier)),
+            .getBalance(tokenAddress, getAddressFromPublicIdentifier(mininode.publicIdentifier)),
         ).toBeEq(expected);
       }
     }

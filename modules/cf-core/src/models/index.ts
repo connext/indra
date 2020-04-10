@@ -4,7 +4,6 @@ export {
   CoinTransferMap,
   convertCoinTransfersToCoinTransfersMap,
   FreeBalanceClass,
-  getSignerAddress,
   TokenIndexedCoinTransferMap,
 } from "./free-balance";
 export { StateChannel } from "./state-channel";

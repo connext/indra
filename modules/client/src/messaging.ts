@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { MessagingConfig, VerifyNonceDtoType, ILoggerService, Address, PublicIdentifier, getChainIdFromIdentifier } from "@connext/types";
+import { MessagingConfig, VerifyNonceDtoType, ILoggerService, Address, PublicIdentifier, getChainIdFromPublicIdentifier } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { isNode } from "./lib";
 
@@ -69,7 +69,7 @@ export const createMessagingService = async (
     messagingUrl,
     logger,
   };
-  const key = `INDRA.${getChainIdFromIdentifier(userIdentifier)}`;
+  const key = `INDRA.${getChainIdFromPublicIdentifier(userIdentifier)}`;
   // create a messaging service client
   // do not specify a prefix so that clients can publish to node
   const messaging = new MessagingService(config, key, () =>

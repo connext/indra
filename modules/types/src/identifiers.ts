@@ -65,7 +65,7 @@ export const verifyAssetId = (
 export const getChainIdFromAssetId = (assetId: AssetId): number =>
   parseAssetId(assetId).chainId;
 
-export const getTokenAddressFromAssetId = (assetId: AssetId): string =>
+export const getAddressFromAssetId = (assetId: AssetId): string =>
   parseAssetId(assetId).address;
 
 ////////////////////////////////////////
@@ -109,9 +109,9 @@ export const isValidPublicIdentifier = (
   return true;
 };
 
-export const getAddressFromIdentifier = (identifer: string): string => {
+export const getAddressFromPublicIdentifier = (identifer: string): string => {
   return computeAddress(parsePublicIdentifier(identifer).publicKey);
 };
 
-export const getChainIdFromIdentifier = (identifier: PublicIdentifier): number =>
+export const getChainIdFromPublicIdentifier = (identifier: PublicIdentifier): number =>
   parsePublicIdentifier(identifier).chainId;

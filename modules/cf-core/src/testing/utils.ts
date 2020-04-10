@@ -13,9 +13,9 @@ import {
   DepositAppState,
   DepositAppStateEncoding,
   EventNames,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
   getRandomPublicIdentifier,
-  getTokenAddressFromAssetId,
+  getAddressFromAssetId,
   InstallMessage,
   Message,
   MethodNames,
@@ -168,7 +168,7 @@ export async function rescindDepositRights(
   const apps = await getInstalledAppInstances(node, multisigAddress);
   const depositApp = apps.filter(app => 
     app.appInterface.addr === global[`network`][`DepositApp`] &&
-    (app.latestState as DepositAppState).assetId === getTokenAddressFromAssetId(assetId),
+    (app.latestState as DepositAppState).assetId === getAddressFromAssetId(assetId),
   )[0];
   if (!depositApp) {
     // no apps to uninstall, return
@@ -451,7 +451,7 @@ export async function getProposeDepositAppParams(
   responderIdentifier: string,
   assetId: string = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ): Promise<MethodParams.ProposeInstall> {
-  const tokenAddress = getTokenAddressFromAssetId(assetId);
+  const tokenAddress = getAddressFromAssetId(assetId);
   const startingTotalAmountWithdrawn = await getMultisigAmountWithdrawn(
     multisigAddress,
     tokenAddress,
@@ -465,11 +465,11 @@ export async function getProposeDepositAppParams(
     transfers: [
       {
         amount: Zero,
-        to: getAddressFromIdentifier(initiatorIdentifier),
+        to: getAddressFromPublicIdentifier(initiatorIdentifier),
       },
       {
         amount: Zero,
-        to: getAddressFromIdentifier(responderIdentifier),
+        to: getAddressFromPublicIdentifier(responderIdentifier),
       },
     ],
   };
@@ -503,12 +503,12 @@ export async function deposit(
   await requestDepositRights(node, responderNode, multisigAddress, assetId);
   const wallet = global["wallet"] as Wallet;
   // send a deposit to the multisig
-  const tx = getTokenAddressFromAssetId(assetId) === AddressZero
+  const tx = getAddressFromAssetId(assetId) === AddressZero
     ? await wallet.sendTransaction({
         value: amount,
         to: multisigAddress,
       })
-    : await new Contract(getTokenAddressFromAssetId(assetId), ERC20.abi, wallet)
+    : await new Contract(getAddressFromAssetId(assetId), ERC20.abi, wallet)
         .transfer(multisigAddress, amount);
   expect(tx.hash).toBeDefined();
   // rescind rights

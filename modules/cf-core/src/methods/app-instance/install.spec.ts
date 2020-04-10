@@ -6,7 +6,7 @@ import {
   nullLogger,
   ProtocolNames,
   IStoreService,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
   getRandomPublicIdentifier,
 } from "@connext/types";
 import { Wallet } from "ethers";
@@ -99,8 +99,8 @@ describe("Can handle correct & incorrect installs", () => {
     const multisigAddress = Wallet.createRandom().address;
     const publicIdentifiers = getRandomPublicIdentifiers(2);
     const participants = [
-      getAddressFromIdentifier(publicIdentifiers[0]),
-      getAddressFromIdentifier(publicIdentifiers[1]),
+      getAddressFromPublicIdentifier(publicIdentifiers[0]),
+      getAddressFromPublicIdentifier(publicIdentifiers[1]),
     ];
 
     const stateChannel = StateChannel.setupChannel(

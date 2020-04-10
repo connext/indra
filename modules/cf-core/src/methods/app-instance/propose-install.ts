@@ -3,7 +3,7 @@ import {
   MethodParams,
   MethodResults,
   ProtocolNames,
-  getChainIdFromIdentifier,
+  getChainIdFromPublicIdentifier,
   getAssetId,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
@@ -52,7 +52,7 @@ export class ProposeInstallAppInstanceController extends NodeController {
     const { initialState } = params;
     const { publicIdentifier } = requestHandler;
 
-    const chainId = getChainIdFromIdentifier(publicIdentifier);
+    const chainId = getChainIdFromPublicIdentifier(publicIdentifier);
 
     if (!initialState) {
       throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);

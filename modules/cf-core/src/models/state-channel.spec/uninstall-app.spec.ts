@@ -1,6 +1,6 @@
 import { Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress, getAddressFromIdentifier } from "@connext/types";
+import { createRandomAddress, getAddressFromPublicIdentifier } from "@connext/types";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
@@ -36,15 +36,15 @@ describe("StateChannel::uninstallApp", () => {
 
     sc1 = sc1.installApp(testApp, {
       [AddressZero]: {
-        [getAddressFromIdentifier(ids[0])]: Zero,
-        [getAddressFromIdentifier(ids[1])]: Zero,
+        [getAddressFromPublicIdentifier(ids[0])]: Zero,
+        [getAddressFromPublicIdentifier(ids[1])]: Zero,
       },
     });
 
     sc2 = sc1.uninstallApp(testApp, {
       [AddressZero]: {
-        [getAddressFromIdentifier(ids[0])]: Zero,
-        [getAddressFromIdentifier(ids[1])]: Zero,
+        [getAddressFromPublicIdentifier(ids[0])]: Zero,
+        [getAddressFromPublicIdentifier(ids[1])]: Zero,
       },
     });
   });

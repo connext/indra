@@ -8,8 +8,8 @@ import {
   ProtocolRoles,
   getAssetId,
   getChainIdFromAssetId,
-  getAddressFromIdentifier,
-  getChainIdFromIdentifier,
+  getAddressFromPublicIdentifier,
+  getChainIdFromPublicIdentifier,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
@@ -97,9 +97,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
       initiatorDepositAssetId: initiatorDepositAssetId 
-        || getAssetId(AddressZero, getChainIdFromIdentifier(initiatorIdentifier)),
+        || getAssetId(AddressZero, getChainIdFromPublicIdentifier(initiatorIdentifier)),
       responderDepositAssetId: responderDepositAssetId 
-        || getAssetId(AddressZero, getChainIdFromIdentifier(responderIdentifier)),
+        || getAssetId(AddressZero, getChainIdFromPublicIdentifier(responderIdentifier)),
       meta,
     };
 
@@ -167,7 +167,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     await assertIsValidSignature(
-      getAddressFromIdentifier(responderIdentifier),
+      getAddressFromPublicIdentifier(responderIdentifier),
       setStateCommitment.hashToSign(),
       responderSignatureOnInitialState,
     );
@@ -302,7 +302,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     await assertIsValidSignature(
-      getAddressFromIdentifier(initiatorIdentifier),
+      getAddressFromPublicIdentifier(initiatorIdentifier),
       setStateCommitment.hashToSign(),
       initiatorSignatureOnInitialState,
     );

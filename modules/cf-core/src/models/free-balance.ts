@@ -1,4 +1,4 @@
-import { AppInterface, OutcomeType, stringify, toBN, getAddressFromIdentifier, PublicIdentifier } from "@connext/types";
+import { AppInterface, OutcomeType, stringify, toBN, getAddressFromPublicIdentifier, PublicIdentifier } from "@connext/types";
 import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
@@ -204,8 +204,8 @@ export function createFreeBalance(
   freeBalanceTimeout: number,
   multisigAddress: string,
 ) {
-  const initiator = getAddressFromIdentifier(initiatorId);
-  const responder = getAddressFromIdentifier(responderId);
+  const initiator = getAddressFromPublicIdentifier(initiatorId);
+  const responder = getAddressFromPublicIdentifier(responderId);
 
   const initialState: FreeBalanceState = {
     activeAppsMap: {},
@@ -282,11 +282,4 @@ function convertCoinTransfersMapToCoinTransfers(coinTransfersMap: CoinTransferMa
     to,
     amount,
   }));
-}
-
-/**
- * Address used for a Node's free balance
- */
-export function getSignerAddress(publicIdentifier: string) {
-  return getAddressFromIdentifier(publicIdentifier);
 }

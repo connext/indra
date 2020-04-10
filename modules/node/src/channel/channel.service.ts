@@ -5,7 +5,7 @@ import {
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
   stringify,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -331,10 +331,10 @@ export class ChannelService {
     }
     if (
       !creationData.data.owners.includes(
-        getAddressFromIdentifier(existing.nodeIdentifier),
+        getAddressFromPublicIdentifier(existing.nodeIdentifier),
       ) ||
       !creationData.data.owners.includes(
-        getAddressFromIdentifier(existing.userIdentifier),
+        getAddressFromPublicIdentifier(existing.userIdentifier),
       )
     ) {
       throw new Error(

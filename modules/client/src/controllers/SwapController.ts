@@ -9,7 +9,7 @@ import {
   toBN,
   getAssetId,
   AssetId,
-  getAddressFromIdentifier,
+  getAddressFromAssetId,
 } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, getAddress, parseEther } from "ethers/utils";
@@ -20,7 +20,7 @@ import {
   notLessThanOrEqualTo,
   notPositive,
   validate,
-  invalidIdentifier,
+  invalidAssetIdentifier,
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -47,8 +47,8 @@ export class SwapController extends AbstractController {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     validate(
-      invalidIdentifier(fromAssetId),
-      invalidIdentifier(toAssetId),
+      invalidAssetIdentifier(fromAssetId),
+      invalidAssetIdentifier(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
       notPositive(parseEther(swapRate)),
@@ -124,8 +124,8 @@ export class SwapController extends AbstractController {
 
     this.log.info(
       `Swapping ${formatEther(amount)} ${
-        getAddressFromIdentifier(fromAssetId) === AddressZero ? "ETH" : "Tokens"
-      } for ${formatEther(swappedAmount)} ${getAddressFromIdentifier(toAssetId) === AddressZero ? "ETH" : "Tokens"}`,
+        getAddressFromAssetId(fromAssetId) === AddressZero ? "ETH" : "Tokens"
+      } for ${formatEther(swappedAmount)} ${getAddressFromAssetId(toAssetId) === AddressZero ? "ETH" : "Tokens"}`,
     );
 
     // NOTE: always put the initiators swap information FIRST

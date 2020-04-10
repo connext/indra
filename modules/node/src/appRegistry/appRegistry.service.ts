@@ -20,7 +20,7 @@ import {
   HashLockTransferAppState,
   SimpleSignedTransferAppState,
   DepositAppName,
-  getAddressFromIdentifier,
+  getAddressFromAssetId,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -91,7 +91,7 @@ export class AppRegistryService implements OnModuleInit {
       if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
         const depositReceipt = await this.channelService.rebalance(
           from,
-          getAddressFromIdentifier(proposeInstallParams.responderDepositAssetId),
+          getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
           RebalanceType.COLLATERALIZE,
           responderDepositBigNumber,
         );
@@ -244,7 +244,7 @@ export class AppRegistryService implements OnModuleInit {
     // rebalance at the end without blocking
     this.channelService.rebalance(
       from,
-      getAddressFromIdentifier(proposeInstallParams.responderDepositAssetId),
+      getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
       RebalanceType.RECLAIM,
     );
   }

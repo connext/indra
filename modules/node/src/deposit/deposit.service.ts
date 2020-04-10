@@ -6,7 +6,7 @@ import {
   Contract,
   DepositAppName,
   DepositAppState,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
   getAssetId,
   MinimalTransaction,
   stringify,
@@ -170,7 +170,7 @@ export class DepositService {
         },
         {
           amount: Zero,
-          to: getAddressFromIdentifier(channel.userIdentifier),
+          to: getAddressFromPublicIdentifier(channel.userIdentifier),
         },
       ],
       multisigAddress: channel.multisigAddress,

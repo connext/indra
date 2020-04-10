@@ -8,7 +8,6 @@ import {
   ProtocolParams,
   toBN,
   PublicIdentifier,
-  getAddressFromIdentifier,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 

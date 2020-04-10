@@ -5,7 +5,7 @@ import {
   ProtocolParams,
   ProtocolRoles,
   UpdateMiddlewareContext,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -78,7 +78,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    const responderAddr = getAddressFromIdentifier(responderIdentifier);
+    const responderAddr = getAddressFromPublicIdentifier(responderIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
 
@@ -185,7 +185,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    const initiatorAddr = getAddressFromIdentifier(initiatorIdentifier);
+    const initiatorAddr = getAddressFromPublicIdentifier(initiatorIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
 

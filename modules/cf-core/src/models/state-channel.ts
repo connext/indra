@@ -3,7 +3,7 @@ import {
   AppInstanceProposal,
   CriticalStateChannelAddresses,
   deBigNumberifyJson,
-  getAddressFromIdentifier,
+  getAddressFromPublicIdentifier,
   IStoreService,
   PublicIdentifier,
   SolidityValueType,
@@ -146,8 +146,8 @@ export class StateChannel {
     responderId: string, 
   ): string[] {
     return [
-      getAddressFromIdentifier(initiatorId),
-      getAddressFromIdentifier(responderId),
+      getAddressFromPublicIdentifier(initiatorId),
+      getAddressFromPublicIdentifier(responderId),
     ];
   }
 
@@ -170,7 +170,7 @@ export class StateChannel {
       );
     }
 
-    return getAddressFromIdentifier(identifer);
+    return getAddressFromPublicIdentifier(identifer);
   }
 
   public getFreeBalanceAddrOf(identifier: string): string {
@@ -183,7 +183,7 @@ export class StateChannel {
       );
     }
 
-    return getAddressFromIdentifier(identifier);
+    return getAddressFromPublicIdentifier(identifier);
   }
 
   public getFreeBalanceClass() {
