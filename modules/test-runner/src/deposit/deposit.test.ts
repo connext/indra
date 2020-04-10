@@ -54,7 +54,7 @@ describe("Deposits", () => {
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    nodeSignerAddress = getAddressFromPublicIdentifier(client.config.nodeIdentifier);
+    nodeSignerAddress = client.nodeSignerAddress;;
   });
 
   afterEach(async () => {

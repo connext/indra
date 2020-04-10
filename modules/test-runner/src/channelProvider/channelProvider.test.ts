@@ -31,7 +31,7 @@ describe("ChannelProvider", () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodeIdentifier = client.config.nodeIdentifier;
-    nodeSignerAddress = getAddressFromPublicIdentifier(nodeIdentifier);
+    nodeSignerAddress = client.nodeSignerAddress;;
     tokenAddress = client.config.contractAddresses.Token;
   });
 
