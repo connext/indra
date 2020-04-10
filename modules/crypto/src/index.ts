@@ -171,7 +171,7 @@ export async function decryptWithPrivateKey(privateKey: string, message: string)
 }
 
 export class ChannelSigner implements IChannelSigner {
-  public static async createRandom() {
+  public static createRandom() {
     const privateKey = bufferToHex(randomBytes(32), true);
     return new ChannelSigner(privateKey);
   }
@@ -205,7 +205,6 @@ export class ChannelSigner implements IChannelSigner {
     return signChannelMessage(this.privateKey, message);
   }
 
-  // TODO: remove below 2 fns when done refactoring
   public async getAddress(): Promise<string> {
     return this.address;
   }

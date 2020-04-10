@@ -29,8 +29,8 @@ export {
   Opcode,
 } from "./protocol";
 export * from "./middleware";
-export * from "./publicMethods";
-export * from "./publicIdentifiers";
+export * from "./public";
+export * from "./identifiers";
 export * from "./state";
 export * from "./store";
 export * from "./transfers";

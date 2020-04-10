@@ -6,7 +6,7 @@ import {
 } from "./commitments";
 import { ContractAddresses } from "./contracts";
 import { MethodResults } from "./methods";
-import { PublicResults } from "./publicMethods";
+import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
 import { Collateralizations, RebalanceProfile } from "./misc";

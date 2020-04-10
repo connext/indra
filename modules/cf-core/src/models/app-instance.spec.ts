@@ -7,8 +7,8 @@ import { AppInstance } from "./app-instance";
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {
     const participants = [
-      getPublicIdentifier(4447, getAddress(createRandomAddress())),
-      getPublicIdentifier(4447, getAddress(createRandomAddress())),
+      getPublicIdentifier(createRandomAddress()),
+      getPublicIdentifier(createRandomAddress()),
     ];
 
     const appInstance = new AppInstance(

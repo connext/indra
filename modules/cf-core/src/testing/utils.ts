@@ -104,14 +104,8 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
       stateChannel!.userPublicIdentifiers[1],
     ]
     : [
-        getPublicIdentifier(
-          GANACHE_CHAIN_ID,
-          getAddress(hexlify(randomBytes(20))),
-        ),
-        getPublicIdentifier(
-          GANACHE_CHAIN_ID,
-          getAddress(hexlify(randomBytes(20))),
-        ),
+        getPublicIdentifier(hexlify(randomBytes(32))),
+        getPublicIdentifier(hexlify(randomBytes(32))),
       ];
   return new AppInstance(
     /* initiator */ initiator,

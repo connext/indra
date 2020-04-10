@@ -9,7 +9,7 @@ import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
 import { MethodResults, MethodParams, MethodName } from "./methods";
 import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
-import { PublicParams, PublicResults } from "./publicMethods";
+import { PublicParams, PublicResults } from "./public";
 
 /////////////////////////////////
 

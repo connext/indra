@@ -6,8 +6,6 @@ import {
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
-  getAssetId,
-  getChainIdFromIdentifier,
   getAddressFromIdentifier,
 } from "@connext/types";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
@@ -94,10 +92,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorIdentifier,
       responderIdentifier,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositAssetId: initiatorDepositAssetId 
-        || getAssetId(getChainIdFromIdentifier(initiatorIdentifier)),
-      responderDepositAssetId: responderDepositAssetId 
-        || getAssetId(getChainIdFromIdentifier(responderIdentifier)),
+      initiatorDepositAssetId: initiatorDepositAssetId,
+      responderDepositAssetId: responderDepositAssetId,
       meta,
     };
 
@@ -260,10 +256,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       meta,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositAssetId: initiatorDepositAssetId 
-        || getAssetId(getChainIdFromIdentifier(initiatorIdentifier)),
-      responderDepositAssetId: responderDepositAssetId 
-        || getAssetId(getChainIdFromIdentifier(responderIdentifier)),
+      initiatorDepositAssetId: initiatorDepositAssetId,
+      responderDepositAssetId: responderDepositAssetId,
     };
 
     yield [
