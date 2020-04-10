@@ -23,7 +23,7 @@ describe("Reclaim", () => {
     clientA = await createClient();
     clientB = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
-    nodeSignerAddress = clientA.config.nodePublicIdentifier;
+    nodeSignerAddress = clientA.config.nodeIdentifier;
   });
 
   afterEach(async () => {

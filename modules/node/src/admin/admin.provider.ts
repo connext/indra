@@ -42,13 +42,13 @@ class AdminMessaging extends AbstractMessagingProvider {
   }
 
   async getStateChannelByUserPublicIdentifier(data: {
-    userPublicIdentifier: string;
+    userIdentifier: string;
   }): Promise<StateChannelJSON> {
-    const { userPublicIdentifier } = data;
-    if (!userPublicIdentifier) {
+    const { userIdentifier } = data;
+    if (!userIdentifier) {
       throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
     }
-    return await this.adminService.getStateChannelByUserPublicIdentifier(userPublicIdentifier);
+    return await this.adminService.getStateChannelByUserPublicIdentifier(userIdentifier);
   }
 
   async getStateChannelByMultisig(

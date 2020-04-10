@@ -75,7 +75,7 @@ export const createAppInstanceProposal = (
 export const createStateChannelJSON = (
   overrides: Partial<StateChannelJSON> = {},
 ): StateChannelJSON => {
-  const userPublicIdentifiers = [generateRandomAddress(), generateRandomAddress()];
+  const userIdentifiers = [generateRandomAddress(), generateRandomAddress()];
   const channelData: Omit<StateChannelJSON, "freeBalanceAppInstance"> = {
     addresses: {
       multisigMastercopy: "",
@@ -86,7 +86,7 @@ export const createStateChannelJSON = (
     multisigAddress: generateRandomAddress(),
     proposedAppInstances: [],
     schemaVersion: 1,
-    userPublicIdentifiers,
+    userIdentifiers,
     ...overrides,
   };
 
@@ -94,8 +94,8 @@ export const createStateChannelJSON = (
     ...channelData,
     freeBalanceAppInstance: createAppInstanceJson({
       multisigAddress: channelData.multisigAddress,
-      initiatorIdentifier: channelData.userPublicIdentifiers[0],
-      responderIdentifier: channelData.userPublicIdentifiers[1],
+      initiatorIdentifier: channelData.userIdentifiers[0],
+      responderIdentifier: channelData.userIdentifiers[1],
       ...overrides.freeBalanceAppInstance,
     }),
   };

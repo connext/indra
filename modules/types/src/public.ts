@@ -169,8 +169,8 @@ type SwapParameters = {
 
 type SwapResponse = {
   id: number;
-  nodePublicIdentifier: PublicIdentifier;
-  userPublicIdentifier: PublicIdentifier;
+  nodeIdentifier: PublicIdentifier;
+  userIdentifier: PublicIdentifier;
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: { [assetId: string]: boolean };

@@ -62,7 +62,7 @@ export const createCFChannelProvider = async ({
   const channelProviderConfig: ChannelProviderConfig = {
     signerAddress: address,
     nodeUrl,
-    userPublicIdentifier: getPublicIdentifier(
+    userIdentifier: getPublicIdentifier(
       publicKey,
       (await ethProvider.getNetwork()).chainId,
     ),

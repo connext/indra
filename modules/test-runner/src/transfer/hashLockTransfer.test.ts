@@ -80,7 +80,7 @@ describe("HashLock Transfers", () => {
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,
-      [clientA.nodePublicIdentifier]: nodePostTransferBal,
+      [clientA.nodeIdentifier]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
@@ -89,7 +89,7 @@ describe("HashLock Transfers", () => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
           [clientA.signerAddress]: clientAPostReclaimBal,
-          [clientA.nodePublicIdentifier]: nodePostReclaimBal,
+          [clientA.nodeIdentifier]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -132,7 +132,7 @@ describe("HashLock Transfers", () => {
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,
-      [clientA.nodePublicIdentifier]: nodePostTransferBal,
+      [clientA.nodeIdentifier]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
@@ -141,7 +141,7 @@ describe("HashLock Transfers", () => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
           [clientA.signerAddress]: clientAPostReclaimBal,
-          [clientA.nodePublicIdentifier]: nodePostReclaimBal,
+          [clientA.nodeIdentifier]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);

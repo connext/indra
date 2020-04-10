@@ -44,7 +44,7 @@ export type ChannelProviderConfig = {
   signerAddress: Address;
   multisigAddress?: Address; // may not be deployed yet
   nodeUrl: string;
-  userPublicIdentifier: PublicIdentifier;
+  userIdentifier: PublicIdentifier;
 };
 
 export interface CFChannelProviderOptions {

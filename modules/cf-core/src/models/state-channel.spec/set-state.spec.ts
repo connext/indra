@@ -50,7 +50,7 @@ describe("StateChannel::setState", () => {
 
   it("should not alter any of the base properties", () => {
     expect(sc2.multisigAddress).toBe(sc1.multisigAddress);
-    expect(sc2.userPublicIdentifiers).toMatchObject(sc1.userPublicIdentifiers);
+    expect(sc2.userIdentifiers).toMatchObject(sc1.userIdentifiers);
   });
 
   it("should not have bumped the sequence number", () => {

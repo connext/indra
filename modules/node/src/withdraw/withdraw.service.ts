@@ -179,14 +179,14 @@ export class WithdrawService {
     return await this.withdrawRepository.save(withdraw);
   }
 
-  async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+  async getLatestWithdrawal(userIdentifier: string): Promise<OnchainTransaction | undefined> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
     if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+      throw new Error(`No channel exists for userIdentifier ${userIdentifier}`);
     }
 
     return await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
-      userPublicIdentifier,
+      userIdentifier,
     );
   }
 
@@ -214,7 +214,7 @@ export class WithdrawService {
 
     const transfers: CoinTransfer[] = [
       { amount, to: this.cfCoreService.cfCore.signerAddress },
-      { amount: Zero, to: channel.userPublicIdentifier },
+      { amount: Zero, to: channel.userIdentifier },
     ];
 
     const initialState: WithdrawAppState = {
@@ -222,7 +222,7 @@ export class WithdrawService {
       signatures: [withdrawerSignatureOnCommitment, HashZero],
       signers: [
         this.cfCoreService.cfCore.signerAddress,
-        channel.userPublicIdentifier,
+        channel.userIdentifier,
       ],
       data: hash,
       nonce,

@@ -18,14 +18,14 @@ describe("ChannelProvider", () => {
   let client: IConnextClient;
   let remoteClient: IConnextClient;
   let nodeSignerAddress: string;
-  let nodePublicIdentifier: string;
+  let nodeIdentifier: string;
   let tokenAddress: string;
 
   beforeEach(async () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
-    nodePublicIdentifier = client.config.nodePublicIdentifier;
-    nodeSignerAddress = getAddressFromIdentifier(nodePublicIdentifier);
+    nodeIdentifier = client.config.nodeIdentifier;
+    nodeSignerAddress = getAddressFromIdentifier(nodeIdentifier);
     tokenAddress = client.config.contractAddresses.Token;
   });
 
@@ -35,10 +35,10 @@ describe("ChannelProvider", () => {
 
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
-    const _nodePublicIdentifier = remoteClient.config.nodePublicIdentifier;
-    const _nodeSignerAddress = nodePublicIdentifier;
+    const _nodeIdentifier = remoteClient.config.nodeIdentifier;
+    const _nodeSignerAddress = nodeIdentifier;
     expect(_tokenAddress).to.be.eq(tokenAddress);
-    expect(_nodePublicIdentifier).to.be.eq(nodePublicIdentifier);
+    expect(_nodeIdentifier).to.be.eq(nodeIdentifier);
     expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);
   });
 
@@ -64,7 +64,7 @@ describe("ChannelProvider", () => {
     const transferFinished = Promise.all([
       new Promise(async resolve => {
         await clientB.messaging.subscribe(
-          `${client.nodePublicIdentifier}.channel.*.app-instance.*.uninstall`,
+          `${client.nodeIdentifier}.channel.*.app-instance.*.uninstall`,
           resolve,
         );
       }),

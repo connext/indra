@@ -96,8 +96,8 @@ export function createAppInstanceProposalForTest(appIdentityHash: string): AppIn
 export function createAppInstanceForTest(stateChannel?: StateChannel) {
   const [initiator, responder] = stateChannel
     ? [
-      stateChannel!.userPublicIdentifiers[0], 
-      stateChannel!.userPublicIdentifiers[1],
+      stateChannel!.userIdentifiers[0], 
+      stateChannel!.userIdentifiers[1],
     ]
     : [
         getRandomPublicIdentifier(),

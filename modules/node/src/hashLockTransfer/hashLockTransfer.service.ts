@@ -78,7 +78,7 @@ export class HashLockTransferService {
   }
 
   async resolveHashLockTransfer(
-    senderPublicIdentifier: string,
+    senderIdentifier: string,
     receiverPublicIdentifier: string,
     appState: HashLockTransferAppState,
     assetId: string,
@@ -158,7 +158,7 @@ export class HashLockTransferService {
       Zero,
       assetId,
       HashLockTransferAppName,
-      { ...meta, sender: senderPublicIdentifier },
+      { ...meta, sender: senderIdentifier },
       HASHLOCK_TRANSFER_STATE_TIMEOUT,
     );
 

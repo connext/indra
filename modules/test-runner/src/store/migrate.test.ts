@@ -39,14 +39,14 @@ const convertV0toV1JSON = (oldChannel: any, nodeAddress: string = env.nodePubId)
     const { isVirtualApp, participants, latestTimeout, timeout, ...ret } = obj;
     return ret;
   };
-  const userAddress = oldChannel.userPublicIdentifiers.find(
+  const userAddress = oldChannel.userIdentifiers.find(
     x => x !== nodeAddress,
   );
   return {
     schemaVersion: STORE_SCHEMA_VERSION,
     monotonicNumProposedApps: oldChannel.monotonicNumProposedApps,
     multisigAddress: oldChannel.multisigAddress,
-    userPublicIdentifiers: oldChannel.userPublicIdentifiers.sort(),
+    userIdentifiers: oldChannel.userIdentifiers.sort(),
     proposedAppInstances: oldChannel.proposedAppInstances 
       ? oldChannel.proposedAppInstances.map(([id, proposal]) => [
           id,
@@ -126,7 +126,7 @@ describe("Store Migrations", () => {
         )
       `);
       await dbClient.query(SQL`
-        INSERT INTO "channel" ("userPublicIdentifier", "nodePublicIdentifier", "multisigAddress") VALUES (
+        INSERT INTO "channel" ("userIdentifier", "nodeIdentifier", "multisigAddress") VALUES (
           ${oldClientAddresss[idx]},
           ${nodePubId},
           ${json.multisigAddress}
@@ -161,8 +161,8 @@ describe("Store Migrations", () => {
       const [oldKey, oldVal] = oldClientChannels[idx];
       const json = oldVal[oldKey];
       expect(channelRow).to.containSubset({
-        userPublicIdentifier: oldClientAddresss[idx],
-        nodePublicIdentifier: nodePubId,
+        userIdentifier: oldClientAddresss[idx],
+        nodeIdentifier: nodePubId,
         multisigAddress: json.multisigAddress,
       });
     });

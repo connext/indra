@@ -167,7 +167,7 @@ describe("Async transfer offline tests", () => {
       amount: TOKEN_AMOUNT_SM,
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
-      senderPublicIdentifier: senderClient.publicIdentifier,
+      senderIdentifier: senderClient.publicIdentifier,
       status: LinkedTransferStatus.COMPLETED,
       assetId: tokenAddress,
     };
@@ -238,7 +238,7 @@ describe("Async transfer offline tests", () => {
       assetId: tokenAddress,
       receiverPublicIdentifier: receiverClient.publicIdentifier,
       paymentId,
-      senderPublicIdentifier: senderClient.publicIdentifier,
+      senderIdentifier: senderClient.publicIdentifier,
       status: LinkedTransferStatus.COMPLETED,
     };
     await verifyTransfer(receiverClient, expected);

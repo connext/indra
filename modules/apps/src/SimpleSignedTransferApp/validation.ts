@@ -9,14 +9,14 @@ import { unidirectionalCoinTransferValidation } from "../shared";
 
 export const validateSignedTransferApp = (
   params: MethodParams.ProposeInstall,
-  initiatorPublicIdentifier: string,
-  responderPublicIdentifier: string,
+  initiatorIdentifier: string,
+  responderIdentifier: string,
 ) => {
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as SimpleSignedTransferAppState;
 
-  const initiatorSignerAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
-  const responderSignerAddress = getAddressFromIdentifier(responderPublicIdentifier);
+  const initiatorSignerAddress = getAddressFromIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getAddressFromIdentifier(responderIdentifier);
 
   // initiator is sender
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {

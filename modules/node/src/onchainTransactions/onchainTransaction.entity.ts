@@ -97,7 +97,7 @@ export class OnchainTransaction {
     "onchain_transaction"."hash" as "hash",
     "onchain_transaction"."data" as "data",
     "onchain_transaction"."nonce" as "nonce",
-    encode(digest("channel"."userPublicIdentifier", 'sha256'), 'hex') as "publicIdentifier"
+    encode(digest("channel"."userIdentifier", 'sha256'), 'hex') as "publicIdentifier"
   FROM "onchain_transaction"
     LEFT JOIN "channel" ON "channel"."id" = "onchain_transaction"."channelId"
   `,

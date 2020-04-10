@@ -93,7 +93,7 @@ export class TakeActionController extends NodeController {
 
     const responderAddress = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      sc.userPublicIdentifiers,
+      sc.userIdentifiers,
     );
 
     await runTakeActionProtocol(

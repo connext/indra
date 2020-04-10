@@ -84,7 +84,7 @@ export class UninstallController extends NodeController {
 
     const to = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      stateChannel.userPublicIdentifiers,
+      stateChannel.userIdentifiers,
     );
 
     await uninstallAppInstanceFromChannel(

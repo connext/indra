@@ -49,7 +49,7 @@ export class DepositService {
     this.log.debug(`Found deposit app: ${stringify(depositApp, 2)}`);
     if (
       depositApp && 
-      depositApp.latestState.transfers[0].to === channel.userPublicIdentifier
+      depositApp.latestState.transfers[0].to === channel.userIdentifier
     ) {
       throw new Error(
         `Cannot deposit, user has deposit app installed for asset ${tokenAddress}, app: ${depositApp.identityHash}`,
@@ -73,7 +73,7 @@ export class DepositService {
       await this.rescindDepositRights(appIdentityHash || depositApp.identityHash);
     }
     console.log('free balance post collateral', await this.cfCoreService.getFreeBalance(
-      channel.userPublicIdentifier,
+      channel.userIdentifier,
       channel.multisigAddress,
       getAssetId(
         tokenAddress,
@@ -170,7 +170,7 @@ export class DepositService {
         },
         {
           amount: Zero,
-          to: getAddressFromIdentifier(channel.userPublicIdentifier),
+          to: getAddressFromIdentifier(channel.userIdentifier),
         },
       ],
       multisigAddress: channel.multisigAddress,

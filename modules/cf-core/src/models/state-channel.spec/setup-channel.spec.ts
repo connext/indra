@@ -40,7 +40,7 @@ describe("StateChannel::setupChannel", () => {
 
   it("should not alter any of the base properties", () => {
     expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userPublicIdentifiers).toMatchObject(ids);
+    expect(sc.userIdentifiers).toMatchObject(ids);
   });
 
   it("should have bumped the sequence number", () => {
@@ -93,7 +93,7 @@ describe("StateChannel::setupChannel", () => {
       expect(fb.appSeqNo).toBe(0);
     });
 
-    it("should set the participants as the userPublicIdentifiers", () => {});
+    it("should set the participants as the userIdentifiers", () => {});
 
     it("should have 0 balances for Alice and Bob", () => {
       for (const amount of Object.values(

@@ -37,8 +37,8 @@ const appProposalMatchesRegistry = (
  * is uninstalled.
  *
  * @param params
- * @param initiatorPublicIdentifier
- * @param responderPublicIdentifier
+ * @param initiatorIdentifier
+ * @param responderIdentifier
  */
 export const baseCoinTransferValidation = (
   initiatorDeposit: BigNumber,
@@ -67,8 +67,8 @@ export const baseCoinTransferValidation = (
  * is a unidirectional receiver.
  *
  * @param params
- * @param initiatorPublicIdentifier
- * @param responderPublicIdentifier
+ * @param initiatorIdentifier
+ * @param responderIdentifier
  */
 export const unidirectionalCoinTransferValidation = (
   initiatorDeposit: BigNumber,

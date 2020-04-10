@@ -16,16 +16,16 @@ import { BaseProvider, JsonRpcProvider } from "ethers/providers";
 
 export const validateDepositApp = async (
   params: MethodParams.ProposeInstall,
-  initiatorPublicIdentifier: string,
-  responderPublicIdentifier: string,
+  initiatorIdentifier: string,
+  responderIdentifier: string,
   multisigAddress: string,
   provider: BaseProvider,
 ) => {
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as DepositAppState;
 
-  const initiatorSignerAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
-  const responderSignerAddress = getAddressFromIdentifier(responderPublicIdentifier);
+  const initiatorSignerAddress = getAddressFromIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getAddressFromIdentifier(responderIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];

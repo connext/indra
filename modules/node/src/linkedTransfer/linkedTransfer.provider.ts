@@ -80,10 +80,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   }
 
   async getPendingTransfers(
-    userPublicIdentifier: string,
+    userIdentifier: string,
   ): Promise<NodeResponses.GetPendingAsyncTransfers> {
     const transfers = await this.linkedTransferService.getLinkedTransfersForRedeem(
-      userPublicIdentifier,
+      userIdentifier,
     );
     return transfers.map(transfer => {
       const state = bigNumberifyJson(transfer.latestState) as SimpleLinkedTransferAppState;
@@ -92,7 +92,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
         createdAt: transfer.createdAt,
         amount: state.amount,
         assetId: state.assetId,
-        senderIdentifier: transfer.channel.userPublicIdentifier,
+        senderIdentifier: transfer.channel.userIdentifier,
         receiverIdentifier: transfer.meta["recipient"],
         status: LinkedTransferStatus.PENDING,
         meta: transfer.meta,

@@ -47,10 +47,10 @@ export class AdminService implements OnApplicationBootstrap {
 
   /**  Get channels by address */
   async getStateChannelByUserPublicIdentifier(
-    userPublicIdentifier: string,
+    userIdentifier: string,
   ): Promise<StateChannelJSON> {
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
+      userIdentifier,
     );
     return convertChannelToJSON(channel);
   }
@@ -100,7 +100,7 @@ export class AdminService implements OnApplicationBootstrap {
     const corrupted = [];
     for (const channel of channels) {
       // try to get the free balance of eth
-      const { id, multisigAddress, userPublicIdentifier: userAddress } = channel;
+      const { id, multisigAddress, userIdentifier: userAddress } = channel;
       try {
         await this.cfCoreService.getFreeBalance(userAddress, multisigAddress);
       } catch (error) {
@@ -135,7 +135,7 @@ export class AdminService implements OnApplicationBootstrap {
       const mergeInfo = {
         channelId: chan.id,
         records: { oldPrefix, currPrefix },
-        userAddress: chan.userPublicIdentifier,
+        userAddress: chan.userIdentifier,
       };
       toMerge.push(mergeInfo);
     }
@@ -165,8 +165,8 @@ export class AdminService implements OnApplicationBootstrap {
         !state.addresses.multisigMastercopy ||
         state.multisigAddress !==
           (await getCreate2MultisigAddress(
-            state.userPublicIdentifiers[0],
-            state.userPublicIdentifiers[1],
+            state.userIdentifiers[0],
+            state.userIdentifiers[1],
             state.addresses,
             this.configService.getEthProvider(),
           ))
@@ -186,8 +186,8 @@ export class AdminService implements OnApplicationBootstrap {
       const state = await this.cfCoreStore.getStateChannel(brokenMultisig);
       this.log.info(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
       const criticalAddresses = await scanForCriticalAddresses(
-        state.userPublicIdentifiers[0],
-        state.userPublicIdentifiers[1],
+        state.userIdentifiers[0],
+        state.userIdentifiers[1],
         state.multisigAddress,
         this.configService.getEthProvider(),
       );
@@ -244,7 +244,7 @@ export class AdminService implements OnApplicationBootstrap {
     const channelJSONs: StateChannelJSON[] = Object.values(oldChannelRecords);
     this.log.log(`Found ${channelJSONs.length} old channel records`);
     for (const channelJSON of channelJSONs) {
-      if (channelJSON.userPublicIdentifiers.length === 3) {
+      if (channelJSON.userIdentifiers.length === 3) {
         // just ignore virtual channels
         continue;
       }
@@ -336,8 +336,8 @@ export class AdminService implements OnApplicationBootstrap {
               initiatorDeposit: "0",
               initiatorDepositAssetId: AddressZero,
               outcomeType: appInstance.outcomeType as OutcomeType,
-              initiatorIdentifier: channelJSON.userPublicIdentifiers[0],
-              responderIdentifier: channelJSON.userPublicIdentifiers[1],
+              initiatorIdentifier: channelJSON.userIdentifiers[0],
+              responderIdentifier: channelJSON.userIdentifiers[1],
               responderDeposit: "0",
               responderDepositAssetId: AddressZero,
               meta: appInstance.meta,

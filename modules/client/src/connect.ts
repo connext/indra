@@ -83,13 +83,13 @@ export const connect = async (
       return sig;
     };
 
-    let { userPublicIdentifier, nodeUrl } = channelProvider.config;
+    let { userIdentifier, nodeUrl } = channelProvider.config;
 
     if (!messaging) {
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        userPublicIdentifier,
+        userIdentifier,
         getSignature,
         messagingUrl,
       );
@@ -108,8 +108,8 @@ export const connect = async (
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userPublicIdentifier = userPublicIdentifier;
-    node.nodePublicIdentifier = config.nodePublicIdentifier;
+    node.userIdentifier = userIdentifier;
+    node.nodeIdentifier = config.nodeIdentifier;
 
     isInjected = true;
   } else if (signer || mnemonic) {
@@ -142,7 +142,7 @@ export const connect = async (
     config = await node.config();
 
     // ensure that node and user identifiers are different
-    if (config.nodePublicIdentifier === identifier) {
+    if (config.nodeIdentifier === identifier) {
       throw new Error(
         "Client must be instantiated with a signer that is different from the node's",
       );
@@ -164,8 +164,8 @@ export const connect = async (
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
-    node.nodePublicIdentifier = config.nodePublicIdentifier;
+    node.userIdentifier = channelProvider.config.userIdentifier;
+    node.nodeIdentifier = config.nodeIdentifier;
   } else {
     throw new Error("Must provide channelProvider or signer");
   }

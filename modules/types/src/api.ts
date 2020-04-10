@@ -6,8 +6,8 @@ import { PublicIdentifier } from "./identifiers";
 
 export interface INodeApiClient {
   channelProvider: IChannelProvider | undefined;
-  userPublicIdentifier: PublicIdentifier | undefined;
-  nodePublicIdentifier: PublicIdentifier | undefined;
+  userIdentifier: PublicIdentifier | undefined;
+  nodeIdentifier: PublicIdentifier | undefined;
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
   appRegistry(
     appDetails?:

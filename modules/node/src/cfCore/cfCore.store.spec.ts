@@ -33,8 +33,8 @@ import { toBN } from "@connext/types";
 
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
-  nodePublicIdentifier: string,
-  userPublicIdentifier: string = generateRandomAddress(),
+  nodeIdentifier: string,
+  userIdentifier: string = generateRandomAddress(),
   multisigAddress: string = generateRandomAddress(),
 ) => {
   await cfCoreStore.createSetupCommitment(multisigAddress, {
@@ -45,17 +45,17 @@ const createTestChannel = async (
 
   const channelJson = createStateChannelJSON({
     multisigAddress,
-    userPublicIdentifiers: [nodePublicIdentifier, userPublicIdentifier],
+    userIdentifiers: [nodeIdentifier, userIdentifier],
   });
   await cfCoreStore.createStateChannel(channelJson);
 
-  return { multisigAddress, userPublicIdentifier, channelJson };
+  return { multisigAddress, userIdentifier, channelJson };
 };
 
 const createTestChannelWithAppInstance = async (
   cfCoreStore: CFCoreStore,
-  nodePublicIdentifier: string,
-  userPublicIdentifier: string = generateRandomAddress(),
+  nodeIdentifier: string,
+  userIdentifier: string = generateRandomAddress(),
   multisigAddress: string = generateRandomAddress(),
 ) => {
   await cfCoreStore.createSetupCommitment(multisigAddress, {
@@ -66,15 +66,15 @@ const createTestChannelWithAppInstance = async (
 
   const channelJson = createStateChannelJSON({
     multisigAddress,
-    userPublicIdentifiers: [nodePublicIdentifier, userPublicIdentifier],
+    userIdentifiers: [nodeIdentifier, userIdentifier],
   });
   await cfCoreStore.createStateChannel(channelJson);
 
   const appProposal = createAppInstanceProposal({ appSeqNo: 2 });
   await cfCoreStore.createAppProposal(multisigAddress, appProposal, 2);
 
-  const userParticipantAddr = userPublicIdentifier;
-  const nodeParticipantAddr = nodePublicIdentifier;
+  const userParticipantAddr = userIdentifier;
+  const nodeParticipantAddr = nodeIdentifier;
 
   const appInstance = createAppInstanceJson({
     identityHash: appProposal.identityHash,
@@ -90,7 +90,7 @@ const createTestChannelWithAppInstance = async (
 
   return {
     multisigAddress,
-    userPublicIdentifier,
+    userIdentifier,
     channelJson,
     appInstance,
     updatedFreeBalance,
@@ -132,22 +132,22 @@ describe("CFCoreStore", () => {
 
   describe("Channel", () => {
     it("should create a state channel", async () => {
-      const nodePublicIdentifier = configService.getPublicIdentifier();
+      const nodeIdentifier = configService.getPublicIdentifier();
       const { multisigAddress, channelJson } = await createTestChannel(
         cfCoreStore,
-        nodePublicIdentifier,
+        nodeIdentifier,
       );
 
       let channel = await cfCoreStore.getStateChannel(multisigAddress);
-      const userIdentifier = channelJson.userPublicIdentifiers.find(
-        x => x !== nodePublicIdentifier,
+      const userIdentifier = channelJson.userIdentifiers.find(
+        x => x !== nodeIdentifier,
       );
       expect(channel).toMatchObject({
         ...channelJson,
-        userPublicIdentifiers: [nodePublicIdentifier, userIdentifier],
+        userIdentifiers: [nodeIdentifier, userIdentifier],
         freeBalanceAppInstance: {
           ...channelJson.freeBalanceAppInstance,
-          initiatorIdentifier: nodePublicIdentifier,
+          initiatorIdentifier: nodeIdentifier,
           responderIdentifier: userIdentifier,
         },
       });
@@ -221,19 +221,19 @@ describe("CFCoreStore", () => {
     it("should create app instance", async () => {
       const APP_SEQ_NO = 2;
 
-      const { multisigAddress, channelJson, userPublicIdentifier } = await createTestChannel(
+      const { multisigAddress, channelJson, userIdentifier } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
 
       const appProposal = createAppInstanceProposal({
         appSeqNo: APP_SEQ_NO,
-        initiatorIdentifier: userPublicIdentifier,
+        initiatorIdentifier: userIdentifier,
         responderIdentifier: configService.getPublicIdentifier(),
       });
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, APP_SEQ_NO);
 
-      const userParticipantAddr = userPublicIdentifier;
+      const userParticipantAddr = userIdentifier;
       const nodeParticipantAddr = configService.getPublicIdentifier();
 
       const appInstance = createAppInstanceJson({
@@ -263,19 +263,19 @@ describe("CFCoreStore", () => {
     it("should update app instance", async () => {
       const APP_SEQ_NO = 2;
 
-      const { multisigAddress, channelJson, userPublicIdentifier } = await createTestChannel(
+      const { multisigAddress, channelJson, userIdentifier } = await createTestChannel(
         cfCoreStore,
         configService.getPublicIdentifier(),
       );
 
       const appProposal = createAppInstanceProposal({
         appSeqNo: APP_SEQ_NO,
-        initiatorIdentifier: userPublicIdentifier,
+        initiatorIdentifier: userIdentifier,
         responderIdentifier: configService.getPublicIdentifier(),
       });
       await cfCoreStore.createAppProposal(multisigAddress, appProposal, APP_SEQ_NO);
 
-      const userParticipantAddr = userPublicIdentifier;
+      const userParticipantAddr = userIdentifier;
       const nodeParticipantAddr = configService.getPublicIdentifier();
 
       const appInstance = createAppInstanceJson({

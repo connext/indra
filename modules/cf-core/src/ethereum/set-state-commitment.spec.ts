@@ -45,8 +45,8 @@ describe("Set State Commitment", () => {
     getPublicIdentifier(responder.publicKey),
   );
 
-  expect(stateChannel.userPublicIdentifiers[0]).toEqual(getPublicIdentifier(initiator.publicKey));
-  expect(stateChannel.userPublicIdentifiers[1]).toEqual(getPublicIdentifier(responder.publicKey));
+  expect(stateChannel.userIdentifiers[0]).toEqual(getPublicIdentifier(initiator.publicKey));
+  expect(stateChannel.userIdentifiers[1]).toEqual(getPublicIdentifier(responder.publicKey));
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(

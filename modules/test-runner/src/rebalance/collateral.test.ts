@@ -17,7 +17,7 @@ describe("Collateral", () => {
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    nodeSignerAddress = client.config.nodePublicIdentifier;
+    nodeSignerAddress = client.config.nodeIdentifier;
   });
 
   afterEach(async () => {

@@ -551,7 +551,7 @@ class App extends React.Component {
       return;
     }
 
-    const hubFBAddress = connext.utils.addressToAddress(channel.nodePublicIdentifier);
+    const hubFBAddress = connext.utils.addressToAddress(channel.nodeIdentifier);
     // in swap, collateral needed is just weiToToken(availableWeiToSwap)
     const tokensForWei = weiToToken(availableWeiToSwap, swapRate);
     let collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];

@@ -137,7 +137,7 @@ describe("Async Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const receiverBal = await clientB.getFreeBalance(transfer.assetId);
-    expect(receiverBal[clientB.nodePublicIdentifier].lt(transfer.amount)).to.be.true;
+    expect(receiverBal[clientB.nodeIdentifier].lt(transfer.amount)).to.be.true;
 
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });

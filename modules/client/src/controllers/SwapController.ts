@@ -144,7 +144,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount: swappedAmount,
-            to: this.connext.nodePublicIdentifier,
+            to: this.connext.nodeIdentifier,
           },
         ],
       ],
@@ -162,7 +162,7 @@ export class SwapController extends AbstractController {
       initiatorDeposit: amount,
       initiatorDepositAssetId: fromAssetId,
       outcomeType: appInfo.outcomeType,
-      responderIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: swappedAmount,
       responderDepositAssetId: toAssetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,

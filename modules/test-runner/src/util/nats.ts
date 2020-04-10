@@ -20,7 +20,7 @@ export const connectNats = async (): Promise<Client> => {
   if (!natsClient) {
     const adminJWT: AxiosResponse<string> = await axios.post(`${env.nodeUrl}/auth`, {
       sig: "0xbeef",
-      userPublicIdentifier: getPublicIdentifier(signer.publicKey),
+      userIdentifier: getPublicIdentifier(signer.publicKey),
       adminToken: env.adminToken,
     } as VerifyNonceDtoType);
     natsClient = await connect({ servers: ["nats://172.17.0.1:4222"], userJWT: adminJWT.data });

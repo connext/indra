@@ -18,8 +18,8 @@ export interface NodeInitializationParameters {
   nodeUrl: string;
   messaging: IMessagingService;
   logger?: ILoggerService;
-  userPublicIdentifier?: Address;
-  nodePublicIdentifier?: Address;
+  userIdentifier?: Address;
+  nodeIdentifier?: Address;
   channelProvider?: IChannelProvider;
 }
 

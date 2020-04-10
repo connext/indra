@@ -43,15 +43,15 @@ export const formatMessagingUrl = (nodeUrl: string) => {
 
 export const getBearerToken = async (
   nodeUrl: string,
-  userPublicIdentifier: Address,
+  userIdentifier: Address,
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<string> => {
-  const nonceResponse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${userPublicIdentifier}`);
+  const nonceResponse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${userIdentifier}`);
   const nonce = nonceResponse.data;
   const sig = await getSignature(nonce);
   const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth`, {
     sig,
-    userPublicIdentifier,
+    userIdentifier,
   } as VerifyNonceDtoType);
   return verifyResponse.data;
 };

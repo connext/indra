@@ -62,12 +62,12 @@ export class SignedTransferService {
   }
 
   async installSignedTransferReceiverApp(
-    userPublicIdentifier: Address,
+    userIdentifier: Address,
     paymentId: Bytes32,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
+    this.log.debug(`resolveLinkedTransfer(${userIdentifier}, ${paymentId})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
+      userIdentifier,
     );
 
     // TODO: could there be more than 1? how to handle that case?
@@ -91,25 +91,25 @@ export class SignedTransferService {
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(
-      userPublicIdentifier,
+      userIdentifier,
       channel.multisigAddress,
       assetId,
     );
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.channelService.rebalance(
-        userPublicIdentifier,
+        userIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amount,
       );
       if (!depositReceipt) {
-        throw new Error(`Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userPublicIdentifier}`);
+        throw new Error(`Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`);
       }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
-        userPublicIdentifier,
+        userIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amount,
@@ -124,7 +124,7 @@ export class SignedTransferService {
         },
         {
           amount: Zero,
-          to: userPublicIdentifier,
+          to: userIdentifier,
         },
       ],
       paymentId,
@@ -151,7 +151,7 @@ export class SignedTransferService {
 
     return {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
-      sender: senderChannel.userPublicIdentifier,
+      sender: senderChannel.userIdentifier,
       meta: senderApp["meta"] || {},
       amount,
       assetId,

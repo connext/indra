@@ -35,8 +35,8 @@ class MockChannelRepository extends ChannelRepository {
     channel.available = true;
     channel.activeCollateralizations = { [AddressZero]: false };
     channel.multisigAddress = mkAddress("0xAAA");
-    channel.nodePublicIdentifier = mkAddress("addressAAA");
-    channel.userPublicIdentifier = mkAddress("addressBBB");
+    channel.nodeIdentifier = mkAddress("addressAAA");
+    channel.userIdentifier = mkAddress("addressBBB");
     channel.id = 1;
     return channel;
   }

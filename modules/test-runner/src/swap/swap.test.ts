@@ -21,13 +21,13 @@ describe("Swaps", () => {
   let client: IConnextClient;
   let tokenAddress: string;
   let nodeSignerAddress: string;
-  let nodePublicIdentifier: string;
+  let nodeIdentifier: string;
 
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    nodePublicIdentifier = client.config.nodePublicIdentifier;
-    nodeSignerAddress = nodePublicIdentifier;
+    nodeIdentifier = client.config.nodeIdentifier;
+    nodeSignerAddress = nodeIdentifier;
   });
 
   afterEach(async () => {

@@ -91,7 +91,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
     multisigMastercopy: TEST_STORE_ETH_ADDRESS,
     proxyFactory: TEST_STORE_ETH_ADDRESS,
   },
-  userPublicIdentifiers: ["address1", "address2"],
+  userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
   appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
   freeBalanceAppInstance: TEST_STORE_APP_INSTANCE,
@@ -126,7 +126,7 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
   interpreterAddr: TEST_STORE_ETH_ADDRESS,
   interpreterParams: "conditionalInterpreter",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
-  multisigOwners: TEST_STORE_CHANNEL.userPublicIdentifiers,
+  multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
   networkContext: {} as NetworkContext,
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };

@@ -161,7 +161,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
           `${this.options.nodeUrl}/auth`,
           {
             sig,
-            userPublicIdentifier: address,
+            userIdentifier: address,
           } as VerifyNonceDtoType,
         );
         return bearerToken.data;

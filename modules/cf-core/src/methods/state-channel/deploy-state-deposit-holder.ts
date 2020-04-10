@@ -61,8 +61,8 @@ export class DeployStateDepositController extends NodeController {
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userPublicIdentifiers[0],
-      channel.userPublicIdentifiers[1],
+      channel.userIdentifiers[0],
+      channel.userIdentifiers[1],
       channel.addresses,
       provider,
     );
@@ -91,8 +91,8 @@ export class DeployStateDepositController extends NodeController {
 
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userPublicIdentifiers[0],
-      channel.userPublicIdentifiers[1],
+      channel.userIdentifiers[0],
+      channel.userIdentifiers[1],
       channel.addresses,
       provider,
     );
@@ -136,7 +136,7 @@ async function sendMultisigDeployTx(
     signer,
   );
 
-  const owners = stateChannel.userPublicIdentifiers;
+  const owners = stateChannel.userIdentifiers;
 
   const signerAddress = await signer.getAddress();
 

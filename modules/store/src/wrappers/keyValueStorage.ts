@@ -103,7 +103,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
     return channels.find(
-      channel => [...channel.userPublicIdentifiers].sort().toString() 
+      channel => [...channel.userIdentifiers].sort().toString() 
         === owners.sort().toString(),
     );
   }

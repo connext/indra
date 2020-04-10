@@ -205,7 +205,7 @@ export class CFCoreService {
       initiatorDepositAssetId,
       meta,
       outcomeType,
-      responderIdentifier: channel.userPublicIdentifier,
+      responderIdentifier: channel.userIdentifier,
       responderDeposit,
       responderDepositAssetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,

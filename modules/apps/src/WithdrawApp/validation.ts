@@ -6,14 +6,14 @@ import { unidirectionalCoinTransferValidation } from "../shared";
 
 export const validateWithdrawApp = async (
   params: MethodParams.ProposeInstall,
-  initiatorPublicIdentifier: string,
-  responderPublicIdentifier: string,
+  initiatorIdentifier: string,
+  responderIdentifier: string,
 ) => {
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = bigNumberifyJson(params.initialState) as WithdrawAppState;
 
-  const initiatorSignerAddress = getAddressFromIdentifier(initiatorPublicIdentifier);
-  const responderSignerAddress = getAddressFromIdentifier(responderPublicIdentifier);
+  const initiatorSignerAddress = getAddressFromIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getAddressFromIdentifier(responderIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];

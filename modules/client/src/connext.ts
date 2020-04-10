@@ -68,7 +68,7 @@ export class ConnextClient implements IConnextClient {
   public multisigAddress: Address;
   public network: Network;
   public node: INodeApiClient;
-  public nodePublicIdentifier: string;
+  public nodeIdentifier: string;
   public nodeSignerAddress: string;
   public publicIdentifier: string;
   public signer: IChannelSigner;
@@ -103,10 +103,10 @@ export class ConnextClient implements IConnextClient {
     this.token = opts.token;
 
     this.signerAddress = this.channelProvider.config.signerAddress;
-    this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
+    this.publicIdentifier = this.channelProvider.config.userIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
-    this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.nodeSignerAddress = getAddressFromIdentifier(this.nodePublicIdentifier);
+    this.nodeIdentifier = this.opts.config.nodeIdentifier;
+    this.nodeSignerAddress = getAddressFromIdentifier(this.nodeIdentifier);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -170,7 +170,7 @@ export class ConnextClient implements IConnextClient {
     }
 
     // ensure that node and user address are different
-    if (this.nodePublicIdentifier === this.publicIdentifier) {
+    if (this.nodeIdentifier === this.publicIdentifier) {
       throw new Error(
         "Client must be instantiated with a secret that is different from the node's secret",
       );

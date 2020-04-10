@@ -17,7 +17,7 @@ export async function asyncTransferAsset(
   nats: Client,
 ): Promise<ExistingBalancesAsyncTransfer> {
   const SENDER_INPUT_META = { hello: "world" };
-  const nodeSignerAddress = clientA.nodePublicIdentifier;
+  const nodeSignerAddress = clientA.nodeIdentifier;
   const {
     [clientA.signerAddress]: preTransferFreeBalanceClientA,
     [nodeSignerAddress]: preTransferFreeBalanceNodeA,
@@ -102,7 +102,7 @@ export async function asyncTransferAsset(
     assetId,
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,
-    senderPublicIdentifier: clientA.publicIdentifier,
+    senderIdentifier: clientA.publicIdentifier,
     status: LinkedTransferStatus.COMPLETED,
     meta: { ...SENDER_INPUT_META },
   });

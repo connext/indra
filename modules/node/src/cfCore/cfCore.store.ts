@@ -80,8 +80,8 @@ export class CFCoreStore implements IStoreService {
       stateChannel.multisigAddress,
     );
 
-    const nodePublicIdentifier = this.configService.getPublicIdentifier();
-    const userPublicIdentifier = stateChannel.userPublicIdentifiers.find(
+    const nodeIdentifier = this.configService.getPublicIdentifier();
+    const userIdentifier = stateChannel.userIdentifiers.find(
       address => address !== this.configService.getPublicIdentifier(),
     );
 
@@ -93,8 +93,8 @@ export class CFCoreStore implements IStoreService {
     } = stateChannel;
     const channel = new Channel();
     channel.schemaVersion = this.schemaVersion;
-    channel.userPublicIdentifier = userPublicIdentifier;
-    channel.nodePublicIdentifier = nodePublicIdentifier;
+    channel.userIdentifier = userIdentifier;
+    channel.nodeIdentifier = nodeIdentifier;
     channel.multisigAddress = multisigAddress;
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
@@ -106,7 +106,7 @@ export class CFCoreStore implements IStoreService {
     });
     channel.activeCollateralizations = activeCollateralizations;
 
-    const userFreeBalance = userPublicIdentifier;
+    const userFreeBalance = userIdentifier;
     const nodeFreeBalance = this.configService.getPublicIdentifier();
     const participants = [
       freeBalanceAppInstance.initiatorIdentifier,
@@ -143,8 +143,8 @@ export class CFCoreStore implements IStoreService {
     freeBalanceApp.initiatorDepositAssetId = AddressZero;
     freeBalanceApp.responderDeposit = Zero;
     freeBalanceApp.responderDepositAssetId = AddressZero;
-    freeBalanceApp.responderIdentifier = userPublicIdentifier;
-    freeBalanceApp.initiatorIdentifier = nodePublicIdentifier;
+    freeBalanceApp.responderIdentifier = userIdentifier;
+    freeBalanceApp.initiatorIdentifier = nodeIdentifier;
     freeBalanceApp.userParticipantAddress = userParticipantAddress;
     freeBalanceApp.nodeParticipantAddress = nodeParticipantAddress;
     freeBalanceApp.type = AppType.FREE_BALANCE;

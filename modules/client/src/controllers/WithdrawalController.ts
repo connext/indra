@@ -147,7 +147,7 @@ export class WithdrawalController extends AbstractController {
     const initialState: WithdrawAppState = {
       transfers: [
         { amount: amount, to: recipient },
-        { amount: Zero, to: this.connext.nodePublicIdentifier },
+        { amount: Zero, to: this.connext.nodeIdentifier },
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [
@@ -168,7 +168,7 @@ export class WithdrawalController extends AbstractController {
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
       outcomeType,
-      responderIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
       responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,

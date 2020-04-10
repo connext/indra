@@ -8,13 +8,13 @@ describe("Restore State", () => {
   let clientA: IConnextClient;
   let tokenAddress: string;
   let nodeSignerAddress: string;
-  let nodePublicIdentifier: string;
+  let nodeIdentifier: string;
 
   beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
-    nodePublicIdentifier = clientA.config.nodePublicIdentifier;
-    nodeSignerAddress = nodePublicIdentifier;
+    nodeIdentifier = clientA.config.nodeIdentifier;
+    nodeSignerAddress = nodeIdentifier;
   });
 
   afterEach(async () => {

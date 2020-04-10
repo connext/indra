@@ -41,7 +41,7 @@ export interface IConnextClient {
   ethProvider: providers.JsonRpcProvider;
   signerAddress: Address;
   multisigAddress: Address;
-  nodePublicIdentifier: PublicIdentifier;
+  nodeIdentifier: PublicIdentifier;
   nodeSignerAddress: Address;
   publicIdentifier: PublicIdentifier; // publicIdentifier?
 

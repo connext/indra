@@ -60,12 +60,12 @@ export class LinkedTransferService {
   }
 
   async resolveLinkedTransfer(
-    userPublicIdentifier: string,
+    userIdentifier: string,
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
+    this.log.debug(`resolveLinkedTransfer(${userIdentifier}, ${paymentId})`);
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
+      userIdentifier,
     );
 
     // TODO: handle offline case
@@ -88,14 +88,14 @@ export class LinkedTransferService {
     const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(
-      userPublicIdentifier,
+      userIdentifier,
       receiverChannel.multisigAddress,
       assetId,
     );
     if (freeBal[freeBalanceAddr].lt(amountBN)) {
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.channelService.rebalance(
-        userPublicIdentifier,
+        userIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amountBN,
@@ -106,7 +106,7 @@ export class LinkedTransferService {
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
-        userPublicIdentifier,
+        userIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amountBN,
@@ -123,7 +123,7 @@ export class LinkedTransferService {
         },
         {
           amount: Zero,
-          to: userPublicIdentifier,
+          to: userIdentifier,
         },
       ],
       linkedHash,
@@ -149,7 +149,7 @@ export class LinkedTransferService {
 
     const returnRes: NodeResponses.ResolveLinkedTransfer = {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
-      sender: senderApp.channel.userPublicIdentifier,
+      sender: senderApp.channel.userIdentifier,
       meta: senderApp.meta,
       paymentId,
       amount,
@@ -189,10 +189,10 @@ export class LinkedTransferService {
   // sender installs app, goes offline
   // receiver redeems, app is installed and uninstalled
   // if we don't check for uninstalled receiver app, receiver can keep redeeming
-  async getLinkedTransfersForRedeem(userPublicIdentifier: string): Promise<AppInstance[]> {
+  async getLinkedTransfersForRedeem(userIdentifier: string): Promise<AppInstance[]> {
     const transfersFromNodeToUser =
       await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
-        userPublicIdentifier,
+        userIdentifier,
         this.cfCoreService.cfCore.signerAddress,
       );
     const existingReceiverApps = (
@@ -225,10 +225,10 @@ export class LinkedTransferService {
   // sender installs app, goes offline
   // receiver redeems, app is installed and uninstalled
   // sender comes back online, node can unlock transfer
-  async unlockLinkedTransfersFromUser(userPublicIdentifier: string): Promise<string[]> {
+  async unlockLinkedTransfersFromUser(userIdentifier: string): Promise<string[]> {
     // eslint-disable-next-line max-len
     const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
-      userPublicIdentifier,
+      userIdentifier,
       this.cfCoreService.cfCore.signerAddress,
     );
     const receiverRedeemed = await Promise.all(

@@ -11,16 +11,16 @@ export class AuthController {
     this.log.setContext("AuthController");
   }
 
-  @Get(":userPublicIdentifier")
-  async getNonce(@Param("userPublicIdentifier") userPublicIdentifier: string): Promise<string> {
-    return this.authService.getNonce(userPublicIdentifier);
+  @Get(":userIdentifier")
+  async getNonce(@Param("userIdentifier") userIdentifier: string): Promise<string> {
+    return this.authService.getNonce(userIdentifier);
   }
 
   @Post("")
   async verifyNonce(@Body() verifyNonceDto: VerifyNonceDto): Promise<string> {
-    let { sig, userPublicIdentifier, adminToken } = verifyNonceDto;
+    let { sig, userIdentifier, adminToken } = verifyNonceDto;
     try {
-      return this.authService.verifyAndVend(sig, userPublicIdentifier, adminToken);
+      return this.authService.verifyAndVend(sig, userIdentifier, adminToken);
     } catch (e) {
       this.log.error(e);
       throw new BadRequestException(`Signature not verified: ${e.toString()}`);

@@ -29,42 +29,42 @@ export class AuthService {
     this.log.setContext("AuthService");
   }
 
-  async getNonce(userPublicIdentifier: string): Promise<string> {
+  async getNonce(userIdentifier: string): Promise<string> {
     const nonce = createRandomBytesHexString(nonceLen);
     const expiry = Date.now() + nonceTTL;
     // FIXME-- store nonce in redis instead of here...
-    this.nonces[userPublicIdentifier] = { expiry, nonce };
+    this.nonces[userIdentifier] = { expiry, nonce };
     this.log.debug(
-      `getNonce: Gave address ${userPublicIdentifier} a nonce that expires at ${expiry}: ${nonce}`,
+      `getNonce: Gave address ${userIdentifier} a nonce that expires at ${expiry}: ${nonce}`,
     );
     return nonce;
   }
 
   async verifyAndVend(
     signedNonce: string,
-    userPublicIdentifier: string,
+    userIdentifier: string,
     adminToken?: string,
   ): Promise<string> {
     const indraAdminToken = this.configService.get("INDRA_ADMIN_TOKEN");
     if (indraAdminToken && adminToken === indraAdminToken) {
-      this.log.warn(`Vending admin token to ${userPublicIdentifier}`);
-      return this.vendAdminToken(userPublicIdentifier);
+      this.log.warn(`Vending admin token to ${userIdentifier}`);
+      return this.vendAdminToken(userIdentifier);
     }
 
-    const address = getAddressFromIdentifier(userPublicIdentifier);
-    this.log.debug(`Got address ${address} from userPublicIdentifier ${userPublicIdentifier}`);
+    const address = getAddressFromIdentifier(userIdentifier);
+    this.log.debug(`Got address ${address} from userIdentifier ${userIdentifier}`);
 
-    if (!this.nonces[userPublicIdentifier]) {
+    if (!this.nonces[userIdentifier]) {
       throw new Error(`User hasn't requested a nonce yet`);
     }
 
-    const { nonce, expiry } = this.nonces[userPublicIdentifier];
+    const { nonce, expiry } = this.nonces[userIdentifier];
     const recovered = await verifyChannelMessage(nonce, signedNonce);
     if (recovered !== address) {
       throw new Error(`Verification failed, expected ${address}, got ${recovered}`);
     }
     if (Date.now() > expiry) {
-      throw new Error(`Verification failed... nonce expired for address: ${userPublicIdentifier}`);
+      throw new Error(`Verification failed... nonce expired for address: ${userIdentifier}`);
     }
 
     const network = await this.configService.getEthNetwork();
@@ -72,7 +72,7 @@ export class AuthService {
     // Try to get latest published OR move everything under address route.
     let permissions = {
       publish: {
-        allow: [`${userPublicIdentifier}.>`, `INDRA.${network.chainId}.>`],
+        allow: [`${userIdentifier}.>`, `INDRA.${network.chainId}.>`],
       },
       subscribe: {
         allow: [`>`],
@@ -82,11 +82,11 @@ export class AuthService {
       // },
     };
 
-    const jwt = this.messagingAuthService.vend(userPublicIdentifier, nonceTTL, permissions);
+    const jwt = this.messagingAuthService.vend(userIdentifier, nonceTTL, permissions);
     return jwt;
   }
 
-  async vendAdminToken(userPublicIdentifier: string): Promise<string> {
+  async vendAdminToken(userIdentifier: string): Promise<string> {
     const permissions = {
       publish: {
         allow: [`>`],
@@ -96,7 +96,7 @@ export class AuthService {
       },
     };
 
-    const jwt = this.messagingAuthService.vend(userPublicIdentifier, nonceTTL, permissions);
+    const jwt = this.messagingAuthService.vend(userIdentifier, nonceTTL, permissions);
     return jwt;
   }
 

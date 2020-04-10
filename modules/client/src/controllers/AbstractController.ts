@@ -66,7 +66,7 @@ export abstract class AbstractController {
           boundReject = this.rejectInstall.bind(null, rej, appIdentityHash);
 
           // set up install nats subscription
-          const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
+          const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
           this.connext.messaging.subscribe(subject, res);
 
           // this.listener.on(INSTALL_EVENT, boundResolve, appIdentityHash);
@@ -123,7 +123,7 @@ export abstract class AbstractController {
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {
     this.connext.messaging.unsubscribe(
-      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
+      `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };

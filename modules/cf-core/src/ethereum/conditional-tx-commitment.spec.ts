@@ -43,10 +43,10 @@ describe("ConditionalTransactionCommitment", () => {
     getPublicIdentifier(responder.publicKey),
   );
 
-  expect(stateChannel.userPublicIdentifiers[0]).toEqual(
+  expect(stateChannel.userIdentifiers[0]).toEqual(
     getPublicIdentifier(initiator.publicKey),
   );
-  expect(stateChannel.userPublicIdentifiers[1]).toEqual(
+  expect(stateChannel.userIdentifiers[1]).toEqual(
     getPublicIdentifier(responder.publicKey),
   );
 

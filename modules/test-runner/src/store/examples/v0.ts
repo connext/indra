@@ -19,7 +19,7 @@ export const CHANNEL_KEY_VO_1 = `${ConnextClientStorePrefixV0}/${XPUB_V0_1}/chan
 export const CHANNEL_VALUE_VO_1 = {
   [CHANNEL_KEY_VO_1]: {
     multisigAddress: "0x8C0A6Fee57539DCF1e2F8414ded4C3692742f994",
-    userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_1],
+    userIdentifiers: [NODE_PUB_ID, XPUB_V0_1],
     appInstances: [],
     freeBalanceAppInstance: {
       participants: [NODE_PUB_ID, XPUB_V0_1].sort(),
@@ -66,7 +66,7 @@ export const CHANNEL_KEY_VO_2 = `${ConnextClientStorePrefixV0}/${XPUB_V0_2}/chan
 export const CHANNEL_VALUE_VO_2 = {
   [CHANNEL_KEY_VO_2]: {
     multisigAddress: "0x9E746946146Da59D4d0daBfEA159ed791FB42FD1",
-    userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_2],
+    userIdentifiers: [NODE_PUB_ID, XPUB_V0_2],
     appInstances: [],
     freeBalanceAppInstance: {
       participants: [NODE_PUB_ID, XPUB_V0_2].sort(),
@@ -134,7 +134,7 @@ export const CHANNEL_VALUE_VO_3 = {
       proxyFactory: "0x8eb543b35DE94B0E636402C7cA32947b22853eDF",
       multisigMastercopy: "0xe54f4EBeCE507477dFb86FA226394bdbA0b85d66",
     },
-    userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_3],
+    userIdentifiers: [NODE_PUB_ID, XPUB_V0_3],
     proposedAppInstances: [
       [
         "0x090482fe110e64b6ab59356c62bdd23d57caf4b528ab3b3d0e99f73da377d12e",
@@ -259,7 +259,7 @@ export const CHANNEL_VALUE_VO_4 = {
       proxyFactory: "0xCE7cBC12c4d2b49A4c0ee77683F3fDefF721940D",
       multisigMastercopy: "0xdD7dbCCdd42d7bFC10c2D23B8A1fa8bAaE95bc69",
     },
-    userPublicIdentifiers: [NODE_PUB_ID, XPUB_V0_4],
+    userIdentifiers: [NODE_PUB_ID, XPUB_V0_4],
     proposedAppInstances: [],
     appInstances: [
       [

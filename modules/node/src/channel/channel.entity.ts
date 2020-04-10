@@ -32,12 +32,12 @@ export class Channel {
 
   @Column("text")
   @IsAddress()
-  userPublicIdentifier!: string;
+  userIdentifier!: string;
 
   // might not need this
   @Column("text")
   @IsAddress()
-  nodePublicIdentifier!: string;
+  nodeIdentifier!: string;
 
   @Column("text", { unique: true })
   @IsEthAddress()
