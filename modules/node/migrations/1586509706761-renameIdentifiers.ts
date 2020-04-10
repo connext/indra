@@ -1,13 +1,15 @@
-import {MigrationInterface, QueryRunner} from "typeorm";
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class renameIdentifiers1586509706761 implements MigrationInterface {
-    name = 'renameIdentifiers1586509706761'
+    name = "renameIdentifiers1586509706761"
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`DELETE FROM "typeorm_metadata" WHERE "type" = 'VIEW' AND "schema" = $1 AND "name" = $2`, ["public","anonymized_onchain_transaction"]);
         await queryRunner.query(`DROP VIEW "anonymized_onchain_transaction"`, undefined);
         await queryRunner.query(`ALTER TABLE "channel" RENAME COLUMN "userPublicIdentifier" TO "userIdentifier"`, undefined);
         await queryRunner.query(`ALTER TABLE "channel" RENAME COLUMN "nodePublicIdentifier" TO "nodeIdentifier"`, undefined);
+        await queryRunner.query(`ALTER TABLE "app_instance" RENAME COLUMN "userParticipantAddress" TO "userIdentifier"`, undefined);
+        await queryRunner.query(`ALTER TABLE "app_instance" RENAME COLUMN "nodeParticipantAddress" TO "nodeIdentifier"`, undefined);
         await queryRunner.query(`CREATE VIEW "anonymized_onchain_transaction" AS 
   SELECT
     "onchain_transaction"."createdAt" as "createdAt",
@@ -32,6 +34,8 @@ export class renameIdentifiers1586509706761 implements MigrationInterface {
         await queryRunner.query(`DROP VIEW "anonymized_onchain_transaction"`, undefined);
         await queryRunner.query(`ALTER TABLE "channel" RENAME COLUMN "userIdentifier" TO "userPublicIdentifier"`, undefined);
         await queryRunner.query(`ALTER TABLE "channel" RENAME COLUMN "nodeIdentifier" TO "nodePublicIdentifier"`, undefined);
+        await queryRunner.query(`ALTER TABLE "app_instance" RENAME COLUMN "userIdentifier" TO "userParticipantAddress"`, undefined);
+        await queryRunner.query(`ALTER TABLE "app_instance" RENAME COLUMN "nodeIdentifier" TO "nodeParticipantAddress"`, undefined);
         await queryRunner.query(`CREATE VIEW "anonymized_onchain_transaction" AS SELECT
     "onchain_transaction"."createdAt" as "createdAt",
     "onchain_transaction"."reason" as "reason",

@@ -110,7 +110,6 @@ export class CFCoreStore implements IStoreService {
       freeBalanceAppInstance.initiatorIdentifier,
       freeBalanceAppInstance.responderIdentifier,
     ];
-    // TODO: fix column names to be identifiers!
     const userId = participants.find(p => p === userIdentifier);
     const nodeId = participants.find(p => p === nodeIdentifier);
     const {
@@ -144,8 +143,8 @@ export class CFCoreStore implements IStoreService {
     freeBalanceApp.responderDepositAssetId = AddressZero;
     freeBalanceApp.responderIdentifier = userIdentifier;
     freeBalanceApp.initiatorIdentifier = nodeIdentifier;
-    freeBalanceApp.userParticipantAddress = userId;
-    freeBalanceApp.nodeParticipantAddress = nodeId;
+    freeBalanceApp.userIdentifier = userId;
+    freeBalanceApp.nodeIdentifier = nodeId;
     freeBalanceApp.type = AppType.FREE_BALANCE;
 
     channel.appInstances = [freeBalanceApp];
@@ -181,11 +180,11 @@ export class CFCoreStore implements IStoreService {
 
     // upgrade proposal to instance
     proposal.type = AppType.INSTANCE;
-    // save participants
+    // save user/node specific ids
     const nodeId = this.configService.getPublicIdentifier();
-    proposal.userParticipantAddress = [initiatorIdentifier, responderIdentifier]
+    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier]
       .find(p => p !== nodeId);
-    proposal.nodeParticipantAddress = [initiatorIdentifier, responderIdentifier]
+    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier]
       .find(p => p === nodeId);
 
     proposal.meta = meta;
