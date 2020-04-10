@@ -1,6 +1,7 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType, PublicIdentifier, AssetId } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
 import { OutcomeType } from "./contracts";
+import { AssetId, PublicIdentifier } from "./identifiers";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {

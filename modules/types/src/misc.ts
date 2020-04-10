@@ -1,4 +1,5 @@
-import { Address, BigNumber, Bytes32, PublicIdentifier } from "./basic";
+import { Address, BigNumber, Bytes32 } from "./basic";
+import { PublicIdentifier } from "./identifiers";
 import { enumify } from "./utils";
 
 export type Collateralizations = { [assetId: string]: boolean };

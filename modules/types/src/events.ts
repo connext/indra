@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { Address, BigNumber, Bytes32, HexObject, SolidityValueType, PublicIdentifier } from "./basic";
+import { Address, BigNumber, Bytes32, HexObject, SolidityValueType } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,
@@ -11,6 +11,7 @@ import {
 } from "./transfers";
 import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
+import { PublicIdentifier } from "./identifiers";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;

@@ -1,16 +1,22 @@
 import {
+  Address,
   AppABIEncodings,
   AppInstanceJson,
   AppInstanceProposal,
+  AssetId,
   bigNumberifyJson,
   ContractABI,
   CreateChannelMessage,
   deBigNumberifyJson,
   DepositAppState,
   DepositAppStateEncoding,
-  Message,
   EventNames,
+  getAddressFromIdentifier,
+  getAssetId,
+  getRandomPublicIdentifier,
+  getTokenAddressFromAssetId,
   InstallMessage,
+  Message,
   MethodNames,
   MethodParam,
   MethodParams,
@@ -18,16 +24,10 @@ import {
   OutcomeType,
   ProposeMessage,
   ProtocolParams,
+  PublicIdentifier,
   SolidityValueType,
   toBN,
   UninstallMessage,
-  getAssetId,
-  getAddressFromIdentifier,
-  PublicIdentifier,
-  AssetId,
-  getTokenAddressFromAssetId,
-  Address,
-  getPublicIdentifier,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -104,8 +104,8 @@ export function createAppInstanceForTest(stateChannel?: StateChannel) {
       stateChannel!.userPublicIdentifiers[1],
     ]
     : [
-        getPublicIdentifier(hexlify(randomBytes(32))),
-        getPublicIdentifier(hexlify(randomBytes(32))),
+        getRandomPublicIdentifier(),
+        getRandomPublicIdentifier(),
       ];
   return new AppInstance(
     /* initiator */ initiator,
@@ -237,7 +237,7 @@ export function assertProposeMessage(
   const {
     multisigAddress,
     initiatorIdentifier,
-    responderIdentifier: responderIdentifier,
+    responderIdentifier,
     ...emittedParams
   } = params;
   assertMessage(

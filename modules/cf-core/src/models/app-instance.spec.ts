@@ -1,4 +1,4 @@
-import { OutcomeType, createRandomAddress, toBN, getPublicIdentifier } from "@connext/types";
+import { OutcomeType, createRandomAddress, toBN, getRandomPublicIdentifier } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
@@ -7,8 +7,8 @@ import { AppInstance } from "./app-instance";
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {
     const participants = [
-      getPublicIdentifier(createRandomAddress()),
-      getPublicIdentifier(createRandomAddress()),
+      getRandomPublicIdentifier(),
+      getRandomPublicIdentifier(),
     ];
 
     const appInstance = new AppInstance(

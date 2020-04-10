@@ -1,8 +1,29 @@
 import { AddressZero } from "ethers/constants";
-import { computeAddress, getAddress, isHexString } from "ethers/utils";
+import {
+  computeAddress,
+  computePublicKey,
+  getAddress,
+  isHexString,
+  randomBytes,
+} from "ethers/utils";
 
-import { Address, AssetId, PublicIdentifier, PublicKey } from "./basic";
-import { ETHEREUM_NAMESPACE } from "./constants";
+import { Address, PublicKey } from "./basic";
+import { ETHEREUM_NAMESPACE, GANACHE_CHAIN_ID } from "./constants";
+
+export type AssetId = string; // CAIP-10 format: ${address}@${namespace}:${chainId}
+export type PublicIdentifier = string; // CAIP-10-ish format: ${publicKey}@${namespace}:${chainId}
+
+export type AssetIdData = {
+  address: Address;
+  chainId: number;
+  namespace: string;
+}
+
+export type PublicIdentifierData = {
+  publicKey: PublicKey;
+  chainId: number;
+  namespace: string;
+}
 
 ////////////////////////////////////////
 // AssetId
@@ -18,7 +39,7 @@ export const getAssetId = (
 
 export const parseAssetId = (
   assetId: AssetId,
-): { chainId: number, address: Address, namespace: string} => {
+): AssetIdData => {
   const [address, rest] = assetId.split("@");
   const [namespace, chainId] = rest.split(":");
   return {
@@ -41,32 +62,48 @@ export const verifyAssetId = (
   }
 };
 
-export const getTokenAddressFromAssetId = (assetId: AssetId): string => {
-  const { address } = parseAssetId(assetId);
-  return address;
-};
+export const getChainIdFromAssetId = (assetId: AssetId): number =>
+  parseAssetId(assetId).chainId;
+
+export const getTokenAddressFromAssetId = (assetId: AssetId): string =>
+  parseAssetId(assetId).address;
 
 ////////////////////////////////////////
 // PublicIdentifier
 
 export const getPublicIdentifier = (
+  chainId: number,
   publicKey: PublicKey,
-): PublicIdentifier => {
-  return publicKey;
+  namespace: string = ETHEREUM_NAMESPACE,
+) => {
+  return `${publicKey}@${namespace}:${chainId.toString()}`;
 };
 
+export const getRandomPublicIdentifier = (): PublicIdentifier =>
+  `${computePublicKey(randomBytes(32))}@${ETHEREUM_NAMESPACE}:${GANACHE_CHAIN_ID}`;
+  ;
+
 export const parsePublicIdentifier = (
-  identifier: PublicIdentifier,
-): { publicKey: PublicKey } => {
-  return { publicKey: identifier };
+  identifier: string,
+): PublicIdentifierData => {
+  const [publicKey, res] = identifier.split("@");
+  const [namespace, chainId] = res.split(":");
+  return {
+    chainId: parseInt(chainId),
+    publicKey,
+    namespace,
+  };
 };
 
 export const verifyPublicIdentifier = (
   identifier: PublicIdentifier,
 ) => {
-  const { publicKey } = parsePublicIdentifier(identifier);
-  const address = computeAddress(publicKey);
-  if (!isHexString(address)) {
+  const { chainId, publicKey, namespace } = parsePublicIdentifier(identifier);
+  if (
+    !isHexString(publicKey) ||
+    namespace !== ETHEREUM_NAMESPACE ||
+    typeof chainId !== "number"
+  ) {
     throw new Error(`Invalid public identfier: ${identifier}`);
   }
 };
@@ -74,3 +111,6 @@ export const verifyPublicIdentifier = (
 export const getAddressFromIdentifier = (identifer: string): string => {
   return computeAddress(parsePublicIdentifier(identifer).publicKey);
 };
+
+export const getChainIdFromIdentifier = (identifier: PublicIdentifier): number =>
+  parsePublicIdentifier(identifier).chainId;

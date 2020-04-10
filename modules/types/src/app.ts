@@ -4,8 +4,6 @@ import {
   DecString,
   HexString,
   SolidityValueType,
-  PublicIdentifier,
-  AssetId,
 } from "./basic";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
@@ -16,6 +14,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParamsJson,
 } from "./contracts";
+import { AssetId, PublicIdentifier } from "./identifiers";
 
 ////////////////////////////////////
 // App Instances

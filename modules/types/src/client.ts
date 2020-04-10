@@ -1,9 +1,10 @@
 import { providers } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
+import { Address, Bytes32, DecString } from "./basic";
 import { IChannelSigner, ChannelProviderConfig, IChannelProvider } from "./channelProvider";
 import { EventNames } from "./events";
+import { PublicIdentifier } from "./identifiers";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";

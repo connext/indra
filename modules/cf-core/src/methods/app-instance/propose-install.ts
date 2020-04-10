@@ -3,6 +3,8 @@ import {
   MethodParams,
   MethodResults,
   ProtocolNames,
+  getChainIdFromIdentifier,
+  getAssetId,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -47,6 +49,9 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
   ): Promise<void> {
     const { initialState } = params;
+    const { publicIdentifier } = requestHandler;
+
+    const chainId = getChainIdFromIdentifier(publicIdentifier);
 
     if (!initialState) {
       throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
@@ -57,8 +62,11 @@ export class ProposeInstallAppInstanceController extends NodeController {
       responderDepositAssetId: responderDepositAssetIdParam,
     } = params;
 
-    const initiatorDepositAssetId = initiatorDepositAssetIdParam;
-    const responderDepositAssetId = responderDepositAssetIdParam;
+    const initiatorDepositAssetId =
+      initiatorDepositAssetIdParam || getAssetId(chainId);
+
+    const responderDepositAssetId =
+      responderDepositAssetIdParam || getAssetId(chainId);
 
     params.initiatorDepositAssetId = initiatorDepositAssetId;
     params.responderDepositAssetId = responderDepositAssetId;

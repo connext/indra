@@ -1,8 +1,9 @@
 import { EventNames, EventPayloads } from "./events";
-import { Bytes32, DecString, Address, PublicIdentifier } from "./basic";
+import { Bytes32, DecString, Address } from "./basic";
 import { ILoggerService } from "./logger";
 import { MethodResults, MethodParams } from "./methods";
 import { ProtocolName, ProtocolParam } from "./protocol";
+import { PublicIdentifier } from "./identifiers";
 
 ////////////////////////////////////////
 // Message Contents
