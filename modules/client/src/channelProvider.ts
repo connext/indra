@@ -21,7 +21,6 @@ import {
   toBN,
   WalletTransferParams,
   WithdrawalMonitorObject,
-  getPublicIdentifier,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Contract } from "ethers";
@@ -62,10 +61,7 @@ export const createCFChannelProvider = async ({
   const channelProviderConfig: ChannelProviderConfig = {
     signerAddress: address,
     nodeUrl,
-    userIdentifier: getPublicIdentifier(
-      publicKey,
-      (await ethProvider.getNetwork()).chainId,
-    ),
+    userIdentifier: publicKey,
   };
   const connection = new CFCoreRpcConnection(cfCore, store, signer);
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
@@ -98,6 +94,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         break;
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
+        break;
+      case ChannelMethods.chan_encrypt:
+        result = await this.encrypt(params.message, params.publicKey);
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -153,6 +152,13 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   private signMessage(message: string): Promise<string> {
     return this.signer.signMessage(message);
+  };
+
+  private encrypt(message: string, publicKey: string): Promise<string> {
+    return this.signer.encrypt(
+      message,
+      publicKey, // TODO: replace with real pubkey
+    );
   };
 
   private walletTransfer = async (params: WalletTransferParams): Promise<string> => {

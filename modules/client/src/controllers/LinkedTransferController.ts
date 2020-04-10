@@ -7,7 +7,6 @@ import {
   EventPayloads,
   getAddressFromAssetId,
   MethodParams,
-  parsePublicIdentifier,
   PublicParams,
   PublicResults,
   SimpleLinkedTransferAppName,
@@ -48,9 +47,9 @@ export class LinkedTransferController extends AbstractController {
     if (recipient) {
       validate(invalidPublicIdentifier(recipient));
       // set recipient and encrypted pre-image on linked transfer
-      const encryptedPreImage = await this.signer.encrypt(
+      const encryptedPreImage = await this.channelProvider.encrypt(
         preImage,
-        parsePublicIdentifier(recipient).publicKey,
+        recipient,
       );
 
       // add encrypted preImage to meta so node can store it in the DB
