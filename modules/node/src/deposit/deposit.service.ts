@@ -71,11 +71,6 @@ export class DepositService {
     } finally {
       await this.rescindDepositRights(appIdentityHash || depositApp.identityHash);
     }
-    console.log("free balance post collateral", await this.cfCoreService.getFreeBalance(
-      channel.userIdentifier,
-      channel.multisigAddress,
-      tokenAddress,
-    ));
     return receipt;
   }
 
