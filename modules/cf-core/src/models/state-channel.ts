@@ -3,13 +3,14 @@ import {
   AppInstanceProposal,
   CriticalStateChannelAddresses,
   deBigNumberifyJson,
+  getAddressFromIdentifier,
   IStoreService,
+  PublicIdentifier,
   SolidityValueType,
   StateChannelJSON,
   StateSchemaVersion,
   stringify,
   toBN,
-  getAddressFromIdentifier,
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
@@ -247,8 +248,8 @@ export class StateChannel {
     freeBalanceAppAddress: string,
     addresses: CriticalStateChannelAddresses,
     multisigAddress: string,
-    initiatorId: string,
-    responderId: string,
+    initiatorId: PublicIdentifier,
+    responderId: PublicIdentifier,
     freeBalanceTimeout?: number,
   ) {
     return new StateChannel(

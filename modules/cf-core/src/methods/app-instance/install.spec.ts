@@ -97,18 +97,18 @@ describe("Can handle correct & incorrect installs", () => {
 
     const appIdentityHash = createRandom32ByteHexString();
     const multisigAddress = Wallet.createRandom().address;
-    const extendedKeys = getRandomPublicIdentifiers(2);
+    const publicIdentifiers = getRandomPublicIdentifiers(2);
     const participants = [
-      getAddressFromIdentifier(extendedKeys[0]),
-      getAddressFromIdentifier(extendedKeys[1]),
+      getAddressFromIdentifier(publicIdentifiers[0]),
+      getAddressFromIdentifier(publicIdentifiers[1]),
     ];
 
     const stateChannel = StateChannel.setupChannel(
       AddressZero,
       { proxyFactory: AddressZero, multisigMastercopy: AddressZero },
       multisigAddress,
-      extendedKeys[0],
-      extendedKeys[1],
+      publicIdentifiers[0],
+      publicIdentifiers[1],
     );
 
     expect(
@@ -144,7 +144,7 @@ describe("Can handle correct & incorrect installs", () => {
         {
           appIdentityHash,
         },
-        extendedKeys[0],
+        publicIdentifiers[0],
       ),
     ).resolves.toEqual(appInstanceProposal);
   });

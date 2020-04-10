@@ -1,4 +1,4 @@
-import { MultiAssetMultiPartyCoinTransferInterpreterParams, OutcomeType } from "@connext/types";
+import { MultiAssetMultiPartyCoinTransferInterpreterParams, OutcomeType, getPublicIdentifier } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -62,7 +62,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
 
   it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
     const signers = getRandomChannelSigners(2);
-    const ids = signers.map(s => s.address);
+    const ids = signers.map(s => getPublicIdentifier(s.publicKey));
     const erc20TokenAddress = network.DolphinCoin;
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 

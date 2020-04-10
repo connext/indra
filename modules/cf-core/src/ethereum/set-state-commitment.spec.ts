@@ -1,4 +1,4 @@
-import { MinimalTransaction, createRandomAddress } from "@connext/types";
+import { MinimalTransaction, createRandomAddress, getPublicIdentifier } from "@connext/types";
 import {
   bigNumberify,
   Interface,
@@ -41,12 +41,12 @@ describe("Set State Commitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    initiator.address,
-    responder.address,
+    getPublicIdentifier(initiator.publicKey),
+    getPublicIdentifier(responder.publicKey),
   );
 
-  expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiator.address);
-  expect(stateChannel.userPublicIdentifiers[1]).toEqual(responder.address);
+  expect(stateChannel.userPublicIdentifiers[0]).toEqual(getPublicIdentifier(initiator.publicKey));
+  expect(stateChannel.userPublicIdentifiers[1]).toEqual(getPublicIdentifier(responder.publicKey));
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(
@@ -101,7 +101,13 @@ describe("Set State Commitment", () => {
     });
 
     it("should contain expected AppIdentity argument", () => {
-      const [channelNonce, participants, multisigAddress, appDefinition, defaultTimeout] = desc.args[0];
+      const [
+        channelNonce,
+        participants,
+        multisigAddress,
+        appDefinition,
+        defaultTimeout,
+      ] = desc.args[0];
 
       expect(channelNonce).toEqual(bigNumberify(appInstance.identity.channelNonce));
       expect(participants).toEqual(appInstance.identity.participants);
