@@ -4,7 +4,6 @@ import {
   createRandom32ByteHexString,
   IConnextClient,
   StoreTypes,
-  getPublicIdentifier,
 } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -80,18 +79,14 @@ describe("Async Transfers", () => {
       Wallet.createRandom().privateKey,
       ethProvider.connection.url,
     );
-    const receiverId = getPublicIdentifier(
-      receiverSigner.publicKey,
-      (await ethProvider.getNetwork()).chainId,
-    );
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
     await clientA.transfer({
       amount: ETH_AMOUNT_SM.toString(),
       assetId: tokenAddress,
-      recipient: receiverId,
+      recipient: receiverSigner.publicKey,
     });
     const receiverClient = await createClient({ signer: receiverSigner }, false);
-    expect(receiverClient.publicIdentifier).to.eq(receiverId);
+    expect(receiverClient.publicIdentifier).to.eq(receiverSigner.publicKey);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);
     receiverClient.messaging.disconnect();

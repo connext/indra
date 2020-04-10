@@ -82,7 +82,7 @@ export class CFCoreStore implements IStoreService {
 
     const nodeIdentifier = this.configService.getPublicIdentifier();
     const userIdentifier = stateChannel.userIdentifiers.find(
-      address => address !== this.configService.getPublicIdentifier(),
+      id => id !== nodeIdentifier,
     );
 
     const {
@@ -106,14 +106,13 @@ export class CFCoreStore implements IStoreService {
     });
     channel.activeCollateralizations = activeCollateralizations;
 
-    const userFreeBalance = userIdentifier;
-    const nodeFreeBalance = this.configService.getPublicIdentifier();
     const participants = [
       freeBalanceAppInstance.initiatorIdentifier,
       freeBalanceAppInstance.responderIdentifier,
     ];
-    const userParticipantAddress = participants.find(p => p === userFreeBalance);
-    const nodeParticipantAddress = participants.find(p => p === nodeFreeBalance);
+    // TODO: fix column names to be identifiers!
+    const userId = participants.find(p => p === userIdentifier);
+    const nodeId = participants.find(p => p === nodeIdentifier);
     const {
       identityHash,
       appInterface: { stateEncoding, actionEncoding, addr },
@@ -145,8 +144,8 @@ export class CFCoreStore implements IStoreService {
     freeBalanceApp.responderDepositAssetId = AddressZero;
     freeBalanceApp.responderIdentifier = userIdentifier;
     freeBalanceApp.initiatorIdentifier = nodeIdentifier;
-    freeBalanceApp.userParticipantAddress = userParticipantAddress;
-    freeBalanceApp.nodeParticipantAddress = nodeParticipantAddress;
+    freeBalanceApp.userParticipantAddress = userId;
+    freeBalanceApp.nodeParticipantAddress = nodeId;
     freeBalanceApp.type = AppType.FREE_BALANCE;
 
     channel.appInstances = [freeBalanceApp];
@@ -183,9 +182,11 @@ export class CFCoreStore implements IStoreService {
     // upgrade proposal to instance
     proposal.type = AppType.INSTANCE;
     // save participants
-    const nodeAddr = this.configService.getPublicIdentifier();
-    proposal.userParticipantAddress = [initiatorIdentifier, responderIdentifier].find(p => p !== nodeAddr);
-    proposal.nodeParticipantAddress = [initiatorIdentifier, responderIdentifier].find(p => p === nodeAddr);
+    const nodeId = this.configService.getPublicIdentifier();
+    proposal.userParticipantAddress = [initiatorIdentifier, responderIdentifier]
+      .find(p => p !== nodeId);
+    proposal.nodeParticipantAddress = [initiatorIdentifier, responderIdentifier]
+      .find(p => p === nodeId);
 
     proposal.meta = meta;
 

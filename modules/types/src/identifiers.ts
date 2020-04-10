@@ -1,13 +1,11 @@
 import {
   computeAddress,
   computePublicKey,
-  isHexString,
   randomBytes,
   getAddress,
 } from "ethers/utils";
 
 import { Address, PublicKey } from "./basic";
-import { ETHEREUM_NAMESPACE, GANACHE_CHAIN_ID } from "./constants";
 
 export type AssetId = string; // CAIP-10 format: ${address}@${namespace}:${chainId}
 export type PublicIdentifier = string; // CAIP-10-ish format: ${publicKey}@${namespace}:${chainId}
@@ -34,54 +32,26 @@ export const getAddressFromAssetId = (assetId: AssetId): string =>
 ////////////////////////////////////////
 // PublicIdentifier
 
-export const getPublicIdentifier = (
-  publicKey: PublicKey,
-  chainId: number = GANACHE_CHAIN_ID,
-  namespace: string = ETHEREUM_NAMESPACE,
-) => {
-  return `${publicKey}@${namespace}:${chainId.toString()}`;
-};
-
 export const getRandomPublicIdentifier = (): PublicIdentifier =>
-  `${computePublicKey(randomBytes(32))}@${ETHEREUM_NAMESPACE}:${GANACHE_CHAIN_ID}`;
-  ;
-
-export const parsePublicIdentifier = (
-  identifier: string,
-): PublicIdentifierData => {
-  const [publicKey, res] = identifier.split("@");
-  const [namespace, chainId] = res.split(":");
-  return {
-    chainId: parseInt(chainId),
-    publicKey,
-    namespace,
-  };
-};
+  `${computePublicKey(randomBytes(32))}`;
 
 export const isValidPublicIdentifier = (
   identifier: PublicIdentifier,
 ): boolean => {
-  let parsed;
+  let addr;
   try {
-    parsed = parsePublicIdentifier(identifier);
+    addr = getAddressFromPublicIdentifier(identifier);
   } catch (e) {
     return false;
   }
-  const { publicKey, namespace, chainId } = parsed;
-
-  if (
-    !isHexString(publicKey) ||
-    namespace !== ETHEREUM_NAMESPACE ||
-    typeof chainId !== "number"
-  ) {
+  try {
+    getAddress(addr);
+  } catch (e) {
     return false;
   }
   return true;
 };
 
 export const getAddressFromPublicIdentifier = (identifer: string): string => {
-  return computeAddress(parsePublicIdentifier(identifer).publicKey);
+  return computeAddress(identifer);
 };
-
-export const getChainIdFromPublicIdentifier = (identifier: PublicIdentifier): number =>
-  parsePublicIdentifier(identifier).chainId;

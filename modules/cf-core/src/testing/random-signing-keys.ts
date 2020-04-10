@@ -1,5 +1,5 @@
 import { getRandomChannelSigner } from "@connext/crypto";
-import { IChannelSigner, createRandom32ByteHexString, getPublicIdentifier } from "@connext/types";
+import { IChannelSigner, createRandom32ByteHexString } from "@connext/types";
 import { SigningKey } from "ethers/utils";
 
 export function getRandomSigningKeys(length: number) {
@@ -14,6 +14,6 @@ export function getRandomChannelSigners(length: number, ethProviderUrl?: string)
 
 export function getRandomPublicIdentifiers(length: number, provider?: string): string[] {
   return getRandomChannelSigners(length, provider)
-    .map((signer) => getPublicIdentifier(signer.publicKey));
+    .map((signer) => signer.publicKey);
 }
 

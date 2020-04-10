@@ -1,4 +1,4 @@
-import { NetworkContext, createRandomAddress, getPublicIdentifier } from "@connext/types";
+import { NetworkContext, createRandomAddress } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, AddressZero } from "ethers/constants";
 
@@ -40,12 +40,12 @@ describe("set state on free balance", () => {
         multisigMastercopy: network.MinimumViableMultisig,
       },
       getAddress(createRandomAddress()),
-      getPublicIdentifier(initiatorNode.publicKey),
-      getPublicIdentifier(responderNode.publicKey),
+      initiatorNode.publicKey,
+      responderNode.publicKey,
     );
 
-    expect(stateChannel.userIdentifiers[0]).toEqual(getPublicIdentifier(initiatorNode.publicKey));
-    expect(stateChannel.userIdentifiers[1]).toEqual(getPublicIdentifier(responderNode.publicKey));
+    expect(stateChannel.userIdentifiers[0]).toEqual(initiatorNode.publicKey);
+    expect(stateChannel.userIdentifiers[1]).toEqual(responderNode.publicKey);
 
     // Set the state to some test values
     stateChannel = stateChannel.setFreeBalance(

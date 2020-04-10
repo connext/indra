@@ -1,5 +1,5 @@
 import { getRandomChannelSigner } from "@connext/crypto";
-import { createRandomAddress, MultisigTransaction, getPublicIdentifier } from "@connext/types";
+import { createRandomAddress, MultisigTransaction } from "@connext/types";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
 import { generateRandomNetworkContext } from "../testing/mocks";
@@ -30,8 +30,8 @@ describe("SetupCommitment", () => {
     sender: getRandomChannelSigner(),
     receiver: getRandomChannelSigner(),
   };
-  const initiatorId = getPublicIdentifier(interaction.sender.publicKey);
-  const responderId = getPublicIdentifier(interaction.receiver.publicKey);
+  const initiatorId = interaction.sender.publicKey;
+  const responderId = interaction.receiver.publicKey;
 
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(

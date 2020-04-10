@@ -1,7 +1,6 @@
 import { ChannelSigner } from "@connext/crypto";
 import {
   ContractAddresses,
-  getPublicIdentifier,
   IChannelSigner,
   MessagingConfig,
   SwapRate,
@@ -34,7 +33,6 @@ export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
   private readonly ethProvider: JsonRpcProvider;
   private signer: IChannelSigner;
-  public publicIdentifier: string;
 
   constructor() {
     this.envConfig = process.env;
@@ -42,11 +40,6 @@ export class ConfigService implements OnModuleInit {
     this.signer = new ChannelSigner(
       this.getPrivateKey(),
       this.getEthRpcUrl(),
-    );
-    // TODO: chainid synchronously?
-    this.publicIdentifier = getPublicIdentifier(
-      this.signer.publicKey,
-      this.ethProvider.network ? this.ethProvider.network.chainId : 4447, 
     );
   }
 
@@ -164,7 +157,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   getPublicIdentifier(): string {
-    return this.publicIdentifier;
+    return this.signer.publicKey;
   }
 
   async getSignerAddress(): Promise<string> {

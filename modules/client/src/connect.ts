@@ -13,7 +13,6 @@ import {
   NodeResponses,
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
-  getPublicIdentifier,
 } from "@connext/types";
 import { Contract, providers, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -122,7 +121,6 @@ export const connect = async (
       log.warn(`Client instantiation with mnemonic is only recommended for dev usage`);
       signer = new ChannelSigner(pk, ethProviderUrl);
     }
-    const identifier = getPublicIdentifier(signer.publicKey, network.chainId);
 
     store = store || getDefaultStore(opts);
 
@@ -130,7 +128,7 @@ export const connect = async (
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        identifier,
+        signer.publicKey,
         (msg: string) => signer.signMessage(msg),
         messagingUrl,
       );
@@ -142,7 +140,7 @@ export const connect = async (
     config = await node.config();
 
     // ensure that node and user identifiers are different
-    if (config.nodeIdentifier === identifier) {
+    if (config.nodeIdentifier === signer.publicKey) {
       throw new Error(
         "Client must be instantiated with a signer that is different from the node's",
       );

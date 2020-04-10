@@ -1,4 +1,4 @@
-import { parsePublicIdentifier, isValidPublicIdentifier } from "@connext/types";
+import { isValidPublicIdentifier } from "@connext/types";
 import { registerDecorator, ValidationOptions } from "class-validator";
 import { arrayify, isHexString } from "ethers/utils";
 

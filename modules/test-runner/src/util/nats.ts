@@ -1,5 +1,5 @@
 import { getRandomChannelSigner } from "@connext/crypto";
-import { VerifyNonceDtoType, getPublicIdentifier } from "@connext/types";
+import { VerifyNonceDtoType } from "@connext/types";
 import { connect, Client } from "ts-nats";
 import axios, { AxiosResponse } from "axios";
 
@@ -20,7 +20,7 @@ export const connectNats = async (): Promise<Client> => {
   if (!natsClient) {
     const adminJWT: AxiosResponse<string> = await axios.post(`${env.nodeUrl}/auth`, {
       sig: "0xbeef",
-      userIdentifier: getPublicIdentifier(signer.publicKey),
+      userIdentifier: signer.publicKey,
       adminToken: env.adminToken,
     } as VerifyNonceDtoType);
     natsClient = await connect({ servers: ["nats://172.17.0.1:4222"], userJWT: adminJWT.data });

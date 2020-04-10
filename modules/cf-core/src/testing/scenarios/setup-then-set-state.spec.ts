@@ -1,4 +1,3 @@
-import { getPublicIdentifier } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -73,8 +72,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         network.IdentityApp,
         { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
         proxy, // used as multisig
-        getPublicIdentifier(initiator.publicKey),
-        getPublicIdentifier(responder.publicKey),
+        initiator.publicKey,
+        responder.publicKey,
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(

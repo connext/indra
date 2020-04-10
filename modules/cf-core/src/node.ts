@@ -19,8 +19,8 @@ import {
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
-  getPublicIdentifier,
-  PublicIdentifier,
+  PublicKey,
+  Address,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -78,12 +78,7 @@ export class Node {
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
   ): Promise<Node> {
-    const publicIdentifier = getPublicIdentifier(
-      signer.publicKey,
-      (await provider.getNetwork()).chainId,
-    );
     const node = new Node(
-      publicIdentifier,
       signer,
       messagingService,
       storeService,
@@ -99,7 +94,6 @@ export class Node {
   }
 
   private constructor(
-    public readonly publicIdentifier: PublicIdentifier,
     private readonly signer: IChannelSigner,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
@@ -118,8 +112,13 @@ export class Node {
   }
 
   @Memoize()
-  get signerAddress(): string {
+  get signerAddress(): Address {
     return this.signer.address;
+  }
+
+  @Memoize()
+  get publicIdentifier(): PublicKey {
+    return this.signer.publicKey;
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {

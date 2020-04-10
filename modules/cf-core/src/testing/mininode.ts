@@ -1,7 +1,6 @@
 import { getRandomChannelSigner } from "@connext/crypto";
 import {
   AppInstanceProposal,
-  getPublicIdentifier,
   IChannelSigner,
   IStoreService,
   NetworkContext,
@@ -40,7 +39,7 @@ export class MiniNode {
     readonly store: IStoreService,
   ) {
     this.signer = getRandomChannelSigner();
-    this.publicIdentifier = getPublicIdentifier(this.signer.publicKey);
+    this.publicIdentifier = this.signer.publicKey;
     this.address = this.signer.address;
     this.protocolRunner = new ProtocolRunner(
       networkContext, 

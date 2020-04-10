@@ -1,9 +1,7 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import {
   createRandomAddress,
-  MultisigTransaction,
-  getPublicIdentifier,
-} from "@connext/types";
+  MultisigTransaction } from "@connext/types";
 import { WeiPerEther, AddressZero } from "ethers/constants";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
@@ -39,15 +37,15 @@ describe("ConditionalTransactionCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    getPublicIdentifier(initiator.publicKey),
-    getPublicIdentifier(responder.publicKey),
+    initiator.publicKey,
+    responder.publicKey,
   );
 
   expect(stateChannel.userIdentifiers[0]).toEqual(
-    getPublicIdentifier(initiator.publicKey),
+    initiator.publicKey,
   );
   expect(stateChannel.userIdentifiers[1]).toEqual(
-    getPublicIdentifier(responder.publicKey),
+    responder.publicKey,
   );
 
   // Set the state to some test values
