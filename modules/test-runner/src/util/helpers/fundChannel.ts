@@ -1,6 +1,6 @@
 import {
   AssetId,
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  CONVENTION_FOR_ETH_ASSET_ID,
   delay,
   EventNames,
   getAddressFromAssetId,
@@ -13,7 +13,7 @@ import { env, expect, Logger } from "../";
 export const fundChannel = async (
   client: IConnextClient,
   amount: BigNumber,
-  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
 ): Promise<void> => {
   const log = new Logger("FundChannel", env.logLevel);
   const tokenAddress = getAddressFromAssetId(assetId);
@@ -47,7 +47,7 @@ export const fundChannel = async (
 
 export const requestCollateral = async (
   client: IConnextClient,
-  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID,
   enforce: boolean = false,
 ): Promise<void> => {
   const log = new Logger("RequestCollateral", env.logLevel);
