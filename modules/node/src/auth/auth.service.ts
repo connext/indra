@@ -1,13 +1,13 @@
-import { MessagingAuthService } from "@connext/messaging";
-import { Injectable, Inject } from "@nestjs/common";
-import { createRandomBytesHexString, getAddressFromIdentifier, PublicIdentifier } from "@connext/types";
 import { verifyChannelMessage } from "@connext/crypto";
+import { MessagingAuthService } from "@connext/messaging";
+import { createRandomBytesHexString, getAddressFromIdentifier, PublicIdentifier, isValidPublicIdentifier } from "@connext/types";
+import { Injectable, Inject } from "@nestjs/common";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 
-import { isValidIdentifier, isAddress } from "../util";
+import { isAddress } from "../util";
 import { MessagingAuthProviderId } from "../constants";
 
 const nonceLen = 32;
@@ -115,7 +115,7 @@ export class AuthService {
     return async (subject: string, data: any): Promise<string> => {
       // Get & validate address from subject
       const identifier = subject.split(".")[0]; // first item of subscription is id
-      if (!identifier || !isValidIdentifier(identifier)) {
+      if (!identifier || !isValidPublicIdentifier(identifier)) {
         throw new Error(`Subject's first item isn't a valid identifier: ${identifier}`);
       }
       return callback(identifier, data);

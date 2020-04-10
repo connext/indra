@@ -1,6 +1,6 @@
 import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
-  verifyPublicIdentifier,
+  isValidPublicIdentifier,
   ConditionalTransferTypes,
   CreatedLinkedTransferMeta,
   deBigNumberifyJson,
@@ -36,7 +36,9 @@ export class LinkedTransferController extends AbstractController {
     const submittedMeta = { ...(meta || {}) } as CreatedLinkedTransferMeta;
     
     if (recipient) {
-      verifyPublicIdentifier(recipient);
+      if (!isValidPublicIdentifier(recipient)) {
+        throw new Error(`Invalid recipient identifier: ${recipient}`);
+      }
       // set recipient and encrypted pre-image on linked transfer
       const encryptedPreImage = await this.signer.encrypt(
         preImage,

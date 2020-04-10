@@ -1,6 +1,6 @@
+import { parsePublicIdentifier, isValidPublicIdentifier } from "@connext/types";
 import { registerDecorator, ValidationOptions } from "class-validator";
 import { arrayify, isHexString } from "ethers/utils";
-import { parsePublicIdentifier } from "@connext/types";
 
 export const isValidHex = (hex: string, bytes?: number): boolean =>
   isHexString(hex) && (bytes ? arrayify(hex).length === bytes : true);
@@ -111,35 +111,16 @@ export function IsAddress(validationOptions?: ValidationOptions): Function {
   };
 }
 
-export const isValidIdentifier = (identifier: string): boolean => {
-  let parsed;
-  try {
-    parsed = parsePublicIdentifier(identifier);
-  } catch (e) {
-    return false;
-  }
-  if (
-    !parsed.chainId || 
-    typeof parsed.chainId !== "number" ||
-    !parsed.namespace || 
-    !parsed.address || 
-    !isEthAddress(parsed.address)
-  ) {
-    return false;
-  }
-  return true;
-};
-
-export function IsValidIdentifier(validationOptions?: ValidationOptions): Function {
+export function IsValidPublicIdentifier(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
     registerDecorator({
-      name: "isValidIdentifier",
+      name: "isValidPublicIdentifier",
       options: validationOptions,
       propertyName,
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isValidIdentifier(value);
+          return isValidPublicIdentifier(value);
         },
       },
     });

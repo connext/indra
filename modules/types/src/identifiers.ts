@@ -95,17 +95,18 @@ export const parsePublicIdentifier = (
   };
 };
 
-export const verifyPublicIdentifier = (
+export const isValidPublicIdentifier = (
   identifier: PublicIdentifier,
-) => {
+): boolean => {
   const { chainId, publicKey, namespace } = parsePublicIdentifier(identifier);
   if (
     !isHexString(publicKey) ||
     namespace !== ETHEREUM_NAMESPACE ||
     typeof chainId !== "number"
   ) {
-    throw new Error(`Invalid public identfier: ${identifier}`);
+    return false;
   }
+  return true;
 };
 
 export const getAddressFromIdentifier = (identifer: string): string => {

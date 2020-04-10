@@ -122,7 +122,7 @@ export const connect = async (
       log.warn(`Client instantiation with mnemonic is only recommended for dev usage`);
       signer = new ChannelSigner(pk, ethProviderUrl);
     }
-    const identifier = getPublicIdentifier(signer.publicKey, config.ethNetwork.chainId);
+    const identifier = getPublicIdentifier(signer.publicKey, network.chainId);
 
     store = store || getDefaultStore(opts);
 
