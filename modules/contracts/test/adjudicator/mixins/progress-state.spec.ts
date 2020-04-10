@@ -132,7 +132,7 @@ describe("progressState", () => {
     );
   });
 
-  it("Cannot call progressState with incorrect turn taker", async () => {
+  it("progressState should fail with incorrect turn taker", async () => {
     await setState(1, encodeState(PRE_STATE));
 
     await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
