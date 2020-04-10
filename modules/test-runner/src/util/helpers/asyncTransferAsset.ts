@@ -101,7 +101,7 @@ export async function asyncTransferAsset(
     amount: transferAmount,
     assetId,
     paymentId,
-    receiverPublicIdentifier: clientB.publicIdentifier,
+    receiverIdentifier: clientB.publicIdentifier,
     senderIdentifier: clientA.publicIdentifier,
     status: LinkedTransferStatus.COMPLETED,
     meta: { ...SENDER_INPUT_META },

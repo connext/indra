@@ -37,7 +37,7 @@ describe("Get Linked Transfer", () => {
       amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
-      receiverPublicIdentifier: null,
+      receiverIdentifier: null,
       senderIdentifier: clientA.publicIdentifier,
     });
   });
@@ -62,7 +62,7 @@ describe("Get Linked Transfer", () => {
       amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
-      receiverPublicIdentifier: clientB.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
       senderIdentifier: clientA.publicIdentifier,
     });
   });

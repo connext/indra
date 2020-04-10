@@ -165,7 +165,7 @@ describe("Async transfer offline tests", () => {
     // verify transfer
     const expected = {
       amount: TOKEN_AMOUNT_SM,
-      receiverPublicIdentifier: receiverClient.publicIdentifier,
+      receiverIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderIdentifier: senderClient.publicIdentifier,
       status: LinkedTransferStatus.COMPLETED,
@@ -236,7 +236,7 @@ describe("Async transfer offline tests", () => {
     const expected = {
       amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
-      receiverPublicIdentifier: receiverClient.publicIdentifier,
+      receiverIdentifier: receiverClient.publicIdentifier,
       paymentId,
       senderIdentifier: senderClient.publicIdentifier,
       status: LinkedTransferStatus.COMPLETED,

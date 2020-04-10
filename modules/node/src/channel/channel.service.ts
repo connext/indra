@@ -77,17 +77,17 @@ export class ChannelService {
 
   /**
    * Starts create channel process within CF core
-   * @param counterpartyPublicIdentifier
+   * @param counterpartyIdentifier
    */
-  async create(counterpartyPublicIdentifier: string): Promise<MethodResults.CreateChannel> {
+  async create(counterpartyIdentifier: string): Promise<MethodResults.CreateChannel> {
     const existing = await this.channelRepository.findByUserPublicIdentifier(
-      counterpartyPublicIdentifier,
+      counterpartyIdentifier,
     );
     if (existing) {
-      throw new Error(`Channel already exists for ${counterpartyPublicIdentifier}`);
+      throw new Error(`Channel already exists for ${counterpartyIdentifier}`);
     }
 
-    const createResult = await this.cfCoreService.createChannel(counterpartyPublicIdentifier);
+    const createResult = await this.cfCoreService.createChannel(counterpartyIdentifier);
     return createResult;
   }
 

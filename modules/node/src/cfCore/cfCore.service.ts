@@ -99,12 +99,12 @@ export class CFCoreService {
     return getStateChannelRes.result.result;
   }
 
-  async createChannel(counterpartyPublicIdentifier: string): Promise<MethodResults.CreateChannel> {
+  async createChannel(counterpartyIdentifier: string): Promise<MethodResults.CreateChannel> {
     const params = {
       id: Date.now(),
       methodName: MethodNames.chan_create,
       parameters: {
-        owners: [this.cfCore.publicIdentifier, counterpartyPublicIdentifier],
+        owners: [this.cfCore.publicIdentifier, counterpartyIdentifier],
       } as MethodParams.CreateChannel,
     };
     this.log.debug(`Calling createChannel with params: ${stringify(params)}`);
