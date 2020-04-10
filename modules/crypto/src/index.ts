@@ -20,7 +20,6 @@ import {
   compress,
   decompress,
   padLeft,
-  trimRight,
   isCompressed,
   isDecompressed,
 } from "eccrypto-js";
@@ -33,8 +32,7 @@ export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
 // publicIdentifier contants
 export const INDRA_PUB_ID_PREFIX = "indra";
-export const INDRA_PUB_ID_HASH_SIZE = 10;
-export const INDRA_PUB_ID_CHAR_LENGTH = 70;
+export const INDRA_PUB_ID_CHAR_LENGTH = 50;
 
 export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
@@ -53,11 +51,10 @@ export function ensureBase58Length(str: string, length: number) {
   return padLeft(str, length, "1");
 }
 
-export function getChannelPublicIdentifier(seed: string, publicKey: string): string {
-  const seedHash = trimRight(keccak256(bufferify(seed)), INDRA_PUB_ID_HASH_SIZE);
+export function getChannelPublicIdentifier(publicKey: string): string {
   const buf = hexToBuffer(publicKey);
   const compressedPubKey = isCompressed(buf) ? buf : compress(buf);
-  const base58id = bs58check.encode(concatBuffers(seedHash, compressedPubKey));
+  const base58id = bs58check.encode(compressedPubKey);
   const base58length = INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length;
   return INDRA_PUB_ID_PREFIX + ensureBase58Length(base58id, base58length);
 }
@@ -66,7 +63,7 @@ export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): stri
   publicIdentifier = publicIdentifier.replace(INDRA_PUB_ID_PREFIX, "");
   publicIdentifier = publicIdentifier.replace(/^1+/, "");
   const buf: Buffer = bs58check.decode(publicIdentifier);
-  const publicKey = decompress(buf.slice(INDRA_PUB_ID_HASH_SIZE, buf.length));
+  const publicKey = decompress(buf);
   return bufferToHex(publicKey);
 }
 

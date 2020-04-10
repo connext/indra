@@ -33,8 +33,6 @@ const testMessageArr = ethers.utils.arrayify(Buffer.from(testMessage));
 const digest = keccak256(utf8ToBuffer(testMessage));
 const digestHex = bufferToHex(digest, true);
 
-const multisigAddress = "0x24E5E0e535fAa3f8382d3bCf682dbb5e52E67544";
-
 const base58lengthTarget = INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length;
 const base58length65 = "2HKEJD1Y8TiL32U4Mt7zH2HAP35DqKR5Zbc9aCDjgXw7CwU1m1ZQhofPqTQ4xoXwK";
 const base58length64 = "DcdgTzP9eUmNDshnvXrUr2RzDJEgbnHaDqtvrVpH56YCTKexLLUwMZA3UuumTup1";
@@ -126,19 +124,19 @@ describe("crypto", () => {
   });
 
   it("should generate channel publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(multisigAddress, example.pubKey);
+    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
     expect(publicIdentifier.length).toEqual(INDRA_PUB_ID_CHAR_LENGTH);
     expect(publicIdentifier.startsWith(INDRA_PUB_ID_PREFIX)).toBeTruthy;
   });
 
   it("should get signer publicKey from publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(multisigAddress, example.pubKey);
+    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
     const publicKey = getPublicKeyFromPublicIdentifier(publicIdentifier);
     expect(publicKey).toEqual(example.pubKey);
   });
 
   it("should get signer address from publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(multisigAddress, example.pubKey);
+    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
     const address = getSignerAddressFromPublicIdentifier(publicIdentifier);
     expect(address).toEqual(example.address);
   });
