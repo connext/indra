@@ -1,10 +1,9 @@
-import { AddressZero } from "ethers/constants";
 import {
   computeAddress,
   computePublicKey,
-  getAddress,
   isHexString,
   randomBytes,
+  getAddress,
 } from "ethers/utils";
 
 import { Address, PublicKey } from "./basic";
@@ -28,45 +27,9 @@ export type PublicIdentifierData = {
 ////////////////////////////////////////
 // AssetId
 
-// chain id and deployed address (defaults to ETH)
-export const getAssetId = (
-  address: Address = AddressZero,
-  chainId: number = GANACHE_CHAIN_ID,
-  namespace: string = ETHEREUM_NAMESPACE,
-): AssetId => {
-  return `${address}@${namespace}:${chainId.toString()}`;
-};
-
-export const parseAssetId = (
-  assetId: AssetId,
-): AssetIdData => {
-  const [address, rest] = assetId.split("@");
-  const [namespace, chainId] = rest.split(":");
-  return {
-    address: getAddress(address),
-    chainId: parseInt(chainId, 10),
-    namespace,
-  };
-};
-
-export const verifyAssetId = (
-  assetId: AssetId,
-) => {
-  const { address, chainId, namespace } = parseAssetId(assetId);
-  if (
-    !isHexString(address) ||
-    namespace !== ETHEREUM_NAMESPACE ||
-    typeof chainId !== "number"
-  ) {
-    throw new Error(`Invalid assetId: ${assetId}`);
-  }
-};
-
-export const getChainIdFromAssetId = (assetId: AssetId): number =>
-  parseAssetId(assetId).chainId;
-
+// make sure all addresses are normalized
 export const getAddressFromAssetId = (assetId: AssetId): string =>
-  parseAssetId(assetId).address;
+  getAddress(assetId);
 
 ////////////////////////////////////////
 // PublicIdentifier
