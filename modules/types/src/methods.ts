@@ -3,7 +3,7 @@ import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
 import { OutcomeType } from "./contracts";
-import { PublicParams, PublicResults } from "./public";
+import { PublicParams, PublicResults } from "./publicMethods";
 import { StateChannelJSON } from "./state";
 import { MinimalTransaction } from "./commitments";
 import { enumify } from "./utils";
