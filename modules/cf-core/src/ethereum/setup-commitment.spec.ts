@@ -10,7 +10,6 @@ import { appIdentityToHash } from "../utils";
 
 import { getSetupCommitment } from "./setup-commitment";
 import { getRandomChannelSigner } from "../testing/random-signing-keys";
-import { GANACHE_CHAIN_ID } from "../testing/utils";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according
@@ -28,17 +27,11 @@ describe("SetupCommitment", () => {
 
   // General interaction testing values
   const interaction = {
-    sender: getRandomChannelSigner().address,
-    receiver: getRandomChannelSigner().address,
+    sender: getRandomChannelSigner(),
+    receiver: getRandomChannelSigner(),
   };
-  const initiatorId = getPublicIdentifier(
-    GANACHE_CHAIN_ID,
-    interaction.sender,
-  );
-  const responderId = getPublicIdentifier(
-    GANACHE_CHAIN_ID,
-    interaction.receiver,
-  );
+  const initiatorId = getPublicIdentifier(interaction.sender.publicKey);
+  const responderId = getPublicIdentifier(interaction.receiver.publicKey);
 
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(

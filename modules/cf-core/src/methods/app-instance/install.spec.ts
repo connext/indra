@@ -7,7 +7,7 @@ import {
   ProtocolNames,
   IStoreService,
   getAddressFromIdentifier,
-  getPublicIdentifier,
+  getRandomPublicIdentifier,
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -22,7 +22,7 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models";
 
-import { createAppInstanceProposalForTest, GANACHE_CHAIN_ID } from "../../testing/utils";
+import { createAppInstanceProposalForTest } from "../../testing/utils";
 
 import { install } from "./install";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -48,10 +48,7 @@ describe("Can handle correct & incorrect installs", () => {
       store,
       nullLogger,
     );
-    initiatorIdentifier = getPublicIdentifier(
-      GANACHE_CHAIN_ID,
-      Wallet.createRandom().address,
-    );
+    initiatorIdentifier = getRandomPublicIdentifier();
   });
 
   it("fails to install with undefined appIdentityHash", async () => {

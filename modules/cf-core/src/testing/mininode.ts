@@ -14,7 +14,6 @@ import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { PersistAppType } from "../types";
 import { getRandomChannelSigner } from "./random-signing-keys";
-import { GANACHE_CHAIN_ID } from "./utils";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
 const makeSigner = (signer: ChannelSigner) => {
@@ -41,10 +40,7 @@ export class MiniNode {
     readonly store: IStoreService,
   ) {
     this.signer = getRandomChannelSigner();
-    this.publicIdentifier = getPublicIdentifier(
-      GANACHE_CHAIN_ID,
-      this.signer.address,
-    );
+    this.publicIdentifier = getPublicIdentifier(this.signer.publicKey);
     this.address = this.signer.address;
     this.protocolRunner = new ProtocolRunner(
       networkContext, 

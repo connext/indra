@@ -10,13 +10,12 @@ import { toBeEq } from "../bignumber-jest-matcher";
 
 import { setup, SetupContext } from "../setup";
 import {
+  assertMessage,
   createChannel,
+  deposit,
+  getFreeBalanceState,
   getTokenIndexedFreeBalanceStates,
   transferERC20Tokens,
-  assertMessage,
-  deposit,
-  GANACHE_CHAIN_ID,
-  getFreeBalanceState,
 } from "../utils";
 import { BigNumber } from "ethers/utils";
 
@@ -75,7 +74,6 @@ describe("Node method follows spec - deposit", () => {
 
   it("has the right balance before an ERC20 deposit has been made", async () => {
     const erc20AssetId = getAssetId(
-      GANACHE_CHAIN_ID, 
       (global["network"] as NetworkContextForTestSuite)
         .DolphinCoin,
     );
@@ -115,7 +113,6 @@ describe("Node method follows spec - deposit", () => {
 
   it("has the right balance for both parties after erc20 deposits", async () => {
     const erc20AssetId = getAssetId(
-      GANACHE_CHAIN_ID,
       (global["network"] as NetworkContextForTestSuite)
         .DolphinCoin);
 
@@ -157,7 +154,6 @@ describe("Node method follows spec - deposit", () => {
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {
     const erc20AssetId = getAssetId(
-      GANACHE_CHAIN_ID,
       (global["network"] as NetworkContextForTestSuite)
         .DolphinCoin);
 
@@ -248,12 +244,12 @@ async function confirmEthAndERC20FreeBalances(
     const ethFreeBalance = await getFreeBalanceState(
       node,
       multisigAddress,
-      getAssetId(GANACHE_CHAIN_ID, AddressZero),
+      getAssetId(AddressZero),
     );
     const tokenFreeBalance = await getFreeBalanceState(
       node,
       multisigAddress,
-      getAssetId(GANACHE_CHAIN_ID, tokenAddress),
+      getAssetId(tokenAddress),
     );
     // validate eth
     expect(

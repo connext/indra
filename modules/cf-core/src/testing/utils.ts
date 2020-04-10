@@ -6,13 +6,13 @@ import {
   AssetId,
   bigNumberifyJson,
   ContractABI,
+  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   CreateChannelMessage,
   deBigNumberifyJson,
   DepositAppState,
   DepositAppStateEncoding,
   EventNames,
   getAddressFromIdentifier,
-  getAssetId,
   getRandomPublicIdentifier,
   getTokenAddressFromAssetId,
   InstallMessage,
@@ -46,10 +46,6 @@ import { initialTransferState, transferAbiEncodings } from "./unidirectional-tra
 import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
 import { getRandomChannelSigner } from "./random-signing-keys";
-
-export const GANACHE_CHAIN_ID = 4447;
-
-export const CONVENTION_FOR_ETH_ASSET_ID_GANACHE = getAssetId(GANACHE_CHAIN_ID);
 
 interface AppContext {
   appDefinition: string;

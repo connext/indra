@@ -1,9 +1,10 @@
 import {
+  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   delay,
+  getAssetId,
   InstallMessage,
   ProposeMessage,
   ProtocolParams,
-  getAssetId,
 } from "@connext/types";
 import { One } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
@@ -28,8 +29,6 @@ import {
   makeAndSendProposeCall,
   makeInstallCall,
   transferERC20Tokens,
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
-  GANACHE_CHAIN_ID,
 } from "../utils";
 
 expect.extend({ toBeLt });
@@ -140,7 +139,7 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeB.signerAddress);
 
         const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
-        const assetId = getAssetId(GANACHE_CHAIN_ID, erc20TokenAddress);
+        const assetId = getAssetId(erc20TokenAddress);
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
 

@@ -1,5 +1,4 @@
 import {
-  Address,
   AppInstanceProposal,
   delay,
   EventNames,
@@ -79,10 +78,9 @@ export class Node {
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
   ): Promise<Node> {
-    // TODO: private key validation
     const publicIdentifier = getPublicIdentifier(
+      signer.publicKey,
       (await provider.getNetwork()).chainId,
-      await signer.getAddress(),
     );
     const node = new Node(
       publicIdentifier,

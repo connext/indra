@@ -1,4 +1,3 @@
-import { signChannelMessage } from "@connext/crypto";
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import {
   createRandomAddress,
@@ -9,7 +8,7 @@ import { WeiPerEther, AddressZero } from "ethers/constants";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
 import { generateRandomNetworkContext } from "../testing/mocks";
-import { createAppInstanceForTest, GANACHE_CHAIN_ID } from "../testing/utils";
+import { createAppInstanceForTest } from "../testing/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { FreeBalanceClass, StateChannel } from "../models";
@@ -20,7 +19,6 @@ import {
   getConditionalTransactionCommitment,
   ConditionalTransactionCommitment,
 } from "./conditional-tx-commitment";
-import { HDNode } from "ethers/utils/hdnode";
 import { getRandomChannelSigners } from "../testing/random-signing-keys";
 
 describe("ConditionalTransactionCommitment", () => {
@@ -41,15 +39,15 @@ describe("ConditionalTransactionCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    getPublicIdentifier(GANACHE_CHAIN_ID, initiator.address),
-    getPublicIdentifier(GANACHE_CHAIN_ID, responder.address),
+    getPublicIdentifier(initiator.publicKey),
+    getPublicIdentifier(responder.publicKey),
   );
 
   expect(stateChannel.userPublicIdentifiers[0]).toEqual(
-    getPublicIdentifier(GANACHE_CHAIN_ID, initiator.address),
+    getPublicIdentifier(initiator.publicKey),
   );
   expect(stateChannel.userPublicIdentifiers[1]).toEqual(
-    getPublicIdentifier(GANACHE_CHAIN_ID, responder.address),
+    getPublicIdentifier(responder.publicKey),
   );
 
   // Set the state to some test values

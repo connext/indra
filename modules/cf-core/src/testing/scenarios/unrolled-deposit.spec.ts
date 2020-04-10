@@ -1,5 +1,11 @@
-import { DepositAppState, BigNumber, getAddressFromIdentifier, getAssetId, getTokenAddressFromAssetId } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import {
+  BigNumber,
+  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  DepositAppState,
+  getAddressFromIdentifier,
+  getAssetId,
+  getTokenAddressFromAssetId,
+} from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../node";
@@ -15,8 +21,6 @@ import {
   transferERC20Tokens,
   getDepositApps,
   getMultisigBalance,
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
-  GANACHE_CHAIN_ID,
 } from "../utils";
 
 expect.extend({ toBeLt, toBeEq });
@@ -123,13 +127,13 @@ describe(`Node method follows spec - install deposit app`, () => {
 
   it(`install app with tokens, sending tokens should increase free balance`, async () => {
     const depositAmt = new BigNumber(1000);
-    const assetId = getAssetId(GANACHE_CHAIN_ID, global[`network`].DolphinCoin);
+    const assetId = getAssetId(global[`network`].DolphinCoin);
 
     await runUnrolledDepositTest(assetId, depositAmt);;
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async () => {
-    const erc20AssetId = getAssetId(GANACHE_CHAIN_ID, global[`network`].DolphinCoin);
+    const erc20AssetId = getAssetId(global[`network`].DolphinCoin);
     const depositAmtToken = new BigNumber(1000);
     const depositAmtEth = new BigNumber(500);
 

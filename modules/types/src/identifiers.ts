@@ -30,8 +30,8 @@ export type PublicIdentifierData = {
 
 // chain id and deployed address (defaults to ETH)
 export const getAssetId = (
-  chainId: number,
   address: Address = AddressZero,
+  chainId: number = GANACHE_CHAIN_ID,
   namespace: string = ETHEREUM_NAMESPACE,
 ): AssetId => {
   return `${address}@${namespace}:${chainId.toString()}`;
@@ -72,8 +72,8 @@ export const getTokenAddressFromAssetId = (assetId: AssetId): string =>
 // PublicIdentifier
 
 export const getPublicIdentifier = (
-  chainId: number,
   publicKey: PublicKey,
+  chainId: number = GANACHE_CHAIN_ID,
   namespace: string = ETHEREUM_NAMESPACE,
 ) => {
   return `${publicKey}@${namespace}:${chainId.toString()}`;

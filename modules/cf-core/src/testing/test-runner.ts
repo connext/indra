@@ -11,7 +11,7 @@ import { IdentityApp } from "./contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
 import { MessageRouter } from "./message-router";
 import { MiniNode } from "./mininode";
-import { newWallet, GANACHE_CHAIN_ID } from "./utils";
+import { newWallet } from "./utils";
 import { StateChannel } from "../models";
 
 expect.extend({ toBeEq });
@@ -200,9 +200,9 @@ export class TestRunner {
         actionEncoding: undefined,
       },
       initiatorDeposit: One,
-      initiatorDepositAssetId: getAssetId(GANACHE_CHAIN_ID, tokenAddress),
+      initiatorDepositAssetId: getAssetId(tokenAddress),
       responderDeposit: One,
-      responderDepositAssetId: getAssetId(GANACHE_CHAIN_ID, tokenAddress),
+      responderDepositAssetId: getAssetId(tokenAddress),
       defaultTimeout: toBN(100),
       stateTimeout: Zero,
       initialState,
@@ -226,12 +226,12 @@ export class TestRunner {
       disableLimit: false,
       initialState,
       initiatorBalanceDecrement: One,
-      initiatorDepositAssetId: getAssetId(GANACHE_CHAIN_ID, tokenAddress),
+      initiatorDepositAssetId: getAssetId(tokenAddress),
       initiatorIdentifier: this.mininodeA.publicIdentifier,
       multisigAddress: this.multisigAB,
       outcomeType,
       responderBalanceDecrement: One,
-      responderDepositAssetId: getAssetId(GANACHE_CHAIN_ID, tokenAddress),
+      responderDepositAssetId: getAssetId(tokenAddress),
       responderIdentifier: this.mininodeB.publicIdentifier,
       appInitiatorIdentifier: this.mininodeA.publicIdentifier,
       appResponderIdentifier: this.mininodeB.publicIdentifier,
@@ -285,9 +285,9 @@ export class TestRunner {
         actionEncoding: undefined,
       },
       initiatorDeposit: One,
-      initiatorDepositAssetId: getAssetId(GANACHE_CHAIN_ID, tokenAddressA),
+      initiatorDepositAssetId: getAssetId(tokenAddressA),
       responderDeposit: One,
-      responderDepositAssetId: getAssetId(GANACHE_CHAIN_ID, tokenAddressB),
+      responderDepositAssetId: getAssetId(tokenAddressB),
       defaultTimeout: bigNumberify(100),
       stateTimeout: Zero,
       initialState,
@@ -315,8 +315,8 @@ export class TestRunner {
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: bigNumberify(40),
       stateTimeout: Zero,
-      initiatorDepositAssetId: getAssetId(GANACHE_CHAIN_ID, tokenAddressA),
-      responderDepositAssetId: getAssetId(GANACHE_CHAIN_ID, tokenAddressB),
+      initiatorDepositAssetId: getAssetId(tokenAddressA),
+      responderDepositAssetId: getAssetId(tokenAddressB),
       disableLimit: false,
       appInitiatorIdentifier: this.mininodeA.publicIdentifier,
       appResponderIdentifier: this.mininodeB.publicIdentifier,
