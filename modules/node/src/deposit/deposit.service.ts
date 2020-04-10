@@ -107,7 +107,7 @@ export class DepositService {
     } else {
       const token = new Contract(
         tokenAddress, 
-        ERC20.abi, 
+        ERC20.abi as any, 
         this.configService.getEthProvider(),
       );
       tx = {
@@ -129,7 +129,7 @@ export class DepositService {
     const ethProvider = this.configService.getEthProvider();
 
     // generate initial totalAmountWithdrawn
-    const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi, ethProvider);
+    const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi as any, ethProvider);
     let startingTotalAmountWithdrawn: BigNumber;
     try {
       startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);

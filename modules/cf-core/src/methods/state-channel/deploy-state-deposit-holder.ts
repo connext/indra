@@ -202,7 +202,7 @@ async function checkForCorrectOwners(
 ): Promise<boolean> {
   await tx.wait();
 
-  const contract = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
+  const contract = new Contract(multisigAddress, MinimumViableMultisig.abi as any, provider);
 
   const expectedOwners = [
     getAddressFromPublicIdentifier(identifiers[0]),

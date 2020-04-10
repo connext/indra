@@ -64,11 +64,11 @@ export const validateDepositApp = async (
   const startingMultisigBalance = 
     initialState.assetId === CONVENTION_FOR_ETH_ASSET_ID
       ? await provider.getBalance(multisigAddress)
-      : await new Contract(initialState.assetId, ERC20.abi, provider)
+      : await new Contract(initialState.assetId, ERC20.abi as any, provider)
           .functions
           .balanceOf(multisigAddress);
 
-  const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
+  const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi as any, provider);
   let startingTotalAmountWithdrawn;
   try {
     startingTotalAmountWithdrawn = await multisig

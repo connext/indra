@@ -205,7 +205,7 @@ describe("Withdrawal", () => {
       await client.deployMultisig();
       multisigContract = new Contract(
         client.multisigAddress,
-        MinimumViableMultisig.abi,
+        MinimumViableMultisig.abi as any,
         client.ethProvider,
       );
     });

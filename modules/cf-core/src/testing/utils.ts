@@ -422,7 +422,7 @@ export async function getMultisigBalance(
   const provider = global[`wallet`].provider;
   return tokenAddress === AddressZero
     ? await provider.getBalance(multisigAddr)
-    : await new Contract(tokenAddress, ERC20.abi, provider)
+    : await new Contract(tokenAddress, ERC20.abi as any, provider)
         .functions.balanceOf(multisigAddr);
 }
 
@@ -431,7 +431,7 @@ export async function getMultisigAmountWithdrawn(
   tokenAddress: string = AddressZero,
 ) {
   const provider = global[`wallet`].provider;
-  const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi, provider);
+  const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi as any, provider);
   try {
     return await multisig.functions.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
@@ -508,7 +508,7 @@ export async function deposit(
         value: amount,
         to: multisigAddress,
       })
-    : await new Contract(getAddressFromAssetId(assetId), ERC20.abi, wallet)
+    : await new Contract(getAddressFromAssetId(assetId), ERC20.abi as any, wallet)
         .transfer(multisigAddress, amount);
   expect(tx.hash).toBeDefined();
   // rescind rights
