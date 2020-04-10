@@ -6,11 +6,12 @@ import {
   ProtocolRoles,
   getAddressFromAssetId,
   getAddressFromPublicIdentifier,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
 import { baseCoinTransferValidation } from "../shared";
-import { Zero, AddressZero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { Contract } from "ethers";
 import { BaseProvider, JsonRpcProvider } from "ethers/providers";
 
@@ -60,11 +61,12 @@ export const validateDepositApp = async (
     throw new Error(`Cannot install deposit app with invalid token address. Expected ${getAddressFromAssetId(params.initiatorDepositAssetId)}, got ${initialState.assetId}`);
   }
 
-  const startingMultisigBalance = initialState.assetId === AddressZero
-    ? await provider.getBalance(multisigAddress)
-    : await new Contract(initialState.assetId, ERC20.abi, provider)
-        .functions
-        .balanceOf(multisigAddress);
+  const startingMultisigBalance = 
+    initialState.assetId === CONVENTION_FOR_ETH_ASSET_ID
+      ? await provider.getBalance(multisigAddress)
+      : await new Contract(initialState.assetId, ERC20.abi, provider)
+          .functions
+          .balanceOf(multisigAddress);
 
   const multisig = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
   let startingTotalAmountWithdrawn;
@@ -103,11 +105,12 @@ export const uninstallDepositMiddleware = async (
   } = context;
 
   const latestState = appInstance.latestState as DepositAppState;
-  const currentMultisigBalance = latestState.assetId === AddressZero
-    ? await provider.getBalance(stateChannel.multisigAddress)
-    : await new Contract(latestState.assetId, ERC20.abi as any, provider)
-        .functions
-        .balanceOf(stateChannel.multisigAddress);
+  const currentMultisigBalance = 
+    latestState.assetId === CONVENTION_FOR_ETH_ASSET_ID
+      ? await provider.getBalance(stateChannel.multisigAddress)
+      : await new Contract(latestState.assetId, ERC20.abi as any, provider)
+          .functions
+          .balanceOf(stateChannel.multisigAddress);
 
   if (currentMultisigBalance.lt(latestState.startingMultisigBalance)) {
     throw new Error(`Refusing to uninstall, current multisig balance (${currentMultisigBalance.toString()}) is less than starting multsig balance (${latestState.startingMultisigBalance.toString()})`);
