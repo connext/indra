@@ -183,6 +183,10 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
+  getMessagingKey(): string {
+    return `INDRA`;
+  }
+
   getPort(): number {
     return parseInt(this.get(`INDRA_PORT`), 10);
   }

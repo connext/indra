@@ -67,12 +67,10 @@ export class AuthService {
       throw new Error(`Verification failed... nonce expired for address: ${userIdentifier}`);
     }
 
-    const network = await this.configService.getEthNetwork();
-
     // Try to get latest published OR move everything under address route.
     let permissions = {
       publish: {
-        allow: [`${userIdentifier}.>`, `INDRA.${network.chainId}.>`],
+        allow: [`${userIdentifier}.>`, `${this.configService.getMessagingKey()}.>`],
       },
       subscribe: {
         allow: [`>`],
