@@ -108,6 +108,16 @@ describe("progressState", () => {
     await progressStateAndVerify(PRE_STATE, ACTION);
   });
 
+  it("Can call progressState with explicitly finalizing action", async () => {
+    await setState(1, encodeState(PRE_STATE));
+
+    expect(await isProgressable()).to.be.false;
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    expect(await isProgressable()).to.be.true;
+
+    await progressStateAndVerify(PRE_STATE, EXPLICITLY_FINALIZING_ACTION);
+  });
+
   it("Can be called multiple times", async () => {
     await setState(1, encodeState(PRE_STATE));
 
@@ -169,4 +179,25 @@ describe("progressState", () => {
       context["progressStateAndVerify"](context["state0"], context["action"]),
     ).to.be.revertedWith("applyAction fails for this app");
   });
+
+  it("progressState should fail if applying action to old state does not match new state", async () => {
+    await setState(1, encodeState(PRE_STATE));
+
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+
+    await expect(progressState(PRE_STATE, ACTION, BOB, PRE_STATE)).to.be.revertedWith(
+      "progressState: applying action to old state does not match new state",
+    );
+  });
+
+  it("progressState should fail if versionNumber of new state is not that of stored state plus 1", async () => {
+    await setState(1, encodeState(PRE_STATE));
+
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+
+    await expect(progressState(PRE_STATE, ACTION, BOB, POST_STATE, 1)).to.be.revertedWith(
+      "progressState: versionNumber of new state is not that of stored state plus 1",
+    );
+  });
+
 });
