@@ -1,5 +1,5 @@
 import { Wallet } from "ethers";
-import { EthSignature, IChannelSigner, JsonRpcProvider } from "@connext/types";
+import { IChannelSigner, JsonRpcProvider } from "@connext/types";
 import {
   sign,
   encrypt,
@@ -22,7 +22,7 @@ import {
 } from "eccrypto-js";
 import { TransactionResponse, TransactionRequest } from "ethers/providers";
 
-const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
+// const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
 const CHAN_SIGN_PREFIX = "\x18Channel Signed Message:\n";
 
 function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
@@ -73,6 +73,7 @@ function hashMessage(message: Buffer | string, prefix: string): string {
   return bufferToHex(hash, true);
 }
 
+/* TODO: export if we use this anywhere, otherwise delete
 function splitSignature(sig: Buffer): EthSignature {
   return {
     r: sig.slice(0, 32).toString("hex"),
@@ -80,13 +81,16 @@ function splitSignature(sig: Buffer): EthSignature {
     v: sig.slice(64, 65).toString("hex"),
   };
 }
+*/
 
+/* TODO: export if we use this anywhere, otherwise delete
 function joinSignature(sig: EthSignature): string {
   return bufferToHex(
     concatBuffers(hexToBuffer(sig.r), hexToBuffer(sig.s), hexToBuffer(sig.v)),
     true,
   );
 }
+*/
 
 async function signDigest(
   privateKey: Buffer | string,
@@ -105,12 +109,14 @@ async function signMessage(
   return signDigest(privateKey, bufferify(hash));
 }
 
+/* TODO: export if we use this anywhere, otherwise delete
 async function signEthereumMessage(
   privateKey: Buffer | string,
   message: Buffer | string,
 ): Promise<string> {
   return signMessage(privateKey, message, ETH_SIGN_PREFIX);
 }
+*/
 
 async function signChannelMessage(
   privateKey: Buffer | string,
@@ -164,12 +170,10 @@ export async function verifyChannelMessage(
   return verifyMessage(message, sig, CHAN_SIGN_PREFIX);
 }
 
-export class ChannelSigner implements IChannelSigner {
-  public static createRandom() {
-    const privateKey = bufferToHex(randomBytes(32), true);
-    return new ChannelSigner(privateKey);
-  }
+export const getRandomChannelSigner = (ethProviderUrl?: string) =>
+  new ChannelSigner(bufferToHex(randomBytes(32), true), ethProviderUrl);
 
+export class ChannelSigner implements IChannelSigner {
   public address: string;
   public publicKey: string;
   public readonly provider?: JsonRpcProvider;
@@ -180,8 +184,8 @@ export class ChannelSigner implements IChannelSigner {
   // https://github.com/ethers-io/ethers.js/issues/779
   private readonly _ethersType = "Signer";
 
-  constructor(private readonly privateKey: string, ethUrl?: string) {
-    this.provider = !!ethUrl ? new JsonRpcProvider(ethUrl) : undefined;
+  constructor(private readonly privateKey: string, ethProviderUrl?: string) {
+    this.provider = !!ethProviderUrl ? new JsonRpcProvider(ethProviderUrl) : undefined;
     this.privateKey = privateKey;
     this.publicKey = getPublicKeyFromPrivate(this.privateKey);
     this.address = getChecksumAddress(this.publicKey);
