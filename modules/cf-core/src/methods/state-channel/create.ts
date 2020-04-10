@@ -8,11 +8,11 @@ import {
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
-import { xkeysToSortedKthAddresses } from "../../xkeys";
 
 import { NodeController } from "../controller";
 import { getCreate2MultisigAddress } from "../../utils";
 import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
+import { xkeyKthAddress } from "../../xkeys";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
@@ -48,13 +48,15 @@ export class CreateChannelController extends NodeController {
     // channels. also because the `getMultisigAddressWithCounterparty` function
     // will default to using any existing multisig address for the provided
     // owners before creating one
-    const { multisigAddress: storedMultisig } =
-      await store.getStateChannelByOwners(owners) || { multisigAddress: undefined };
+    const { 
+      multisigAddress: storedMultisig,
+    } = await store.getStateChannelByOwners(owners) || { multisigAddress: undefined };
     if (!networkContext.provider && !storedMultisig) {
       throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
     }
     const multisigAddress = storedMultisig || await getCreate2MultisigAddress(
-      owners,
+      requestHandler.publicIdentifier,
+      owners.find(xpub => xpub !== requestHandler.publicIdentifier)!,
       { 
         proxyFactory: networkContext.ProxyFactory, 
         multisigMastercopy: networkContext.MinimumViableMultisig,
@@ -86,7 +88,10 @@ export class CreateChannelController extends NodeController {
     });
 
     // use state channel for owners
-    const addressOwners = xkeysToSortedKthAddresses(owners, 0);
+    const addressOwners = [
+      xkeyKthAddress(publicIdentifier, 0),
+      xkeyKthAddress(responderXpub, 0),
+    ];
 
     const msg: CreateChannelMessage = {
       from: publicIdentifier,

@@ -1,7 +1,15 @@
 /////////////////////////////////////////////////////////////
 
 import { env } from "../../util";
-import { xkeyKthAddress, xkeysToSortedKthAddresses } from "@connext/cf-core";
+import { xkeyKthAddress } from "@connext/cf-core";
+
+// from past cf
+const sortAddresses = (addrs: string[]): string[] =>
+  addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+
+const xkeysToSortedKthAddresses = (xkeys: string[], k: number | string = "0"): string[] =>
+  sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
+
 
 // Don't import from types in case types change
 export const ConnextClientStorePrefixV0 = "INDRA_CLIENT_CF_CORE";

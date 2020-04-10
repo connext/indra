@@ -1,5 +1,5 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames, sortAddresses, toBN } from "@connext/types";
+import { OutcomeType, ProtocolNames, toBN, ProtocolParams } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -35,6 +35,7 @@ export class TestRunner {
   public multisigAC!: string;
   public multisigBC!: string;
   public provider!: JsonRpcProvider;
+  public defaultTimeout!: BigNumber;
   private mr!: MessageRouter;
 
   async connectToGanache(): Promise<void> {
@@ -48,12 +49,15 @@ export class TestRunner {
       wallet,
     ).deploy();
 
+    this.defaultTimeout = bigNumberify(100);
+
     this.mininodeA = new MiniNode(network, this.provider, new MemoryStoreService());
     this.mininodeB = new MiniNode(network, this.provider, new MemoryStoreService());
     this.mininodeC = new MiniNode(network, this.provider, new MemoryStoreService());
 
     this.multisigAB = await getCreate2MultisigAddress(
-      [this.mininodeA.xpub, this.mininodeB.xpub],
+      this.mininodeA.xpub,
+      this.mininodeB.xpub,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -62,7 +66,8 @@ export class TestRunner {
     );
 
     this.multisigAC = await getCreate2MultisigAddress(
-      [this.mininodeA.xpub, this.mininodeC.xpub],
+      this.mininodeA.xpub,
+      this.mininodeC.xpub,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -71,7 +76,8 @@ export class TestRunner {
     );
 
     this.multisigBC = await getCreate2MultisigAddress(
-      [this.mininodeB.xpub, this.mininodeC.xpub],
+      this.mininodeB.xpub,
+      this.mininodeC.xpub,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -202,7 +208,7 @@ export class TestRunner {
       initiatorDepositTokenAddress: tokenAddress,
       responderDeposit: One,
       responderDepositTokenAddress: tokenAddress,
-      defaultTimeout: toBN(100),
+      defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       initialState,
       outcomeType,
@@ -212,11 +218,6 @@ export class TestRunner {
     const [proposal] = [
       ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
     ];
-    // TODO: fix sortAddresses sometimes not sorting correctly
-    const participants = sortAddresses([
-      xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
-      xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
-    ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
       appInterface: {
@@ -225,7 +226,7 @@ export class TestRunner {
         actionEncoding: undefined,
       },
       appSeqNo: proposal.appSeqNo,
-      defaultTimeout: bigNumberify(40),
+      defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       disableLimit: false,
       initialState,
@@ -234,11 +235,15 @@ export class TestRunner {
       initiatorXpub: this.mininodeA.xpub,
       multisigAddress: this.multisigAB,
       outcomeType,
-      participants,
       responderBalanceDecrement: One,
       responderDepositTokenAddress: tokenAddress,
       responderXpub: this.mininodeB.xpub,
-    });
+      appInitiatorAddress: xkeyKthAddress(
+        this.mininodeA.xpub,
+        proposal.appSeqNo,
+      ),
+      appResponderAddress: xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
+    } as ProtocolParams.Install);
   }
 
   async installSplitDeposits(
@@ -291,7 +296,7 @@ export class TestRunner {
       initiatorDepositTokenAddress: tokenAddressA,
       responderDeposit: One,
       responderDepositTokenAddress: tokenAddressB,
-      defaultTimeout: bigNumberify(100),
+      defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       initialState,
       outcomeType,
@@ -301,14 +306,8 @@ export class TestRunner {
     const [proposal] = [
       ...StateChannel.fromJson(postProposalStateChannel!).proposedAppInstances.values(),
     ];
-    // TODO: fix sortAddresses sometimes not sorting correctly
-    const participants = sortAddresses([
-      xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
-      xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
-    ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
-      participants,
       outcomeType,
       initialState,
       initiatorXpub: this.mininodeA.xpub,
@@ -322,12 +321,14 @@ export class TestRunner {
         actionEncoding: undefined,
       },
       appSeqNo: proposal.appSeqNo,
-      defaultTimeout: bigNumberify(40),
+      defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       initiatorDepositTokenAddress: tokenAddressA,
       responderDepositTokenAddress: tokenAddressB,
       disableLimit: false,
-    });
+      appInitiatorAddress: xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
+      appResponderAddress: xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
+    } as ProtocolParams.Install);
   }
 
   async uninstall() {

@@ -21,6 +21,7 @@ import { stringify } from "../lib";
 import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { verifyChannelMessage } from "@connext/crypto";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
@@ -93,15 +94,11 @@ export class WithdrawalController extends AbstractController {
     const hash = generatedCommitment.hashToSign();
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment =
-      await this.connext.channelProvider.signMessage(hash);
-    await this.connext.takeAction(
-      appInstance.identityHash, 
-      {
-        signature: counterpartySignatureOnWithdrawCommitment,
-      } as WithdrawAppAction,
-      WITHDRAW_STATE_TIMEOUT,
-    );
+    const counterpartySignatureOnWithdrawCommitment = await this
+      .connext.channelProvider.signMessage(hash);
+    await this.connext.takeAction(appInstance.identityHash, {
+      signature: counterpartySignatureOnWithdrawCommitment,
+    } as WithdrawAppAction);
     await this.connext.uninstallApp(appInstance.identityHash);
   }
 
@@ -120,11 +117,14 @@ export class WithdrawalController extends AbstractController {
     params: PublicParams.Withdraw,
   ): Promise<WithdrawCommitment> {
     const { assetId, amount, nonce, recipient } = params;
-    const channel = await this.connext.getStateChannel();
+    const { data: channel } = await this.connext.getStateChannel();
     return new WithdrawCommitment(
       this.connext.config.contractAddresses,
-      channel.data.multisigAddress,
-      channel.data.freeBalanceAppInstance.participants,
+      channel.multisigAddress,
+      [
+        channel.freeBalanceAppInstance.initiator,
+        channel.freeBalanceAppInstance.responder,
+      ],
       recipient,
       assetId,
       amount,
@@ -153,8 +153,8 @@ export class WithdrawalController extends AbstractController {
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [
-        xpubToAddress(this.connext.publicIdentifier),
-        xpubToAddress(this.connext.nodePublicIdentifier),
+        this.connext.freeBalanceAddress,
+        this.connext.nodeFreeBalanceAddress,
       ],
       data: withdrawCommitmentHash,
       nonce,
@@ -185,7 +185,7 @@ export class WithdrawalController extends AbstractController {
   ): Promise<void> {
     // set the withdrawal tx in the store
     const commitment = await this.createWithdrawCommitment(params);
-    commitment.signatures = signatures as any;
+    await commitment.addSignatures(signatures[0], signatures[1]);
     const minTx: MinimalTransaction = await commitment.getSignedTransaction();
     const value = { tx: minTx, retry: 0 };
     await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, { ...value });

@@ -1,12 +1,12 @@
 import {
   delay,
+  ILoggerService,
   MethodNames,
   MethodParams,
   MethodResults,
   NetworkContext,
   stringify,
 } from "@connext/types";
-import { ILoggerService, sortAddresses } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
@@ -25,9 +25,9 @@ import { MinimumViableMultisig, ProxyFactory } from "../../contracts";
 import { StateChannel } from "../../models";
 import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
-import { xkeysToSortedKthAddresses } from "../../xkeys";
 
 import { NodeController } from "../controller";
+import { xkeyKthAddress } from "../../xkeys";
 
 // Estimate based on rinkeby transaction:
 // 0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec
@@ -59,7 +59,8 @@ export class DeployStateDepositController extends NodeController {
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userNeuteredExtendedKeys,
+      channel.userNeuteredExtendedKeys[0],
+      channel.userNeuteredExtendedKeys[1],
       channel.addresses,
       provider,
     );
@@ -88,7 +89,8 @@ export class DeployStateDepositController extends NodeController {
 
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userNeuteredExtendedKeys,
+      channel.userNeuteredExtendedKeys[0],
+      channel.userNeuteredExtendedKeys[1],
       channel.addresses,
       provider,
     );
@@ -133,7 +135,7 @@ async function sendMultisigDeployTx(
       const tx: TransactionResponse = await proxyFactory.functions.createProxyWithNonce(
         networkContext.MinimumViableMultisig,
         new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-          xkeysToSortedKthAddresses(owners, 0),
+          stateChannel.multisigOwners,
         ]),
         // hash chainId plus nonce for x-chain replay protection
         solidityKeccak256(
@@ -184,16 +186,19 @@ async function sendMultisigDeployTx(
 async function checkForCorrectOwners(
   tx: TransactionResponse,
   provider: JsonRpcProvider,
-  xpubs: string[],
+  xpubs: string[], // [initiator, responder]
   multisigAddress: string,
 ): Promise<boolean> {
   await tx.wait();
 
   const contract = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
 
-  const expectedOwners = xkeysToSortedKthAddresses(xpubs, 0);
+  const expectedOwners = [
+    xkeyKthAddress(xpubs[0], 0),
+    xkeyKthAddress(xpubs[1], 0),
+  ];
 
-  const actualOwners = sortAddresses(await contract.functions.getOwners());
+  const actualOwners = await contract.functions.getOwners();
 
   return expectedOwners[0] === actualOwners[0] && expectedOwners[1] === actualOwners[1];
 }

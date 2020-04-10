@@ -21,12 +21,12 @@ import {
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models";
-import { xkeysToSortedKthAddresses } from "../../xkeys";
 
 import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
 import { createAppInstanceProposalForTest } from "../../testing/utils";
 
 import { install } from "./install";
+import { xkeyKthAddress } from "../../xkeys";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
@@ -99,13 +99,17 @@ describe("Can handle correct & incorrect installs", () => {
     const appIdentityHash = createRandom32ByteHexString();
     const multisigAddress = Wallet.createRandom().address;
     const extendedKeys = getRandomExtendedPubKeys(2);
-    const participants = xkeysToSortedKthAddresses(extendedKeys, 0);
+    const participants = [
+      xkeyKthAddress(extendedKeys[0]),
+      xkeyKthAddress(extendedKeys[1]),
+    ];
 
     const stateChannel = StateChannel.setupChannel(
       AddressZero,
       { proxyFactory: AddressZero, multisigMastercopy: AddressZero },
       multisigAddress,
-      extendedKeys,
+      extendedKeys[0],
+      extendedKeys[1],
     );
 
     expect(

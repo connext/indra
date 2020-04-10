@@ -109,12 +109,12 @@ export class CFCoreStore implements IStoreService {
 
     const userFreeBalance = xkeyKthAddress(userPublicIdentifier);
     const nodeFreeBalance = xkeyKthAddress(this.configService.getPublicIdentifier());
-    const userParticipantAddress = freeBalanceAppInstance.participants.find(
-      p => p === userFreeBalance,
-    );
-    const nodeParticipantAddress = freeBalanceAppInstance.participants.find(
-      p => p === nodeFreeBalance,
-    );
+    const participants = [
+      freeBalanceAppInstance.initiator,
+      freeBalanceAppInstance.responder,
+    ];
+    const userParticipantAddress = participants.find(p => p === userFreeBalance);
+    const nodeParticipantAddress = participants.find(p => p === nodeFreeBalance);
     const {
       identityHash,
       appInterface: { stateEncoding, actionEncoding, addr },
@@ -165,7 +165,8 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     const {
       identityHash,
-      participants,
+      initiator,
+      responder,
       latestState,
       stateTimeout,
       latestVersionNumber,
@@ -183,12 +184,12 @@ export class CFCoreStore implements IStoreService {
     // upgrade proposal to instance
     proposal.type = AppType.INSTANCE;
     // save participants
-    let userAddr = xkeyKthAddress(this.configService.getPublicIdentifier(), proposal.appSeqNo);
-    if (!participants.find(p => p === userAddr)) {
-      userAddr = xkeyKthAddress(this.configService.getPublicIdentifier());
-    }
-    proposal.userParticipantAddress = participants.find(p => p === userAddr);
-    proposal.nodeParticipantAddress = participants.find(p => p !== userAddr);
+    const nodeAddr = xkeyKthAddress(
+      this.configService.getPublicIdentifier(),
+      proposal.appSeqNo,
+    );
+    proposal.userParticipantAddress = [initiator, responder].find(p => p !== nodeAddr);
+    proposal.nodeParticipantAddress = [initiator, responder].find(p => p === nodeAddr);
 
     proposal.meta = meta;
 
@@ -240,7 +241,7 @@ export class CFCoreStore implements IStoreService {
       throw new Error(`No app found when trying to update. AppId: ${identityHash}`);
     }
 
-    if (app.type !== AppType.INSTANCE) {
+    if (app.type !== AppType.INSTANCE && app.type !== AppType.FREE_BALANCE) {
       throw new Error(`App is not of correct type, type: ${app.type}`);
     }
 

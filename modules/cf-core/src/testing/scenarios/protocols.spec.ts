@@ -77,16 +77,14 @@ describe("Three mininodes", () => {
       multisigAddress: tr.multisigAB,
       initiatorBalanceDecrement: bigNumberify(0),
       responderBalanceDecrement: bigNumberify(0),
-      participants: [
-        xkeyKthAddress(tr.mininodeA.xpub, proposal.appSeqNo),
-        xkeyKthAddress(tr.mininodeB.xpub, proposal.appSeqNo),
-      ].sort(),
       initialState: proposal.initialState,
       appInterface: {
         addr: proposal.appDefinition,
         stateEncoding: proposal.abiEncodings.stateEncoding,
         actionEncoding: proposal.abiEncodings.actionEncoding,
       },
+      appInitiatorAddress: xkeyKthAddress(proposal.proposedByIdentifier, proposal.appSeqNo),
+      appResponderAddress: xkeyKthAddress(proposal.proposedToIdentifier, proposal.appSeqNo),
       defaultTimeout: bigNumberify(100),
       stateTimeout: Zero,
       appSeqNo: proposal.appSeqNo,

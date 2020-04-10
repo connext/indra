@@ -39,7 +39,8 @@ export const createAppInstanceJson = (
     latestVersionNumber: 0,
     multisigAddress: generateRandomAddress(),
     outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    participants: [generateRandomAddress(), generateRandomAddress()],
+    initiator: generateRandomAddress(),
+    responder: generateRandomAddress(),
     multiAssetMultiPartyCoinTransferInterpreterParams: null,
     singleAssetTwoPartyCoinTransferInterpreterParams: null,
     twoPartyOutcomeInterpreterParams: null,
@@ -93,14 +94,12 @@ export const createStateChannelJSON = (
     ...overrides,
   };
 
-  const freeBalanceParticipants = channelData.userNeuteredExtendedKeys.map(xpub =>
-    xkeyKthAddress(xpub),
-  );
   return {
     ...channelData,
     freeBalanceAppInstance: createAppInstanceJson({
       multisigAddress: channelData.multisigAddress,
-      participants: freeBalanceParticipants,
+      initiator: xkeyKthAddress(channelData.userNeuteredExtendedKeys[0]),
+      responder: xkeyKthAddress(channelData.userNeuteredExtendedKeys[1]),
       ...overrides.freeBalanceAppInstance,
     }),
   };

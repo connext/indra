@@ -30,7 +30,8 @@ describe("StateChannel::uninstallApp", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs,
+      xpubs[0],
+      xpubs[1],
     );
 
     const appInstance = createAppInstanceForTest(sc1);
@@ -57,7 +58,7 @@ describe("StateChannel::uninstallApp", () => {
 
   it("should not alter any of the base properties", () => {
     expect(sc2.multisigAddress).toBe(sc1.multisigAddress);
-    expect(sc2.userNeuteredExtendedKeys).toBe(sc1.userNeuteredExtendedKeys);
+    expect(sc2.userNeuteredExtendedKeys).toMatchObject(sc1.userNeuteredExtendedKeys);
   });
 
   it("should have added something at the id of thew new app", () => {

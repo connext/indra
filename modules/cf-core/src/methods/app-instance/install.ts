@@ -5,6 +5,7 @@ import {
   MethodParams,
   MethodResults,
   ProtocolNames,
+  ProtocolParams,
   toBN,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
@@ -18,6 +19,7 @@ import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
+import { xkeyKthAddress } from "../../xkeys";
 
 /**
  * This converts a proposed app instance to an installed app instance while
@@ -94,7 +96,6 @@ export async function install(
     initiatorBalanceDecrement: toBN(proposal.initiatorDeposit),
     responderBalanceDecrement: toBN(proposal.responderDeposit),
     multisigAddress: stateChannel.multisigAddress,
-    participants: stateChannel.getSigningKeysFor(proposal.appSeqNo),
     initialState: proposal.initialState,
     appInterface: {
       ...proposal.abiEncodings,
@@ -107,8 +108,17 @@ export async function install(
     responderDepositTokenAddress: proposal.responderDepositTokenAddress,
     disableLimit: false,
     meta: proposal.meta,
+    appInitiatorAddress: xkeyKthAddress(
+      proposal.proposedByIdentifier,
+      proposal.appSeqNo,
+    ),
+    appResponderAddress: xkeyKthAddress(
+      proposal.proposedToIdentifier,
+      proposal.appSeqNo,
+    ),
     stateTimeout: toBN(proposal.stateTimeout),
-  });
+  } as ProtocolParams.Install);
+  
   stateChannel.removeProposal(appIdentityHash);
   await store.removeAppProposal(stateChannel.multisigAddress, proposal.identityHash);
 

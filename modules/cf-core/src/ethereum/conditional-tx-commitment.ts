@@ -35,7 +35,6 @@ export const getConditionalTransactionCommitment = (
       ? context.network.TwoPartyFixedOutcomeInterpreter
       : AddressZero,
     appInstance.encodedInterpreterParams,
-    /* sigs? */
   );
 
 // class to represent an unsigned multisignature wallet transaction
@@ -49,9 +48,10 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
     public readonly interpreterParams: string,
-    participantSignatures: string[] = [],
+    initiatorSignature?: string,
+    responderSignature?: string,
   ) {
-    super(multisig, multisigOwners, participantSignatures);
+    super(multisig, multisigOwners, initiatorSignature, responderSignature);
     if (interpreterAddr === AddressZero) {
       throw Error("The outcome type in this application logic contract is not supported yet.");
     }
@@ -79,7 +79,8 @@ export class ConditionalTransactionCommitment extends MultisigCommitment {
       json.freeBalanceAppIdentityHash,
       json.interpreterAddr,
       json.interpreterParams,
-      json.signatures,
+      json.signatures[0],
+      json.signatures[1],
     );
   }
 
