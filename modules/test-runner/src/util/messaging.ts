@@ -146,22 +146,21 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     };
 
     const wallet = Wallet.fromMnemonic(this.options.mnemonic);
-    const getSignature = new ChannelSigner(wallet.privateKey).signMessage;
-
-    const address = wallet.address;
+    const signer = new ChannelSigner(wallet.privateKey);
+    const getSignature = (msg: string) => signer.signMessage(msg);
 
     const getBearerToken = async (
-      address: string,
+      userIdentifier: string,
       getSignature: (nonce: string) => Promise<string>,
     ): Promise<string> => {
       try {
-        const nonce = await axios.get(`${this.options.nodeUrl}/auth/${address}`);
+        const nonce = await axios.get(`${this.options.nodeUrl}/auth/${userIdentifier}`);
         const sig = await getSignature(nonce.data);
         const bearerToken: AxiosResponse<string> = await axios.post(
           `${this.options.nodeUrl}/auth`,
           {
             sig,
-            userIdentifier: address,
+            userIdentifier: userIdentifier,
           } as VerifyNonceDtoType,
         );
         return bearerToken.data;
@@ -171,9 +170,9 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     };
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
-    const key = `INDRA.4447`;
+    const key = `INDRA`;
     this.connection = new MessagingService(this.options.messagingConfig, key, () =>
-      getBearerToken(address, getSignature),
+      getBearerToken(signer.publicKey, getSignature),
     );
     this.protocolDefaults = this.options.protocolDefaults;
     this.countInternal = this.options.count;
