@@ -24,10 +24,13 @@ import { validate, notLessThanOrEqualTo, notGreaterThan, invalidAssetIdentifier 
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
     const amount = toBN(params.amount);
-    const assetId = getAssetId(
-      params.assetId || AddressZero,
-      await this.ethProvider.network.chainId,
-    );
+    const assetId = (params.assetId && params.assetId.includes("@"))
+     ? params.assetId
+     : getAssetId(
+        params.assetId || AddressZero,
+        await this.ethProvider.network.chainId,
+      );
+    console.log(`Deposit parsed ${JSON.stringify(params)} into assetId: ${assetId}`);
     validate(invalidAssetIdentifier(assetId));
     // NOTE: when the `walletTransfer` is not used, these parameters
     // do not have to be validated

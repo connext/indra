@@ -1,6 +1,7 @@
 import { SupportedApplications } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import {
+  getAssetId,
   getAddressFromAssetId,
   Address,
   AppAction,
@@ -321,7 +322,7 @@ export class ConnextClient implements IConnextClient {
   ): Promise<PublicResults.LinkedTransfer> => {
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
-      assetId: params.assetId || AddressZero,
+      assetId: params.assetId || getAssetId(AddressZero), // TODO: need chainId
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       meta: params.meta,
       paymentId: params.paymentId || createRandom32ByteHexString(),

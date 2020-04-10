@@ -1,4 +1,5 @@
 import {
+  getAddressFromPublicIdentifier,
   IConnextClient,
   BigNumberish,
   BigNumber,
@@ -53,7 +54,7 @@ describe("Deposits", () => {
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    nodeSignerAddress = client.config.nodeIdentifier;
+    nodeSignerAddress = getAddressFromPublicIdentifier(client.config.nodeIdentifier);
   });
 
   afterEach(async () => {
@@ -84,7 +85,7 @@ describe("Deposits", () => {
   });
 
   it("client should not be able to deposit with invalid token address", async () => {
-    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith("invalid address");
+    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith("invalid");
   });
 
   it("client should not be able to deposit with negative amount", async () => {
@@ -130,9 +131,9 @@ describe("Deposits", () => {
     };
     await client.deposit({ assetId: expected.assetId, amount: expected.client });
     await assertClientFreeBalance(client, expected);
-    
+
     const receiver = await createClient();
-    
+
     // TODO: chan_install events and nats subscription don't seem
     // to trigger promise resolution here...
     // cannot use INSTALL_EVENT because receiver will call install

@@ -1,15 +1,17 @@
 import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
-  isValidPublicIdentifier,
   ConditionalTransferTypes,
   CreatedLinkedTransferMeta,
   deBigNumberifyJson,
   EventNames,
   EventPayloads,
+  getAddressFromAssetId,
+  getAssetId,
+  isValidPublicIdentifier,
   MethodParams,
+  parsePublicIdentifier,
   PublicParams,
   PublicResults,
-  parsePublicIdentifier,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
@@ -26,12 +28,16 @@ export class LinkedTransferController extends AbstractController {
   ): Promise<PublicResults.LinkedTransfer> => {
     const amount = toBN(params.amount);
     const {
-      assetId,
+      assetId: maybeAssetId,
       paymentId,
       preImage,
       meta,
       recipient,
     } = params;
+    const assetId = maybeAssetId.includes("@") ? maybeAssetId : getAssetId(maybeAssetId);
+    const tokenAddress = (assetId && assetId.includes("@"))
+      ? getAddressFromAssetId(assetId)
+      : assetId;
 
     const submittedMeta = { ...(meta || {}) } as CreatedLinkedTransferMeta;
     
@@ -51,11 +57,11 @@ export class LinkedTransferController extends AbstractController {
     }
 
     // install the transfer application
-    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+    const linkedHash = createLinkedHash(amount, tokenAddress, paymentId, preImage);
 
     const initialState: SimpleLinkedTransferAppState = {
       amount,
-      assetId,
+      assetId: tokenAddress,
       coinTransfers: [
         {
           amount,
@@ -103,7 +109,7 @@ export class LinkedTransferController extends AbstractController {
     const eventData = deBigNumberifyJson({
       type: ConditionalTransferTypes.LinkedTransfer,
       amount,
-      assetId,
+      assetId: tokenAddress,
       paymentId,
       sender: this.connext.publicIdentifier,
       recipient,

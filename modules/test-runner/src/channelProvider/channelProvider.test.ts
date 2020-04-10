@@ -48,7 +48,7 @@ describe("ChannelProvider", () => {
     expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);
   });
 
-  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
+  it.skip("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: getAssetId(AddressZero) };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: getAssetId(tokenAddress) };
 
