@@ -113,18 +113,12 @@ describe("progressState", () => {
     await progressState(POST_STATE, ACTION, ALICE);
   });
 
-  it("Cannot call progressState with incorrect turn taker", async () => {
+  it("progressState should fail if dispute is not progressable", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
-
-    await expect(progressStateAndVerify(PRE_STATE, ACTION, ALICE)).to.be.revertedWith(
-      /*
-       TODO: Temporary solution. Proper fix: The `verifySignatures` contract function
-       shouldn't revert, but just return `false`.
-      "Call to progressState included incorrectly signed state update",
-      */
-      "Invalid signature",
+    expect(await isProgressable()).to.be.false;
+    await expect(progressState(POST_STATE, ACTION, ALICE)).to.be.revertedWith(
+      "progressState called on app not in a progressable state",
     );
   });
 
@@ -138,12 +132,18 @@ describe("progressState", () => {
     );
   });
 
-  it("progressState should fail if dispute is not progressable", async () => {
+  it("Cannot call progressState with incorrect turn taker", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    expect(await isProgressable()).to.be.false;
-    await expect(progressState(POST_STATE, ACTION, ALICE)).to.be.revertedWith(
-      "progressState called on app not in a progressable state",
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+
+    await expect(progressStateAndVerify(PRE_STATE, ACTION, ALICE)).to.be.revertedWith(
+      /*
+       TODO: Temporary solution. Proper fix: The `verifySignatures` contract function
+       shouldn't revert, but just return `false`.
+      "Call to progressState included incorrectly signed state update",
+      */
+      "Invalid signature",
     );
   });
 
