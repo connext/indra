@@ -6,7 +6,6 @@ import {
   EventNames,
   EventPayloads,
   getAddressFromAssetId,
-  getAssetId,
   isValidPublicIdentifier,
   MethodParams,
   parsePublicIdentifier,
@@ -15,6 +14,7 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 
@@ -28,16 +28,14 @@ export class LinkedTransferController extends AbstractController {
   ): Promise<PublicResults.LinkedTransfer> => {
     const amount = toBN(params.amount);
     const {
-      assetId: maybeAssetId,
       paymentId,
       preImage,
       meta,
       recipient,
     } = params;
-    const assetId = maybeAssetId.includes("@") ? maybeAssetId : getAssetId(maybeAssetId);
-    const tokenAddress = (assetId && assetId.includes("@"))
-      ? getAddressFromAssetId(assetId)
-      : assetId;
+    const assetId = params.assetId
+      ? getAddressFromAssetId(params.assetId)
+      : CONVENTION_FOR_ETH_ASSET_ID;
 
     const submittedMeta = { ...(meta || {}) } as CreatedLinkedTransferMeta;
     
@@ -57,11 +55,11 @@ export class LinkedTransferController extends AbstractController {
     }
 
     // install the transfer application
-    const linkedHash = createLinkedHash(amount, tokenAddress, paymentId, preImage);
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
     const initialState: SimpleLinkedTransferAppState = {
       amount,
-      assetId: tokenAddress,
+      assetId,
       coinTransfers: [
         {
           amount,
@@ -106,10 +104,11 @@ export class LinkedTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
+    // TODO: use BNs for events
     const eventData = deBigNumberifyJson({
       type: ConditionalTransferTypes.LinkedTransfer,
       amount,
-      assetId: tokenAddress,
+      assetId,
       paymentId,
       sender: this.connext.publicIdentifier,
       recipient,

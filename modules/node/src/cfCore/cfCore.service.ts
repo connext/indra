@@ -11,12 +11,12 @@ import {
   StateChannelJSON,
   stringify,
   toBN,
-  getAssetId,
   getAddressFromPublicIdentifier,
   AssetId,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
-import { AddressZero, Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -64,10 +64,7 @@ export class CFCoreService {
         methodName: MethodNames.chan_getFreeBalanceState,
         parameters: {
           multisigAddress,
-          assetId: assetId || getAssetId(
-            AddressZero,
-            (await this.configService.getEthNetwork()).chainId,
-          ),
+          assetId: assetId || CONVENTION_FOR_ETH_ASSET_ID,
         },
       });
       return freeBalance.result.result as MethodResults.GetFreeBalanceState;

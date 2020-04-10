@@ -1,5 +1,5 @@
 import { arrayify, computeAddress, getAddress, isHexString } from "ethers/utils";
-import { parseAssetId, parsePublicIdentifier } from "@connext/types";
+import { parsePublicIdentifier } from "@connext/types";
 
 export const isValidAddress = (address: any): boolean =>
   typeof address === "string" && isHexString(address) && arrayify(address).length === 20;
@@ -38,25 +38,3 @@ export const invalidPublicIdentifier = (identifier: string): string | undefined 
   }
   return errors.length === 0 ? undefined : errors.toString();
 };
-
-export const invalidAssetIdentifier = (identifier: string): string | undefined => {
-  let parsed;
-  let errors: string[] = [];
-  try {
-    parsed = parseAssetId(identifier);
-  } catch (e) {
-    errors.push(`AssetIdentifier is invalid: ${identifier}`);
-    return errors.toString();
-  }
-  if (!parsed.chainId || typeof parsed.chainId !== "number") {
-    errors.push(`AssetIdentifier has invalid chainId: ${identifier}`);
-  }
-  if (!parsed.namespace || typeof parsed.namespace !== "string") {
-    errors.push(`AssetIdentifier has invalid namespace: ${identifier}`);
-  }
-  if (!parsed.address || invalidAddress(parsed.address)) {
-    errors.push(`AssetIdentifier has invalid address: ${identifier}`);
-  }
-  return errors.length === 0 ? undefined : errors.toString();
-};
-

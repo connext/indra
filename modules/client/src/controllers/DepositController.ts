@@ -5,11 +5,11 @@ import {
   DepositAppState,
   EventNames,
   getAddressFromAssetId,
-  getAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
   toBN,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
 import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
@@ -19,19 +19,16 @@ import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
-import { validate, notLessThanOrEqualTo, notGreaterThan, invalidAssetIdentifier } from "../validation";
+import { validate, notLessThanOrEqualTo, notGreaterThan, invalidAddress } from "../validation";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
     const amount = toBN(params.amount);
-    const assetId = (params.assetId && params.assetId.includes("@"))
-     ? params.assetId
-     : getAssetId(
-        params.assetId || AddressZero,
-        await this.ethProvider.network.chainId,
-      );
+    const assetId = params.assetId
+      ? getAddressFromAssetId(params.assetId)
+      : CONVENTION_FOR_ETH_ASSET_ID;
     console.log(`Deposit parsed ${JSON.stringify(params)} into assetId: ${assetId}`);
-    validate(invalidAssetIdentifier(assetId));
+    validate(invalidAddress(assetId));
     // NOTE: when the `walletTransfer` is not used, these parameters
     // do not have to be validated
     const tokenAddress = getAddressFromAssetId(assetId);
@@ -90,11 +87,10 @@ export class DepositController extends AbstractController {
   public requestDepositRights = async (
     params: PublicParams.RequestDepositRights,
   ): Promise<PublicResults.RequestDepositRights> => {
-    const assetId = getAssetId(
-      params.assetId || AddressZero,
-      await this.ethProvider.network.chainId,
-    );
-    validate(invalidAssetIdentifier(assetId));
+    const assetId = params.assetId
+      ? getAddressFromAssetId(params.assetId)
+      : CONVENTION_FOR_ETH_ASSET_ID;
+    validate(invalidAddress(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     const depositApp = await this.getDepositApp({ assetId: tokenAddress });
     
@@ -126,11 +122,10 @@ export class DepositController extends AbstractController {
   public rescindDepositRights = async (
     params: PublicParams.RescindDepositRights,
   ): Promise<PublicResults.RescindDepositRights> => {
-    const assetId = getAssetId(
-      params.assetId || AddressZero,
-      await this.ethProvider.network.chainId,
-    );
-    validate(invalidAssetIdentifier(assetId));
+    const assetId = params.assetId
+      ? getAddressFromAssetId(params.assetId)
+      : CONVENTION_FOR_ETH_ASSET_ID;
+    validate(invalidAddress(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     // get the app instance
     const app = await this.getDepositApp({ assetId: tokenAddress });

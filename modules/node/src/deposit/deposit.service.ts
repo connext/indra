@@ -7,7 +7,6 @@ import {
   DepositAppName,
   DepositAppState,
   getAddressFromPublicIdentifier,
-  getAssetId,
   MinimalTransaction,
   stringify,
   TransactionReceipt,
@@ -72,13 +71,10 @@ export class DepositService {
     } finally {
       await this.rescindDepositRights(appIdentityHash || depositApp.identityHash);
     }
-    console.log('free balance post collateral', await this.cfCoreService.getFreeBalance(
+    console.log("free balance post collateral", await this.cfCoreService.getFreeBalance(
       channel.userIdentifier,
       channel.multisigAddress,
-      getAssetId(
-        tokenAddress,
-        (await this.configService.getEthNetwork()).chainId,
-      ),
+      tokenAddress,
     ));
     return receipt;
   }
@@ -179,18 +175,13 @@ export class DepositService {
       startingMultisigBalance,
     };
 
-    const assetId = getAssetId(
-      tokenAddress,
-      (await this.configService.getEthNetwork()).chainId,
-    );
-
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(
         channel,
         initialState,
         Zero,
-        assetId,
+        tokenAddress,
         Zero,
-        assetId,
+        tokenAddress,
         DepositAppName,
         { reason: "Node deposit" }, // meta
         DEPOSIT_STATE_TIMEOUT,

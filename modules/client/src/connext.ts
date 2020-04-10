@@ -1,7 +1,6 @@
 import { SupportedApplications } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import {
-  getAssetId,
   getAddressFromAssetId,
   Address,
   AppAction,
@@ -37,11 +36,12 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   getAddressFromPublicIdentifier,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -322,7 +322,7 @@ export class ConnextClient implements IConnextClient {
   ): Promise<PublicResults.LinkedTransfer> => {
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
-      assetId: params.assetId || getAssetId(AddressZero), // TODO: need chainId
+      assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       meta: params.meta,
       paymentId: params.paymentId || createRandom32ByteHexString(),
@@ -545,9 +545,7 @@ export class ConnextClient implements IConnextClient {
     if (typeof assetId !== "string") {
       throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
     }
-    const tokenAddress = assetId.includes("@")
-      ? getAddressFromAssetId(assetId)
-      : getAddress(assetId);
+    const tokenAddress = getAddressFromAssetId(assetId);
     try {
       return await this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
         multisigAddress: this.multisigAddress,
