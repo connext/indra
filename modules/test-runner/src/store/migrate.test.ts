@@ -98,7 +98,7 @@ const oldClientChannels: [string, { [k: string]: any }][] = [
 
 const oldClientAddresss: string[] = [XPUB_V0_1, XPUB_V0_2, XPUB_V0_3, XPUB_V0_4];
 
-describe("Store Migrations", () => {
+describe.skip("Store Migrations", () => {
   let dbClient: DBClient;
   let nats: NatsClient;
 
