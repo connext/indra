@@ -4,6 +4,7 @@ import {
   HashLockTransferAppName,
   HashLockTransferAppState,
   HashLockTransferStatus,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
@@ -141,7 +142,7 @@ export class HashLockTransferService {
         },
         {
           amount: Zero,
-          to: receiverIdentifier,
+          to: getAddressFromPublicIdentifier(receiverIdentifier),
         },
       ],
       lockHash: appState.lockHash,

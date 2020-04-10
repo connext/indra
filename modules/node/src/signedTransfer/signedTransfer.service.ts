@@ -7,6 +7,7 @@ import {
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
   Address,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -124,7 +125,7 @@ export class SignedTransferService {
         },
         {
           amount: Zero,
-          to: userIdentifier,
+          to: getAddressFromPublicIdentifier(userIdentifier),
         },
       ],
       paymentId,

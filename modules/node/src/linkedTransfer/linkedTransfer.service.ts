@@ -5,6 +5,7 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
@@ -123,7 +124,7 @@ export class LinkedTransferService {
         },
         {
           amount: Zero,
-          to: userIdentifier,
+          to: getAddressFromPublicIdentifier(userIdentifier),
         },
       ],
       linkedHash,
