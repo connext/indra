@@ -1,4 +1,4 @@
-import { AppInterface, OutcomeType, stringify, toBN, getAddressFromIdentifier } from "@connext/types";
+import { AppInterface, OutcomeType, stringify, toBN, getAddressFromIdentifier, PublicIdentifier } from "@connext/types";
 import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
@@ -198,15 +198,14 @@ export class FreeBalanceClass {
  * and only converted to more complex types (i.e. BigNumber) upon usage.
  */
 export function createFreeBalance(
-  initiatorId: string,
-  responderId: string,
+  initiatorId: PublicIdentifier,
+  responderId: PublicIdentifier,
   coinBucketAddress: string,
   freeBalanceTimeout: number,
   multisigAddress: string,
 ) {
-
-  const initiator = initiatorId;
-  const responder = responderId;
+  const initiator = getAddressFromIdentifier(initiatorId);
+  const responder = getAddressFromIdentifier(responderId);
 
   const initialState: FreeBalanceState = {
     activeAppsMap: {},

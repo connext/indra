@@ -20,6 +20,8 @@ import {
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
+  getPublicIdentifier,
+  PublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -78,10 +80,13 @@ export class Node {
     logger?: ILoggerService,
   ): Promise<Node> {
     // TODO: private key validation
-    const address = await signer.getAddress();
+    const publicIdentifier = getPublicIdentifier(
+      (await provider.getNetwork()).chainId,
+      await signer.getAddress(),
+    );
     const node = new Node(
+      publicIdentifier,
       signer,
-      address,
       messagingService,
       storeService,
       nodeConfig,
@@ -96,8 +101,8 @@ export class Node {
   }
 
   private constructor(
+    public readonly publicIdentifier: PublicIdentifier,
     private readonly signer: IChannelSigner,
-    private readonly address: Address,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
@@ -114,20 +119,15 @@ export class Node {
     this.protocolRunner = this.buildProtocolRunner();
   }
 
-  get publicIdentifier() {
-    return this.address; // TODO: replace w real pub id
-  }
-
-  // TODO: rename?
   @Memoize()
   get signerAddress(): string {
-    return this.address;
+    return this.signer.address;
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
     this.log.info(`Node signer address: ${await this.signer.getAddress()}`);
     this.requestHandler = new RequestHandler(
-      await this.signer.getAddress(),
+      this.publicIdentifier,
       this.incoming,
       this.outgoing,
       this.storeService,
@@ -194,7 +194,7 @@ export class Node {
 
       await this.messagingService.send(data.to, {
         data,
-        from: await this.signer.getAddress(),
+        from: this.publicIdentifier,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
     });
@@ -210,7 +210,7 @@ export class Node {
 
       await this.messagingService.send(data.to, {
         data,
-        from: await this.signer.getAddress(),
+        from: this.publicIdentifier,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
 

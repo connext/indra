@@ -1,4 +1,4 @@
-import { createRandomAddress, MultisigTransaction } from "@connext/types";
+import { createRandomAddress, MultisigTransaction, getPublicIdentifier } from "@connext/types";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
 import { generateRandomNetworkContext } from "../testing/mocks";
@@ -10,6 +10,7 @@ import { appIdentityToHash } from "../utils";
 
 import { getSetupCommitment } from "./setup-commitment";
 import { getRandomChannelSigner } from "../testing/random-signing-keys";
+import { GANACHE_CHAIN_ID } from "../testing/utils";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according
@@ -30,6 +31,14 @@ describe("SetupCommitment", () => {
     sender: getRandomChannelSigner().address,
     receiver: getRandomChannelSigner().address,
   };
+  const initiatorId = getPublicIdentifier(
+    GANACHE_CHAIN_ID,
+    interaction.sender,
+  );
+  const responderId = getPublicIdentifier(
+    GANACHE_CHAIN_ID,
+    interaction.receiver,
+  );
 
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(
@@ -39,8 +48,8 @@ describe("SetupCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    interaction.sender,
-    interaction.receiver,
+    initiatorId,
+    responderId,
   );
 
   const freeBalance = stateChannel.freeBalance;

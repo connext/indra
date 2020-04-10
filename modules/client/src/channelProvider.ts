@@ -21,6 +21,7 @@ import {
   toBN,
   WalletTransferParams,
   WithdrawalMonitorObject,
+  getPublicIdentifier,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Contract } from "ethers";
@@ -60,7 +61,10 @@ export const createCFChannelProvider = async ({
   const channelProviderConfig: ChannelProviderConfig = {
     signerAddress: address,
     nodeUrl,
-    userPublicIdentifier: address,
+    userPublicIdentifier: getPublicIdentifier(
+      (await ethProvider.getNetwork()).chainId,
+      address,
+    ),
   };
   const connection = new CFCoreRpcConnection(cfCore, store, signer);
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
@@ -72,7 +76,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public cfCore: CFCore;
   public store: IClientStore;
 
-  // TODO: replace this when signing keys are added!
   public signer: IChannelSigner;
 
   constructor(cfCore: CFCore, store: IClientStore, signer: IChannelSigner) {
@@ -147,13 +150,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
 
-  private signMessage = this.signer.signMessage;
-
-  /* TODO: implement Signer using fast signer functions from @connext/crypto & pass it into client
-  private signMessage = async (message: string): Promise<string> => {
-    return signChannelMessage(this.signer.privateKey, message);
+  private signMessage(message: string): Promise<string> {
+    return this.signer.signMessage(message);
   };
-  */
 
   private walletTransfer = async (params: WalletTransferParams): Promise<string> => {
     let hash;

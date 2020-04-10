@@ -81,12 +81,12 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.resolve-signed",
-      this.authService.parseAddress(this.resolveSignedTransfer.bind(this)),
+      this.authService.parseIdentifier(this.resolveSignedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
       "*.transfer.fetch-signed",
-      this.authService.parseAddress(this.getSignedTransferByPaymentId.bind(this)),
+      this.authService.parseIdentifier(this.getSignedTransferByPaymentId.bind(this)),
     );
   }
 }

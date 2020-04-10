@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { MessagingConfig, VerifyNonceDtoType, ILoggerService } from "@connext/types";
+import { MessagingConfig, VerifyNonceDtoType, ILoggerService, Address, PublicIdentifier, getChainIdFromIdentifier } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { isNode } from "./lib";
 
@@ -43,15 +43,15 @@ export const formatMessagingUrl = (nodeUrl: string) => {
 
 export const getBearerToken = async (
   nodeUrl: string,
-  address: string,
+  userPublicIdentifier: Address,
   getSignature: (nonce: string) => Promise<string>,
 ): Promise<string> => {
-  const nonceResponse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${address}`);
+  const nonceResponse: AxiosResponse<string> = await axios.get(`${nodeUrl}/auth/${userPublicIdentifier}`);
   const nonce = nonceResponse.data;
   const sig = await getSignature(nonce);
   const verifyResponse: AxiosResponse<string> = await axios.post(`${nodeUrl}/auth`, {
     sig,
-    userPublicIdentifier: address,
+    userPublicIdentifier,
   } as VerifyNonceDtoType);
   return verifyResponse.data;
 };
@@ -59,8 +59,7 @@ export const getBearerToken = async (
 export const createMessagingService = async (
   logger: ILoggerService,
   nodeUrl: string,
-  address: string,
-  chainId: number,
+  userIdentifier: PublicIdentifier,
   getSignature: (nonce: string) => Promise<string>,
   messagingUrl?: string,
 ): Promise<MessagingService> => {
@@ -70,11 +69,11 @@ export const createMessagingService = async (
     messagingUrl,
     logger,
   };
-  const key = `INDRA.${chainId}`;
+  const key = `INDRA.${getChainIdFromIdentifier(userIdentifier)}`;
   // create a messaging service client
   // do not specify a prefix so that clients can publish to node
   const messaging = new MessagingService(config, key, () =>
-    getBearerToken(nodeUrl, address, getSignature),
+    getBearerToken(nodeUrl, userIdentifier, getSignature),
   );
   await messaging.connect();
   return messaging;

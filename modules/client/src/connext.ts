@@ -33,6 +33,7 @@ import {
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
+  getAddressFromIdentifier,
 } from "@connext/types";
 import { decryptWithPrivateKey } from "@connext/crypto";
 import { Contract, providers } from "ethers";
@@ -106,7 +107,7 @@ export class ConnextClient implements IConnextClient {
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.nodeSignerAddress = this.nodePublicIdentifier;
+    this.nodeSignerAddress = getAddressFromIdentifier(this.nodePublicIdentifier);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);

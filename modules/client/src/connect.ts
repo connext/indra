@@ -12,8 +12,9 @@ import {
   NodeResponses,
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
+  getPublicIdentifier,
 } from "@connext/types";
-import { Contract, providers } from "ethers";
+import { Contract, providers, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -28,6 +29,7 @@ import {
 } from "./lib";
 import { createMessagingService } from "./messaging";
 import { NodeApiClient } from "./node";
+import { ChannelSigner } from "@connext/crypto";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -45,9 +47,9 @@ export const connect = async (
     logger,
     loggerService,
     logLevel,
-    signer,
+    mnemonic,
   } = opts;
-  let { store, messaging, nodeUrl, messagingUrl } = opts;
+  let { store, messaging, nodeUrl, messagingUrl, signer } = opts;
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -74,7 +76,10 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      const sig = await channelProvider.send(ChannelMethods.chan_signMessage, { message });
+      const sig = await channelProvider.send(
+        ChannelMethods.chan_signMessage,
+        { message },
+      );
       return sig;
     };
 
@@ -85,7 +90,6 @@ export const connect = async (
         log,
         nodeUrl,
         userPublicIdentifier,
-        network.chainId,
         getSignature,
         messagingUrl,
       );
@@ -94,20 +98,31 @@ export const connect = async (
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ channelProvider, logger: log, messaging, nodeUrl });
+    node = new NodeApiClient({
+      channelProvider,
+      logger: log,
+      messaging,
+      nodeUrl,
+    });
     config = await node.config();
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userPublicIdentifier = await signer.getAddress(); // make this a real UserId at some point
+    node.userPublicIdentifier = userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
     isInjected = true;
-  } else if (signer) {
+  } else if (signer || mnemonic) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
-    const address = await signer.getAddress();;
+
+    if (!signer) {
+      const pk = Wallet.fromMnemonic(mnemonic).privateKey;
+      log.warn(`Client instantiation with mnemonic is only recommended for dev usage`);
+      signer = new ChannelSigner(pk, ethProviderUrl);
+    }
+    const address = await signer.getAddress();
 
     store = store || getDefaultStore(opts);
 
@@ -115,15 +130,13 @@ export const connect = async (
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        address,
-        network.chainId,
-        signer.signMessage,
+        getPublicIdentifier(network.chainId, address),
+        (msg: string) => signer.signMessage(msg),
         messagingUrl,
       );
     } else {
       await messaging.connect();
     }
-
     // create a new node api instance
     node = new NodeApiClient({ logger: log, messaging, nodeUrl });
     config = await node.config();
@@ -147,7 +160,6 @@ export const connect = async (
       signer,
       store,
     });
-
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     // set pubids + channelProvider

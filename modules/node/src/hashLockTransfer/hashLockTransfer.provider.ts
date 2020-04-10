@@ -63,7 +63,7 @@ export class HashLockTransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.get-hashlock",
-      this.authService.parseAddress(this.getHashLockTransferByLockHash.bind(this)),
+      this.authService.parseIdentifier(this.getHashLockTransferByLockHash.bind(this)),
     );
   }
 }

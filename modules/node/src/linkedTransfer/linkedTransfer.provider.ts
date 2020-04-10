@@ -104,15 +104,15 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.fetch-linked",
-      this.authService.parseAddress(this.getLinkedTransferByPaymentId.bind(this)),
+      this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
       "*.transfer.resolve-linked",
-      this.authService.parseAddress(this.resolveLinkedTransfer.bind(this)),
+      this.authService.parseIdentifier(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
       "*.transfer.get-pending",
-      this.authService.parseAddress(this.getPendingTransfers.bind(this)),
+      this.authService.parseIdentifier(this.getPendingTransfers.bind(this)),
     );
   }
 }

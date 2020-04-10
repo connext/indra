@@ -1,11 +1,11 @@
 import {
-  ChannelAppSequences,
   maxBN,
   MethodResults,
   NodeResponses,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
   stringify,
+  getAddressFromIdentifier,
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -93,15 +93,15 @@ export class ChannelService {
 
   async rebalance(
     userPubId: string,
-    assetId: string = AddressZero,
+    tokenAddress: string = AddressZero,
     rebalanceType: RebalanceType,
     minimumRequiredCollateral: BigNumber = Zero,
   ): Promise<TransactionReceipt | undefined> {
-    const normalizedAssetId = getAddress(assetId);
+    const normalizedAssetId = getAddress(tokenAddress);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userPubId);
 
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
-    let rebalancingTargets = await this.getDataFromRebalancingService(userPubId, assetId);
+    let rebalancingTargets = await this.getDataFromRebalancingService(userPubId, tokenAddress);
     if (!rebalancingTargets) {
       this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
       rebalancingTargets = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
@@ -109,7 +109,7 @@ export class ChannelService {
         normalizedAssetId,
       );
       if (!rebalancingTargets) {
-        rebalancingTargets = await this.configService.getDefaultRebalanceProfile(assetId);
+        rebalancingTargets = await this.configService.getDefaultRebalanceProfile(tokenAddress);
         if (rebalancingTargets) {
           this.log.debug(`Rebalancing with default profile: ${stringify(rebalancingTargets)}`);
         }
@@ -117,7 +117,7 @@ export class ChannelService {
     }
 
     if (!rebalancingTargets) {
-      throw new Error(`Node is not configured to rebalance asset ${assetId} for user ${userPubId}`);
+      throw new Error(`Node is not configured to rebalance asset ${tokenAddress} for user ${userPubId}`);
     }
 
     const {
@@ -141,14 +141,14 @@ export class ChannelService {
       ]);
       return this.collateralizeIfNecessary(
         channel,
-        assetId,
+        tokenAddress,
         collateralNeeded,
         lowerBoundCollateralize,
       );
     } else if (rebalanceType === RebalanceType.RECLAIM) {
       await this.reclaimIfNecessary(
         channel,
-        assetId,
+        tokenAddress,
         upperBoundReclaim,
         lowerBoundReclaim,
       );
@@ -330,8 +330,12 @@ export class ChannelService {
       );
     }
     if (
-      !creationData.data.owners.includes(existing.nodePublicIdentifier) ||
-      !creationData.data.owners.includes(existing.userPublicIdentifier)
+      !creationData.data.owners.includes(
+        getAddressFromIdentifier(existing.nodePublicIdentifier),
+      ) ||
+      !creationData.data.owners.includes(
+        getAddressFromIdentifier(existing.userPublicIdentifier),
+      )
     ) {
       throw new Error(
         `Channel has already been created with different owners! ${stringify(

@@ -4,6 +4,8 @@ import {
   NetworkContext,
   nullLogger,
   Opcode,
+  PublicIdentifier,
+  getPublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { ChannelSigner } from "@connext/crypto";
@@ -12,6 +14,7 @@ import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { PersistAppType } from "../types";
 import { getRandomChannelSigner } from "./random-signing-keys";
+import { GANACHE_CHAIN_ID } from "./utils";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
 const makeSigner = (signer: ChannelSigner) => {
@@ -30,6 +33,7 @@ export class MiniNode {
   public readonly protocolRunner: ProtocolRunner;
   public scm: Map<string, StateChannel>;
   public readonly address: string;
+  public readonly publicIdentifier: PublicIdentifier;
 
   constructor(
     readonly networkContext: NetworkContext,
@@ -37,6 +41,10 @@ export class MiniNode {
     readonly store: IStoreService,
   ) {
     this.signer = getRandomChannelSigner();
+    this.publicIdentifier = getPublicIdentifier(
+      GANACHE_CHAIN_ID,
+      this.signer.address,
+    );
     this.address = this.signer.address;
     this.protocolRunner = new ProtocolRunner(
       networkContext, 
