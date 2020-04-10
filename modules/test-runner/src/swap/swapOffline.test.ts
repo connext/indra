@@ -63,7 +63,7 @@ const fundChannelAndSwap = async (opts: {
   await requestCollateral(client, output.assetId);
   // swap call back
   const swapCb = async () =>
-    await swapAsset(client, input, output, client.nodeIdentifier);
+    await swapAsset(client, input, output, client.nodeSignerAddress);
   // try to swap, first check if test must be fast forwarded
   if (fastForward) {
     // fast forward the clock for tests with delay
