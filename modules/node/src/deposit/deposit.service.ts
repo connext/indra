@@ -149,7 +149,7 @@ export class DepositService {
         ? await ethProvider.getBalance(channel.multisigAddress)
         : await new Contract(
             tokenAddress,
-            ERC20.abi,
+            ERC20.abi as any,
             this.configService.getSigner(),
           ).functions.balanceOf(channel.multisigAddress);
 
