@@ -222,7 +222,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient,
       }),
-    ).to.be.rejectedWith(`PublicIdentifier is invalid`);
+    ).to.be.rejectedWith(`Invalid public key identifier`);
   });
 
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
