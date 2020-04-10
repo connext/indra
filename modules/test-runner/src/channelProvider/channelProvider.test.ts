@@ -1,4 +1,4 @@
-import { IConnextClient, EventNames } from "@connext/types";
+import { IConnextClient, EventNames, getAddressFromIdentifier } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
 import {
@@ -25,7 +25,7 @@ describe("ChannelProvider", () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
     nodePublicIdentifier = client.config.nodePublicIdentifier;
-    nodeSignerAddress = nodePublicIdentifier;
+    nodeSignerAddress = getAddressFromIdentifier(nodePublicIdentifier);
     tokenAddress = client.config.contractAddresses.Token;
   });
 

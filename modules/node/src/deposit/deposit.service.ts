@@ -12,6 +12,7 @@ import {
   getAddressFromIdentifier,
   getPublicIdentifier,
   Address,
+  getAssetId,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero, AddressZero } from "ethers/constants";
@@ -72,6 +73,14 @@ export class DepositService {
     } finally {
       await this.rescindDepositRights(appIdentityHash || depositApp.identityHash);
     }
+    console.log('free balance post collateral', await this.cfCoreService.getFreeBalance(
+      channel.userPublicIdentifier,
+      channel.multisigAddress,
+      getAssetId(
+        (await this.configService.getEthNetwork()).chainId,
+        tokenAddress,
+      ),
+    ));
     return receipt;
   }
 
