@@ -1,4 +1,11 @@
-import { ContractAddresses, SwapRate, MessagingConfig, getPublicIdentifier } from "@connext/types";
+import { ChannelSigner } from "@connext/crypto";
+import {
+  ContractAddresses,
+  getPublicIdentifier,
+  IChannelSigner,
+  MessagingConfig,
+  SwapRate,
+} from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -6,7 +13,6 @@ import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { ChannelSigner } from "@connext/crypto";
 
 type PostgresConfig = {
   database: string;
@@ -27,7 +33,7 @@ type TokenConfig = {
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
   private readonly ethProvider: JsonRpcProvider;
-  private signer: ChannelSigner;
+  private signer: IChannelSigner;
   public publicIdentifier: string;
 
   constructor() {
@@ -49,16 +55,20 @@ export class ConfigService implements OnModuleInit {
     return this.envConfig[key];
   }
 
+  private getPrivateKey(): string {
+    return Wallet.fromMnemonic(this.get(`INDRA_ETH_MNEMONIC`)).privateKey;
+  }
+
+  getSigner(): IChannelSigner {
+    return this.signer;
+  }
+
   getEthRpcUrl(): string {
     return this.get(`INDRA_ETH_RPC_URL`);
   }
 
   getEthProvider(): JsonRpcProvider {
     return this.ethProvider;
-  }
-
-  getSigner(): ChannelSigner {
-    return this.signer;
   }
 
   async getEthNetwork(): Promise<EthNetwork> {
@@ -168,10 +178,6 @@ export class ConfigService implements OnModuleInit {
 
   isDevMode(): boolean {
     return this.get(`NODE_ENV`) !== `production`;
-  }
-
-  getPrivateKey(): string {
-    return Wallet.fromMnemonic(this.get(`INDRA_ETH_MNEMONIC`)).privateKey;
   }
 
   getMessagingConfig(): MessagingConfig {

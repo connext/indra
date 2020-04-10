@@ -1,4 +1,5 @@
 /* global before */
+import { getRandomChannelSigner } from "@connext/crypto";
 import {
   ConditionalTransferTypes,
   EventNames,
@@ -9,7 +10,6 @@ import {
   deBigNumberifyJson,
   EventPayloads,
 } from "@connext/types";
-import { ChannelSigner } from "@connext/crypto";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { providers } from "ethers";
@@ -60,7 +60,7 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = ChannelSigner.createRandom();
+    const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
     const promises = await Promise.all([
@@ -133,7 +133,7 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = ChannelSigner.createRandom();
+    const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
     const promises = await Promise.all([
@@ -206,7 +206,7 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = ChannelSigner.createRandom();
+    const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
@@ -233,7 +233,7 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = ChannelSigner.createRandom();
+    const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
@@ -278,7 +278,7 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signer = ChannelSigner.createRandom();
+    const signer = getRandomChannelSigner();
     const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
@@ -307,7 +307,7 @@ describe("Signed Transfers", () => {
     let sum = 0;
     const numberOfRuns = 5;
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    const signer = ChannelSigner.createRandom();
+    const signer = getRandomChannelSigner();
     const signerAddress = signer.address;
 
     await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);

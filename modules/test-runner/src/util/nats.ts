@@ -1,10 +1,9 @@
+import { getRandomChannelSigner } from "@connext/crypto";
 import { VerifyNonceDtoType, getPublicIdentifier } from "@connext/types";
 import { connect, Client } from "ts-nats";
 import axios, { AxiosResponse } from "axios";
 
 import { env } from "./env";
-import { Wallet } from "ethers";
-import { ChannelSigner } from "@connext/crypto";
 
 let natsClient: Client | undefined = undefined;
 
@@ -17,7 +16,7 @@ export const getNatsClient = (): Client => {
 };
 
 export const connectNats = async (): Promise<Client> => {
-  const signer = new ChannelSigner(Wallet.createRandom().privateKey);
+  const signer = getRandomChannelSigner();
   if (!natsClient) {
     const adminJWT: AxiosResponse<string> = await axios.post(`${env.nodeUrl}/auth`, {
       sig: "0xbeef",

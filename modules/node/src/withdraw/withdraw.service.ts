@@ -1,5 +1,4 @@
 import { WITHDRAW_STATE_TIMEOUT } from "@connext/apps";
-import { signChannelMessage } from "@connext/crypto";
 import {
   AppInstanceJson,
   BigNumber,
@@ -73,12 +72,11 @@ export class WithdrawService {
       appInstance.multisigAddress,
     );
 
-    // Get Private Key
-    const privateKey = this.configService.getPrivateKey();
+    const signer = this.configService.getSigner();
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = await signChannelMessage(privateKey, hash);
+    const counterpartySignatureOnWithdrawCommitment = await signer.signMessage(hash);
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -210,10 +208,9 @@ export class WithdrawService {
       channel.multisigAddress,
     );
 
-    const privateKey = this.configService.getPrivateKey();
+    const signer = this.configService.getSigner();
     const hash = commitment.hashToSign();
-
-    const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, hash);
+    const withdrawerSignatureOnCommitment = await signer.signMessage(hash);
 
     const transfers: CoinTransfer[] = [
       { amount, to: this.cfCoreService.cfCore.signerAddress },

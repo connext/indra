@@ -1,3 +1,4 @@
+import { getRandomChannelSigner } from "@connext/crypto";
 import {
   Address,
   AppABIEncodings,
@@ -45,7 +46,6 @@ import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { initialTransferState, transferAbiEncodings } from "./unidirectional-transfer";
 import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
-import { getRandomChannelSigner } from "./random-signing-keys";
 
 interface AppContext {
   appDefinition: string;

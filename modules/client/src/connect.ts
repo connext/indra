@@ -1,3 +1,4 @@
+import { ChannelSigner } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
   ChannelMethods,
@@ -29,7 +30,6 @@ import {
 } from "./lib";
 import { createMessagingService } from "./messaging";
 import { NodeApiClient } from "./node";
-import { ChannelSigner } from "@connext/crypto";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -122,8 +122,7 @@ export const connect = async (
       log.warn(`Client instantiation with mnemonic is only recommended for dev usage`);
       signer = new ChannelSigner(pk, ethProviderUrl);
     }
-    const address = signer.address;
-    const publicKey = signer.publicKey;
+    const identifier = getPublicIdentifier(signer.publicKey, config.ethNetwork.chainId);
 
     store = store || getDefaultStore(opts);
 
@@ -131,7 +130,7 @@ export const connect = async (
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        getPublicIdentifier(publicKey, network.chainId),
+        identifier,
         (msg: string) => signer.signMessage(msg),
         messagingUrl,
       );
@@ -142,10 +141,10 @@ export const connect = async (
     node = new NodeApiClient({ logger: log, messaging, nodeUrl });
     config = await node.config();
 
-    // ensure that node and user address are different
-    if (config.nodePublicIdentifier === address) {
+    // ensure that node and user identifiers are different
+    if (config.nodePublicIdentifier === identifier) {
       throw new Error(
-        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+        "Client must be instantiated with a signer that is different from the node's",
       );
     }
 

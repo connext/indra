@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { signChannelMessage } from "@connext/crypto";
+import { ChannelSigner } from "@connext/crypto";
 import {
   ConnextEventEmitter,
   delay,
@@ -146,10 +146,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     };
 
     const wallet = Wallet.fromMnemonic(this.options.mnemonic);
-    const getSignature = async (message: string) => {
-      const sig = await signChannelMessage(wallet.privateKey, message);
-      return sig;
-    };
+    const getSignature = new ChannelSigner(wallet.privateKey).signMessage;
 
     const address = wallet.address;
 

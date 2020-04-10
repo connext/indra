@@ -1,5 +1,4 @@
 import { MultiAssetMultiPartyCoinTransferInterpreterParams, OutcomeType } from "@connext/types";
-import { signChannelMessage } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

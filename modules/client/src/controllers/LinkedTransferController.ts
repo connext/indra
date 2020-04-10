@@ -1,4 +1,6 @@
+import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
+  verifyPublicIdentifier,
   ConditionalTransferTypes,
   CreatedLinkedTransferMeta,
   deBigNumberifyJson,
@@ -7,20 +9,14 @@ import {
   MethodParams,
   PublicParams,
   PublicResults,
+  parsePublicIdentifier,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
 } from "@connext/types";
-import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
-import { encryptWithPublicKey } from "@connext/crypto";
 import { HashZero, Zero } from "ethers/constants";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { createLinkedHash, stringify } from "../lib";
-import {
-  invalidAddress,
-  validate,
-} from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -40,12 +36,11 @@ export class LinkedTransferController extends AbstractController {
     const submittedMeta = { ...(meta || {}) } as CreatedLinkedTransferMeta;
     
     if (recipient) {
-      validate(invalidAddress(recipient));
+      verifyPublicIdentifier(recipient);
       // set recipient and encrypted pre-image on linked transfer
-      const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
-      const encryptedPreImage = await encryptWithPublicKey(
-        recipientPublicKey.replace(/^0x/, ``),
+      const encryptedPreImage = await this.signer.encrypt(
         preImage,
+        parsePublicIdentifier(recipient).publicKey,
       );
 
       // add encrypted preImage to meta so node can store it in the DB

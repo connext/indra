@@ -1,22 +1,22 @@
+import { getRandomChannelSigner } from "@connext/crypto";
 import {
   AppInstanceProposal,
+  getPublicIdentifier,
+  IChannelSigner,
   IStoreService,
   NetworkContext,
   nullLogger,
   Opcode,
   PublicIdentifier,
-  getPublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { ChannelSigner } from "@connext/crypto";
 
 import { ProtocolRunner } from "../machine";
 import { AppInstance, StateChannel } from "../models";
 import { PersistAppType } from "../types";
-import { getRandomChannelSigner } from "./random-signing-keys";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
-const makeSigner = (signer: ChannelSigner) => {
+const makeSigner = (signer: IChannelSigner) => {
   return async (args: any[]) => {
     if (args.length !== 1) {
       throw new Error("OP_SIGN middleware received wrong number of arguments.");
@@ -28,7 +28,7 @@ const makeSigner = (signer: ChannelSigner) => {
 };
 
 export class MiniNode {
-  private readonly signer: ChannelSigner;
+  private readonly signer: IChannelSigner;
   public readonly protocolRunner: ProtocolRunner;
   public scm: Map<string, StateChannel>;
   public readonly address: string;

@@ -1,4 +1,4 @@
-import { ChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner } from "@connext/crypto";
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { JsonRpcProvider } from "ethers/providers";
 
@@ -18,7 +18,7 @@ describe("Node", () => {
       global["network"],
       { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
       provider,
-      await ChannelSigner.createRandom(),
+      await getRandomChannelSigner(),
     );
 
     expect(node).toBeDefined();

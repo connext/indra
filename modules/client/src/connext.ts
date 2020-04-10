@@ -35,7 +35,6 @@ import {
   WithdrawAppName,
   getAddressFromIdentifier,
 } from "@connext/types";
-import { decryptWithPrivateKey } from "@connext/crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -63,7 +62,6 @@ export class ConnextClient implements IConnextClient {
   public channelProvider: IChannelProvider;
   public config: NodeResponses.GetConfig;
   public ethProvider: providers.JsonRpcProvider;
-  public signerAddress: string;
   public listener: ConnextListener;
   public log: ILoggerService;
   public messaging: MessagingService;
@@ -73,21 +71,22 @@ export class ConnextClient implements IConnextClient {
   public nodePublicIdentifier: string;
   public nodeSignerAddress: string;
   public publicIdentifier: string;
+  public signer: IChannelSigner;
+  public signerAddress: string;
   public store: IClientStore;
   public token: Contract;
 
   private opts: InternalClientOptions;
-  private signer: IChannelSigner;
 
   private depositController: DepositController;
+  private hashlockTransferController: HashLockTransferController;
+  private linkedTransferController: LinkedTransferController;
+  private resolveHashLockTransferController: ResolveHashLockTransferController;
+  private resolveLinkedTransferController: ResolveLinkedTransferController;
+  private resolveSignedTransferController: ResolveSignedTransferController;
+  private signedTransferController: SignedTransferController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
-  private linkedTransferController: LinkedTransferController;
-  private resolveLinkedTransferController: ResolveLinkedTransferController;
-  private hashlockTransferController: HashLockTransferController;
-  private resolveHashLockTransferController: ResolveHashLockTransferController;
-  private signedTransferController: SignedTransferController;
-  private resolveSignedTransferController: ResolveSignedTransferController;
 
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -698,8 +697,7 @@ export class ConnextClient implements IConnextClient {
   ): Promise<PublicResults.ResolveLinkedTransfer> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
-    let privateKey = await (this.signer as any).privateKey; // TODO: this won't work
-    const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
+    const preImage = await this.signer.decrypt(encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
       conditionType: ConditionalTransferTypes.LinkedTransfer,

@@ -1,3 +1,4 @@
+import { getRandomChannelSigner } from "@connext/crypto";
 import { createRandomAddress, MultisigTransaction, getPublicIdentifier } from "@connext/types";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
@@ -9,7 +10,6 @@ import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import { getSetupCommitment } from "./setup-commitment";
-import { getRandomChannelSigner } from "../testing/random-signing-keys";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according
