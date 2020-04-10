@@ -44,7 +44,7 @@ export const createCFChannelProvider = async ({
     contractAddresses,
     nodeConfig,
     ethProvider,
-    signer as any, // TODO rm any when fixed in cfcore
+    signer,
     lockService,
     undefined,
     logger,
