@@ -218,27 +218,30 @@ export const setupContext = async (
     state: AppWithCounterState,
     action: AppWithCounterAction,
     signer: Wallet,
+    resultingState?: AppWithCounterState,
+    resultingStateVersionNumber?: BigNumberish,
+    resultingStateTimeout?: number,
   ) => {
     const existingChallenge = await getChallenge();
-    const resultingState: AppWithCounterState = {
+    resultingState = resultingState ?? {
       counter:
         action.actionType === ActionType.ACCEPT_INCREMENT
           ? state.counter
           : state.counter.add(action.increment),
     };
     const resultingStateHash = keccak256(encodeState(resultingState));
-    const resultingStateVersionNumber = existingChallenge.versionNumber.add(One);
-    const timeout = 0;
+    resultingStateVersionNumber = resultingStateVersionNumber ?? existingChallenge.versionNumber.add(One);
+    resultingStateTimeout = resultingStateTimeout ?? 0;
     const digest = computeAppChallengeHash(
       appInstance.identityHash,
       resultingStateHash,
       resultingStateVersionNumber,
-      timeout,
+      resultingStateTimeout,
     );
     const req = {
       appStateHash: resultingStateHash,
       versionNumber: resultingStateVersionNumber,
-      timeout,
+      timeout: resultingStateTimeout,
       signatures: [ await signChannelMessage(signer.privateKey, digest) ],
     };
     await wrapInEventVerification(
@@ -253,7 +256,7 @@ export const setupContext = async (
           ? ChallengeStatus.EXPLICITLY_FINALIZED
           : ChallengeStatus.IN_ONCHAIN_PROGRESSION,
         appStateHash: resultingStateHash,
-        versionNumber: resultingStateVersionNumber,
+        versionNumber: toBN(resultingStateVersionNumber),
         // FIXME: why is this off by one?
         finalizesAt: toBN((await provider.getBlockNumber()) + appInstance.defaultTimeout + 1),
       },
@@ -274,15 +277,19 @@ export const setupContext = async (
           : state.counter.add(action.increment),
     };
     const resultingStateHash = keccak256(encodeState(resultingState));
+    const explicitlyFinalized = resultingState.counter.gt(5);
+    const status = explicitlyFinalized
+      ? ChallengeStatus.EXPLICITLY_FINALIZED
+      : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     const expected = {
       latestSubmitter: wallet.address,
       appStateHash: resultingStateHash,
       versionNumber: existingChallenge.versionNumber.add(One),
-      status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
+      status,
     };
     await progressState(state, action, signer);
     await verifyChallenge(expected);
-    expect(await isProgressable()).to.be.true;
+    expect(await isProgressable()).to.be.equal(!explicitlyFinalized);
   };
 
   const setAndProgressStateAndVerify = async (
@@ -409,6 +416,10 @@ export const setupContext = async (
     action: {
       actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
       increment: toBN(2),
+    },
+    explicitlyFinalizingAction: {
+      actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
+      increment: toBN(6),
     },
     ONCHAIN_CHALLENGE_TIMEOUT,
     DEFAULT_TIMEOUT,

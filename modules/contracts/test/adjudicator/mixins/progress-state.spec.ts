@@ -33,6 +33,7 @@ describe("progressState", () => {
   let snapshotId: any;
 
   let ACTION: AppWithCounterAction;
+  let EXPLICITLY_FINALIZING_ACTION: AppWithCounterAction;
   let PRE_STATE: AppWithCounterState;
   let POST_STATE: AppWithCounterState;
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
@@ -42,6 +43,9 @@ describe("progressState", () => {
     state: AppWithCounterState,
     action: AppWithCounterAction,
     signer: Wallet,
+    resultingState?: AppWithCounterState,
+    resultingStateVersionNumber?: number,
+    resultingStateTimeout?: number,
   ) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
@@ -77,6 +81,7 @@ describe("progressState", () => {
     PRE_STATE = context["state0"];
     POST_STATE = context["state1"];
     ACTION = context["action"];
+    EXPLICITLY_FINALIZING_ACTION = context["explicitlyFinalizingAction"];
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
 
     // get helpers
