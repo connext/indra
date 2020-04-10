@@ -52,20 +52,20 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { processID, params } = message;
 
     const {
-      multisigAddress,
-      initiatorIdentifier,
-      responderIdentifier,
-      appDefinition,
       abiEncodings,
+      appDefinition,
+      defaultTimeout,
+      initialState,
       initiatorDeposit,
       initiatorDepositAssetId,
+      initiatorIdentifier,
+      meta,
+      multisigAddress,
+      outcomeType,
       responderDeposit,
       responderDepositAssetId,
-      defaultTimeout,
+      responderIdentifier,
       stateTimeout,
-      initialState,
-      outcomeType,
-      meta,
     } = params as ProtocolParams.Propose;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
@@ -213,19 +213,19 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
 
     const {
-      multisigAddress,
-      initiatorIdentifier,
-      responderIdentifier,
-      appDefinition,
       abiEncodings,
-      initiatorDeposit,
-      initiatorDepositAssetId,
-      responderDeposit,
-      responderDepositAssetId,
+      appDefinition,
       defaultTimeout,
       initialState,
-      outcomeType,
+      initiatorDeposit,
+      initiatorDepositAssetId,
+      initiatorIdentifier,
       meta,
+      multisigAddress,
+      outcomeType,
+      responderDeposit,
+      responderDepositAssetId,
+      responderIdentifier,
       stateTimeout,
     } = params as ProtocolParams.Propose;
 
@@ -256,8 +256,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       }),
       defaultTimeout: defaultTimeout.toHexString(),
       stateTimeout: stateTimeout.toHexString(),
-      initiatorDeposit: responderDeposit.toHexString(),
-      responderDeposit: initiatorDeposit.toHexString(),
+      initiatorDeposit: initiatorDeposit.toHexString(),
+      responderDeposit: responderDeposit.toHexString(),
       initiatorIdentifier,
       responderIdentifier,
       meta,

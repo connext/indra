@@ -87,30 +87,44 @@ export async function install(
   }
   const stateChannel = StateChannel.fromJson(json);
 
+  const isSame = initiatorIdentifier === proposal.initiatorIdentifier;
+
   await protocolRunner.initiateProtocol(ProtocolNames.install, {
-    initiatorIdentifier,
-    initiatorDepositAssetId: proposal.initiatorDepositAssetId,
-    responderIdentifier:
-      initiatorIdentifier === proposal.initiatorIdentifier
-        ? proposal.responderIdentifier
-        : proposal.initiatorIdentifier,
-    initiatorBalanceDecrement: toBN(proposal.initiatorDeposit),
-    responderBalanceDecrement: toBN(proposal.responderDeposit),
-    multisigAddress: stateChannel.multisigAddress,
-    initialState: proposal.initialState,
-    appInterface: {
-      ...proposal.abiEncodings,
-      addr: proposal.appDefinition,
-    },
+    appInitiatorIdentifier: proposal.initiatorIdentifier,
+    appInterface: { ...proposal.abiEncodings, addr: proposal.appDefinition },
+    appResponderIdentifier: proposal.responderIdentifier,
     appSeqNo: proposal.appSeqNo,
     defaultTimeout: toBN(proposal.defaultTimeout),
-    outcomeType: proposal.outcomeType,
-    responderDepositAssetId: proposal.responderDepositAssetId,
     disableLimit: false,
+    initialState: proposal.initialState,
+    initiatorBalanceDecrement:
+      isSame
+        ? toBN(proposal.initiatorDeposit)
+        : toBN(proposal.responderDeposit),
+    initiatorDepositAssetId:
+      isSame
+        ? proposal.initiatorDepositAssetId
+        : proposal.responderDepositAssetId,
+    initiatorIdentifier:
+      isSame
+        ? proposal.initiatorIdentifier
+        : proposal.responderIdentifier,
     meta: proposal.meta,
+    multisigAddress: stateChannel.multisigAddress,
+    outcomeType: proposal.outcomeType,
+    responderBalanceDecrement:
+      isSame
+        ? toBN(proposal.responderDeposit)
+        : toBN(proposal.initiatorDeposit),
+    responderDepositAssetId:
+      isSame
+        ? proposal.responderDepositAssetId
+        : proposal.initiatorDepositAssetId,
+    responderIdentifier:
+      isSame
+        ? proposal.responderIdentifier
+        : proposal.initiatorIdentifier,
     stateTimeout: toBN(proposal.stateTimeout),
-    appInitiatorIdentifier: proposal.initiatorIdentifier,
-    appResponderIdentifier: proposal.responderIdentifier,
   } as ProtocolParams.Install);
   
   stateChannel.removeProposal(appIdentityHash);

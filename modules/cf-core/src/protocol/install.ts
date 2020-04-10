@@ -67,13 +67,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     log.warn(`Initiation started for Install protocol`);
 
     const {
-      responderIdentifier,
-      multisigAddress,
-      initiatorDepositAssetId,
-      responderDepositAssetId,
       initiatorBalanceDecrement,
-      responderBalanceDecrement,
+      initiatorDepositAssetId,
       initiatorIdentifier,
+      multisigAddress,
+      responderBalanceDecrement,
+      responderDepositAssetId,
+      responderIdentifier,
     } = params as ProtocolParams.Install;
 
     const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
@@ -259,13 +259,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const counterpartySignatureOnConditionalTransaction = signature;
 
     const {
+      initiatorBalanceDecrement,
+      initiatorDepositAssetId,
       initiatorIdentifier,
       multisigAddress,
       responderBalanceDecrement,
-      responderIdentifier,
       responderDepositAssetId,
-      initiatorBalanceDecrement,
-      initiatorDepositAssetId,
+      responderIdentifier,
     } = params as ProtocolParams.Install;
 
     const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
