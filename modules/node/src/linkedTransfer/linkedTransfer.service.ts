@@ -229,7 +229,7 @@ export class LinkedTransferService {
   async unlockLinkedTransfersFromUser(userIdentifier: string): Promise<string[]> {
     // eslint-disable-next-line max-len
     const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
-      userIdentifier,
+      getAddressFromPublicIdentifier(userIdentifier),
       this.cfCoreService.cfCore.signerAddress,
     );
     const receiverRedeemed = await Promise.all(
