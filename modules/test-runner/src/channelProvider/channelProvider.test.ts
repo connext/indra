@@ -2,8 +2,8 @@ import {
   EventNames,
   getAddressFromAssetId,
   getAddressFromPublicIdentifier,
-  getAssetId,
   IConnextClient,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
@@ -48,9 +48,9 @@ describe("ChannelProvider", () => {
     expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);
   });
 
-  it.skip("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
-    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: getAssetId(AddressZero) };
-    const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: getAssetId(tokenAddress) };
+  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async () => {
+    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: CONVENTION_FOR_ETH_ASSET_ID };
+    const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
