@@ -1,7 +1,5 @@
 import {
   ConditionalTransferTypes,
-  CreatedLinkedTransferMeta,
-  deBigNumberifyJson,
   EventNames,
   EventPayloads,
   MethodParams,
@@ -37,7 +35,7 @@ export class LinkedTransferController extends AbstractController {
       recipient,
     } = params;
 
-    const submittedMeta = { ...(meta || {}) } as CreatedLinkedTransferMeta;
+    const submittedMeta = { ...(meta || {}) } as any;
     
     if (recipient) {
       validate(invalidXpub(recipient));
@@ -49,8 +47,8 @@ export class LinkedTransferController extends AbstractController {
       );
 
       // add encrypted preImage to meta so node can store it in the DB
-      submittedMeta["encryptedPreImage"] = encryptedPreImage;
-      submittedMeta["recipient"] = recipient;
+      submittedMeta.encryptedPreImage = encryptedPreImage;
+      submittedMeta.recipient = recipient;
     }
 
     // install the transfer application
@@ -110,7 +108,7 @@ export class LinkedTransferController extends AbstractController {
       paymentId,
       sender: this.connext.publicIdentifier,
       recipient,
-      meta,
+      meta: submittedMeta,
       transferMeta: {},
     } as EventPayloads.LinkedTransferCreated;
 
