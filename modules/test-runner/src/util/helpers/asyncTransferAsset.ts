@@ -1,4 +1,4 @@
-import { EventNames, IConnextClient, LinkedTransferStatus } from "@connext/types";
+import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
@@ -13,11 +13,11 @@ export async function asyncTransferAsset(
   clientA: IConnextClient,
   clientB: IConnextClient,
   transferAmount: BigNumber,
-  assetId: string,
-  nats: Client,
+  assetId: Address,
+  nats: Client, // TODO: remove
 ): Promise<ExistingBalancesAsyncTransfer> {
   const SENDER_INPUT_META = { hello: "world" };
-  const nodeSignerAddress = clientA.nodeIdentifier;
+  const nodeSignerAddress = clientA.nodeSignerAddress;
   const {
     [clientA.signerAddress]: preTransferFreeBalanceClientA,
     [nodeSignerAddress]: preTransferFreeBalanceNodeA,

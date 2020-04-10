@@ -6,7 +6,6 @@ import {
   EventNames,
   EventPayloads,
   getAddressFromAssetId,
-  isValidPublicIdentifier,
   MethodParams,
   parsePublicIdentifier,
   PublicParams,
@@ -21,6 +20,7 @@ import { HashZero, Zero } from "ethers/constants";
 import { createLinkedHash, stringify } from "../lib";
 
 import { AbstractController } from "./AbstractController";
+import { validate, invalidAddress, invalid32ByteHexString, invalidPublicIdentifier } from "../validation";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
@@ -37,12 +37,16 @@ export class LinkedTransferController extends AbstractController {
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
 
+    validate(
+      invalidAddress(assetId),
+      invalid32ByteHexString(paymentId),
+      invalid32ByteHexString(preImage),
+    );
+
     const submittedMeta = { ...(meta || {}) } as CreatedLinkedTransferMeta;
     
     if (recipient) {
-      if (!isValidPublicIdentifier(recipient)) {
-        throw new Error(`Invalid recipient identifier: ${recipient}`);
-      }
+      validate(invalidPublicIdentifier(recipient));
       // set recipient and encrypted pre-image on linked transfer
       const encryptedPreImage = await this.signer.encrypt(
         preImage,

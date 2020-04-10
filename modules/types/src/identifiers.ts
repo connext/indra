@@ -61,7 +61,14 @@ export const parsePublicIdentifier = (
 export const isValidPublicIdentifier = (
   identifier: PublicIdentifier,
 ): boolean => {
-  const { chainId, publicKey, namespace } = parsePublicIdentifier(identifier);
+  let parsed;
+  try {
+    parsed = parsePublicIdentifier(identifier);
+  } catch (e) {
+    return false;
+  }
+  const { publicKey, namespace, chainId } = parsed;
+
   if (
     !isHexString(publicKey) ||
     namespace !== ETHEREUM_NAMESPACE ||
