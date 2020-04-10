@@ -23,7 +23,7 @@ export class MessageRouter {
     this.pendingPromises = new Set();
 
     for (const node of nodes) {
-      this.nodesMap.set(node.address, node);
+      this.nodesMap.set(node.publicIdentifier, node);
 
       node.protocolRunner.register(Opcode.IO_SEND, (args: [any]) => {
         const [message] = args;
@@ -31,12 +31,12 @@ export class MessageRouter {
       });
       node.protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [any]) => {
         const [message] = args;
-        message.fromAddress = node.address;
+        message.fromAddress = node.publicIdentifier;
 
-        this.deferrals.set(node.address, new Deferred());
+        this.deferrals.set(node.publicIdentifier, new Deferred());
         this.appendToPendingPromisesIfNotNull(this.routeMessage(message));
-        const ret = await this.deferrals.get(node.address)!.promise;
-        this.deferrals.delete(node.address);
+        const ret = await this.deferrals.get(node.publicIdentifier)!.promise;
+        this.deferrals.delete(node.publicIdentifier);
 
         return ret;
       });
