@@ -38,8 +38,8 @@ describe("Three mininodes", () => {
     await tr.setup();
 
     const proposalParams: ProtocolParams.Propose = {
-      initiatorIdentifier: tr.mininodeA.address,
-      responderIdentifier: tr.mininodeB.address,
+      initiatorIdentifier: tr.mininodeA.publicIdentifier,
+      responderIdentifier: tr.mininodeB.publicIdentifier,
       defaultTimeout: bigNumberify(100),
       stateTimeout: Zero,
       appDefinition: appWithAction.address,
@@ -69,8 +69,8 @@ describe("Three mininodes", () => {
     expect(proposal).toBeTruthy();
 
     const installParams: ProtocolParams.Install = {
-      initiatorIdentifier: tr.mininodeA.address,
-      responderIdentifier: tr.mininodeB.address,
+      initiatorIdentifier: tr.mininodeA.publicIdentifier,
+      responderIdentifier: tr.mininodeB.publicIdentifier,
       initiatorDepositAssetId: proposal.initiatorDepositAssetId,
       responderDepositAssetId: proposal.responderDepositAssetId,
       multisigAddress: tr.multisigAB,
@@ -98,8 +98,8 @@ describe("Three mininodes", () => {
     const [appInstance] = [...StateChannel.fromJson(postInstallChannel!).appInstances.values()];
 
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.update, {
-      initiatorIdentifier: tr.mininodeA.address,
-      responderIdentifier: tr.mininodeB.address,
+      initiatorIdentifier: tr.mininodeA.publicIdentifier,
+      responderIdentifier: tr.mininodeB.publicIdentifier,
       multisigAddress: tr.multisigAB,
       appIdentityHash: appInstance.identityHash,
       newState: {
@@ -108,8 +108,8 @@ describe("Three mininodes", () => {
     });
 
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
-      initiatorIdentifier: tr.mininodeA.address,
-      responderIdentifier: tr.mininodeB.address,
+      initiatorIdentifier: tr.mininodeA.publicIdentifier,
+      responderIdentifier: tr.mininodeB.publicIdentifier,
       multisigAddress: tr.multisigAB,
       appIdentityHash: appInstance.identityHash,
       action: {
@@ -119,8 +119,8 @@ describe("Three mininodes", () => {
     });
 
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
-      initiatorIdentifier: tr.mininodeA.address,
-      responderIdentifier: tr.mininodeB.address,
+      initiatorIdentifier: tr.mininodeA.publicIdentifier,
+      responderIdentifier: tr.mininodeB.publicIdentifier,
       appIdentityHash: appInstance.identityHash,
       multisigAddress: tr.multisigAB,
     });

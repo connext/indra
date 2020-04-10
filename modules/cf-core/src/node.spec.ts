@@ -12,7 +12,7 @@ describe("Node", () => {
   });
 
   it("can be created", async () => {
-    const provider = new JsonRpcProvider(global["ganacheURL"]);
+    const provider = new JsonRpcProvider(global["network"].provider.connection.url);
     const node = await Node.create(
       memoryMessagingService,
       new MemoryStoreService(),

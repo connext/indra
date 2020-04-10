@@ -7,11 +7,11 @@ import {
   ProtocolNames,
   IStoreService,
   getAddressFromIdentifier,
+  getPublicIdentifier,
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
 import {
@@ -22,7 +22,7 @@ import {
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models";
 
-import { createAppInstanceProposalForTest } from "../../testing/utils";
+import { createAppInstanceProposalForTest, GANACHE_CHAIN_ID } from "../../testing/utils";
 
 import { install } from "./install";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -48,7 +48,10 @@ describe("Can handle correct & incorrect installs", () => {
       store,
       nullLogger,
     );
-    initiatorIdentifier = HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
+    initiatorIdentifier = getPublicIdentifier(
+      GANACHE_CHAIN_ID,
+      Wallet.createRandom().address,
+    );
   });
 
   it("fails to install with undefined appIdentityHash", async () => {

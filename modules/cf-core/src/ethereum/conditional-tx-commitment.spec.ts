@@ -3,12 +3,13 @@ import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import {
   createRandomAddress,
   MultisigTransaction,
+  getPublicIdentifier,
 } from "@connext/types";
 import { WeiPerEther, AddressZero } from "ethers/constants";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
 import { generateRandomNetworkContext } from "../testing/mocks";
-import { createAppInstanceForTest } from "../testing/utils";
+import { createAppInstanceForTest, GANACHE_CHAIN_ID } from "../testing/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
 import { FreeBalanceClass, StateChannel } from "../models";
@@ -40,12 +41,16 @@ describe("ConditionalTransactionCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    initiator.address,
-    responder.address,
+    getPublicIdentifier(GANACHE_CHAIN_ID, initiator.address),
+    getPublicIdentifier(GANACHE_CHAIN_ID, responder.address),
   );
 
-  expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiator.address);
-  expect(stateChannel.userPublicIdentifiers[1]).toEqual(responder.address);
+  expect(stateChannel.userPublicIdentifiers[0]).toEqual(
+    getPublicIdentifier(GANACHE_CHAIN_ID, initiator.address),
+  );
+  expect(stateChannel.userPublicIdentifiers[1]).toEqual(
+    getPublicIdentifier(GANACHE_CHAIN_ID, responder.address),
+  );
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(
