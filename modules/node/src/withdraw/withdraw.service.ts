@@ -10,6 +10,7 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
@@ -214,7 +215,7 @@ export class WithdrawService {
 
     const transfers: CoinTransfer[] = [
       { amount, to: this.cfCoreService.cfCore.signerAddress },
-      { amount: Zero, to: channel.userIdentifier },
+      { amount: Zero, to: getAddressFromPublicIdentifier(channel.userIdentifier) },
     ];
 
     const initialState: WithdrawAppState = {
@@ -222,7 +223,7 @@ export class WithdrawService {
       signatures: [withdrawerSignatureOnCommitment, HashZero],
       signers: [
         this.cfCoreService.cfCore.signerAddress,
-        channel.userIdentifier,
+        getAddressFromPublicIdentifier(channel.userIdentifier),
       ],
       data: hash,
       nonce,

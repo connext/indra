@@ -11,6 +11,7 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
+  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -42,9 +43,10 @@ export class WithdrawalController extends AbstractController {
     const { assetId, recipient } = params;
     let transaction: TransactionResponse | undefined;
 
-    if (recipient) {
-      validate(invalidAddress(recipient));
-    }
+    validate(
+      invalidAddress(recipient),
+      invalidAddress(assetId),
+    );
 
     this.log.info(
       `Withdrawing ${formatEther(amount)} ${
@@ -116,13 +118,18 @@ export class WithdrawalController extends AbstractController {
   ): Promise<WithdrawCommitment> {
     const { assetId, amount, nonce, recipient } = params;
     const { data: channel } = await this.connext.getStateChannel();
+    const multisigOwners = [
+      getAddressFromPublicIdentifier(
+        channel.userIdentifiers[0],
+      ),
+      getAddressFromPublicIdentifier(
+        channel.userIdentifiers[1],
+      ),
+    ];
     return new WithdrawCommitment(
       this.connext.config.contractAddresses,
       channel.multisigAddress,
-      [
-        channel.freeBalanceAppInstance.initiatorIdentifier,
-        channel.freeBalanceAppInstance.responderIdentifier,
-      ],
+      multisigOwners,
       recipient,
       assetId,
       amount,
@@ -147,7 +154,7 @@ export class WithdrawalController extends AbstractController {
     const initialState: WithdrawAppState = {
       transfers: [
         { amount: amount, to: recipient },
-        { amount: Zero, to: this.connext.nodeIdentifier },
+        { amount: Zero, to: this.connext.nodeSignerAddress },
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [

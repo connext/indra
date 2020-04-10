@@ -140,13 +140,18 @@ export class CFCoreService {
     const contractAddresses = await this.configService.getContractAddresses(
       (await this.configService.getEthNetwork()).chainId.toString(),
     );
+    const multisigOwners = [
+      getAddressFromPublicIdentifier(
+        channel.userIdentifiers[0],
+      ),
+      getAddressFromPublicIdentifier(
+        channel.userIdentifiers[1],
+      ),
+    ];
     return new WithdrawCommitment(
       contractAddresses,
       channel.multisigAddress,
-      [
-        channel.freeBalanceAppInstance.initiatorIdentifier,
-        channel.freeBalanceAppInstance.responderIdentifier,
-      ],
+      multisigOwners,
       recipient,
       assetId,
       amount,
