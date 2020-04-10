@@ -27,7 +27,6 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    console.log(`Deposit parsed ${JSON.stringify(params)} into assetId: ${assetId}`);
     validate(invalidAddress(assetId));
     // NOTE: when the `walletTransfer` is not used, these parameters
     // do not have to be validated
