@@ -16,6 +16,8 @@ import {
   ProxyFactory,
 } from "../contracts";
 import { getRandomChannelSigners } from "../random-signing-keys";
+import { getPublicIdentifier } from "@connext/types";
+import { GANACHE_CHAIN_ID } from "../utils";
 
 expect.extend({ toBeEq });
 jest.setTimeout(10000);
@@ -51,6 +53,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
 
   it("should distribute funds in ETH free balance when put on chain", async done => {
     const [initiator, responder] = getRandomChannelSigners(2);
+    const [initiatorId, responderId] = [initiator, responder]
+      .map(signer => getPublicIdentifier(GANACHE_CHAIN_ID, signer.address));
 
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 
@@ -58,8 +62,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
       // TODO: Test this separately
       expect(proxy).toBe(
         await getCreate2MultisigAddress(
-          initiator.address,
-          responder.address,
+          initiatorId,
+          responderId,
           {
             proxyFactory: network.ProxyFactory,
             multisigMastercopy: network.MinimumViableMultisig,
@@ -72,8 +76,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         network.IdentityApp,
         { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
         proxy, // used as multisig
-        initiator.address,
-        responder.address,
+        initiatorId,
+        responderId,
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(

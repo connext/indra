@@ -1,5 +1,4 @@
 import { DepositAppState, BigNumber, getAddressFromIdentifier, getAssetId, getTokenAddressFromAssetId } from "@connext/types";
-import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../node";

@@ -9,7 +9,7 @@ import { Context } from "../types";
 import { appIdentityToHash } from "../utils";
 
 import { getSetupCommitment } from "./setup-commitment";
-import { getRandomChannelSigner } from "../testing/random-signing-keys";
+import { getRandomChannelSigners } from "../testing/random-signing-keys";
 import { GANACHE_CHAIN_ID } from "../testing/utils";
 
 /**
@@ -26,19 +26,8 @@ describe("SetupCommitment", () => {
     network: generateRandomNetworkContext(),
   } as Context;
 
-  // General interaction testing values
-  const interaction = {
-    sender: getRandomChannelSigner().address,
-    receiver: getRandomChannelSigner().address,
-  };
-  const initiatorId = getPublicIdentifier(
-    GANACHE_CHAIN_ID,
-    interaction.sender,
-  );
-  const responderId = getPublicIdentifier(
-    GANACHE_CHAIN_ID,
-    interaction.receiver,
-  );
+  // signing keys
+  const [initiator, responder] = getRandomChannelSigners(2);
 
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(
@@ -48,8 +37,8 @@ describe("SetupCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    initiatorId,
-    responderId,
+    getPublicIdentifier(GANACHE_CHAIN_ID, initiator.address),
+    getPublicIdentifier(GANACHE_CHAIN_ID, responder.address),
   );
 
   const freeBalance = stateChannel.freeBalance;

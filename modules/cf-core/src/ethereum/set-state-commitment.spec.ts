@@ -1,4 +1,4 @@
-import { MinimalTransaction, createRandomAddress } from "@connext/types";
+import { MinimalTransaction, createRandomAddress, getPublicIdentifier, delay } from "@connext/types";
 import {
   bigNumberify,
   Interface,
@@ -8,7 +8,7 @@ import {
   getAddress,
 } from "ethers/utils";
 
-import { createAppInstanceForTest } from "../testing/utils";
+import { createAppInstanceForTest, GANACHE_CHAIN_ID } from "../testing/utils";
 import { generateRandomNetworkContext } from "../testing/mocks";
 
 import { ChallengeRegistry } from "../contracts";
@@ -31,6 +31,7 @@ describe("Set State Commitment", () => {
 
   const context = { network: generateRandomNetworkContext() } as Context;
 
+  // signing keys
   const [initiator, responder] = getRandomChannelSigners(2);
 
   // State channel testing values
@@ -41,12 +42,16 @@ describe("Set State Commitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    initiator.address,
-    responder.address,
+    getPublicIdentifier(GANACHE_CHAIN_ID, initiator.address),
+    getPublicIdentifier(GANACHE_CHAIN_ID, responder.address),
   );
 
-  expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiator.address);
-  expect(stateChannel.userPublicIdentifiers[1]).toEqual(responder.address);
+  expect(stateChannel.userPublicIdentifiers[0]).toEqual(
+    getPublicIdentifier(GANACHE_CHAIN_ID, initiator.address),
+  );
+  expect(stateChannel.userPublicIdentifiers[1]).toEqual(
+    getPublicIdentifier(GANACHE_CHAIN_ID, responder.address),
+  );
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(

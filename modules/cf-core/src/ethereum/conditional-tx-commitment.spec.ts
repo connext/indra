@@ -20,7 +20,6 @@ import {
   getConditionalTransactionCommitment,
   ConditionalTransactionCommitment,
 } from "./conditional-tx-commitment";
-import { HDNode } from "ethers/utils/hdnode";
 import { getRandomChannelSigners } from "../testing/random-signing-keys";
 
 describe("ConditionalTransactionCommitment", () => {

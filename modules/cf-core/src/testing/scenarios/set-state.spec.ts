@@ -1,4 +1,4 @@
-import { NetworkContext, createRandomAddress } from "@connext/types";
+import { NetworkContext, createRandomAddress, getPublicIdentifier } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, AddressZero } from "ethers/constants";
 
@@ -9,6 +9,7 @@ import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { getRandomChannelSigners } from "../random-signing-keys";
 import { getAddress } from "ethers/utils";
+import { GANACHE_CHAIN_ID } from "../utils";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -32,6 +33,8 @@ beforeAll(async () => {
 describe("set state on free balance", () => {
   it("should have the correct versionNumber", async done => {
     const [initiatorNode, responderNode] = getRandomChannelSigners(2);
+    const [initiatorId, responderId] = [initiatorNode, responderNode]
+      .map(signer => getPublicIdentifier(GANACHE_CHAIN_ID, signer.address));
     // State channel testing values
     let stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
@@ -40,12 +43,12 @@ describe("set state on free balance", () => {
         multisigMastercopy: network.MinimumViableMultisig,
       },
       getAddress(createRandomAddress()),
-      initiatorNode.address,
-      responderNode.address,
+      initiatorId,
+      responderId,
     );
 
-    expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiatorNode.address);
-    expect(stateChannel.userPublicIdentifiers[1]).toEqual(responderNode.address);
+    expect(stateChannel.userPublicIdentifiers[0]).toEqual(initiatorId);
+    expect(stateChannel.userPublicIdentifiers[1]).toEqual(responderId);
 
     // Set the state to some test values
     stateChannel = stateChannel.setFreeBalance(

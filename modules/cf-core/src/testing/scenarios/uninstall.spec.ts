@@ -1,5 +1,5 @@
 import { EventNames, UninstallMessage } from "@connext/types";
-import { One, Two, Zero, AddressZero } from "ethers/constants";
+import { One, Two, Zero } from "ethers/constants";
 
 import { Node } from "../../node";
 
