@@ -33,11 +33,9 @@ const testMessageArr = ethers.utils.arrayify(Buffer.from(testMessage));
 const digest = keccak256(utf8ToBuffer(testMessage));
 const digestHex = bufferToHex(digest, true);
 
-const multisigAddress = "0x24E5E0e535fAa3f8382d3bCf682dbb5e52E67544";
-
 const base58lengthTarget = INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length;
-const base58length65 = "2HKEJD1Y8TiL32U4Mt7zH2HAP35DqKR5Zbc9aCDjgXw7CwU1m1ZQhofPqTQ4xoXwK";
-const base58length64 = "DcdgTzP9eUmNDshnvXrUr2RzDJEgbnHaDqtvrVpH56YCTKexLLUwMZA3UuumTup1";
+const base58length50 = "8V9EyGkUsxR3wXJKhNCK7HoUyHYJMAd8F1M1TCzt3AKUBkE2bH";
+const base58length49 = "2cfB9GitD1f6PDFmTGxowKSBnHE3JqpqhxSYyhHnrp1DFcT5k";
 
 // Mnemonic was pulled from the testnet daicard that received a test async transfer
 const wallet = ethers.Wallet.fromMnemonic(
@@ -126,26 +124,26 @@ describe("crypto", () => {
   });
 
   it("should generate channel publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(multisigAddress, example.pubKey);
+    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
     expect(publicIdentifier.length).toEqual(INDRA_PUB_ID_CHAR_LENGTH);
     expect(publicIdentifier.startsWith(INDRA_PUB_ID_PREFIX)).toBeTruthy;
   });
 
   it("should get signer publicKey from publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(multisigAddress, example.pubKey);
+    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
     const publicKey = getPublicKeyFromPublicIdentifier(publicIdentifier);
     expect(publicKey).toEqual(example.pubKey);
   });
 
   it("should get signer address from publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(multisigAddress, example.pubKey);
+    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
     const address = getSignerAddressFromPublicIdentifier(publicIdentifier);
     expect(address).toEqual(example.address);
   });
 
   it("should ensure base58 length is fixed", async () => {
-    const parsed1 = ensureBase58Length(base58length65, base58lengthTarget);
-    const parsed2 = ensureBase58Length(base58length64, base58lengthTarget);
+    const parsed1 = ensureBase58Length(base58length50, base58lengthTarget);
+    const parsed2 = ensureBase58Length(base58length49, base58lengthTarget);
     expect(parsed1.length).toEqual(base58lengthTarget);
     expect(parsed2.length).toEqual(base58lengthTarget);
     expect(parsed2.startsWith("1")).toBeTruthy();
