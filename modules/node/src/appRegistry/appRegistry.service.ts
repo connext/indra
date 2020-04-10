@@ -134,8 +134,8 @@ export class AppRegistryService implements OnModuleInit {
       case SimpleTwoPartySwapAppName: {
         const allowedSwaps = this.configService.getAllowedSwaps();
         const ourRate = await this.swapRateService.getOrFetchRate(
-          proposeInstallParams.initiatorDepositAssetId,
-          proposeInstallParams.responderDepositAssetId,
+          getAddressFromAssetId(proposeInstallParams.initiatorDepositAssetId),
+          getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
         );
         validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;

@@ -1,5 +1,11 @@
-import { IConnextClient, EventNames, delay } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import {
+  AssetId,
+  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
+  delay,
+  EventNames,
+  getAddressFromAssetId,
+  IConnextClient,
+} from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
 import { env, expect, Logger } from "../";
@@ -7,13 +13,14 @@ import { env, expect, Logger } from "../";
 export const fundChannel = async (
   client: IConnextClient,
   amount: BigNumber,
-  assetId: string = AddressZero,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 ): Promise<void> => {
   const log = new Logger("FundChannel", env.logLevel);
-  const prevFreeBalance = await client.getFreeBalance(assetId);
+  const tokenAddress = getAddressFromAssetId(assetId);
+  const prevFreeBalance = await client.getFreeBalance(tokenAddress);
   await new Promise(async (resolve, reject) => {
     client.once(EventNames.DEPOSIT_CONFIRMED_EVENT, async () => {
-      const freeBalance = await client.getFreeBalance(assetId);
+      const freeBalance = await client.getFreeBalance(tokenAddress);
       // verify free balance increased as expected
       const expected = prevFreeBalance[client.signerAddress].add(amount);
       expect(freeBalance[client.signerAddress]).to.equal(expected);
@@ -40,11 +47,12 @@ export const fundChannel = async (
 
 export const requestCollateral = async (
   client: IConnextClient,
-  assetId: string = AddressZero,
+  assetId: AssetId = CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
   enforce: boolean = false,
 ): Promise<void> => {
   const log = new Logger("RequestCollateral", env.logLevel);
-  const preCollateralBal = await client.getFreeBalance(assetId);
+  const tokenAddress = getAddressFromAssetId(assetId);
+  const preCollateralBal = await client.getFreeBalance(tokenAddress);
 
   return new Promise(async (resolve, reject) => {
     log.debug(`client.requestCollateral() called`);
@@ -69,7 +77,7 @@ export const requestCollateral = async (
           client.on(
             EventNames.UNINSTALL_EVENT,
             async () => {
-            const currBal = await client.getFreeBalance(assetId);
+            const currBal = await client.getFreeBalance(tokenAddress);
             if (
               currBal[client.nodeSignerAddress]
                 .lte(preCollateralBal[client.nodeSignerAddress])

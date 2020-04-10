@@ -1,12 +1,14 @@
 import { SupportedApplications } from "@connext/apps";
 import { MessagingService } from "@connext/messaging";
 import {
+  getAddressFromAssetId,
   Address,
   AppAction,
   AppInstanceJson,
   AppInstanceProposal,
   AppRegistry,
   AppState,
+  AssetId,
   ChannelMethods,
   ChannelProviderConfig,
   ConditionalTransferTypes,
@@ -537,19 +539,21 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getFreeBalance = async (
-    assetId: string = AddressZero,
+    assetId: AssetId | Address = AddressZero,
   ): Promise<MethodResults.GetFreeBalanceState> => {
     if (typeof assetId !== "string") {
       throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
     }
-    const normalizedAssetId = getAddress(assetId);
+    const tokenAddress = assetId.includes("@")
+      ? getAddressFromAssetId(assetId)
+      : getAddress(assetId);
     try {
       return await this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
         multisigAddress: this.multisigAddress,
-        tokenAddress: getAddress(assetId),
+        assetId: tokenAddress,
       } as MethodParams.GetFreeBalanceState);
     } catch (e) {
-      const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
+      const error = `No free balance exists for the specified token: ${tokenAddress}`;
       if (e.message.includes(error)) {
         // if there is no balance, return undefined
         // NOTE: can return free balance obj with 0s,

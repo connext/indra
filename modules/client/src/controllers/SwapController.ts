@@ -1,15 +1,16 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
 import {
+  AssetId,
   calculateExchange,
   DefaultApp,
+  getAddressFromAssetId,
+  getAddressFromPublicIdentifier,
+  getAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
   SimpleSwapAppState,
   toBN,
-  getAssetId,
-  AssetId,
-  getAddressFromAssetId,
 } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, getAddress, parseEther } from "ethers/utils";
@@ -144,7 +145,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount: swappedAmount,
-            to: this.connext.nodeIdentifier,
+            to: getAddressFromPublicIdentifier(this.connext.nodeIdentifier),
           },
         ],
       ],
