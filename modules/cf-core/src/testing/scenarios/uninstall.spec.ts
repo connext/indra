@@ -1,4 +1,4 @@
-import { EventNames, UninstallMessage } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, EventNames, UninstallMessage } from "@connext/types";
 import { One, Two, Zero, AddressZero } from "ethers/constants";
 
 import { Node } from "../../node";
@@ -14,7 +14,6 @@ import {
   getFreeBalanceState,
   getInstalledAppInstances,
   installApp,
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 } from "../utils";
 import { isHexString } from "ethers/utils";
 

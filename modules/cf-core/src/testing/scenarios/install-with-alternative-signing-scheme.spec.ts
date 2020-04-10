@@ -1,5 +1,5 @@
 import { ChannelSigner } from "@connext/crypto";
-import { ProposeMessage } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
@@ -22,7 +22,6 @@ import {
   makeInstallCall,
   makeProposeCall,
   newWallet,
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 } from "../utils";
 
 expect.extend({ toBeLt });

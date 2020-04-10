@@ -34,9 +34,10 @@ export type ChannelMethods = typeof ChannelMethods[keyof typeof ChannelMethods];
 
 export interface IChannelSigner extends Signer {
   address: Address;
-  signMessage(message: string): Promise<string>;
-  encrypt(message: string, publicKey: string): Promise<string>;
   decrypt(message: string): Promise<string>;
+  encrypt(message: string, publicKey: string): Promise<string>;
+  signMessage(message: string): Promise<string>;
+  publicKey: string;
 }
 
 export type ChannelProviderConfig = {

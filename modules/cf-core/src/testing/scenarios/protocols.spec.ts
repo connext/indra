@@ -1,4 +1,4 @@
-import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -8,7 +8,6 @@ import { StateChannel } from "../../models";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { AppWithAction } from "../contracts";
 import { TestRunner } from "../test-runner";
-import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE } from "../utils";
 
 let wallet: Wallet;
 let appWithAction: Contract;

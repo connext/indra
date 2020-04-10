@@ -9,7 +9,9 @@ import {
   getAssetId,
   getChainIdFromAssetId,
   getAddressFromIdentifier,
+  getChainIdFromIdentifier,
 } from "@connext/types";
+import { AddressZero } from "ethers/constants";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -95,9 +97,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderIdentifier,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
       initiatorDepositAssetId: initiatorDepositAssetId 
-        || getAssetId(getChainIdFromAssetId(initiatorIdentifier)),
+        || getAssetId(AddressZero, getChainIdFromIdentifier(initiatorIdentifier)),
       responderDepositAssetId: responderDepositAssetId 
-        || getAssetId(getChainIdFromAssetId(responderIdentifier)),
+        || getAssetId(AddressZero, getChainIdFromIdentifier(responderIdentifier)),
       meta,
     };
 
@@ -261,9 +263,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       meta,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
       initiatorDepositAssetId: initiatorDepositAssetId 
-        || getAssetId(getChainIdFromAssetId(initiatorIdentifier)),
+        || getAssetId(AddressZero, getChainIdFromAssetId(initiatorIdentifier)),
       responderDepositAssetId: responderDepositAssetId 
-        || getAssetId(getChainIdFromAssetId(responderIdentifier)),
+        || getAssetId(AddressZero, getChainIdFromAssetId(responderIdentifier)),
     };
 
     yield [

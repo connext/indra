@@ -1,4 +1,4 @@
-import { ProposeMessage } from "@connext/types";
+import { CONVENTION_FOR_ETH_ASSET_ID_GANACHE, ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -12,7 +12,6 @@ import {
   createChannel,
   makeInstallCall,
   makeProposeCall,
-  CONVENTION_FOR_ETH_ASSET_ID_GANACHE,
 } from "../utils";
 
 expect.extend({ toBeLt });

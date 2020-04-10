@@ -6,6 +6,7 @@ import {
   getChainIdFromIdentifier,
   getAssetId,
 } from "@connext/types";
+import { AddressZero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -63,10 +64,10 @@ export class ProposeInstallAppInstanceController extends NodeController {
     } = params;
 
     const initiatorDepositAssetId =
-      initiatorDepositAssetIdParam || getAssetId(chainId);
+      initiatorDepositAssetIdParam || getAssetId(AddressZero, chainId);
 
     const responderDepositAssetId =
-      responderDepositAssetIdParam || getAssetId(chainId);
+      responderDepositAssetIdParam || getAssetId(AddressZero, chainId);
 
     params.initiatorDepositAssetId = initiatorDepositAssetId;
     params.responderDepositAssetId = responderDepositAssetId;

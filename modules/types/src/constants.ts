@@ -5,4 +5,4 @@ export const ETHEREUM_NAMESPACE = "ethereum";
 
 export const GANACHE_CHAIN_ID = 4447;
 
-export const CONVENTION_FOR_ETH_ASSET_ID_GANACHE = getAssetId(GANACHE_CHAIN_ID);
+export const CONVENTION_FOR_ETH_ASSET_ID_GANACHE = getAssetId();
