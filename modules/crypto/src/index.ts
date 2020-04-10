@@ -149,17 +149,6 @@ async function verifyMessage(
   return recoverAddress(hashMessage(message, prefix), sig);
 }
 
-async function encryptWithPublicKey(publicKey: string, message: string): Promise<string> {
-  const encrypted = await encrypt(hexToBuffer(publicKey), utf8ToBuffer(message));
-  return bufferToHex(serialize(encrypted));
-}
-
-async function decryptWithPrivateKey(privateKey: string, message: string): Promise<string> {
-  const encrypted = deserialize(hexToBuffer(message));
-  const decrypted = await decrypt(hexToBuffer(privateKey), encrypted);
-  return bufferToUtf8(decrypted);
-}
-
 ////////////////////////////////////////
 // exports
 
@@ -192,11 +181,14 @@ export class ChannelSigner implements IChannelSigner {
   }
 
   public async encrypt(message: string, publicKey: string): Promise<string> {
-    return encryptWithPublicKey(publicKey, message);
+    const encrypted = await encrypt(hexToBuffer(publicKey), utf8ToBuffer(message));
+    return bufferToHex(serialize(encrypted));
   }
 
   public async decrypt(message: string): Promise<string> {
-    return decryptWithPrivateKey(this.privateKey, message);
+    const encrypted = deserialize(hexToBuffer(message));
+    const decrypted = await decrypt(hexToBuffer(this.privateKey), encrypted);
+    return bufferToUtf8(decrypted);
   }
 
   public async signMessage(message: string): Promise<string> {
