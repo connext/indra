@@ -11,7 +11,6 @@ import {
   AppWithCounterAction,
   encodeState,
   encodeAction,
-  computeActionHash,
   moveToBlock,
 } from "./utils";
 

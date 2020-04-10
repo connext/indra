@@ -22,7 +22,6 @@ import {
   encodeState,
   encodeAction,
   computeAppChallengeHash,
-  computeActionHash,
   EMPTY_CHALLENGE,
   encodeOutcome,
   computeCancelChallengeHash,

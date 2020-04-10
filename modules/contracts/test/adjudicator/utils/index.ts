@@ -78,20 +78,6 @@ export const computeAppChallengeHash = (
     ),
   );
 
-// TS version of MChallengeRegistryCore::computeActionHash
-export const computeActionHash = (
-  turnTaker: string,
-  previousState: string,
-  action: string,
-  versionNumber: number,
-) =>
-  keccak256(
-    solidityPack(
-      ["bytes1", "address", "bytes", "bytes", "uint256"],
-      ["0x19", turnTaker, previousState, action, versionNumber],
-    ),
-  );
-
 export class AppWithCounterClass {
   get identityHash(): string {
     return keccak256(

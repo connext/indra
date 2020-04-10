@@ -6,7 +6,6 @@ import { keccak256 } from "ethers/utils";
 
 import {
   expect,
-  computeActionHash,
   AppWithCounterState,
   AppWithCounterAction,
   snapshot,
