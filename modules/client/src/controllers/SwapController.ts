@@ -32,13 +32,13 @@ export class SwapController extends AbstractController {
 
     const toTokenAddress = getAddress(params.toAssetId);
     const toAssetId = getAssetId(
-      (await this.ethProvider.getNetwork()).chainId,
       toTokenAddress,
+      (await this.ethProvider.getNetwork()).chainId,
     );
     const fromTokenAddress = getAddress(params.fromAssetId);
     const fromAssetId = getAssetId(
-      (await this.ethProvider.getNetwork()).chainId,
       fromTokenAddress,
+      (await this.ethProvider.getNetwork()).chainId,
     );
   
     const preSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);

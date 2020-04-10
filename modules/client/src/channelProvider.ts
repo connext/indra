@@ -50,7 +50,8 @@ export const createCFChannelProvider = async ({
     undefined,
     logger,
   );
-  const address = await signer.getAddress();
+  const address = signer.address;
+  const publicKey = signer.publicKey;
 
   // register any default middlewares
   cfCore.injectMiddleware(
@@ -62,8 +63,8 @@ export const createCFChannelProvider = async ({
     signerAddress: address,
     nodeUrl,
     userPublicIdentifier: getPublicIdentifier(
+      publicKey,
       (await ethProvider.getNetwork()).chainId,
-      address,
     ),
   };
   const connection = new CFCoreRpcConnection(cfCore, store, signer);

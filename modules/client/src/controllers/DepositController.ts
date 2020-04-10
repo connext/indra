@@ -1,15 +1,15 @@
 import { 
   AppInstanceJson,
   DefaultApp,
+  DepositAppName,
+  DepositAppState,
   EventNames,
+  getAddressFromIdentifier,
+  getAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
   toBN,
-  DepositAppState,
-  DepositAppName,
-  getPublicIdentifier,
-  getAddressFromIdentifier,
 } from "@connext/types";
 import { MinimumViableMultisig } from "@connext/contracts";
 import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
@@ -24,9 +24,9 @@ import { validate, notLessThanOrEqualTo, notGreaterThan, invalidIdentifier } fro
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
     const amount = toBN(params.amount);
-    const assetId = getPublicIdentifier(
-      await this.ethProvider.network.chainId,
+    const assetId = getAssetId(
       params.assetId || AddressZero,
+      await this.ethProvider.network.chainId,
     );
     validate(invalidIdentifier(assetId));
     // NOTE: when the `walletTransfer` is not used, these parameters
@@ -87,9 +87,9 @@ export class DepositController extends AbstractController {
   public requestDepositRights = async (
     params: PublicParams.RequestDepositRights,
   ): Promise<PublicResults.RequestDepositRights> => {
-    const assetId = getPublicIdentifier(
-      await this.ethProvider.network.chainId,
+    const assetId = getAssetId(
       params.assetId || AddressZero,
+      await this.ethProvider.network.chainId,
     );
     validate(invalidIdentifier(assetId));
     const tokenAddress = getAddressFromIdentifier(assetId);
@@ -123,9 +123,9 @@ export class DepositController extends AbstractController {
   public rescindDepositRights = async (
     params: PublicParams.RescindDepositRights,
   ): Promise<PublicResults.RescindDepositRights> => {
-    const assetId = getPublicIdentifier(
-      await this.ethProvider.network.chainId,
+    const assetId = getAssetId(
       params.assetId || AddressZero,
+      await this.ethProvider.network.chainId,
     );
     validate(invalidIdentifier(assetId));
     const tokenAddress = getAddressFromIdentifier(assetId);

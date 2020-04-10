@@ -39,8 +39,8 @@ export class ConfigService implements OnModuleInit {
     );
     // TODO: chainid synchronously?
     this.publicIdentifier = getPublicIdentifier(
+      this.signer.publicKey,
       this.ethProvider.network ? this.ethProvider.network.chainId : 4447, 
-      this.signer.address,
     );
     console.log(`ConfigService launched w pub id: ${this.publicIdentifier}`);
   }

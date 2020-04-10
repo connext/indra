@@ -122,7 +122,8 @@ export const connect = async (
       log.warn(`Client instantiation with mnemonic is only recommended for dev usage`);
       signer = new ChannelSigner(pk, ethProviderUrl);
     }
-    const address = await signer.getAddress();
+    const address = signer.address;
+    const publicKey = signer.publicKey;
 
     store = store || getDefaultStore(opts);
 
@@ -130,7 +131,7 @@ export const connect = async (
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        getPublicIdentifier(network.chainId, address),
+        getPublicIdentifier(publicKey, network.chainId),
         (msg: string) => signer.signMessage(msg),
         messagingUrl,
       );

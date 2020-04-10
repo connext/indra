@@ -11,7 +11,7 @@ import {
   StateChannelJSON,
   stringify,
   toBN,
-  getPublicIdentifier,
+  getAssetId,
   getAddressFromIdentifier,
   AssetId,
 } from "@connext/types";
@@ -64,9 +64,9 @@ export class CFCoreService {
         methodName: MethodNames.chan_getFreeBalanceState,
         parameters: {
           multisigAddress,
-          tokenAddress: assetId || getPublicIdentifier(
-            (await this.configService.getEthNetwork()).chainId,
+          tokenAddress: assetId || getAssetId(
             AddressZero,
+            (await this.configService.getEthNetwork()).chainId,
           ),
         },
       });

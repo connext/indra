@@ -1,18 +1,17 @@
 import { DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 import {
-  BigNumber,
-  MinimalTransaction,
-  Contract,
-  DepositAppState,
-  DepositAppName,
-  TransactionResponse,
-  TransactionReceipt,
-  stringify,
-  getAddressFromIdentifier,
-  getPublicIdentifier,
   Address,
+  BigNumber,
+  Contract,
+  DepositAppName,
+  DepositAppState,
+  getAddressFromIdentifier,
   getAssetId,
+  MinimalTransaction,
+  stringify,
+  TransactionReceipt,
+  TransactionResponse,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero, AddressZero } from "ethers/constants";
@@ -77,8 +76,8 @@ export class DepositService {
       channel.userPublicIdentifier,
       channel.multisigAddress,
       getAssetId(
-        (await this.configService.getEthNetwork()).chainId,
         tokenAddress,
+        (await this.configService.getEthNetwork()).chainId,
       ),
     ));
     return receipt;
@@ -180,9 +179,9 @@ export class DepositService {
       startingMultisigBalance,
     };
 
-    const assetId = getPublicIdentifier(
-      (await this.configService.getEthNetwork()).chainId,
+    const assetId = getAssetId(
       tokenAddress,
+      (await this.configService.getEthNetwork()).chainId,
     );
 
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(
