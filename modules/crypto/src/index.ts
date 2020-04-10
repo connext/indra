@@ -32,7 +32,7 @@ export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
 // publicIdentifier contants
 export const INDRA_PUB_ID_PREFIX = "indra";
-export const INDRA_PUB_ID_CHAR_LENGTH = 50;
+export const INDRA_PUB_ID_CHAR_LENGTH = 55;
 
 export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
