@@ -36,6 +36,7 @@
     "@nestjs/typeorm": "7.0.0",
     "@openzeppelin/contracts": "2.5.0",
     "@uniswap/sdk": "1.0.0-beta.4",
+    "bs58check": "2.1.2",
     "class-validator": "0.11.1",
     "dotenv": "8.2.0",
     "ethers": "4.0.46",
