@@ -39,7 +39,8 @@ export function appIdentityToHash(appIdentity: AppIdentity): string {
         appIdentity.participants, 
         appIdentity.multisigAddress, 
         appIdentity.appDefinition, 
-        appIdentity.defaultTimeout],
+        appIdentity.defaultTimeout,
+      ],
     ),
   );
 }
