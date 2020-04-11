@@ -70,12 +70,15 @@ export class NodeApiClient implements INodeApiClient {
       await messaging.connect();
     }
 
-    return new NodeApiClient({ ...opts, messaging });
+    const node = new NodeApiClient({ ...opts, messaging });
+    await node.getConfig(nodeUrl);
+    return node;
   }
 
   public messaging: IMessagingService;
   public latestSwapRates: { [key: string]: string } = {};
   public log: ILoggerService;
+  public config: NodeResponses.GetConfig | undefined;
 
   private _userIdentifier: string | undefined;
   private _nodeIdentifier: string | undefined;
@@ -91,8 +94,9 @@ export class NodeApiClient implements INodeApiClient {
     this.nodeUrl = opts.nodeUrl;
   }
 
-  public static async config(nodeUrl: string): Promise<NodeResponses.GetConfig> {
+  public async getConfig(nodeUrl: string = this.nodeUrl): Promise<NodeResponses.GetConfig> {
     const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(`${nodeUrl}/config`);
+    this.config = response.data;
     return response.data;
   }
 
@@ -147,13 +151,6 @@ export class NodeApiClient implements INodeApiClient {
   }
   public async appRegistry(): Promise<AppRegistry> {
     const response: AxiosResponse<AppRegistry> = await axios.get(`${this.nodeUrl}/app-registry`);
-    return response.data;
-  }
-
-  public async config(): Promise<NodeResponses.GetConfig> {
-    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(
-      `${this.nodeUrl}/config`,
-    );
     return response.data;
   }
 

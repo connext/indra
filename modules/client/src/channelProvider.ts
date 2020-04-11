@@ -34,6 +34,7 @@ export const createCFChannelProvider = async ({
   logger,
   messaging,
   contractAddresses,
+  node,
   nodeConfig,
   nodeUrl,
   signer,
@@ -63,7 +64,7 @@ export const createCFChannelProvider = async ({
     userIdentifier: signer.publicIdentifier,
   };
   const connection = new CFCoreRpcConnection(cfCore, store, signer, channelProviderConfig);
-  const channelProvider = new ChannelProvider(connection);
+  const channelProvider = new ChannelProvider(connection, node);
   return channelProvider;
 };
 
@@ -223,6 +224,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private restoreState = async (): Promise<void> => {
+    // Make sure our store schema is up-to-date
+    const schemaVersion = await this.store.getSchemaVersion();
     await this.store.restore();
   };
 

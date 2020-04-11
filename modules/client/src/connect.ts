@@ -68,7 +68,7 @@ export const connect = async (
 
     nodeUrl = channelProvider.config.nodeUrl;
     node = await NodeApiClient.init({ messaging, messagingUrl, logger, nodeUrl, channelProvider });
-    nodeConfig = await node.config();
+    nodeConfig = node.config;
     messaging = node.messaging;
     userIdentifier = channelProvider.config.userIdentifier;
 
@@ -89,7 +89,7 @@ export const connect = async (
 
     // create a new node api instance
     node = await NodeApiClient.init({ messaging, messagingUrl, logger, nodeUrl, signer });
-    nodeConfig = await node.config();
+    nodeConfig = node.config;
     messaging = node.messaging;
     userIdentifier = signer.publicIdentifier;
 
@@ -106,6 +106,7 @@ export const connect = async (
       lockService: { acquireLock: node.acquireLock.bind(node) },
       logger,
       messaging,
+      node,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
       signer,
@@ -164,14 +165,9 @@ export const connect = async (
   const client = new ConnextClient({
     appRegistry,
     channelProvider,
-    config: nodeConfig,
     ethProvider,
     logger,
-    messaging,
     network,
-    node,
-    signer,
-    store,
     token,
   });
 
@@ -211,7 +207,7 @@ export const connect = async (
     await client.restoreState();
     // increment / update store schema version, defaults to types const
     // of `STORE_SCHEMA_VERSION`
-    await client.store.updateSchemaVersion();
+    await store.updateSchemaVersion();
   }
 
   try {

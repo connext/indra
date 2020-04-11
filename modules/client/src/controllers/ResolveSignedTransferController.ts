@@ -46,7 +46,7 @@ export class ResolveSignedTransferController extends AbstractController {
         meta = existing.meta;
       } else {
         this.log.info(`Did not find installed app, ask node to install it for us`);
-        resolveRes = await this.connext.node.resolveSignedTransfer(paymentId);
+        resolveRes = await this.connext.channelProvider.node.resolveSignedTransfer(paymentId);
         appIdentityHash = resolveRes.appIdentityHash;
         amount = resolveRes.amount;
         assetId = resolveRes.assetId;
@@ -66,18 +66,15 @@ export class ResolveSignedTransferController extends AbstractController {
       throw e;
     }
 
-    this.connext.emit(
-      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-      {
-        type: ConditionalTransferTypes.SignedTransfer,
-        amount,
-        assetId,
-        paymentId,
-        sender,
-        recipient: this.connext.publicIdentifier,
-        meta,
-      } as EventPayloads.SignedTransferUnlocked,
-    );
+    this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+      type: ConditionalTransferTypes.SignedTransfer,
+      amount,
+      assetId,
+      paymentId,
+      sender,
+      recipient: this.connext.publicIdentifier,
+      meta,
+    } as EventPayloads.SignedTransferUnlocked);
 
     return resolveRes;
   };

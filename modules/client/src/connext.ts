@@ -1,6 +1,5 @@
 import { SupportedApplications } from "@connext/apps";
 import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
-import { MessagingService } from "@connext/messaging";
 import {
   getAddressFromAssetId,
   Address,
@@ -20,11 +19,8 @@ import {
   DepositAppState,
   EventNames,
   IChannelProvider,
-  IChannelSigner,
-  IClientStore,
   IConnextClient,
   ILoggerService,
-  INodeApiClient,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -37,7 +33,8 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   CONVENTION_FOR_ETH_ASSET_ID,
-  IMessagingService,
+  IChannelSigner,
+  IClientStore,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -64,20 +61,15 @@ import { InternalClientOptions } from "./types";
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
   public channelProvider: IChannelProvider;
-  public config: NodeResponses.GetConfig;
   public ethProvider: providers.JsonRpcProvider;
   public listener: ConnextListener;
   public log: ILoggerService;
-  public messaging: IMessagingService;
   public multisigAddress: Address;
   public network: Network;
-  public node: INodeApiClient;
   public nodeIdentifier: string;
   public nodeSignerAddress: string;
   public publicIdentifier: string;
-  public signer: IChannelSigner;
   public signerAddress: string;
-  public store: IClientStore;
   public token: Contract;
 
   private opts: InternalClientOptions;
@@ -96,20 +88,15 @@ export class ConnextClient implements IConnextClient {
     this.opts = opts;
     this.appRegistry = opts.appRegistry;
     this.channelProvider = opts.channelProvider;
-    this.config = opts.config;
     this.ethProvider = opts.ethProvider;
-    this.signer = opts.signer;
     this.log = opts.logger.newContext("ConnextClient");
-    this.messaging = opts.messaging;
     this.network = opts.network;
-    this.node = opts.node;
-    this.store = opts.store;
     this.token = opts.token;
 
     this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
-    this.nodeIdentifier = this.opts.config.nodeIdentifier;
+    this.nodeIdentifier = this.channelProvider.node.config.nodeIdentifier;
     this.nodeSignerAddress = getSignerAddressFromPublicIdentifier(this.nodeIdentifier);
 
     // establish listeners
@@ -148,7 +135,7 @@ export class ConnextClient implements IConnextClient {
       async (resolve: any, reject: any): Promise<any> => {
         // Wait for channel to be available
         const channelIsAvailable = async (): Promise<boolean> => {
-          const chan = await this.node.getChannel();
+          const chan = await this.channelProvider.node.getChannel();
           return chan && chan.available;
         };
         while (!(await channelIsAvailable())) {
@@ -168,7 +155,7 @@ export class ConnextClient implements IConnextClient {
   // Unsorted methods pulled from the old abstract wrapper class
 
   public restart = async (): Promise<void> => {
-    if (!this.channelProvider.isSigner) {
+    if (!this.opts.signer || !this.opts.store) {
       this.log.warn("Cannot restart with an injected provider.");
       return;
     }
@@ -179,36 +166,40 @@ export class ConnextClient implements IConnextClient {
         "Client must be instantiated with a secret that is different from the node's secret",
       );
     }
+    const node = this.channelProvider.node;
+    const store = this.opts.store;
+    const signer = this.opts.signer;
+    const messaging = this.channelProvider.node.messaging;
 
     // Create a fresh channelProvider & start using that.
     // End goal is to use this to restart the cfNode after restoring state
     const channelProvider = await createCFChannelProvider({
       ethProvider: this.ethProvider,
-      signer: this.signer,
-      lockService: { acquireLock: this.node.acquireLock.bind(this.node) },
-      messaging: this.messaging as any,
-      contractAddresses: this.config.contractAddresses,
+      signer: signer,
+      lockService: { acquireLock: node.acquireLock.bind(node) },
+      messaging: messaging as any,
+      contractAddresses: node.config.contractAddresses,
+      node,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl: this.channelProvider.config.nodeUrl,
-      store: this.store,
+      store: store,
       logger: this.log.newContext("CFChannelProvider"),
     });
     // TODO: this is very confusing to have to do, lets try to figure out a better way
     channelProvider.multisigAddress = this.multisigAddress;
-    this.node.channelProvider = channelProvider;
     this.channelProvider = channelProvider;
     this.listener = new ConnextListener(channelProvider, this);
     await this.isAvailable();
   };
 
   public getChannel = async (): Promise<NodeResponses.GetChannel> => {
-    return await this.node.getChannel();
+    return await this.channelProvider.node.getChannel();
   };
 
   public requestCollateral = async (
     tokenAddress: string,
   ): Promise<NodeResponses.RequestCollateral | void> => {
-    const res = await this.node.requestCollateral(tokenAddress);
+    const res = await this.channelProvider.node.requestCollateral(tokenAddress);
     return res;
   };
 
@@ -219,13 +210,13 @@ export class ConnextClient implements IConnextClient {
   public getLinkedTransfer = async (
     paymentId: string,
   ): Promise<NodeResponses.GetLinkedTransfer> => {
-    return await this.node.fetchLinkedTransfer(paymentId);
+    return await this.channelProvider.node.fetchLinkedTransfer(paymentId);
   };
 
   public getSignedTransfer = async (
     paymentId: string,
   ): Promise<NodeResponses.GetSignedTransfer> => {
-    return await this.node.fetchSignedTransfer(paymentId);
+    return await this.channelProvider.node.fetchSignedTransfer(paymentId);
   };
 
   public getAppRegistry = async (
@@ -237,7 +228,7 @@ export class ConnextClient implements IConnextClient {
       | { appDefinitionAddress: string },
   ): Promise<AppRegistry | DefaultApp | undefined> => {
     if (!this.appRegistry) {
-      this.appRegistry = await this.node.appRegistry();
+      this.appRegistry = await this.channelProvider.node.appRegistry();
     }
     const registry = this.appRegistry;
     if (!appDetails) {
@@ -251,27 +242,27 @@ export class ConnextClient implements IConnextClient {
   };
 
   public createChannel = async (): Promise<NodeResponses.CreateChannel> => {
-    return this.node.createChannel();
+    return this.channelProvider.node.createChannel();
   };
 
   public subscribeToSwapRates = async (from: string, to: string, callback: any): Promise<any> => {
-    return await this.node.subscribeToSwapRates(from, to, callback);
+    return await this.channelProvider.node.subscribeToSwapRates(from, to, callback);
   };
 
   public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
-    return await this.node.getLatestSwapRate(from, to);
+    return await this.channelProvider.node.getLatestSwapRate(from, to);
   };
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
-    return this.node.unsubscribeFromSwapRates(from, to);
+    return this.channelProvider.node.unsubscribeFromSwapRates(from, to);
   };
 
   public getRebalanceProfile = async (assetId?: string): Promise<RebalanceProfile | undefined> => {
-    return await this.node.getRebalanceProfile(assetId);
+    return await this.channelProvider.node.getRebalanceProfile(assetId);
   };
 
   public getTransferHistory = async (): Promise<NodeResponses.GetTransferHistory> => {
-    return await this.node.getTransferHistory();
+    return await this.channelProvider.node.getTransferHistory();
   };
 
   ///////////////////////////////////
@@ -380,7 +371,7 @@ export class ConnextClient implements IConnextClient {
   public getHashLockTransfer = async (
     lockHash: string,
   ): Promise<NodeResponses.GetHashLockTransfer> => {
-    return await this.node.getHashLockTransfer(lockHash);
+    return await this.channelProvider.node.getHashLockTransfer(lockHash);
   };
 
   public getLatestWithdrawal = async (): Promise<
@@ -454,7 +445,7 @@ export class ConnextClient implements IConnextClient {
         setupCommitment,
         setStateCommitments,
         conditionalCommitments,
-      } = await this.node.restoreState(this.publicIdentifier);
+      } = await this.channelProvider.node.restoreState(this.publicIdentifier);
       if (!channel) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
@@ -677,11 +668,11 @@ export class ConnextClient implements IConnextClient {
   // NODE METHODS
 
   public clientCheckIn = async (): Promise<void> => {
-    return await this.node.clientCheckIn();
+    return await this.channelProvider.node.clientCheckIn();
   };
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
-    const pendingTransfers = await this.node.getPendingAsyncTransfers();
+    const pendingTransfers = await this.channelProvider.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
       const { encryptedPreImage, paymentId } = transfer;
       await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
@@ -827,7 +818,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private handleInstalledDepositApps = async () => {
-    const assetIds = this.config.supportedTokenAddresses;
+    const assetIds = this.channelProvider.node.config.supportedTokenAddresses;
     for (const assetId of assetIds) {
       const { appIdentityHash } = await this.checkDepositRights({ assetId });
       if (!appIdentityHash) {

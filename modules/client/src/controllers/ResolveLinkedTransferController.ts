@@ -30,7 +30,7 @@ export class ResolveLinkedTransferController extends AbstractController {
     let resolveRes: PublicResults.ResolveLinkedTransfer;
     try {
       // node installs app, validation happens in listener
-      resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
+      resolveRes = await this.connext.channelProvider.node.resolveLinkedTransfer(paymentId);
       await this.connext.takeAction(resolveRes.appIdentityHash, { preImage });
       await this.connext.uninstallApp(resolveRes.appIdentityHash);
     } catch (e) {
@@ -38,18 +38,15 @@ export class ResolveLinkedTransferController extends AbstractController {
       throw e;
     }
 
-    this.connext.emit(
-      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-      {
-        type: ConditionalTransferTypes.LinkedTransfer,
-        amount: resolveRes.amount,
-        assetId: resolveRes.assetId,
-        paymentId,
-        sender: resolveRes.sender,
-        recipient: this.connext.publicIdentifier,
-        meta: resolveRes.meta,
-      } as EventPayloads.LinkedTransferUnlocked,
-    );
+    this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
+      type: ConditionalTransferTypes.LinkedTransfer,
+      amount: resolveRes.amount,
+      assetId: resolveRes.assetId,
+      paymentId,
+      sender: resolveRes.sender,
+      recipient: this.connext.publicIdentifier,
+      meta: resolveRes.meta,
+    } as EventPayloads.LinkedTransferUnlocked);
 
     return resolveRes;
   };

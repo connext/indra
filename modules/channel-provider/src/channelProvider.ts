@@ -12,21 +12,40 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
   INodeApiClient,
+  IChannelSigner,
 } from "@connext/types";
 
 function exists(obj: any): boolean {
   return !!obj && !!Object.keys(obj).length;
 }
 
+interface AsyncChannelProviderInitializationParameters {
+  connection: IRpcConnection;
+  node: INodeApiClient;
+  signer: IChannelSigner;
+  channelProvider: IChannelProvider;
+}
+
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
+  // public async init(opts: AsyncChannelProviderInitializationParameters) {
+  //   const { node, signer, connection } = opts;
+  //   const nodeConfig = await node.config();
+  //   // ensure that node and user identifiers are different
+  //   if (nodeConfig.nodeIdentifier === userIdentifier) {
+  //     throw new Error(
+  //       "Client must be instantiated with a signer that is different from the node's",
+  //     );
+  //   }
+  // }
+
   public connected: boolean = false;
   public connection: IRpcConnection;
-  public node: INodeApiClient | undefined;
+  public node: INodeApiClient;
 
   private _config: ChannelProviderConfig | undefined = undefined;
   private _multisigAddress: string | undefined = undefined;
 
-  constructor(connection: IRpcConnection, node?: INodeApiClient) {
+  constructor(connection: IRpcConnection, node: INodeApiClient) {
     super();
     this.connection = connection;
     this.node = node;

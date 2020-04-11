@@ -43,10 +43,7 @@ export class WithdrawalController extends AbstractController {
     const { assetId, recipient } = params;
     let transaction: TransactionResponse | undefined;
 
-    validate(
-      invalidAddress(recipient),
-      invalidAddress(assetId),
-    );
+    validate(invalidAddress(recipient), invalidAddress(assetId));
 
     this.log.info(
       `Withdrawing ${formatEther(amount)} ${
@@ -94,8 +91,9 @@ export class WithdrawalController extends AbstractController {
     const hash = generatedCommitment.hashToSign();
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this
-      .connext.channelProvider.signMessage(hash);
+    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
+      hash,
+    );
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
     } as WithdrawAppAction);
@@ -119,15 +117,11 @@ export class WithdrawalController extends AbstractController {
     const { assetId, amount, nonce, recipient } = params;
     const { data: channel } = await this.connext.getStateChannel();
     const multisigOwners = [
-      getSignerAddressFromPublicIdentifier(
-        channel.userIdentifiers[0],
-      ),
-      getSignerAddressFromPublicIdentifier(
-        channel.userIdentifiers[1],
-      ),
+      getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
+      getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
     ];
     return new WithdrawCommitment(
-      this.connext.config.contractAddresses,
+      this.connext.channelProvider.node.config.contractAddresses,
       channel.multisigAddress,
       multisigOwners,
       recipient,
@@ -157,10 +151,7 @@ export class WithdrawalController extends AbstractController {
         { amount: Zero, to: this.connext.nodeSignerAddress },
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
-      signers: [
-        this.connext.signerAddress,
-        this.connext.nodeSignerAddress,
-      ],
+      signers: [this.connext.signerAddress, this.connext.nodeSignerAddress],
       data: withdrawCommitmentHash,
       nonce,
       finalized: false,

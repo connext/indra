@@ -27,6 +27,7 @@ export interface INodeApiClient {
   channelProvider: IChannelProvider | undefined;
   userIdentifier: PublicIdentifier | undefined;
   nodeIdentifier: PublicIdentifier | undefined;
+  config: NodeResponses.GetConfig | undefined;
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
   appRegistry(
     appDetails?:
@@ -36,7 +37,7 @@ export interface INodeApiClient {
         }
       | { appDefinitionAddress: Address },
   ): Promise<AppRegistry>;
-  config(): Promise<NodeResponses.GetConfig>;
+  getConfig(): Promise<NodeResponses.GetConfig>;
   createChannel(): Promise<NodeResponses.CreateChannel>;
   clientCheckIn(): Promise<void>;
   getChannel(): Promise<NodeResponses.GetChannel>;

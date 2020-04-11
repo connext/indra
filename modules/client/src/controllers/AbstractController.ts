@@ -4,7 +4,6 @@ import {
   IChannelProvider,
   IChannelSigner,
   ILoggerService,
-  INodeApiClient,
   MethodParams,
   MethodResults,
 } from "@connext/types";
@@ -18,17 +17,13 @@ export abstract class AbstractController {
   public name: string;
   public connext: ConnextClient;
   public log: ILoggerService;
-  public node: INodeApiClient;
   public channelProvider: IChannelProvider;
   public listener: ConnextListener;
   public ethProvider: providers.JsonRpcProvider;
-  public signer: IChannelSigner;
 
   public constructor(name: string, connext: ConnextClient) {
     this.connext = connext;
     this.name = name;
-    this.node = connext.node;
-    this.signer = connext.signer;
     this.channelProvider = connext.channelProvider;
     this.listener = connext.listener;
     this.log = connext.log.newContext(name);
@@ -38,9 +33,7 @@ export abstract class AbstractController {
   /**
    * @returns {string} appIdentityHash - Installed app's identityHash
    */
-  proposeAndInstallLedgerApp = async (
-    params: MethodParams.ProposeInstall,
-  ): Promise<string> => {
+  proposeAndInstallLedgerApp = async (params: MethodParams.ProposeInstall): Promise<string> => {
     // 163 ms
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
@@ -67,7 +60,7 @@ export abstract class AbstractController {
 
           // set up install nats subscription
           const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
-          this.connext.messaging.subscribe(subject, res);
+          this.connext.channelProvider.node.messaging.subscribe(subject, res);
 
           // this.listener.on(INSTALL_EVENT, boundResolve, appIdentityHash);
           this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
@@ -122,7 +115,7 @@ export abstract class AbstractController {
   };
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {
-    this.connext.messaging.unsubscribe(
+    this.connext.channelProvider.node.messaging.unsubscribe(
       `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);

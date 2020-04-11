@@ -16,6 +16,7 @@ import {
   MinimalTransaction,
 } from "./commitments";
 import { PublicIdentifier } from "./identifiers";
+import { INodeApiClient } from "./api";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -58,6 +59,7 @@ export interface CFChannelProviderOptions {
   logger?: ILoggerService;
   messaging: any;
   contractAddresses: ContractAddresses;
+  node: INodeApiClient;
   nodeConfig: any;
   nodeUrl: string;
   store: IClientStore;
@@ -93,6 +95,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   connected: boolean;
   connection: IRpcConnection;
+  node: INodeApiClient;
 
   ////////////////////////////////////////
   // Methods

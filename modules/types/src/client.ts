@@ -1,4 +1,4 @@
-import { providers } from "ethers";
+import { providers, Contract } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
 import { Address, Bytes32, DecString } from "./basic";
@@ -11,6 +11,7 @@ import { NodeResponses } from "./node";
 import { MethodResults, MethodParams, MethodName } from "./methods";
 import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
 import { PublicParams, PublicResults } from "./public";
+import { Network } from "ethers/utils";
 
 /////////////////////////////////
 
@@ -36,18 +37,16 @@ export interface IConnextClient {
   // Properties
 
   appRegistry: AppRegistry;
-  config: NodeResponses.GetConfig;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
-  signerAddress: Address;
+  log: ILoggerService;
   multisigAddress: Address;
+  network: Network;
   nodeIdentifier: PublicIdentifier;
   nodeSignerAddress: Address;
-  publicIdentifier: PublicIdentifier; // publicIdentifier?
-
-  // Expose some internal machineary for easier debugging
-  messaging: IMessagingService;
-  store: IClientStore;
+  publicIdentifier: PublicIdentifier;
+  signerAddress: Address;
+  token: Contract;
 
   ////////////////////////////////////////
   // Methods
