@@ -1,6 +1,6 @@
-import { isValidPublicIdentifier } from "@connext/types";
 import { registerDecorator, ValidationOptions } from "class-validator";
 import { arrayify, isHexString } from "ethers/utils";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 export const isValidHex = (hex: string, bytes?: number): boolean =>
   isHexString(hex) && (bytes ? arrayify(hex).length === bytes : true);
@@ -110,6 +110,15 @@ export function IsAddress(validationOptions?: ValidationOptions): Function {
     });
   };
 }
+
+export const isValidPublicIdentifier = (id: string): boolean => {
+  try {
+    const addr = getSignerAddressFromPublicIdentifier(id);
+    return isEthAddress(addr);
+  } catch (e) {
+    return false;
+  }
+};
 
 export function IsValidPublicIdentifier(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {

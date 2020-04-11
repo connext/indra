@@ -1,13 +1,13 @@
 import { verifyChannelMessage, getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { MessagingAuthService } from "@connext/messaging";
-import { createRandomBytesHexString, PublicIdentifier, isValidPublicIdentifier } from "@connext/types";
+import { createRandomBytesHexString, PublicIdentifier } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 
-import { isAddress } from "../util";
+import { isAddress, isValidPublicIdentifier } from "../util";
 import { MessagingAuthProviderId } from "../constants";
 
 const nonceLen = 32;
