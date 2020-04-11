@@ -390,7 +390,7 @@ export class ConnextListener extends ConnextEventEmitter {
         const amount = initalState.coinTransfers[0].amount;
         this.connext.emit(
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
-          deBigNumberifyJson({
+          {
             amount,
             appIdentityHash,
             assetId,
@@ -398,11 +398,12 @@ export class ConnextListener extends ConnextEventEmitter {
             sender: meta["sender"],
             transferMeta: {
               lockHash: initalState.lockHash,
+              timelock: initalState.timelock,
             } as CreatedHashLockTransferMeta,
-            type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+            type: ConditionalTransferTypes[ConditionalTransferTypes.HashLockTransfer],
             paymentId: initalState.lockHash,
             recipient: meta["recipient"],
-          }) as EventPayloads.SignedTransferReceived,
+          } as EventPayloads.HashLockTransferReceived,
         );
         break;
       }
@@ -412,7 +413,7 @@ export class ConnextListener extends ConnextEventEmitter {
         const amount = initalState.coinTransfers[0].amount;
         this.connext.emit(
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
-          deBigNumberifyJson({
+          {
             amount,
             appIdentityHash,
             assetId,
@@ -421,10 +422,10 @@ export class ConnextListener extends ConnextEventEmitter {
             transferMeta: {
               encryptedPreImage: meta["encryptedPreImage"],
             } as CreatedLinkedTransferMeta,
-            type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+            type: ConditionalTransferTypes[ConditionalTransferTypes.LinkedTransfer],
             paymentId: initalState.paymentId,
             recipient: meta["recipient"],
-          }) as EventPayloads.LinkedTransferReceived,
+          } as EventPayloads.LinkedTransferReceived,
         );
         break;
       }

@@ -2,7 +2,6 @@ import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/app
 import {
   ConditionalTransferTypes,
   CreatedLinkedTransferMeta,
-  deBigNumberifyJson,
   EventNames,
   EventPayloads,
   getAddressFromAssetId,
@@ -107,8 +106,7 @@ export class LinkedTransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    // TODO: use BNs for events
-    const eventData = deBigNumberifyJson({
+    const eventData = {
       type: ConditionalTransferTypes.LinkedTransfer,
       amount,
       assetId,
@@ -117,7 +115,7 @@ export class LinkedTransferController extends AbstractController {
       recipient,
       meta,
       transferMeta: {},
-    }) as EventPayloads.LinkedTransferCreated;
+    } as EventPayloads.LinkedTransferCreated;
 
     this.log.info(`Emitting event data: ${JSON.stringify(eventData)}`);
 

@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { Address, BigNumber, Bytes32, HexObject, SolidityValueType } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,
@@ -21,7 +21,7 @@ type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
 const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
 
 type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
-  amount: HexObject;
+  amount: BigNumber;
   assetId: Address;
   paymentId?: Bytes32;
   sender: Address;
@@ -41,7 +41,7 @@ type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
 const CONDITIONAL_TRANSFER_RECEIVED_EVENT = "CONDITIONAL_TRANSFER_RECEIVED_EVENT";
 
 export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTypes> = {
-  amount: HexObject;
+  amount: BigNumber;
   appIdentityHash: Bytes32;
   assetId: Address;
   paymentId?: Bytes32;
@@ -62,7 +62,7 @@ export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTy
 const CONDITIONAL_TRANSFER_UNLOCKED_EVENT = "CONDITIONAL_TRANSFER_UNLOCKED_EVENT";
 
 export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTypes> = {
-  amount: HexObject;
+  amount: BigNumber;
   assetId: Address;
   paymentId?: Bytes32;
   sender: PublicIdentifier;
