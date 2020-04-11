@@ -280,7 +280,7 @@ client: apps channel-provider messaging $(shell find modules/client $(find_optio
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 node: apps messaging $(shell find modules/node $(find_options))
-	$(log_start
+	$(log_start)
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
