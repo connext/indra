@@ -1,7 +1,6 @@
 import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   ConditionalTransferTypes,
-  CreatedLinkedTransferMeta,
   EventNames,
   EventPayloads,
   getAddressFromAssetId,
@@ -41,7 +40,7 @@ export class LinkedTransferController extends AbstractController {
       invalid32ByteHexString(preImage),
     );
 
-    const submittedMeta = { ...(meta || {}) } as CreatedLinkedTransferMeta;
+    const submittedMeta = { ...(meta || {}) } as any;
     
     if (recipient) {
       validate(invalidPublicIdentifier(recipient));
@@ -52,8 +51,8 @@ export class LinkedTransferController extends AbstractController {
       );
 
       // add encrypted preImage to meta so node can store it in the DB
-      submittedMeta["encryptedPreImage"] = encryptedPreImage;
-      submittedMeta["recipient"] = recipient;
+      submittedMeta.encryptedPreImage = encryptedPreImage;
+      submittedMeta.recipient = recipient;
     }
 
     // install the transfer application
@@ -113,7 +112,7 @@ export class LinkedTransferController extends AbstractController {
       paymentId,
       sender: this.connext.publicIdentifier,
       recipient,
-      meta,
+      meta: submittedMeta,
       transferMeta: {},
     } as EventPayloads.LinkedTransferCreated;
 

@@ -1,6 +1,5 @@
 import {
   ConditionalTransferTypes,
-  deBigNumberifyJson,
   EventNames,
   EventPayloads,
   HashLockTransferAppName,
@@ -22,8 +21,8 @@ export class HashLockTransferController extends AbstractController {
     // convert params + validate
     const amount = toBN(params.amount);
     const timelock = toBN(params.timelock);
-    params.meta = params.meta || {};
     const { assetId, lockHash, meta, recipient } = params;
+    const submittedMeta = { ...(meta || {}) } as any;
 
     const initialState: HashLockTransferAppState = {
       coinTransfers: [
@@ -42,7 +41,7 @@ export class HashLockTransferController extends AbstractController {
       finalized: false,
     };
 
-    meta["recipient"] = recipient;
+    submittedMeta.recipient = recipient;
 
     const {
       actionEncoding,
@@ -59,7 +58,7 @@ export class HashLockTransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositAssetId: assetId,
-      meta,
+      meta: submittedMeta,
       outcomeType,
       responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
@@ -78,7 +77,7 @@ export class HashLockTransferController extends AbstractController {
       amount,
       assetId,
       sender: this.connext.publicIdentifier,
-      meta,
+      meta: submittedMeta,
       paymentId: HashZero,
       transferMeta: {
         timelock,

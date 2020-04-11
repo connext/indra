@@ -96,7 +96,9 @@ export class AppRegistryService implements OnModuleInit {
           responderDepositBigNumber,
         );
         if (!depositReceipt) {
-          throw new Error(`Could not collateralize sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`);
+          throw new Error(
+            `Could not collateralize sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
+          );
         }
       }
       // collateralized again in post-install tasks
@@ -230,6 +232,7 @@ export class AppRegistryService implements OnModuleInit {
               (proposeInstallParams.initialState as SimpleSignedTransferAppState).paymentId,
             )
             // if receipient is not online, do not throw error, receipient can always unlock later
+            .then(response => this.log.info(`Installed recipient app: ${response.appIdentityHash}`))
             .catch(e =>
               this.log.error(
                 `Could not install receiver app, receiver was possibly offline? ${e.toString()}`,
