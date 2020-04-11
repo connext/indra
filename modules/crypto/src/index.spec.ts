@@ -1,6 +1,5 @@
 import { recoverAddressWithEthers, signDigestWithEthers } from "@connext/types";
 import {
-  ChannelSigner,
   INDRA_PUB_ID_CHAR_LENGTH,
   INDRA_PUB_ID_PREFIX,
   decryptWithPrivateKey,
@@ -11,7 +10,10 @@ import {
   verifyChannelMessage,
   signDigest,
   recoverAddress,
+  keccak256,
+  utf8ToBuffer,
   removeHexPrefix,
+  bufferToHex,
   ensureBase58Length,
   getChannelPublicIdentifier,
   getPublicKeyFromPublicIdentifier,
@@ -27,9 +29,9 @@ const shortMessage = "123456789012345";
 const longMessage = "1234567890123456";
 
 const testMessage = "test message to sign";
-// const testMessageArr = ethers.utils.arrayify(Buffer.from(testMessage));
-// const digest = keccak256(utf8ToBuffer(testMessage));
-// const digestHex = bufferToHex(digest, true);
+const testMessageArr = ethers.utils.arrayify(Buffer.from(testMessage));
+const digest = keccak256(utf8ToBuffer(testMessage));
+const digestHex = bufferToHex(digest, true);
 
 const CF_PATH = "m/44'/60'/0'/25446";
 
@@ -49,7 +51,7 @@ const example = {
     "b304bbe1bc97a4f1101f3381b93a837f022b6ef864c41e7b8837779b59be67ef355cf2c918961251ec118da2c0abde3b0e803d817b2a3a318f60609023301748350008307ae20ccb1473eac05aced53180511e97cc4cec5809cb4f2ba43517d7951a71bd56b85ac161b8ccdc98dbeabfa99d555216cda31247c21d4a3caa7c46d37fa229f02f15ba254f8d6f5b15ed5310c35dd9ddd54cd23b99a7e332ed501605",
   message: "0xd10d622728d22635333ea792730a0feaede8b61902050a3f8604bb85d7013864",
   prvKey: wallet.privateKey,
-  pubKey: ethers.utils.computePublicKey(wallet.privateKey).replace(/^0x/, ""),
+  pubKey: removeHexPrefix(ethers.utils.computePublicKey(wallet.privateKey)),
 };
 
 describe("crypto", () => {
@@ -68,9 +70,9 @@ describe("crypto", () => {
   it("should encrypt and decrypt with eth-crypto package", async () => {
     const myEncrypted = await encryptWithPublicKey(pubKey, shortMessage);
     const ethEncrypted = EthCrypto.cipher.stringify(
-      await EthCrypto.encryptWithPublicKey(pubKey.replace(/^0x/, ""), shortMessage),
+      await EthCrypto.encryptWithPublicKey(pubKey, shortMessage),
     );
-    const myDecrypted = await new ChannelSigner(prvKey).decrypt(ethEncrypted);
+    const myDecrypted = await decryptWithPrivateKey(prvKey, ethEncrypted);
     const ethDecrypted = await EthCrypto.decryptWithPrivateKey(
       prvKey,
       EthCrypto.cipher.parse(myEncrypted),
