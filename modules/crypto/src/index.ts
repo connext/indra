@@ -23,9 +23,9 @@ import {
   isCompressed,
   isDecompressed,
   getPublic,
+  randomBytes,
 } from "eccrypto-js";
 import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
-import { randomBytes } from "crypto";
 import { Wallet } from "ethers";
 
 // signing contants
@@ -35,6 +35,57 @@ export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 // publicIdentifier contants
 export const INDRA_PUB_ID_PREFIX = "indra";
 export const INDRA_PUB_ID_CHAR_LENGTH = 55;
+
+function toChecksumAddress(address: string): string {
+  address = removeHexPrefix(address);
+  const hash = bufferToHex(keccak256(utf8ToBuffer(address)));
+  let checksum = "";
+  for (let i = 0; i < address.length; i++) {
+    if (parseInt(hash[i], 16) > 7) {
+      checksum += address[i].toUpperCase();
+    } else {
+      checksum += address[i];
+    }
+  }
+  return addHexPrefix(checksum);
+}
+
+function getPublicKeyFromPrivate(privateKey: string): string {
+  const publicKey = getPublic(bufferify(privateKey));
+  return bufferToHex(publicKey, true);
+}
+
+function hashMessage(message: Buffer | string, prefix: string): string {
+  const data = bufferify(message);
+  const length = bufferify(`${data.length}`);
+  const hash = keccak256(concatBuffers(bufferify(prefix), length, data));
+  return bufferToHex(hash, true);
+}
+
+async function signMessage(
+  privateKey: Buffer | string,
+  message: Buffer | string,
+  prefix: string,
+): Promise<string> {
+  const hash = hashMessage(message, prefix);
+  return signDigest(privateKey, bufferify(hash));
+}
+
+async function recoverPublicKey(digest: Buffer | string, sig: Buffer | string): Promise<string> {
+  const publicKey = await recover(bufferify(digest), bufferify(sig));
+  return bufferToHex(publicKey, true);
+}
+
+async function verifyMessage(
+  message: Buffer | string,
+  sig: Buffer | string,
+  prefix: string,
+): Promise<string> {
+  return recoverAddress(hashMessage(message, prefix), sig);
+}
+
+////////////////////////////////////////
+// exports
 
 export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
@@ -81,52 +132,7 @@ export function getLowerCaseAddress(publicKey: Buffer | string): string {
   return addHexPrefix(bufferToHex(hash.slice(12)));
 }
 
-function toChecksumAddress(address: string): string {
-  address = removeHexPrefix(address);
-  const hash = bufferToHex(keccak256(utf8ToBuffer(address)));
-  let checksum = "";
-  for (let i = 0; i < address.length; i++) {
-    if (parseInt(hash[i], 16) > 7) {
-      checksum += address[i].toUpperCase();
-    } else {
-      checksum += address[i];
-    }
-  }
-  return addHexPrefix(checksum);
-}
-
-function getPublicKeyFromPrivate(privateKey: string): string {
-  const publicKey = getPublic(bufferify(privateKey));
-  return bufferToHex(publicKey, true);
-}
-
-function hashMessage(message: Buffer | string, prefix: string): string {
-  const data = bufferify(message);
-  const length = bufferify(`${data.length}`);
-  const hash = keccak256(concatBuffers(bufferify(prefix), length, data));
-  return bufferToHex(hash, true);
-}
-
-/* TODO: export if we use this anywhere, otherwise delete
-function splitSignature(sig: Buffer): EthSignature {
-  return {
-    r: sig.slice(0, 32).toString("hex"),
-    s: sig.slice(32, 64).toString("hex"),
-    v: sig.slice(64, 65).toString("hex"),
-  };
-}
-*/
-
-/* TODO: export if we use this anywhere, otherwise delete
-function joinSignature(sig: EthSignature): string {
-  return bufferToHex(
-    concatBuffers(hexToBuffer(sig.r), hexToBuffer(sig.s), hexToBuffer(sig.v)),
-    true,
-  );
-}
-*/
-
-async function signDigest(
+export async function signDigest(
   privateKey: Buffer | string,
   digest: Buffer | string,
 ): Promise<string> {
@@ -134,40 +140,7 @@ async function signDigest(
   return bufferToHex(signature, true);
 }
 
-async function signMessage(
-  privateKey: Buffer | string,
-  message: Buffer | string,
-  prefix: string,
-): Promise<string> {
-  const hash = hashMessage(message, prefix);
-  return signDigest(privateKey, bufferify(hash));
-}
-
-/* TODO: export if we use this anywhere, otherwise delete
-async function signEthereumMessage(
-  privateKey: Buffer | string,
-  message: Buffer | string,
-): Promise<string> {
-  return signMessage(privateKey, message, ETH_SIGN_PREFIX);
-}
-*/
-
-async function signChannelMessage(
-  privateKey: Buffer | string,
-  message: Buffer | string,
-): Promise<string> {
-  return signMessage(privateKey, message, INDRA_SIGN_PREFIX);
-}
-
-async function recoverPublicKey(
-  digest: Buffer | string,
-  sig: Buffer | string,
-): Promise<string> {
-  const publicKey = await recover(bufferify(digest), bufferify(sig));
-  return bufferToHex(publicKey, true);
-}
-
-async function recoverAddress(
+export async function recoverAddress(
   digest: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
@@ -175,19 +148,16 @@ async function recoverAddress(
   return getChecksumAddress(publicKey);
 }
 
-async function verifyMessage(
-  message: Buffer | string,
-  sig: Buffer | string,
-  prefix: string,
-): Promise<string> {
-  return recoverAddress(hashMessage(message, prefix), sig);
-}
-
-////////////////////////////////////////
-// exports
 export function getChecksumAddress(publicKey: Buffer | string): string {
   const address = getLowerCaseAddress(publicKey);
   return toChecksumAddress(address);
+}
+
+export async function signChannelMessage(
+  privateKey: Buffer | string,
+  message: Buffer | string,
+): Promise<string> {
+  return signMessage(privateKey, message, INDRA_SIGN_PREFIX);
 }
 
 export async function verifyChannelMessage(
