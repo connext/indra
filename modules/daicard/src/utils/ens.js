@@ -346,12 +346,6 @@ if (
   throw new Error("Incorrect namehash implementation. See: https://eips.ethereum.org/EIPS/eip-137");
 }
 
-// export const resolveAddress = async (name, ethProvider, network) => {
-//   const address = await ethProvider.resolveName(name);
-//   console.log(`[ENS] Resolved address ${address} for ${name}`);
-//   return address;
-// };
-
 export const resolveAddress = async (name, ethProvider, network) => {
   const hash = namehash(name);
   const ens = new Contract(network.ensAddress, ensRegistryAbi, ethProvider);
