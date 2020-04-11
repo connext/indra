@@ -78,19 +78,15 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_walletDeposit:
         result = await this.walletDeposit(params);
         break;
-
       case ChannelMethods.chan_createSetupCommitment:
         result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
         break;
-
       case ChannelMethods.chan_createSetStateCommitment:
         result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
         break;
-
       case ChannelMethods.chan_createConditionalCommitment:
         result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
-
       default:
         result = await this._send(method, params);
         break;

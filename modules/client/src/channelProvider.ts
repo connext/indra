@@ -95,16 +95,19 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     let result;
     switch (method) {
       case ChannelMethods.chan_setUserWithdrawal:
-        result = await this.storeSetUserWithdrawal(params.withdrawalObject);
+        result = await this.setUserWithdrawal(params.withdrawalObject);
         break;
       case ChannelMethods.chan_getUserWithdrawal:
-        result = await this.storeGetUserWithdrawal();
+        result = await this.getUserWithdrawal();
         break;
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
       case ChannelMethods.chan_encrypt:
         result = await this.encrypt(params.message, params.publicIdentifier);
+        break;
+      case ChannelMethods.chan_config:
+        result = await this.getConfig();
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -186,13 +189,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return hash;
   };
 
-  private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
+  private getUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
     return this.store.getUserWithdrawal();
   };
 
-  private storeSetUserWithdrawal = async (
-    value: WithdrawalMonitorObject | undefined,
-  ): Promise<void> => {
+  private setUserWithdrawal = async (value: WithdrawalMonitorObject | undefined): Promise<void> => {
     if (!value) {
       return this.store.removeUserWithdrawal();
     }
