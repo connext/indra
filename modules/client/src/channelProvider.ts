@@ -19,7 +19,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   toBN,
-  WalletTransferParams,
+  WalletDepositParams,
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
@@ -62,8 +62,8 @@ export const createCFChannelProvider = async ({
     nodeUrl,
     userIdentifier: signer.publicIdentifier,
   };
-  const connection = new CFCoreRpcConnection(cfCore, store, signer);
-  const channelProvider = new ChannelProvider(connection, channelProviderConfig);
+  const connection = new CFCoreRpcConnection(cfCore, store, signer, channelProviderConfig);
+  const channelProvider = new ChannelProvider(connection);
   return channelProvider;
 };
 
@@ -71,14 +71,23 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public connected: boolean = true;
   public cfCore: CFCore;
   public store: IClientStore;
+  public config: ChannelProviderConfig;
+  public multisigAddress: string | undefined;
 
   public signer: IChannelSigner;
 
-  constructor(cfCore: CFCore, store: IClientStore, signer: IChannelSigner) {
+  constructor(
+    cfCore: CFCore,
+    store: IClientStore,
+    signer: IChannelSigner,
+    config: ChannelProviderConfig,
+  ) {
     super();
     this.cfCore = cfCore;
     this.signer = signer;
     this.store = store;
+    this.config = config;
+    this.multisigAddress = this.config.multisigAddress;
   }
 
   public async send(payload: JsonRpcRequest): Promise<any> {
@@ -103,8 +112,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
-      case ChannelMethods.chan_walletTransfer:
-        result = await this.walletTransfer(params);
+      case ChannelMethods.chan_walletDeposit:
+        result = await this.walletDeposit(params);
         break;
       case ChannelMethods.chan_createSetupCommitment:
         result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
@@ -151,26 +160,27 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   private signMessage(message: string): Promise<string> {
     return this.signer.signMessage(message);
-  };
+  }
 
   private encrypt(message: string, publicIdentifier: string): Promise<string> {
-    return this.signer.encrypt(
-      message,
-      getPublicKeyFromPublicIdentifier(publicIdentifier),
-    );
-  };
+    return this.signer.encrypt(message, getPublicKeyFromPublicIdentifier(publicIdentifier));
+  }
 
-  private walletTransfer = async (params: WalletTransferParams): Promise<string> => {
+  private walletDeposit = async (params: WalletDepositParams): Promise<string> => {
     let hash;
+    const multisigAddress = await this.getMultisigAddress();
+    if (!multisigAddress) {
+      throw new Error("Cannot make wallet deposit without multisigAddress");
+    }
     if (params.assetId === AddressZero) {
       const tx = await this.signer.sendTransaction({
-        to: params.recipient,
+        to: multisigAddress,
         value: toBN(params.amount),
       });
       hash = tx.hash;
     } else {
       const erc20 = new Contract(params.assetId, tokenAbi, this.signer);
-      const tx = await erc20.transfer(params.recipient, toBN(params.amount));
+      const tx = await erc20.transfer(multisigAddress, toBN(params.amount));
       hash = tx.hash;
     }
     return hash;
@@ -224,6 +234,26 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ): Promise<void> => {
     await this.store.createConditionalTransactionCommitment(appIdentityHash, commitment);
   };
+
+  private async getConfig(): Promise<ChannelProviderConfig> {
+    if (this.config) {
+      return this.config;
+    }
+    this.config = await this.routerDispatch(ChannelMethods.chan_config);
+    return this.config;
+  }
+
+  private async getMultisigAddress(): Promise<string | undefined> {
+    if (this.multisigAddress) {
+      return this.multisigAddress;
+    }
+    const config = await this.getConfig();
+    if (config.multisigAddress) {
+      this.multisigAddress = this.config.multisigAddress;
+      return this.multisigAddress;
+    }
+    return undefined;
+  }
 
   private routerDispatch = async (method: string, params: any = {}) => {
     const ret = await this.cfCore.rpcRouter.dispatch({

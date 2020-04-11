@@ -7,11 +7,15 @@ import {
   JsonRpcRequest,
   StateChannelJSON,
   WithdrawalMonitorObject,
-  WalletTransferParams,
+  WalletDepositParams,
   ConditionalTransactionCommitmentJSON,
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "@connext/types";
+
+function exists(obj: any): boolean {
+  return !!obj && !!Object.keys(obj).length;
+}
 
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
   public connected: boolean = false;
@@ -20,17 +24,16 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   private _config: ChannelProviderConfig | undefined = undefined;
   private _multisigAddress: string | undefined = undefined;
 
-  constructor(connection: IRpcConnection, config?: ChannelProviderConfig) {
+  constructor(connection: IRpcConnection) {
     super();
     this.connection = connection;
-    this._config = config;
   }
 
   public enable(): Promise<ChannelProviderConfig> {
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config = this._config || (await this._send(ChannelMethods.chan_config));
+        const config = await this.getConfig();
         if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;
@@ -64,7 +67,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         result = await this.encrypt(params.message, params.publicIdentifier);
         break;
       case ChannelMethods.chan_config:
-        result = this.config;
+        result = await this.getConfig();
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -72,8 +75,8 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
-      case ChannelMethods.chan_walletTransfer:
-        result = await this.walletTransfer(params);
+      case ChannelMethods.chan_walletDeposit:
+        result = await this.walletDeposit(params);
         break;
 
       case ChannelMethods.chan_createSetupCommitment:
@@ -112,12 +115,15 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   get multisigAddress(): string | undefined {
     const multisigAddress =
-      this._multisigAddress || (this._config ? this._config.multisigAddress : undefined);
+      this._multisigAddress ||
+      (exists(this._config) && this._config.multisigAddress
+        ? this._config.multisigAddress
+        : undefined);
     return multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string | undefined) {
-    if (this._config) {
+    if (exists(this._config)) {
       this._config.multisigAddress = multisigAddress;
     }
     this._multisigAddress = multisigAddress;
@@ -154,10 +160,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       message,
       publicIdentifier,
     });
-  };
+  }
 
-  public walletTransfer = async (params: WalletTransferParams) => {
-    return this._send(ChannelMethods.chan_walletTransfer, params);
+  public walletDeposit = async (params: WalletDepositParams) => {
+    return this._send(ChannelMethods.chan_walletDeposit, params);
   };
 
   /// ////////////////////////////////////////////
@@ -213,6 +219,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // PRIVATE METHODS
+
+  private async getConfig(): Promise<ChannelProviderConfig> {
+    return exists(this._config) ? this._config : await this._send(ChannelMethods.chan_config);
+  }
 
   private async _send(method: ChannelMethods, params: any = {}): Promise<any> {
     const payload = { id: Date.now(), jsonrpc: "2.0", method, params };
