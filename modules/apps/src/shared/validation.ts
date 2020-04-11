@@ -131,7 +131,7 @@ export const commonAppProposalValidation = (
   }
 
   if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported responderDepositTokenAddress: ${responderDepositTokenAddress}`);
+    throw new Error(`Unsupported responderDepositAssetId: ${responderDepositTokenAddress}`);
   }
 
   // NOTE: may need to remove this condition if we start working
