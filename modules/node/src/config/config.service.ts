@@ -157,7 +157,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   getPublicIdentifier(): string {
-    return this.signer.publicKey;
+    return this.signer.publicIdentifier;
   }
 
   async getSignerAddress(): Promise<string> {

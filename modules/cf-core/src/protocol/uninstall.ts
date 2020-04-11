@@ -6,9 +6,9 @@ import {
   ProtocolParams,
   ProtocolRoles,
   UninstallMiddlewareContext,
-  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -83,7 +83,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const responderFreeBalanceKey = getAddressFromPublicIdentifier(responderIdentifier);
+    const responderFreeBalanceKey = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
       context,
@@ -191,7 +191,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const initiatorFreeBalanceKey = getAddressFromPublicIdentifier(initiatorIdentifier);
+    const initiatorFreeBalanceKey = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
     const uninstallCommitment = getSetStateCommitment(
       context,

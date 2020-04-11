@@ -172,7 +172,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
     const key = `INDRA`;
     this.connection = new MessagingService(this.options.messagingConfig, key, () =>
-      getBearerToken(signer.publicKey, getSignature),
+      getBearerToken(signer.publicIdentifier, getSignature),
     );
     this.protocolDefaults = this.options.protocolDefaults;
     this.countInternal = this.options.count;

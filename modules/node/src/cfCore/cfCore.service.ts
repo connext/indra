@@ -1,5 +1,6 @@
 import { MessagingService } from "@connext/messaging";
 import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   AppAction,
   ConnextNodeStorePrefix,
@@ -11,7 +12,6 @@ import {
   StateChannelJSON,
   stringify,
   toBN,
-  getAddressFromPublicIdentifier,
   AssetId,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
@@ -76,7 +76,7 @@ export class CFCoreService {
         // but need the free balance address in the multisig
         const obj = {};
         obj[this.cfCore.signerAddress] = Zero;
-        obj[getAddressFromPublicIdentifier(userPubId)] = Zero;
+        obj[getSignerAddressFromPublicIdentifier(userPubId)] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);
@@ -141,10 +141,10 @@ export class CFCoreService {
       (await this.configService.getEthNetwork()).chainId.toString(),
     );
     const multisigOwners = [
-      getAddressFromPublicIdentifier(
+      getSignerAddressFromPublicIdentifier(
         channel.userIdentifiers[0],
       ),
-      getAddressFromPublicIdentifier(
+      getSignerAddressFromPublicIdentifier(
         channel.userIdentifiers[1],
       ),
     ];

@@ -6,10 +6,9 @@ import {
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
-  getAddressFromPublicIdentifier,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -165,7 +164,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     await assertIsValidSignature(
-      getAddressFromPublicIdentifier(responderIdentifier),
+      getSignerAddressFromPublicIdentifier(responderIdentifier),
       setStateCommitment.hashToSign(),
       responderSignatureOnInitialState,
     );
@@ -300,7 +299,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     await assertIsValidSignature(
-      getAddressFromPublicIdentifier(initiatorIdentifier),
+      getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       setStateCommitment.hashToSign(),
       initiatorSignatureOnInitialState,
     );

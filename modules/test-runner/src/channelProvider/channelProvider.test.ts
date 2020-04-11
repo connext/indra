@@ -1,10 +1,10 @@
 import {
   EventNames,
   getAddressFromAssetId,
-  getAddressFromPublicIdentifier,
   IConnextClient,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { AddressZero, One } from "ethers/constants";
 
 import {
@@ -42,7 +42,7 @@ describe("ChannelProvider", () => {
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
     const _nodeIdentifier = remoteClient.config.nodeIdentifier;
-    const _nodeSignerAddress = getAddressFromPublicIdentifier(nodeIdentifier);
+    const _nodeSignerAddress = getSignerAddressFromPublicIdentifier(nodeIdentifier);
     expect(_tokenAddress).to.be.eq(tokenAddress);
     expect(_nodeIdentifier).to.be.eq(nodeIdentifier);
     expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);

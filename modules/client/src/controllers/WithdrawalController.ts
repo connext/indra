@@ -1,4 +1,5 @@
 import { DEFAULT_APP_TIMEOUT, WITHDRAW_STATE_TIMEOUT, WithdrawCommitment } from "@connext/apps";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   AppInstanceJson,
   ChannelMethods,
@@ -11,7 +12,6 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
-  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -119,10 +119,10 @@ export class WithdrawalController extends AbstractController {
     const { assetId, amount, nonce, recipient } = params;
     const { data: channel } = await this.connext.getStateChannel();
     const multisigOwners = [
-      getAddressFromPublicIdentifier(
+      getSignerAddressFromPublicIdentifier(
         channel.userIdentifiers[0],
       ),
-      getAddressFromPublicIdentifier(
+      getSignerAddressFromPublicIdentifier(
         channel.userIdentifiers[1],
       ),
     ];

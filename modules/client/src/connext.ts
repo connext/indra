@@ -1,4 +1,5 @@
 import { SupportedApplications } from "@connext/apps";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
   getAddressFromAssetId,
@@ -35,7 +36,6 @@ import {
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
-  getAddressFromPublicIdentifier,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
@@ -109,7 +109,7 @@ export class ConnextClient implements IConnextClient {
     this.publicIdentifier = this.channelProvider.config.userIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodeIdentifier = this.opts.config.nodeIdentifier;
-    this.nodeSignerAddress = getAddressFromPublicIdentifier(this.nodeIdentifier);
+    this.nodeSignerAddress = getSignerAddressFromPublicIdentifier(this.nodeIdentifier);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);

@@ -1,6 +1,5 @@
 import {
   delay,
-  getAddressFromPublicIdentifier,
   IChannelSigner,
   ILoggerService,
   MethodNames,
@@ -10,6 +9,8 @@ import {
   PublicIdentifier,
   stringify,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
@@ -205,8 +206,8 @@ async function checkForCorrectOwners(
   const contract = new Contract(multisigAddress, MinimumViableMultisig.abi as any, provider);
 
   const expectedOwners = [
-    getAddressFromPublicIdentifier(identifiers[0]),
-    getAddressFromPublicIdentifier(identifiers[1]),
+    getSignerAddressFromPublicIdentifier(identifiers[0]),
+    getSignerAddressFromPublicIdentifier(identifiers[1]),
   ];
 
   const actualOwners = await contract.functions.getOwners();

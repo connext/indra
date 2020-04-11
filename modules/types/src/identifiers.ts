@@ -29,29 +29,3 @@ export type PublicIdentifierData = {
 export const getAddressFromAssetId = (assetId: AssetId): string =>
   getAddress(assetId);
 
-////////////////////////////////////////
-// PublicIdentifier
-
-export const getRandomPublicIdentifier = (): PublicIdentifier =>
-  `${computePublicKey(randomBytes(32))}`;
-
-export const isValidPublicIdentifier = (
-  identifier: PublicIdentifier,
-): boolean => {
-  let addr;
-  try {
-    addr = getAddressFromPublicIdentifier(identifier);
-  } catch (e) {
-    return false;
-  }
-  try {
-    getAddress(addr);
-  } catch (e) {
-    return false;
-  }
-  return true;
-};
-
-export const getAddressFromPublicIdentifier = (identifer: string): string => {
-  return computeAddress(identifer);
-};

@@ -1,4 +1,5 @@
-import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, getAddressFromPublicIdentifier, PublicIdentifier } from "@connext/types";
+import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, PublicIdentifier } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -97,8 +98,8 @@ export const getCreate2MultisigAddress = async (
               // see encoding notes
               new Interface(MinimumViableMultisig.abi).functions.setup.encode([
                 [
-                  getAddressFromPublicIdentifier(initiatorIdentifier),
-                  getAddressFromPublicIdentifier(responderIdentifier),
+                  getSignerAddressFromPublicIdentifier(initiatorIdentifier),
+                  getSignerAddressFromPublicIdentifier(responderIdentifier),
                 ],
               ]),
             ),
@@ -210,7 +211,7 @@ export function assertSufficientFundsWithinFreeBalance(
     channel.getFreeBalanceClass()
       .getBalance(
         tokenAddress, 
-        getAddressFromPublicIdentifier(publicIdentifier),
+        getSignerAddressFromPublicIdentifier(publicIdentifier),
       ) || Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {

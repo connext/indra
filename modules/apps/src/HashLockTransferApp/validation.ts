@@ -1,4 +1,5 @@
-import { MethodParams, CoinTransfer, HashLockTransferAppState, getAddressFromPublicIdentifier } from "@connext/types";
+import { MethodParams, CoinTransfer, HashLockTransferAppState } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
@@ -11,8 +12,8 @@ export const validateHashLockTransferApp = (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as HashLockTransferAppState;
 
-  const initiatorSignerAddress = getAddressFromPublicIdentifier(initiatorIdentifier);
-  const responderSignerAddress = getAddressFromPublicIdentifier(responderIdentifier);
+  const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
   const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
     return transfer.to === initiatorSignerAddress;

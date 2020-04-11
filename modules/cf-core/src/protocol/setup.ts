@@ -5,8 +5,8 @@ import {
   ProtocolParams,
   ProtocolRoles,
   SetupMiddlewareContext,
-  getAddressFromPublicIdentifier,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
@@ -108,7 +108,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 68 ms
     substart = Date.now();
-    const responderAddr = getAddressFromPublicIdentifier(responderIdentifier);
+    const responderAddr = getSignerAddressFromPublicIdentifier(responderIdentifier);
     await assertIsValidSignature(
       responderAddr,
       setupCommitment.hashToSign(),
@@ -194,7 +194,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     // will have nonce 1, so use hardcoded 0th key
     // 94 ms
     substart = Date.now();
-    const initatorAddr = getAddressFromPublicIdentifier(initiatorIdentifier);
+    const initatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
     await assertIsValidSignature(
       initatorAddr,
       setupCommitment.hashToSign(),

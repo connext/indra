@@ -1,6 +1,7 @@
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress, getAddressFromPublicIdentifier } from "@connext/types";
+import { createRandomAddress } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -40,8 +41,8 @@ describe("StateChannel::setState", () => {
 
     sc1 = sc1.installApp(testApp, {
       [AddressZero]: {
-        [getAddressFromPublicIdentifier(ids[0])]: Zero,
-        [getAddressFromPublicIdentifier(ids[1])]: Zero,
+        [getSignerAddressFromPublicIdentifier(ids[0])]: Zero,
+        [getSignerAddressFromPublicIdentifier(ids[1])]: Zero,
       },
     });
 

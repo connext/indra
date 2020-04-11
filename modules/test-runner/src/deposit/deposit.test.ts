@@ -1,5 +1,4 @@
 import {
-  getAddressFromPublicIdentifier,
   IConnextClient,
   BigNumberish,
   BigNumber,

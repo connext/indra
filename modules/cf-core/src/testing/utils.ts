@@ -1,4 +1,4 @@
-import { getRandomChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner, getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   Address,
   AppABIEncodings,
@@ -13,7 +13,6 @@ import {
   DepositAppState,
   DepositAppStateEncoding,
   EventNames,
-  getAddressFromPublicIdentifier,
   getRandomPublicIdentifier,
   getAddressFromAssetId,
   InstallMessage,
@@ -465,11 +464,11 @@ export async function getProposeDepositAppParams(
     transfers: [
       {
         amount: Zero,
-        to: getAddressFromPublicIdentifier(initiatorIdentifier),
+        to: getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       },
       {
         amount: Zero,
-        to: getAddressFromPublicIdentifier(responderIdentifier),
+        to: getSignerAddressFromPublicIdentifier(responderIdentifier),
       },
     ],
   };

@@ -5,9 +5,9 @@ import {
   UninstallMiddlewareContext,
   ProtocolRoles,
   getAddressFromAssetId,
-  getAddressFromPublicIdentifier,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
 import { baseCoinTransferValidation } from "../shared";
@@ -25,8 +25,8 @@ export const validateDepositApp = async (
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = params.initialState as DepositAppState;
 
-  const initiatorSignerAddress = getAddressFromPublicIdentifier(initiatorIdentifier);
-  const responderSignerAddress = getAddressFromPublicIdentifier(responderIdentifier);
+  const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];
@@ -118,7 +118,7 @@ export const uninstallDepositMiddleware = async (
 
   if (
     role === ProtocolRoles.initiator
-    && latestState.transfers[0].to !== getAddressFromPublicIdentifier(params.initiatorIdentifier)
+    && latestState.transfers[0].to !== getSignerAddressFromPublicIdentifier(params.initiatorIdentifier)
   ) {
     throw new Error(`Cannot uninstall deposit app without being the initiator`);
   }

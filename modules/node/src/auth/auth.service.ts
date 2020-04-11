@@ -1,6 +1,6 @@
-import { verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage, getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { MessagingAuthService } from "@connext/messaging";
-import { createRandomBytesHexString, getAddressFromPublicIdentifier, PublicIdentifier, isValidPublicIdentifier } from "@connext/types";
+import { createRandomBytesHexString, PublicIdentifier, isValidPublicIdentifier } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
 
 import { ChannelRepository } from "../channel/channel.repository";
@@ -14,7 +14,7 @@ const nonceLen = 32;
 const nonceTTL = 24 * 60 * 60 * 1000; // 1 day
 
 export function getAuthAddressFromIdentifier(id: PublicIdentifier): string {
-  return getAddressFromPublicIdentifier(id);
+  return getSignerAddressFromPublicIdentifier(id);
 }
 
 @Injectable()
@@ -51,7 +51,7 @@ export class AuthService {
       return this.vendAdminToken(userIdentifier);
     }
 
-    const address = getAddressFromPublicIdentifier(userIdentifier);
+    const address = getSignerAddressFromPublicIdentifier(userIdentifier);
     this.log.debug(`Got address ${address} from userIdentifier ${userIdentifier}`);
 
     if (!this.nonces[userIdentifier]) {

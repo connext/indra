@@ -21,6 +21,7 @@ import {
   ValidationMiddleware,
   PublicKey,
   Address,
+  PublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -117,8 +118,8 @@ export class Node {
   }
 
   @Memoize()
-  get publicIdentifier(): PublicKey {
-    return this.signer.publicKey;
+  get publicIdentifier(): PublicIdentifier {
+    return this.signer.publicIdentifier;
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {

@@ -1,6 +1,7 @@
-import { AppInterface, OutcomeType, stringify, toBN, getAddressFromPublicIdentifier, PublicIdentifier } from "@connext/types";
+import { AppInterface, OutcomeType, stringify, toBN, PublicIdentifier } from "@connext/types";
 import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
 
@@ -204,8 +205,8 @@ export function createFreeBalance(
   freeBalanceTimeout: number,
   multisigAddress: string,
 ) {
-  const initiator = getAddressFromPublicIdentifier(initiatorId);
-  const responder = getAddressFromPublicIdentifier(responderId);
+  const initiator = getSignerAddressFromPublicIdentifier(initiatorId);
+  const responder = getSignerAddressFromPublicIdentifier(responderId);
 
   const initialState: FreeBalanceState = {
     activeAppsMap: {},

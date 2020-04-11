@@ -1,3 +1,4 @@
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   maxBN,
   MethodResults,
@@ -5,7 +6,6 @@ import {
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
   stringify,
-  getAddressFromPublicIdentifier,
 } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -331,10 +331,10 @@ export class ChannelService {
     }
     if (
       !creationData.data.owners.includes(
-        getAddressFromPublicIdentifier(existing.nodeIdentifier),
+        getSignerAddressFromPublicIdentifier(existing.nodeIdentifier),
       ) ||
       !creationData.data.owners.includes(
-        getAddressFromPublicIdentifier(existing.userIdentifier),
+        getSignerAddressFromPublicIdentifier(existing.userIdentifier),
       )
     ) {
       throw new Error(

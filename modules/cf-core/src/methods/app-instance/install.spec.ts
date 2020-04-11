@@ -6,9 +6,9 @@ import {
   nullLogger,
   ProtocolNames,
   IStoreService,
-  getAddressFromPublicIdentifier,
   getRandomPublicIdentifier,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -99,8 +99,8 @@ describe("Can handle correct & incorrect installs", () => {
     const multisigAddress = Wallet.createRandom().address;
     const publicIdentifiers = getRandomPublicIdentifiers(2);
     const participants = [
-      getAddressFromPublicIdentifier(publicIdentifiers[0]),
-      getAddressFromPublicIdentifier(publicIdentifiers[1]),
+      getSignerAddressFromPublicIdentifier(publicIdentifiers[0]),
+      getSignerAddressFromPublicIdentifier(publicIdentifiers[1]),
     ];
 
     const stateChannel = StateChannel.setupChannel(

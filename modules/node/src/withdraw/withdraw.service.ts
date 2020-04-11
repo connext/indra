@@ -10,8 +10,8 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
-  getAddressFromPublicIdentifier,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
 import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
@@ -215,7 +215,7 @@ export class WithdrawService {
 
     const transfers: CoinTransfer[] = [
       { amount, to: this.cfCoreService.cfCore.signerAddress },
-      { amount: Zero, to: getAddressFromPublicIdentifier(channel.userIdentifier) },
+      { amount: Zero, to: getSignerAddressFromPublicIdentifier(channel.userIdentifier) },
     ];
 
     const initialState: WithdrawAppState = {
@@ -223,7 +223,7 @@ export class WithdrawService {
       signatures: [withdrawerSignatureOnCommitment, HashZero],
       signers: [
         this.cfCoreService.cfCore.signerAddress,
-        getAddressFromPublicIdentifier(channel.userIdentifier),
+        getSignerAddressFromPublicIdentifier(channel.userIdentifier),
       ],
       data: hash,
       nonce,

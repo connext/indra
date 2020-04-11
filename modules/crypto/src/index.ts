@@ -218,6 +218,10 @@ export class ChannelSigner implements IChannelSigner {
     this.address = getChecksumAddress(this.publicKey);
   }
 
+  get publicIdentifier(): string {
+    return getChannelPublicIdentifier(this.publicKey);
+  }
+
   public async encrypt(message: string, publicKey: string): Promise<string> {
     const encrypted = await encrypt(hexToBuffer(publicKey), utf8ToBuffer(message));
     return bufferToHex(serialize(encrypted));

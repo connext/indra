@@ -1,12 +1,12 @@
 import { DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   Address,
   BigNumber,
   Contract,
   DepositAppName,
   DepositAppState,
-  getAddressFromPublicIdentifier,
   MinimalTransaction,
   stringify,
   TransactionReceipt,
@@ -161,7 +161,7 @@ export class DepositService {
         },
         {
           amount: Zero,
-          to: getAddressFromPublicIdentifier(channel.userIdentifier),
+          to: getSignerAddressFromPublicIdentifier(channel.userIdentifier),
         },
       ],
       multisigAddress: channel.multisigAddress,

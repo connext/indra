@@ -14,6 +14,6 @@ export function getRandomChannelSigners(length: number, ethProviderUrl?: string)
 
 export function getRandomPublicIdentifiers(length: number, provider?: string): string[] {
   return getRandomChannelSigners(length, provider)
-    .map((signer) => signer.publicKey);
+    .map((signer) => signer.publicIdentifier);
 }
 

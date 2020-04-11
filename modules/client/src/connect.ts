@@ -128,7 +128,7 @@ export const connect = async (
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        signer.publicKey,
+        signer.publicIdentifier,
         (msg: string) => signer.signMessage(msg),
         messagingUrl,
       );
@@ -140,7 +140,7 @@ export const connect = async (
     config = await node.config();
 
     // ensure that node and user identifiers are different
-    if (config.nodeIdentifier === signer.publicKey) {
+    if (config.nodeIdentifier === signer.publicIdentifier) {
       throw new Error(
         "Client must be instantiated with a signer that is different from the node's",
       );
@@ -154,7 +154,6 @@ export const connect = async (
       messaging,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
-      publicIdentifier: await signer.getAddress(),
       signer,
       store,
     });

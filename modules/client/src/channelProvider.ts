@@ -49,8 +49,6 @@ export const createCFChannelProvider = async ({
     undefined,
     logger,
   );
-  const address = signer.address;
-  const publicKey = signer.publicKey;
 
   // register any default middlewares
   cfCore.injectMiddleware(
@@ -59,9 +57,9 @@ export const createCFChannelProvider = async ({
   );
 
   const channelProviderConfig: ChannelProviderConfig = {
-    signerAddress: address,
+    signerAddress: signer.address,
     nodeUrl,
-    userIdentifier: publicKey,
+    userIdentifier: signer.publicIdentifier,
   };
   const connection = new CFCoreRpcConnection(cfCore, store, signer);
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);

@@ -5,8 +5,8 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
-  getAddressFromPublicIdentifier,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
@@ -124,7 +124,7 @@ export class LinkedTransferService {
         },
         {
           amount: Zero,
-          to: getAddressFromPublicIdentifier(userIdentifier),
+          to: getSignerAddressFromPublicIdentifier(userIdentifier),
         },
       ],
       linkedHash,
@@ -229,7 +229,7 @@ export class LinkedTransferService {
   async unlockLinkedTransfersFromUser(userIdentifier: string): Promise<string[]> {
     // eslint-disable-next-line max-len
     const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
-      getAddressFromPublicIdentifier(userIdentifier),
+      getSignerAddressFromPublicIdentifier(userIdentifier),
       this.cfCoreService.cfCore.signerAddress,
     );
     const receiverRedeemed = await Promise.all(

@@ -3,7 +3,6 @@ import {
   AppInstanceProposal,
   CriticalStateChannelAddresses,
   deBigNumberifyJson,
-  getAddressFromPublicIdentifier,
   IStoreService,
   PublicIdentifier,
   SolidityValueType,
@@ -12,6 +11,8 @@ import {
   stringify,
   toBN,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+
 import { BigNumber } from "ethers/utils";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
@@ -146,8 +147,8 @@ export class StateChannel {
     responderId: string, 
   ): string[] {
     return [
-      getAddressFromPublicIdentifier(initiatorId),
-      getAddressFromPublicIdentifier(responderId),
+      getSignerAddressFromPublicIdentifier(initiatorId),
+      getSignerAddressFromPublicIdentifier(responderId),
     ];
   }
 
@@ -170,7 +171,7 @@ export class StateChannel {
       );
     }
 
-    return getAddressFromPublicIdentifier(identifer);
+    return getSignerAddressFromPublicIdentifier(identifer);
   }
 
   public getFreeBalanceAddrOf(identifier: string): string {
@@ -183,7 +184,7 @@ export class StateChannel {
       );
     }
 
-    return getAddressFromPublicIdentifier(identifier);
+    return getSignerAddressFromPublicIdentifier(identifier);
   }
 
   public getFreeBalanceClass() {

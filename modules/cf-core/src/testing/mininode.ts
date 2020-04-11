@@ -39,7 +39,7 @@ export class MiniNode {
     readonly store: IStoreService,
   ) {
     this.signer = getRandomChannelSigner();
-    this.publicIdentifier = this.signer.publicKey;
+    this.publicIdentifier = this.signer.publicIdentifier;
     this.address = this.signer.address;
     this.protocolRunner = new ProtocolRunner(
       networkContext, 

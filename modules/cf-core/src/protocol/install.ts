@@ -9,10 +9,11 @@ import {
   ProtocolRoles,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
-  getAddressFromPublicIdentifier,
   AssetId,
   getAddressFromAssetId,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -121,7 +122,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
 
     // 0ms
-    const responderSignerAddress = getAddressFromPublicIdentifier(responderIdentifier);
+    const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
     // 6ms
     // free balance addr signs conditional transactions
@@ -292,7 +293,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const initiatorSignerAddress = getAddressFromPublicIdentifier(initiatorIdentifier);
+    const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
 

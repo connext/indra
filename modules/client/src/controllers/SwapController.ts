@@ -1,9 +1,9 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   calculateExchange,
   DefaultApp,
   getAddressFromAssetId,
-  getAddressFromPublicIdentifier,
   MethodParams,
   PublicParams,
   PublicResults,
@@ -135,7 +135,7 @@ export class SwapController extends AbstractController {
         [
           {
             amount: swappedAmount,
-            to: getAddressFromPublicIdentifier(this.connext.nodeIdentifier),
+            to: getSignerAddressFromPublicIdentifier(this.connext.nodeIdentifier),
           },
         ],
       ],

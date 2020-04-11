@@ -2,11 +2,10 @@ import {
   BigNumber,
   CONVENTION_FOR_ETH_ASSET_ID,
   DepositAppState,
-  getAddressFromPublicIdentifier,
   getAddressFromAssetId,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Node } from "../../node";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
@@ -59,8 +58,8 @@ describe(`Node method follows spec - install deposit app`, () => {
     expect(appsA.length).toBe(1);
     expect(appsA[0].identityHash).toBe(appIdentityHash);
     const transfers = (appsA[0].latestState as DepositAppState).transfers;
-    expect(transfers[0].to).toBe(getAddressFromPublicIdentifier(nodeA.publicIdentifier));
-    expect(transfers[1].to).toBe(getAddressFromPublicIdentifier(nodeB.publicIdentifier));
+    expect(transfers[0].to).toBe(getSignerAddressFromPublicIdentifier(nodeA.publicIdentifier));
+    expect(transfers[1].to).toBe(getSignerAddressFromPublicIdentifier(nodeB.publicIdentifier));
 
     // validate post-deposit free balance
     const [preSendBalA, preSendBalB] = await getBalances(

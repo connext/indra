@@ -4,8 +4,9 @@ import {
   MethodNames,
   MethodParams,
   MethodResults,
-  getAddressFromPublicIdentifier,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
@@ -89,8 +90,8 @@ export class CreateChannelController extends NodeController {
 
     // use state channel for owners
     const addressOwners = [
-      getAddressFromPublicIdentifier(publicIdentifier),
-      getAddressFromPublicIdentifier(responderIdentifier),
+      getSignerAddressFromPublicIdentifier(publicIdentifier),
+      getSignerAddressFromPublicIdentifier(responderIdentifier),
     ];
 
     const msg: CreateChannelMessage = {

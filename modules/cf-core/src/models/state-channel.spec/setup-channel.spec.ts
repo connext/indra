@@ -1,6 +1,7 @@
 import { Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { AppInstanceProposal, createRandomAddress, toBN, getAddressFromPublicIdentifier } from "@connext/types";
+import { AppInstanceProposal, createRandomAddress, toBN } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { HARD_CODED_ASSUMPTIONS } from "../../constants";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
@@ -79,8 +80,8 @@ describe("StateChannel::setupChannel", () => {
 
     it("should use the multisig owners as the participants", () => {
       expect([
-        getAddressFromPublicIdentifier(fb.initiatorIdentifier),
-        getAddressFromPublicIdentifier(fb.responderIdentifier),
+        getSignerAddressFromPublicIdentifier(fb.initiatorIdentifier),
+        getSignerAddressFromPublicIdentifier(fb.responderIdentifier),
       ]).toEqual(sc.multisigOwners);
     });
 

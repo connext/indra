@@ -5,8 +5,8 @@ import {
   ProtocolParams,
   ProtocolRoles,
   TakeActionMiddlewareContext,
-  getAddressFromPublicIdentifier,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -82,7 +82,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     // 0ms
-    const responderAddr = getAddressFromPublicIdentifier(responderIdentifier);
+    const responderAddr = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();
@@ -186,7 +186,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     // 0ms
-    const initiatorAddr = getAddressFromPublicIdentifier(initiatorIdentifier);
+    const initiatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();

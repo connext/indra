@@ -57,7 +57,6 @@ export interface CFChannelProviderOptions {
   contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
-  publicIdentifier: PublicIdentifier;
   store: IClientStore;
 }
 
