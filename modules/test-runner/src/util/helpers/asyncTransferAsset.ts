@@ -36,7 +36,7 @@ export async function asyncTransferAsset(
         new Promise((resolve: Function): void => {
           clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, data => {
             expect(data).to.deep.include({
-              amount: { _hex: transferAmount.toHexString() },
+              amount: transferAmount,
               sender: clientA.publicIdentifier,
             });
             resolve();

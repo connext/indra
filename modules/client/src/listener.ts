@@ -15,7 +15,6 @@ import {
   CreatedHashLockTransferMeta,
   CreatedLinkedTransferMeta,
   CreatedSignedTransferMeta,
-  deBigNumberifyJson,
   DefaultApp,
   DepositAppName,
   DepositConfirmationMessage,
@@ -368,7 +367,7 @@ export class ConnextListener extends ConnextEventEmitter {
         const amount = initalState.coinTransfers[0].amount;
         this.connext.emit(
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
-          deBigNumberifyJson({
+          {
             amount,
             appIdentityHash,
             assetId,
@@ -380,7 +379,7 @@ export class ConnextListener extends ConnextEventEmitter {
             type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
             paymentId: initalState.paymentId,
             recipient: meta["recipient"],
-          }) as EventPayloads.SignedTransferReceived,
+          } as EventPayloads.SignedTransferReceived,
         );
         break;
       }

@@ -6,7 +6,6 @@ import {
   IConnextClient,
   PublicParams,
   SignedTransferStatus,
-  deBigNumberifyJson,
   EventPayloads,
 } from "@connext/types";
 import { signChannelMessage } from "@connext/crypto";
@@ -57,8 +56,6 @@ describe("Signed Transfers", () => {
     await clientB.messaging.disconnect();
   });
 
-
-
   it("happy case: clientA signed transfers eth to clientB through node, clientB is online", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
@@ -87,16 +84,14 @@ describe("Signed Transfers", () => {
     ]);
 
     const [, installed] = promises;
-    expect(installed).deep.contain(
-      deBigNumberifyJson({
-        amount: transfer.amount,
-        assetId: transfer.assetId,
-        type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
-        paymentId,
-        transferMeta: { signer: signerAddress },
-        meta: { foo: "bar", recipient: clientB.publicIdentifier },
-      }) as EventPayloads.SignedTransferReceived,
-    );
+    expect(installed).deep.contain({
+      amount: transfer.amount,
+      assetId: transfer.assetId,
+      type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+      paymentId,
+      transferMeta: { signer: signerAddress },
+      meta: { foo: "bar", recipient: clientB.publicIdentifier },
+    } as EventPayloads.SignedTransferReceived);
 
     const {
       [clientA.freeBalanceAddress]: clientAPostTransferBal,
@@ -161,14 +156,14 @@ describe("Signed Transfers", () => {
 
     const [, installed] = promises;
     expect(installed).deep.contain(
-      deBigNumberifyJson({
+      {
         amount: transfer.amount,
         assetId: transfer.assetId,
         type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
         paymentId,
         transferMeta: { signer: signerAddress },
         meta: { foo: "bar", recipient: clientB.publicIdentifier },
-      }) as EventPayloads.SignedTransferReceived,
+      } as Partial<EventPayloads.SignedTransferReceived>,
     );
 
     const {
@@ -317,9 +312,9 @@ describe("Signed Transfers", () => {
     await requestCollateral(clientB, transfer.assetId);
 
     for (let i = 0; i < numberOfRuns; i++) {
-      const {
-        [clientA.freeBalanceAddress]: clientAPreBal,
-      } = await clientA.getFreeBalance(transfer.assetId);
+      const { [clientA.freeBalanceAddress]: clientAPreBal } = await clientA.getFreeBalance(
+        transfer.assetId,
+      );
       const {
         [clientB.freeBalanceAddress]: clientBPreBal,
         [clientB.nodeFreeBalanceAddress]: nodeBPreBal,
@@ -332,7 +327,7 @@ describe("Signed Transfers", () => {
 
       // TODO: what are these errors
       await new Promise(async res => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, async (data) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, async data => {
           res();
         });
         await clientA.conditionalTransfer({
@@ -351,7 +346,7 @@ describe("Signed Transfers", () => {
       const signature = await signChannelMessage(signerWallet.privateKey, digest);
 
       await new Promise(async res => {
-        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async (data) => {
+        clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async data => {
           res();
         });
         await clientB.resolveCondition({
@@ -367,9 +362,9 @@ describe("Signed Transfers", () => {
       console.log(`Run: ${i}, Runtime: ${runTime[i]}`);
       sum = sum + runTime[i];
 
-      const {
-        [clientA.freeBalanceAddress]: clientAPostBal,
-      } = await clientA.getFreeBalance(transfer.assetId);
+      const { [clientA.freeBalanceAddress]: clientAPostBal } = await clientA.getFreeBalance(
+        transfer.assetId,
+      );
       const {
         [clientB.freeBalanceAddress]: clientBPostBal,
         [clientB.nodeFreeBalanceAddress]: nodeBPostBal,
