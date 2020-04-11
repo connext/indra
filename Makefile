@@ -264,7 +264,7 @@ webserver: daicard dashboard $(shell find ops/webserver $(find_options))
 # Keep prerequisites synced w the @connext/* dependencies of that module's package.json
 # Each rule here should only depend on rules that come after (ie first no dependents, last no dependencies)
 
-test-runner: apps cf-core channel-provider client contracts crypto messaging store types $(shell find modules/test-runner $(find_options))
+test-runner: types crypto contracts store cf-core apps channel-provider messaging client $(shell find modules/test-runner $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
