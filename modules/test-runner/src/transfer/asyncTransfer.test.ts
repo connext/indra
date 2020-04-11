@@ -83,10 +83,10 @@ describe("Async Transfers", () => {
     await clientA.transfer({
       amount: ETH_AMOUNT_SM.toString(),
       assetId: tokenAddress,
-      recipient: receiverSigner.publicKey,
+      recipient: receiverSigner.publicIdentifier,
     });
     const receiverClient = await createClient({ signer: receiverSigner }, false);
-    expect(receiverClient.publicIdentifier).to.eq(receiverSigner.publicKey);
+    expect(receiverClient.publicIdentifier).to.eq(receiverSigner.publicIdentifier);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
     expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);
     receiverClient.messaging.disconnect();
