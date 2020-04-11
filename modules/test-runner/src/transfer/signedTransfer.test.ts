@@ -6,7 +6,6 @@ import {
   IConnextClient,
   PublicParams,
   SignedTransferStatus,
-  deBigNumberifyJson,
   EventPayloads,
 } from "@connext/types";
 import { signChannelMessage } from "@connext/crypto";
@@ -157,14 +156,14 @@ describe("Signed Transfers", () => {
 
     const [, installed] = promises;
     expect(installed).deep.contain(
-      deBigNumberifyJson({
+      {
         amount: transfer.amount,
         assetId: transfer.assetId,
         type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
         paymentId,
         transferMeta: { signer: signerAddress },
         meta: { foo: "bar", recipient: clientB.publicIdentifier },
-      }) as EventPayloads.SignedTransferReceived,
+      } as Partial<EventPayloads.SignedTransferReceived>,
     );
 
     const {

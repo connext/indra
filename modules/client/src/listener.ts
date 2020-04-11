@@ -15,7 +15,6 @@ import {
   CreatedHashLockTransferMeta,
   CreatedLinkedTransferMeta,
   CreatedSignedTransferMeta,
-  deBigNumberifyJson,
   DefaultApp,
   DepositAppName,
   DepositConfirmationMessage,
