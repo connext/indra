@@ -11,6 +11,7 @@ import {
   ConditionalTransactionCommitmentJSON,
   SetStateCommitmentJSON,
   MinimalTransaction,
+  INodeApiClient,
 } from "@connext/types";
 
 function exists(obj: any): boolean {
@@ -20,13 +21,15 @@ function exists(obj: any): boolean {
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
   public connected: boolean = false;
   public connection: IRpcConnection;
+  public node: INodeApiClient | undefined;
 
   private _config: ChannelProviderConfig | undefined = undefined;
   private _multisigAddress: string | undefined = undefined;
 
-  constructor(connection: IRpcConnection) {
+  constructor(connection: IRpcConnection, node?: INodeApiClient) {
     super();
     this.connection = connection;
+    this.node = node;
   }
 
   public enable(): Promise<ChannelProviderConfig> {

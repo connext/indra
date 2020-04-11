@@ -1,9 +1,26 @@
 import { AppRegistry } from "./app";
 import { Address, Bytes32, DecString, Transaction } from "./basic";
-import { IChannelProvider } from "./channelProvider";
+import { IChannelProvider, IChannelSigner } from "./channelProvider";
 import { NodeResponses } from "./node";
 import { PublicIdentifier } from "./identifiers";
 import { IMessagingService } from "./messaging";
+import { ILoggerService } from "./logger";
+
+export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
+  messaging: IMessagingService;
+  messagingUrl?: string;
+  signer?: IChannelSigner;
+  channelProvider?: IChannelProvider;
+}
+
+export interface NodeInitializationParameters {
+  nodeUrl: string;
+  messaging: IMessagingService;
+  logger?: ILoggerService;
+  userIdentifier?: Address;
+  nodeIdentifier?: Address;
+  channelProvider?: IChannelProvider;
+}
 
 export interface INodeApiClient {
   messaging: IMessagingService;

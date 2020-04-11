@@ -1,7 +1,13 @@
 import { ConnextStore } from "@connext/store";
-import { ClientOptions, StoreTypes, StoreFactoryOptions } from "@connext/types";
-
-import { isMainnet, isRinkeby, isLocalhost, removeUndefinedFields } from "./utils";
+import {
+  ClientOptions,
+  StoreTypes,
+  StoreFactoryOptions,
+  isMainnet,
+  isRinkeby,
+  isLocalhost,
+  removeUndefinedFields,
+} from "@connext/types";
 
 export function getOptionIfAvailable(option: string, opts?: Partial<ClientOptions>) {
   return opts && opts[option] ? opts[option] : undefined;

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@connext/types": "6.0.0-alpha.12",
+    "@connext/messaging": "6.0.0-alpha.12",
     "eventemitter3": "4.0.0"
   },
   "devDependencies": {

@@ -274,7 +274,7 @@ daicard: client $(shell find modules/daicard $(find_options))
 	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-client: apps channel-provider messaging $(shell find modules/client $(find_options))
+client: apps channel-provider $(shell find modules/client $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
@@ -304,7 +304,7 @@ contracts: crypto $(shell find modules/contracts $(find_options))
 	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-channel-provider: types $(shell find modules/channel-provider $(find_options))
+channel-provider: types messaging $(shell find modules/channel-provider $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@

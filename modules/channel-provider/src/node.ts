@@ -10,13 +10,17 @@ import {
   IChannelSigner,
   ChannelMethods,
   IMessagingService,
+  Transaction,
+  NATS_ATTEMPTS,
+  NATS_TIMEOUT,
+  logTime,
+  AsyncNodeInitializationParameters,
+  NodeInitializationParameters,
+  invalidAddress,
+  getAddressWithEthers,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
-import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
-import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
-import { NodeInitializationParameters } from "./types";
-import { invalidAddress } from "./validation";
 import { createMessagingService } from "./messaging";
 
 const sendFailed = "Failed to send message";
@@ -24,13 +28,6 @@ const sendFailed = "Failed to send message";
 // NOTE: swap rates are given as a decimal string describing:
 // Given 1 unit of `from`, how many units `to` are received.
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
-
-interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
-  messaging: IMessagingService;
-  messagingUrl?: string;
-  signer?: IChannelSigner;
-  channelProvider?: IChannelProvider;
-}
 
 export class NodeApiClient implements INodeApiClient {
   public static async init(opts: AsyncNodeInitializationParameters) {
@@ -233,7 +230,7 @@ export class NodeApiClient implements INodeApiClient {
 
   public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
     return this.send(`${this.userIdentifier}.channel.get-profile`, {
-      assetId: getAddress(assetId),
+      assetId: getAddressWithEthers(assetId),
     });
   }
 

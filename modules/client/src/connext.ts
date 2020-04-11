@@ -37,6 +37,7 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   CONVENTION_FOR_ETH_ASSET_ID,
+  IMessagingService,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -67,7 +68,7 @@ export class ConnextClient implements IConnextClient {
   public ethProvider: providers.JsonRpcProvider;
   public listener: ConnextListener;
   public log: ILoggerService;
-  public messaging: MessagingService;
+  public messaging: IMessagingService;
   public multisigAddress: Address;
   public network: Network;
   public node: INodeApiClient;

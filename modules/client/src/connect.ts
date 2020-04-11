@@ -1,5 +1,4 @@
 import { ChannelSigner } from "@connext/crypto";
-import { MessagingService } from "@connext/messaging";
 import {
   ClientOptions,
   ConnextClientStorePrefix,
@@ -12,14 +11,15 @@ import {
   NodeResponses,
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
+  logTime,
 } from "@connext/types";
+import { NodeApiClient } from "@connext/channel-provider";
 import { Contract, providers, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { delayAndThrow, getDefaultOptions, Logger, logTime, stringify } from "./lib";
-import { NodeApiClient } from "./node";
+import { delayAndThrow, getDefaultOptions, Logger, stringify } from "./lib";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -167,7 +167,7 @@ export const connect = async (
     config: nodeConfig,
     ethProvider,
     logger,
-    messaging: messaging as MessagingService,
+    messaging,
     network,
     node,
     signer,

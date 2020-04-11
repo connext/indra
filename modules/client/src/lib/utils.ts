@@ -1,20 +1,6 @@
-import { ILogger, createRandom32ByteHexString } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/types";
 import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
-
-import { RINKEBY_NETWORK, MAINNET_NETWORK, LOCALHOST_NETWORK } from "./constants";
-
-export const logTime = (log: ILogger, start: number, msg: string) => {
-  const diff = Date.now() - start;
-  const message = `${msg} in ${diff} ms`;
-  if (diff < 10) {
-    log.debug(message);
-  } else if (diff < 250) {
-    log.info(message);
-  } else {
-    log.warn(message);
-  }
-};
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "address6FEC..kuQk"
 export const stringify = (obj: object, abrv: boolean = false): string =>
@@ -97,25 +83,3 @@ export const withdrawalKey = (address: string): string => {
 
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
-
-export const isNode = () =>
-  typeof process !== "undefined" &&
-  typeof process.versions !== "undefined" &&
-  typeof process.versions.node !== "undefined";
-
-export function isMainnet(network: string): boolean {
-  return network.toLowerCase() === MAINNET_NETWORK.toLowerCase();
-}
-
-export function isRinkeby(network: string): boolean {
-  return network.toLowerCase() === RINKEBY_NETWORK.toLowerCase();
-}
-
-export function isLocalhost(network: string): boolean {
-  return network.toLowerCase() === LOCALHOST_NETWORK.toLowerCase();
-}
-
-export function removeUndefinedFields<T>(obj: T): T {
-  Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
-  return obj;
-}

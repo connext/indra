@@ -1,7 +1,13 @@
 import { MessagingService } from "@connext/messaging";
-import { MessagingConfig, VerifyNonceDtoType, ILoggerService, Address, PublicKey } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
-import { isNode } from "./lib";
+import {
+  MessagingConfig,
+  VerifyNonceDtoType,
+  ILoggerService,
+  Address,
+  PublicKey,
+  isNode,
+} from "@connext/types";
 
 export const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") => {
   let arr = url.split(delimiter);
@@ -72,10 +78,8 @@ export const createMessagingService = async (
   const key = `INDRA`;
   // create a messaging service client
   // do not specify a prefix so that clients can publish to node
-  const messaging = new MessagingService(
-    config, 
-    key, 
-    () => getBearerToken(nodeUrl, userIdentifier, getSignature),
+  const messaging = new MessagingService(config, key, () =>
+    getBearerToken(nodeUrl, userIdentifier, getSignature),
   );
   await messaging.connect();
   return messaging;
