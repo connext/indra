@@ -1,5 +1,5 @@
-import { Wallet } from "ethers";
-import { IChannelSigner, JsonRpcProvider } from "@connext/types";
+import { IChannelSigner } from "@connext/types";
+import bs58check from "bs58check";
 import {
   sign,
   encrypt,
@@ -17,15 +17,26 @@ import {
   isHexString,
   arrayToBuffer,
   removeHexPrefix,
+  compress,
+  decompress,
+  padLeft,
+  isCompressed,
+  isDecompressed,
   getPublic,
-  randomBytes,
 } from "eccrypto-js";
-import { TransactionResponse, TransactionRequest } from "ethers/providers";
+import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
+import { randomBytes } from "crypto";
+import { Wallet } from "ethers";
 
-// const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
-const CHAN_SIGN_PREFIX = "\x18Channel Signed Message:\n";
+// signing contants
+export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
+export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
-function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
+// publicIdentifier contants
+export const INDRA_PUB_ID_PREFIX = "indra";
+export const INDRA_PUB_ID_CHAR_LENGTH = 55;
+
+export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
   return typeof input === "string"
     ? isHexString(input)
       ? hexToBuffer(input)
@@ -35,11 +46,39 @@ function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
     : input;
 }
 
-function getLowerCaseAddress(publicKey: Buffer | string): string {
-  const buf = bufferify(publicKey);
-  const hex = addHexPrefix(bufferToHex(buf).slice(2));
-  const hash = keccak256(hexToBuffer(hex));
-  return addHexPrefix(bufferToHex(hash).substring(24));
+export function ensureBase58Length(str: string, length: number) {
+  if (str.length > length) {
+    throw new Error(`Provided string has length (${str.length}) greater than ${length}`);
+  }
+  return padLeft(str, length, "1");
+}
+
+export function getChannelPublicIdentifier(publicKey: string): string {
+  const buf = hexToBuffer(publicKey);
+  const compressedPubKey = isCompressed(buf) ? buf : compress(buf);
+  const base58id = bs58check.encode(compressedPubKey);
+  const base58length = INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length;
+  return INDRA_PUB_ID_PREFIX + ensureBase58Length(base58id, base58length);
+}
+
+export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): string {
+  publicIdentifier = publicIdentifier.replace(INDRA_PUB_ID_PREFIX, "");
+  publicIdentifier = publicIdentifier.replace(/^1+/, "");
+  const buf: Buffer = bs58check.decode(publicIdentifier);
+  const publicKey = decompress(buf);
+  return bufferToHex(publicKey);
+}
+
+export function getSignerAddressFromPublicIdentifier(publicIdentifier: string): string {
+  const publicKey = getPublicKeyFromPublicIdentifier(publicIdentifier);
+  return getChecksumAddress(publicKey);
+}
+
+export function getLowerCaseAddress(publicKey: Buffer | string): string {
+  const buf = typeof publicKey === "string" ? hexToBuffer(publicKey) : publicKey;
+  const pubKey = isDecompressed(buf) ? buf : decompress(buf);
+  const hash = keccak256(pubKey.slice(1));
+  return addHexPrefix(bufferToHex(hash.slice(12)));
 }
 
 function toChecksumAddress(address: string): string {
@@ -117,7 +156,7 @@ async function signChannelMessage(
   privateKey: Buffer | string,
   message: Buffer | string,
 ): Promise<string> {
-  return signMessage(privateKey, message, CHAN_SIGN_PREFIX);
+  return signMessage(privateKey, message, INDRA_SIGN_PREFIX);
 }
 
 async function recoverPublicKey(
@@ -155,7 +194,7 @@ export async function verifyChannelMessage(
   message: Buffer | string,
   sig: Buffer | string,
 ): Promise<string> {
-  return verifyMessage(message, sig, CHAN_SIGN_PREFIX);
+  return verifyMessage(message, sig, INDRA_SIGN_PREFIX);
 }
 
 export const getRandomChannelSigner = (ethProviderUrl?: string) =>
@@ -204,7 +243,7 @@ export class ChannelSigner implements IChannelSigner {
         `ChannelSigner can't send transactions without being connected to a provider`,
       );
     }
-    const wallet = new Wallet(this.privateKey, this.provider as any);
+    const wallet = new Wallet(this.privateKey, this.provider);
     return wallet.sendTransaction(transaction);
   }
 }
