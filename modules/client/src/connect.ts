@@ -1,7 +1,6 @@
 import { ChannelSigner } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
-  ChannelMethods,
   ClientOptions,
   ConnextClientStorePrefix,
   CreateChannelMessage,
@@ -19,15 +18,7 @@ import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import {
-  delayAndThrow,
-  getDefaultOptions,
-  getDefaultStore,
-  Logger,
-  logTime,
-  stringify,
-} from "./lib";
-import { createMessagingService } from "./messaging";
+import { delayAndThrow, getDefaultOptions, Logger, logTime, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 
 export const connect = async (
@@ -43,126 +34,90 @@ export const connect = async (
   const {
     channelProvider: providedChannelProvider,
     ethProviderUrl,
-    logger,
+    logger: providedLogger,
     loggerService,
     logLevel,
     mnemonic,
   } = opts;
   let { store, messaging, nodeUrl, messagingUrl, signer } = opts;
 
-  const log = loggerService
+  const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
-    : new Logger("ConnextConnect", logLevel, logger);
+    : new Logger("ConnextConnect", logLevel, providedLogger);
 
   // setup ethProvider + network information
-  log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
+  logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
   const network = await ethProvider.getNetwork();
 
   // setup messaging and node api
   let node: INodeApiClient;
-  let config: NodeResponses.GetConfig;
+  let nodeConfig: NodeResponses.GetConfig;
+  let userIdentifier: string;
 
   // setup channelProvider
   let channelProvider: IChannelProvider;
-  let isInjected = false;
+  let isInjected = !!providedChannelProvider;
 
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
     if (typeof channelProvider.config === "undefined") {
       await channelProvider.enable();
     }
-    log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
+    logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
-    const getSignature = async (message: string) => {
-      const sig = await channelProvider.send(
-        ChannelMethods.chan_signMessage,
-        { message },
-      );
-      return sig;
-    };
-
-    let { userIdentifier, nodeUrl } = channelProvider.config;
-
-    if (!messaging) {
-      messaging = await createMessagingService(
-        log,
-        nodeUrl,
-        userIdentifier,
-        getSignature,
-        messagingUrl,
-      );
-    } else {
-      await messaging.connect();
-    }
-
-    // create a new node api instance
-    node = new NodeApiClient({
-      channelProvider,
-      logger: log,
-      messaging,
-      nodeUrl,
-    });
-    config = await node.config();
+    nodeUrl = channelProvider.config.nodeUrl;
+    node = await NodeApiClient.init({ messaging, messagingUrl, logger, nodeUrl, channelProvider });
+    nodeConfig = await node.config();
+    messaging = node.messaging;
+    userIdentifier = channelProvider.config.userIdentifier;
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
     node.userIdentifier = userIdentifier;
-    node.nodeIdentifier = config.nodeIdentifier;
-
-    isInjected = true;
+    node.nodeIdentifier = nodeConfig.nodeIdentifier;
   } else if (signer || mnemonic) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
 
-    if (!signer) {
+    if (!signer && mnemonic) {
       const pk = Wallet.fromMnemonic(mnemonic).privateKey;
-      log.warn(`Client instantiation with mnemonic is only recommended for dev usage`);
+      logger.warn(`Client instantiation with mnemonic is only recommended for dev usage`);
       signer = new ChannelSigner(pk, ethProviderUrl);
     }
 
-    store = store || getDefaultStore(opts);
-
-    if (!messaging) {
-      messaging = await createMessagingService(
-        log,
-        nodeUrl,
-        signer.publicIdentifier,
-        (msg: string) => signer.signMessage(msg),
-        messagingUrl,
-      );
-    } else {
-      await messaging.connect();
-    }
     // create a new node api instance
-    node = new NodeApiClient({ logger: log, messaging, nodeUrl });
-    config = await node.config();
+    node = await NodeApiClient.init({ messaging, messagingUrl, logger, nodeUrl, signer });
+    nodeConfig = await node.config();
+    messaging = node.messaging;
+    userIdentifier = signer.publicIdentifier;
 
     // ensure that node and user identifiers are different
-    if (config.nodeIdentifier === signer.publicIdentifier) {
+    if (nodeConfig.nodeIdentifier === userIdentifier) {
       throw new Error(
         "Client must be instantiated with a signer that is different from the node's",
       );
     }
 
     channelProvider = await createCFChannelProvider({
-      contractAddresses: config.contractAddresses,
+      contractAddresses: nodeConfig.contractAddresses,
       ethProvider,
       lockService: { acquireLock: node.acquireLock.bind(node) },
-      logger: log,
+      logger,
       messaging,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
       signer,
       store,
     });
-    log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
+
+    logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userIdentifier = channelProvider.config.userIdentifier;
-    node.nodeIdentifier = config.nodeIdentifier;
+    node.userIdentifier = userIdentifier;
+    node.nodeIdentifier = nodeConfig.nodeIdentifier;
   } else {
     throw new Error("Must provide channelProvider or signer");
   }
@@ -172,7 +127,7 @@ export const connect = async (
 
   let multisigAddress: string;
   if (!myChannel) {
-    log.debug("no channel detected, creating channel..");
+    logger.debug("no channel detected, creating channel..");
     const creationEventData = await Promise.race([
       delayAndThrow(30_000, "Create channel event not fired within 30s"),
       new Promise(
@@ -180,14 +135,14 @@ export const connect = async (
           channelProvider.once(
             EventNames.CREATE_CHANNEL_EVENT,
             (data: CreateChannelMessage): void => {
-              log.debug(`Received CREATE_CHANNEL_EVENT`);
+              logger.debug(`Received CREATE_CHANNEL_EVENT`);
               res(data.data);
             },
           );
 
           // FYI This continues async in the background after CREATE_CHANNEL_EVENT is recieved
           const creationData = await node.createChannel();
-          log.debug(`created channel, transaction: ${stringify(creationData)}`);
+          logger.debug(`created channel, transaction: ${stringify(creationData)}`);
         },
       ),
     ]);
@@ -195,12 +150,12 @@ export const connect = async (
   } else {
     multisigAddress = myChannel.multisigAddress;
   }
-  log.debug(`multisigAddress: ${multisigAddress}`);
+  logger.debug(`multisigAddress: ${multisigAddress}`);
 
   channelProvider.multisigAddress = multisigAddress;
 
   // create a token contract based on the provided token
-  const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
+  const token = new Contract(nodeConfig.contractAddresses.Token, tokenAbi, ethProvider);
 
   // create appRegistry
   const appRegistry = await node.appRegistry();
@@ -209,9 +164,9 @@ export const connect = async (
   const client = new ConnextClient({
     appRegistry,
     channelProvider,
-    config,
+    config: nodeConfig,
     ethProvider,
-    logger: log,
+    logger,
     messaging: messaging as MessagingService,
     network,
     node,
@@ -220,12 +175,12 @@ export const connect = async (
     token,
   });
 
-  log.debug(`Done creating connext client`);
+  logger.debug(`Done creating connext client`);
 
   // return before any cleanup using the assumption that all injected clients
   // have an online client that it can access that has done the cleanup
   if (isInjected) {
-    logTime(log, start, `Client successfully connected`);
+    logTime(logger, start, `Client successfully connected`);
     return client;
   }
 
@@ -247,12 +202,12 @@ export const connect = async (
     delayAndThrow(30_000, "Channel was not available after 30 seconds."),
   ]);
 
-  log.debug(`Channel is available`);
+  logger.debug(`Channel is available`);
 
   // Make sure our store schema is up-to-date
   const schemaVersion = await store.getSchemaVersion();
   if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
-    log.debug(`Outdated store schema detected, restoring state`);
+    logger.debug(`Outdated store schema detected, restoring state`);
     await client.restoreState();
     // increment / update store schema version, defaults to types const
     // of `STORE_SCHEMA_VERSION`
@@ -263,10 +218,10 @@ export const connect = async (
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes("StateChannel does not exist yet")) {
-      log.debug(`Restoring client state: ${e.stack || e.message}`);
+      logger.debug(`Restoring client state: ${e.stack || e.message}`);
       await client.restoreState();
     } else {
-      log.error(`Failed to get free balance: ${e.stack || e.message}`);
+      logger.error(`Failed to get free balance: ${e.stack || e.message}`);
       throw e;
     }
   }
@@ -274,20 +229,20 @@ export const connect = async (
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
   if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
-    log.debug("State schema is out-of-date, restoring an up-to-date client state");
+    logger.debug("State schema is out-of-date, restoring an up-to-date client state");
     await client.restoreState();
   }
 
-  log.debug("Registering subscriptions");
+  logger.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
   // cleanup any hanging registry apps
-  log.debug("Cleaning up registry apps");
+  logger.debug("Cleaning up registry apps");
   await client.cleanupRegistryApps();
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
-  log.debug("Reclaiming pending async transfers");
+  logger.debug("Reclaiming pending async transfers");
   // NOTE: Removing the following await results in a subtle race condition during bot tests.
   //       Don't remove this await again unless you really know what you're doing & bot tests pass
   // no need to await this if it needs collateral
@@ -296,7 +251,7 @@ export const connect = async (
   try {
     await client.reclaimPendingAsyncTransfers();
   } catch (e) {
-    log.error(
+    logger.error(
       `Could not reclaim pending async transfers: ${e}... will attempt again on next connection`,
     );
   }
@@ -305,9 +260,9 @@ export const connect = async (
   try {
     await client.clientCheckIn();
   } catch (e) {
-    log.error(`Could not complete node check-in: ${e}... will attempt again on next connection`);
+    logger.error(`Could not complete node check-in: ${e}... will attempt again on next connection`);
   }
 
-  logTime(log, start, `Client successfully connected`);
+  logTime(logger, start, `Client successfully connected`);
   return client;
 };

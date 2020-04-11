@@ -19,6 +19,7 @@ import { PublicIdentifier } from "./identifiers";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
+  chan_getPublicIdentifier: "chan_getPublicIdentifier",
   chan_config: "chan_config",
   chan_signMessage: "chan_signMessage",
   chan_encrypt: "chan_encrypt",
@@ -114,6 +115,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // SIGNER METHODS
+  getPublicIdentifier(): Promise<string>;
   signMessage(message: string): Promise<string>;
   encrypt(message: string, publicKey: PublicKey): Promise<string>;
   decrypt(encryptedPreImage: string): Promise<string>;

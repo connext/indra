@@ -50,7 +50,6 @@ export class DepositController extends AbstractController {
         appIdentityHash,
       });
       const hash = await this.connext.channelProvider.walletDeposit({
-        recipient: this.connext.multisigAddress,
         amount: amount.toString(),
         assetId: tokenAddress,
       });

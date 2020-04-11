@@ -1,12 +1,7 @@
 import { ConnextStore } from "@connext/store";
-import { ClientOptions, StoreTypes } from "@connext/types";
+import { ClientOptions, StoreTypes, StoreFactoryOptions } from "@connext/types";
 
-import {
-  isMainnet,
-  isRinkeby,
-  isLocalhost,
-  removeUndefinedFields,
-} from "./utils";
+import { isMainnet, isRinkeby, isLocalhost, removeUndefinedFields } from "./utils";
 
 export function getOptionIfAvailable(option: string, opts?: Partial<ClientOptions>) {
   return opts && opts[option] ? opts[option] : undefined;
@@ -14,8 +9,10 @@ export function getOptionIfAvailable(option: string, opts?: Partial<ClientOption
 
 export function getDefaultStore(opts?: Partial<ClientOptions>): ConnextStore {
   const storeType = getOptionIfAvailable("storeType", opts);
-  const backupService = getOptionIfAvailable("backupService", opts);
-  return new ConnextStore(storeType || StoreTypes.LocalStorage, { backupService });
+  return new ConnextStore(
+    storeType || StoreTypes.LocalStorage,
+    removeUndefinedFields<StoreFactoryOptions>(opts),
+  );
 }
 
 export function getDefaultUrlOptions(network: string) {

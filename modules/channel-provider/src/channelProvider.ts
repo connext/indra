@@ -54,6 +54,9 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   public send = async (method: ChannelMethods, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
+      case ChannelMethods.chan_getPublicIdentifier:
+        result = await this.getPublicIdentifier();
+        break;
       case ChannelMethods.chan_setUserWithdrawal:
         result = await this.setUserWithdrawal(params.withdrawalObject);
         break;
@@ -150,6 +153,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
+  public getPublicIdentifier(): Promise<string> {
+    return this._send(ChannelMethods.chan_getPublicIdentifier);
+  }
+
   public signMessage(message: string): Promise<string> {
     return this._send(ChannelMethods.chan_signMessage, { message });
   }

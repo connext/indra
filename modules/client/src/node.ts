@@ -1,4 +1,3 @@
-import { MessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   bigNumberifyJson,
@@ -8,6 +7,9 @@ import {
   INodeApiClient,
   NodeResponses,
   stringify,
+  IChannelSigner,
+  ChannelMethods,
+  IMessagingService,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
@@ -15,6 +17,7 @@ import { v4 as uuid } from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
 import { NodeInitializationParameters } from "./types";
 import { invalidAddress } from "./validation";
+import { createMessagingService } from "./messaging";
 
 const sendFailed = "Failed to send message";
 
@@ -22,8 +25,58 @@ const sendFailed = "Failed to send message";
 // Given 1 unit of `from`, how many units `to` are received.
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
+interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
+  messaging: IMessagingService;
+  messagingUrl?: string;
+  signer?: IChannelSigner;
+  channelProvider?: IChannelProvider;
+}
+
 export class NodeApiClient implements INodeApiClient {
-  public messaging: MessagingService;
+  public static async init(opts: AsyncNodeInitializationParameters) {
+    let getSignature: (msg: string) => Promise<string>;
+    let userIdentifier: string;
+    let messaging: IMessagingService;
+
+    const {
+      signer,
+      channelProvider,
+      logger,
+      nodeUrl,
+      messaging: providedMessaging,
+      messagingUrl,
+    } = opts;
+
+    if (signer) {
+      getSignature = (msg: string) => signer.signMessage(msg);
+      userIdentifier = signer.publicIdentifier;
+    } else if (channelProvider) {
+      getSignature = async (message: string) => {
+        const sig = await channelProvider.send(ChannelMethods.chan_signMessage, { message });
+        return sig;
+      };
+      userIdentifier = channelProvider.config.userIdentifier;
+    } else {
+      throw new Error("Must provide channelProvider or signer");
+    }
+
+    if (!providedMessaging) {
+      messaging = await createMessagingService(
+        logger,
+        nodeUrl,
+        userIdentifier,
+        getSignature,
+        messagingUrl,
+      );
+    } else {
+      messaging = providedMessaging;
+      await messaging.connect();
+    }
+
+    return new NodeApiClient({ ...opts, messaging });
+  }
+
+  public messaging: IMessagingService;
   public latestSwapRates: { [key: string]: string } = {};
   public log: ILoggerService;
 
@@ -33,7 +86,7 @@ export class NodeApiClient implements INodeApiClient {
   private nodeUrl: string;
 
   constructor(opts: NodeInitializationParameters) {
-    this.messaging = opts.messaging as MessagingService;
+    this.messaging = opts.messaging as IMessagingService;
     this.log = opts.logger.newContext("NodeApiClient");
     this._userIdentifier = opts.userIdentifier;
     this._nodeIdentifier = opts.nodeIdentifier;
@@ -95,14 +148,15 @@ export class NodeApiClient implements INodeApiClient {
     }
     return retVal;
   }
-
   public async appRegistry(): Promise<AppRegistry> {
     const response: AxiosResponse<AppRegistry> = await axios.get(`${this.nodeUrl}/app-registry`);
     return response.data;
   }
 
   public async config(): Promise<NodeResponses.GetConfig> {
-    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(`${this.nodeUrl}/config`);
+    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(
+      `${this.nodeUrl}/config`,
+    );
     return response.data;
   }
 
@@ -290,6 +344,6 @@ export class NodeApiClient implements INodeApiClient {
       start,
       `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
     );
-    return (!response || isEmptyObj) ? undefined : bigNumberifyJson(response);
+    return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }
 }

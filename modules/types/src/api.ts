@@ -3,8 +3,10 @@ import { Address, Bytes32, DecString, Transaction } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import { NodeResponses } from "./node";
 import { PublicIdentifier } from "./identifiers";
+import { IMessagingService } from "./messaging";
 
 export interface INodeApiClient {
+  messaging: IMessagingService;
   channelProvider: IChannelProvider | undefined;
   userIdentifier: PublicIdentifier | undefined;
   nodeIdentifier: PublicIdentifier | undefined;

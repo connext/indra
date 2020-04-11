@@ -94,6 +94,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     const { method, params } = payload;
     let result;
     switch (method) {
+      case ChannelMethods.chan_getPublicIdentifier:
+        result = await this.getPublicIdentifier();
+        break;
       case ChannelMethods.chan_setUserWithdrawal:
         result = await this.setUserWithdrawal(params.withdrawalObject);
         break;
@@ -163,6 +166,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
+
+  private async getPublicIdentifier(): Promise<string> {
+    return this.signer.publicIdentifier;
+  }
 
   private signMessage(message: string): Promise<string> {
     return this.signer.signMessage(message);
