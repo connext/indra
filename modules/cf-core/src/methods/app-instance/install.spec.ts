@@ -6,7 +6,6 @@ import {
   nullLogger,
   ProtocolNames,
   IStoreService,
-  getRandomPublicIdentifier,
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Wallet } from "ethers";
@@ -48,7 +47,7 @@ describe("Can handle correct & incorrect installs", () => {
       store,
       nullLogger,
     );
-    initiatorIdentifier = getRandomPublicIdentifier();
+    [initiatorIdentifier] = getRandomPublicIdentifiers(1);
   });
 
   it("fails to install with undefined appIdentityHash", async () => {

@@ -37,15 +37,15 @@ describe("ConditionalTransactionCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    initiator.publicKey,
-    responder.publicKey,
+    initiator.publicIdentifier,
+    responder.publicIdentifier,
   );
 
   expect(stateChannel.userIdentifiers[0]).toEqual(
-    initiator.publicKey,
+    initiator.publicIdentifier,
   );
   expect(stateChannel.userIdentifiers[1]).toEqual(
-    responder.publicKey,
+    responder.publicIdentifier,
   );
 
   // Set the state to some test values

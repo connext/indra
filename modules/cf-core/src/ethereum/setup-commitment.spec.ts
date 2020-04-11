@@ -30,8 +30,8 @@ describe("SetupCommitment", () => {
     sender: getRandomChannelSigner(),
     receiver: getRandomChannelSigner(),
   };
-  const initiatorId = interaction.sender.publicKey;
-  const responderId = interaction.receiver.publicKey;
+  const initiatorId = interaction.sender.publicIdentifier;
+  const responderId = interaction.receiver.publicIdentifier;
 
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(

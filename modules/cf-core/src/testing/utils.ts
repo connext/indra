@@ -13,7 +13,6 @@ import {
   DepositAppState,
   DepositAppStateEncoding,
   EventNames,
-  getRandomPublicIdentifier,
   getAddressFromAssetId,
   InstallMessage,
   Message,
@@ -45,6 +44,7 @@ import { initialEmptyTTTState, tttAbiEncodings } from "./tic-tac-toe";
 import { initialTransferState, transferAbiEncodings } from "./unidirectional-transfer";
 import { ERC20, MinimumViableMultisig } from "@connext/contracts";
 import { CONTRACT_NOT_DEPLOYED } from "../errors";
+import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 interface AppContext {
   appDefinition: string;

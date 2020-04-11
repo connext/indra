@@ -1,8 +1,9 @@
-import { OutcomeType, createRandomAddress, toBN, getRandomPublicIdentifier } from "@connext/types";
+import { OutcomeType, createRandomAddress, toBN } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
 import { AppInstance } from "./app-instance";
+import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {

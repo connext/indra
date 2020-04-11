@@ -40,12 +40,12 @@ describe("set state on free balance", () => {
         multisigMastercopy: network.MinimumViableMultisig,
       },
       getAddress(createRandomAddress()),
-      initiatorNode.publicKey,
-      responderNode.publicKey,
+      initiatorNode.publicIdentifier,
+      responderNode.publicIdentifier,
     );
 
-    expect(stateChannel.userIdentifiers[0]).toEqual(initiatorNode.publicKey);
-    expect(stateChannel.userIdentifiers[1]).toEqual(responderNode.publicKey);
+    expect(stateChannel.userIdentifiers[0]).toEqual(initiatorNode.publicIdentifier);
+    expect(stateChannel.userIdentifiers[1]).toEqual(responderNode.publicIdentifier);
 
     // Set the state to some test values
     stateChannel = stateChannel.setFreeBalance(

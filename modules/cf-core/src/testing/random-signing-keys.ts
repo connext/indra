@@ -12,6 +12,11 @@ export function getRandomChannelSigners(length: number, ethProviderUrl?: string)
   return Array(length).fill(0).map(() => getRandomChannelSigner(ethProviderUrl));
 }
 
+export function getRandomPublicIdentifier(provider?: string) {
+  const [ret] = getRandomPublicIdentifiers(1, provider);
+  return ret;
+}
+
 export function getRandomPublicIdentifiers(length: number, provider?: string): string[] {
   return getRandomChannelSigners(length, provider)
     .map((signer) => signer.publicIdentifier);

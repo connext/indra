@@ -39,6 +39,7 @@ export interface IChannelSigner extends Signer {
   encrypt(message: string, publicKey: string): Promise<string>;
   signMessage(message: string): Promise<string>;
   publicKey: string;
+  publicIdentifier: string;
 }
 
 export type ChannelProviderConfig = {

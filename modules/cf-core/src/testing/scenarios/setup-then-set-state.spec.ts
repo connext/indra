@@ -72,8 +72,8 @@ describe.skip("Scenario: Setup, set state on free balance, go on chain", () => {
         network.IdentityApp,
         { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
         proxy, // used as multisig
-        initiator.publicKey,
-        responder.publicKey,
+        initiator.publicIdentifier,
+        responder.publicIdentifier,
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
