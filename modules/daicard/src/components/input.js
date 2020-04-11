@@ -3,7 +3,7 @@ import { arrayify, isHexString } from "ethers/utils";
 import React, { useEffect, useState } from "react";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 
-import { resolveAddress, resolveAddress } from "../utils";
+import { resolveAddress } from "../utils";
 import { QRScan } from "./qrCode";
 
 const useDebounce = (value, delay) => {

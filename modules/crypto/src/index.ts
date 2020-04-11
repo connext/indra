@@ -28,11 +28,11 @@ import {
 import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
 import { Wallet } from "ethers";
 
-// signing contants
+// signing constants
 export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
-// publicIdentifier contants
+// publicIdentifier constants
 export const INDRA_PUB_ID_PREFIX = "indra";
 export const INDRA_PUB_ID_CHAR_LENGTH = 55;
 
