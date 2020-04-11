@@ -26,6 +26,7 @@ import { ChannelProvider } from "@connext/channel-provider";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
+import { getPublicKeyFromPublicIdentifier } from "@connext/crypto";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -94,7 +95,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         result = await this.signMessage(params.message);
         break;
       case ChannelMethods.chan_encrypt:
-        result = await this.encrypt(params.message, params.publicKey);
+        result = await this.encrypt(params.message, params.publicIdentifier);
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -152,10 +153,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return this.signer.signMessage(message);
   };
 
-  private encrypt(message: string, publicKey: string): Promise<string> {
+  private encrypt(message: string, publicIdentifier: string): Promise<string> {
     return this.signer.encrypt(
       message,
-      publicKey, // TODO: replace with real pubkey
+      getPublicKeyFromPublicIdentifier(publicIdentifier),
     );
   };
 

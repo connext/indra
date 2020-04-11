@@ -61,7 +61,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         result = await this.signMessage(params.message);
         break;
       case ChannelMethods.chan_encrypt:
-        result = await this.encrypt(params.message, params.publicKey);
+        result = await this.encrypt(params.message, params.publicIdentifier);
         break;
       case ChannelMethods.chan_config:
         result = this.config;
@@ -149,10 +149,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return this._send(ChannelMethods.chan_signMessage, { message });
   }
 
-  public encrypt(message: string, publicKey: string): Promise<string> {
+  public encrypt(message: string, publicIdentifier: string): Promise<string> {
     return this._send(ChannelMethods.chan_encrypt, {
       message,
-      publicKey,
+      publicIdentifier,
     });
   };
 

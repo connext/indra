@@ -16,7 +16,7 @@ export const invalidAddress = (value: string): string | undefined => {
 export const isValidPublicIdentifier = (id: string): boolean => {
   try {
     const addr = getSignerAddressFromPublicIdentifier(id);
-    return !!invalidAddress(addr);
+    return isValidAddress(addr);
   } catch (e) {
     return false;
   }
