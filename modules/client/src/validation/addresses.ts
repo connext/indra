@@ -1,5 +1,5 @@
 import { arrayify, getAddress, isHexString } from "ethers/utils";
-import { isValidPublicIdentifier } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 export const isValidAddress = (address: any): boolean =>
   typeof address === "string" && isHexString(address) && arrayify(address).length === 20;
@@ -10,6 +10,15 @@ export const invalidAddress = (value: string): string | undefined => {
     return undefined;
   } catch (e) {
     return e.message;
+  }
+};
+
+export const isValidPublicIdentifier = (id: string): boolean => {
+  try {
+    const addr = getSignerAddressFromPublicIdentifier(id);
+    return !!invalidAddress(addr);
+  } catch (e) {
+    return false;
   }
 };
 

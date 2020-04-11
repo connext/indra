@@ -189,7 +189,6 @@ export class ConnextClient implements IConnextClient {
       contractAddresses: this.config.contractAddresses,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl: this.channelProvider.config.nodeUrl,
-      publicIdentifier: await this.signer.getAddress(),
       store: this.store,
       logger: this.log.newContext("CFChannelProvider"),
     });
