@@ -197,7 +197,7 @@ export class TestRunner {
       multisigAddress: this.multisigAB,
       initiatorIdentifier: this.mininodeA.publicIdentifier,
       responderIdentifier: this.mininodeB.publicIdentifier,
-      appDefinition: this.identityApp.publicIdentifier,
+      appDefinition: this.identityApp.address,
       abiEncodings: {
         stateEncoding,
         actionEncoding: undefined,
@@ -210,7 +210,7 @@ export class TestRunner {
       stateTimeout: Zero,
       initialState,
       outcomeType,
-    });
+    } as ProtocolParams.Propose);
 
     const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
     const [proposal] = [
@@ -229,12 +229,12 @@ export class TestRunner {
       disableLimit: false,
       initialState,
       initiatorBalanceDecrement: One,
-      initiatorDepositAssetId: getAddressFromAssetId(tokenAddress),
+      initiatorDepositAssetId: tokenAddress,
       initiatorIdentifier: this.mininodeA.publicIdentifier,
       multisigAddress: this.multisigAB,
       outcomeType,
       responderBalanceDecrement: One,
-      responderDepositAssetId: getAddressFromAssetId(tokenAddress),
+      responderDepositAssetId: tokenAddress,
       responderIdentifier: this.mininodeB.publicIdentifier,
       appInitiatorIdentifier: this.mininodeA.publicIdentifier,
       appResponderIdentifier: this.mininodeB.publicIdentifier,
@@ -295,7 +295,7 @@ export class TestRunner {
       stateTimeout: Zero,
       initialState,
       outcomeType,
-    });
+    } as ProtocolParams.Propose);
 
     const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
     const [proposal] = [
@@ -318,8 +318,8 @@ export class TestRunner {
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
-      initiatorDepositAssetId: getAddressFromAssetId(tokenAddressA),
-      responderDepositAssetId: getAddressFromAssetId(tokenAddressB),
+      initiatorDepositAssetId: tokenAddressA,
+      responderDepositAssetId: tokenAddressB,
       disableLimit: false,
       appInitiatorIdentifier: this.mininodeA.publicIdentifier,
       appResponderIdentifier: this.mininodeB.publicIdentifier,
