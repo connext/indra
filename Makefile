@@ -269,37 +269,37 @@ test-runner: apps cf-core channel-provider client contracts crypto messaging sto
 	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-daicard: client store types $(shell find modules/daicard $(find_options))
+daicard: client $(shell find modules/daicard $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-client: apps cf-core channel-provider crypto messaging store types $(shell find modules/client $(find_options))
+client: apps channel-provider messaging $(shell find modules/client $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-node: apps cf-core contracts crypto messaging types $(shell find modules/node $(find_options))
-	$(log_start)
+node: apps messaging $(shell find modules/node $(find_options))
+	$(log_start
 	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-apps: cf-core contracts crypto types $(shell find modules/apps $(find_options))
+apps: cf-core $(shell find modules/apps $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/apps && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-dashboard: cf-core messaging types $(shell find modules/dashboard $(find_options))
+dashboard: cf-core messaging $(shell find modules/dashboard $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/dashboard && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-cf-core: contracts crypto store types $(shell find modules/cf-core $(find_options))
+cf-core: contracts store $(shell find modules/cf-core $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-contracts: crypto types $(shell find modules/contracts $(find_options))
+contracts: crypto $(shell find modules/contracts $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
