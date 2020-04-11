@@ -244,14 +244,9 @@ export class ConnextClient implements IConnextClient {
     }
     const { name, chainId, appDefinitionAddress } = appDetails as any;
     if (name) {
-      return registry.find(app => 
-        app.name === name &&
-        app.chainId === chainId,
-      );
+      return registry.find(app => app.name === name && app.chainId === chainId);
     }
-    return registry.find(app =>
-      app.appDefinitionAddress === appDefinitionAddress,
-    );
+    return registry.find(app => app.appDefinitionAddress === appDefinitionAddress);
   };
 
   public createChannel = async (): Promise<NodeResponses.CreateChannel> => {
@@ -342,10 +337,7 @@ export class ConnextClient implements IConnextClient {
     params: PublicParams.Withdraw,
     signatures: string[],
   ): Promise<void> => {
-    return await this.withdrawalController.saveWithdrawCommitmentToStore(
-      params,
-      signatures,
-    );
+    return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
   };
 
   public resolveCondition = async (
@@ -456,7 +448,7 @@ export class ConnextClient implements IConnextClient {
       await this.channelProvider.send(ChannelMethods.chan_restoreState, {});
       this.log.info(`Found state to restore from store's backup`);
     } catch (e) {
-      const { 
+      const {
         channel,
         setupCommitment,
         setStateCommitments,
@@ -608,7 +600,8 @@ export class ConnextClient implements IConnextClient {
     }
     // check state is not finalized
     const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
-    if ((state as any).finalized) { // FIXME: casting?
+    if ((state as any).finalized) {
+      // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(MethodNames.chan_takeAction, {
@@ -631,7 +624,8 @@ export class ConnextClient implements IConnextClient {
     }
     // check state is not finalized
     const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
-    if ((state as any).finalized) { // FIXME: casting?
+    if ((state as any).finalized) {
+      // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(MethodNames.chan_updateState, {
@@ -699,7 +693,9 @@ export class ConnextClient implements IConnextClient {
   ): Promise<PublicResults.ResolveLinkedTransfer> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
-    const preImage = await this.signer.decrypt(encryptedPreImage);
+    const preImage = await this.channelProvider.send(ChannelMethods.chan_decrypt, {
+      encryptedPreImage,
+    });
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
@@ -803,7 +799,9 @@ export class ConnextClient implements IConnextClient {
       try {
         await this.rejectInstallApp(hanging.identityHash);
       } catch (e) {
-        this.log.error(`Could not remove proposal: ${hanging.identityHash}. Error: ${e.stack || e.message}`);
+        this.log.error(
+          `Could not remove proposal: ${hanging.identityHash}. Error: ${e.stack || e.message}`,
+        );
       }
     }
   };
@@ -820,7 +818,9 @@ export class ConnextClient implements IConnextClient {
       try {
         await this.uninstallApp(app.identityHash);
       } catch (e) {
-        this.log.error(`Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`);
+        this.log.error(
+          `Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`,
+        );
       }
     }
   };
@@ -847,17 +847,21 @@ export class ConnextClient implements IConnextClient {
 
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
-      const currentMultisigBalance = assetId === AddressZero
-        ? await this.ethProvider.getBalance(this.multisigAddress)
-        : await new Contract(assetId, tokenAbi, this.ethProvider)
-            .functions.balanceOf(this.multisigAddress);
+      const currentMultisigBalance =
+        assetId === AddressZero
+          ? await this.ethProvider.getBalance(this.multisigAddress)
+          : await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
+              this.multisigAddress,
+            );
 
       if (currentMultisigBalance.gt(latestState.startingMultisigBalance)) {
         // deposit has occurred, rescind
         try {
           await this.rescindDepositRights({ assetId, appIdentityHash });
         } catch (e) {
-          this.log.warn(`Could not uninstall deposit app ${appIdentityHash}. Error: ${e.stack || e.message}`);
+          this.log.warn(
+            `Could not uninstall deposit app ${appIdentityHash}. Error: ${e.stack || e.message}`,
+          );
         }
         continue;
       }
@@ -865,14 +869,11 @@ export class ConnextClient implements IConnextClient {
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
       if (assetId === AddressZero) {
-        this.ethProvider.on(
-          this.multisigAddress, 
-          async (balance: BigNumber) => {
-            if (balance.gt(latestState.startingMultisigBalance)) {
-              await this.rescindDepositRights({ assetId, appIdentityHash });
-            }
-          },
-        );
+        this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
+          if (balance.gt(latestState.startingMultisigBalance)) {
+            await this.rescindDepositRights({ assetId, appIdentityHash });
+          }
+        });
         continue;
       }
 
@@ -880,8 +881,9 @@ export class ConnextClient implements IConnextClient {
         "Transfer",
         async (sender: string, recipient: string, amount: BigNumber) => {
           if (recipient === this.multisigAddress && amount.gt(0)) {
-            const bal = await new Contract(assetId, tokenAbi, this.ethProvider)
-              .functions.balanceOf(this.multisigAddress);
+            const bal = await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
+              this.multisigAddress,
+            );
             if (bal.gt(latestState.startingMultisigBalance)) {
               await this.rescindDepositRights({ assetId, appIdentityHash });
             }
