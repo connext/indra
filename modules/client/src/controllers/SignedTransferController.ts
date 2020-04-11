@@ -1,6 +1,5 @@
 import {
   ConditionalTransferTypes,
-  deBigNumberifyJson,
   MethodParams,
   EventNames,
   EventPayloads,
@@ -22,8 +21,8 @@ export class SignedTransferController extends AbstractController {
     // convert params + validate
     const amount = toBN(params.amount);
     const { meta, paymentId, signer, assetId, recipient } = params;
-    let metaWithRecipient = meta || {};
-    metaWithRecipient.recipient = recipient;
+    const submittedMeta = { ...(meta || {}) } as any;
+    submittedMeta.recipient = recipient;
 
     const initialState: SimpleSignedTransferAppState = {
       coinTransfers: [
@@ -56,7 +55,7 @@ export class SignedTransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      meta,
+      meta: submittedMeta,
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
@@ -75,7 +74,7 @@ export class SignedTransferController extends AbstractController {
       amount,
       assetId,
       sender: this.connext.publicIdentifier,
-      meta,
+      meta: submittedMeta,
       transferMeta: {
         signer,
       },

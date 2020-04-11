@@ -2,7 +2,6 @@ import {
   Address,
   Bytes32,
   ConditionalTransferTypes,
-  deBigNumberifyJson,
   EventNames,
   EventPayloads,
   PublicParams,
@@ -69,7 +68,7 @@ export class ResolveSignedTransferController extends AbstractController {
 
     this.connext.emit(
       EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
-      deBigNumberifyJson({
+      {
         type: ConditionalTransferTypes.SignedTransfer,
         amount,
         assetId,
@@ -77,7 +76,7 @@ export class ResolveSignedTransferController extends AbstractController {
         sender,
         recipient: this.connext.publicIdentifier,
         meta,
-      }) as EventPayloads.SignedTransferUnlocked,
+      } as EventPayloads.SignedTransferUnlocked,
     );
 
     return resolveRes;
