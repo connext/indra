@@ -73,8 +73,8 @@ export const computeAppChallengeHash = (
 ) =>
   keccak256(
     solidityPack(
-      ["uint8", "bytes32", "uint256", "uint256", "bytes32"],
-      [CommitmentTypeId.SET_STATE, id, versionNumber, timeout, appStateHash],
+      ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
+      [CommitmentTypeId.SET_STATE, id, appStateHash, versionNumber, timeout],
     ),
   );
 

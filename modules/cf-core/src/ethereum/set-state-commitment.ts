@@ -62,7 +62,7 @@ export class SetStateCommitment implements EthereumCommitment {
 
   public encode(): string {
     return solidityPack(
-      ["uint8", "bytes32", "uint256", "uint256", "bytes32"],
+      ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
       [
         CommitmentTypeId.SET_STATE,
         appIdentityToHash(this.appIdentity),

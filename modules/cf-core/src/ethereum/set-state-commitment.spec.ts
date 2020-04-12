@@ -134,7 +134,7 @@ describe("Set State Commitment", () => {
     //       function ... maybe an ChallengeRegistry class or something
     const expectedHashToSign = keccak256(
       solidityPack(
-        ["uint8", "bytes32", "uint256", "uint256", "bytes32"],
+        ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
         [
           CommitmentTypeId.SET_STATE,
           appIdentityToHash(appInstance.identity),
