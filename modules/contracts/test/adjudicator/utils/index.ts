@@ -82,11 +82,11 @@ export class AppWithCounterClass {
   get identityHash(): string {
     return keccak256(
       solidityPack(
-        ["uint256", "address[]", "address", "address", "uint256"],
+        ["address", "uint256", "bytes32", "address", "uint256"],
         [
-          this.channelNonce,
-          this.participants,
           this.multisigAddress,
+          this.channelNonce,
+          keccak256(this.participants),
           this.appDefinition,
           this.defaultTimeout
         ],

@@ -46,9 +46,9 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
     {
         return keccak256(
             abi.encodePacked(
-                appIdentity.channelNonce,
-                appIdentity.participants,
                 appIdentity.multisigAddress,
+                appIdentity.channelNonce,
+                keccak256(appIdentity.participants),
                 appIdentity.appDefinition,
                 appIdentity.defaultTimeout
             )

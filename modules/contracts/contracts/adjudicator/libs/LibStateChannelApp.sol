@@ -15,9 +15,9 @@ contract LibStateChannelApp is LibDispute {
 
     // A minimal structure that uniquely identifies a single instance of an App
     struct AppIdentity {
+        address multisigAddress;
         uint256 channelNonce;
         address[] participants;
-        address multisigAddress;
         address appDefinition;
         uint256 defaultTimeout;
     }
