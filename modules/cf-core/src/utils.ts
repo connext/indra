@@ -40,7 +40,7 @@ export function appIdentityToHash(appIdentity: AppIdentity): string {
       [
         appIdentity.multisigAddress,
         appIdentity.channelNonce,
-        keccak256(appIdentity.participants),
+        keccak256(solidityPack(["address[]"], [appIdentity.participants])),
         appIdentity.appDefinition,
         appIdentity.defaultTimeout
       ],

@@ -86,7 +86,7 @@ export class AppWithCounterClass {
         [
           this.multisigAddress,
           this.channelNonce,
-          keccak256(this.participants),
+          keccak256(solidityPack(["address[]"], [this.participants])),
           this.appDefinition,
           this.defaultTimeout
         ],
