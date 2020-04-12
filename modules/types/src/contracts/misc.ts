@@ -95,7 +95,6 @@ export type OutcomeType = (typeof OutcomeType)[keyof typeof OutcomeType];
 export const enum CommitmentTypeId {
   MULTISIG = 0,
   SET_STATE = 1,
-  PROGRESS_STATE = 2,
-  CANCEL_DISPUTE = 3,
+  CANCEL_DISPUTE = 2,
 }
 

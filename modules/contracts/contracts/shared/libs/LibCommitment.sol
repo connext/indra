@@ -10,7 +10,6 @@ contract LibCommitment {
     enum CommitmentTypeId {
         MULTISIG,
         SET_STATE,
-        PROGRESS_STATE,
         CANCEL_DISPUTE
     }
 
