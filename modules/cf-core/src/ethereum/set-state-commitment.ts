@@ -66,9 +66,9 @@ export class SetStateCommitment implements EthereumCommitment {
       [
         CommitmentTypeId.SET_STATE,
         appIdentityToHash(this.appIdentity),
+        this.appStateHash,
         this.versionNumber,
         toBN(this.stateTimeout),
-        this.appStateHash,
       ],
     );
   }

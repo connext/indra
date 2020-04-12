@@ -75,9 +75,9 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
             abi.encodePacked(
                 uint8(CommitmentTypeId.SET_STATE),
                 identityHash,
+                appStateHash,
                 versionNumber,
                 timeout,
-                appStateHash
             )
         );
     }

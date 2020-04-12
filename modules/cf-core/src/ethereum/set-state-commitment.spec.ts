@@ -138,9 +138,9 @@ describe("Set State Commitment", () => {
         [
           CommitmentTypeId.SET_STATE,
           appIdentityToHash(appInstance.identity),
+          appInstance.hashOfLatestState,
           appInstance.versionNumber,
           appInstance.timeout,
-          appInstance.hashOfLatestState,
         ],
       ),
     );
