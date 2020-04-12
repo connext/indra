@@ -30,6 +30,14 @@ contract LibDispute {
         bytes[] signatures;
     }
 
+    // Event emitted when state is progressed via a unilateral action
+    event StateProgressed (
+      bytes32 identityHash,
+      bytes action,
+      uint256 versionNumber,
+      address turnTaker
+    );
+
     // Event emitted when the challenge is updated
     event ChallengeUpdated (
       bytes32 identityHash,

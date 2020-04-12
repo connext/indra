@@ -89,8 +89,12 @@ contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
             challenge.status = ChallengeStatus.EXPLICITLY_FINALIZED;
         }
 
-        // TODO: Emit event that at least contains the action taken
-        // and probably the (starting or resulting) version number.
+        emit StateProgressed(
+            identityHash,
+            action,
+            req.versionNumber,
+            turnTaker
+        );
 
         emit ChallengeUpdated(
             identityHash,
