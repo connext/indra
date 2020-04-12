@@ -1,5 +1,5 @@
 import { signChannelMessage } from "@connext/crypto";
-import { MinimalTransaction, createRandomAddress, CommitmentTypeId } from "@connext/types";
+import { MinimalTransaction, createRandomAddress, CommitmentTarget } from "@connext/types";
 import {
   bigNumberify,
   Interface,
@@ -136,7 +136,7 @@ describe("Set State Commitment", () => {
       solidityPack(
         ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
         [
-          CommitmentTypeId.SET_STATE,
+          CommitmentTarget.SET_STATE,
           appIdentityToHash(appInstance.identity),
           appInstance.hashOfLatestState,
           appInstance.versionNumber,

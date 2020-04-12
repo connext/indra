@@ -7,7 +7,7 @@ pragma experimental ABIEncoderV2;
 contract LibCommitment {
 
     // An ID for each commitment type
-    enum CommitmentTypeId {
+    enum CommitmentTarget {
         MULTISIG,
         SET_STATE,
         CANCEL_DISPUTE

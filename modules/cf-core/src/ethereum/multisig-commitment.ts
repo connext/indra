@@ -1,4 +1,4 @@
-import { CommitmentTypeId, EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
+import { CommitmentTarget, EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
 import { Interface, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
 import { verifyChannelMessage } from "@connext/crypto";
 
@@ -62,7 +62,7 @@ export abstract class MultisigCommitment implements EthereumCommitment {
     return solidityPack(
       ["uint8", "address", "address", "uint256", "bytes32", "uint8"],
       [
-        CommitmentTypeId.MULTISIG,
+        CommitmentTarget.MULTISIG,
         this.multisigAddress,
         to,
         value,

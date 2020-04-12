@@ -70,7 +70,7 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
     {
         return keccak256(
             abi.encodePacked(
-                uint8(CommitmentTypeId.SET_STATE),
+                uint8(CommitmentTarget.SET_STATE),
                 identityHash,
                 appStateHash,
                 versionNumber,
@@ -93,7 +93,7 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
     {
         return keccak256(
             abi.encodePacked(
-                uint8(CommitmentTypeId.CANCEL_DISPUTE),
+                uint8(CommitmentTarget.CANCEL_DISPUTE),
                 identityHash,
                 versionNumber
             )

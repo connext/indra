@@ -101,7 +101,7 @@ contract MinimumViableMultisig is MultisigData, LibCommitment {
     {
         return keccak256(
             abi.encodePacked(
-                uint8(CommitmentTypeId.MULTISIG),
+                uint8(CommitmentTarget.MULTISIG),
                 address(this),
                 to,
                 value,
