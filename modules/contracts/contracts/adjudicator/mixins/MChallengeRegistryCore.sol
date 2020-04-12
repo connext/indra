@@ -83,7 +83,7 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
     /// @param identityHash The unique hash of an `AppIdentity`
     /// @param versionNumber The versionNumber corresponding to the version of the state
     /// @return A bytes32 hash of the RLP encoded arguments
-    function computeCancelChallengeHash(
+    function computeCancelDisputeHash(
         bytes32 identityHash,
         uint256 versionNumber
     )

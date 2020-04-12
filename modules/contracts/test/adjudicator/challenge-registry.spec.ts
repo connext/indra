@@ -51,7 +51,7 @@ describe("ChallengeRegistry", () => {
     action: AppWithCounterAction,
     signer?: Wallet,
   ) => Promise<void>;
-  let cancelChallengeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
+  let cancelDisputeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
@@ -107,7 +107,7 @@ describe("ChallengeRegistry", () => {
       );
     verifyChallenge = context["verifyChallenge"];
     isProgressable = context["isProgressable"];
-    cancelChallengeAndVerify = context["cancelChallengeAndVerify"];
+    cancelDisputeAndVerify = context["cancelDisputeAndVerify"];
   });
 
   afterEach(async () => {
@@ -175,18 +175,18 @@ describe("ChallengeRegistry", () => {
 
   it("Can cancel challenge at `setState` phase", async () => {
     await setState(1, encodeState(state0));
-    await cancelChallengeAndVerify(1);
+    await cancelDisputeAndVerify(1);
 
     await setState(15, encodeState(state0));
-    await cancelChallengeAndVerify(15);
+    await cancelDisputeAndVerify(15);
   });
 
   it("Can cancel challenge at `progressState` phase", async () => {
     await setAndProgressState(1, state0);
-    await cancelChallengeAndVerify(2);
+    await cancelDisputeAndVerify(2);
 
     await setAndProgressState(2, state0);
-    await cancelChallengeAndVerify(3);
+    await cancelDisputeAndVerify(3);
   });
 
   it("Cannot cancel challenge after outcome set", async () => {
@@ -195,8 +195,8 @@ describe("ChallengeRegistry", () => {
     await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
 
     await setOutcome(encodeState(state0));
-    await expect(cancelChallengeAndVerify(1)).to.be.revertedWith(
-      "cancelChallenge called on challenge that cannot be cancelled",
+    await expect(cancelDisputeAndVerify(1)).to.be.revertedWith(
+      "cancelDispute called on challenge that cannot be cancelled",
     );
   });
 });

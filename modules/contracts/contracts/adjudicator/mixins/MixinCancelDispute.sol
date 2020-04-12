@@ -11,7 +11,7 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
     /// @param appIdentity an AppIdentity object pointing to the app being cancelled
     /// @param req Cancel request, includes signatures on app state hash + current challenge status
     /// @dev Note this function is only callable when the application has an open + progressable challenge
-    function cancelChallenge(
+    function cancelDispute(
         AppIdentity memory appIdentity,
         SignedCancelChallengeRequest memory req
     )
@@ -25,7 +25,7 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
 
         require(
             isCancellable(challenge, appIdentity.defaultTimeout),
-            "cancelChallenge called on challenge that cannot be cancelled"
+            "cancelDispute called on challenge that cannot be cancelled"
         );
 
         require(
@@ -34,12 +34,12 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
                 appIdentity.participants,
                 req
             ),
-            "Call to cancelChallenge included incorrectly signed request"
+            "Call to cancelDispute included incorrectly signed request"
         );
 
         require(
             req.versionNumber == challenge.versionNumber,
-            "cancelChallenge was called with wrong version number"
+            "cancelDispute was called with wrong version number"
         );
 
         // Clear challenge

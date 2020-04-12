@@ -50,8 +50,8 @@ export function encodeOutcome() {
   return defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
 }
 
-// TS version of MChallengeRegistryCore::computeCancelChallengeHash
-export const computeCancelChallengeHash = (
+// TS version of MChallengeRegistryCore::computeCancelDisputeHash
+export const computeCancelDisputeHash = (
   identityHash: string,
   versionNumber: BigNumber,
 ) => keccak256(

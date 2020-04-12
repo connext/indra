@@ -24,7 +24,7 @@ import {
   computeAppChallengeHash,
   EMPTY_CHALLENGE,
   encodeOutcome,
-  computeCancelChallengeHash,
+  computeCancelDisputeHash,
 } from "./index";
 
 export const setupContext = async (
@@ -377,8 +377,8 @@ export const setupContext = async (
     );
   };
 
-  const cancelChallenge = async (versionNumber: number, signatures?: string[]): Promise<void> => {
-    const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
+  const cancelDispute = async (versionNumber: number, signatures?: string[]): Promise<void> => {
+    const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
     if (!signatures) {
       signatures = await sortSignaturesBySignerAddress(
         digest,
@@ -391,7 +391,7 @@ export const setupContext = async (
     }
     // TODO: why does event verification fail?
     // await wrapInEventVerification(
-    await appRegistry.functions.cancelChallenge(appInstance.appIdentity, {
+    await appRegistry.functions.cancelDispute(appInstance.appIdentity, {
       versionNumber: toBN(versionNumber),
       signatures,
     });
@@ -399,11 +399,11 @@ export const setupContext = async (
     // );
   };
 
-  const cancelChallengeAndVerify = async (
+  const cancelDisputeAndVerify = async (
     versionNumber: number,
     signatures?: string[],
   ): Promise<void> => {
-    await cancelChallenge(versionNumber, signatures);
+    await cancelDispute(versionNumber, signatures);
     await verifyChallenge(EMPTY_CHALLENGE);
   };
 
@@ -443,7 +443,7 @@ export const setupContext = async (
     progressStateAndVerify,
     setAndProgressState,
     setAndProgressStateAndVerify,
-    cancelChallenge,
-    cancelChallengeAndVerify,
+    cancelDispute,
+    cancelDisputeAndVerify,
   };
 };
