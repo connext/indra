@@ -96,8 +96,9 @@ export const setupContext = async (
     return await appRegistry.functions.isDisputable(challenge);
   };
 
-  const isFinalized = () => {
-    return appRegistry.functions.isFinalized(appInstance.identityHash);
+  const isFinalized = async () => {
+    const challenge = await getChallenge();
+    return await appRegistry.functions.isFinalized(challenge, appInstance.defaultTimeout);
   };
 
   const isCancellable = async (challenge?: AppChallengeBigNumber) => {
