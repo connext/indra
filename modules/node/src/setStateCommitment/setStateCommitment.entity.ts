@@ -23,7 +23,7 @@ export class SetStateCommitment {
   @Column("jsonb", { nullable: true })
   signatures!: string[];
 
-  @Column("text")
+  @Column("text", { nullable: true })
   stateTimeout!: HexString;
 
   @Column("integer")

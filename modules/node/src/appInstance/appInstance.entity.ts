@@ -93,7 +93,7 @@ export class AppInstance<T extends AppState = any> {
   @Column("text")
   defaultTimeout!: HexString;
 
-  @Column("text")
+  @Column("text", { nullable: true })
   stateTimeout!: HexString;
 
   // assigned a value on installation not proposal
