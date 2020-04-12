@@ -5,7 +5,7 @@ import "../libs/LibStateChannelApp.sol";
 import "./MChallengeRegistryCore.sol";
 
 
-contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
+contract MixinCancelDispute is LibStateChannelApp, MChallengeRegistryCore {
 
     /// @notice Unanimously agree to cancel a challenge
     /// @param appIdentity an AppIdentity object pointing to the app being cancelled
@@ -13,7 +13,7 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
     /// @dev Note this function is only callable when the application has an open + progressable challenge
     function cancelDispute(
         AppIdentity memory appIdentity,
-        SignedCancelChallengeRequest memory req
+        SignedCancelDisputeRequest memory req
     )
         // TODO: Uncomment when ABIEncoderV2 supports `external`
         //       ref: https://github.com/ethereum/solidity/issues/3199
@@ -62,13 +62,13 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
     function correctKeysSignedCancelChallengeRequest(
         bytes32 identityHash,
         address[] memory participants,
-        SignedCancelChallengeRequest memory req
+        SignedCancelDisputeRequest memory req
     )
         private
         pure
         returns (bool)
     {
-        bytes32 digest = computeCancelChallengeHash(
+        bytes32 digest = computeCancelDisputeHash(
             identityHash,
             req.versionNumber
         );

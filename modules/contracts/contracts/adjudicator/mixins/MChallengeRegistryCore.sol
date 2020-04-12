@@ -45,7 +45,7 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
             abi.encodePacked(
                 appIdentity.multisigAddress,
                 appIdentity.channelNonce,
-                keccak256(appIdentity.participants),
+                keccak256(abi.encodePacked(appIdentity.participants)),
                 appIdentity.appDefinition,
                 appIdentity.defaultTimeout
             )
@@ -74,7 +74,7 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
                 identityHash,
                 appStateHash,
                 versionNumber,
-                timeout,
+                timeout
             )
         );
     }
