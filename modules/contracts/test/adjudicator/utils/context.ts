@@ -96,8 +96,8 @@ export const setupContext = async (
     return await appRegistry.functions.isDisputable(challenge);
   };
 
-  const isStateFinalized = () => {
-    return appRegistry.functions.isStateFinalized(appInstance.identityHash);
+  const isFinalized = () => {
+    return appRegistry.functions.isFinalized(appInstance.identityHash);
   };
 
   const isCancellable = async (challenge?: AppChallengeBigNumber) => {
@@ -429,7 +429,7 @@ export const setupContext = async (
     verifyChallenge,
     verifyEmptyChallenge: () => verifyChallenge(EMPTY_CHALLENGE),
     isProgressable,
-    isStateFinalized,
+    isFinalized,
     isCancellable,
     hasPassed,
     isDisputable,

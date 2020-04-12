@@ -116,7 +116,7 @@ contract LibStateChannelApp is LibDispute {
     /// @dev Checks whether the state is finalized
     /// @param appChallenge the app challenge to check
     /// @param defaultTimeout the app instance's default timeout
-    function isStateFinalized(
+    function isFinalized(
         AppChallenge memory appChallenge,
         uint256 defaultTimeout
     )

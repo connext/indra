@@ -26,7 +26,7 @@ describe("MChallengeRegistryCore", () => {
   let setAndProgressState: (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => Promise<void>;
 
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
-  let isStateFinalized: () => Promise<boolean>;
+  let isFinalized: () => Promise<boolean>;
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
@@ -53,7 +53,7 @@ describe("MChallengeRegistryCore", () => {
     action = context["action"];
 
     setState = context["setState"];
-    isStateFinalized = context["isStateFinalized"];
+    isFinalized = context["isFinalized"];
     verifyChallenge = context["verifyChallenge"];
     setAndProgressState = 
       (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => context["setAndProgressState"](
@@ -69,7 +69,7 @@ describe("MChallengeRegistryCore", () => {
     await restore(snapshotId);
   });
 
-  describe("isStateFinalized", () => {
+  describe("isFinalized", () => {
     it("should return true if state is explicitly finalized", async () => {
       const state = { counter: toBN(10) };
       // NOTE: cannot get to `EXPLICITLY_FINALIZED` status without calling
@@ -85,7 +85,7 @@ describe("MChallengeRegistryCore", () => {
         status: ChallengeStatus.EXPLICITLY_FINALIZED,
       });
 
-      expect(await isStateFinalized()).to.be.true;
+      expect(await isFinalized()).to.be.true;
     });
 
     it("should return true if set state period elapsed", async () => {
@@ -100,7 +100,7 @@ describe("MChallengeRegistryCore", () => {
       // appChallenge.finalizesAt.add(defaultTimeout))
       await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
-      expect(await isStateFinalized()).to.be.true;
+      expect(await isFinalized()).to.be.true;
     });
 
     it("should return true if state progression period elapsed", async () => {
@@ -115,7 +115,7 @@ describe("MChallengeRegistryCore", () => {
       // appChallenge.finalizesAt
       await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
-      expect(await isStateFinalized()).to.be.true;
+      expect(await isFinalized()).to.be.true;
     });
 
     it("should return false if challenge is in set state period", async () => {
@@ -126,7 +126,7 @@ describe("MChallengeRegistryCore", () => {
         status: ChallengeStatus.IN_DISPUTE,
       });
 
-      expect(await isStateFinalized()).to.be.false;
+      expect(await isFinalized()).to.be.false;
     });
 
     it("should return false if challenge is in state progression period", async () => {
@@ -137,11 +137,11 @@ describe("MChallengeRegistryCore", () => {
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });
 
-      expect(await isStateFinalized()).to.be.false;
+      expect(await isFinalized()).to.be.false;
     });
 
     it("should return false if challenge is empty", async () => {
-      expect(await isStateFinalized()).to.be.false;
+      expect(await isFinalized()).to.be.false;
     });
   });
 });
