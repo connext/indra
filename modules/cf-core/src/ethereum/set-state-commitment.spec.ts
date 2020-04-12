@@ -1,5 +1,5 @@
 import { signChannelMessage } from "@connext/crypto";
-import { MinimalTransaction, createRandomAddress } from "@connext/types";
+import { MinimalTransaction, createRandomAddress, CommitmentTypeId } from "@connext/types";
 import {
   bigNumberify,
   Interface,
@@ -134,9 +134,9 @@ describe("Set State Commitment", () => {
     //       function ... maybe an ChallengeRegistry class or something
     const expectedHashToSign = keccak256(
       solidityPack(
-        ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
+        ["uint8", "bytes32", "uint256", "uint256", "bytes32"],
         [
-          "0x19",
+          CommitmentTypeId.SET_STATE,
           appIdentityToHash(appInstance.identity),
           appInstance.versionNumber,
           appInstance.timeout,

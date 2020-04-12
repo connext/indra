@@ -1,12 +1,13 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
+import "../../shared/libs/LibCommitment.sol";
 import "../libs/LibStateChannelApp.sol";
 import "../libs/LibAppCaller.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
+contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCaller {
 
     using SafeMath for uint256;
 
@@ -44,8 +45,8 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
         returns (bytes32)
     {
         return keccak256(
-            abi.encode(
-                appIdentity.channelNonce, 
+            abi.encodePacked(
+                appIdentity.channelNonce,
                 appIdentity.participants,
                 appIdentity.multisigAddress,
                 appIdentity.appDefinition,
@@ -72,7 +73,7 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
     {
         return keccak256(
             abi.encodePacked(
-                byte(0x19),
+                uint8(CommitmentTypeId.SET_STATE),
                 identityHash,
                 versionNumber,
                 timeout,
@@ -95,7 +96,7 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
     {
         return keccak256(
             abi.encodePacked(
-                byte(0x19),
+                uint8(CommitmentTypeId.CANCEL_DISPUTE),
                 identityHash,
                 versionNumber
             )

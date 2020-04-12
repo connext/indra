@@ -1,6 +1,7 @@
 import {
   AppIdentity,
   EthereumCommitment,
+  CommitmentTypeId,
   HexString,
   MinimalTransaction,
   SetStateCommitmentJSON,
@@ -61,9 +62,9 @@ export class SetStateCommitment implements EthereumCommitment {
 
   public encode(): string {
     return solidityPack(
-      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
+      ["uint8", "bytes32", "uint256", "uint256", "bytes32"],
       [
-        "0x19",
+        CommitmentTypeId.SET_STATE,
         appIdentityToHash(this.appIdentity),
         this.versionNumber,
         toBN(this.stateTimeout),

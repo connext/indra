@@ -1,4 +1,4 @@
-import { AppIdentity, ChallengeStatus } from "@connext/types";
+import { AppIdentity, ChallengeStatus, CommitmentTypeId } from "@connext/types";
 import {
   BigNumberish,
   defaultAbiCoder,
@@ -56,8 +56,8 @@ export const computeCancelChallengeHash = (
   versionNumber: BigNumber,
 ) => keccak256(
   solidityPack(
-    ["bytes1", "bytes32", "uint256"],
-    ["0x19", identityHash, versionNumber],
+    ["uint8", "bytes32", "uint256"],
+    [CommitmentTypeId.CANCEL_DISPUTE, identityHash, versionNumber],
   ),
 );
 
@@ -73,22 +73,23 @@ export const computeAppChallengeHash = (
 ) =>
   keccak256(
     solidityPack(
-      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-      ["0x19", id, versionNumber, timeout, appStateHash],
+      ["uint8", "bytes32", "uint256", "uint256", "bytes32"],
+      [CommitmentTypeId.SET_STATE, id, versionNumber, timeout, appStateHash],
     ),
   );
 
 export class AppWithCounterClass {
   get identityHash(): string {
     return keccak256(
-      defaultAbiCoder.encode(
+      solidityPack(
         ["uint256", "address[]", "address", "address", "uint256"],
         [
-          this.channelNonce, 
-          this.participants, 
-          this.multisigAddress, 
-          this.appDefinition, 
-          this.defaultTimeout],
+          this.channelNonce,
+          this.participants,
+          this.multisigAddress,
+          this.appDefinition,
+          this.defaultTimeout
+        ],
       ),
     );
   }
