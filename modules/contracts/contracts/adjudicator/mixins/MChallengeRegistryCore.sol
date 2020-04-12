@@ -11,9 +11,6 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
 
     using SafeMath for uint256;
 
-    // A mapping of appIdentityHash to timeouts
-    mapping (bytes32 => uint256) public appTimeouts;
-
     // A mapping of appIdentityHash to AppChallenge structs which represents
     // the current on-chain status of some particular application's state.
     mapping (bytes32 => AppChallenge) public appChallenges;
@@ -100,31 +97,6 @@ contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCall
                 identityHash,
                 versionNumber
             )
-        );
-    }
-
-    /// @notice Checks if an application's state has been finalized by challenge
-    /// @param identityHash The unique hash of an `AppIdentity`
-    /// @return A boolean indicator
-    function isStateFinalized(bytes32 identityHash)
-        public
-        view
-        returns (bool)
-    {
-        AppChallenge storage appChallenge = appChallenges[identityHash];
-
-        return (
-          (
-              appChallenge.status == ChallengeStatus.IN_DISPUTE &&
-              hasPassed(appChallenge.finalizesAt.add(appTimeouts[identityHash]))
-          ) ||
-          (
-              appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
-              hasPassed(appChallenge.finalizesAt)
-          ) ||
-          (
-              appChallenge.status == ChallengeStatus.EXPLICITLY_FINALIZED
-          )
         );
     }
 

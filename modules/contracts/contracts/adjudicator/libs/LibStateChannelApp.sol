@@ -113,6 +113,32 @@ contract LibStateChannelApp is LibDispute {
             );
     }
 
+    /// @dev Checks whether the state is finalized
+    /// @param appChallenge the app challenge to check
+    /// @param defaultTimeout the app instance's default timeout
+    function isStateFinalized(
+        AppChallenge memory appChallenge,
+        uint256 defaultTimeout
+    )
+        public
+        view
+        returns (bool)
+    {
+        return (
+          (
+              appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+              hasPassed(appChallenge.finalizesAt.add(defaultTimeout))
+          ) ||
+          (
+              appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
+              hasPassed(appChallenge.finalizesAt)
+          ) ||
+          (
+              appChallenge.status == ChallengeStatus.EXPLICITLY_FINALIZED
+          )
+        );
+    }
+
     /// @dev Verifies signatures given the signer addresses
     /// @param signatures message `txHash` signature
     /// @param txHash operation ethereum signed message hash

@@ -97,7 +97,7 @@ describe("MChallengeRegistryCore", () => {
       });
 
       // must have passed:
-      // appChallenge.finalizesAt.add(appTimeouts[identityHash])
+      // appChallenge.finalizesAt.add(defaultTimeout))
       await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + ONCHAIN_CHALLENGE_TIMEOUT + 2);
 
       expect(await isStateFinalized()).to.be.true;
