@@ -46,7 +46,6 @@ contract MixinSetOutcome is LibStateChannelApp, LibAppCaller, MChallengeRegistry
         emit ChallengeUpdated(
             identityHash,
             challenge.status,
-            challenge.latestSubmitter,
             challenge.appStateHash,
             challenge.versionNumber,
             challenge.finalizesAt

@@ -79,7 +79,6 @@ contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
 
         // Update challenge
         challenge.status = ChallengeStatus.IN_ONCHAIN_PROGRESSION;
-        challenge.latestSubmitter = msg.sender;
         challenge.appStateHash = newAppStateHash;
         challenge.versionNumber = req.versionNumber;
         challenge.finalizesAt = block.number.add(appIdentity.defaultTimeout);
@@ -99,7 +98,6 @@ contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
         emit ChallengeUpdated(
             identityHash,
             challenge.status,
-            challenge.latestSubmitter,
             challenge.appStateHash,
             challenge.versionNumber,
             challenge.finalizesAt

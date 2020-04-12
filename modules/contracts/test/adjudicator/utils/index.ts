@@ -114,7 +114,6 @@ export class AppWithCounterClass {
 }
 
 export const EMPTY_CHALLENGE = {
-  latestSubmitter: AddressZero,
   versionNumber: Zero,
   appStateHash: HashZero,
   status: ChallengeStatus.NO_CHALLENGE,

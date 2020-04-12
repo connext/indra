@@ -60,14 +60,12 @@ export const setupContext = async (
   const getChallenge = async (): Promise<AppChallengeBigNumber> => {
     const [
       status,
-      latestSubmitter,
       appStateHash,
       versionNumber,
       finalizesAt,
     ] = await appRegistry.functions.getAppChallenge(appInstance.identityHash);
     return {
       status,
-      latestSubmitter,
       appStateHash,
       versionNumber,
       finalizesAt,
@@ -145,7 +143,6 @@ export const setupContext = async (
       .withArgs(
         appInstance.identityHash, // identityHash
         expected.status || status, // status
-        expected.latestSubmitter || wallet.address, // latestSubmitter
         expected.appStateHash || appStateHash, // appStateHash
         expected.versionNumber || versionNumber, // versionNumber
         expected.finalizesAt || finalizesAt, // finalizesAt
@@ -208,7 +205,6 @@ export const setupContext = async (
   ) => {
     await setState(versionNumber, appState, timeout);
     await verifyChallenge({
-      latestSubmitter: wallet.address,
       versionNumber: toBN(versionNumber),
       appStateHash: keccak256(appState || HashZero),
       status: ChallengeStatus.IN_DISPUTE,
@@ -283,7 +279,6 @@ export const setupContext = async (
       ? ChallengeStatus.EXPLICITLY_FINALIZED
       : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     const expected = {
-      latestSubmitter: wallet.address,
       appStateHash: resultingStateHash,
       versionNumber: existingChallenge.versionNumber.add(One),
       status,
@@ -312,7 +307,6 @@ export const setupContext = async (
       ? ChallengeStatus.EXPLICITLY_FINALIZED
       : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     await verifyChallenge({
-      latestSubmitter: wallet.address,
       appStateHash: resultingStateHash,
       versionNumber: One.add(versionNumber),
       status,

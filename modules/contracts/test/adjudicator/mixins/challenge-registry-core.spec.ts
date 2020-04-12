@@ -80,7 +80,6 @@ describe("MChallengeRegistryCore", () => {
       await setAndProgressState(1, state, alice);
       await verifyChallenge({
         appStateHash: keccak256(encodeState(resultingState)),
-        latestSubmitter: wallet.address,
         versionNumber: toBN(2),
         status: ChallengeStatus.EXPLICITLY_FINALIZED,
       });
@@ -91,7 +90,6 @@ describe("MChallengeRegistryCore", () => {
     it("should return true if set state period elapsed", async () => {
       await setState(1);
       await verifyChallenge({
-        latestSubmitter: wallet.address,
         versionNumber: One,
         status: ChallengeStatus.IN_DISPUTE,
       });
@@ -106,7 +104,6 @@ describe("MChallengeRegistryCore", () => {
     it("should return true if state progression period elapsed", async () => {
       await setAndProgressState(1);
       await verifyChallenge({
-        latestSubmitter: wallet.address,
         versionNumber: toBN(2),
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });
@@ -121,7 +118,6 @@ describe("MChallengeRegistryCore", () => {
     it("should return false if challenge is in set state period", async () => {
       await setState(1);
       await verifyChallenge({
-        latestSubmitter: wallet.address,
         versionNumber: One,
         status: ChallengeStatus.IN_DISPUTE,
       });
@@ -132,7 +128,6 @@ describe("MChallengeRegistryCore", () => {
     it("should return false if challenge is in state progression period", async () => {
       await setAndProgressState(1);
       await verifyChallenge({
-        latestSubmitter: wallet.address,
         versionNumber: toBN(2),
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });

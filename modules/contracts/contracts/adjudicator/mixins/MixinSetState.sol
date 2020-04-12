@@ -49,7 +49,6 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
 
         // Update challenge
         challenge.status = ChallengeStatus.IN_DISPUTE;
-        challenge.latestSubmitter = msg.sender;
         challenge.appStateHash = req.appStateHash;
         challenge.versionNumber = req.versionNumber;
         challenge.finalizesAt = block.number.add(req.timeout);
@@ -57,7 +56,6 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
         emit ChallengeUpdated(
             identityHash,
             challenge.status,
-            challenge.latestSubmitter,
             challenge.appStateHash,
             challenge.versionNumber,
             challenge.finalizesAt

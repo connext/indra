@@ -129,7 +129,6 @@ describe("ChallengeRegistry", () => {
     await verifyChallenge({
       appStateHash: keccak256(encodeState(finalState)),
       status: ChallengeStatus.EXPLICITLY_FINALIZED,
-      latestSubmitter: wallet.address,
       versionNumber: toBN(3),
     });
 

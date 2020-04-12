@@ -27,7 +27,6 @@ contract LibStateChannelApp is LibDispute {
     // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
     struct AppChallenge {
         ChallengeStatus status;
-        address latestSubmitter;
         bytes32 appStateHash;
         uint256 versionNumber;
         uint256 finalizesAt;

@@ -42,7 +42,6 @@ contract LibDispute {
     event ChallengeUpdated (
       bytes32 identityHash,
       ChallengeStatus status,
-      address latestSubmitter,
       bytes32 appStateHash,
       uint256 versionNumber,
       uint256 finalizesAt

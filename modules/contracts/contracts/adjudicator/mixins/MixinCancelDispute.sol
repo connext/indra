@@ -44,7 +44,6 @@ contract MixinCancelDispute is LibStateChannelApp, MChallengeRegistryCore {
 
         // Clear challenge
         challenge.status = ChallengeStatus.NO_CHALLENGE;
-        challenge.latestSubmitter = address(0x0);
         challenge.appStateHash = 0;
         challenge.versionNumber = 0;
         challenge.finalizesAt = 0;
@@ -52,7 +51,6 @@ contract MixinCancelDispute is LibStateChannelApp, MChallengeRegistryCore {
         emit ChallengeUpdated(
             identityHash,
             challenge.status,
-            challenge.latestSubmitter,
             challenge.appStateHash,
             challenge.versionNumber,
             challenge.finalizesAt
