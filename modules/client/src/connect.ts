@@ -120,7 +120,9 @@ export const connect = async (
       throw new Error("Client must be instantiated with signer if not using a channelProvider");
     }
 
-    signer = typeof opts.signer === "string" ? new ChannelSigner(opts.signer, ethProvider) : signer;
+    signer = typeof opts.signer === "string" 
+      ? new ChannelSigner(opts.signer, ethProvider) 
+      : opts.signer;
 
     store = store || getDefaultStore(opts);
 
