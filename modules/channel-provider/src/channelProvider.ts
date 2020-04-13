@@ -29,10 +29,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config: ChannelProviderConfig =
-          typeof this._config !== "undefined"
-            ? this._config
-            : await this._send(ChannelMethods.chan_config);
+        const config: ChannelProviderConfig = await this._send(ChannelMethods.chan_config);
         if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;

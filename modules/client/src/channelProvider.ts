@@ -239,7 +239,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private subscribeChannelCreation() {
-    this.once(EventNames.CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
+    this.cfCore.once(EventNames.CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
       this.config.multisigAddress = data.data.multisigAddress;
     });
   }
