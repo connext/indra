@@ -89,8 +89,9 @@ describe("Signed Transfers", () => {
       assetId: transfer.assetId,
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
+      sender: clientA.publicIdentifier,
       transferMeta: { signer: signerAddress },
-      meta: { foo: "bar", recipient: clientB.publicIdentifier },
+      meta: { foo: "bar", recipient: clientB.publicIdentifier, sender: clientA.publicIdentifier },
     } as EventPayloads.SignedTransferReceived);
 
     const {
@@ -155,16 +156,14 @@ describe("Signed Transfers", () => {
     ]);
 
     const [, installed] = promises;
-    expect(installed).deep.contain(
-      {
-        amount: transfer.amount,
-        assetId: transfer.assetId,
-        type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
-        paymentId,
-        transferMeta: { signer: signerAddress },
-        meta: { foo: "bar", recipient: clientB.publicIdentifier },
-      } as Partial<EventPayloads.SignedTransferReceived>,
-    );
+    expect(installed).deep.contain({
+      amount: transfer.amount,
+      assetId: transfer.assetId,
+      type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+      paymentId,
+      transferMeta: { signer: signerAddress },
+      meta: { foo: "bar", recipient: clientB.publicIdentifier, sender: clientA.publicIdentifier },
+    } as Partial<EventPayloads.SignedTransferReceived>);
 
     const {
       [clientA.freeBalanceAddress]: clientAPostTransferBal,
