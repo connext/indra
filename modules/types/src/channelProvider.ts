@@ -26,7 +26,7 @@ export const ChannelMethods = enumify({
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
   chan_setStateChannel: "chan_setStateChannel",
-  chan_walletTransfer: "chan_walletTransfer",
+  chan_walletDeposit: "chan_walletDeposit",
   chan_createSetupCommitment: "chan_createSetupCommitment",
   chan_createSetStateCommitment: "chan_createSetStateCommitment",
   chan_createConditionalCommitment: "chan_createConditionalCommitment",
@@ -125,7 +125,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // TRANSFER METHODS
-  walletTransfer(params: WalletTransferParams): Promise<string>;
+  walletDeposit(params: WalletTransferParams): Promise<string>;
   setStateChannel(state: StateChannelJSON): Promise<void>;
   createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   createSetStateCommitment(

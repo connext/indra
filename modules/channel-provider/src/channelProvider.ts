@@ -72,8 +72,8 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
-      case ChannelMethods.chan_walletTransfer:
-        result = await this.walletTransfer(params);
+      case ChannelMethods.chan_walletDeposit:
+        result = await this.walletDeposit(params);
         break;
 
       case ChannelMethods.chan_createSetupCommitment:
@@ -154,10 +154,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       message,
       publicIdentifier,
     });
-  };
+  }
 
-  public walletTransfer = async (params: WalletTransferParams) => {
-    return this._send(ChannelMethods.chan_walletTransfer, params);
+  public walletDeposit = async (params: WalletTransferParams) => {
+    return this._send(ChannelMethods.chan_walletDeposit, params);
   };
 
   /// ////////////////////////////////////////////

@@ -103,8 +103,8 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
-      case ChannelMethods.chan_walletTransfer:
-        result = await this.walletTransfer(params);
+      case ChannelMethods.chan_walletDeposit:
+        result = await this.walletDeposit(params);
         break;
       case ChannelMethods.chan_createSetupCommitment:
         result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
@@ -151,16 +151,13 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   private signMessage(message: string): Promise<string> {
     return this.signer.signMessage(message);
-  };
+  }
 
   private encrypt(message: string, publicIdentifier: string): Promise<string> {
-    return this.signer.encrypt(
-      message,
-      getPublicKeyFromPublicIdentifier(publicIdentifier),
-    );
-  };
+    return this.signer.encrypt(message, getPublicKeyFromPublicIdentifier(publicIdentifier));
+  }
 
-  private walletTransfer = async (params: WalletTransferParams): Promise<string> => {
+  private walletDeposit = async (params: WalletTransferParams): Promise<string> => {
     let hash;
     if (params.assetId === AddressZero) {
       const tx = await this.signer.sendTransaction({
