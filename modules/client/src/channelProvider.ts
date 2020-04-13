@@ -1,5 +1,6 @@
 import { generateValidationMiddleware } from "@connext/apps";
 import { Node as CFCore } from "@connext/cf-core";
+
 import {
   CFChannelProviderOptions,
   ChannelMethods,
@@ -21,6 +22,7 @@ import {
   toBN,
   WalletDepositParams,
   WithdrawalMonitorObject,
+  INodeApiClient,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Contract } from "ethers";
@@ -34,6 +36,7 @@ export const createCFChannelProvider = async ({
   logger,
   messaging,
   contractAddresses,
+  node,
   nodeConfig,
   nodeUrl,
   signer,
@@ -62,8 +65,8 @@ export const createCFChannelProvider = async ({
     nodeUrl,
     userIdentifier: signer.publicIdentifier,
   };
-  const connection = new CFCoreRpcConnection(cfCore, store, signer);
-  const channelProvider = new ChannelProvider(connection, channelProviderConfig);
+  const connection = new CFCoreRpcConnection(cfCore, store, signer, channelProviderConfig, node);
+  const channelProvider = new ChannelProvider(connection);
   return channelProvider;
 };
 
@@ -72,13 +75,23 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public cfCore: CFCore;
   public store: IClientStore;
 
-  public signer: IChannelSigner;
+  private signer: IChannelSigner;
+  private config: ChannelProviderConfig;
+  private node: INodeApiClient;
 
-  constructor(cfCore: CFCore, store: IClientStore, signer: IChannelSigner) {
+  constructor(
+    cfCore: CFCore,
+    store: IClientStore,
+    signer: IChannelSigner,
+    config: ChannelProviderConfig,
+    node: INodeApiClient,
+  ) {
     super();
     this.cfCore = cfCore;
     this.signer = signer;
     this.store = store;
+    this.config = config;
+    this.node = node;
   }
 
   public async send(payload: JsonRpcRequest): Promise<any> {
@@ -96,6 +109,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         break;
       case ChannelMethods.chan_encrypt:
         result = await this.encrypt(params.message, params.publicIdentifier);
+        break;
+      case ChannelMethods.chan_config:
+        result = await this.getConfig();
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -158,16 +174,21 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   }
 
   private walletDeposit = async (params: WalletDepositParams): Promise<string> => {
+    const config = await this.getConfig();
+    let recipient = config.multisigAddress;
+    if (!recipient) {
+      throw new Error(`Cannot make deposit without channel created - missing multisigAddress`);
+    }
     let hash;
     if (params.assetId === AddressZero) {
       const tx = await this.signer.sendTransaction({
-        to: params.recipient,
+        to: recipient,
         value: toBN(params.amount),
       });
       hash = tx.hash;
     } else {
       const erc20 = new Contract(params.assetId, tokenAbi, this.signer);
-      const tx = await erc20.transfer(params.recipient, toBN(params.amount));
+      const tx = await erc20.transfer(recipient, toBN(params.amount));
       hash = tx.hash;
     }
     return hash;
@@ -221,6 +242,16 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ): Promise<void> => {
     await this.store.createConditionalTransactionCommitment(appIdentityHash, commitment);
   };
+
+  public async getConfig(): Promise<ChannelProviderConfig> {
+    if (!this.config.multisigAddress) {
+      const channel = await this.node.getChannel();
+      if (channel.multisigAddress) {
+        this.config = { ...this.config, multisigAddress: channel.multisigAddress };
+      }
+    }
+    return this.config;
+  }
 
   private routerDispatch = async (method: string, params: any = {}) => {
     const ret = await this.cfCore.rpcRouter.dispatch({

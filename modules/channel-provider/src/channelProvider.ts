@@ -20,17 +20,16 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   private _config: ChannelProviderConfig | undefined = undefined;
   private _multisigAddress: string | undefined = undefined;
 
-  constructor(connection: IRpcConnection, config?: ChannelProviderConfig) {
+  constructor(connection: IRpcConnection) {
     super();
     this.connection = connection;
-    this._config = config;
   }
 
   public enable(): Promise<ChannelProviderConfig> {
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config = this._config || (await this._send(ChannelMethods.chan_config));
+        const config = await this.getConfig();
         if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;
@@ -64,7 +63,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         result = await this.encrypt(params.message, params.publicIdentifier);
         break;
       case ChannelMethods.chan_config:
-        result = this.config;
+        result = await this.getConfig();
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -75,19 +74,15 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_walletDeposit:
         result = await this.walletDeposit(params);
         break;
-
       case ChannelMethods.chan_createSetupCommitment:
         result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
         break;
-
       case ChannelMethods.chan_createSetStateCommitment:
         result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
         break;
-
       case ChannelMethods.chan_createConditionalCommitment:
         result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
-
       default:
         result = await this._send(method, params);
         break;
@@ -162,6 +157,14 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // STORE METHODS
+
+  public async getConfig(): Promise<ChannelProviderConfig> {
+    if (!this._config || !this.config.multisigAddress) {
+      this._config = await this._send(ChannelMethods.chan_config);
+      this._multisigAddress = this._config.multisigAddress;
+    }
+    return this._config;
+  }
 
   public getUserWithdrawal = async (): Promise<any> => {
     return this._send(ChannelMethods.chan_getUserWithdrawal, {});
