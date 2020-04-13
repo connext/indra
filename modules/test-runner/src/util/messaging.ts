@@ -7,14 +7,15 @@ import {
   MessagingConfig,
   Message,
   VerifyNonceDtoType,
+  IChannelSigner,
 } from "@connext/types";
-import { Wallet } from "ethers";
 
 import { env } from "./env";
 import { combineObjects } from "./misc";
 import { Logger } from "./logger";
 
 import axios, { AxiosResponse } from "axios";
+import { Wallet } from "ethers";
 
 const log = new Logger("Messaging", env.logLevel);
 
@@ -36,7 +37,7 @@ export type TestMessagingConfig = {
     [protocol: string]: DetailedMessageCounter;
   };
   count: DetailedMessageCounter;
-  mnemonic: string;
+  signer: IChannelSigner;
 };
 
 export const RECEIVED = "RECEIVED";
@@ -103,7 +104,7 @@ const zeroCounter = (): MessageCounter => {
   return { sent: 0, received: 0 };
 };
 
-const defaultOpts = (): Omit<TestMessagingConfig, "mnemonic"> => {
+const defaultOpts = (): TestMessagingConfig => {
   return {
     nodeUrl: env.nodeUrl,
     messagingConfig: {
@@ -122,6 +123,10 @@ const defaultOpts = (): Omit<TestMessagingConfig, "mnemonic"> => {
       withdraw: defaultCount(),
     },
     count: defaultCount(),
+    signer: new ChannelSigner(
+      Wallet.createRandom().privateKey,
+      env.ethProviderUrl,
+    ),
   };
 };
 
@@ -133,21 +138,21 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
   private countInternal: DetailedMessageCounter;
   public options: TestMessagingConfig;
 
-  constructor(opts: Partial<TestMessagingConfig> & { mnemonic: string }) {
+  constructor(opts: Partial<TestMessagingConfig>) {
     super();
     const defaults = defaultOpts();
+    opts.signer = opts.signer || defaults.signer;
     // create options
     this.options = {
       nodeUrl: opts.nodeUrl || defaults.nodeUrl,
       messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
       count: combineObjects(opts.count, defaults.count),
       protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
-      mnemonic: opts.mnemonic!,
+      signer: typeof opts.signer === "string" 
+        ? new ChannelSigner(opts.signer) 
+        : opts.signer,
     };
-
-    const wallet = Wallet.fromMnemonic(this.options.mnemonic);
-    const signer = new ChannelSigner(wallet.privateKey);
-    const getSignature = (msg: string) => signer.signMessage(msg);
+    const getSignature = (msg: string) => this.options.signer.signMessage(msg);
 
     const getBearerToken = async (
       userIdentifier: string,
@@ -172,7 +177,7 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
     const key = `INDRA`;
     this.connection = new MessagingService(this.options.messagingConfig, key, () =>
-      getBearerToken(signer.publicIdentifier, getSignature),
+      getBearerToken(this.options.signer.publicIdentifier, getSignature),
     );
     this.protocolDefaults = this.options.protocolDefaults;
     this.countInternal = this.options.count;

@@ -1,4 +1,5 @@
-import { delay, EventNames, IConnextClient } from "@connext/types";
+import { ChannelSigner, getRandomChannelSigner } from "@connext/crypto";
+import { delay, EventNames, IConnextClient, IChannelSigner } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
@@ -10,7 +11,6 @@ import {
   ethProvider,
   expect,
   fundChannel,
-  getMnemonic,
   getProtocolFromData,
   MessagingEventData,
   RECEIVED,
@@ -23,6 +23,7 @@ import {
 describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
+  let signer: IChannelSigner;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
@@ -30,7 +31,15 @@ describe("Withdraw offline tests", () => {
     assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
     // make sure the tokenAddress is set
-    client = await createClientWithMessagingLimits(messagingConfig);
+    const signer = messagingConfig.signer && 
+      typeof messagingConfig.signer === "string" 
+        ? new ChannelSigner(messagingConfig.signer) 
+        : !!messagingConfig.signer 
+          ? messagingConfig.signer : getRandomChannelSigner();
+    client = await createClientWithMessagingLimits({
+      signer,
+      ...messagingConfig,
+    });
     await fundChannel(client, amount, assetId);
     return client;
   };
@@ -111,7 +120,7 @@ describe("Withdraw offline tests", () => {
 
     // restart the client
     const reconnected = await createClient({
-      mnemonic: getMnemonic(client.publicIdentifier),
+      signer,
       store: client.store,
     });
     expect(reconnected.publicIdentifier).to.be.equal(client.publicIdentifier);

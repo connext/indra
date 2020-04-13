@@ -14,7 +14,7 @@ import { PublicParams, PublicResults } from "./public";
 
 /////////////////////////////////
 
-// channelProvider, mnemonic, and address+keyGen are all optional but one of them needs to be provided
+// channelProvider / signer are both optional but one of them needs to be provided
 export interface ClientOptions {
   backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;

@@ -13,7 +13,6 @@ import {
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getMnemonic,
   getProtocolFromData,
   MessagingEventData,
   PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
@@ -28,6 +27,7 @@ import {
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 import { before } from "mocha";
+import { Wallet } from "ethers";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,
@@ -142,9 +142,11 @@ describe("Async transfer offline tests", () => {
    * and money is returned to the hubs channel (redeemed payment)
    */
   it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later (sender offline for take action)", async () => {
+    const senderPk = Wallet.createRandom().privateKey;
+    const receiverPk = Wallet.createRandom().privateKey;
     // create the sender client and receiver clients + fund
-    senderClient = await createClientWithMessagingLimits();
-    receiverClient = await createClientWithMessagingLimits();
+    senderClient = await createClientWithMessagingLimits({ signer: senderPk });
+    receiverClient = await createClientWithMessagingLimits({ signer: receiverPk });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
     // transfer from the sender to the receiver, then take the
@@ -174,7 +176,7 @@ describe("Async transfer offline tests", () => {
     await verifyTransfer(receiverClient, expected);
     // reconnect the sender
     const reconnected = await createClient({
-      mnemonic: getMnemonic(senderClient.publicIdentifier),
+      signer: senderPk,
       store: senderClient.store,
     });
     // NOTE: fast forwarding does not propagate to node timers
@@ -200,12 +202,15 @@ describe("Async transfer offline tests", () => {
    * and money is returned to the hubs channel (redeemed payment)
    */
   it("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later (sender offline for uninstall)", async () => {
+    const senderPk = Wallet.createRandom().privateKey;
+    const receiverPk = Wallet.createRandom().privateKey;
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       ceiling: { sent: 1 }, // for deposit app
       protocol: "uninstall",
+      signer: senderPk,
     });
-    receiverClient = await createClientWithMessagingLimits();
+    receiverClient = await createClientWithMessagingLimits({ signer: receiverPk });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
 
@@ -246,7 +251,7 @@ describe("Async transfer offline tests", () => {
     clock.tick(60_000 * 3);
     // reconnect the sender
     const reconnected = await createClient({
-      mnemonic: getMnemonic(senderClient.publicIdentifier),
+      signer: senderPk,
       store: senderClient.store,
     });
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);

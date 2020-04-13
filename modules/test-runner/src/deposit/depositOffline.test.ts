@@ -8,7 +8,6 @@ import {
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getMnemonic,
   getProtocolFromData,
   MessagingEvent,
   MessagingEventData,
@@ -20,6 +19,7 @@ import {
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
+import { Wallet } from "ethers";
 
 const { CF_METHOD_TIMEOUT } = utils;
 
@@ -136,12 +136,15 @@ describe("Deposit offline tests", () => {
   });
 
   it("client proposes deposit, but node only responds after timeout is over", async () => {
+    const { privateKey } = Wallet.createRandom();
+
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
     client = await createClientWithMessagingLimits({
       delay: { received: CLIENT_DELAY },
       protocol: "propose",
+      signer: privateKey,
     });
 
     await makeDepositCall({
@@ -154,9 +157,11 @@ describe("Deposit offline tests", () => {
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
+    const { privateKey } = Wallet.createRandom();
     client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: 0 },
+      signer: privateKey,
     });
 
     await makeDepositCall({
@@ -167,7 +172,7 @@ describe("Deposit offline tests", () => {
       protocol: "install",
     });
 
-    await createClient({ mnemonic: getMnemonic(client.publicIdentifier) });
+    await createClient({ signer: privateKey });
   });
 
 });

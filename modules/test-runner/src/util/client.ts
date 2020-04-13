@@ -1,6 +1,6 @@
 import { connect } from "@connext/client";
 import { ConnextStore } from "@connext/store";
-import { ClientOptions, IChannelProvider, IConnextClient, StoreTypes } from "@connext/types";
+import { ClientOptions, IChannelProvider, IChannelSigner, IConnextClient, StoreTypes } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -10,11 +10,7 @@ import { env } from "./env";
 import { ethWallet } from "./ethprovider";
 import { Logger } from "./logger";
 import { MessageCounter, TestMessagingService } from "./messaging";
-
-let mnemonics: { [address: string]: string } = {};
-export const getMnemonic = (address: string): string => {
-  return mnemonics[address] || "";
-};
+import { getRandomChannelSigner, ChannelSigner } from "@connext/crypto";
 
 export const createClient = async (
   opts: Partial<ClientOptions | any> = {},
@@ -36,7 +32,6 @@ export const createClient = async (
   const client = await connect(clientOpts);
   log.info(`connect() returned after ${Date.now() - start}ms`);
   start = Date.now();
-  mnemonics[client.publicIdentifier] = wallet.mnemonic;
 
   const ethTx = await ethWallet.sendTransaction({
     to: client.signerAddress,
@@ -95,21 +90,24 @@ export type ClientTestMessagingInputOpts = {
   ceiling: Partial<MessageCounter>; // set ceiling of sent/received
   protocol: string; // use "any" to limit any messages by count
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
+  signer: string | IChannelSigner;
 };
 
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay } = opts;
+  const { protocol, ceiling, delay, signer: signerOpts } = opts;
+  const signer = signerOpts && typeof signerOpts === "string" 
+    ? new ChannelSigner(signerOpts) 
+    : !!signerOpts ? signerOpts : getRandomChannelSigner();
   const messageOptions: any = {};
   // no defaults specified, exit early
-  const mnemonic = Wallet.createRandom().mnemonic;
   if (Object.keys(opts).length === 0) {
-    const messaging = new TestMessagingService({ mnemonic });
+    const messaging = new TestMessagingService({ signer: signer as ChannelSigner });
     expect(messaging.install.ceiling).to.be.undefined;
     expect(messaging.count.received).to.be.equal(0);
     expect(messaging.count.sent).to.be.equal(0);
-    return await createClient({ messaging, mnemonic });
+    return await createClient({ messaging, signer });
   }
   if (protocol === "any") {
     // assign the ceiling for the general message count
@@ -123,7 +121,7 @@ export const createClientWithMessagingLimits = async (
       },
     };
   }
-  const messaging = new TestMessagingService({ ...messageOptions, mnemonic });
+  const messaging = new TestMessagingService({ ...messageOptions, signer });
   // verification of messaging settings
   const expected = {
     sent: 0,
@@ -135,5 +133,5 @@ export const createClientWithMessagingLimits = async (
     ? expect(messaging.count).to.containSubset(expected)
     : expect(messaging[protocol]).to.containSubset(expected);
   expect(messaging.options).to.containSubset(messageOptions);
-  return await createClient({ messaging, mnemonic });
+  return await createClient({ messaging, signer: signer });
 };
