@@ -150,13 +150,13 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userPublicIdentifier}.transfer.fetch-linked`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.get-linked`, {
       paymentId,
     });
   }
 
   public async fetchSignedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userPublicIdentifier}.transfer.fetch-signed`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.get-signed`, {
       paymentId,
     });
   }

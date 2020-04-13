@@ -85,7 +85,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
     );
 
     await super.connectRequestReponse(
-      "*.transfer.fetch-signed",
+      "*.transfer.get-signed",
       this.authService.parseXpub(this.getSignedTransferByPaymentId.bind(this)),
     );
   }
