@@ -205,10 +205,6 @@ export class ChannelSigner implements IChannelSigner {
     return signChannelMessage(this.privateKey, message);
   }
 
-  public async getAddress(): Promise<string> {
-    return this.address;
-  }
-
   public async sendTransaction(transaction: TransactionRequest): Promise<TransactionResponse> {
     if (!this.provider) {
       throw new Error(

@@ -60,7 +60,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
+    const signerAddress = signer.address;
 
     const promises = await Promise.all([
       clientA.conditionalTransfer({
@@ -131,7 +131,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
+    const signerAddress = signer.address;
 
     const promises = await Promise.all([
       clientA.conditionalTransfer({
@@ -204,7 +204,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
+    const signerAddress = signer.address;
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
@@ -231,7 +231,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
+    const signerAddress = signer.address;
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
@@ -276,7 +276,7 @@ describe("Signed Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
     const signer = getRandomChannelSigner();
-    const signerAddress = await signer.getAddress();
+    const signerAddress = signer.address;
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,

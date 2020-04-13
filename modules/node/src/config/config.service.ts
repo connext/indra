@@ -160,8 +160,8 @@ export class ConfigService implements OnModuleInit {
     return this.signer.publicIdentifier;
   }
 
-  async getSignerAddress(): Promise<string> {
-    return this.signer.getAddress();
+   getSignerAddress(): string {
+    return this.signer.address
   }
 
   getLogLevel(): number {

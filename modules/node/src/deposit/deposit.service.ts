@@ -157,7 +157,7 @@ export class DepositService {
       transfers: [
         {
           amount: Zero,
-          to: await this.configService.getSignerAddress(),
+          to:  this.configService.getSignerAddress(),
         },
         {
           amount: Zero,

@@ -122,7 +122,7 @@ export class Node {
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
-    this.log.info(`Node signer address: ${await this.signer.getAddress()}`);
+    this.log.info(`Node signer address: ${this.signer.address}`);
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -212,10 +212,7 @@ export class Node {
       } as ProtocolMessage);
 
       // 90 seconds is the default lock acquiring time time
-      const msg = await Promise.race([
-        counterpartyResponse,
-        delay(IO_SEND_AND_WAIT_TIMEOUT),
-      ]);
+      const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
 
       if (!msg || !("data" in (msg as ProtocolMessage))) {
         throw new Error(

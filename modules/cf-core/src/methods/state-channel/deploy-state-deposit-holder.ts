@@ -139,7 +139,7 @@ async function sendMultisigDeployTx(
 
   const owners = stateChannel.userIdentifiers;
 
-  const signerAddress = await signer.getAddress();
+  const signerAddress = signer.address;
 
   let error;
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {

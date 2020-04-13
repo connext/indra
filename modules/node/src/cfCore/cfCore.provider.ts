@@ -23,7 +23,7 @@ export const cfCoreProviderFactory: Provider = {
   ): Promise<CFCore> => {
     const provider = config.getEthProvider();
     const signer = config.getSigner();
-    const signerAddress = await signer.getAddress();
+    const signerAddress = signer.address;
     log.setContext("CFCoreProvider");
     log.info(`Derived address from mnemonic: ${signerAddress}`);
 
