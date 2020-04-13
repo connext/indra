@@ -325,10 +325,20 @@ export class CFCoreStore implements IStoreService {
     app.initialState = appProposal.initialState;
     app.latestState = appProposal.initialState;
     app.latestVersionNumber = 0;
+    app.channel = channel;
 
-    channel.monotonicNumProposedApps = numProposedApps;
-    channel.appInstances.push(app);
-    await this.channelRepository.save(channel);
+    await getManager().transaction(async transactionalEntityManager => {
+      await transactionalEntityManager.save(app);
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(Channel)
+        .set({
+          monotonicNumProposedApps: numProposedApps,
+        })
+        .where("multisigAddress = :multisigAddress", { multisigAddress })
+        .execute();
+    });
   }
 
   async removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
