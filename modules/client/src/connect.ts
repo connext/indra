@@ -75,10 +75,7 @@ export const connect = async (
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     const getSignature = async (message: string) => {
-      const sig = await channelProvider.send(
-        ChannelMethods.chan_signMessage,
-        { message },
-      );
+      const sig = await channelProvider.send(ChannelMethods.chan_signMessage, { message });
       return sig;
     };
 

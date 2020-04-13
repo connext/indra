@@ -16,17 +16,20 @@ import {
   MinimalTransaction,
 } from "./commitments";
 import { PublicIdentifier } from "./identifiers";
+import { INodeApiClient } from "./api";
+import { IMessagingService } from "./messaging";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
   chan_config: "chan_config",
   chan_signMessage: "chan_signMessage",
   chan_encrypt: "chan_encrypt",
+  chan_decrypt: "chan_decrypt",
   chan_restoreState: "chan_restoreState",
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
   chan_setStateChannel: "chan_setStateChannel",
-  chan_walletTransfer: "chan_walletTransfer",
+  chan_walletDeposit: "chan_walletDeposit",
   chan_createSetupCommitment: "chan_createSetupCommitment",
   chan_createSetStateCommitment: "chan_createSetStateCommitment",
   chan_createConditionalCommitment: "chan_createConditionalCommitment",
@@ -54,7 +57,7 @@ export interface CFChannelProviderOptions {
   signer: IChannelSigner;
   lockService?: ILockService;
   logger?: ILoggerService;
-  messaging: any;
+  messaging: IMessagingService;
   contractAddresses: ContractAddresses;
   nodeConfig: any;
   nodeUrl: string;
@@ -68,10 +71,9 @@ export type JsonRpcRequest = {
   params: any;
 };
 
-export type WalletTransferParams = {
+export type WalletDepositParams = {
   amount: DecString;
   assetId: Address;
-  recipient: Address;
 };
 
 export interface IRpcConnection extends ConnextEventEmitter {
@@ -116,6 +118,8 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // SIGNER METHODS
   signMessage(message: string): Promise<string>;
   encrypt(message: string, publicKey: PublicKey): Promise<string>;
+  decrypt(encryptedPreImage: string): Promise<string>;
+  walletDeposit(params: WalletDepositParams): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS
@@ -125,7 +129,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // TRANSFER METHODS
-  walletTransfer(params: WalletTransferParams): Promise<string>;
+  walletDeposit(params: WalletDepositParams): Promise<string>;
   setStateChannel(state: StateChannelJSON): Promise<void>;
   createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   createSetStateCommitment(

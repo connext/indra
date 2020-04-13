@@ -1,4 +1,4 @@
-import { 
+import {
   AppInstanceJson,
   DefaultApp,
   DepositAppName,
@@ -28,20 +28,17 @@ export class DepositController extends AbstractController {
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
     validate(invalidAddress(assetId));
-    // NOTE: when the `walletTransfer` is not used, these parameters
+    // NOTE: when the `walletDeposit` is not used, these parameters
     // do not have to be validated
     const tokenAddress = getAddressFromAssetId(assetId);
-    const startingBalance = tokenAddress === AddressZero
-      ? await this.ethProvider.getBalance(this.connext.signerAddress)
-      : await new Contract(tokenAddress, tokenAbi, this.ethProvider)
-          .functions.balanceOf(this.connext.signerAddress);
-    validate(
-      notLessThanOrEqualTo(amount, startingBalance),
-      notGreaterThan(amount, Zero),
-    );
-    const { 
-      appIdentityHash, 
-    } = await this.requestDepositRights({ assetId });
+    const startingBalance =
+      tokenAddress === AddressZero
+        ? await this.ethProvider.getBalance(this.connext.signerAddress)
+        : await new Contract(tokenAddress, tokenAbi, this.ethProvider).functions.balanceOf(
+            this.connext.signerAddress,
+          );
+    validate(notLessThanOrEqualTo(amount, startingBalance), notGreaterThan(amount, Zero));
+    const { appIdentityHash } = await this.requestDepositRights({ assetId });
 
     let ret;
     let transactionHash;
@@ -52,10 +49,9 @@ export class DepositController extends AbstractController {
         assetId: tokenAddress,
         appIdentityHash,
       });
-      const hash = await this.connext.channelProvider.walletTransfer({
-        recipient: this.connext.multisigAddress, 
+      const hash = await this.connext.channelProvider.walletDeposit({
         amount: amount.toString(),
-        assetId: tokenAddress, 
+        assetId: tokenAddress,
       });
       this.log.debug(`Sent deposit transaction to chain: ${hash}`);
       transactionHash = hash;
@@ -92,7 +88,7 @@ export class DepositController extends AbstractController {
     validate(invalidAddress(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     const depositApp = await this.getDepositApp({ assetId: tokenAddress });
-    
+
     if (!depositApp) {
       this.log.debug(`No deposit app installed for ${assetId}. Installing.`);
       const appIdentityHash = await this.proposeDepositInstall(assetId);
@@ -111,12 +107,14 @@ export class DepositController extends AbstractController {
       throw new Error(`Node has unfinalized deposit, cannot request deposit rights for ${assetId}`);
     }
 
-    this.log.debug(`Found existing, unfinalized deposit app for ${assetId}, doing nothing. (deposit app: ${depositApp.identityHash})`);
+    this.log.debug(
+      `Found existing, unfinalized deposit app for ${assetId}, doing nothing. (deposit app: ${depositApp.identityHash})`,
+    );
     return {
       appIdentityHash: depositApp.identityHash,
       multisigAddress: this.connext.multisigAddress,
     };
-  }
+  };
 
   public rescindDepositRights = async (
     params: PublicParams.RescindDepositRights,
@@ -133,24 +131,24 @@ export class DepositController extends AbstractController {
       const freeBalance = await this.connext.getFreeBalance(tokenAddress);
       return { freeBalance };
     }
-  
+
     this.log.debug(`Uninstalling ${app.identityHash}`);
     await this.connext.uninstallApp(app.identityHash);
     this.log.debug(`Uninstalled deposit app`);
     const freeBalance = await this.connext.getFreeBalance(tokenAddress);
     return { freeBalance };
-  }
+  };
 
   public getDepositApp = async (
     params: PublicParams.CheckDepositRights,
   ): Promise<AppInstanceJson | undefined> => {
     const appInstances = await this.connext.getAppInstances();
-    const depositAppInfo = await this.connext.getAppRegistry({
+    const depositAppInfo = (await this.connext.getAppRegistry({
       name: DepositAppName,
       chainId: this.ethProvider.network.chainId,
-    }) as DefaultApp;
+    })) as DefaultApp;
     const depositApp = appInstances.find(
-      (appInstance) =>
+      appInstance =>
         appInstance.appInterface.addr === depositAppInfo.appDefinitionAddress &&
         (appInstance.latestState as DepositAppState).assetId === params.assetId,
     );
@@ -160,14 +158,12 @@ export class DepositController extends AbstractController {
     }
 
     return depositApp;
-  }
+  };
 
   /////////////////////////////////
   ////// PRIVATE METHODS
 
-  private proposeDepositInstall = async (
-    assetId: string,
-  ): Promise<string> => {
+  private proposeDepositInstall = async (assetId: string): Promise<string> => {
     const tokenAddress = getAddressFromAssetId(assetId);
 
     // generate initial totalAmountWithdrawn
@@ -179,8 +175,7 @@ export class DepositController extends AbstractController {
 
     let startingTotalAmountWithdrawn: BigNumber;
     try {
-      startingTotalAmountWithdrawn = await multisig
-        .functions.totalAmountWithdrawn(tokenAddress);
+      startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);
     } catch (e) {
       const NOT_DEPLOYED_ERR = `contract not deployed (contractAddress="${this.connext.multisigAddress}"`;
       if (!e.message.includes(NOT_DEPLOYED_ERR)) {
@@ -195,8 +190,9 @@ export class DepositController extends AbstractController {
     const startingMultisigBalance =
       tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await new Contract(tokenAddress, tokenAbi, this.ethProvider)
-            .functions.balanceOf(this.connext.multisigAddress);
+        : await new Contract(tokenAddress, tokenAbi, this.ethProvider).functions.balanceOf(
+            this.connext.multisigAddress,
+          );
 
     const initialState: DepositAppState = {
       transfers: [
@@ -211,7 +207,7 @@ export class DepositController extends AbstractController {
       ],
       multisigAddress: this.connext.multisigAddress,
       assetId: tokenAddress,
-      startingTotalAmountWithdrawn, 
+      startingTotalAmountWithdrawn,
       startingMultisigBalance,
     };
 
