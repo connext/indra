@@ -28,10 +28,6 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
         bytes32 identityHash = appIdentityToHash(appIdentity);
         AppChallenge storage challenge = appChallenges[identityHash];
 
-        if (challenge.status == ChallengeStatus.NO_CHALLENGE) {
-            appTimeouts[identityHash] = appIdentity.defaultTimeout;
-        }
-
         require(
             isDisputable(challenge),
             "setState was called on an app that cannot be disputed anymore"
@@ -53,7 +49,6 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
 
         // Update challenge
         challenge.status = ChallengeStatus.IN_DISPUTE;
-        challenge.latestSubmitter = msg.sender;
         challenge.appStateHash = req.appStateHash;
         challenge.versionNumber = req.versionNumber;
         challenge.finalizesAt = block.number.add(req.timeout);
@@ -61,7 +56,6 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
         emit ChallengeUpdated(
             identityHash,
             challenge.status,
-            challenge.latestSubmitter,
             challenge.appStateHash,
             challenge.versionNumber,
             challenge.finalizesAt

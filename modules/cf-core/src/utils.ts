@@ -9,6 +9,7 @@ import {
   Interface,
   keccak256,
   solidityKeccak256,
+  solidityPack,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import memoize from "memoizee";
@@ -34,14 +35,15 @@ export const logTime = (log: ILoggerService, start: number, msg: string) => {
 
 export function appIdentityToHash(appIdentity: AppIdentity): string {
   return keccak256(
-    defaultAbiCoder.encode(
-      ["uint256", "address[]", "address", "address", "uint256"],
+    solidityPack(
+      ["address", "uint256", "bytes32", "address", "uint256"],
       [
-        appIdentity.channelNonce, 
-        appIdentity.participants, 
-        appIdentity.multisigAddress, 
-        appIdentity.appDefinition, 
-        appIdentity.defaultTimeout],
+        appIdentity.multisigAddress,
+        appIdentity.channelNonce,
+        keccak256(solidityPack(["address[]"], [appIdentity.participants])),
+        appIdentity.appDefinition,
+        appIdentity.defaultTimeout
+      ],
     ),
   );
 }

@@ -83,7 +83,6 @@ describe("setState", () => {
 
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
-        latestSubmitter: await wallet.getAddress(),
         appStateHash: appStateToHash(state),
         versionNumber: toBN(versionNumber),
         finalizesAt: toBN((await provider.getBlockNumber()) + timeout),
@@ -99,7 +98,6 @@ describe("setState", () => {
 
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
-        latestSubmitter: await wallet.getAddress(),
         appStateHash: appStateToHash(state),
         versionNumber: toBN(versionNumber),
         finalizesAt: toBN((await provider.getBlockNumber()) + timeout),
@@ -113,7 +111,6 @@ describe("setState", () => {
 
       await verifyChallenge({
         status: ChallengeStatus.IN_DISPUTE,
-        latestSubmitter: await wallet.getAddress(),
         appStateHash: appStateToHash(newState),
         versionNumber: toBN(newVersionNumber),
         finalizesAt: toBN((await provider.getBlockNumber()) + newTimeout),
