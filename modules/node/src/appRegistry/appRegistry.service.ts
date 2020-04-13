@@ -224,8 +224,7 @@ export class AppRegistryService implements OnModuleInit {
       case SimpleSignedTransferAppName: {
         this.log.warn(`Doing simple signed transfer post-install tasks`);
         if (proposeInstallParams.meta["recipient"]) {
-          // do not await, this can happen in the background. otherwise will be blocked here if receiver is offline
-          this.signedTransferService
+          await this.signedTransferService
             .installSignedTransferReceiverApp(
               proposeInstallParams.meta["recipient"],
               (proposeInstallParams.initialState as SimpleSignedTransferAppState).paymentId,
