@@ -23,11 +23,11 @@ import {
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
   getNatsClient,
+  env,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 import { before } from "mocha";
-import { Wallet } from "ethers";
 import { getRandomChannelSigner } from "@connext/crypto";
 
 const fundForTransfers = async (
@@ -143,8 +143,8 @@ describe("Async transfer offline tests", () => {
    * and money is returned to the hubs channel (redeemed payment)
    */
   it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later (sender offline for take action)", async () => {
-    const senderSigner = getRandomChannelSigner();
-    const receiverSigner = getRandomChannelSigner();
+    const senderSigner = getRandomChannelSigner(env.ethProviderUrl);
+    const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({ signer: senderSigner });
     receiverClient = await createClientWithMessagingLimits({ signer: receiverSigner });
@@ -203,8 +203,8 @@ describe("Async transfer offline tests", () => {
    * and money is returned to the hubs channel (redeemed payment)
    */
   it("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later (sender offline for uninstall)", async () => {
-    const senderSigner = getRandomChannelSigner();
-    const receiverSigner = getRandomChannelSigner();
+    const senderSigner = getRandomChannelSigner(env.ethProviderUrl);
+    const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       ceiling: { sent: 1 }, // for deposit app
