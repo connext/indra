@@ -110,12 +110,6 @@ export interface IConnextClient {
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile | undefined>;
   getTransferHistory(): Promise<NodeResponses.GetTransferHistory>;
   reclaimPendingAsyncTransfers(): Promise<void>;
-  reclaimPendingAsyncTransfer(
-    amount: DecString,
-    assetId: Address,
-    paymentId: Bytes32,
-    encryptedPreImage: string,
-  ): Promise<NodeResponses.ResolveLinkedTransfer>;
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS

@@ -692,6 +692,7 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
+  // must be public so it can easily be used by the listener
   public reclaimPendingAsyncTransfer = async (
     paymentId: string,
     encryptedPreImage: string,
