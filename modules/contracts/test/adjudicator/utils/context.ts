@@ -1,4 +1,4 @@
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner, signChannelMessage } from "@connext/crypto";
 import {
   AppChallengeBigNumber,
   toBN,
@@ -351,7 +351,6 @@ export const setupContext = async (
           await signChannelMessage(alice.privateKey, stateDigest),
           await signChannelMessage(bob.privateKey, stateDigest),
         ],
-        verifyChannelMessage,
       ),
     };
     const req2 = {
