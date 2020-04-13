@@ -92,7 +92,9 @@ contract MixinProgressState is LibStateChannelApp, MChallengeRegistryCore {
             identityHash,
             action,
             req.versionNumber,
-            turnTaker
+            req.timeout,
+            turnTaker,
+            req.signatures[0]
         );
 
         emit ChallengeUpdated(
