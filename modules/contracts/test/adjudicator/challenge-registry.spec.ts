@@ -172,12 +172,16 @@ describe("ChallengeRegistry", () => {
     );
   });
 
-  it("Can cancel challenge at `setState` phase", async () => {
+  it("Cannot cancel challenge at `setState` phase", async () => {
     await setState(1, encodeState(state0));
-    await cancelDisputeAndVerify(1);
+    await expect(cancelDisputeAndVerify(1)).to.be.revertedWith(
+      "cancelDispute called on challenge that cannot be cancelled",
+    );
 
     await setState(15, encodeState(state0));
-    await cancelDisputeAndVerify(15);
+    await expect(cancelDisputeAndVerify(15)).to.be.revertedWith(
+      "cancelDispute called on challenge that cannot be cancelled",
+    );
   });
 
   it("Can cancel challenge at `progressState` phase", async () => {

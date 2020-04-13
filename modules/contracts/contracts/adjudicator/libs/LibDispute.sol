@@ -35,7 +35,9 @@ contract LibDispute {
       bytes32 identityHash,
       bytes action,
       uint256 versionNumber,
-      address turnTaker
+      uint256 timeout,
+      address turnTaker,
+      bytes signature
     );
 
     // Event emitted when the challenge is updated
