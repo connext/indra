@@ -95,7 +95,7 @@ export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
     : input;
 }
 
-export function getChannelPublicIdentifier(publicKey: string): string {
+export function getPublicIdentifierFromPublicKey(publicKey: string): string {
   const buf = hexToBuffer(publicKey);
   const compressedPubKey = isCompressed(buf) ? buf : compress(buf);
   const base58id = bs58check.encode(compressedPubKey);
@@ -179,7 +179,7 @@ export class ChannelSigner implements IChannelSigner {
   }
 
   get publicIdentifier(): string {
-    return getChannelPublicIdentifier(this.publicKey);
+    return getPublicIdentifierFromPublicKey(this.publicKey);
   }
 
   public async encrypt(message: string, publicKey: string): Promise<string> {

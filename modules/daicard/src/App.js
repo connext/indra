@@ -6,7 +6,6 @@ import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
@@ -246,7 +245,6 @@ class App extends React.Component {
         eth.Wallet.fromMnemonic(mnemonic).privateKey,
         urls.ethProviderUrl,
       );
-      const address = await signer.getAddress();
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
         signer,
@@ -550,10 +548,12 @@ class App extends React.Component {
       return;
     }
 
-    const hubFBAddress = connext.utils.addressToAddress(channel.nodeIdentifier);
+    const hubSignerAddresss = connext.utils.getSignerAddressFromPublicIdentifier(
+      channel.nodeIdentifier,
+    );
     // in swap, collateral needed is just weiToToken(availableWeiToSwap)
     const tokensForWei = weiToToken(availableWeiToSwap, swapRate);
-    let collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
+    let collateral = (await channel.getFreeBalance(token.address))[hubSignerAddresss];
 
     console.log(
       `Hub token collateral: ${formatEther(collateral)}, amount to swap: ${formatEther(
@@ -564,7 +564,7 @@ class App extends React.Component {
     if (tokensForWei.gt(collateral) && !collateralizationInFlight) {
       console.log(`Requesting more collateral...`);
       await channel.requestCollateral(token.address);
-      collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
+      collateral = (await channel.getFreeBalance(token.address))[hubSignerAddresss];
       console.debug(
         `[after collateral request] Hub token collateral: ${formatEther(
           collateral,

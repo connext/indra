@@ -5,7 +5,7 @@ import {
   verifyChannelMessage,
   signDigest,
   recoverAddress,
-  getChannelPublicIdentifier,
+  getPublicIdentifierFromPublicKey,
   getPublicKeyFromPublicIdentifier,
   getSignerAddressFromPublicIdentifier,
   ChannelSigner,
@@ -104,18 +104,18 @@ describe("crypto", () => {
   });
 
   it("should generate channel publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
+    const publicIdentifier = getPublicIdentifierFromPublicKey(example.pubKey);
     expect(publicIdentifier.startsWith(INDRA_PUB_ID_PREFIX)).toBeTruthy;
   });
 
   it("should get signer publicKey from publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
+    const publicIdentifier = getPublicIdentifierFromPublicKey(example.pubKey);
     const publicKey = getPublicKeyFromPublicIdentifier(publicIdentifier);
     expect(publicKey).toEqual(example.pubKey);
   });
 
   it("should get signer address from publicIdentifier", async () => {
-    const publicIdentifier = getChannelPublicIdentifier(example.pubKey);
+    const publicIdentifier = getPublicIdentifierFromPublicKey(example.pubKey);
     const address = getSignerAddressFromPublicIdentifier(publicIdentifier);
     expect(address).toEqual(example.address);
   });
