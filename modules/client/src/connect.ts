@@ -13,8 +13,9 @@ import {
   NodeResponses,
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
+  IChannelSigner,
 } from "@connext/types";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -46,9 +47,8 @@ export const connect = async (
     logger,
     loggerService,
     logLevel,
-    mnemonic,
   } = opts;
-  let { store, messaging, nodeUrl, messagingUrl, signer } = opts;
+  let { store, messaging, nodeUrl, messagingUrl } = opts;
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -66,6 +66,9 @@ export const connect = async (
   // setup channelProvider
   let channelProvider: IChannelProvider;
   let isInjected = false;
+
+  // setup signer
+  let signer: IChannelSigner;
 
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
@@ -108,16 +111,16 @@ export const connect = async (
     node.nodeIdentifier = config.nodeIdentifier;
 
     isInjected = true;
-  } else if (signer || mnemonic) {
+  } else if (opts.signer) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
 
-    if (!signer) {
-      const pk = Wallet.fromMnemonic(mnemonic).privateKey;
-      log.warn(`Client instantiation with mnemonic is only recommended for dev usage`);
-      signer = new ChannelSigner(pk, ethProviderUrl);
+    if (!opts.signer) {
+      throw new Error("Client must be instantiated with signer if not using a channelProvider");
     }
+
+    signer = typeof opts.signer === "string" ? new ChannelSigner(opts.signer, ethProvider) : signer;
 
     store = store || getDefaultStore(opts);
 

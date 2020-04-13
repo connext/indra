@@ -171,8 +171,12 @@ export class ChannelSigner implements IChannelSigner {
   // https://github.com/ethers-io/ethers.js/issues/779
   private readonly _ethersType = "Signer";
 
-  constructor(private readonly privateKey: string, ethProviderUrl?: string) {
-    this.provider = !!ethProviderUrl ? new JsonRpcProvider(ethProviderUrl) : undefined;
+  constructor(private readonly privateKey: string, ethProvider?: string | JsonRpcProvider) {
+    this.provider = ethProvider
+      ? typeof ethProvider === "string"
+        ? new JsonRpcProvider(ethProvider)
+        : ethProvider
+      : undefined;
     this.privateKey = privateKey;
     this.publicKey = getPublicKeyFromPrivate(this.privateKey);
     this.address = getChecksumAddress(this.publicKey);

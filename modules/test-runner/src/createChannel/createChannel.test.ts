@@ -9,6 +9,7 @@ import {
   SETUP_RESPONDER_SENT_COUNT,
   TestMessagingService,
 } from "../util";
+import { Wallet } from "ethers";
 
 describe("Create Channel", () => {
   let client: IConnextClient;
@@ -44,8 +45,8 @@ describe("Create Channel", () => {
     expect(messaging!.installVirtual.sent).to.be.equal(0);
   });
 
-  it("Creating a channel with mainnet network string fails if no mnemonic is provided", async () => {
-    await expect(createDefaultClient("mainnet", { mnemonic: undefined })).to.be.rejectedWith(
+  it("Creating a channel with mainnet network string fails if no signer is provided", async () => {
+    await expect(createDefaultClient("mainnet", { signer: undefined })).to.be.rejectedWith(
       "Must provide channelProvider or signer",
     );
   });
@@ -53,7 +54,8 @@ describe("Create Channel", () => {
   it("Creating a channel fails if user address and node address are the same", async () => {
     const nodeMnemonic: string =
       "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
-    await expect(createClient({ mnemonic: nodeMnemonic })).to.be.rejectedWith(
+    const { privateKey } = Wallet.fromMnemonic(nodeMnemonic);
+    await expect(createClient({ signer: privateKey })).to.be.rejectedWith(
       "Client must be instantiated with a signer that is different from the node's",
     );
   });
