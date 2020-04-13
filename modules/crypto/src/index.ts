@@ -19,7 +19,6 @@ import {
   removeHexPrefix,
   compress,
   decompress,
-  padLeft,
   isCompressed,
   isDecompressed,
   getPublic,
@@ -34,7 +33,6 @@ export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
 // publicIdentifier constants
 export const INDRA_PUB_ID_PREFIX = "indra";
-export const INDRA_PUB_ID_CHAR_LENGTH = 55;
 
 function toChecksumAddress(address: string): string {
   address = removeHexPrefix(address);
@@ -97,19 +95,11 @@ export function bufferify(input: any[] | Buffer | string | Uint8Array): Buffer {
     : input;
 }
 
-export function ensureBase58Length(str: string, length: number) {
-  if (str.length > length) {
-    throw new Error(`Provided string has length (${str.length}) greater than ${length}`);
-  }
-  return padLeft(str, length, "1");
-}
-
 export function getChannelPublicIdentifier(publicKey: string): string {
   const buf = hexToBuffer(publicKey);
   const compressedPubKey = isCompressed(buf) ? buf : compress(buf);
   const base58id = bs58check.encode(compressedPubKey);
-  const base58length = INDRA_PUB_ID_CHAR_LENGTH - INDRA_PUB_ID_PREFIX.length;
-  return INDRA_PUB_ID_PREFIX + ensureBase58Length(base58id, base58length);
+  return INDRA_PUB_ID_PREFIX + base58id;
 }
 
 export function getPublicKeyFromPublicIdentifier(publicIdentifier: string): string {
