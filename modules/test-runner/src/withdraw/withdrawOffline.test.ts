@@ -21,7 +21,7 @@ import {
   env,
 } from "../util";
 
-describe.only("Withdraw offline tests", () => {
+describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
   let signer: IChannelSigner;
@@ -97,7 +97,7 @@ describe.only("Withdraw offline tests", () => {
     ).to.be.rejectedWith(`proposal took longer than 90 seconds`);
   });
 
-  it.only("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
+  it("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
     await createAndFundChannel();
 
     await new Promise(resolve => {
