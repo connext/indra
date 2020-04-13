@@ -200,7 +200,25 @@ const sendGift = async (address, token) => {
   ////////////////////////////////////////
   // Deploy contracts
 
-  for (const contract of coreContracts.concat(appContracts).sort()) {
+  let contractsToDeploy = [];
+  const knownContracts = coreContracts.concat(appContracts).sort();
+
+  // if args are provided, only deploy given contracts
+  const args = process.argv.slice(2);
+  if (args.length > 0) {
+    args.forEach(contractName => {
+      if (!knownContracts.includes(contractName)) {
+        console.error(`Unknown contract name: ${contractName}`);
+        return;
+      }
+      contractsToDeploy.push(contractName);
+    });
+  } else {
+    contractsToDeploy = knownContracts;
+  }
+  console.log(`Deploying contracts: ${contractsToDeploy}`);
+
+  for (const contract of contractsToDeploy) {
     await deployContract(contract, artifacts[contract], []);
   }
 
