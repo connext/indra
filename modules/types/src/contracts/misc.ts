@@ -92,9 +92,9 @@ export const OutcomeType = enumify({
 export type OutcomeType = (typeof OutcomeType)[keyof typeof OutcomeType];
 
 // Commitment targets
-export const enum CommitmentTarget {
-  MULTISIG = 0,
-  SET_STATE = 1,
-  CANCEL_DISPUTE = 2,
-}
+export const CommitmentTarget = enumify({
+  MULTISIG: "0",
+  SET_STATE: "1",
+  CANCEL_DISPUTE: "2",
+});
 
