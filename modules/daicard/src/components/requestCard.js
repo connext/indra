@@ -15,16 +15,16 @@ const style = withStyles(theme => ({
 }));
 
 const zero = "0.0";
-const generateQrUrl = (amount, address) =>
-  `${window.location.origin}/send?amount=${amount || zero}&recipient=${address}`;
+const generateQrUrl = (amount, publicId) =>
+  `${window.location.origin}/send?amount=${amount || zero}&recipient=${publicId}`;
 
 export const RequestCard = style(props => {
-  const { maxDeposit, address } = props;
+  const { maxDeposit, publicId } = props;
 
   const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
-  const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, address));
+  const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, publicId));
 
-  useEffect(() => setQrUrl(generateQrUrl(amount.value, address)), [amount.value, address]);
+  useEffect(() => setQrUrl(generateQrUrl(amount.value, publicId)), [amount.value, publicId]);
 
   const updateAmountHandler = input => {
     let value, error;
@@ -42,7 +42,7 @@ export const RequestCard = style(props => {
     if (value && value.wad.lt(Zero)) {
       error = "Please enter a payment amount above 0";
     }
-    setQrUrl(generateQrUrl(error ? zero : value.amount, address));
+    setQrUrl(generateQrUrl(error ? zero : value.amount, publicId));
     setAmount({ value: value ? value.amount : zero, display: input, error });
   };
 
@@ -65,7 +65,7 @@ export const RequestCard = style(props => {
           <Typography style={{ marginTop: "6px" }}>Channel ID:</Typography>
         </Grid>
         <Grid item xs={8}>
-          <Copyable text={address} />
+          <Copyable text={publicId} />
         </Grid>
       </Grid>
 

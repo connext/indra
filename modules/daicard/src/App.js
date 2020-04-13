@@ -725,7 +725,7 @@ class App extends React.Component {
               render={props => (
                 <RequestCard
                   {...props}
-                  address={channel ? channel.publicIdentifier : "Unknown"}
+                  publicId={channel ? channel.publicIdentifier : "Unknown"}
                   maxDeposit={maxDeposit}
                 />
               )}
