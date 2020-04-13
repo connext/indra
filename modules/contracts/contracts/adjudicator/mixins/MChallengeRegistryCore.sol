@@ -1,17 +1,15 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
+import "../../shared/libs/LibCommitment.sol";
 import "../libs/LibStateChannelApp.sol";
 import "../libs/LibAppCaller.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
+contract MChallengeRegistryCore is LibCommitment, LibStateChannelApp, LibAppCaller {
 
     using SafeMath for uint256;
-
-    // A mapping of appIdentityHash to timeouts
-    mapping (bytes32 => uint256) public appTimeouts;
 
     // A mapping of appIdentityHash to AppChallenge structs which represents
     // the current on-chain status of some particular application's state.
@@ -44,10 +42,10 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
         returns (bytes32)
     {
         return keccak256(
-            abi.encode(
-                appIdentity.channelNonce, 
-                appIdentity.participants,
+            abi.encodePacked(
                 appIdentity.multisigAddress,
+                appIdentity.channelNonce,
+                keccak256(abi.encodePacked(appIdentity.participants)),
                 appIdentity.appDefinition,
                 appIdentity.defaultTimeout
             )
@@ -72,11 +70,11 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
     {
         return keccak256(
             abi.encodePacked(
-                byte(0x19),
+                uint8(CommitmentTarget.SET_STATE),
                 identityHash,
+                appStateHash,
                 versionNumber,
-                timeout,
-                appStateHash
+                timeout
             )
         );
     }
@@ -85,7 +83,7 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
     /// @param identityHash The unique hash of an `AppIdentity`
     /// @param versionNumber The versionNumber corresponding to the version of the state
     /// @return A bytes32 hash of the RLP encoded arguments
-    function computeCancelChallengeHash(
+    function computeCancelDisputeHash(
         bytes32 identityHash,
         uint256 versionNumber
     )
@@ -95,35 +93,10 @@ contract MChallengeRegistryCore is LibStateChannelApp, LibAppCaller {
     {
         return keccak256(
             abi.encodePacked(
-                byte(0x19),
+                uint8(CommitmentTarget.CANCEL_DISPUTE),
                 identityHash,
                 versionNumber
             )
-        );
-    }
-
-    /// @notice Checks if an application's state has been finalized by challenge
-    /// @param identityHash The unique hash of an `AppIdentity`
-    /// @return A boolean indicator
-    function isStateFinalized(bytes32 identityHash)
-        public
-        view
-        returns (bool)
-    {
-        AppChallenge storage appChallenge = appChallenges[identityHash];
-
-        return (
-          (
-              appChallenge.status == ChallengeStatus.IN_DISPUTE &&
-              hasPassed(appChallenge.finalizesAt.add(appTimeouts[identityHash]))
-          ) ||
-          (
-              appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
-              hasPassed(appChallenge.finalizesAt)
-          ) ||
-          (
-              appChallenge.status == ChallengeStatus.EXPLICITLY_FINALIZED
-          )
         );
     }
 

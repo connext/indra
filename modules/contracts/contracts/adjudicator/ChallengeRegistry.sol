@@ -5,7 +5,7 @@ import "./mixins/MixinChallengeRegistryCore.sol";
 import "./mixins/MixinSetState.sol";
 import "./mixins/MixinProgressState.sol";
 import "./mixins/MixinSetAndProgressState.sol";
-import "./mixins/MixinCancelChallenge.sol";
+import "./mixins/MixinCancelDispute.sol";
 import "./mixins/MixinSetOutcome.sol";
 
 
@@ -16,7 +16,7 @@ contract ChallengeRegistry is
   MixinSetState,
   MixinProgressState,
   MixinSetAndProgressState,
-  MixinCancelChallenge,
+  MixinCancelDispute,
   MixinSetOutcome {
     // solium-disable-next-line no-empty-blocks
     constructor () public {}

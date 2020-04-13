@@ -31,7 +31,6 @@ export type AppIdentityBigNumber = AppIdentity<BigNumber>
 // NOTE: AppChallenge is the overall state of a channelized app instance,
 // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
 export type AppChallenge<T = string> = {
-  latestSubmitter: Address;
   appStateHash: HexString;
   versionNumber: T;
   finalizesAt: T;
