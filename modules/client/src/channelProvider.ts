@@ -19,7 +19,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   toBN,
-  WalletTransferParams,
+  WalletDepositParams,
   WithdrawalMonitorObject,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
@@ -157,7 +157,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return this.signer.encrypt(message, getPublicKeyFromPublicIdentifier(publicIdentifier));
   }
 
-  private walletDeposit = async (params: WalletTransferParams): Promise<string> => {
+  private walletDeposit = async (params: WalletDepositParams): Promise<string> => {
     let hash;
     if (params.assetId === AddressZero) {
       const tx = await this.signer.sendTransaction({

@@ -7,7 +7,7 @@ import {
   JsonRpcRequest,
   StateChannelJSON,
   WithdrawalMonitorObject,
-  WalletTransferParams,
+  WalletDepositParams,
   ConditionalTransactionCommitmentJSON,
   SetStateCommitmentJSON,
   MinimalTransaction,
@@ -156,7 +156,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     });
   }
 
-  public walletDeposit = async (params: WalletTransferParams) => {
+  public walletDeposit = async (params: WalletDepositParams) => {
     return this._send(ChannelMethods.chan_walletDeposit, params);
   };
 

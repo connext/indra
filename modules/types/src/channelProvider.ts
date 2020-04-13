@@ -68,7 +68,7 @@ export type JsonRpcRequest = {
   params: any;
 };
 
-export type WalletTransferParams = {
+export type WalletDepositParams = {
   amount: DecString;
   assetId: Address;
   recipient: Address;
@@ -125,7 +125,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // TRANSFER METHODS
-  walletDeposit(params: WalletTransferParams): Promise<string>;
+  walletDeposit(params: WalletDepositParams): Promise<string>;
   setStateChannel(state: StateChannelJSON): Promise<void>;
   createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   createSetStateCommitment(
