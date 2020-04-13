@@ -17,6 +17,7 @@ import {
 } from "./commitments";
 import { PublicIdentifier } from "./identifiers";
 import { INodeApiClient } from "./api";
+import { IMessagingService } from "./messaging";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -56,9 +57,8 @@ export interface CFChannelProviderOptions {
   signer: IChannelSigner;
   lockService?: ILockService;
   logger?: ILoggerService;
-  messaging: any;
+  messaging: IMessagingService;
   contractAddresses: ContractAddresses;
-  node: INodeApiClient;
   nodeConfig: any;
   nodeUrl: string;
   store: IClientStore;

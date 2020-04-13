@@ -13,6 +13,10 @@ import {
   MinimalTransaction,
 } from "@connext/types";
 
+function exists(obj: any) {
+  return !!obj && Object.keys(obj.length);
+}
+
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
   public connected: boolean = false;
   public connection: IRpcConnection;
@@ -110,12 +114,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   get multisigAddress(): string | undefined {
     const multisigAddress =
-      this._multisigAddress || (this._config ? this._config.multisigAddress : undefined);
+      this._multisigAddress || (exists(this._config) ? this._config.multisigAddress : undefined);
     return multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string | undefined) {
-    if (this._config) {
+    if (exists(this._config)) {
       this._config.multisigAddress = multisigAddress;
     }
     this._multisigAddress = multisigAddress;
@@ -168,7 +172,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// // STORE METHODS
 
   public async getConfig(): Promise<ChannelProviderConfig> {
-    if (!this._config || !this.config.multisigAddress) {
+    if (!exists(this._config) || (exists(this._config) && !this.config.multisigAddress)) {
       this._config = await this._send(ChannelMethods.chan_config);
       this._multisigAddress = this._config.multisigAddress;
     }

@@ -22,7 +22,7 @@ import {
   toBN,
   WalletDepositParams,
   WithdrawalMonitorObject,
-  INodeApiClient,
+  CreateChannelMessage,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Contract } from "ethers";
@@ -36,7 +36,6 @@ export const createCFChannelProvider = async ({
   logger,
   messaging,
   contractAddresses,
-  node,
   nodeConfig,
   nodeUrl,
   signer,
@@ -60,7 +59,7 @@ export const createCFChannelProvider = async ({
     await generateValidationMiddleware(contractAddresses),
   );
 
-  const connection = new CFCoreRpcConnection(cfCore, store, signer, node);
+  const connection = new CFCoreRpcConnection(cfCore, store, signer, nodeUrl);
   const channelProvider = new ChannelProvider(connection);
   return channelProvider;
 };
@@ -71,20 +70,19 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public store: IClientStore;
 
   private signer: IChannelSigner;
-  private node: INodeApiClient;
   private config: ChannelProviderConfig;
 
-  constructor(cfCore: CFCore, store: IClientStore, signer: IChannelSigner, node: INodeApiClient) {
+  constructor(cfCore: CFCore, store: IClientStore, signer: IChannelSigner, nodeUrl: string) {
     super();
     this.cfCore = cfCore;
     this.signer = signer;
     this.store = store;
-    this.node = node;
     this.config = {
+      nodeUrl,
       signerAddress: signer.address,
-      nodeUrl: node.nodeUrl,
       userIdentifier: signer.publicIdentifier,
     };
+    this.subscribeChannelCreation();
   }
 
   public async send(payload: JsonRpcRequest): Promise<any> {
@@ -92,10 +90,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     let result;
     switch (method) {
       case ChannelMethods.chan_setUserWithdrawal:
-        result = await this.storeSetUserWithdrawal(params.withdrawalObject);
+        result = await this.setUserWithdrawal(params.withdrawalObject);
         break;
       case ChannelMethods.chan_getUserWithdrawal:
-        result = await this.storeGetUserWithdrawal();
+        result = await this.getUserWithdrawal();
         break;
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
@@ -194,13 +192,15 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return hash;
   };
 
-  private storeGetUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
+  public async getConfig(): Promise<ChannelProviderConfig> {
+    return this.config;
+  }
+
+  private getUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
     return this.store.getUserWithdrawal();
   };
 
-  private storeSetUserWithdrawal = async (
-    value: WithdrawalMonitorObject | undefined,
-  ): Promise<void> => {
+  private setUserWithdrawal = async (value: WithdrawalMonitorObject | undefined): Promise<void> => {
     if (!value) {
       return this.store.removeUserWithdrawal();
     }
@@ -243,14 +243,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     await this.store.createConditionalTransactionCommitment(appIdentityHash, commitment);
   };
 
-  public async getConfig(): Promise<ChannelProviderConfig> {
-    if (!this.config.multisigAddress) {
-      const channel = await this.node.getChannel();
-      if (channel.multisigAddress) {
-        this.config = { ...this.config, multisigAddress: channel.multisigAddress };
-      }
-    }
-    return this.config;
+  private subscribeChannelCreation() {
+    this.once(EventNames.CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
+      this.config.multisigAddress = data.data.multisigAddress;
+    });
   }
 
   private routerDispatch = async (method: string, params: any = {}) => {

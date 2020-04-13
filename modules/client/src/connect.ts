@@ -149,7 +149,6 @@ export const connect = async (
       lockService: { acquireLock: node.acquireLock.bind(node) },
       logger: log,
       messaging,
-      node,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
       signer,
