@@ -70,7 +70,7 @@ describe("ConnextStore", () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         await store.updateSchemaVersion();
         const channel = TEST_STORE_CHANNEL;
-        const owners = channel.userNeuteredExtendedKeys;
+        const owners = channel.userIdentifiers;
         const nullValue = await store.getStateChannelByOwners(owners);
         expect(nullValue).to.be.undefined;
         await store.createStateChannel(channel);

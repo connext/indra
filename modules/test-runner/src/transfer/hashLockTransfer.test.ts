@@ -9,7 +9,6 @@ import {
   PublicParams,
   EventPayloads,
 } from "@connext/types";
-import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
 import { soliditySha256, bigNumberify } from "ethers/utils";
 import { providers } from "ethers";
@@ -96,8 +95,8 @@ describe("HashLock Transfers", () => {
     ]);
 
     const {
-      [clientA.freeBalanceAddress]: clientAPostTransferBal,
-      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+      [clientA.signerAddress]: clientAPostTransferBal,
+      [clientA.nodeSignerAddress]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
@@ -105,8 +104,8 @@ describe("HashLock Transfers", () => {
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
-          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
-          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+          [clientA.signerAddress]: clientAPostReclaimBal,
+          [clientA.nodeSignerAddress]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -116,7 +115,7 @@ describe("HashLock Transfers", () => {
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
       } as PublicParams.ResolveHashLockTransfer);
-      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
       expect(clientBPostTransferBal).to.eq(transfer.amount);
@@ -163,8 +162,8 @@ describe("HashLock Transfers", () => {
     ]);
 
     const {
-      [clientA.freeBalanceAddress]: clientAPostTransferBal,
-      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+      [clientA.signerAddress]: clientAPostTransferBal,
+      [clientA.nodeSignerAddress]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
@@ -172,8 +171,8 @@ describe("HashLock Transfers", () => {
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
-          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
-          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+          [clientA.signerAddress]: clientAPostReclaimBal,
+          [clientA.nodeSignerAddress]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -183,7 +182,7 @@ describe("HashLock Transfers", () => {
         conditionType: ConditionalTransferTypes.HashLockTransfer,
         preImage,
       } as PublicParams.ResolveHashLockTransfer);
-      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
       expect(clientBPostTransferBal).to.eq(transfer.amount);
@@ -219,8 +218,8 @@ describe("HashLock Transfers", () => {
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       lockHash,
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.PENDING,
       meta: { foo: "bar" },
     } as NodeResponses.GetHashLockTransfer);
@@ -263,8 +262,8 @@ describe("HashLock Transfers", () => {
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       lockHash,
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
       status: HashLockTransferStatus.COMPLETED,
       meta: { foo: "bar" },
     } as NodeResponses.GetHashLockTransfer);
@@ -345,12 +344,12 @@ describe("HashLock Transfers", () => {
 
     for (let i = 0; i < numberOfRuns; i++) {
       const {
-        [clientA.freeBalanceAddress]: clientAPreBal,
-        [clientA.nodeFreeBalanceAddress]: nodeAPreBal,
+        [clientA.signerAddress]: clientAPreBal,
+        [clientA.nodeSignerAddress]: nodeAPreBal,
       } = await clientA.getFreeBalance(transfer.assetId);
       const {
-        [clientB.freeBalanceAddress]: clientBPreBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPreBal,
+        [clientB.signerAddress]: clientBPreBal,
+        [clientB.nodeSignerAddress]: nodeBPreBal,
       } = await clientB.getFreeBalance(transfer.assetId);
 
       const preImage = createRandom32ByteHexString();
@@ -395,12 +394,12 @@ describe("HashLock Transfers", () => {
       sum = sum + runTime[i];
 
       const {
-        [clientA.freeBalanceAddress]: clientAPostBal,
-        [clientA.nodeFreeBalanceAddress]: nodeAPostBal,
+        [clientA.signerAddress]: clientAPostBal,
+        [clientA.nodeSignerAddress]: nodeAPostBal,
       } = await clientA.getFreeBalance(transfer.assetId);
       const {
-        [clientB.freeBalanceAddress]: clientBPostBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPostBal,
+        [clientB.signerAddress]: clientBPostBal,
+        [clientB.nodeSignerAddress]: nodeBPostBal,
       } = await clientB.getFreeBalance(transfer.assetId);
       expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
       expect(nodeAPostBal).to.eq(nodeAPreBal.add(transfer.amount));

@@ -14,7 +14,7 @@ export class ConfigController {
       ethNetwork: await this.configService.getEthNetwork(),
       supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
       messagingUrl: this.configService.getMessagingConfig().messagingUrl,
-      nodePublicIdentifier: this.configService.getPublicIdentifier(),
+      nodeIdentifier: this.configService.getPublicIdentifier(),
     } as NodeResponses.GetConfig);
   }
 }

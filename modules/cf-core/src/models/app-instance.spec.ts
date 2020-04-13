@@ -3,10 +3,14 @@ import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
 import { AppInstance } from "./app-instance";
+import { getRandomPublicIdentifier } from "../testing/random-signing-keys";
 
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {
-    const participants = [getAddress(createRandomAddress()), getAddress(createRandomAddress())];
+    const participants = [
+      getRandomPublicIdentifier(),
+      getRandomPublicIdentifier(),
+    ];
 
     const appInstance = new AppInstance(
       /* initiator */ participants[0],
@@ -34,8 +38,8 @@ describe("AppInstance", () => {
 
     expect(appInstance).not.toBe(null);
     expect(appInstance).not.toBe(undefined);
-    expect(appInstance.initiator).toBe(participants[0]);
-    expect(appInstance.responder).toBe(participants[1]);
+    expect(appInstance.initiatorIdentifier).toBe(participants[0]);
+    expect(appInstance.responderIdentifier).toBe(participants[1]);
 
     // TODO: moar tests pl0x
   });

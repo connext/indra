@@ -9,7 +9,11 @@ import {
   ProtocolRoles,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
+  AssetId,
+  getAddressFromAssetId,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -24,7 +28,6 @@ import {
   ProtocolExecutionFlow,
 } from "../types";
 import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
-import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
@@ -65,13 +68,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     log.warn(`Initiation started for Install protocol`);
 
     const {
-      responderXpub,
-      multisigAddress,
-      initiatorDepositTokenAddress,
-      responderDepositTokenAddress,
       initiatorBalanceDecrement,
+      initiatorDepositAssetId,
+      initiatorIdentifier,
+      multisigAddress,
       responderBalanceDecrement,
-      initiatorXpub,
+      responderDepositAssetId,
+      responderIdentifier,
     } = params as ProtocolParams.Install;
 
     const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
@@ -79,16 +82,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 0ms
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
-      initiatorXpub,
-      initiatorDepositTokenAddress,
+      initiatorIdentifier,
+      getAddressFromAssetId(initiatorDepositAssetId),
       initiatorBalanceDecrement,
     );
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
-      responderXpub,
-      responderDepositTokenAddress,
+      responderIdentifier,
+      getAddressFromAssetId(responderDepositAssetId),
       responderBalanceDecrement,
     );
 
@@ -119,7 +122,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const conditionalTxCommitmentHash = conditionalTxCommitment.hashToSign();
 
     // 0ms
-    const responderFreeBalanceAddress = xkeyKthAddress(responderXpub, 0);
+    const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
     // 6ms
     // free balance addr signs conditional transactions
@@ -137,7 +140,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         params,
         protocol,
-        toXpub: responderXpub,
+        to: responderIdentifier,
         customData: {
           signature: mySignatureOnConditionalTransaction,
         },
@@ -148,12 +151,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 7ms
     // free balance addr signs conditional transactions
     await assertIsValidSignature(
-      responderFreeBalanceAddress,
+      responderSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
     );
 
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderFreeBalanceAddress;
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== responderSignerAddress;
     await conditionalTxCommitment.addSignatures(
       isChannelInitiator 
         ? mySignatureOnConditionalTransaction as any
@@ -177,7 +180,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 7ms
     // always use free balance key to sign free balance update
     await assertIsValidSignature(
-      responderFreeBalanceAddress,
+      responderSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
@@ -219,7 +222,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       {
         processID,
         protocol,
-        toXpub: responderXpub,
+        to: responderIdentifier,
         customData: {
           signature: mySignatureOnFreeBalanceStateUpdate,
         },
@@ -257,13 +260,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const counterpartySignatureOnConditionalTransaction = signature;
 
     const {
-      initiatorXpub,
+      initiatorBalanceDecrement,
+      initiatorDepositAssetId,
+      initiatorIdentifier,
       multisigAddress,
       responderBalanceDecrement,
-      responderXpub,
-      responderDepositTokenAddress,
-      initiatorBalanceDecrement,
-      initiatorDepositTokenAddress,
+      responderDepositAssetId,
+      responderIdentifier,
     } = params as ProtocolParams.Install;
 
     const stateChannelBefore = await stateChannelClassFromStoreByMultisig(multisigAddress, store);
@@ -271,16 +274,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 1ms
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
-      initiatorXpub,
-      initiatorDepositTokenAddress,
+      initiatorIdentifier,
+      getAddressFromAssetId(initiatorDepositAssetId),
       initiatorBalanceDecrement,
     );
 
     // 0ms
     assertSufficientFundsWithinFreeBalance(
       stateChannelBefore,
-      responderXpub,
-      responderDepositTokenAddress,
+      responderIdentifier,
+      getAddressFromAssetId(responderDepositAssetId),
       responderBalanceDecrement,
     );
 
@@ -290,7 +293,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     // 0ms
-    const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorXpub, 0);
+    const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
     const newAppInstance = stateChannelAfter.mostRecentlyInstalledAppInstance();
 
@@ -316,7 +319,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // 7ms
     // multisig owner always signs conditional tx
     await assertIsValidSignature(
-      initiatorFreeBalanceAddress,
+      initiatorSignerAddress,
       conditionalTxCommitmentHash,
       counterpartySignatureOnConditionalTransaction,
     );
@@ -324,7 +327,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTxCommitmentHash];
 
     // add signatures to commitment
-    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== initiatorFreeBalanceAddress;
+    const isChannelInitiator = stateChannelAfter.multisigOwners[0] !== initiatorSignerAddress;
     await conditionalTxCommitment.addSignatures(
       isChannelInitiator 
         ? mySignatureOnConditionalTransaction as any
@@ -356,7 +359,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       {
         processID,
         protocol,
-        toXpub: initiatorXpub,
+        to: initiatorIdentifier,
         customData: {
           signature: mySignatureOnConditionalTransaction,
           signature2: mySignatureOnFreeBalanceStateUpdate,
@@ -366,9 +369,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 7ms
-    // always use freeBalanceAddress to sign updates
+    // always use signerAddress to sign updates
     await assertIsValidSignature(
-      initiatorFreeBalanceAddress,
+      initiatorSignerAddress,
       freeBalanceUpdateDataHash,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
@@ -403,7 +406,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const m4 = {
       processID,
       protocol,
-      toXpub: initiatorXpub,
+      to: initiatorIdentifier,
       customData: {
         dataPersisted: true,
       },
@@ -434,10 +437,10 @@ function computeStateChannelTransition(
   const {
     initiatorBalanceDecrement,
     responderBalanceDecrement,
-    initiatorDepositTokenAddress,
-    responderDepositTokenAddress,
-    initiatorXpub,
-    responderXpub,
+    initiatorDepositAssetId,
+    responderDepositAssetId,
+    initiatorIdentifier,
+    responderIdentifier,
     initialState,
     appInterface,
     defaultTimeout,
@@ -446,12 +449,12 @@ function computeStateChannelTransition(
     outcomeType,
     disableLimit,
     meta,
-    appInitiatorAddress,
-    appResponderAddress,
+    appInitiatorIdentifier,
+    appResponderIdentifier,
   } = params;
 
-  const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorXpub);
-  const responderFbAddress = stateChannel.getFreeBalanceAddrOf(responderXpub);
+  const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorIdentifier);
+  const responderFbAddress = stateChannel.getFreeBalanceAddrOf(responderIdentifier);
 
   const {
     multiAssetMultiPartyCoinTransferInterpreterParams,
@@ -459,8 +462,8 @@ function computeStateChannelTransition(
     singleAssetTwoPartyCoinTransferInterpreterParams,
   } = computeInterpreterParameters(
     outcomeType,
-    initiatorDepositTokenAddress,
-    responderDepositTokenAddress,
+    initiatorDepositAssetId,
+    responderDepositAssetId,
     initiatorBalanceDecrement,
     responderBalanceDecrement,
     initiatorFbAddress,
@@ -469,8 +472,8 @@ function computeStateChannelTransition(
   );
 
   const appInstanceToBeInstalled = new AppInstance(
-    /* initiator */ appInitiatorAddress,
-    /* responder */ appResponderAddress,
+    /* initiator */ appInitiatorIdentifier,
+    /* responder */ appResponderIdentifier,
     /* defaultTimeout */ defaultTimeout.toHexString(),
     /* appInterface */ appInterface,
     /* appSeqNo */ appSeqNo,
@@ -484,6 +487,9 @@ function computeStateChannelTransition(
     multiAssetMultiPartyCoinTransferInterpreterParams,
     singleAssetTwoPartyCoinTransferInterpreterParams,
   );
+
+  const initiatorDepositTokenAddress = getAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = getAddressFromAssetId(responderDepositAssetId);
 
   let tokenIndexedBalanceDecrement: TokenIndexedCoinTransferMap;
   if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
@@ -538,8 +544,8 @@ function computeStateChannelTransition(
  */
 function computeInterpreterParameters(
   outcomeType: OutcomeType,
-  initiatorDepositTokenAddress: string,
-  responderDepositTokenAddress: string,
+  initiatorAssetId: AssetId,
+  responderAssetId: AssetId,
   initiatorBalanceDecrement: BigNumber,
   responderBalanceDecrement: BigNumber,
   initiatorFbAddress: string,
@@ -552,20 +558,22 @@ function computeInterpreterParameters(
   singleAssetTwoPartyCoinTransferInterpreterParams?:
     SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
+  const initiatorDepositAssetId = getAddressFromAssetId(initiatorAssetId);
+  const responderDepositAssetId = getAddressFromAssetId(responderAssetId);
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-      if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
+      if (initiatorDepositAssetId !== responderDepositAssetId) {
         throw new Error(
           TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
-            initiatorDepositTokenAddress,
-            responderDepositTokenAddress,
+            initiatorDepositAssetId,
+            responderDepositAssetId,
           ),
         );
       }
 
       return {
         twoPartyOutcomeInterpreterParams: {
-          tokenAddress: initiatorDepositTokenAddress,
+          tokenAddress: initiatorDepositAssetId,
           playerAddrs: [initiatorFbAddress, responderFbAddress],
           amount: initiatorBalanceDecrement.add(responderBalanceDecrement),
         },
@@ -573,27 +581,27 @@ function computeInterpreterParameters(
     }
 
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-      return initiatorDepositTokenAddress === responderDepositTokenAddress
+      return initiatorDepositAssetId === responderDepositAssetId
         ? {
             multiAssetMultiPartyCoinTransferInterpreterParams: {
               limit: [initiatorBalanceDecrement.add(responderBalanceDecrement)],
-              tokenAddresses: [initiatorDepositTokenAddress],
+              tokenAddresses: [initiatorDepositAssetId],
             },
           }
         : {
             multiAssetMultiPartyCoinTransferInterpreterParams: {
               limit: [initiatorBalanceDecrement, responderBalanceDecrement],
-              tokenAddresses: [initiatorDepositTokenAddress, responderDepositTokenAddress],
+              tokenAddresses: [initiatorDepositAssetId, responderDepositAssetId],
             },
           };
     }
 
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-      if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
+      if (initiatorDepositAssetId !== responderDepositAssetId) {
         throw new Error(
           TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
-            initiatorDepositTokenAddress,
-            responderDepositTokenAddress,
+            initiatorDepositAssetId,
+            responderDepositAssetId,
           ),
         );
       }
@@ -603,7 +611,7 @@ function computeInterpreterParameters(
           limit: disableLimit
             ? MaxUint256
             : initiatorBalanceDecrement.add(responderBalanceDecrement),
-          tokenAddress: initiatorDepositTokenAddress,
+          tokenAddress: initiatorDepositAssetId,
         },
       };
     }

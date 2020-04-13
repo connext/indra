@@ -1,4 +1,3 @@
-import { MessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   bigNumberifyJson,
@@ -8,13 +7,15 @@ import {
   INodeApiClient,
   NodeResponses,
   stringify,
+  IMessagingService,
+  StringMapping,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
 import { NodeInitializationParameters } from "./types";
-import { invalidXpub } from "./validation";
+import { invalidAddress } from "./validation";
 
 const sendFailed = "Failed to send message";
 
@@ -23,20 +24,20 @@ const sendFailed = "Failed to send message";
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
-  public messaging: MessagingService;
-  public latestSwapRates: { [key: string]: string } = {};
+  public nodeUrl: string;
+  public messaging: IMessagingService;
+  public latestSwapRates: StringMapping = {};
   public log: ILoggerService;
 
-  private _userPublicIdentifier: string | undefined;
-  private _nodePublicIdentifier: string | undefined;
+  private _userIdentifier: string | undefined;
+  private _nodeIdentifier: string | undefined;
   private _channelProvider: IChannelProvider | undefined;
-  private nodeUrl: string;
 
   constructor(opts: NodeInitializationParameters) {
-    this.messaging = opts.messaging as MessagingService;
+    this.messaging = opts.messaging;
     this.log = opts.logger.newContext("NodeApiClient");
-    this._userPublicIdentifier = opts.userPublicIdentifier;
-    this._nodePublicIdentifier = opts.nodePublicIdentifier;
+    this._userIdentifier = opts.userIdentifier;
+    this._nodeIdentifier = opts.nodeIdentifier;
     this._channelProvider = opts.channelProvider;
     this.nodeUrl = opts.nodeUrl;
   }
@@ -56,20 +57,20 @@ export class NodeApiClient implements INodeApiClient {
     this._channelProvider = channelProvider;
   }
 
-  get userPublicIdentifier(): string | undefined {
-    return this._userPublicIdentifier;
+  get userIdentifier(): string | undefined {
+    return this._userIdentifier;
   }
 
-  set userPublicIdentifier(userXpub: string) {
-    this._userPublicIdentifier = userXpub;
+  set userIdentifier(userAddress: string) {
+    this._userIdentifier = userAddress;
   }
 
-  get nodePublicIdentifier(): string | undefined {
-    return this._nodePublicIdentifier;
+  get nodeIdentifier(): string | undefined {
+    return this._nodeIdentifier;
   }
 
-  set nodePublicIdentifier(nodeXpub: string) {
-    this._nodePublicIdentifier = nodeXpub;
+  set nodeIdentifier(nodeAddress: string) {
+    this._nodeIdentifier = nodeAddress;
   }
 
   ////////////////////////////////////////
@@ -80,7 +81,7 @@ export class NodeApiClient implements INodeApiClient {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    const lockValue = await this.send(`${this.userPublicIdentifier}.lock.acquire.${lockName}`, {
+    const lockValue = await this.send(`${this.userIdentifier}.lock.acquire.${lockName}`, {
       lockTTL: timeout,
     });
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
@@ -90,7 +91,7 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       this.log.error(`Failed to execute callback while lock is held: ${e.stack || e.message}`);
     } finally {
-      await this.send(`${this.userPublicIdentifier}.lock.release.${lockName}`, { lockValue });
+      await this.send(`${this.userIdentifier}.lock.release.${lockName}`, { lockValue });
       this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
@@ -102,32 +103,34 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async config(): Promise<NodeResponses.GetConfig> {
-    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(`${this.nodeUrl}/config`);
+    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(
+      `${this.nodeUrl}/config`,
+    );
     return response.data;
   }
 
   public async createChannel(): Promise<NodeResponses.CreateChannel> {
-    return this.send(`${this.userPublicIdentifier}.channel.create`);
+    return this.send(`${this.userIdentifier}.channel.create`);
   }
 
   public async getChannel(): Promise<NodeResponses.GetChannel> {
-    return this.send(`${this.userPublicIdentifier}.channel.get`);
+    return this.send(`${this.userIdentifier}.channel.get`);
   }
 
   public async getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    return (await this.send(`${this.userPublicIdentifier}.transfer.get-pending`)) || [];
+    return (await this.send(`${this.userIdentifier}.transfer.get-pending`)) || [];
   }
 
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
-    return this.send(`${this.userPublicIdentifier}.swap-rate.${from}.${to}`);
+    return this.send(`${this.userIdentifier}.swap-rate.${from}.${to}`);
   }
 
   public async getTransferHistory(): Promise<NodeResponses.GetTransferHistory> {
-    return (await this.send(`${this.userPublicIdentifier}.transfer.get-history`)) || [];
+    return (await this.send(`${this.userIdentifier}.transfer.get-history`)) || [];
   }
 
   public async getHashLockTransfer(lockHash: string): Promise<NodeResponses.GetHashLockTransfer> {
-    return this.send(`${this.userPublicIdentifier}.transfer.get-hashlock`, {
+    return this.send(`${this.userIdentifier}.transfer.get-hashlock`, {
       lockHash,
     });
   }
@@ -136,7 +139,7 @@ export class NodeApiClient implements INodeApiClient {
   // which exceeds the timeout.....
   public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral | void> {
     try {
-      return this.send(`${this.userPublicIdentifier}.channel.request-collateral`, {
+      return this.send(`${this.userIdentifier}.channel.request-collateral`, {
         assetId,
       });
     } catch (e) {
@@ -150,13 +153,13 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userPublicIdentifier}.transfer.get-linked`, {
+    return this.send(`${this.userIdentifier}.transfer.get-linked`, {
       paymentId,
     });
   }
 
   public async fetchSignedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userPublicIdentifier}.transfer.get-signed`, {
+    return this.send(`${this.userIdentifier}.transfer.get-signed`, {
       paymentId,
     });
   }
@@ -164,7 +167,7 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveLinkedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    return this.send(`${this.userPublicIdentifier}.transfer.install-linked`, {
+    return this.send(`${this.userIdentifier}.transfer.install-linked`, {
       paymentId,
     });
   }
@@ -172,22 +175,22 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveSignedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    return this.send(`${this.userPublicIdentifier}.transfer.install-signed`, {
+    return this.send(`${this.userIdentifier}.transfer.install-signed`, {
       paymentId,
     });
   }
 
   public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
-    return this.send(`${this.userPublicIdentifier}.channel.get-profile`, {
+    return this.send(`${this.userIdentifier}.channel.get-profile`, {
       assetId: getAddress(assetId),
     });
   }
 
   // NOTE: maybe move since its not directly to the node just through messaging?
   // TODO -- What needs to happen here for JWT auth refactor?
-  public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
+  public recipientOnline = async (recipientIdentifier: string): Promise<boolean> => {
     try {
-      return this.send(`online.${recipientPublicIdentifier}`);
+      return this.send(`online.${recipientIdentifier}`);
     } catch (e) {
       if (e.message.startsWith("Request timed out")) {
         return false;
@@ -195,22 +198,6 @@ export class NodeApiClient implements INodeApiClient {
       throw e;
     }
   };
-
-  public setUserPublicIdentifier(publicIdentifier: string): void {
-    const ret = invalidXpub(publicIdentifier);
-    if (ret !== undefined) {
-      throw new Error(ret);
-    }
-    this.userPublicIdentifier = publicIdentifier;
-  }
-
-  public setNodePublicIdentifier(publicIdentifier: string): void {
-    const ret = invalidXpub(publicIdentifier);
-    if (ret !== undefined) {
-      throw new Error(ret);
-    }
-    this.nodePublicIdentifier = publicIdentifier;
-  }
 
   public async subscribeToSwapRates(from: string, to: string, callback: any): Promise<void> {
     await this.messaging.subscribe(`swap-rate.${from}.${to}`, callback);
@@ -221,15 +208,15 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async restoreState(): Promise<NodeResponses.ChannelRestore> {
-    return this.send(`${this.userPublicIdentifier}.channel.restore`);
+    return this.send(`${this.userIdentifier}.channel.restore`);
   }
 
   public async getLatestWithdrawal(): Promise<Transaction> {
-    return this.send(`${this.userPublicIdentifier}.channel.latestWithdrawal`);
+    return this.send(`${this.userIdentifier}.channel.latestWithdrawal`);
   }
 
   public async clientCheckIn(): Promise<void> {
-    return this.send(`${this.userPublicIdentifier}.client.check-in`);
+    return this.send(`${this.userIdentifier}.client.check-in`);
   }
 
   ////////////////////////////////////////
@@ -290,6 +277,6 @@ export class NodeApiClient implements INodeApiClient {
       start,
       `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
     );
-    return (!response || isEmptyObj) ? undefined : bigNumberifyJson(response);
+    return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }
 }

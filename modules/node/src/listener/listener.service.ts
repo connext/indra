@@ -8,7 +8,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
-import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,

@@ -1,15 +1,15 @@
 import { bigNumberifyJson, createRandomAddress, StateChannelJSON } from "@connext/types";
 import { getAddress } from "ethers/utils";
 
-import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../../testing/mocks";
 
 import { StateChannel } from "../state-channel";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
 describe("StateChannel", () => {
   it("should be able to instantiate", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const [initiator, responder] = getRandomExtendedPubKeys(2);
+    const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
@@ -23,14 +23,14 @@ describe("StateChannel", () => {
     expect(sc).not.toBe(null);
     expect(sc).not.toBe(undefined);
     expect(sc.multisigAddress).toBe(multisigAddress);
-    expect(sc.userNeuteredExtendedKeys).toMatchObject([initiator, responder]);
+    expect(sc.userIdentifiers).toMatchObject([initiator, responder]);
     expect(sc.numActiveApps).toBe(0);
     expect(sc.numProposedApps).toBe(0);
   });
 
   describe("should be able to write a channel to a json", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const [initiator, responder] = getRandomExtendedPubKeys(2);
+    const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     let sc: StateChannel;
     let json: StateChannelJSON;
@@ -61,9 +61,9 @@ describe("StateChannel", () => {
       expect(json.freeBalanceAppInstance).toBeDefined();
     });
 
-    it("should not change the user xpubs", () => {
-      expect(json.userNeuteredExtendedKeys[0]).toEqual(initiator);
-      expect(json.userNeuteredExtendedKeys[1]).toEqual(responder);
+    it("should not change the user addresss", () => {
+      expect(json.userIdentifiers[0]).toEqual(initiator);
+      expect(json.userIdentifiers[1]).toEqual(responder);
     });
 
     it("should not change the multisig address", () => {
@@ -80,7 +80,7 @@ describe("StateChannel", () => {
 
   describe("should be able to rehydrate from json", () => {
     const multisigAddress = getAddress(createRandomAddress());
-    const [initiator, responder] = getRandomExtendedPubKeys(2);
+    const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
@@ -125,9 +125,9 @@ describe("StateChannel", () => {
       expect(rehydrated.freeBalance).toMatchObject(bigNumberifyJson(sc.freeBalance));
     });
 
-    it("should not change the user xpubs", () => {
-      expect(rehydrated.userNeuteredExtendedKeys[0]).toEqual(initiator);
-      expect(rehydrated.userNeuteredExtendedKeys[1]).toEqual(responder);
+    it("should not change the user addresss", () => {
+      expect(rehydrated.userIdentifiers[0]).toEqual(initiator);
+      expect(rehydrated.userIdentifiers[1]).toEqual(responder);
     });
 
     it("should not change the multisig address", () => {

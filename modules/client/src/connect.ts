@@ -1,6 +1,6 @@
+import { ChannelSigner } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
-  CF_PATH,
   ChannelMethods,
   ClientOptions,
   ConnextClientStorePrefix,
@@ -13,10 +13,9 @@ import {
   NodeResponses,
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
+  IChannelSigner,
 } from "@connext/types";
-import { signChannelMessage } from "@connext/crypto";
 import { Contract, providers } from "ethers";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -28,7 +27,6 @@ import {
   Logger,
   logTime,
   stringify,
-  isWalletProvided,
 } from "./lib";
 import { createMessagingService } from "./messaging";
 import { NodeApiClient } from "./node";
@@ -42,15 +40,15 @@ export const connect = async (
     typeof clientOptions === "string"
       ? await getDefaultOptions(clientOptions, overrideOptions)
       : clientOptions;
+
   const {
     channelProvider: providedChannelProvider,
     ethProviderUrl,
     logger,
     loggerService,
     logLevel,
-    mnemonic,
   } = opts;
-  let { xpub, keyGen, store, messaging, nodeUrl, messagingUrl } = opts;
+  let { store, messaging, nodeUrl, messagingUrl } = opts;
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
@@ -69,6 +67,9 @@ export const connect = async (
   let channelProvider: IChannelProvider;
   let isInjected = false;
 
+  // setup signer
+  let signer: IChannelSigner;
+
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
     if (typeof channelProvider.config === "undefined") {
@@ -81,14 +82,13 @@ export const connect = async (
       return sig;
     };
 
-    let { userPublicIdentifier, nodeUrl } = channelProvider.config;
+    let { userIdentifier, nodeUrl } = channelProvider.config;
 
     if (!messaging) {
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        userPublicIdentifier,
-        network.chainId,
+        userIdentifier,
         getSignature,
         messagingUrl,
       );
@@ -97,83 +97,76 @@ export const connect = async (
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ channelProvider, logger: log, messaging, nodeUrl });
+    node = new NodeApiClient({
+      channelProvider,
+      logger: log,
+      messaging,
+      nodeUrl,
+    });
     config = await node.config();
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userPublicIdentifier = userPublicIdentifier;
-    node.nodePublicIdentifier = config.nodePublicIdentifier;
+    node.userIdentifier = userIdentifier;
+    node.nodeIdentifier = config.nodeIdentifier;
 
     isInjected = true;
-  } else if (isWalletProvided(opts)) {
+  } else if (opts.signer) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
 
-    store = store || getDefaultStore(opts);
-
-    if (mnemonic) {
-      log.debug(`Creating channelProvider with mnemonic: ${mnemonic}`);
-      // Convert mnemonic into xpub + keyGen if provided
-      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-      xpub = hdNode.neuter().extendedKey;
-      keyGen = (index: string): Promise<string> =>
-        Promise.resolve(hdNode.derivePath(index).privateKey);
-    } else {
-      log.debug(`Creating channelProvider with xpub: ${xpub}`);
-      log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
+    if (!opts.signer) {
+      throw new Error("Client must be instantiated with signer if not using a channelProvider");
     }
-    const getSignature = async message => {
-      const sig = await signChannelMessage(await keyGen("0"), message);
-      return sig;
-    };
+
+    signer = typeof opts.signer === "string" 
+      ? new ChannelSigner(opts.signer, ethProvider) 
+      : opts.signer;
+
+    store = store || getDefaultStore(opts);
 
     if (!messaging) {
       messaging = await createMessagingService(
         log,
         nodeUrl,
-        xpub,
-        network.chainId,
-        getSignature,
+        signer.publicIdentifier,
+        (msg: string) => signer.signMessage(msg),
         messagingUrl,
       );
     } else {
       await messaging.connect();
     }
-
     // create a new node api instance
     node = new NodeApiClient({ logger: log, messaging, nodeUrl });
     config = await node.config();
 
-    // ensure that node and user xpub are different
-    if (config.nodePublicIdentifier === xpub) {
+    // ensure that node and user identifiers are different
+    if (config.nodeIdentifier === signer.publicIdentifier) {
       throw new Error(
-        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+        "Client must be instantiated with a signer that is different from the node's",
       );
     }
 
     channelProvider = await createCFChannelProvider({
-      ethProvider,
-      keyGen,
-      lockService: { acquireLock: node.acquireLock.bind(node) },
-      messaging,
       contractAddresses: config.contractAddresses,
+      ethProvider,
+      lockService: { acquireLock: node.acquireLock.bind(node) },
+      logger: log,
+      messaging,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl,
+      signer,
       store,
-      xpub,
-      logger: log,
     });
-
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
-    node.nodePublicIdentifier = config.nodePublicIdentifier;
+    node.userIdentifier = channelProvider.config.userIdentifier;
+    node.nodeIdentifier = config.nodeIdentifier;
   } else {
-    throw new Error("Must provide mnemonic or xpub + keygen");
+    throw new Error("Must provide channelProvider or signer");
   }
 
   // setup multisigAddress + assign to channelProvider
@@ -220,14 +213,13 @@ export const connect = async (
     channelProvider,
     config,
     ethProvider,
-    keyGen,
     logger: log,
     messaging: messaging as MessagingService,
     network,
     node,
+    signer,
     store,
     token,
-    xpub,
   });
 
   log.debug(`Done creating connext client`);

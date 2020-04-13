@@ -73,6 +73,6 @@ export const requestDepositRights = async (
   expect(transfers[0].amount).to.be.eq(Zero);
   expect(transfers[1].amount).to.be.eq(Zero);
   const clientIdx = clientIsRecipient ? 0 : 1;
-  expect(transfers[clientIdx].to).to.be.eq(client.freeBalanceAddress);
-  expect(transfers[clientIdx === 0 ? 1 : 0].to).to.be.eq(client.nodeFreeBalanceAddress);
+  expect(transfers[clientIdx].to).to.be.eq(client.signerAddress);
+  expect(transfers[clientIdx === 0 ? 1 : 0].to).to.be.eq(client.nodeSignerAddress);
 };

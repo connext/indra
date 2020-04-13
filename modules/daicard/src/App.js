@@ -1,11 +1,11 @@
 import * as connext from "@connext/client";
+import { ChannelSigner } from "@connext/crypto";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
-import { CF_PATH, ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
+import { ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
@@ -199,7 +199,7 @@ class App extends React.Component {
     await ethProvider.ready;
     const network = await ethProvider.getNetwork();
     if (!useWalletConnext) {
-      wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + "/0").connect(ethProvider);
+      wallet = eth.Wallet.fromMnemonic(mnemonic).connect(ethProvider);
       this.setState({ network, wallet });
     }
 
@@ -240,27 +240,15 @@ class App extends React.Component {
         }
       }
 
-      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-      const xpub = hdNode.neuter().extendedKey;
-      const keyGen = index => {
-        const res = hdNode.derivePath(index);
-        return Promise.resolve(res.privateKey);
-      };
+      const { privateKey } = eth.Wallet.fromMnemonic(mnemonic);
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
-        keyGen,
+        signer: privateKey,
         logLevel: LOG_LEVEL,
         nodeUrl: urls.nodeUrl,
         store,
-        xpub,
       });
       console.log(`mnemonic address: ${wallet.address} (path: ${wallet.path})`);
-      console.log(`xpub address: ${eth.utils.computeAddress(fromExtendedKey(xpub).publicKey)}`);
-      console.log(
-        `keygen address: ${new eth.Wallet(await keyGen("1")).address} (path ${
-          new eth.Wallet(await keyGen("1")).path
-        })`,
-      );
     } else if (useWalletConnext) {
       const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
@@ -295,7 +283,7 @@ class App extends React.Component {
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.multisigAddress}`);
-    console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
+    console.log(` - Free balance address: ${channel.signerAddress}`);
     console.log(` - Token address: ${token.address}`);
     console.log(` - Swap rate: ${swapRate}`);
 
@@ -345,7 +333,7 @@ class App extends React.Component {
     }
     const saiToken = new Contract(channel.config.contractAddresses.SAIToken, tokenAbi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
-    const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
+    const mySaiBalance = freeSaiBalance[channel.signerAddress];
     return mySaiBalance;
   };
 
@@ -405,22 +393,16 @@ class App extends React.Component {
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
     balance.onChain.ether = Currency.WEI(
-      await ethProvider.getBalance(channel.freeBalanceAddress),
+      await ethProvider.getBalance(channel.signerAddress),
       swapRate,
     ).toETH();
     balance.onChain.token = Currency.DEI(
-      await token.balanceOf(channel.freeBalanceAddress),
+      await token.balanceOf(channel.signerAddress),
       swapRate,
     ).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
-    balance.channel.ether = Currency.WEI(
-      freeEtherBalance[channel.freeBalanceAddress],
-      swapRate,
-    ).toETH();
-    balance.channel.token = Currency.DEI(
-      freeTokenBalance[channel.freeBalanceAddress],
-      swapRate,
-    ).toDAI();
+    balance.channel.ether = Currency.WEI(freeEtherBalance[channel.signerAddress], swapRate).toETH();
+    balance.channel.token = Currency.DEI(freeTokenBalance[channel.signerAddress], swapRate).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     const logIfNotZero = (wad, prefix) => {
       if (wad.isZero()) {
@@ -556,10 +538,12 @@ class App extends React.Component {
       return;
     }
 
-    const hubFBAddress = connext.utils.xpubToAddress(channel.nodePublicIdentifier);
+    const hubSignerAddresss = connext.utils.getSignerAddressFromPublicIdentifier(
+      channel.nodeIdentifier,
+    );
     // in swap, collateral needed is just weiToToken(availableWeiToSwap)
     const tokensForWei = weiToToken(availableWeiToSwap, swapRate);
-    let collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
+    let collateral = (await channel.getFreeBalance(token.address))[hubSignerAddresss];
 
     console.log(
       `Hub token collateral: ${formatEther(collateral)}, amount to swap: ${formatEther(
@@ -570,7 +554,7 @@ class App extends React.Component {
     if (tokensForWei.gt(collateral) && !collateralizationInFlight) {
       console.log(`Requesting more collateral...`);
       await channel.requestCollateral(token.address);
-      collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
+      collateral = (await channel.getFreeBalance(token.address))[hubSignerAddresss];
       console.debug(
         `[after collateral request] Hub token collateral: ${formatEther(
           collateral,
@@ -653,7 +637,7 @@ class App extends React.Component {
       token,
       wallet,
     } = this.state;
-    const address = wallet ? wallet.address : channel ? channel.freeBalanceAddress : AddressZero;
+    const address = wallet ? wallet.address : channel ? channel.signerAddress : AddressZero;
     const { classes } = this.props;
     return (
       <Router>
@@ -722,7 +706,7 @@ class App extends React.Component {
                   setWalletConnext={this.setWalletConnext}
                   getWalletConnext={this.getWalletConnext}
                   store={channel ? channel.store : undefined}
-                  xpub={channel ? channel.publicIdentifier : "Unknown"}
+                  address={channel ? channel.publicIdentifier : "Unknown"}
                 />
               )}
             />
@@ -731,7 +715,7 @@ class App extends React.Component {
               render={props => (
                 <RequestCard
                   {...props}
-                  xpub={channel ? channel.publicIdentifier : "Unknown"}
+                  publicId={channel ? channel.publicIdentifier : "Unknown"}
                   maxDeposit={maxDeposit}
                 />
               )}

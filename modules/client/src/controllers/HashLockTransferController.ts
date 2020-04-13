@@ -29,11 +29,11 @@ export class HashLockTransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: this.connext.freeBalanceAddress,
+          to: this.connext.signerAddress,
         },
         {
           amount: Zero,
-          to: this.connext.nodeFreeBalanceAddress,
+          to: this.connext.nodeSignerAddress,
         },
       ],
       timelock,
@@ -62,12 +62,12 @@ export class HashLockTransferController extends AbstractController {
       appDefinition,
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: assetId,
+      initiatorDepositAssetId: assetId,
       meta: submittedMeta,
       outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
+      responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: HASHLOCK_TRANSFER_STATE_TIMEOUT,
     };

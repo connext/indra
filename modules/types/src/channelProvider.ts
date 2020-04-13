@@ -1,4 +1,7 @@
-import { Address, Bytes32, DecString, Xpub } from "./basic";
+import { Signer } from "ethers";
+import { JsonRpcProvider } from "ethers/providers";
+
+import { Address, Bytes32, DecString, PublicKey } from "./basic";
 import { ContractAddresses } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
@@ -12,21 +15,78 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
+import { PublicIdentifier } from "./identifiers";
+import { INodeApiClient } from "./api";
+import { IMessagingService } from "./messaging";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
   chan_config: "chan_config",
   chan_signMessage: "chan_signMessage",
+  chan_encrypt: "chan_encrypt",
+  chan_decrypt: "chan_decrypt",
   chan_restoreState: "chan_restoreState",
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
   chan_setStateChannel: "chan_setStateChannel",
-  chan_walletTransfer: "chan_walletTransfer",
+  chan_walletDeposit: "chan_walletDeposit",
   chan_createSetupCommitment: "chan_createSetupCommitment",
   chan_createSetStateCommitment: "chan_createSetStateCommitment",
   chan_createConditionalCommitment: "chan_createConditionalCommitment",
 });
 export type ChannelMethods = typeof ChannelMethods[keyof typeof ChannelMethods];
+
+export interface IChannelSigner extends Signer {
+  address: Address;
+  decrypt(message: string): Promise<string>;
+  encrypt(message: string, publicKey: string): Promise<string>;
+  signMessage(message: string): Promise<string>;
+  publicKey: string;
+  publicIdentifier: string;
+}
+
+export type ChannelProviderConfig = {
+  signerAddress: Address;
+  multisigAddress?: Address; // may not be deployed yet
+  nodeUrl: string;
+  userIdentifier: PublicIdentifier;
+};
+
+export interface CFChannelProviderOptions {
+  ethProvider: JsonRpcProvider;
+  signer: IChannelSigner;
+  lockService?: ILockService;
+  logger?: ILoggerService;
+  messaging: IMessagingService;
+  contractAddresses: ContractAddresses;
+  nodeConfig: any;
+  nodeUrl: string;
+  store: IClientStore;
+}
+
+export type JsonRpcRequest = {
+  id: number;
+  jsonrpc: "2.0";
+  method: string; // MethodNames?
+  params: any;
+};
+
+export type WalletDepositParams = {
+  amount: DecString;
+  assetId: Address;
+};
+
+export interface IRpcConnection extends ConnextEventEmitter {
+  ////////////////////////////////////////
+  // Properties
+  connected: boolean;
+
+  ////////////////////////////////////////
+  // Methods
+  send(payload: JsonRpcRequest): Promise<any>;
+  open(): Promise<void>;
+  close(): Promise<void>;
+}
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -47,7 +107,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
   isSigner: boolean;
   config: ChannelProviderConfig | undefined;
   multisigAddress: Address | undefined;
-  freeBalanceAddress: Address | undefined;
+  signerAddress: Address | undefined;
 
   ///////////////////////////////////
   // LISTENER METHODS
@@ -55,8 +115,11 @@ export interface IChannelProvider extends ConnextEventEmitter {
   once(event: string, listener: (...args: any[]) => void): any;
 
   ///////////////////////////////////
-  // SIGNING METHODS
+  // SIGNER METHODS
   signMessage(message: string): Promise<string>;
+  encrypt(message: string, publicKey: PublicKey): Promise<string>;
+  decrypt(encryptedPreImage: string): Promise<string>;
+  walletDeposit(params: WalletDepositParams): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS
@@ -66,7 +129,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // TRANSFER METHODS
-  walletTransfer(params: WalletTransferParams): Promise<string>;
+  walletDeposit(params: WalletDepositParams): Promise<string>;
   setStateChannel(state: StateChannelJSON): Promise<void>;
   createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   createSetStateCommitment(
@@ -77,51 +140,4 @@ export interface IChannelProvider extends ConnextEventEmitter {
     appIdentityHash: Bytes32,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
-}
-
-export type ChannelProviderConfig = {
-  freeBalanceAddress: Address;
-  multisigAddress?: Address; // may not be deployed yet
-  nodeUrl: string;
-  userPublicIdentifier: Xpub;
-};
-
-export type KeyGen = (index: string) => Promise<string>;
-
-export interface CFChannelProviderOptions {
-  ethProvider: any; // TODO: replace w real type
-  keyGen: KeyGen;
-  lockService?: ILockService;
-  logger?: ILoggerService;
-  messaging: any;
-  contractAddresses: ContractAddresses;
-  nodeConfig: any;
-  nodeUrl: string;
-  xpub: Xpub;
-  store: IClientStore;
-}
-
-export type JsonRpcRequest = {
-  id: number;
-  jsonrpc: "2.0";
-  method: string; // MethodNames?
-  params: any;
-};
-
-export type WalletTransferParams = {
-  amount: DecString;
-  assetId: Address;
-  recipient: Address;
-}
-
-export interface IRpcConnection extends ConnextEventEmitter {
-  ////////////////////////////////////////
-  // Properties
-  connected: boolean;
-
-  ////////////////////////////////////////
-  // Methods
-  send(payload: JsonRpcRequest): Promise<any>;
-  open(): Promise<void>;
-  close(): Promise<void>;
 }

@@ -17,7 +17,7 @@ export const withdrawFromChannel = async (
 ): Promise<void> => {
   // try to withdraw
   const preWithdrawalBalance = await client.getFreeBalance(assetId);
-  const expected = preWithdrawalBalance[client.freeBalanceAddress].sub(amount);
+  const expected = preWithdrawalBalance[client.signerAddress].sub(amount);
   const log = new Logger("WithdrawFromChannel", env.logLevel);
   log.info(`client.withdraw() called`);
   const start = Date.now();
@@ -36,7 +36,7 @@ export const withdrawFromChannel = async (
     recipientBalance = await token.balanceOf(recipient);
   }
   expect(recipientBalance).to.be.at.least(amount.toString());
-  expect(postWithdrawalBalance[client.freeBalanceAddress].toString()).to.be.eq(expected.toString());
+  expect(postWithdrawalBalance[client.signerAddress].toString()).to.be.eq(expected.toString());
   expect(transaction.hash).to.exist;
   return;
 };

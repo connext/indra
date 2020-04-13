@@ -6,6 +6,7 @@ import {
   ProtocolRoles,
   TakeActionMiddlewareContext,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -16,7 +17,6 @@ import {
   PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
-import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
@@ -47,7 +47,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const {
       appIdentityHash,
       multisigAddress,
-      responderXpub,
+      responderIdentifier,
       action,
       stateTimeout,
     } = params as ProtocolParams.TakeAction;
@@ -82,13 +82,13 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     // 0ms
-    const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
+    const responderAddr = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 6ms
-    const mySignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
+    const mySignature = yield [OP_SIGN, setStateCommitmentHash];
 
     // 117ms
     const {
@@ -100,7 +100,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         params,
         seq: 1,
-        toXpub: responderXpub,
+        to: responderIdentifier,
         customData: {
           signature: mySignature,
         },
@@ -108,10 +108,10 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 10ms
-    await assertIsValidSignature(responderEphemeralKey, setStateCommitmentHash, counterpartySig);
+    await assertIsValidSignature(responderAddr, setStateCommitmentHash, counterpartySig);
 
     // add signatures and write commitment to store
-    const isAppInitiator = appInstance.initiator !== responderEphemeralKey;
+    const isAppInitiator = appInstance.initiatorIdentifier !== responderIdentifier;
     await setStateCommitment.addSignatures(
       isAppInitiator
         ? mySignature as any
@@ -152,7 +152,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const {
       appIdentityHash,
       multisigAddress,
-      initiatorXpub,
+      initiatorIdentifier,
       action,
       stateTimeout,
     } = params as ProtocolParams.TakeAction;
@@ -186,19 +186,19 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     // 0ms
-    const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
+    const initiatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     // 9ms
-    await assertIsValidSignature(initiatorEphemeralKey, setStateCommitmentHash, counterpartySignature);
+    await assertIsValidSignature(initiatorAddr, setStateCommitmentHash, counterpartySignature);
 
     // 7ms
-    const mySignature = yield [OP_SIGN, setStateCommitmentHash, appInstance.appSeqNo];
+    const mySignature = yield [OP_SIGN, setStateCommitmentHash];
 
     // add signatures and write commitment to store
-    const isAppInitiator = appInstance.initiator !== initiatorEphemeralKey;
+    const isAppInitiator = appInstance.initiatorIdentifier !== initiatorIdentifier;
     await setStateCommitment.addSignatures(
       isAppInitiator
         ? mySignature as any
@@ -228,7 +228,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       {
         protocol,
         processID,
-        toXpub: initiatorXpub,
+        to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
           signature: mySignature,

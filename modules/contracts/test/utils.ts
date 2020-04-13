@@ -5,6 +5,7 @@ import { solidity } from "ethereum-waffle";
 import { use } from "chai";
 import { BigNumber, BigNumberish, parseEther } from "ethers/utils";
 import { Wallet } from "ethers";
+import { verifyChannelMessage } from "@connext/crypto";
 
 export function mkXpub(prefix: string = "xpub"): string {
   return prefix.padEnd(111, "0");
@@ -33,7 +34,9 @@ export const moveToBlock = async (blockNumber: BigNumberish) => {
   const desired: BigNumber = toBN(blockNumber);
   const current: BigNumber = toBN(await provider.getBlockNumber());
   if (current.gt(desired)) {
-    throw new Error(`Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`);
+    throw new Error(
+      `Already at block ${current.toNumber()}, cannot rewind to ${blockNumber.toString()}`,
+    );
   }
   if (current.eq(desired)) {
     return;
@@ -76,6 +79,32 @@ export const fund = async (amount: BigNumber, recipient: Wallet) => {
   }
   const final = await provider.getBalance(recipient.address);
   if (final.lt(amount)) {
-    throw new Error(`Insufficient funds after funding to max. Off by: ${final.sub(amount).abs().toString()}`);
+    throw new Error(
+      `Insufficient funds after funding to max. Off by: ${final
+        .sub(amount)
+        .abs()
+        .toString()}`,
+    );
   }
 };
+
+export function sortByAddress(a: string, b: string) {
+  return toBN(a).lt(toBN(b)) ? -1 : 1;
+}
+
+export function sortAddresses(addrs: string[]) {
+  return addrs.sort(sortByAddress);
+}
+
+export async function sortSignaturesBySignerAddress(
+  digest: string,
+  signatures: string[],
+): Promise<string[]> {
+  return (
+    await Promise.all(
+      signatures.map(async sig => ({ sig, addr: await verifyChannelMessage(digest, sig) })),
+    )
+  )
+    .sort((a, b) => sortByAddress(a.addr, b.addr))
+    .map(x => x.sig);
+}

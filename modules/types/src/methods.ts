@@ -1,8 +1,9 @@
-import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
 import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
 import { OutcomeType } from "./contracts";
+import { AssetId, PublicIdentifier } from "./identifiers";
 import { PublicParams, PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { MinimalTransaction } from "./commitments";
@@ -11,13 +12,12 @@ import { enumify } from "./utils";
 ////////////////////////////////////////
 
 type CreateChannelParams = {
-  owners: Xpub[];
+  owners: PublicIdentifier[];
 };
 
 type CreateChannelResult = {
   multisigAddress: Address;
-  owners?: Xpub[];
-  counterpartyXpub?: Xpub;
+  owners?: Address[];
 };
 
 ////////////////////////////////////////
@@ -79,7 +79,7 @@ type GetStateDepositHolderAddressResult = {
 
 type GetFreeBalanceStateParams = {
   multisigAddress: Address;
-  tokenAddress?: Address;
+  assetId?: Address;
 };
 
 type GetFreeBalanceStateResult = {
@@ -157,12 +157,12 @@ type ProposeInstallParams = {
   defaultTimeout: BigNumber;
   initialState: AppState;
   initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress: Address;
+  initiatorDepositAssetId: AssetId;
   meta?: Object;
   outcomeType: OutcomeType;
-  proposedToIdentifier: Xpub;
+  responderIdentifier: PublicIdentifier;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress: Address;
+  responderDepositAssetId: AssetId;
   stateTimeout?: BigNumber;
 };
 

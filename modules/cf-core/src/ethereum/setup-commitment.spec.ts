@@ -1,7 +1,7 @@
+import { getRandomChannelSigner } from "@connext/crypto";
 import { createRandomAddress, MultisigTransaction } from "@connext/types";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 
-import { getRandomExtendedPubKey } from "../testing/random-signing-keys";
 import { generateRandomNetworkContext } from "../testing/mocks";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
@@ -27,9 +27,11 @@ describe("SetupCommitment", () => {
 
   // General interaction testing values
   const interaction = {
-    sender: getRandomExtendedPubKey(),
-    receiver: getRandomExtendedPubKey(),
+    sender: getRandomChannelSigner(),
+    receiver: getRandomChannelSigner(),
   };
+  const initiatorId = interaction.sender.publicIdentifier;
+  const responderId = interaction.receiver.publicIdentifier;
 
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(
@@ -39,8 +41,8 @@ describe("SetupCommitment", () => {
       multisigMastercopy: context.network.MinimumViableMultisig,
     },
     getAddress(createRandomAddress()),
-    interaction.sender,
-    interaction.receiver,
+    initiatorId,
+    responderId,
   );
 
   const freeBalance = stateChannel.freeBalance;

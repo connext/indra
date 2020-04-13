@@ -1,9 +1,10 @@
 import { providers } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, Bytes32, DecString, Xpub } from "./basic";
-import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
+import { Address, Bytes32, DecString } from "./basic";
+import { IChannelSigner, ChannelProviderConfig, IChannelProvider } from "./channelProvider";
 import { EventNames } from "./events";
+import { PublicIdentifier } from "./identifiers";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
@@ -13,14 +14,12 @@ import { PublicParams, PublicResults } from "./public";
 
 /////////////////////////////////
 
-// channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
+// channelProvider / signer are both optional but one of them needs to be provided
 export interface ClientOptions {
   backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
-  keyGen?: KeyGen;
-  mnemonic?: string;
-  xpub?: Xpub;
+  signer?: string | IChannelSigner;
   store?: IClientStore;
   storeType?: StoreTypes;
   logger?: ILogger;
@@ -39,11 +38,11 @@ export interface IConnextClient {
   config: NodeResponses.GetConfig;
   channelProvider: IChannelProvider;
   ethProvider: providers.JsonRpcProvider;
-  freeBalanceAddress: Address;
+  signerAddress: Address;
   multisigAddress: Address;
-  nodePublicIdentifier: Xpub;
-  nodeFreeBalanceAddress: Address;
-  publicIdentifier: Xpub;
+  nodeIdentifier: PublicIdentifier;
+  nodeSignerAddress: Address;
+  publicIdentifier: PublicIdentifier; // publicIdentifier?
 
   // Expose some internal machineary for easier debugging
   messaging: IMessagingService;
@@ -59,26 +58,23 @@ export interface IConnextClient {
   on(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
   once(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
   emit(event: EventNames | MethodName, data: any): boolean;
-  removeListener(
-    event: EventNames | MethodName,
-    callback: (...args: any[]) => void,
-  ): void;
+  removeListener(event: EventNames | MethodName, callback: (...args: any[]) => void): void;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
   channelProviderConfig(): Promise<ChannelProviderConfig>;
   checkDepositRights(
-    params: PublicParams.CheckDepositRights
+    params: PublicParams.CheckDepositRights,
   ): Promise<PublicResults.CheckDepositRights>;
   conditionalTransfer(
-    params: PublicParams.ConditionalTransfer
+    params: PublicParams.ConditionalTransfer,
   ): Promise<PublicResults.ConditionalTransfer>;
   deposit(params: PublicParams.Deposit): Promise<PublicResults.Deposit>;
   requestDepositRights(
-    params: PublicParams.RequestDepositRights
+    params: PublicParams.RequestDepositRights,
   ): Promise<MethodResults.RequestDepositRights>;
   rescindDepositRights(
-    params: PublicParams.RescindDepositRights
+    params: PublicParams.RescindDepositRights,
   ): Promise<PublicResults.RescindDepositRights>;
   resolveCondition(params: PublicParams.ResolveCondition): Promise<PublicResults.ResolveCondition>;
   restoreState(): Promise<void>;
@@ -124,9 +120,7 @@ export interface IConnextClient {
   getProposedAppInstance(
     appIdentityHash: Bytes32,
   ): Promise<MethodResults.GetProposedAppInstance | undefined>;
-  proposeInstallApp(
-    params: MethodParams.ProposeInstall,
-  ): Promise<MethodResults.ProposeInstall>;
+  proposeInstallApp(params: MethodParams.ProposeInstall): Promise<MethodResults.ProposeInstall>;
   installApp(appIdentityHash: Bytes32): Promise<MethodResults.Install>;
   rejectInstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
   takeAction(appIdentityHash: Bytes32, action: any): Promise<MethodResults.TakeAction>;

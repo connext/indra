@@ -2,6 +2,7 @@ import {
   EventNames,
   EventPayloads,
   IChannelProvider,
+  IChannelSigner,
   ILoggerService,
   INodeApiClient,
   MethodParams,
@@ -21,11 +22,13 @@ export abstract class AbstractController {
   public channelProvider: IChannelProvider;
   public listener: ConnextListener;
   public ethProvider: providers.JsonRpcProvider;
+  public signer: IChannelSigner;
 
   public constructor(name: string, connext: ConnextClient) {
     this.connext = connext;
     this.name = name;
     this.node = connext.node;
+    this.signer = connext.signer;
     this.channelProvider = connext.channelProvider;
     this.listener = connext.listener;
     this.log = connext.log.newContext(name);
@@ -63,7 +66,7 @@ export abstract class AbstractController {
           boundReject = this.rejectInstall.bind(null, rej, appIdentityHash);
 
           // set up install nats subscription
-          const subject = `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
+          const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
           this.connext.messaging.subscribe(subject, res);
 
           // this.listener.on(INSTALL_EVENT, boundResolve, appIdentityHash);
@@ -120,7 +123,7 @@ export abstract class AbstractController {
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {
     this.connext.messaging.unsubscribe(
-      `${this.connext.nodePublicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
+      `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);
   };

@@ -55,14 +55,14 @@ export class OnchainTransactionService {
   private async sendTransaction(
     transaction: MinimalTransaction,
   ): Promise<TransactionResponse> {
-    const wallet = this.configService.getEthWallet();
+    const wallet = this.configService.getSigner();
     let errors: {[k: number]: string} = [];
     for (let attempt = 1; attempt < MAX_RETRIES + 1; attempt += 1) {
       try {
         this.log.info(`Attempt ${attempt}/${MAX_RETRIES} to send transaction to ${transaction.to}`);
         const tx = await wallet.sendTransaction({ 
           ...transaction,
-          nonce: await wallet.getTransactionCount(),
+          nonce: await wallet.provider.getTransactionCount(await wallet.getAddress()),
         });
         if (!tx.hash) {
           throw new Error(NO_TX_HASH);

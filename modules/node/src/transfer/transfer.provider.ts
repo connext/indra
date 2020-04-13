@@ -25,23 +25,23 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   /**
    * Check in endpoint for client to call when it comes online to handle pending tasks
-   * @param userPublicIdentifier
+   * @param userIdentifier
    */
-  async clientCheckIn(userPublicIdentifier: string): Promise<void> {
+  async clientCheckIn(userIdentifier: string): Promise<void> {
     // reclaim collateral from redeemed transfers
     await this.linkedTransferService
-      .unlockLinkedTransfersFromUser(userPublicIdentifier);
+      .unlockLinkedTransfersFromUser(userIdentifier);
   }
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.get-history",
-      this.authService.parseXpub(this.getTransferHistory.bind(this)),
+      this.authService.parseIdentifier(this.getTransferHistory.bind(this)),
     );
 
     await super.connectRequestReponse(
       "*.client.check-in",
-      this.authService.parseXpub(this.clientCheckIn.bind(this)),
+      this.authService.parseIdentifier(this.clientCheckIn.bind(this)),
     );
   }
 }

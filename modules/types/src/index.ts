@@ -4,7 +4,7 @@ export * from "./basic";
 export * from "./channelProvider";
 export * from "./client";
 export * from "./commitments";
-export { CF_PATH } from "./constants";
+export * from "./constants";
 export * from "./contracts";
 export * from "./events";
 export * from "./lock";
@@ -30,6 +30,7 @@ export {
 } from "./protocol";
 export * from "./middleware";
 export * from "./public";
+export * from "./identifiers";
 export * from "./state";
 export * from "./store";
 export * from "./transfers";

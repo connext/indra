@@ -20,6 +20,7 @@ import {
   HashLockTransferAppState,
   SimpleSignedTransferAppState,
   DepositAppName,
+  getAddressFromAssetId,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
@@ -84,13 +85,13 @@ export class AppRegistryService implements OnModuleInit {
       const freeBal = await this.cfCoreService.getFreeBalance(
         from,
         installerChannel.multisigAddress,
-        proposeInstallParams.responderDepositTokenAddress,
+        proposeInstallParams.responderDepositAssetId,
       );
       const responderDepositBigNumber = bigNumberify(proposeInstallParams.responderDeposit);
-      if (freeBal[this.cfCoreService.cfCore.freeBalanceAddress].lt(responderDepositBigNumber)) {
+      if (freeBal[this.cfCoreService.cfCore.signerAddress].lt(responderDepositBigNumber)) {
         const depositReceipt = await this.channelService.rebalance(
           from,
-          proposeInstallParams.responderDepositTokenAddress,
+          getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
           RebalanceType.COLLATERALIZE,
           responderDepositBigNumber,
         );
@@ -135,8 +136,8 @@ export class AppRegistryService implements OnModuleInit {
       case SimpleTwoPartySwapAppName: {
         const allowedSwaps = this.configService.getAllowedSwaps();
         const ourRate = await this.swapRateService.getOrFetchRate(
-          proposeInstallParams.initiatorDepositTokenAddress,
-          proposeInstallParams.responderDepositTokenAddress,
+          getAddressFromAssetId(proposeInstallParams.initiatorDepositAssetId),
+          getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
         );
         validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;
@@ -175,7 +176,7 @@ export class AppRegistryService implements OnModuleInit {
           from,
           recipient,
           proposeInstallParams.initialState as HashLockTransferAppState,
-          proposeInstallParams.initiatorDepositTokenAddress,
+          proposeInstallParams.initiatorDepositAssetId,
           proposeInstallParams.meta,
         );
         break;
@@ -211,7 +212,7 @@ export class AppRegistryService implements OnModuleInit {
         await this.withdrawService.saveWithdrawal(
           appIdentityHash,
           bigNumberify(proposeInstallParams.initiatorDeposit),
-          proposeInstallParams.initiatorDepositTokenAddress,
+          proposeInstallParams.initiatorDepositAssetId,
           initialState.transfers[0].to,
           initialState.data,
           initialState.signatures[0],
@@ -245,7 +246,7 @@ export class AppRegistryService implements OnModuleInit {
     // rebalance at the end without blocking
     this.channelService.rebalance(
       from,
-      proposeInstallParams.responderDepositTokenAddress,
+      getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
       RebalanceType.RECLAIM,
     );
   }

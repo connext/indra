@@ -1,5 +1,7 @@
 import {
+  CONVENTION_FOR_ETH_ASSET_ID,
   delay,
+  getAddressFromAssetId,
   InstallMessage,
   ProposeMessage,
   ProtocolParams,
@@ -8,7 +10,6 @@ import { One } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
 
 import { Node } from "../../node";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
 
 import { NetworkContextForTestSuite } from "../contracts";
@@ -70,7 +71,7 @@ describe("Node method follows spec - install", () => {
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+            CONVENTION_FOR_ETH_ASSET_ID,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
           makeInstallCall(nodeB, msg.data.appIdentityHash);
@@ -101,7 +102,7 @@ describe("Node method follows spec - install", () => {
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+            CONVENTION_FOR_ETH_ASSET_ID,
           );
 
           expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
@@ -126,20 +127,21 @@ describe("Node method follows spec - install", () => {
           multisigAddress,
           undefined,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+          CONVENTION_FOR_ETH_ASSET_ID,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+          CONVENTION_FOR_ETH_ASSET_ID,
         );
         proposeInstallParams = params;
       });
 
       it("install app with ERC20", async done => {
-        await transferERC20Tokens(await nodeA.freeBalanceAddress);
-        await transferERC20Tokens(await nodeB.freeBalanceAddress);
+        await transferERC20Tokens(await nodeA.signerAddress);
+        await transferERC20Tokens(await nodeB.signerAddress);
 
         const erc20TokenAddress = (global["network"] as NetworkContextForTestSuite).DolphinCoin;
+        const assetId = getAddressFromAssetId(erc20TokenAddress);
 
-        await collateralizeChannel(multisigAddress, nodeA, nodeB, One, erc20TokenAddress);
+        await collateralizeChannel(multisigAddress, nodeA, nodeB, One, assetId);
 
         let preInstallERC20BalanceNodeA: BigNumber;
         let postInstallERC20BalanceNodeA: BigNumber;
@@ -155,7 +157,7 @@ describe("Node method follows spec - install", () => {
             nodeA,
             nodeB,
             multisigAddress,
-            erc20TokenAddress,
+            assetId,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
           makeInstallCall(nodeB, msg.data.appIdentityHash);
@@ -170,7 +172,7 @@ describe("Node method follows spec - install", () => {
             nodeA,
             nodeB,
             multisigAddress,
-            erc20TokenAddress,
+            assetId,
           );
 
           expect(postInstallERC20BalanceNodeA).toBeLt(preInstallERC20BalanceNodeA);
@@ -189,9 +191,9 @@ describe("Node method follows spec - install", () => {
           multisigAddress,
           undefined,
           One,
-          erc20TokenAddress,
+          assetId,
           One,
-          erc20TokenAddress,
+          assetId,
         );
         proposedParams = params;
       });

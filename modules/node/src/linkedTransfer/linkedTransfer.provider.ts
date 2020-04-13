@@ -51,14 +51,14 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     const { encryptedPreImage, recipient, ...meta } = senderApp.meta || ({} as any);
     return {
       amount: latestState.amount,
-      meta: meta || {},
       assetId: latestState.assetId,
       createdAt: senderApp.createdAt,
-      paymentId: latestState.paymentId,
-      senderPublicIdentifier: senderApp.proposedByIdentifier,
-      status,
       encryptedPreImage: encryptedPreImage,
-      receiverPublicIdentifier: recipient,
+      meta: meta || {},
+      paymentId: latestState.paymentId,
+      receiverIdentifier: recipient,
+      senderIdentifier: senderApp.initiatorIdentifier,
+      status,
     };
   }
 
@@ -80,10 +80,10 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   }
 
   async getPendingTransfers(
-    userPublicIdentifier: string,
+    userIdentifier: string,
   ): Promise<NodeResponses.GetPendingAsyncTransfers> {
     const transfers = await this.linkedTransferService.getLinkedTransfersForRedeem(
-      userPublicIdentifier,
+      userIdentifier,
     );
     return transfers.map(transfer => {
       const state = bigNumberifyJson(transfer.latestState) as SimpleLinkedTransferAppState;
@@ -92,8 +92,8 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
         createdAt: transfer.createdAt,
         amount: state.amount,
         assetId: state.assetId,
-        senderPublicIdentifier: transfer.channel.userPublicIdentifier,
-        receiverPublicIdentifier: transfer.meta["recipient"],
+        senderIdentifier: transfer.channel.userIdentifier,
+        receiverIdentifier: transfer.meta["recipient"],
         status: LinkedTransferStatus.PENDING,
         meta: transfer.meta,
         encryptedPreImage: transfer.meta["encryptedPreImage"],
@@ -104,15 +104,15 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.get-linked",
-      this.authService.parseXpub(this.getLinkedTransferByPaymentId.bind(this)),
+      this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
       "*.transfer.install-linked",
-      this.authService.parseXpub(this.resolveLinkedTransfer.bind(this)),
+      this.authService.parseIdentifier(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
       "*.transfer.get-pending",
-      this.authService.parseXpub(this.getPendingTransfers.bind(this)),
+      this.authService.parseIdentifier(this.getPendingTransfers.bind(this)),
     );
   }
 }

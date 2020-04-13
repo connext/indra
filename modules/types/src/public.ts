@@ -1,7 +1,8 @@
 import { TransactionResponse } from "ethers/providers";
 import { BigNumberish } from "ethers/utils";
 
-import { Address, BigNumber, Bytes32, HexString, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, HexString } from "./basic";
+import { PublicIdentifier } from "./identifiers";
 import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 
@@ -41,7 +42,7 @@ type HashLockTransferParameters = {
   amount: BigNumberish;
   timelock: BigNumberish;
   lockHash: Bytes32;
-  recipient: Xpub;
+  recipient: PublicIdentifier;
   assetId?: Address;
   meta?: object;
 };
@@ -57,7 +58,7 @@ type ResolveHashLockTransferParameters = {
 
 type ResolveHashLockTransferResponse = {
   appIdentityHash: Bytes32;
-  sender: Xpub;
+  sender: PublicIdentifier;
   amount: BigNumber;
   assetId: Address;
   meta?: object;
@@ -72,7 +73,7 @@ type LinkedTransferParameters = {
   assetId?: Address;
   paymentId: Bytes32;
   preImage: Bytes32;
-  recipient?: Xpub;
+  recipient?: PublicIdentifier;
   meta?: object;
 };
 
@@ -90,7 +91,7 @@ type ResolveLinkedTransferParameters = {
 
 type ResolveLinkedTransferResponse = {
   appIdentityHash: Bytes32;
-  sender: Xpub;
+  sender: PublicIdentifier;
   paymentId: Bytes32;
   amount: BigNumber;
   assetId: Address;
@@ -106,7 +107,7 @@ type SignedTransferParameters = {
   assetId: Address;
   paymentId: Bytes32;
   signer: Address;
-  recipient?: Xpub;
+  recipient?: PublicIdentifier;
   meta?: any;
 };
 
@@ -126,7 +127,7 @@ type ResolveSignedTransferResponse = {
   appIdentityHash: Bytes32;
   assetId: Address;
   amount: BigNumber;
-  sender: Xpub;
+  sender: PublicIdentifier;
   meta?: any;
 };
 
@@ -168,8 +169,8 @@ type SwapParameters = {
 
 type SwapResponse = {
   id: number;
-  nodePublicIdentifier: Xpub;
-  userPublicIdentifier: Xpub;
+  nodeIdentifier: PublicIdentifier;
+  userIdentifier: PublicIdentifier;
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: { [assetId: string]: boolean };
@@ -193,7 +194,7 @@ type WithdrawResponse = {
 // transfer
 
 type TransferParameters = MethodParams.Deposit & {
-  recipient: Address;
+  recipient: PublicIdentifier;
   meta?: object;
   paymentId?: Bytes32;
 };

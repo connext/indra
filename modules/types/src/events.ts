@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,
@@ -11,6 +11,7 @@ import {
 } from "./transfers";
 import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
+import { PublicIdentifier } from "./identifiers";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -44,8 +45,8 @@ export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTy
   appIdentityHash: Bytes32;
   assetId: Address;
   paymentId?: Bytes32;
-  sender: Xpub;
-  recipient?: Xpub;
+  sender: PublicIdentifier;
+  recipient?: PublicIdentifier;
   meta: any;
   type: T;
   transferMeta: T extends LinkedTransfer
@@ -64,8 +65,8 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   amount: BigNumber;
   assetId: Address;
   paymentId?: Bytes32;
-  sender: Xpub;
-  recipient?: Xpub;
+  sender: PublicIdentifier;
+  recipient?: PublicIdentifier;
   meta: any;
   type: T;
 };
@@ -85,6 +86,7 @@ const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 type CreateMultisigEventData = {
   owners: Address[];
   multisigAddress: Address;
+  counterpartyIdentifier?: PublicIdentifier;
 };
 
 ////////////////////////////////////////

@@ -31,8 +31,7 @@ describe("Node can create multisig, other owners get notified", () => {
       from: nodeB.publicIdentifier,
       type: EventNames.CREATE_CHANNEL_EVENT,
       data: {
-        owners: [nodeB.freeBalanceAddress, nodeA.freeBalanceAddress],
-        counterpartyXpub: nodeB.publicIdentifier,
+        owners: [nodeB.signerAddress, nodeA.signerAddress],
       },
     };
 
@@ -47,13 +46,7 @@ describe("Node can create multisig, other owners get notified", () => {
     nodeB.once(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertMessage(
         msg,
-        {
-          ...expectedMsg,
-          data: {
-            ...expectedMsg.data,
-            counterpartyXpub: nodeA.publicIdentifier,
-          },
-        },
+        expectedMsg,
         ["data.multisigAddress"],
       );
       assertionCount += 1;
@@ -64,7 +57,9 @@ describe("Node can create multisig, other owners get notified", () => {
       result: {
         result: { multisigAddress },
       },
-    } = await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
+    } = await nodeB.rpcRouter.dispatch(
+      constructChannelCreationRpc(owners),
+    );
     expect(isHexString(multisigAddress)).toBeTruthy();
     assertionCount += 1;
     if (assertionCount === 3) done();
@@ -74,11 +69,11 @@ describe("Node can create multisig, other owners get notified", () => {
     it("Node A can create multiple back-to-back channels with Node B and Node C", async done => {
       const ownersABPublicIdentifiers = [nodeA.publicIdentifier, nodeB.publicIdentifier];
 
-      const ownersABFreeBalanceAddr = [nodeA.freeBalanceAddress, nodeB.freeBalanceAddress];
+      const ownersABFreeBalanceAddr = [nodeA.signerAddress, nodeB.signerAddress];
 
       const ownersACPublicIdentifiers = [nodeA.publicIdentifier, nodeC.publicIdentifier];
 
-      const ownersACFreeBalanceAddr = [nodeA.freeBalanceAddress, nodeC.freeBalanceAddress];
+      const ownersACFreeBalanceAddr = [nodeA.signerAddress, nodeC.signerAddress];
 
       nodeA.on(EventNames.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
         if (msg.data.owners === ownersABPublicIdentifiers) {
@@ -88,7 +83,7 @@ describe("Node can create multisig, other owners get notified", () => {
           expect(openChannelsNodeA.size).toEqual(1);
           expect(openChannelsNodeB.size).toEqual(1);
 
-          await confirmChannelCreation(nodeA, nodeB, ownersABFreeBalanceAddr, msg.data);
+          await confirmChannelCreation(nodeA, nodeB, msg.data, ownersABFreeBalanceAddr);
         } else {
           const openChannelsNodeA = await getChannelAddresses(nodeA);
           const openChannelsNodeC = await getChannelAddresses(nodeC);
@@ -96,7 +91,7 @@ describe("Node can create multisig, other owners get notified", () => {
           expect(openChannelsNodeA.size).toEqual(2);
           expect(openChannelsNodeC.size).toEqual(1);
 
-          await confirmChannelCreation(nodeA, nodeC, ownersACFreeBalanceAddr, msg.data);
+          await confirmChannelCreation(nodeA, nodeC, msg.data, ownersACFreeBalanceAddr);
 
           done();
         }

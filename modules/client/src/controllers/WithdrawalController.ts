@@ -1,4 +1,5 @@
 import { DEFAULT_APP_TIMEOUT, WITHDRAW_STATE_TIMEOUT, WithdrawCommitment } from "@connext/apps";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   AppInstanceJson,
   ChannelMethods,
@@ -13,7 +14,6 @@ import {
   WithdrawAppState,
   DefaultApp,
 } from "@connext/types";
-import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { formatEther, getAddress, hexlify, randomBytes } from "ethers/utils";
@@ -22,7 +22,6 @@ import { stringify } from "../lib";
 import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { verifyChannelMessage } from "@connext/crypto";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
@@ -33,7 +32,7 @@ export class WithdrawalController extends AbstractController {
     params.assetId = getAddress(params.assetId);
 
     if (!params.recipient) {
-      params.recipient = this.connext.freeBalanceAddress;
+      params.recipient = this.connext.signerAddress;
     }
     params.recipient = getAddress(params.recipient);
 
@@ -45,9 +44,10 @@ export class WithdrawalController extends AbstractController {
     const { assetId, recipient } = params;
     let transaction: TransactionResponse | undefined;
 
-    if (recipient) {
-      validate(invalidAddress(recipient));
-    }
+    validate(
+      invalidAddress(recipient),
+      invalidAddress(assetId),
+    );
 
     this.log.info(
       `Withdrawing ${formatEther(amount)} ${
@@ -119,13 +119,18 @@ export class WithdrawalController extends AbstractController {
   ): Promise<WithdrawCommitment> {
     const { assetId, amount, nonce, recipient } = params;
     const { data: channel } = await this.connext.getStateChannel();
+    const multisigOwners = [
+      getSignerAddressFromPublicIdentifier(
+        channel.userIdentifiers[0],
+      ),
+      getSignerAddressFromPublicIdentifier(
+        channel.userIdentifiers[1],
+      ),
+    ];
     return new WithdrawCommitment(
       this.connext.config.contractAddresses,
       channel.multisigAddress,
-      [
-        channel.freeBalanceAppInstance.initiator,
-        channel.freeBalanceAppInstance.responder,
-      ],
+      multisigOwners,
       recipient,
       assetId,
       amount,
@@ -154,12 +159,12 @@ export class WithdrawalController extends AbstractController {
     const initialState: WithdrawAppState = {
       transfers: [
         { amount: amount, to: recipient },
-        { amount: Zero, to: xpubToAddress(this.connext.nodePublicIdentifier) },
+        { amount: Zero, to: this.connext.nodeSignerAddress },
       ],
       signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
       signers: [
-        this.connext.freeBalanceAddress,
-        this.connext.nodeFreeBalanceAddress,
+        this.connext.signerAddress,
+        this.connext.nodeSignerAddress,
       ],
       data: withdrawCommitmentHash,
       nonce,
@@ -173,11 +178,11 @@ export class WithdrawalController extends AbstractController {
       appDefinition,
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: assetId,
+      initiatorDepositAssetId: assetId,
       outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
+      responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: WITHDRAW_STATE_TIMEOUT,
     };

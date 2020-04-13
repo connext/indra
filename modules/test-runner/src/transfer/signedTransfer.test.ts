@@ -1,4 +1,5 @@
 /* global before */
+import { getRandomChannelSigner } from "@connext/crypto";
 import {
   ConditionalTransferTypes,
   EventNames,
@@ -8,11 +9,9 @@ import {
   SignedTransferStatus,
   EventPayloads,
 } from "@connext/types";
-import { signChannelMessage } from "@connext/crypto";
-import { xkeyKthAddress } from "@connext/cf-core";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
-import { providers, Wallet } from "ethers";
+import { providers } from "ethers";
 
 import {
   AssetOptions,
@@ -60,8 +59,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signerWallet = Wallet.createRandom();
-    const signerAddress = await signerWallet.getAddress();
+    const signer = getRandomChannelSigner();
+    const signerAddress = await signer.getAddress();
 
     const promises = await Promise.all([
       clientA.conditionalTransfer({
@@ -95,21 +94,21 @@ describe("Signed Transfers", () => {
     } as EventPayloads.SignedTransferReceived);
 
     const {
-      [clientA.freeBalanceAddress]: clientAPostTransferBal,
-      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+      [clientA.signerAddress]: clientAPostTransferBal,
+      [clientA.nodeSignerAddress]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signChannelMessage(signerWallet.privateKey, digest);
+    const signature = await signer.signMessage(digest);
 
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
-          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
-          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+          [clientA.signerAddress]: clientAPostReclaimBal,
+          [clientA.nodeSignerAddress]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -121,7 +120,7 @@ describe("Signed Transfers", () => {
         data,
         signature,
       } as PublicParams.ResolveSignedTransfer);
-      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
       expect(clientBPostTransferBal).to.eq(transfer.amount);
@@ -132,8 +131,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signerWallet = Wallet.createRandom();
-    const signerAddress = await signerWallet.getAddress();
+    const signer = getRandomChannelSigner();
+    const signerAddress = await signer.getAddress();
 
     const promises = await Promise.all([
       clientA.conditionalTransfer({
@@ -166,21 +165,21 @@ describe("Signed Transfers", () => {
     } as Partial<EventPayloads.SignedTransferReceived>);
 
     const {
-      [clientA.freeBalanceAddress]: clientAPostTransferBal,
-      [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostTransferBal,
+      [clientA.signerAddress]: clientAPostTransferBal,
+      [clientA.nodeSignerAddress]: nodePostTransferBal,
     } = await clientA.getFreeBalance(transfer.assetId);
     expect(clientAPostTransferBal).to.eq(0);
     expect(nodePostTransferBal).to.eq(0);
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signChannelMessage(signerWallet.privateKey, digest);
+    const signature = await signer.signMessage(digest);
 
     await new Promise(async res => {
       clientA.on(EventNames.UNINSTALL_EVENT, async data => {
         const {
-          [clientA.freeBalanceAddress]: clientAPostReclaimBal,
-          [xkeyKthAddress(clientA.nodePublicIdentifier)]: nodePostReclaimBal,
+          [clientA.signerAddress]: clientAPostReclaimBal,
+          [clientA.nodeSignerAddress]: nodePostReclaimBal,
         } = await clientA.getFreeBalance(transfer.assetId);
         expect(clientAPostReclaimBal).to.eq(0);
         expect(nodePostReclaimBal).to.eq(transfer.amount);
@@ -192,7 +191,7 @@ describe("Signed Transfers", () => {
         data,
         signature,
       } as PublicParams.ResolveSignedTransfer);
-      const { [clientB.freeBalanceAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
+      const { [clientB.signerAddress]: clientBPostTransferBal } = await clientB.getFreeBalance(
         transfer.assetId,
       );
       expect(clientBPostTransferBal).to.eq(transfer.amount);
@@ -203,8 +202,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signerWallet = Wallet.createRandom();
-    const signerAddress = await signerWallet.getAddress();
+    const signer = getRandomChannelSigner();
+    const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
@@ -220,7 +219,7 @@ describe("Signed Transfers", () => {
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       paymentId,
-      senderPublicIdentifier: clientA.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
       status: SignedTransferStatus.PENDING,
       meta: { foo: "bar" },
     } as NodeResponses.GetSignedTransfer);
@@ -230,8 +229,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signerWallet = Wallet.createRandom();
-    const signerAddress = await signerWallet.getAddress();
+    const signer = getRandomChannelSigner();
+    const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
@@ -246,7 +245,7 @@ describe("Signed Transfers", () => {
 
     const data = hexlify(randomBytes(32));
     const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-    const signature = await signChannelMessage(signerWallet.privateKey, digest);
+    const signature = await signer.signMessage(digest);
 
     // wait for transfer to be picked up by receiver
     await new Promise(async (resolve, reject) => {
@@ -264,8 +263,8 @@ describe("Signed Transfers", () => {
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       paymentId,
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
       status: SignedTransferStatus.COMPLETED,
       meta: { foo: "bar" },
     } as NodeResponses.GetSignedTransfer);
@@ -275,8 +274,8 @@ describe("Signed Transfers", () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     const paymentId = hexlify(randomBytes(32));
-    const signerWallet = Wallet.createRandom();
-    const signerAddress = await signerWallet.getAddress();
+    const signer = getRandomChannelSigner();
+    const signerAddress = await signer.getAddress();
 
     await clientA.conditionalTransfer({
       amount: transfer.amount,
@@ -304,19 +303,19 @@ describe("Signed Transfers", () => {
     let sum = 0;
     const numberOfRuns = 5;
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    const signerWallet = Wallet.createRandom();
-    const signerAddress = signerWallet.address;
+    const signer = getRandomChannelSigner();
+    const signerAddress = signer.address;
 
     await fundChannel(clientA, transfer.amount.mul(25), transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
 
     for (let i = 0; i < numberOfRuns; i++) {
-      const { [clientA.freeBalanceAddress]: clientAPreBal } = await clientA.getFreeBalance(
+      const { [clientA.signerAddress]: clientAPreBal } = await clientA.getFreeBalance(
         transfer.assetId,
       );
       const {
-        [clientB.freeBalanceAddress]: clientBPreBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPreBal,
+        [clientB.signerAddress]: clientBPreBal,
+        [clientB.nodeSignerAddress]: nodeBPreBal,
       } = await clientB.getFreeBalance(transfer.assetId);
       const data = hexlify(randomBytes(32));
       const paymentId = hexlify(randomBytes(32));
@@ -342,7 +341,7 @@ describe("Signed Transfers", () => {
 
       // Including recipient signing in test to match real conditions
       const digest = solidityKeccak256(["bytes32", "bytes32"], [data, paymentId]);
-      const signature = await signChannelMessage(signerWallet.privateKey, digest);
+      const signature = await signer.signMessage(digest);
 
       await new Promise(async res => {
         clientB.once(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, async data => {
@@ -361,12 +360,12 @@ describe("Signed Transfers", () => {
       console.log(`Run: ${i}, Runtime: ${runTime[i]}`);
       sum = sum + runTime[i];
 
-      const { [clientA.freeBalanceAddress]: clientAPostBal } = await clientA.getFreeBalance(
+      const { [clientA.signerAddress]: clientAPostBal } = await clientA.getFreeBalance(
         transfer.assetId,
       );
       const {
-        [clientB.freeBalanceAddress]: clientBPostBal,
-        [clientB.nodeFreeBalanceAddress]: nodeBPostBal,
+        [clientB.signerAddress]: clientBPostBal,
+        [clientB.nodeSignerAddress]: nodeBPostBal,
       } = await clientB.getFreeBalance(transfer.assetId);
       expect(clientAPostBal).to.eq(clientAPreBal.sub(transfer.amount));
       expect(nodeBPostBal).to.eq(nodeBPreBal.sub(transfer.amount));

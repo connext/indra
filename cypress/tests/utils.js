@@ -16,7 +16,7 @@ const my = {};
 
 my.mnemonicRegex = /([A-Za-z]{3,}\s?){12}/;
 my.addressRegex = /.*0x[0-9a-z]{40}.*/i;
-my.xpubRegex = /^xpub[a-zA-Z0-9]{107}/i;
+my.publicIdRegex = /^indra[a-zA-Z0-9]{49,50}/i;
 
 ////////////////////////////////////////
 // Vanilla cypress compilations
@@ -168,16 +168,16 @@ my.getMnemonic = () => {
   );
 };
 
-my.getXpub = () => {
+my.getPublicId = () => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
       my.goToRequest();
-      cy.contains("button", my.xpubRegex)
+      cy.contains("button", my.publicIdRegex)
         .invoke("text")
-        .then(xpub => {
-          cy.log(`Got xpub: ${xpub}`);
+        .then(publicId => {
+          cy.log(`Got publicId: ${publicId}`);
           my.goBack();
-          resolve(xpub);
+          resolve(publicId);
         });
     }),
   );
@@ -188,8 +188,8 @@ my.getAccount = () => {
     new Cypress.Promise((resolve, reject) => {
       return my.getMnemonic().then(mnemonic => {
         return my.getAddress().then(address => {
-          return my.getXpub().then(xpub => {
-            return resolve({ address, mnemonic, xpub });
+          return my.getPublicId().then(publicId => {
+            return resolve({ address, mnemonic, publicId });
           });
         });
       });

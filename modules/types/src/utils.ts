@@ -61,25 +61,3 @@ export async function signDigestWithEthers(privateKey: string, digest: string) {
   const signingKey = new SigningKey(privateKey);
   return joinSignature(signingKey.signDigest(arrayify(digest)));
 }
-
-export function sortByAddress(a: string, b: string) {
-  return toBN(a).lt(toBN(b)) ? -1 : 1;
-}
-
-export function sortAddresses(addrs: string[]) {
-  return addrs.sort(sortByAddress);
-}
-
-export async function sortSignaturesBySignerAddress(
-  digest: string,
-  signatures: string[],
-  recoverAddressFn: any = recoverAddressWithEthers,
-): Promise<string[]> {
-  return (
-    await Promise.all(
-      signatures.map(async sig => ({ sig, addr: await recoverAddressFn(digest, sig) })),
-    )
-  )
-    .sort((a, b) => sortByAddress(a.addr, b.addr))
-    .map(x => x.sig);
-}

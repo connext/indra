@@ -1,11 +1,9 @@
 import { MultiAssetMultiPartyCoinTransferInterpreterParams, OutcomeType } from "@connext/types";
-import { signChannelMessage } from "@connext/crypto";
 import { Contract, Wallet } from "ethers";
-import { WeiPerEther, Zero } from "ethers/constants";
+import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { Interface, parseEther, SigningKey } from "ethers/utils";
+import { Interface, parseEther } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import {
   getConditionalTransactionCommitment,
   getSetupCommitment,
@@ -13,7 +11,6 @@ import {
 } from "../../ethereum";
 import { AppInstance, FreeBalanceClass, StateChannel } from "../../models";
 import { Context } from "../../types";
-import { xkeyKthHDNode } from "../../xkeys";
 
 import {
   ChallengeRegistry,
@@ -25,7 +22,7 @@ import {
 import { transferERC20Tokens, newWallet } from "../utils";
 
 import { toBeEq } from "../bignumber-jest-matcher";
-import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "../random-signing-keys";
+import { getRandomChannelSigners } from "../random-signing-keys";
 
 expect.extend({ toBeEq });
 
@@ -64,12 +61,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
   });
 
   it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
-    const xprvs = getRandomExtendedPrvKeys(2);
-    const multisigOwnerKeys = [
-      new SigningKey(xkeyKthHDNode(xprvs[0], 0).privateKey),
-      new SigningKey(xkeyKthHDNode(xprvs[1], 0).privateKey),
-    ];
-    const xpubs = xprvs.map(extendedPrvKeyToExtendedPubKey);
+    const signers = getRandomChannelSigners(2);
+    const ids = signers.map(s => s.publicIdentifier);
     const erc20TokenAddress = network.DolphinCoin;
     const proxyFactory = new Contract(network.ProxyFactory, ProxyFactory.abi, wallet);
 
@@ -78,27 +71,22 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         network.IdentityApp,
         { proxyFactory: proxyFactory.address, multisigMastercopy: network.MinimumViableMultisig },
         proxyAddress, // used as multisigAddress
-        xpubs[0],
-        xpubs[1],
+        ids[0],
+        ids[1],
         1,
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(
-          multisigOwnerKeys.map(key => key.address),
+          signers.map(key => key.address),
           WeiPerEther,
-          [CONVENTION_FOR_ETH_TOKEN_ADDRESS, erc20TokenAddress],
+          [AddressZero, erc20TokenAddress],
         ),
       );
-
-      const uniqueAppSigningKeys = [
-        new SigningKey(xkeyKthHDNode(xprvs[0], stateChannel.numProposedApps.toString()).privateKey),
-        new SigningKey(xkeyKthHDNode(xprvs[1], stateChannel.numProposedApps.toString()).privateKey),
-      ];
 
       // todo(xuanji): don't reuse state
       // todo(xuanji): use createAppInstance
       const identityAppInstance = new AppInstance(
-        uniqueAppSigningKeys[0].address,
-        uniqueAppSigningKeys[1].address,
+        signers[0].address,
+        signers[1].address,
         stateChannel.freeBalance.defaultTimeout, // Re-use ETH FreeBalance timeout
         {
           addr: network.IdentityApp,
@@ -109,13 +97,13 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
         [
           // ETH token index
           [
-            { to: multisigOwnerKeys[0].address, amount: WeiPerEther },
-            { to: multisigOwnerKeys[1].address, amount: Zero },
+            { to: signers[0].address, amount: WeiPerEther },
+            { to: signers[1].address, amount: Zero },
           ],
           // ERC20 token index
           [
-            { to: multisigOwnerKeys[0].address, amount: Zero },
-            { to: multisigOwnerKeys[1].address, amount: WeiPerEther },
+            { to: signers[0].address, amount: Zero },
+            { to: signers[1].address, amount: WeiPerEther },
           ],
         ],
         1,
@@ -128,19 +116,19 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
           // total limit of ETH and ERC20 token that can be transferred
           limit: [WeiPerEther, WeiPerEther],
           // The only assets being transferred are ETH and the ERC20 token
-          tokenAddresses: [CONVENTION_FOR_ETH_TOKEN_ADDRESS, erc20TokenAddress],
+          tokenAddresses: [AddressZero, erc20TokenAddress],
         } as MultiAssetMultiPartyCoinTransferInterpreterParams,
         undefined,
       );
 
       stateChannel = stateChannel.installApp(identityAppInstance, {
-        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-          [multisigOwnerKeys[0].address]: WeiPerEther,
-          [multisigOwnerKeys[1].address]: Zero,
+        [AddressZero]: {
+          [signers[0].address]: WeiPerEther,
+          [signers[1].address]: Zero,
         },
         [erc20TokenAddress]: {
-          [multisigOwnerKeys[0].address]: Zero,
-          [multisigOwnerKeys[1].address]: WeiPerEther,
+          [signers[0].address]: Zero,
+          [signers[1].address]: WeiPerEther,
         },
       });
 
@@ -149,8 +137,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       const setStateCommitmentHash = setStateCommitment.hashToSign();
 
       setStateCommitment.signatures = [
-        await signChannelMessage(uniqueAppSigningKeys[0].privateKey, setStateCommitmentHash),
-        await signChannelMessage(uniqueAppSigningKeys[1].privateKey, setStateCommitmentHash),
+        await signers[0].signMessage(setStateCommitmentHash),
+        await signers[1].signMessage(setStateCommitmentHash),
       ];
 
       await wallet.sendTransaction({
@@ -164,14 +152,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       );
       const setStateCommitmentForFreeBalanceHash = setStateCommitmentForFreeBalance.hashToSign();
       setStateCommitmentForFreeBalance.signatures = [
-        await signChannelMessage(
-          multisigOwnerKeys[0].privateKey,
-          setStateCommitmentForFreeBalanceHash,
-        ),
-        await signChannelMessage(
-          multisigOwnerKeys[1].privateKey,
-          setStateCommitmentForFreeBalanceHash,
-        ),
+        await signers[0].signMessage(setStateCommitmentForFreeBalanceHash),
+        await signers[1].signMessage(setStateCommitmentForFreeBalanceHash),
       ];
 
       await wallet.sendTransaction({
@@ -201,8 +183,8 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       );
       const conditionalTransactionHash = conditionalTransaction.hashToSign();
       conditionalTransaction.signatures = [
-        await signChannelMessage(multisigOwnerKeys[0].privateKey, conditionalTransactionHash),
-        await signChannelMessage(multisigOwnerKeys[1].privateKey, conditionalTransactionHash),
+        await signers[0].signMessage(conditionalTransactionHash),
+        await signers[1].signMessage(conditionalTransactionHash),
       ];
       const multisigDelegateCallTx = await conditionalTransaction.getSignedTransaction();
 
@@ -219,28 +201,22 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       });
 
       expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(WeiPerEther);
-      expect(await wallet.provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
-      expect(await wallet.provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(Zero);
+      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(Zero);
 
       const erc20Contract = new Contract(erc20TokenAddress, DolphinCoin.abi, wallet.provider);
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
-      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[0].address)).toBeEq(Zero);
-      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[1].address)).toBeEq(
+      expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(Zero);
+      expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(
         WeiPerEther,
       );
 
       const freeBalanceConditionalTransaction = getSetupCommitment(context, stateChannel);
 
       freeBalanceConditionalTransaction.signatures = [
-        await signChannelMessage(
-          multisigOwnerKeys[0].privateKey,
-          freeBalanceConditionalTransaction.hashToSign(),
-        ),
-        await signChannelMessage(
-          multisigOwnerKeys[1].privateKey,
-          freeBalanceConditionalTransaction.hashToSign(),
-        ),
+        await signers[0].signMessage(freeBalanceConditionalTransaction.hashToSign()),
+        await signers[1].signMessage(freeBalanceConditionalTransaction.hashToSign()),
       ];
 
       const multisigDelegateCallTx2 =
@@ -252,14 +228,14 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
       });
 
       expect(await wallet.provider.getBalance(proxyAddress)).toBeEq(Zero);
-      expect(await wallet.provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
-      expect(await wallet.provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[0].address)).toBeEq(WeiPerEther);
+      expect(await wallet.provider.getBalance(signers[1].address)).toBeEq(WeiPerEther);
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(Zero);
-      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[0].address)).toBeEq(
+      expect(await erc20Contract.functions.balanceOf(signers[0].address)).toBeEq(
         WeiPerEther,
       );
-      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[1].address)).toBeEq(
+      expect(await erc20Contract.functions.balanceOf(signers[1].address)).toBeEq(
         WeiPerEther,
       );
 
@@ -269,7 +245,7 @@ describe.skip("Scenario: install AppInstance, set state, put on-chain", () => {
     await proxyFactory.functions.createProxyWithNonce(
       network.MinimumViableMultisig,
       new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-        multisigOwnerKeys.map(x => x.address),
+        signers.map(x => x.address),
       ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },

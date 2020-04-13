@@ -1,5 +1,6 @@
 import { registerDecorator, ValidationOptions } from "class-validator";
 import { arrayify, isHexString } from "ethers/utils";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 export const isValidHex = (hex: string, bytes?: number): boolean =>
   isHexString(hex) && (bytes ? arrayify(hex).length === bytes : true);
@@ -92,18 +93,43 @@ export function IsBytes32(validationOptions?: ValidationOptions): Function {
   };
 }
 
-export const isXpub = (xpub: string): boolean => /^xpub[a-zA-Z0-9]{107}$/.test(xpub);
+export const isAddress = (address: string): boolean => /^address[a-zA-Z0-9]{107}$/.test(address);
 
-export function IsXpub(validationOptions?: ValidationOptions): Function {
+export function IsAddress(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
     registerDecorator({
-      name: "isXpub",
+      name: "isAddress",
       options: validationOptions,
       propertyName,
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isXpub(value);
+          return isAddress(value);
+        },
+      },
+    });
+  };
+}
+
+export const isValidPublicIdentifier = (id: string): boolean => {
+  try {
+    const addr = getSignerAddressFromPublicIdentifier(id);
+    return isEthAddress(addr);
+  } catch (e) {
+    return false;
+  }
+};
+
+export function IsValidPublicIdentifier(validationOptions?: ValidationOptions): Function {
+  return function(object: Object, propertyName: string): void {
+    registerDecorator({
+      name: "isValidPublicIdentifier",
+      options: validationOptions,
+      propertyName,
+      target: object.constructor,
+      validator: {
+        validate(value: any): boolean {
+          return isValidPublicIdentifier(value);
         },
       },
     });

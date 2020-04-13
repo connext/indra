@@ -1,8 +1,5 @@
-import { xkeyKthAddress } from "@connext/cf-core";
-import { utils } from "@connext/client";
 import { ConnextStore } from "@connext/store";
 import {
-  CF_PATH,
   ConditionalTransferTypes,
   createRandom32ByteHexString,
   IConnextClient,
@@ -10,7 +7,6 @@ import {
 } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { HDNode } from "ethers/utils";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
 import { before } from "mocha";
 import { Client } from "ts-nats";
@@ -32,6 +28,7 @@ import {
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { getNatsClient } from "../util/nats";
+import { ChannelSigner } from "@connext/crypto";
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -77,21 +74,21 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
 
-  it("happy case: client A successfully transfers to an xpub that doesn’t have a channel", async () => {
-    const receiverMnemonic = Wallet.createRandom().mnemonic;
-    const receiverXpub = HDNode.fromMnemonic(receiverMnemonic)
-      .derivePath(CF_PATH)
-      .neuter().extendedKey;
+  it("happy case: client A successfully transfers to an address that doesn’t have a channel", async () => {
+    const receiverSigner = new ChannelSigner(
+      Wallet.createRandom().privateKey,
+      ethProvider.connection.url,
+    );
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
     await clientA.transfer({
       amount: ETH_AMOUNT_SM.toString(),
       assetId: tokenAddress,
-      recipient: receiverXpub,
+      recipient: receiverSigner.publicIdentifier,
     });
-    const receiverClient = await createClient({ mnemonic: receiverMnemonic }, false);
-    expect(receiverClient.publicIdentifier).to.eq(receiverXpub);
+    const receiverClient = await createClient({ signer: receiverSigner }, false);
+    expect(receiverClient.publicIdentifier).to.eq(receiverSigner.publicIdentifier);
     const freeBalance = await receiverClient.getFreeBalance(tokenAddress);
-    expect(freeBalance[receiverClient.freeBalanceAddress]).to.be.above(0);
+    expect(freeBalance[receiverClient.signerAddress]).to.be.above(0);
     receiverClient.messaging.disconnect();
   });
 
@@ -142,7 +139,7 @@ describe("Async Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     const receiverBal = await clientB.getFreeBalance(transfer.assetId);
-    expect(receiverBal[xkeyKthAddress(clientB.nodePublicIdentifier)].lt(transfer.amount)).to.be.true;
+    expect(receiverBal[clientB.nodeSignerAddress].lt(transfer.amount)).to.be.true;
 
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
   });
@@ -196,9 +193,9 @@ describe("Async Transfers", () => {
     expect(deployHash).to.exist;
     await ethProvider.waitForTransaction(token.deployTransaction.hash!);
     // mint token to client
-    await token.mint(clientA.freeBalanceAddress, TOKEN_AMOUNT);
+    await token.mint(clientA.signerAddress, TOKEN_AMOUNT);
     // assert sender balance
-    const senderBal = await token.balanceOf(clientA.freeBalanceAddress);
+    const senderBal = await token.balanceOf(clientA.signerAddress);
     expect(senderBal).to.equal(TOKEN_AMOUNT);
 
     // fund channel
@@ -215,7 +212,7 @@ describe("Async Transfers", () => {
     // because the node maintains the valid tokens list
   });
 
-  it("Bot A tries to transfer with invalid recipient xpub", async () => {
+  it("Bot A tries to transfer with invalid recipient identifier", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     const recipient = "nope";
@@ -225,7 +222,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient,
       }),
-    ).to.be.rejectedWith(`Value "${recipient}" must start with "xpub"`);
+    ).to.be.rejectedWith(`Invalid public key identifier`);
   });
 
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
@@ -252,7 +249,7 @@ describe("Async Transfers", () => {
         preImage: createRandom32ByteHexString(),
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`invalid hexidecimal string`);
+    ).to.be.rejectedWith(`is not a valid hex string`);
   });
 
   it("Bot A tries to transfer with a preImage that is not 32 bytes", async () => {
@@ -268,7 +265,7 @@ describe("Async Transfers", () => {
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`invalid hexidecimal string`);
+    ).to.be.rejectedWith(`is not a valid hex string`);
   });
 
   it("Experimental: Average latency of 10 async transfers with Eth", async () => {

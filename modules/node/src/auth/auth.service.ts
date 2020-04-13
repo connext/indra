@@ -1,21 +1,20 @@
+import { verifyChannelMessage, getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { MessagingAuthService } from "@connext/messaging";
+import { createRandomBytesHexString, PublicIdentifier } from "@connext/types";
 import { Injectable, Inject } from "@nestjs/common";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { createRandomBytesHexString } from "@connext/types";
-import { verifyChannelMessage } from "@connext/crypto";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 
-import { isXpub } from "../util";
+import { isAddress, isValidPublicIdentifier } from "../util";
 import { MessagingAuthProviderId } from "../constants";
 
 const nonceLen = 32;
 const nonceTTL = 24 * 60 * 60 * 1000; // 1 day
 
-export function getAuthAddressFromXpub(xpub: string): string {
-  return fromExtendedKey(xpub).derivePath("0").address;
+export function getAuthAddressFromIdentifier(id: PublicIdentifier): string {
+  return getSignerAddressFromPublicIdentifier(id);
 }
 
 @Injectable()
@@ -30,50 +29,48 @@ export class AuthService {
     this.log.setContext("AuthService");
   }
 
-  async getNonce(userPublicIdentifier: string): Promise<string> {
+  async getNonce(userIdentifier: string): Promise<string> {
     const nonce = createRandomBytesHexString(nonceLen);
     const expiry = Date.now() + nonceTTL;
     // FIXME-- store nonce in redis instead of here...
-    this.nonces[userPublicIdentifier] = { expiry, nonce };
+    this.nonces[userIdentifier] = { expiry, nonce };
     this.log.debug(
-      `getNonce: Gave xpub ${userPublicIdentifier} a nonce that expires at ${expiry}: ${nonce}`,
+      `getNonce: Gave address ${userIdentifier} a nonce that expires at ${expiry}: ${nonce}`,
     );
     return nonce;
   }
 
   async verifyAndVend(
     signedNonce: string,
-    userPublicIdentifier: string,
+    userIdentifier: string,
     adminToken?: string,
   ): Promise<string> {
     const indraAdminToken = this.configService.get("INDRA_ADMIN_TOKEN");
     if (indraAdminToken && adminToken === indraAdminToken) {
-      this.log.warn(`Vending admin token to ${userPublicIdentifier}`);
-      return this.vendAdminToken(userPublicIdentifier);
+      this.log.warn(`Vending admin token to ${userIdentifier}`);
+      return this.vendAdminToken(userIdentifier);
     }
 
-    const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
-    this.log.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
+    const address = getSignerAddressFromPublicIdentifier(userIdentifier);
+    this.log.debug(`Got address ${address} from userIdentifier ${userIdentifier}`);
 
-    if (!this.nonces[userPublicIdentifier]) {
+    if (!this.nonces[userIdentifier]) {
       throw new Error(`User hasn't requested a nonce yet`);
     }
 
-    const { nonce, expiry } = this.nonces[userPublicIdentifier];
-    const addr = await verifyChannelMessage(nonce, signedNonce);
-    if (addr !== xpubAddress) {
-      throw new Error(`Verification failed`);
+    const { nonce, expiry } = this.nonces[userIdentifier];
+    const recovered = await verifyChannelMessage(nonce, signedNonce);
+    if (recovered !== address) {
+      throw new Error(`Verification failed, expected ${address}, got ${recovered}`);
     }
     if (Date.now() > expiry) {
-      throw new Error(`Verification failed... nonce expired for xpub: ${userPublicIdentifier}`);
+      throw new Error(`Verification failed... nonce expired for address: ${userIdentifier}`);
     }
 
-    const network = await this.configService.getEthNetwork();
-
-    // Try to get latest published OR move everything under xpub route.
+    // Try to get latest published OR move everything under address route.
     let permissions = {
       publish: {
-        allow: [`${userPublicIdentifier}.>`, `INDRA.${network.chainId}.>`],
+        allow: [`${userIdentifier}.>`, `${this.configService.getMessagingKey()}.>`],
       },
       subscribe: {
         allow: [`>`],
@@ -83,11 +80,11 @@ export class AuthService {
       // },
     };
 
-    const jwt = this.messagingAuthService.vend(userPublicIdentifier, nonceTTL, permissions);
+    const jwt = this.messagingAuthService.vend(userIdentifier, nonceTTL, permissions);
     return jwt;
   }
 
-  async vendAdminToken(userPublicIdentifier: string): Promise<string> {
+  async vendAdminToken(userIdentifier: string): Promise<string> {
     const permissions = {
       publish: {
         allow: [`>`],
@@ -97,18 +94,29 @@ export class AuthService {
       },
     };
 
-    const jwt = this.messagingAuthService.vend(userPublicIdentifier, nonceTTL, permissions);
+    const jwt = this.messagingAuthService.vend(userIdentifier, nonceTTL, permissions);
     return jwt;
   }
 
-  parseXpub(callback: any): any {
+  parseAddress(callback: any): any {
     return async (subject: string, data: any): Promise<string> => {
-      // Get & validate xpub from subject
-      const xpub = subject.split(".")[0]; // first item of subscription is xpub
-      if (!xpub || !isXpub(xpub)) {
-        throw new Error(`Subject's first item isn't a valid xpub: ${subject}`);
+      // Get & validate address from subject
+      const address = subject.split(".")[0]; // first item of subscription is address
+      if (!address || !isAddress(address)) {
+        throw new Error(`Subject's first item isn't a valid address: ${subject}`);
       }
-      return callback(xpub, data);
+      return callback(address, data);
+    };
+  }
+
+  parseIdentifier(callback: any): any {
+    return async (subject: string, data: any): Promise<string> => {
+      // Get & validate address from subject
+      const identifier = subject.split(".")[0]; // first item of subscription is id
+      if (!identifier || !isValidPublicIdentifier(identifier)) {
+        throw new Error(`Subject's first item isn't a valid identifier: ${identifier}`);
+      }
+      return callback(identifier, data);
     };
   }
 
@@ -120,8 +128,8 @@ export class AuthService {
       //      holding off on this right now because it will be *much* easier to iterate through
       //      all appIdentityHashs after our store refactor.
 
-      // const xpub = subject.split(".")[0]; // first item of subscription is xpub
-      // const channel = await this.channelRepo.findByUserPublicIdentifier(xpub);
+      // const address = subject.split(".")[0]; // first item of subscription is address
+      // const channel = await this.channelRepo.findByUserPublicIdentifier(address);
       // if (lockName !== channel.multisigAddress || lockName !== ) {
       //   return this.badSubject(`Subject's last item isn't a valid lockName: ${subject}`);
       // }

@@ -1,6 +1,5 @@
 import { config } from "dotenv";
-import { HDNode } from "ethers/utils";
-import { CF_PATH } from "@connext/types";
+import { Wallet } from "ethers";
 config();
 
 export const env = {
@@ -19,9 +18,5 @@ export const env = {
   adminToken: process.env.INDRA_ADMIN_TOKEN || "foo",
   natsPrivateKey: process.env.INDRA_NATS_JWT_SIGNER_PRIVATE_KEY,
   natsPublicKey: process.env.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY,
-  nodePubId: process.env.INDRA_ETH_MNEMONIC
-    ? HDNode.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!)
-        .derivePath(CF_PATH)
-        .neuter().extendedKey
-    : "",
+  nodePubId: Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).address,
 };

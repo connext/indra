@@ -1,10 +1,11 @@
-import { Address, BigNumber, Bytes32, DecString, Network, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, DecString, Network } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
 import { ContractAddresses } from "./contracts";
+import { PublicIdentifier } from "./identifiers";
 import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
@@ -15,8 +16,8 @@ type GetRebalanceProfileResponse = RebalanceProfile;
 
 type GetHashLockTransferResponse =
   | {
-      senderPublicIdentifier: Xpub;
-      receiverPublicIdentifier?: Xpub;
+      senderIdentifier: PublicIdentifier;
+      receiverIdentifier?: PublicIdentifier;
       assetId: Address;
       amount: DecString;
       lockHash: Bytes32;
@@ -26,8 +27,8 @@ type GetHashLockTransferResponse =
   | undefined;
 
 type GetSignedTransferResponse = {
-  senderPublicIdentifier: Xpub;
-  receiverPublicIdentifier?: Xpub;
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier?: PublicIdentifier;
   assetId: Address;
   amount: DecString;
   paymentId: Bytes32;
@@ -39,23 +40,23 @@ type GetTransferResponse = {
   paymentId: Bytes32;
   amount: BigNumber;
   assetId: Address;
-  senderPublicIdentifier: Xpub;
-  receiverPublicIdentifier: Xpub;
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier: PublicIdentifier;
   meta: any;
 };
 
 type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
-  nodePublicIdentifier: Xpub;
+  nodeIdentifier: PublicIdentifier;
   messagingUrl: string[];
   supportedTokenAddresses: Address[];
 };
 
 type GetChannelResponse = {
   id: number;
-  nodePublicIdentifier: Xpub;
-  userPublicIdentifier: Xpub;
+  nodeIdentifier: PublicIdentifier;
+  userIdentifier: PublicIdentifier;
   multisigAddress: Address;
   available: boolean;
   activeCollateralizations: Collateralizations;
@@ -82,8 +83,8 @@ type FetchedLinkedTransfer = {
   createdAt: Date;
   amount: BigNumber;
   assetId: Address;
-  senderPublicIdentifier: Xpub;
-  receiverPublicIdentifier?: Xpub;
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier?: PublicIdentifier;
   status: LinkedTransferStatus;
   meta: any;
   encryptedPreImage?: string;

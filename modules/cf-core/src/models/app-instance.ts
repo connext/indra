@@ -15,7 +15,9 @@ import {
   stringify,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
+  PublicIdentifier,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -51,8 +53,8 @@ import { appIdentityToHash } from "../utils";
  */
 export class AppInstance {
   constructor(
-    public readonly initiator: string, // eth addr at appSeqNp idx
-    public readonly responder: string, // eth addr at appSeqNp idx
+    public readonly initiatorIdentifier: PublicIdentifier, // eth addr at appSeqNp idx
+    public readonly responderIdentifier: PublicIdentifier, // eth addr at appSeqNp idx
     public readonly defaultTimeout: HexString,
     public readonly appInterface: AppInterface,
     public readonly appSeqNo: number, // channel nonce at app proposal
@@ -123,8 +125,8 @@ export class AppInstance {
     };
 
     return new AppInstance(
-      deserialized.initiator,
-      deserialized.responder,
+      deserialized.initiatorIdentifier,
+      deserialized.responderIdentifier,
       deserialized.defaultTimeout,
       deserialized.appInterface,
       deserialized.appSeqNo,
@@ -146,8 +148,8 @@ export class AppInstance {
     // of an AppInstance that's not turn based
     return deBigNumberifyJson({
       identityHash: this.identityHash,
-      initiator: this.initiator,
-      responder: this.responder,
+      initiatorIdentifier: this.initiatorIdentifier,
+      responderIdentifier: this.responderIdentifier,
       defaultTimeout: this.defaultTimeout,
       appInterface: {
         ...this.appInterface,
@@ -174,9 +176,17 @@ export class AppInstance {
   }
 
   @Memoize()
+  public get participants() {
+    return [
+      getSignerAddressFromPublicIdentifier(this.initiatorIdentifier),
+      getSignerAddressFromPublicIdentifier(this.responderIdentifier),
+    ];
+  }
+
+  @Memoize()
   public get identity(): AppIdentity {
     return {
-      participants: [this.initiator, this.responder],
+      participants: this.participants,
       multisigAddress: this.multisigAddress,
       appDefinition: this.appInterface.addr,
       defaultTimeout: this.defaultTimeout.toString(),

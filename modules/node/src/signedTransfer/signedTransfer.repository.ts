@@ -21,7 +21,7 @@ export class SignedTransferRepository extends Repository<AppInstance> {
 
   findSignedTransferAppByPaymentIdAndSender(
     paymentId: string,
-    sender: string,
+    senderSignerAddress: string,
   ): Promise<AppInstance | undefined> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -32,13 +32,13 @@ export class SignedTransferRepository extends Repository<AppInstance> {
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${sender}"'`)
+      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",0,"to"}' = '"${senderSignerAddress}"'`)
       .getOne();
   }
 
   findSignedTransferAppByPaymentIdAndReceiver(
     paymentId: string,
-    receiver: string,
+    receiverSignerAddress: string,
   ): Promise<AppInstance | undefined> {
     return this.createQueryBuilder("app_instance")
       .leftJoinAndSelect(
@@ -49,7 +49,7 @@ export class SignedTransferRepository extends Repository<AppInstance> {
       .leftJoinAndSelect("app_instance.channel", "channel")
       .where("app_registry.name = :name", { name: SimpleSignedTransferAppName })
       .andWhere(`app_instance."latestState"::JSONB @> '{ "paymentId": "${paymentId}" }'`)
-      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiver}"'`)
+      .andWhere(`app_instance."latestState"::JSONB #> '{"coinTransfers",1,"to"}' = '"${receiverSignerAddress}"'`)
       .getOne();
   }
 }

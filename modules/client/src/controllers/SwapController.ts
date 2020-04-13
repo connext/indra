@@ -1,25 +1,27 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   calculateExchange,
   DefaultApp,
+  getAddressFromAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
   SimpleSwapAppState,
   toBN,
   SimpleTwoPartySwapAppName,
+  Address,
 } from "@connext/types";
-import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther, getAddress, parseEther } from "ethers/utils";
+import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
 import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import {
-  invalidAddress,
   notGreaterThan,
   notLessThanOrEqualTo,
   notPositive,
   validate,
+  invalidAddress,
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -28,17 +30,18 @@ export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
     const amount = toBN(params.amount);
     const { swapRate } = params;
-    const toAssetId = getAddress(params.toAssetId);
-    const fromAssetId = getAddress(params.fromAssetId);
-    const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
+
+    const toTokenAddress = getAddressFromAssetId(params.toAssetId);
+    const fromTokenAddress = getAddressFromAssetId(params.fromAssetId);
+  
+    const preSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);
+    const preSwapToBal = await this.connext.getFreeBalance(toTokenAddress);
+    const userBal = preSwapFromBal[this.connext.signerAddress];
     const swappedAmount = calculateExchange(amount, swapRate);
 
-
     validate(
-      invalidAddress(fromAssetId),
-      invalidAddress(toAssetId),
+      invalidAddress(fromTokenAddress),
+      invalidAddress(toTokenAddress),
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
       notPositive(parseEther(swapRate)),
@@ -46,7 +49,7 @@ export class SwapController extends AbstractController {
 
     const error = notLessThanOrEqualTo(
       amount,
-      toBN(preSwapFromBal[this.connext.freeBalanceAddress]),
+      toBN(preSwapFromBal[this.connext.signerAddress]),
     );
     if (error) {
       throw new Error(error);
@@ -62,8 +65,8 @@ export class SwapController extends AbstractController {
     // install the swap app
     const appIdentityHash = await this.swapAppInstall(
       amount,
-      toAssetId,
-      fromAssetId,
+      toTokenAddress,
+      fromTokenAddress,
       swapRate,
       appInfo,
     );
@@ -85,15 +88,15 @@ export class SwapController extends AbstractController {
     }
 
     // Sanity check to ensure swap was executed correctly
-    const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const postSwapToBal = await this.connext.getFreeBalance(toAssetId);
+    const postSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);
+    const postSwapToBal = await this.connext.getFreeBalance(toTokenAddress);
     // balance decreases
-    const diffFrom = preSwapFromBal[this.connext.freeBalanceAddress].sub(
-      postSwapFromBal[this.connext.freeBalanceAddress],
+    const diffFrom = preSwapFromBal[this.connext.signerAddress].sub(
+      postSwapFromBal[this.connext.signerAddress],
     );
     // balance increases
-    const diffTo = postSwapToBal[this.connext.freeBalanceAddress].sub(
-      preSwapToBal[this.connext.freeBalanceAddress],
+    const diffTo = postSwapToBal[this.connext.signerAddress].sub(
+      preSwapToBal[this.connext.signerAddress],
     );
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
@@ -107,20 +110,18 @@ export class SwapController extends AbstractController {
   /////////////////////////////////
   ////// PRIVATE METHODS
 
-  // TODO: fix for virtual exchanges!
   private swapAppInstall = async (
     amount: BigNumber,
-    toAssetId: string,
-    fromAssetId: string,
+    toTokenAddress: Address,
+    fromTokenAddress: Address,
     swapRate: string,
     appInfo: DefaultApp,
   ): Promise<string> => {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.log.info(
-      `Swapping ${formatEther(amount)} ${
-        fromAssetId === AddressZero ? "ETH" : "Tokens"
-      } for ${formatEther(swappedAmount)} ${toAssetId === AddressZero ? "ETH" : "Tokens"}`,
+      `Swapping ${formatEther(amount)} ${ toTokenAddress === AddressZero ? "ETH" : "Tokens"
+      } for ${formatEther(swappedAmount)} ${fromTokenAddress === AddressZero ? "ETH" : "Tokens"}`,
     );
 
     // NOTE: always put the initiators swap information FIRST
@@ -133,13 +134,13 @@ export class SwapController extends AbstractController {
         [
           {
             amount,
-            to: this.connext.freeBalanceAddress,
+            to: this.connext.signerAddress,
           },
         ],
         [
           {
             amount: swappedAmount,
-            to: xpubToAddress(this.connext.nodePublicIdentifier),
+            to: getSignerAddressFromPublicIdentifier(this.connext.nodeIdentifier),
           },
         ],
       ],
@@ -155,11 +156,11 @@ export class SwapController extends AbstractController {
       appDefinition,
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: fromAssetId,
+      initiatorDepositAssetId: fromTokenAddress,
       outcomeType: appInfo.outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: swappedAmount,
-      responderDepositTokenAddress: toAssetId,
+      responderDepositAssetId: toTokenAddress,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: SWAP_STATE_TIMEOUT,
     };

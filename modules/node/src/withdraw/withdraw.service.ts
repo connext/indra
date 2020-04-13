@@ -1,5 +1,4 @@
 import { WITHDRAW_STATE_TIMEOUT } from "@connext/apps";
-import { signChannelMessage } from "@connext/crypto";
 import {
   AppInstanceJson,
   BigNumber,
@@ -12,6 +11,7 @@ import {
   WithdrawAppName,
   WithdrawAppState,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
 import { bigNumberify, hexlify, randomBytes } from "ethers/utils";
@@ -24,7 +24,6 @@ import { LoggerService } from "../logger/logger.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
-import { xkeyKthAddress } from "../util";
 
 import { WithdrawRepository } from "./withdraw.repository";
 import { Withdraw } from "./withdraw.entity";
@@ -74,12 +73,11 @@ export class WithdrawService {
       appInstance.multisigAddress,
     );
 
-    // Get Private Key
-    const privateKey = this.configService.getEthWallet().privateKey;
+    const signer = this.configService.getSigner();
 
     // Sign commitment
     const hash = generatedCommitment.hashToSign();
-    const counterpartySignatureOnWithdrawCommitment = await signChannelMessage(privateKey, hash);
+    const counterpartySignatureOnWithdrawCommitment = await signer.signMessage(hash);
 
     await this.cfCoreService.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -143,7 +141,7 @@ export class WithdrawService {
     );
     this.log.debug(`Deploy multisig tx: ${deployTx}`);
 
-    const wallet = this.configService.getEthWallet();
+    const wallet = this.configService.getSigner();
     if (deployTx !== HashZero) {
       this.log.debug(`Waiting for deployment transaction...`);
       wallet.provider.waitForTransaction(deployTx);
@@ -182,14 +180,14 @@ export class WithdrawService {
     return await this.withdrawRepository.save(withdraw);
   }
 
-  async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+  async getLatestWithdrawal(userIdentifier: string): Promise<OnchainTransaction | undefined> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userIdentifier);
     if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+      throw new Error(`No channel exists for userIdentifier ${userIdentifier}`);
     }
 
     return await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
-      userPublicIdentifier,
+      userIdentifier,
     );
   }
 
@@ -205,28 +203,27 @@ export class WithdrawService {
       {
         amount,
         assetId,
-        recipient: this.cfCoreService.cfCore.freeBalanceAddress,
+        recipient: this.cfCoreService.cfCore.signerAddress,
         nonce,
       } as PublicParams.Withdraw,
       channel.multisigAddress,
     );
 
-    const privateKey = this.configService.getEthWallet().privateKey;
+    const signer = this.configService.getSigner();
     const hash = commitment.hashToSign();
-
-    const withdrawerSignatureOnCommitment = await signChannelMessage(privateKey, hash);
+    const withdrawerSignatureOnCommitment = await signer.signMessage(hash);
 
     const transfers: CoinTransfer[] = [
-      { amount, to: this.cfCoreService.cfCore.freeBalanceAddress },
-      { amount: Zero, to: xkeyKthAddress(channel.userPublicIdentifier) },
+      { amount, to: this.cfCoreService.cfCore.signerAddress },
+      { amount: Zero, to: getSignerAddressFromPublicIdentifier(channel.userIdentifier) },
     ];
 
     const initialState: WithdrawAppState = {
       transfers: [transfers[0], transfers[1]],
       signatures: [withdrawerSignatureOnCommitment, HashZero],
       signers: [
-        this.cfCoreService.cfCore.freeBalanceAddress,
-        xkeyKthAddress(channel.userPublicIdentifier),
+        this.cfCoreService.cfCore.signerAddress,
+        getSignerAddressFromPublicIdentifier(channel.userIdentifier),
       ],
       data: hash,
       nonce,

@@ -36,7 +36,7 @@ describe("Get State Channel", () => {
   });
 
   it("Store contains multiple state channels", async () => {
-    // Client with same store and new mnemonic
+    // Client with same store and new signer
     const clientB = await createClient({ store: clientA.store });
     await clientB.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientB.requestCollateral(tokenAddress);

@@ -7,10 +7,10 @@ import {
   ProtocolNames,
   IStoreService,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
 import {
@@ -18,15 +18,13 @@ import {
   NO_MULTISIG_FOR_APP_IDENTITY_HASH,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_IDENTITY_HASH,
 } from "../../errors";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { ProtocolRunner } from "../../machine";
 import { StateChannel } from "../../models";
 
-import { getRandomExtendedPubKeys } from "../../testing/random-signing-keys";
 import { createAppInstanceProposalForTest } from "../../testing/utils";
 
 import { install } from "./install";
-import { xkeyKthAddress } from "../../xkeys";
+import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
@@ -49,7 +47,7 @@ describe("Can handle correct & incorrect installs", () => {
       store,
       nullLogger,
     );
-    initiatorIdentifier = HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
+    [initiatorIdentifier] = getRandomPublicIdentifiers(1);
   });
 
   it("fails to install with undefined appIdentityHash", async () => {
@@ -73,7 +71,7 @@ describe("Can handle correct & incorrect installs", () => {
   it("fails to install without the appIdentityHash being in a channel", async () => {
     expect.hasAssertions();
 
-    const mockedStore = mock(MemoryStoreService);
+    const mockedStore: IStoreService = mock(MemoryStoreService);
 
     const appIdentityHash = createRandom32ByteHexString();
     const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
@@ -93,34 +91,34 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedProtocolRunner = mock(ProtocolRunner);
     const protocolRunner = instance(mockedProtocolRunner);
 
-    const mockedStore = mock(MemoryStoreService);
+    const mockedStore: IStoreService = mock(MemoryStoreService);
     const store = instance(mockedStore);
 
     const appIdentityHash = createRandom32ByteHexString();
     const multisigAddress = Wallet.createRandom().address;
-    const extendedKeys = getRandomExtendedPubKeys(2);
+    const publicIdentifiers = getRandomPublicIdentifiers(2);
     const participants = [
-      xkeyKthAddress(extendedKeys[0]),
-      xkeyKthAddress(extendedKeys[1]),
+      getSignerAddressFromPublicIdentifier(publicIdentifiers[0]),
+      getSignerAddressFromPublicIdentifier(publicIdentifiers[1]),
     ];
 
     const stateChannel = StateChannel.setupChannel(
       AddressZero,
       { proxyFactory: AddressZero, multisigMastercopy: AddressZero },
       multisigAddress,
-      extendedKeys[0],
-      extendedKeys[1],
+      publicIdentifiers[0],
+      publicIdentifiers[1],
     );
 
     expect(
       stateChannel
         .getFreeBalanceClass()
-        .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[0]),
+        .getBalance(AddressZero, participants[0]),
     ).toEqual(Zero);
     expect(
       stateChannel
         .getFreeBalanceClass()
-        .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[1]),
+        .getBalance(AddressZero, participants[1]),
     ).toEqual(Zero);
 
     await store.createStateChannel(stateChannel.toJson());
@@ -145,7 +143,7 @@ describe("Can handle correct & incorrect installs", () => {
         {
           appIdentityHash,
         },
-        extendedKeys[0],
+        publicIdentifiers[0],
       ),
     ).resolves.toEqual(appInstanceProposal);
   });

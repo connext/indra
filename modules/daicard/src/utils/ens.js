@@ -347,19 +347,13 @@ if (
 }
 
 export const resolveAddress = async (name, ethProvider, network) => {
-  const address = await ethProvider.resolveName(name);
-  console.log(`[ENS] Resolved address ${address} for ${name}`);
-  return address;
-};
-
-export const resolveXpub = async (name, ethProvider, network) => {
   const hash = namehash(name);
   const ens = new Contract(network.ensAddress, ensRegistryAbi, ethProvider);
   const resolver = new Contract(await ens.resolver(hash), resolverAbi, ethProvider);
   try {
-    const xpub = await resolver.text(hash, "description");
-    console.log(`[ENS] Resolved xpub ${xpub} for ${name}`);
-    return xpub;
+    const address = await resolver.text(hash, "description");
+    console.log(`[ENS] Resolved address ${address} for ${name}`);
+    return address;
   } catch (e) {
     console.warn(e);
     return null;

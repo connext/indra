@@ -1,4 +1,4 @@
-import { ILogger, ClientOptions, createRandom32ByteHexString } from "@connext/types";
+import { ILogger, createRandom32ByteHexString } from "@connext/types";
 import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
@@ -16,14 +16,14 @@ export const logTime = (log: ILogger, start: number, msg: string) => {
   }
 };
 
-// Give abrv = true to abbreviate hex strings and xpubs to look like "xpub6FEC..kuQk"
+// Give abrv = true to abbreviate hex strings and addresss to look like "address6FEC..kuQk"
 export const stringify = (obj: object, abrv: boolean = false): string =>
   JSON.stringify(
     obj,
     (key: string, value: any): any =>
       value && value._hex
         ? bigNumberify(value).toString()
-        : abrv && value && typeof value === "string" && value.startsWith("xpub")
+        : abrv && value && typeof value === "string" && value.startsWith("address")
         ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
         : abrv && value && typeof value === "string" && value.startsWith("0x")
         ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
@@ -91,8 +91,8 @@ export const createLinkedHash = (
   );
 };
 
-export const withdrawalKey = (xpub: string): string => {
-  return `${xpub}/latestNodeSubmittedWithdrawal`;
+export const withdrawalKey = (address: string): string => {
+  return `${address}/latestNodeSubmittedWithdrawal`;
 };
 
 export const createPaymentId = createRandom32ByteHexString;
@@ -113,13 +113,6 @@ export function isRinkeby(network: string): boolean {
 
 export function isLocalhost(network: string): boolean {
   return network.toLowerCase() === LOCALHOST_NETWORK.toLowerCase();
-}
-
-export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
-  if (!opts) {
-    return false;
-  }
-  return !!(opts.mnemonic || (opts.xpub && opts.keyGen));
 }
 
 export function removeUndefinedFields<T>(obj: T): T {

@@ -1,11 +1,12 @@
-import { MethodNames, MethodParams, MethodResults } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults, getAddressFromAssetId } from "@connext/types";
+import { getAddress } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../../errors";
 import { StateChannel } from "../../models";
+import { AddressZero } from "ethers/constants";
 
 export class GetFreeBalanceStateController extends NodeController {
   @jsonRpcMethod(MethodNames.chan_getFreeBalanceState)
@@ -16,10 +17,14 @@ export class GetFreeBalanceStateController extends NodeController {
     params: MethodParams.GetFreeBalanceState,
   ): Promise<MethodResults.GetFreeBalanceState> {
     const { store } = requestHandler;
-    const { multisigAddress, tokenAddress: tokenAddressParam } = params;
+    const { multisigAddress, assetId } = params;
 
     // NOTE: We default to ETH in case of undefined tokenAddress param
-    const tokenAddress = tokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    // TODO: standardize on either address or assetId, not both
+    const tokenAddress = getAddress(
+      ((assetId && assetId.includes("@")) ? getAddressFromAssetId(assetId) : assetId) || AddressZero,
+    );
+    // console.log(`Parsed params ${JSON.stringify(params)} to address ${tokenAddress}`);
 
     if (!multisigAddress) {
       throw new Error("getFreeBalanceState method was given undefined multisigAddress");
@@ -31,6 +36,7 @@ export class GetFreeBalanceStateController extends NodeController {
     }
     const stateChannel = StateChannel.fromJson(json);
 
-    return stateChannel.getFreeBalanceClass().withTokenAddress(tokenAddress);
+    return stateChannel.getFreeBalanceClass()
+      .withTokenAddress(tokenAddress);
   }
 }

@@ -4,17 +4,18 @@ import {
   CriticalStateChannelAddresses,
   deBigNumberifyJson,
   IStoreService,
+  PublicIdentifier,
   SolidityValueType,
-  sortAddresses,
   StateChannelJSON,
   StateSchemaVersion,
   stringify,
   toBN,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+
 import { BigNumber } from "ethers/utils";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
-import { xkeyKthAddress } from "../xkeys";
 
 import { AppInstance } from "./app-instance";
 import { createFreeBalance, FreeBalanceClass, TokenIndexedCoinTransferMap } from "./free-balance";
@@ -34,8 +35,8 @@ export class StateChannel {
   constructor(
     public readonly multisigAddress: string,
     public readonly addresses: CriticalStateChannelAddresses,
-    public readonly initiatorExtendedKey: string, // initator
-    public readonly responderExtendedKey: string, // initator
+    public readonly initiatorIdentifier: string,
+    public readonly responderIdentifier: string,
     readonly proposedAppInstances: ReadonlyMap<string, AppInstanceProposal> = new Map<
       string,
       AppInstanceProposal
@@ -44,28 +45,17 @@ export class StateChannel {
     private readonly freeBalanceAppInstance?: AppInstance,
     private readonly monotonicNumProposedApps: number = 0,
     public readonly schemaVersion: number = StateSchemaVersion,
-  ) {
-    [initiatorExtendedKey, responderExtendedKey].forEach(xpub => {
-      if (!xpub.startsWith("xpub")) {
-        throw new Error(
-          `StateChannel constructor given invalid extended keys: ${stringify(
-            [initiatorExtendedKey, responderExtendedKey],
-          )}`,
-        );
-      }
-    });
-  }
+  ) {}
 
   public get multisigOwners() {
     return this.getSigningKeysFor(
-      /* initiatorXpub */ this.initiatorExtendedKey,
-      /* responderXpub */ this.responderExtendedKey,
-      /* appSeqNo */ 0,
+      this.initiatorIdentifier,
+      this.responderIdentifier,
     );
   }
 
-  public get userNeuteredExtendedKeys() {
-    return [this.initiatorExtendedKey, this.responderExtendedKey];
+  public get userIdentifiers(): string[] {
+    return [this.initiatorIdentifier, this.responderIdentifier];
   }
 
   public get numProposedApps() {
@@ -153,13 +143,12 @@ export class StateChannel {
   }
 
   public getSigningKeysFor(
-    initiatorXpub: string, 
-    responderXpub: string, 
-    addressIndex: number,
+    initiatorId: string, 
+    responderId: string, 
   ): string[] {
     return [
-      xkeyKthAddress(initiatorXpub, addressIndex),
-      xkeyKthAddress(responderXpub, addressIndex),
+      getSignerAddressFromPublicIdentifier(initiatorId),
+      getSignerAddressFromPublicIdentifier(responderId),
     ];
   }
 
@@ -175,29 +164,27 @@ export class StateChannel {
     throw new Error("There is no free balance app instance installed in this state channel");
   }
 
-  public getMultisigOwnerAddrOf(xpub: string): string {
-    if (!this.userNeuteredExtendedKeys.find(k => k === xpub)) {
+  public getMultisigOwnerAddrOf(identifer: string): string {
+    if (!this.userIdentifiers.find(k => k === identifer)) {
       throw new Error(
-        `getMultisigOwnerAddrOf received invalid xpub not in multisigOwners: ${xpub}`,
+        `getMultisigOwnerAddrOf received invalid id not in multisigOwners: ${identifer}`,
       );
     }
 
-    return xkeyKthAddress(xpub, 0);
+    return getSignerAddressFromPublicIdentifier(identifer);
   }
 
-  public getFreeBalanceAddrOf(xpub: string): string {
-    const alice = this.freeBalanceAppInstance!.initiator;
-    const bob = this.freeBalanceAppInstance!.responder;
+  public getFreeBalanceAddrOf(identifier: string): string {
+    const alice = this.freeBalanceAppInstance!.initiatorIdentifier;
+    const bob = this.freeBalanceAppInstance!.responderIdentifier;
 
-    const topLevelKey = xkeyKthAddress(xpub, 0);
-
-    if (topLevelKey !== alice && topLevelKey !== bob) {
+    if (identifier !== alice && identifier !== bob) {
       throw new Error(
-        `getFreeBalanceAddrOf received invalid xpub without free balance account: ${xpub}`,
+        `getFreeBalanceAddrOf received invalid id without free balance account: ${identifier}`,
       );
     }
 
-    return topLevelKey;
+    return getSignerAddressFromPublicIdentifier(identifier);
   }
 
   public getFreeBalanceClass() {
@@ -207,8 +194,8 @@ export class StateChannel {
   private build = (args: {
     multisigAddress?: string;
     addresses?: CriticalStateChannelAddresses;
-    initiatorExtendedKey?: string,
-    responderExtendedKey?: string,
+    initiatorIdentifier?: string,
+    responderIdentifier?: string,
     appInstances?: ReadonlyMap<string, AppInstance>;
     proposedAppInstances?: ReadonlyMap<string, AppInstanceProposal>;
     freeBalanceAppInstance?: AppInstance;
@@ -218,8 +205,8 @@ export class StateChannel {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
       args.addresses || this.addresses,
-      args.initiatorExtendedKey || this.initiatorExtendedKey,
-      args.responderExtendedKey || this.responderExtendedKey,
+      args.initiatorIdentifier || this.initiatorIdentifier,
+      args.responderIdentifier || this.responderIdentifier,
       args.proposedAppInstances || this.proposedAppInstances,
       args.appInstances || this.appInstances,
       args.freeBalanceAppInstance || this.freeBalanceAppInstance,
@@ -262,20 +249,20 @@ export class StateChannel {
     freeBalanceAppAddress: string,
     addresses: CriticalStateChannelAddresses,
     multisigAddress: string,
-    initiatorXpub: string,
-    responderXpub: string,
+    initiatorId: PublicIdentifier,
+    responderId: PublicIdentifier,
     freeBalanceTimeout?: number,
   ) {
     return new StateChannel(
       multisigAddress,
       addresses,
-      initiatorXpub,
-      responderXpub,
+      initiatorId,
+      responderId,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>([]),
       createFreeBalance(
-        initiatorXpub,
-        responderXpub,
+        initiatorId,
+        responderId,
         freeBalanceAppAddress,
         freeBalanceTimeout || HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout,
         multisigAddress,
@@ -287,14 +274,14 @@ export class StateChannel {
   public static createEmptyChannel(
     multisigAddress: string,
     addresses: CriticalStateChannelAddresses,
-    initiatorXpub: string,
-    responderXpub: string,
+    initiatorId: string,
+    responderId: string,
   ) {
     return new StateChannel(
       multisigAddress,
       addresses,
-      initiatorXpub,
-      responderXpub,
+      initiatorId,
+      responderId,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>(),
       // Note that this FreeBalance is undefined because a channel technically
@@ -380,12 +367,14 @@ export class StateChannel {
         
     if (!!proposal) {
       const [initiator, responder] = this.getSigningKeysFor(
-        proposal.proposedByIdentifier, 
-        proposal.proposedToIdentifier, 
-        appInstance.appSeqNo,
+        proposal.initiatorIdentifier, 
+        proposal.responderIdentifier, 
       );
   
-      if (appInstance.initiator !== initiator || appInstance.responder !== responder) {
+      if (
+        appInstance.initiatorIdentifier !== proposal.initiatorIdentifier 
+        || appInstance.responderIdentifier !== proposal.responderIdentifier
+      ) {
         throw new Error(
           `AppInstance passed to installApp has incorrect participants. Got ${
             JSON.stringify(appInstance.identity.participants)
@@ -437,7 +426,7 @@ export class StateChannel {
     return deBigNumberifyJson({
       multisigAddress: this.multisigAddress,
       addresses: this.addresses,
-      userNeuteredExtendedKeys: this.userNeuteredExtendedKeys,
+      userIdentifiers: this.userIdentifiers,
       proposedAppInstances: [...this.proposedAppInstances.entries()],
       appInstances: [...this.appInstances.entries()].map((appInstanceEntry): [
         string,
@@ -473,8 +462,8 @@ export class StateChannel {
       return new StateChannel(
         json.multisigAddress,
         json.addresses,
-        json.userNeuteredExtendedKeys[0], // initiator
-        json.userNeuteredExtendedKeys[1], // responder
+        json.userIdentifiers[0], // initiator
+        json.userIdentifiers[1], // responder
         new Map(
           [...Object.values(dropNulls(json.proposedAppInstances) || [])].map((proposal): [
             string,
@@ -511,7 +500,7 @@ export class StateChannel {
         `[getPeersAddressFromChannel] No state channel found in store for ${multisigAddress}`,
       );
     }
-    const owners = stateChannel.userNeuteredExtendedKeys;
+    const owners = stateChannel.userIdentifiers;
     return owners.filter(owner => owner !== myIdentifier);
   }
 }

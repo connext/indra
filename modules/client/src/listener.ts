@@ -363,7 +363,7 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       case SimpleSignedTransferAppName: {
         const initalState = params.initialState as SimpleSignedTransferAppState;
-        const { initiatorDepositTokenAddress: assetId, meta } = params;
+        const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
         this.connext.emit(
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
@@ -385,7 +385,7 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       case HashLockTransferAppName: {
         const initalState = params.initialState as HashLockTransferAppState;
-        const { initiatorDepositTokenAddress: assetId, meta } = params;
+        const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
         this.connext.emit(
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
@@ -408,7 +408,7 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       case SimpleLinkedTransferAppName: {
         const initalState = params.initialState as SimpleLinkedTransferAppState;
-        const { initiatorDepositTokenAddress: assetId, meta } = params;
+        const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
         this.connext.emit(
           EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,

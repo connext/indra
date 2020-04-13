@@ -1,8 +1,6 @@
-import { HDNode, SigningKey } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-import { createRandom32ByteHexString } from "@connext/types";
-
-import { computeRandomExtendedPrvKey } from "../xkeys";
+import { getRandomChannelSigner } from "@connext/crypto";
+import { IChannelSigner, createRandom32ByteHexString } from "@connext/types";
+import { SigningKey } from "ethers/utils";
 
 export function getRandomSigningKeys(length: number) {
   return Array(length)
@@ -10,26 +8,17 @@ export function getRandomSigningKeys(length: number) {
     .map(_ => new SigningKey(createRandom32ByteHexString()));
 }
 
-export function extendedPrvKeyToExtendedPubKey(extendedPrvKey: string): string {
-  return fromExtendedKey(extendedPrvKey).neuter().extendedKey;
+export function getRandomChannelSigners(length: number, ethProviderUrl?: string): IChannelSigner[] {
+  return Array(length).fill(0).map(() => getRandomChannelSigner(ethProviderUrl));
 }
 
-export function getRandomExtendedPubKey(): string {
-  return extendedPrvKeyToExtendedPubKey(computeRandomExtendedPrvKey());
+export function getRandomPublicIdentifier(provider?: string) {
+  const [ret] = getRandomPublicIdentifiers(1, provider);
+  return ret;
 }
 
-export function getRandomExtendedPubKeys(length: number): string[] {
-  return Array(length)
-    .fill(0)
-    .map(getRandomExtendedPubKey);
+export function getRandomPublicIdentifiers(length: number, provider?: string): string[] {
+  return getRandomChannelSigners(length, provider)
+    .map((signer) => signer.publicIdentifier);
 }
 
-export function getRandomExtendedPrvKeys(length: number): string[] {
-  return Array(length)
-    .fill(0)
-    .map(computeRandomExtendedPrvKey);
-}
-
-export function getRandomHDNodes(length: number): HDNode.HDNode[] {
-  return getRandomExtendedPrvKeys(length).map(x => fromExtendedKey(x));
-}

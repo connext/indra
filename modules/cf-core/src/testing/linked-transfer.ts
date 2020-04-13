@@ -1,8 +1,6 @@
 import { AppABIEncodings, createRandom32ByteHexString } from "@connext/types";
-import { Zero } from "ethers/constants";
+import { Zero, AddressZero } from "ethers/constants";
 import { bigNumberify, BigNumberish, solidityKeccak256 } from "ethers/utils";
-
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 
 const singleAssetTwoPartyCoinTransferEncoding = `
 tuple(address to, uint256 amount)[2]
@@ -28,7 +26,7 @@ export const linkedAbiEncodings: AppABIEncodings = {
 
 export function validAction(
   amount: BigNumberish = 1,
-  assetId: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  assetId: string = AddressZero,
 ) {
   return {
     assetId,
@@ -52,7 +50,7 @@ export function initialLinkedState(
   senderAddr: string,
   redeemerAddr: string,
   amount: BigNumberish = 1,
-  assetId: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  assetId: string = AddressZero,
 ) {
   const action = validAction(amount, assetId);
   const linkedHash = createLinkedHash(action);

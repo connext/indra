@@ -7,7 +7,7 @@ import {
   JsonRpcRequest,
   StateChannelJSON,
   WithdrawalMonitorObject,
-  WalletTransferParams,
+  WalletDepositParams,
   ConditionalTransactionCommitmentJSON,
   SetStateCommitmentJSON,
   MinimalTransaction,
@@ -17,20 +17,19 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   public connected: boolean = false;
   public connection: IRpcConnection;
 
-  private _config: ChannelProviderConfig | undefined = undefined;
-  private _multisigAddress: string | undefined = undefined;
+  private _config: ChannelProviderConfig | undefined;
+  private _multisigAddress: string | undefined;
 
-  constructor(connection: IRpcConnection, config?: ChannelProviderConfig) {
+  constructor(connection: IRpcConnection) {
     super();
     this.connection = connection;
-    this._config = config;
   }
 
   public enable(): Promise<ChannelProviderConfig> {
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config = this._config || (await this._send(ChannelMethods.chan_config));
+        const config: ChannelProviderConfig = await this._send(ChannelMethods.chan_config);
         if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;
@@ -60,8 +59,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
-      case ChannelMethods.chan_config:
-        result = this.config;
+      case ChannelMethods.chan_encrypt:
+        result = await this.encrypt(params.message, params.publicIdentifier);
+        break;
+      case ChannelMethods.chan_decrypt:
+        result = await this.decrypt(params.encryptedPreImage);
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -69,22 +71,18 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_setStateChannel:
         result = await this.setStateChannel(params.state);
         break;
-      case ChannelMethods.chan_walletTransfer:
-        result = await this.walletTransfer(params);
+      case ChannelMethods.chan_walletDeposit:
+        result = await this.walletDeposit(params);
         break;
-
       case ChannelMethods.chan_createSetupCommitment:
         result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
         break;
-
       case ChannelMethods.chan_createSetStateCommitment:
         result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
         break;
-
       case ChannelMethods.chan_createConditionalCommitment:
         result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
-
       default:
         result = await this._send(method, params);
         break;
@@ -109,23 +107,24 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   get multisigAddress(): string | undefined {
     const multisigAddress =
-      this._multisigAddress || (this._config ? this._config.multisigAddress : undefined);
+      this._multisigAddress ||
+      (typeof this._config !== "undefined" ? this._config.multisigAddress : undefined);
     return multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string | undefined) {
-    if (this._config) {
+    if (typeof this._config !== "undefined") {
       this._config.multisigAddress = multisigAddress;
     }
     this._multisigAddress = multisigAddress;
   }
 
-  get freeBalanceAddress(): string | undefined {
-    return this.config.freeBalanceAddress;
+  get signerAddress(): string | undefined {
+    return this.config.signerAddress;
   }
 
-  set freeBalanceAddress(freeBalanceAddress: string | undefined) {
-    this.config.freeBalanceAddress = freeBalanceAddress;
+  set signerAddress(signerAddress: string | undefined) {
+    this.config.signerAddress = signerAddress;
   }
 
   ///////////////////////////////////////////////
@@ -146,8 +145,21 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return this._send(ChannelMethods.chan_signMessage, { message });
   }
 
-  public walletTransfer = async (params: WalletTransferParams) => {
-    return this._send(ChannelMethods.chan_walletTransfer, params);
+  public encrypt(message: string, publicIdentifier: string): Promise<string> {
+    return this._send(ChannelMethods.chan_encrypt, {
+      message,
+      publicIdentifier,
+    });
+  }
+
+  public decrypt(encryptedPreImage: string): Promise<string> {
+    return this._send(ChannelMethods.chan_decrypt, {
+      encryptedPreImage,
+    });
+  }
+
+  public walletDeposit = async (params: WalletDepositParams) => {
+    return this._send(ChannelMethods.chan_walletDeposit, params);
   };
 
   /// ////////////////////////////////////////////
