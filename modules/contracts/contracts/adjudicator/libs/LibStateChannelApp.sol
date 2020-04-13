@@ -15,9 +15,9 @@ contract LibStateChannelApp is LibDispute {
 
     // A minimal structure that uniquely identifies a single instance of an App
     struct AppIdentity {
+        address multisigAddress;
         uint256 channelNonce;
         address[] participants;
-        address multisigAddress;
         address appDefinition;
         uint256 defaultTimeout;
     }
@@ -27,7 +27,6 @@ contract LibStateChannelApp is LibDispute {
     // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
     struct AppChallenge {
         ChallengeStatus status;
-        address latestSubmitter;
         bytes32 appStateHash;
         uint256 versionNumber;
         uint256 finalizesAt;
@@ -111,6 +110,32 @@ contract LibStateChannelApp is LibDispute {
                 appChallenge.status == ChallengeStatus.IN_DISPUTE &&
                 !hasPassed(appChallenge.finalizesAt)
             );
+    }
+
+    /// @dev Checks whether the state is finalized
+    /// @param appChallenge the app challenge to check
+    /// @param defaultTimeout the app instance's default timeout
+    function isFinalized(
+        AppChallenge memory appChallenge,
+        uint256 defaultTimeout
+    )
+        public
+        view
+        returns (bool)
+    {
+        return (
+          (
+              appChallenge.status == ChallengeStatus.IN_DISPUTE &&
+              hasPassed(appChallenge.finalizesAt.add(defaultTimeout))
+          ) ||
+          (
+              appChallenge.status == ChallengeStatus.IN_ONCHAIN_PROGRESSION &&
+              hasPassed(appChallenge.finalizesAt)
+          ) ||
+          (
+              appChallenge.status == ChallengeStatus.EXPLICITLY_FINALIZED
+          )
+        );
     }
 
     /// @dev Verifies signatures given the signer addresses

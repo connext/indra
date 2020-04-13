@@ -1,5 +1,5 @@
 import { signChannelMessage } from "@connext/crypto";
-import { MinimalTransaction, createRandomAddress } from "@connext/types";
+import { MinimalTransaction, createRandomAddress, CommitmentTarget } from "@connext/types";
 import {
   bigNumberify,
   Interface,
@@ -109,7 +109,7 @@ describe("Set State Commitment", () => {
     });
 
     it("should contain expected AppIdentity argument", () => {
-      const [channelNonce, participants, multisigAddress, appDefinition, defaultTimeout] = desc.args[0];
+      const [multisigAddress, channelNonce, participants, appDefinition, defaultTimeout] = desc.args[0];
 
       expect(channelNonce).toEqual(bigNumberify(appInstance.identity.channelNonce));
       expect(participants).toEqual(appInstance.identity.participants);
@@ -134,13 +134,13 @@ describe("Set State Commitment", () => {
     //       function ... maybe an ChallengeRegistry class or something
     const expectedHashToSign = keccak256(
       solidityPack(
-        ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
+        ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
         [
-          "0x19",
+          CommitmentTarget.SET_STATE,
           appIdentityToHash(appInstance.identity),
+          appInstance.hashOfLatestState,
           appInstance.versionNumber,
           appInstance.timeout,
-          appInstance.hashOfLatestState,
         ],
       ),
     );

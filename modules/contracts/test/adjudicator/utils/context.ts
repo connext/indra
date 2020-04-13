@@ -24,7 +24,7 @@ import {
   computeAppChallengeHash,
   EMPTY_CHALLENGE,
   encodeOutcome,
-  computeCancelChallengeHash,
+  computeCancelDisputeHash,
 } from "./index";
 
 export const setupContext = async (
@@ -60,14 +60,12 @@ export const setupContext = async (
   const getChallenge = async (): Promise<AppChallengeBigNumber> => {
     const [
       status,
-      latestSubmitter,
       appStateHash,
       versionNumber,
       finalizesAt,
     ] = await appRegistry.functions.getAppChallenge(appInstance.identityHash);
     return {
       status,
-      latestSubmitter,
       appStateHash,
       versionNumber,
       finalizesAt,
@@ -96,8 +94,9 @@ export const setupContext = async (
     return await appRegistry.functions.isDisputable(challenge);
   };
 
-  const isStateFinalized = () => {
-    return appRegistry.functions.isStateFinalized(appInstance.identityHash);
+  const isFinalized = async () => {
+    const challenge = await getChallenge();
+    return await appRegistry.functions.isFinalized(challenge, appInstance.defaultTimeout);
   };
 
   const isCancellable = async (challenge?: AppChallengeBigNumber) => {
@@ -144,7 +143,6 @@ export const setupContext = async (
       .withArgs(
         appInstance.identityHash, // identityHash
         expected.status || status, // status
-        expected.latestSubmitter || wallet.address, // latestSubmitter
         expected.appStateHash || appStateHash, // appStateHash
         expected.versionNumber || versionNumber, // versionNumber
         expected.finalizesAt || finalizesAt, // finalizesAt
@@ -207,7 +205,6 @@ export const setupContext = async (
   ) => {
     await setState(versionNumber, appState, timeout);
     await verifyChallenge({
-      latestSubmitter: wallet.address,
       versionNumber: toBN(versionNumber),
       appStateHash: keccak256(appState || HashZero),
       status: ChallengeStatus.IN_DISPUTE,
@@ -282,7 +279,6 @@ export const setupContext = async (
       ? ChallengeStatus.EXPLICITLY_FINALIZED
       : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     const expected = {
-      latestSubmitter: wallet.address,
       appStateHash: resultingStateHash,
       versionNumber: existingChallenge.versionNumber.add(One),
       status,
@@ -311,7 +307,6 @@ export const setupContext = async (
       ? ChallengeStatus.EXPLICITLY_FINALIZED
       : ChallengeStatus.IN_ONCHAIN_PROGRESSION;
     await verifyChallenge({
-      latestSubmitter: wallet.address,
       appStateHash: resultingStateHash,
       versionNumber: One.add(versionNumber),
       status,
@@ -377,8 +372,8 @@ export const setupContext = async (
     );
   };
 
-  const cancelChallenge = async (versionNumber: number, signatures?: string[]): Promise<void> => {
-    const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
+  const cancelDispute = async (versionNumber: number, signatures?: string[]): Promise<void> => {
+    const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
     if (!signatures) {
       signatures = await sortSignaturesBySignerAddress(
         digest,
@@ -391,7 +386,7 @@ export const setupContext = async (
     }
     // TODO: why does event verification fail?
     // await wrapInEventVerification(
-    await appRegistry.functions.cancelChallenge(appInstance.appIdentity, {
+    await appRegistry.functions.cancelDispute(appInstance.appIdentity, {
       versionNumber: toBN(versionNumber),
       signatures,
     });
@@ -399,11 +394,11 @@ export const setupContext = async (
     // );
   };
 
-  const cancelChallengeAndVerify = async (
+  const cancelDisputeAndVerify = async (
     versionNumber: number,
     signatures?: string[],
   ): Promise<void> => {
-    await cancelChallenge(versionNumber, signatures);
+    await cancelDispute(versionNumber, signatures);
     await verifyChallenge(EMPTY_CHALLENGE);
   };
 
@@ -429,7 +424,7 @@ export const setupContext = async (
     verifyChallenge,
     verifyEmptyChallenge: () => verifyChallenge(EMPTY_CHALLENGE),
     isProgressable,
-    isStateFinalized,
+    isFinalized,
     isCancellable,
     hasPassed,
     isDisputable,
@@ -443,7 +438,7 @@ export const setupContext = async (
     progressStateAndVerify,
     setAndProgressState,
     setAndProgressStateAndVerify,
-    cancelChallenge,
-    cancelChallengeAndVerify,
+    cancelDispute,
+    cancelDisputeAndVerify,
   };
 };
