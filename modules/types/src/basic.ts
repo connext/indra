@@ -1,11 +1,7 @@
 import { BigNumber as ethersBN, BigNumberish, Interface, ParamType } from "ethers/utils";
 
 export { Contract } from "ethers";
-export {
-  JsonRpcProvider,
-  TransactionReceipt,
-  TransactionResponse,
-} from "ethers/providers";
+export { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
 export { BigNumberish, Network, Transaction } from "ethers/utils";
 
 // special strings
@@ -21,6 +17,8 @@ export type BigNumber = ethersBN;
 export const BigNumber = ethersBN;
 
 export type HexObject = { _hex: HexString };
+
+export type StringMapping = { [key: string]: string };
 
 export interface EthSignature {
   r: string;

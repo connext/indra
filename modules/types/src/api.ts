@@ -1,10 +1,16 @@
 import { AppRegistry } from "./app";
-import { Address, Bytes32, DecString, Transaction } from "./basic";
+import { Address, Bytes32, DecString, Transaction, StringMapping } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import { NodeResponses } from "./node";
 import { PublicIdentifier } from "./identifiers";
+import { IMessagingService } from "./messaging";
+import { ILoggerService } from "./logger";
 
 export interface INodeApiClient {
+  nodeUrl: string;
+  messaging: IMessagingService;
+  latestSwapRates: StringMapping;
+  log: ILoggerService;
   channelProvider: IChannelProvider | undefined;
   userIdentifier: PublicIdentifier | undefined;
   nodeIdentifier: PublicIdentifier | undefined;

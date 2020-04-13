@@ -1,4 +1,3 @@
-import { MessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   bigNumberifyJson,
@@ -8,6 +7,8 @@ import {
   INodeApiClient,
   NodeResponses,
   stringify,
+  IMessagingService,
+  StringMapping,
 } from "@connext/types";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
@@ -23,17 +24,17 @@ const sendFailed = "Failed to send message";
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
-  public messaging: MessagingService;
-  public latestSwapRates: { [key: string]: string } = {};
+  public nodeUrl: string;
+  public messaging: IMessagingService;
+  public latestSwapRates: StringMapping = {};
   public log: ILoggerService;
 
   private _userIdentifier: string | undefined;
   private _nodeIdentifier: string | undefined;
   private _channelProvider: IChannelProvider | undefined;
-  private nodeUrl: string;
 
   constructor(opts: NodeInitializationParameters) {
-    this.messaging = opts.messaging as MessagingService;
+    this.messaging = opts.messaging;
     this.log = opts.logger.newContext("NodeApiClient");
     this._userIdentifier = opts.userIdentifier;
     this._nodeIdentifier = opts.nodeIdentifier;
@@ -102,7 +103,9 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async config(): Promise<NodeResponses.GetConfig> {
-    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(`${this.nodeUrl}/config`);
+    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(
+      `${this.nodeUrl}/config`,
+    );
     return response.data;
   }
 
@@ -290,6 +293,6 @@ export class NodeApiClient implements INodeApiClient {
       start,
       `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
     );
-    return (!response || isEmptyObj) ? undefined : bigNumberifyJson(response);
+    return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }
 }

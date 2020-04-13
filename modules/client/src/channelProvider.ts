@@ -60,12 +60,7 @@ export const createCFChannelProvider = async ({
     await generateValidationMiddleware(contractAddresses),
   );
 
-  const channelProviderConfig: ChannelProviderConfig = {
-    signerAddress: signer.address,
-    nodeUrl,
-    userIdentifier: signer.publicIdentifier,
-  };
-  const connection = new CFCoreRpcConnection(cfCore, store, signer, channelProviderConfig, node);
+  const connection = new CFCoreRpcConnection(cfCore, store, signer, node);
   const channelProvider = new ChannelProvider(connection);
   return channelProvider;
 };
@@ -76,22 +71,20 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public store: IClientStore;
 
   private signer: IChannelSigner;
-  private config: ChannelProviderConfig;
   private node: INodeApiClient;
+  private config: ChannelProviderConfig;
 
-  constructor(
-    cfCore: CFCore,
-    store: IClientStore,
-    signer: IChannelSigner,
-    config: ChannelProviderConfig,
-    node: INodeApiClient,
-  ) {
+  constructor(cfCore: CFCore, store: IClientStore, signer: IChannelSigner, node: INodeApiClient) {
     super();
     this.cfCore = cfCore;
     this.signer = signer;
     this.store = store;
-    this.config = config;
     this.node = node;
+    this.config = {
+      signerAddress: signer.address,
+      nodeUrl: node.nodeUrl,
+      userIdentifier: signer.publicIdentifier,
+    };
   }
 
   public async send(payload: JsonRpcRequest): Promise<any> {
