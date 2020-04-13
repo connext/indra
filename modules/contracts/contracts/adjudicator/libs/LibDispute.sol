@@ -23,12 +23,6 @@ contract LibDispute {
         bytes[] signatures;
     }
 
-    // Abi-encoded action, with a signature of the turn-taker
-    struct SignedAction {
-        bytes encodedAction;
-        bytes signature;
-    }
-
     // Used to cancel a challenge. Inc. current onchain state hash,
     // challenge status, and signatures on this
     struct SignedCancelChallengeRequest {

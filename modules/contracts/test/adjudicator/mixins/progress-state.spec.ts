@@ -6,7 +6,6 @@ import { keccak256 } from "ethers/utils";
 
 import {
   expect,
-  computeActionHash,
   AppWithCounterState,
   AppWithCounterAction,
   snapshot,
@@ -34,6 +33,7 @@ describe("progressState", () => {
   let snapshotId: any;
 
   let ACTION: AppWithCounterAction;
+  let EXPLICITLY_FINALIZING_ACTION: AppWithCounterAction;
   let PRE_STATE: AppWithCounterState;
   let POST_STATE: AppWithCounterState;
   let ONCHAIN_CHALLENGE_TIMEOUT: number;
@@ -42,7 +42,10 @@ describe("progressState", () => {
   let progressState: (
     state: AppWithCounterState,
     action: AppWithCounterAction,
-    actionSig: string,
+    signer: Wallet,
+    resultingState?: AppWithCounterState,
+    resultingStateVersionNumber?: number,
+    resultingStateTimeout?: number,
   ) => Promise<void>;
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
@@ -78,6 +81,7 @@ describe("progressState", () => {
     PRE_STATE = context["state0"];
     POST_STATE = context["state1"];
     ACTION = context["action"];
+    EXPLICITLY_FINALIZING_ACTION = context["explicitlyFinalizingAction"];
     ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
 
     // get helpers
@@ -104,6 +108,16 @@ describe("progressState", () => {
     await progressStateAndVerify(PRE_STATE, ACTION);
   });
 
+  it("Can call progressState with explicitly finalizing action", async () => {
+    await setState(1, encodeState(PRE_STATE));
+
+    expect(await isProgressable()).to.be.false;
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+    expect(await isProgressable()).to.be.true;
+
+    await progressStateAndVerify(PRE_STATE, EXPLICITLY_FINALIZING_ACTION);
+  });
+
   it("Can be called multiple times", async () => {
     await setState(1, encodeState(PRE_STATE));
 
@@ -111,23 +125,15 @@ describe("progressState", () => {
     await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
     await progressStateAndVerify(PRE_STATE, ACTION);
 
-    const thingToSign2 = computeActionHash(
-      ALICE.address,
-      keccak256(encodeState(POST_STATE)),
-      encodeAction(ACTION),
-      2,
-    );
-    const signature2 = await (new ChannelSigner(ALICE.privateKey).signMessage(thingToSign2));
-    await progressState(POST_STATE, ACTION, signature2);
+    await progressState(POST_STATE, ACTION, ALICE);
   });
 
-  it("Cannot call progressState with incorrect turn taker", async () => {
+  it("progressState should fail if dispute is not progressable", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
-
-    await expect(progressStateAndVerify(PRE_STATE, ACTION, ALICE)).to.be.revertedWith(
-      "progressState called with action signed by incorrect turn taker",
+    expect(await isProgressable()).to.be.false;
+    await expect(progressState(POST_STATE, ACTION, ALICE)).to.be.revertedWith(
+      "progressState called on app not in a progressable state",
     );
   });
 
@@ -137,24 +143,22 @@ describe("progressState", () => {
     await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
     await expect(progressStateAndVerify(POST_STATE, ACTION)).to.be.revertedWith(
-      "Tried to progress a challenge with non-agreed upon app",
+      "progressState called with oldAppState that does not match stored challenge",
     );
   });
 
-  it("progressState should fail if dispute is not progressable", async () => {
+  it("progressState should fail with incorrect turn taker", async () => {
     await setState(1, encodeState(PRE_STATE));
 
-    const thingToSign = computeActionHash(
-      BOB.address,
-      keccak256(encodeState(PRE_STATE)),
-      encodeAction(ACTION),
-      1,
-    );
-    const signature = await (new ChannelSigner(ALICE.privateKey).signMessage(thingToSign));
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
 
-    expect(await isProgressable()).to.be.false;
-    await expect(progressState(POST_STATE, ACTION, signature)).to.be.revertedWith(
-      "progressState called on app not in a progressable state",
+    await expect(progressStateAndVerify(PRE_STATE, ACTION, ALICE)).to.be.revertedWith(
+      /*
+       TODO: Temporary solution. Proper fix: The `verifySignatures` contract function
+       shouldn't revert, but just return `false`.
+      "Call to progressState included incorrectly signed state update",
+      */
+      "Invalid signature",
     );
   });
 
@@ -175,4 +179,25 @@ describe("progressState", () => {
       context["progressStateAndVerify"](context["state0"], context["action"]),
     ).to.be.revertedWith("applyAction fails for this app");
   });
+
+  it("progressState should fail if applying action to old state does not match new state", async () => {
+    await setState(1, encodeState(PRE_STATE));
+
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+
+    await expect(progressState(PRE_STATE, ACTION, BOB, PRE_STATE)).to.be.revertedWith(
+      "progressState: applying action to old state does not match new state",
+    );
+  });
+
+  it("progressState should fail if versionNumber of new state is not that of stored state plus 1", async () => {
+    await setState(1, encodeState(PRE_STATE));
+
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 3);
+
+    await expect(progressState(PRE_STATE, ACTION, BOB, POST_STATE, 1)).to.be.revertedWith(
+      "progressState: versionNumber of new state is not that of stored state plus 1",
+    );
+  });
+
 });
