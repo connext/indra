@@ -91,11 +91,6 @@ describe("cancelDispute", () => {
   });
 
   it("works", async () => {
-    // when in set state phase
-    await setState(1);
-    expect(await isDisputable()).to.be.true;
-    await cancelDisputeAndVerify(1);
-
     // when in progress state phase
     await setAndProgressState(1);
     expect(await isProgressable()).to.be.true;
@@ -108,9 +103,19 @@ describe("cancelDispute", () => {
     );
   });
 
+  it("fails if called in set state phase", async () => {
+    await setState(1);
+    expect(await isDisputable()).to.be.true;
+    await expect(cancelDispute(1)).to.be.revertedWith(
+      "VM Exception while processing transaction: revert cancelDispute called on challenge that cannot be cancelled",
+    );
+  });
+
   it("fails if incorrect sigs", async () => {
     const versionNumber = 2;
-    await setState(versionNumber);
+    await setAndProgressState(versionNumber);
+    expect(await isProgressable()).to.be.true;
+
     const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
     const signatures = await sortSignaturesBySignerAddress(
       digest,
@@ -126,8 +131,9 @@ describe("cancelDispute", () => {
 
   it("fails if wrong version number submitted", async () => {
     // when in set state phase
-    await setState(1);
-    await expect(cancelDispute(2)).to.be.revertedWith(
+    await setAndProgressState(1);
+    expect(await isProgressable()).to.be.true;
+    await expect(cancelDispute(1)).to.be.revertedWith(
       "cancelDispute was called with wrong version number",
     );
   });

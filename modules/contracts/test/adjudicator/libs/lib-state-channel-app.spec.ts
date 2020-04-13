@@ -158,9 +158,9 @@ describe("LibStateChannelApp", () => {
   });
 
   describe("isCancellable", () => {
-    it("should return true if it is set state phase", async () => {
+    it("should return false if it is set state phase", async () => {
       await setState(1);
-      expect(await isCancellable()).to.be.true;
+      expect(await isCancellable()).to.be.false;
     });
 
     it("should return true if it is state progression phase", async () => {
