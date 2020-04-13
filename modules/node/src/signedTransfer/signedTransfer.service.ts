@@ -136,7 +136,7 @@ export class SignedTransferService {
       finalized: false,
     };
 
-    const meta = { ...senderApp.meta, sender: senderChannel.userPublicIdentifier };
+    const meta = { ...senderApp.meta, sender: senderChannel.userIdentifier };
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
