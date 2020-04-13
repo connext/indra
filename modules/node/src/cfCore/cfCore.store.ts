@@ -327,6 +327,9 @@ export class CFCoreStore implements IStoreService {
     app.latestVersionNumber = 0;
     app.channel = channel;
 
+    // because the app instance has `cascade` set to true, saving
+    // the channel will involve multiple queries and should be put
+    // within a transaction
     await getManager().transaction(async transactionalEntityManager => {
       await transactionalEntityManager.save(app);
 
