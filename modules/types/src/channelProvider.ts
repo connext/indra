@@ -71,7 +71,6 @@ export type JsonRpcRequest = {
 export type WalletDepositParams = {
   amount: DecString;
   assetId: Address;
-  recipient: Address;
 };
 
 export interface IRpcConnection extends ConnextEventEmitter {
