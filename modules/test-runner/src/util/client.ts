@@ -90,16 +90,14 @@ export type ClientTestMessagingInputOpts = {
   ceiling: Partial<MessageCounter>; // set ceiling of sent/received
   protocol: string; // use "any" to limit any messages by count
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
-  signer: string | IChannelSigner;
+  signer: IChannelSigner;
 };
 
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, delay, signer: signerOpts } = opts;
-  const signer = signerOpts && typeof signerOpts === "string" 
-    ? new ChannelSigner(signerOpts) 
-    : !!signerOpts ? signerOpts : getRandomChannelSigner();
+  const signer = signerOpts || getRandomChannelSigner();
   const messageOptions: any = {};
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {

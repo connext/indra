@@ -19,7 +19,7 @@ import {
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
-import { Wallet } from "ethers";
+import { getRandomChannelSigner } from "@connext/crypto";
 
 const { CF_METHOD_TIMEOUT } = utils;
 
@@ -136,15 +136,12 @@ describe("Deposit offline tests", () => {
   });
 
   it("client proposes deposit, but node only responds after timeout is over", async () => {
-    const { privateKey } = Wallet.createRandom();
-
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
     client = await createClientWithMessagingLimits({
       delay: { received: CLIENT_DELAY },
       protocol: "propose",
-      signer: privateKey,
     });
 
     await makeDepositCall({
@@ -157,11 +154,11 @@ describe("Deposit offline tests", () => {
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
-    const { privateKey } = Wallet.createRandom();
+    const signer = getRandomChannelSigner();
     client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: 0 },
-      signer: privateKey,
+      signer,
     });
 
     await makeDepositCall({
@@ -172,7 +169,7 @@ describe("Deposit offline tests", () => {
       protocol: "install",
     });
 
-    await createClient({ signer: privateKey });
+    await createClient({ signer });
   });
 
 });
