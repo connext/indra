@@ -21,7 +21,7 @@ import {
   env,
 } from "../util";
 
-describe("Withdraw offline tests", () => {
+describe.only("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
   let signer: IChannelSigner;
@@ -31,12 +31,11 @@ describe("Withdraw offline tests", () => {
     amount: BigNumber = ETH_AMOUNT_SM,
     assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
-    // make sure the tokenAddress is set
-    const signer = messagingConfig.signer && 
-      typeof messagingConfig.signer === "string" 
-        ? new ChannelSigner(messagingConfig.signer) 
-        : !!messagingConfig.signer 
-          ? messagingConfig.signer : getRandomChannelSigner(env.ethProviderUrl);
+    // make sure the signer is set
+    messagingConfig.signer = messagingConfig.signer || getRandomChannelSigner(env.ethProviderUrl);
+    signer = typeof messagingConfig.signer === "string" 
+      ? new ChannelSigner(messagingConfig.signer, env.ethProviderUrl) 
+      : messagingConfig.signer;
     client = await createClientWithMessagingLimits({
       signer,
       ...messagingConfig,
@@ -98,7 +97,7 @@ describe("Withdraw offline tests", () => {
     ).to.be.rejectedWith(`proposal took longer than 90 seconds`);
   });
 
-  it("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
+  it.only("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
     await createAndFundChannel();
 
     await new Promise(resolve => {
