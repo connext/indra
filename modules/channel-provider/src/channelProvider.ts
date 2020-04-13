@@ -33,8 +33,8 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config = await this.getConfig();
-        if (Object.keys(config).length > 0) {
+        const config = this._config || (await this._send(ChannelMethods.chan_config));
+        if (exists(config)) {
           this.connected = true;
           this._config = config;
           this._multisigAddress = config.multisigAddress;
@@ -68,9 +68,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
         break;
       case ChannelMethods.chan_decrypt:
         result = await this.decrypt(params.encryptedPreImage);
-        break;
-      case ChannelMethods.chan_config:
-        result = await this.getConfig();
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -170,14 +167,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // STORE METHODS
-
-  public async getConfig(): Promise<ChannelProviderConfig> {
-    if (!exists(this._config) || (exists(this._config) && !this.config.multisigAddress)) {
-      this._config = await this._send(ChannelMethods.chan_config);
-      this._multisigAddress = this._config.multisigAddress;
-    }
-    return this._config;
-  }
 
   public getUserWithdrawal = async (): Promise<any> => {
     return this._send(ChannelMethods.chan_getUserWithdrawal, {});

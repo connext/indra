@@ -89,6 +89,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     const { method, params } = payload;
     let result;
     switch (method) {
+      case ChannelMethods.chan_config:
+        result = this.config;
+        break;
       case ChannelMethods.chan_setUserWithdrawal:
         result = await this.setUserWithdrawal(params.withdrawalObject);
         break;
@@ -103,9 +106,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         break;
       case ChannelMethods.chan_decrypt:
         result = await this.decrypt(params.encryptedPreImage);
-        break;
-      case ChannelMethods.chan_config:
-        result = await this.getConfig();
         break;
       case ChannelMethods.chan_restoreState:
         result = await this.restoreState();
@@ -172,8 +172,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   }
 
   private walletDeposit = async (params: WalletDepositParams): Promise<string> => {
-    const config = await this.getConfig();
-    let recipient = config.multisigAddress;
+    let recipient = this.config.multisigAddress;
     if (!recipient) {
       throw new Error(`Cannot make deposit without channel created - missing multisigAddress`);
     }
@@ -191,10 +190,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     }
     return hash;
   };
-
-  public async getConfig(): Promise<ChannelProviderConfig> {
-    return this.config;
-  }
 
   private getUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
     return this.store.getUserWithdrawal();

@@ -123,7 +123,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // STORE METHODS
-  getConfig(): Promise<ChannelProviderConfig>;
   getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
   setUserWithdrawal(withdrawal: WithdrawalMonitorObject): Promise<void>;
   restoreState(state?: StateChannelJSON): Promise<void>;
