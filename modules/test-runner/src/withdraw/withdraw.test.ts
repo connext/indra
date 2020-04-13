@@ -159,45 +159,6 @@ describe("Withdrawal", () => {
     });
   });
 
-  describe.skip("client tries to withdraw while node has active deposit rights", () => {
-    // if node has rights, then it should not allow client to withdraw
-    it("node has active rights in eth, withdrawing eth", async () => {
-      await fundChannel(client, ZERO_ZERO_ONE_ETH);
-      // give client eth rights
-      await requestDepositRights(client, AddressZero, false);
-      // try to withdraw
-      await expect(
-        withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero),
-      ).to.be.rejectedWith(NODE_HAS_RIGHTS_ERROR);
-    });
-
-    it("node has active rights in tokens, withdrawing eth", async () => {
-      await fundChannel(client, ZERO_ZERO_ONE_ETH);
-      // give client eth rights
-      await requestDepositRights(client, tokenAddress, false);
-      // try to withdraw
-      await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero);
-    });
-
-    it("node has active rights in tokens, withdrawing tokens", async () => {
-      await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
-      // give client eth rights
-      await requestDepositRights(client, tokenAddress, false);
-      // try to withdraw
-      await expect(
-        withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, tokenAddress),
-      ).to.be.rejectedWith(NODE_HAS_RIGHTS_ERROR);
-    });
-
-    it("node has active rights in eth, withdrawing tokens", async () => {
-      await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
-      // give client eth rights
-      await requestDepositRights(client, AddressZero, false);
-      // try to withdraw
-      await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, tokenAddress);
-    });
-  });
-
   describe("totalWithdrawnAmount onchain increases when withdraw happens", () => {
     let multisigContract: Contract;
 
