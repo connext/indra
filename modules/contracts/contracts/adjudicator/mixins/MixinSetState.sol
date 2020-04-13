@@ -2,7 +2,6 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "../libs/LibStateChannelApp.sol";
-import "../libs/LibDispute.sol";
 import "./MChallengeRegistryCore.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -66,29 +65,6 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
             challenge.appStateHash,
             challenge.versionNumber,
             challenge.finalizesAt
-        );
-    }
-
-    function correctKeysSignedAppChallengeUpdate(
-        bytes32 identityHash,
-        address[] memory participants,
-        SignedAppChallengeUpdate memory req
-    )
-        private
-        pure
-        returns (bool)
-    {
-        bytes32 digest = computeAppChallengeHash(
-            identityHash,
-            req.appStateHash,
-            req.versionNumber,
-            req.timeout
-        );
-
-        return verifySignatures(
-            req.signatures,
-            digest,
-            participants
         );
     }
 

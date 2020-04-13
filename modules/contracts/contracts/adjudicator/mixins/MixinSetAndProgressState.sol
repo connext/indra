@@ -9,26 +9,31 @@ import "./MixinProgressState.sol";
 contract MixinSetAndProgressState is LibDispute, MixinSetState, MixinProgressState {
 
     /// @notice Create a challenge regarding the latest signed state and immediately after,
-    /// performs a unilateral action to update it. The latest signed state must have timeout 0.
-    /// @param appIdentity An AppIdentity pointing to the app having its challenge progressed
-    /// @param req A struct with the signed state update in it
-    /// @param action A struct with the signed action being taken
-    /// @dev Note this function is only callable when the challenge is still disputable.
+    /// performs a unilateral action to update it; the latest signed state must have timeout 0
+    /// @param appIdentity An AppIdentity object
+    /// @param req1 A signed app challenge update that contains the hash of the latest state
+    /// that has been signed by all parties; the timeout must be 0
+    /// @param req2 A signed app challenge update that contains the state that results
+    /// from applying the action to appState
+    /// @param appState The full state whose hash is the state hash in req1
+    /// @param action The abi-encoded action to be taken on appState
     function setAndProgressState(
         AppIdentity memory appIdentity,
-        SignedAppChallengeUpdate memory req,
+        SignedAppChallengeUpdate memory req1,
+        SignedAppChallengeUpdate memory req2,
         bytes memory appState,
-        SignedAction memory action
+        bytes memory action
     )
         public
     {
         setState(
             appIdentity,
-            req
+            req1
         );
 
         progressState(
             appIdentity,
+            req2,
             appState,
             action
         );
