@@ -105,6 +105,9 @@ export class SignedTransferService {
         amount,
       );
       if (!depositReceipt) {
+        throw new Error(
+          `Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`,
+        );
         throw new Error(`Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`);
       }
     } else {
@@ -133,6 +136,7 @@ export class SignedTransferService {
       finalized: false,
     };
 
+    const meta = { ...senderApp.meta, sender: senderChannel.userIdentifier };
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
@@ -141,10 +145,9 @@ export class SignedTransferService {
       Zero,
       assetId,
       SimpleSignedTransferAppName,
-      senderApp.meta,
+      meta,
       SIGNED_TRANSFER_STATE_TIMEOUT,
     );
-
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appIdentityHash) {
       throw new Error(`Could not install app on receiver side.`);
@@ -153,7 +156,7 @@ export class SignedTransferService {
     return {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
       sender: senderChannel.userIdentifier,
-      meta: senderApp["meta"] || {},
+      meta,
       amount,
       assetId,
     };
