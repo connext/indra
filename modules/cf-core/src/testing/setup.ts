@@ -48,7 +48,7 @@ export async function setup(
 
   const lockService = new MemoryLockService();
 
-  const channelSignerA = new ChannelSigner(prvKeyA, ethUrl);
+  const channelSignerA = new ChannelSigner(prvKeyA, provider);
 
   const storeServiceA = storeServiceFactory.createStoreService();
   const nodeA = await Node.create(
@@ -68,7 +68,7 @@ export async function setup(
     store: storeServiceA,
   };
 
-  const channelSignerB = new ChannelSigner(prvKeyB, ethUrl);
+  const channelSignerB = new ChannelSigner(prvKeyB, provider);
   const storeServiceB = storeServiceFactory.createStoreService();
   const nodeB = await Node.create(
     messagingService,
@@ -88,7 +88,7 @@ export async function setup(
 
   let nodeC: Node;
   if (nodeCPresent) {
-    const channelSignerC = new ChannelSigner(C_PRIVATE_KEY, ethUrl);
+    const channelSignerC = new ChannelSigner(C_PRIVATE_KEY, provider);
     const storeServiceC = storeServiceFactory.createStoreService();
     nodeC = await Node.create(
       messagingService,

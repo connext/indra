@@ -163,7 +163,7 @@ export const getRandomChannelSigner = (ethProviderUrl?: string) =>
 export class ChannelSigner implements IChannelSigner {
   public address: string;
   public publicKey: string;
-  public readonly provider?: JsonRpcProvider;
+  public provider?: JsonRpcProvider;
 
   // NOTE: without this property, the Signer.isSigner
   // function will not return true, even though this class
@@ -172,18 +172,22 @@ export class ChannelSigner implements IChannelSigner {
   private readonly _ethersType = "Signer";
 
   constructor(private readonly privateKey: string, ethProvider?: string | JsonRpcProvider) {
+    this.privateKey = privateKey;
+    this.publicKey = getPublicKeyFromPrivate(this.privateKey);
+    this.address = getChecksumAddress(this.publicKey);
+    this.connect(ethProvider);
+  }
+
+  get publicIdentifier(): string {
+    return getPublicIdentifierFromPublicKey(this.publicKey);
+  }
+
+  public connect(ethProvider?: string | JsonRpcProvider): void {
     this.provider = ethProvider
       ? typeof ethProvider === "string"
         ? new JsonRpcProvider(ethProvider)
         : ethProvider
       : undefined;
-    this.privateKey = privateKey;
-    this.publicKey = getPublicKeyFromPrivate(this.privateKey);
-    this.address = getChecksumAddress(this.publicKey);
-  }
-
-  get publicIdentifier(): string {
-    return getPublicIdentifierFromPublicKey(this.publicKey);
   }
 
   public async encrypt(message: string, publicKey: string): Promise<string> {
