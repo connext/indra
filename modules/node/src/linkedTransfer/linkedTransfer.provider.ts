@@ -107,7 +107,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
       this.authService.parseXpub(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
-      "*.transfer.resolve-linked",
+      "*.transfer.install-linked",
       this.authService.parseXpub(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(

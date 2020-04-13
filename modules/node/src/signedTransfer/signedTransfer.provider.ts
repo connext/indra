@@ -80,7 +80,7 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.resolve-signed",
+      "*.transfer.install-signed",
       this.authService.parseXpub(this.resolveSignedTransfer.bind(this)),
     );
 

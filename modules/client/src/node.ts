@@ -164,7 +164,7 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveLinkedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    return this.send(`${this.userPublicIdentifier}.transfer.resolve-linked`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.install-linked`, {
       paymentId,
     });
   }
@@ -172,7 +172,7 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveSignedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    return this.send(`${this.userPublicIdentifier}.transfer.resolve-signed`, {
+    return this.send(`${this.userPublicIdentifier}.transfer.install-signed`, {
       paymentId,
     });
   }
