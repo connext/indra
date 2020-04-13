@@ -106,10 +106,10 @@ contract LibStateChannelApp is LibDispute {
         view
         returns (bool)
     {
-        return isProgressable(appChallenge, defaultTimeout) || (
-                appChallenge.status == ChallengeStatus.IN_DISPUTE &&
-                !hasPassed(appChallenge.finalizesAt)
-            );
+        // Note: we also initially allowed cancelling a dispute during
+        //       the dispute phase but before timeout had expired.
+        //       TODO: does that make sense to add back in?
+        return isProgressable(appChallenge, defaultTimeout);
     }
 
     /// @dev Checks whether the state is finalized
