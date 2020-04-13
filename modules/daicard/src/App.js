@@ -255,7 +255,6 @@ class App extends React.Component {
         store,
       });
       console.log(`mnemonic address: ${wallet.address} (path: ${wallet.path})`);
-      console.log(`address address: ${eth.utils.computeAddress(fromExtendedKey(address).publicKey)}`);
     } else if (useWalletConnext) {
       const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
