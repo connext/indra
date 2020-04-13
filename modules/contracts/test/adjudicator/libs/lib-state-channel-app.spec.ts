@@ -129,7 +129,6 @@ describe("LibStateChannelApp", () => {
     it("should return true if challenge is in onchain progression and the progress state period has not elapsed", async () => {
       await setAndProgressState(1);
       await verifyChallenge({
-        latestSubmitter: wallet.address,
         versionNumber: toBN(2),
         status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       });

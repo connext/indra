@@ -25,16 +25,23 @@ contract LibDispute {
 
     // Used to cancel a challenge. Inc. current onchain state hash,
     // challenge status, and signatures on this
-    struct SignedCancelChallengeRequest {
+    struct SignedCancelDisputeRequest {
         uint256 versionNumber;
         bytes[] signatures;
     }
+
+    // Event emitted when state is progressed via a unilateral action
+    event StateProgressed (
+      bytes32 identityHash,
+      bytes action,
+      uint256 versionNumber,
+      address turnTaker
+    );
 
     // Event emitted when the challenge is updated
     event ChallengeUpdated (
       bytes32 identityHash,
       ChallengeStatus status,
-      address latestSubmitter,
       bytes32 appStateHash,
       uint256 versionNumber,
       uint256 finalizesAt

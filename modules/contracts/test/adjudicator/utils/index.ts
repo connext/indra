@@ -1,4 +1,4 @@
-import { AppIdentity, ChallengeStatus } from "@connext/types";
+import { AppIdentity, ChallengeStatus, CommitmentTarget } from "@connext/types";
 import {
   BigNumberish,
   defaultAbiCoder,
@@ -50,14 +50,14 @@ export function encodeOutcome() {
   return defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
 }
 
-// TS version of MChallengeRegistryCore::computeCancelChallengeHash
-export const computeCancelChallengeHash = (
+// TS version of MChallengeRegistryCore::computeCancelDisputeHash
+export const computeCancelDisputeHash = (
   identityHash: string,
   versionNumber: BigNumber,
 ) => keccak256(
   solidityPack(
-    ["bytes1", "bytes32", "uint256"],
-    ["0x19", identityHash, versionNumber],
+    ["uint8", "bytes32", "uint256"],
+    [CommitmentTarget.CANCEL_DISPUTE, identityHash, versionNumber],
   ),
 );
 
@@ -73,22 +73,23 @@ export const computeAppChallengeHash = (
 ) =>
   keccak256(
     solidityPack(
-      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-      ["0x19", id, versionNumber, timeout, appStateHash],
+      ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
+      [CommitmentTarget.SET_STATE, id, appStateHash, versionNumber, timeout],
     ),
   );
 
 export class AppWithCounterClass {
   get identityHash(): string {
     return keccak256(
-      defaultAbiCoder.encode(
-        ["uint256", "address[]", "address", "address", "uint256"],
+      solidityPack(
+        ["address", "uint256", "bytes32", "address", "uint256"],
         [
-          this.channelNonce, 
-          this.participants, 
-          this.multisigAddress, 
-          this.appDefinition, 
-          this.defaultTimeout],
+          this.multisigAddress,
+          this.channelNonce,
+          keccak256(solidityPack(["address[]"], [this.participants])),
+          this.appDefinition,
+          this.defaultTimeout
+        ],
       ),
     );
   }
@@ -113,7 +114,6 @@ export class AppWithCounterClass {
 }
 
 export const EMPTY_CHALLENGE = {
-  latestSubmitter: AddressZero,
   versionNumber: Zero,
   appStateHash: HashZero,
   status: ChallengeStatus.NO_CHALLENGE,

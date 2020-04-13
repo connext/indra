@@ -10,7 +10,7 @@ import {
   setupContext,
   provider,
   AppWithCounterState,
-  computeCancelChallengeHash,
+  computeCancelDisputeHash,
   AppWithCounterClass,
   sortSignaturesBySignerAddress,
 } from "../utils";
@@ -18,7 +18,7 @@ import {
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 
-describe("cancelChallenge", () => {
+describe("cancelDispute", () => {
   let appRegistry: Contract;
   let appDefinition: Contract;
   let wallet: Wallet;
@@ -38,8 +38,8 @@ describe("cancelChallenge", () => {
     state?: AppWithCounterState,
     turnTaker?: Wallet,
   ) => Promise<void>;
-  let cancelChallenge: (versionNumber: number, signatures?: string[]) => Promise<void>;
-  let cancelChallengeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
+  let cancelDispute: (versionNumber: number, signatures?: string[]) => Promise<void>;
+  let cancelDisputeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
   before(async () => {
     wallet = (await provider.getWallets())[0];
@@ -82,8 +82,8 @@ describe("cancelChallenge", () => {
         undefined, // timeout
         turnTaker || bob, // turn taker
       );
-    cancelChallenge = context["cancelChallenge"];
-    cancelChallengeAndVerify = context["cancelChallengeAndVerify"];
+    cancelDispute = context["cancelDispute"];
+    cancelDisputeAndVerify = context["cancelDisputeAndVerify"];
   });
 
   afterEach(async () => {
@@ -94,30 +94,32 @@ describe("cancelChallenge", () => {
     // when in set state phase
     await setState(1);
     expect(await isDisputable()).to.be.true;
-    await cancelChallengeAndVerify(1);
+    await cancelDisputeAndVerify(1);
 
     // when in progress state phase
     await setAndProgressState(1);
     expect(await isProgressable()).to.be.true;
-    await cancelChallengeAndVerify(2);
+    await cancelDisputeAndVerify(2);
   });
 
   it("fails if is not cancellable", async () => {
-    await expect(cancelChallenge(0)).to.be.revertedWith(
-      "cancelChallenge called on challenge that cannot be cancelled",
+    await expect(cancelDispute(0)).to.be.revertedWith(
+      "cancelDispute called on challenge that cannot be cancelled",
     );
   });
 
   it("fails if incorrect sigs", async () => {
     const versionNumber = 2;
     await setState(versionNumber);
-
-    const digest = computeCancelChallengeHash(appInstance.identityHash, toBN(versionNumber));
-    const signatures = await sortSignaturesBySignerAddress(digest, [
-      await (new ChannelSigner(wallet.privateKey).signMessage(digest)),
-      await (new ChannelSigner(bob.privateKey).signMessage(digest)),
-    ]);
-    await expect(cancelChallenge(versionNumber, signatures)).to.be.revertedWith(
+    const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
+    const signatures = await sortSignaturesBySignerAddress(
+      digest,
+      [
+        await (new ChannelSigner(wallet.privateKey).signMessage(digest)),
+        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
+      ],
+    );
+    await expect(cancelDispute(versionNumber, signatures)).to.be.revertedWith(
       "Invalid signature",
     );
   });
@@ -125,8 +127,8 @@ describe("cancelChallenge", () => {
   it("fails if wrong version number submitted", async () => {
     // when in set state phase
     await setState(1);
-    await expect(cancelChallenge(2)).to.be.revertedWith(
-      "cancelChallenge was called with wrong version number",
+    await expect(cancelDispute(2)).to.be.revertedWith(
+      "cancelDispute was called with wrong version number",
     );
   });
 });
