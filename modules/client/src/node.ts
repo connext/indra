@@ -199,22 +199,6 @@ export class NodeApiClient implements INodeApiClient {
     }
   };
 
-  public setUserPublicIdentifier(publicIdentifier: string): void {
-    const ret = invalidAddress(publicIdentifier);
-    if (ret !== undefined) {
-      throw new Error(ret);
-    }
-    this.userIdentifier = publicIdentifier;
-  }
-
-  public setNodePublicIdentifier(publicIdentifier: string): void {
-    const ret = invalidAddress(publicIdentifier);
-    if (ret !== undefined) {
-      throw new Error(ret);
-    }
-    this.nodeIdentifier = publicIdentifier;
-  }
-
   public async subscribeToSwapRates(from: string, to: string, callback: any): Promise<void> {
     await this.messaging.subscribe(`swap-rate.${from}.${to}`, callback);
   }
