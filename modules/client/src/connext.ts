@@ -713,21 +713,6 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
-  public getRegisteredAppDetails = (appName: SupportedApplications): DefaultApp => {
-    const appInfo = this.appRegistry.filter((app: DefaultApp): boolean => {
-      return app.name === appName && app.chainId === this.network.chainId;
-    });
-
-    if (!appInfo || appInfo.length === 0) {
-      throw new Error(`Could not find ${appName} app details on chain ${this.network.chainId}`);
-    }
-
-    if (appInfo.length > 1) {
-      throw new Error(`Found multiple ${appName} app details on chain ${this.network.chainId}`);
-    }
-    return appInfo[0];
-  };
-
   public matchTx = (
     givenTransaction: Transaction | undefined,
     expected: MinimalTransaction,

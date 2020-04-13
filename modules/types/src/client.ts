@@ -102,7 +102,6 @@ export interface IConnextClient {
         }
       | { appDefinitionAddress: Address },
   ): Promise<AppRegistry | DefaultApp | undefined>;
-  getRegisteredAppDetails(appName: string /* AppNames */): DefaultApp;
   createChannel(): Promise<NodeResponses.CreateChannel>;
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<any>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;

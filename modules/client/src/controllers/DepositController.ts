@@ -200,12 +200,16 @@ export class DepositController extends AbstractController {
       startingMultisigBalance,
     };
 
+    const network = await this.ethProvider.getNetwork();
     const {
       actionEncoding,
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(DepositAppName);
+    } = await this.connext.getAppRegistry({
+      name: DepositAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
 
     const params: MethodParams.ProposeInstall = {
       abiEncodings: {

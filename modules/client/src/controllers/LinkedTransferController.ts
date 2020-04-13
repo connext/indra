@@ -8,6 +8,7 @@ import {
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
+  DefaultApp,
 } from "@connext/types";
 import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import { encryptWithPublicKey } from "@connext/crypto";
@@ -72,12 +73,16 @@ export class LinkedTransferController extends AbstractController {
       preImage: HashZero,
     };
 
+    const network = await this.ethProvider.getNetwork();
     const {
       actionEncoding,
-      stateEncoding,
       appDefinitionAddress: appDefinition,
+      stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(SimpleLinkedTransferAppName);
+    } = await this.connext.getAppRegistry({
+      name: SimpleLinkedTransferAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,

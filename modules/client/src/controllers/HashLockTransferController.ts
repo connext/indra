@@ -8,6 +8,7 @@ import {
   PublicParams,
   PublicResults,
   toBN,
+  DefaultApp,
 } from "@connext/types";
 import { DEFAULT_APP_TIMEOUT, HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import { HashZero, Zero } from "ethers/constants";
@@ -43,12 +44,16 @@ export class HashLockTransferController extends AbstractController {
 
     submittedMeta.recipient = recipient;
 
+    const network = await this.ethProvider.getNetwork();
     const {
       actionEncoding,
-      stateEncoding,
       appDefinitionAddress: appDefinition,
+      stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(HashLockTransferAppName);
+    } = await this.connext.getAppRegistry({
+      name: HashLockTransferAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,

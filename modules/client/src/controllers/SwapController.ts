@@ -7,6 +7,7 @@ import {
   PublicResults,
   SimpleSwapAppState,
   toBN,
+  SimpleTwoPartySwapAppName,
 } from "@connext/types";
 import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import { AddressZero, Zero } from "ethers/constants";
@@ -51,8 +52,12 @@ export class SwapController extends AbstractController {
       throw new Error(error);
     }
 
-    // get app definition from constants
-    const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
+    // get app definition
+    const network = await this.ethProvider.getNetwork();
+    const appInfo = await this.connext.getAppRegistry({
+      name: SimpleTwoPartySwapAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
 
     // install the swap app
     const appIdentityHash = await this.swapAppInstall(

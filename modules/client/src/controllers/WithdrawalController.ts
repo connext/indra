@@ -11,6 +11,7 @@ import {
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
+  DefaultApp,
 } from "@connext/types";
 import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
@@ -139,7 +140,11 @@ export class WithdrawalController extends AbstractController {
   ): Promise<string> {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
-    const appInfo = this.connext.getRegisteredAppDetails(WithdrawAppName);
+    const network = await this.ethProvider.getNetwork();
+    const appInfo = await this.connext.getAppRegistry({
+      name: WithdrawAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
     const {
       appDefinitionAddress: appDefinition,
       outcomeType,
