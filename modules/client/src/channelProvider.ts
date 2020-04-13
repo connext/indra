@@ -61,6 +61,7 @@ export const createCFChannelProvider = async ({
 
   const connection = new CFCoreRpcConnection(cfCore, store, signer, nodeUrl);
   const channelProvider = new ChannelProvider(connection);
+  await channelProvider.enable();
   return channelProvider;
 };
 
