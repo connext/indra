@@ -6,6 +6,6 @@ RUN apk add --update --no-cache nginx && \
 
 COPY ops/webserver/nginx.conf /etc/nginx/nginx.conf
 COPY modules/daicard/build /var/www/html/daicard
-COPY modules/dashboard/build /var/www/html/dashboard
+#COPY modules/dashboard/build /var/www/html/dashboard
 
 ENTRYPOINT ["nginx"]

@@ -252,7 +252,7 @@ test-runner-staging: test-runner $(shell find modules/test-runner/ops $(find_opt
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-webserver: daicard dashboard $(shell find ops/webserver $(find_options))
+webserver: daicard $(shell find ops/webserver $(find_options))
 	$(log_start)
 	docker build --file ops/webserver/nginx.dockerfile $(image_cache) --tag $(project)_webserver .
 	docker tag $(project)_webserver $(project)_webserver:$(commit)
