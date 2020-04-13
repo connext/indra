@@ -23,6 +23,7 @@ export const ChannelMethods = enumify({
   chan_config: "chan_config",
   chan_signMessage: "chan_signMessage",
   chan_encrypt: "chan_encrypt",
+  chan_decrypt: "chan_decrypt",
   chan_restoreState: "chan_restoreState",
   chan_getUserWithdrawal: "chan_getUserWithdrawal",
   chan_setUserWithdrawal: "chan_setUserWithdrawal",
@@ -117,6 +118,8 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // SIGNER METHODS
   signMessage(message: string): Promise<string>;
   encrypt(message: string, publicKey: PublicKey): Promise<string>;
+  decrypt(encryptedPreImage: string): Promise<string>;
+  walletDeposit(params: WalletDepositParams): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS

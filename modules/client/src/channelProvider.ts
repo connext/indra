@@ -110,6 +110,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_encrypt:
         result = await this.encrypt(params.message, params.publicIdentifier);
         break;
+      case ChannelMethods.chan_decrypt:
+        result = await this.decrypt(params.encryptedPreImage);
+        break;
       case ChannelMethods.chan_config:
         result = await this.getConfig();
         break;
@@ -171,6 +174,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
 
   private encrypt(message: string, publicIdentifier: string): Promise<string> {
     return this.signer.encrypt(message, getPublicKeyFromPublicIdentifier(publicIdentifier));
+  }
+
+  private decrypt(encryptedPreImage: string): Promise<string> {
+    return this.signer.decrypt(encryptedPreImage);
   }
 
   private walletDeposit = async (params: WalletDepositParams): Promise<string> => {
