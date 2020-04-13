@@ -1,11 +1,6 @@
 import { connect } from "@connext/client";
 import { ConnextStore } from "@connext/store";
-import {
-  ClientOptions,
-  IChannelProvider,
-  IConnextClient,
-  StoreTypes,
-} from "@connext/types";
+import { ClientOptions, IChannelProvider, IConnextClient, StoreTypes } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -26,12 +21,12 @@ export const createClient = async (
   fund: boolean = true,
 ): Promise<IConnextClient> => {
   const store = opts.store || new ConnextStore(StoreTypes.Memory);
-  const mnemonic = opts.mnemonic || Wallet.createRandom().mnemonic;
+  const wallet = Wallet.createRandom();
   const log = new Logger("CreateClient", env.logLevel);
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     loggerService: new Logger("Client", env.logLevel, true, opts.id),
-    mnemonic,
+    signer: wallet.privateKey,
     nodeUrl: env.nodeUrl,
     store,
     ...opts,
@@ -41,7 +36,7 @@ export const createClient = async (
   const client = await connect(clientOpts);
   log.info(`connect() returned after ${Date.now() - start}ms`);
   start = Date.now();
-  mnemonics[client.publicIdentifier] = mnemonic;
+  mnemonics[client.publicIdentifier] = wallet.mnemonic;
 
   const ethTx = await ethWallet.sendTransaction({
     to: client.signerAddress,
@@ -86,7 +81,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   };
   if (network === "mainnet" || network === "rinkeby") {
     clientOpts = {
-      mnemonic: Wallet.createRandom().mnemonic,
+      signer: Wallet.createRandom().privateKey,
       ...clientOpts,
     };
   }

@@ -7,11 +7,7 @@ import { parseEther } from "ethers/utils";
 import { Node } from "../node";
 
 import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "./services";
-import {
-  A_PRIVATE_KEY,
-  B_PRIVATE_KEY,
-  C_PRIVATE_KEY,
-} from "./test-constants.jest";
+import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
 import { Logger } from "./logger";
 
 export const env = {

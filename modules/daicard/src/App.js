@@ -240,14 +240,10 @@ class App extends React.Component {
         }
       }
 
-
-      const signer = new ChannelSigner(
-        eth.Wallet.fromMnemonic(mnemonic).privateKey,
-        urls.ethProviderUrl,
-      );
+      const { privateKey } = eth.Wallet.fromMnemonic(mnemonic);
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
-        signer,
+        signer: privateKey,
         logLevel: LOG_LEVEL,
         nodeUrl: urls.nodeUrl,
         store,
@@ -405,14 +401,8 @@ class App extends React.Component {
       swapRate,
     ).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
-    balance.channel.ether = Currency.WEI(
-      freeEtherBalance[channel.signerAddress],
-      swapRate,
-    ).toETH();
-    balance.channel.token = Currency.DEI(
-      freeTokenBalance[channel.signerAddress],
-      swapRate,
-    ).toDAI();
+    balance.channel.ether = Currency.WEI(freeEtherBalance[channel.signerAddress], swapRate).toETH();
+    balance.channel.token = Currency.DEI(freeTokenBalance[channel.signerAddress], swapRate).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     const logIfNotZero = (wad, prefix) => {
       if (wad.isZero()) {

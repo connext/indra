@@ -19,8 +19,7 @@ export interface ClientOptions {
   backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
-  mnemonic?: string; // TODO: keep as a quick-start option?
-  signer?: IChannelSigner;
+  signer?: string | IChannelSigner;
   store?: IClientStore;
   storeType?: StoreTypes;
   logger?: ILogger;
