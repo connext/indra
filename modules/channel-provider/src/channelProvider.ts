@@ -13,16 +13,12 @@ import {
   MinimalTransaction,
 } from "@connext/types";
 
-function exists(obj: any) {
-  return !!obj && Object.keys(obj.length);
-}
-
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
   public connected: boolean = false;
   public connection: IRpcConnection;
 
-  private _config: ChannelProviderConfig | undefined = undefined;
-  private _multisigAddress: string | undefined = undefined;
+  private _config: ChannelProviderConfig | undefined;
+  private _multisigAddress: string | undefined;
 
   constructor(connection: IRpcConnection) {
     super();
@@ -33,8 +29,11 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config = this._config || (await this._send(ChannelMethods.chan_config));
-        if (exists(config)) {
+        const config: ChannelProviderConfig =
+          typeof this._config !== "undefined"
+            ? this._config
+            : await this._send(ChannelMethods.chan_config);
+        if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;
           this._multisigAddress = config.multisigAddress;
@@ -111,12 +110,13 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   get multisigAddress(): string | undefined {
     const multisigAddress =
-      this._multisigAddress || (exists(this._config) ? this._config.multisigAddress : undefined);
+      this._multisigAddress ||
+      (typeof this._config !== "undefined" ? this._config.multisigAddress : undefined);
     return multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string | undefined) {
-    if (exists(this._config)) {
+    if (typeof this._config !== "undefined") {
       this._config.multisigAddress = multisigAddress;
     }
     this._multisigAddress = multisigAddress;
