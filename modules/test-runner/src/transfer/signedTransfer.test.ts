@@ -89,6 +89,7 @@ describe("Signed Transfers", () => {
       assetId: transfer.assetId,
       type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
       paymentId,
+      sender: clientA.publicIdentifier,
       transferMeta: { signer: signerAddress },
       meta: { foo: "bar", recipient: clientB.publicIdentifier },
     } as EventPayloads.SignedTransferReceived);
