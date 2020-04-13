@@ -16,6 +16,7 @@ import {
   TestMessagingService,
   TOKEN_AMOUNT,
   ZERO_ZERO_ONE_ETH,
+  env,
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -154,7 +155,7 @@ describe("Deposit offline tests", () => {
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
-    const signer = getRandomChannelSigner();
+    const signer = getRandomChannelSigner(env.ethProviderUrl);
     client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: 0 },

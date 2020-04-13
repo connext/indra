@@ -18,6 +18,7 @@ import {
   TestMessagingService,
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
+  env,
 } from "../util";
 
 describe("Withdraw offline tests", () => {
@@ -35,7 +36,7 @@ describe("Withdraw offline tests", () => {
       typeof messagingConfig.signer === "string" 
         ? new ChannelSigner(messagingConfig.signer) 
         : !!messagingConfig.signer 
-          ? messagingConfig.signer : getRandomChannelSigner();
+          ? messagingConfig.signer : getRandomChannelSigner(env.ethProviderUrl);
     client = await createClientWithMessagingLimits({
       signer,
       ...messagingConfig,

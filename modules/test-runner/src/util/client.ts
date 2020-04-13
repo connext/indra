@@ -97,7 +97,7 @@ export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, delay, signer: signerOpts } = opts;
-  const signer = signerOpts || getRandomChannelSigner();
+  const signer = signerOpts || getRandomChannelSigner(env.ethProviderUrl);
   const messageOptions: any = {};
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
