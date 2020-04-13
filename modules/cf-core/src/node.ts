@@ -19,7 +19,6 @@ import {
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
-  PublicKey,
   Address,
   PublicIdentifier,
 } from "@connext/types";
