@@ -341,6 +341,12 @@ export class CFCoreStore implements IStoreService {
         })
         .where("multisigAddress = :multisigAddress", { multisigAddress })
         .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Channel, "appInstances")
+        .of(channel.id)
+        .add(app.id);
     });
   }
 
