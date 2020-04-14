@@ -154,9 +154,6 @@ test-backwards-compatibility: pull-backwards-compatible
 test-cf: cf-core
 	bash ops/test/cf.sh
 
-test-client: client
-	bash ops/test/client.sh
-
 test-contracts: contracts utils
 	bash ops/test/contracts.sh
 

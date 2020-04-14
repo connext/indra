@@ -32,19 +32,6 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
-  test-client:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: Cache node modules
-      uses: actions/cache@v1
-      with:
-        path: .npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
-    - run: make client
-    - run: make test-client
-
   test-contracts:
     runs-on: ubuntu-latest
     steps:
@@ -139,7 +126,7 @@ jobs:
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_RINKEBY }}
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       STAGING_DOMAINNAME: staging.indra.connext.network
-    needs: [test-cf, test-client, test-contracts, test-utils, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-cf, test-contracts, test-utils, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

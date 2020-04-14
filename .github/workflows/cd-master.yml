@@ -32,19 +32,6 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
-  test-client:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: Cache node modules
-      uses: actions/cache@v1
-      with:
-        path: .npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
-    - run: make client
-    - run: make test-client
-
   test-contracts:
     runs-on: ubuntu-latest
     steps:
@@ -151,7 +138,7 @@ jobs:
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_RINKEBY }}
       RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
-    needs: [test-backwards-compatibility, test-cf, test-client, test-contracts, test-crypto, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-cf, test-contracts, test-crypto, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -181,7 +168,7 @@ jobs:
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_MAINNET }}
       MAINNET_DOMAINNAME: indra.connext.network
       MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
-    needs: [test-backwards-compatibility, test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-cf, test-contracts, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
