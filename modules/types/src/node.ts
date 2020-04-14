@@ -1,11 +1,10 @@
-import { Address, BigNumber, Bytes32, DecString, Network } from "./basic";
+import { Address, BigNumber, Bytes32, DecString, Network, PublicIdentifier } from "./basic";
 import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
 import { ContractAddresses } from "./contracts";
-import { PublicIdentifier } from "./identifiers";
 import { MethodResults } from "./methods";
 import { PublicResults } from "./public";
 import { StateChannelJSON } from "./state";

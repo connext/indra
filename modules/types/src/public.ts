@@ -1,8 +1,7 @@
 import { TransactionResponse } from "ethers/providers";
 import { BigNumberish } from "ethers/utils";
 
-import { Address, BigNumber, Bytes32, HexString } from "./basic";
-import { PublicIdentifier } from "./identifiers";
+import { Address, BigNumber, Bytes32, HexString, PublicIdentifier } from "./basic";
 import { ConditionalTransferTypes } from "./transfers";
 import { MethodResults, MethodParams } from "./methods";
 

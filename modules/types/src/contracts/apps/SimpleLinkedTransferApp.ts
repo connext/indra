@@ -1,7 +1,8 @@
 import { Address, BigNumber, HexString } from "../../basic";
+import { tidy } from "../../utils";
 
 import { CoinTransfer } from "../funding";
-import { singleAssetTwoPartyCoinTransferEncoding, tidy } from "../misc";
+import { singleAssetTwoPartyCoinTransferEncoding } from "../misc";
 
 export const SimpleLinkedTransferAppName = "SimpleLinkedTransferApp";
 

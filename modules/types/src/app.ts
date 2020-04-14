@@ -1,8 +1,10 @@
 import {
   ABIEncoding,
   Address,
+  AssetId,
   DecString,
   HexString,
+  PublicIdentifier,
   SolidityValueType,
 } from "./basic";
 import {
@@ -14,7 +16,6 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParamsJson,
 } from "./contracts";
-import { AssetId, PublicIdentifier } from "./identifiers";
 
 ////////////////////////////////////
 // App Instances

@@ -1,7 +1,7 @@
 import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { Address, Bytes32, DecString, PublicKey } from "./basic";
+import { Address, Bytes32, DecString, PublicIdentifier, PublicKey } from "./basic";
 import { ContractAddresses } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
@@ -15,8 +15,6 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
-import { PublicIdentifier } from "./identifiers";
-import { INodeApiClient } from "./api";
 import { IMessagingService } from "./messaging";
 
 export const ChannelMethods = enumify({

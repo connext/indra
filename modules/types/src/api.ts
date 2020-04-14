@@ -1,8 +1,7 @@
 import { AppRegistry } from "./app";
-import { Address, Bytes32, DecString, Transaction, StringMapping } from "./basic";
+import { Address, Bytes32, DecString, PublicIdentifier, Transaction, StringMapping } from "./basic";
 import { IChannelProvider } from "./channelProvider";
 import { NodeResponses } from "./node";
-import { PublicIdentifier } from "./identifiers";
 import { IMessagingService } from "./messaging";
 import { ILoggerService } from "./logger";
 

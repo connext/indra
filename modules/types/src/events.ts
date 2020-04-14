@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
+import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,
@@ -11,7 +11,6 @@ import {
 } from "./transfers";
 import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
-import { PublicIdentifier } from "./identifiers";
 import { ProtocolMessageData } from "./messaging";
 import { PublicParams } from "./public";
 import { MinimalTransaction } from "./commitments";
