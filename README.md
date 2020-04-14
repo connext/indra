@@ -6,7 +6,7 @@
 
 # Indra
 
-Connext's counterfactually-instantiated generalized state-channel platform. To learn more about this project, check out our [docs](https://docs.connext.network).
+Monorepo containing everything related to Connext's state channel network. To learn more about this project, check out our [docs](https://docs.connext.network).
 
 For any unanswered questions, open a [new issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our [Discord channel](https://discord.gg/SmMSFf) & we'll be happy to help.
 
