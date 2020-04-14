@@ -5,6 +5,7 @@ import QRIcon from "mdi-material-ui/QrcodeScan";
 
 import { resolveAddress } from "../utils";
 import { QRScan } from "./qrCode";
+import { isHexString } from "ethers/utils";
 
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -34,7 +35,7 @@ export const useAddress = (initialAddress, ethProvider) => {
   useEffect(() => {
     (async () => {
       if (debounced === null) return;
-      const addressLen = 111;
+      const addressLen = 42;
       let value = debounced;
       let error = null;
       setResolved(false);
@@ -45,8 +46,8 @@ export const useAddress = (initialAddress, ethProvider) => {
       }
       if (value && value.endsWith(".eth")) {
         error = `Network "${network.name}" (chainId ${network.chainId}) doesn"t support ENS`;
-      } else if (!value || !value.startsWith("address")) {
-        error = `Invalid address: should start with "address"`;
+      } else if (!value || !isHexString(value)) {
+        error = `Invalid address: ${value}`;
       }
       if (!error && value.length !== addressLen) {
         error = `Invalid length: ${value.length} (expected ${addressLen})`;

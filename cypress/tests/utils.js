@@ -4,10 +4,11 @@ const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Min
 const addressBook = require("../../modules/contracts/address-book.json");
 
 const provider = new eth.providers.JsonRpcProvider(Cypress.env("provider"));
-const wallet = eth.Wallet.fromMnemonic(Cypress.env("mnemonic")).connect(provider);
+const funder = eth.Wallet.fromMnemonic(Cypress.env("funder")).connect(provider);
+const cashout = eth.Wallet.createRandom().connect(provider);
 const origin = Cypress.env("publicUrl").substring(Cypress.env("publicUrl").indexOf("://") + 3);
 const tokenAddress = addressBook["4447"].Token.address.toLowerCase();
-const token = new eth.Contract(tokenAddress, tokenArtifacts.abi, wallet);
+const token = new eth.Contract(tokenAddress, tokenArtifacts.abi, funder);
 
 const gasMoney = "0.005";
 
@@ -100,10 +101,10 @@ my.pay = (to, value) => {
 
 my.cashoutEther = () => {
   my.goToCashout();
-  cy.log(`cashing out to ${wallet.address}`);
-  cy.get(`input[type="text"]`)
+  cy.log(`cashing out to ${cashout.address}`);
+  cy.get(`input[type="string"]`)
     .clear()
-    .type(wallet.address);
+    .type(cashout.address);
   cy.contains("button", /cash out eth/i).click();
   cy.contains("span", /processing withdrawal/i).should("exist");
   cy.contains("span", /withdraw succeeded/i).should("exist");
@@ -113,10 +114,10 @@ my.cashoutEther = () => {
 
 my.cashoutToken = () => {
   my.goToCashout();
-  cy.log(`cashing out to ${wallet.address}`);
-  cy.get(`input[type="text"]`)
+  cy.log(`cashing out to ${cashout.address}`);
+  cy.get(`input[type="string"]`)
     .clear()
-    .type(wallet.address);
+    .type(cashout.address);
   cy.contains("button", /cash out dai/i).click();
   cy.contains("span", /processing withdrawal/i).should("exist");
   cy.contains("span", /withdraw succeeded/i).should("exist");
@@ -197,22 +198,22 @@ my.getAccount = () => {
   );
 };
 
-my.getOnchainEtherBalance = () => {
+my.getOnchainEtherBalance = (address = cashout.address) => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
-      return cy.wrap(wallet.provider.getBalance(wallet.address)).then(balance => {
-        cy.log(`Onchain ether balance is ${balance.toString()} for ${wallet.address}`);
+      return cy.wrap(cashout.provider.getBalance(address)).then(balance => {
+        cy.log(`Onchain ether balance is ${balance.toString()} for ${address}`);
         resolve(balance.toString());
       });
     }),
   );
 };
 
-my.getOnchainTokenBalance = () => {
+my.getOnchainTokenBalance = (address = cashout.address) => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
-      return cy.wrap(token.balanceOf(wallet.address)).then(balance => {
-        cy.log(`Onchain token balance is ${balance.toString()} for ${wallet.address}`);
+      return cy.wrap(token.balanceOf(address)).then(balance => {
+        cy.log(`Onchain token balance is ${balance.toString()} for ${address}`);
         resolve(balance.toString());
       });
     }),
@@ -252,13 +253,13 @@ my.deposit = value => {
         cy.log(`Depositing ${value} eth into channel ${address}`);
         return cy
           .wrap(
-            wallet.sendTransaction({
+            funder.sendTransaction({
               to: address,
               value: eth.utils.parseEther(value),
             }),
           )
           .then(tx => {
-            return cy.wrap(wallet.provider.waitForTransaction(tx.hash)).then(() => {
+            return cy.wrap(funder.provider.waitForTransaction(tx.hash)).then(() => {
               // cy.contains('span', /processing deposit/i).should('exist')
               cy.contains("span", /processing swap/i).should("exist");
               cy.contains("span", /swap was successful/i).should("exist");
@@ -283,18 +284,18 @@ my.depositToken = value => {
         })
         .then(tx => {
           cy.log(`Waiting for tx ${tx.hash} to be mined...`);
-          return cy.wrap(wallet.provider.waitForTransaction(tx.hash));
+          return cy.wrap(funder.provider.waitForTransaction(tx.hash));
         })
         .then(() => {
           return cy.wrap(
-            wallet.sendTransaction({
+            funder.sendTransaction({
               to: address,
               value: eth.utils.parseEther(gasMoney),
             }),
           );
         })
         .then(tx => {
-          return cy.wrap(wallet.provider.waitForTransaction(tx.hash));
+          return cy.wrap(funder.provider.waitForTransaction(tx.hash));
         })
         .then(() => {
           // cy.contains('span', /processing deposit/i).should('exist')
