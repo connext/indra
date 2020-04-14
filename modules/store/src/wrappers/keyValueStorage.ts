@@ -9,6 +9,7 @@ import {
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
   WrappedStorage,
+  stringify,
 } from "@connext/types";
 
 import {
@@ -395,22 +396,18 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   }
 
   async createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    const withdrawals = await this.getItem<WithdrawalMonitorObject[]>(withdrawalKey);
+    const withdrawals = await this.getUserWithdrawals();
     const existing = withdrawals.find(x => x === withdrawalObject);
     if (existing) {
-      throw new Error(`Found existing withdrawal commitment for ${withdrawalKey}`);
+      throw new Error(`Found existing withdrawal commitment matching: ${stringify(withdrawalObject)}`);
     }
-    withdrawals.push(withdrawalObject);
-    return this.setItem(withdrawalKey, withdrawals);
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    return this.setItem(withdrawalKey, withdrawals.concat([withdrawalObject]));
   }
 
   async updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    const withdrawals = await this.getItem<WithdrawalMonitorObject[]>(withdrawalKey);
-    if (!withdrawals || withdrawals.length === 0) {
-      throw new Error(`Could not find any withdrawal commitments for ${withdrawalKey}`);
-    }
+    const withdrawals = await this.getUserWithdrawals();
     const idx = withdrawals.findIndex(x => x === withdrawalObject);
     if (idx === -1) {
       throw new Error(`Could not find withdrawal commitment to update`);
@@ -421,8 +418,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    const withdrawals = await this.getItem<WithdrawalMonitorObject[]>(withdrawalKey);
-    return this.setItem(withdrawalKey, withdrawals.filter(x => x !== toRemove));
+    const withdrawals = await this.getUserWithdrawals();
+    const updated = withdrawals.filter(x => x !== toRemove);
+    return this.setItem(withdrawalKey, updated);
   }
 
   ////// Helper methods
