@@ -1,4 +1,5 @@
 import { ConditionalTransferTypes } from "@connext/types";
+import { Currency, toBN, createRandom32ByteHexString } from "@connext/utils";
 import {
   Button,
   CircularProgress,
@@ -18,12 +19,10 @@ import { Zero } from "ethers/constants";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
-import { Currency, toBN } from "../utils";
 import { sendMachine } from "../state";
 
 import { Copyable } from "./copyable";
 import { usePublicIdentifier, PublicIdentifierInput } from "./input";
-import { createRandom32ByteHexString } from "@connext/types";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 

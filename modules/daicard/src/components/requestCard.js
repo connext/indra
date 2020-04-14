@@ -1,8 +1,7 @@
+import { Currency } from "@connext/utils";
 import { Button, Grid, TextField, Typography, withStyles } from "@material-ui/core";
 import { Zero } from "ethers/constants";
 import React, { useEffect, useState } from "react";
-
-import { Currency } from "../utils";
 
 import { Copyable } from "./copyable";
 import { QRGenerate } from "./qrCode";
