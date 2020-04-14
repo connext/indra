@@ -10,17 +10,18 @@ import {
   SimpleTwoPartySwapAppName,
   Address,
 } from "@connext/types";
-import { calculateExchange, getAddressFromAssetId, toBN } from "@connext/utils";
-import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther, parseEther } from "ethers/utils";
-
 import {
+  calculateExchange,
+  getAddressFromAssetId,
+  invalidAddress,
   notGreaterThan,
   notLessThanOrEqualTo,
   notPositive,
+  toBN,
   validate,
-  invalidAddress,
-} from "../validation";
+} from "@connext/utils";
+import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
 

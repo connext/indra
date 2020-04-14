@@ -1,5 +1,6 @@
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { arrayify, getAddress, isHexString } from "ethers/utils";
+
+import { getSignerAddressFromPublicIdentifier } from "../crypto";
 
 export const isValidAddress = (address: any): boolean =>
   typeof address === "string" && isHexString(address) && arrayify(address).length === 20;

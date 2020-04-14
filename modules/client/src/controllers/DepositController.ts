@@ -12,14 +12,20 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   EventPayloads,
 } from "@connext/types";
-import { getAddressFromAssetId, toBN } from "@connext/utils";
+import {
+  getAddressFromAssetId,
+  invalidAddress,
+  notGreaterThan,
+  notLessThanOrEqualTo,
+  toBN,
+  validate,
+} from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
-import { validate, notLessThanOrEqualTo, notGreaterThan, invalidAddress } from "../validation";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {

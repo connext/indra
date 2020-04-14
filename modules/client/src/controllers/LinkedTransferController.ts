@@ -11,12 +11,19 @@ import {
   DefaultApp,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getAddressFromAssetId, stringify, toBN } from "@connext/utils";
+import {
+  getAddressFromAssetId,
+  invalid32ByteHexString,
+  invalidAddress,
+  invalidPublicIdentifier,
+  stringify,
+  toBN,
+  validate,
+} from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 import { solidityKeccak256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
-import { validate, invalidAddress, invalid32ByteHexString, invalidPublicIdentifier } from "../validation";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (

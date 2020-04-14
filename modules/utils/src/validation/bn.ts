@@ -1,5 +1,6 @@
-import { stringify } from "@connext/utils";
 import { utils } from "ethers";
+
+import { stringify } from "../misc";
 
 // this contains all of the bn related validation
 // all functions in this library will return `undefined` if the conditions are
