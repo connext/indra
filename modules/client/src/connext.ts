@@ -1,6 +1,5 @@
 import { SupportedApplications } from "@connext/apps";
 import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
-import { MessagingService } from "@connext/messaging";
 import {
   getAddressFromAssetId,
   Address,
@@ -13,7 +12,6 @@ import {
   ChannelMethods,
   ChannelProviderConfig,
   ConditionalTransferTypes,
-  ConnextClientStorePrefix,
   createRandom32ByteHexString,
   DefaultApp,
   DepositAppName,
@@ -37,6 +35,7 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   CONVENTION_FOR_ETH_ASSET_ID,
+  IMessagingService,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -67,7 +66,7 @@ export class ConnextClient implements IConnextClient {
   public ethProvider: providers.JsonRpcProvider;
   public listener: ConnextListener;
   public log: ILoggerService;
-  public messaging: MessagingService;
+  public messaging: IMessagingService;
   public multisigAddress: Address;
   public network: Network;
   public node: INodeApiClient;
@@ -184,16 +183,10 @@ export class ConnextClient implements IConnextClient {
     const channelProvider = await createCFChannelProvider({
       ethProvider: this.ethProvider,
       signer: this.signer,
-      lockService: { acquireLock: this.node.acquireLock.bind(this.node) },
-      messaging: this.messaging as any,
-      contractAddresses: this.config.contractAddresses,
-      nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
-      nodeUrl: this.channelProvider.config.nodeUrl,
-      store: this.store,
+      node: this.node,
       logger: this.log.newContext("CFChannelProvider"),
+      store: this.store,
     });
-    // TODO: this is very confusing to have to do, lets try to figure out a better way
-    channelProvider.multisigAddress = this.multisigAddress;
     this.node.channelProvider = channelProvider;
     this.channelProvider = channelProvider;
     this.listener = new ConnextListener(channelProvider, this);

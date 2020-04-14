@@ -2,13 +2,11 @@ import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Address, Bytes32, DecString, PublicKey } from "./basic";
-import { ContractAddresses } from "./contracts";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
 import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
-import { ILockService } from "./lock";
 import { enumify } from "./utils";
 import {
   ConditionalTransactionCommitmentJSON,
@@ -17,11 +15,11 @@ import {
 } from "./commitments";
 import { PublicIdentifier } from "./identifiers";
 import { INodeApiClient } from "./api";
-import { IMessagingService } from "./messaging";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
   chan_config: "chan_config",
+  chan_enable: "chan_enable",
   chan_signMessage: "chan_signMessage",
   chan_encrypt: "chan_encrypt",
   chan_decrypt: "chan_decrypt",
@@ -55,12 +53,8 @@ export type ChannelProviderConfig = {
 export interface CFChannelProviderOptions {
   ethProvider: JsonRpcProvider;
   signer: IChannelSigner;
-  lockService?: ILockService;
+  node: INodeApiClient;
   logger?: ILoggerService;
-  messaging: IMessagingService;
-  contractAddresses: ContractAddresses;
-  nodeConfig: any;
-  nodeUrl: string;
   store: IClientStore;
 }
 

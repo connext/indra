@@ -23,24 +23,37 @@ import {
   WalletDepositParams,
   WithdrawalMonitorObject,
   CreateChannelMessage,
+  ConnextClientStorePrefix,
+  NodeResponses,
+  INodeApiClient,
+  ILoggerService,
+  MethodResults,
+  stringify,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 import { getPublicKeyFromPublicIdentifier } from "@connext/crypto";
+import { delayAndThrow } from "./lib";
 
 export const createCFChannelProvider = async ({
   ethProvider,
-  lockService,
-  logger,
-  messaging,
-  contractAddresses,
-  nodeConfig,
-  nodeUrl,
   signer,
+  node,
+  logger,
   store,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
+  let config: NodeResponses.GetConfig;
+  if (!node.config) {
+    config = await node.getConfig();
+  } else {
+    config = node.config;
+  }
+  const contractAddresses = config.contractAddresses;
+  const messaging = node.messaging;
+  const nodeConfig = { STORE_KEY_PREFIX: ConnextClientStorePrefix };
+  const lockService = { acquireLock: node.acquireLock.bind(node) };
   const cfCore = await CFCore.create(
     messaging,
     store,
@@ -59,7 +72,7 @@ export const createCFChannelProvider = async ({
     await generateValidationMiddleware(contractAddresses),
   );
 
-  const connection = new CFCoreRpcConnection(cfCore, store, signer, nodeUrl);
+  const connection = new CFCoreRpcConnection(cfCore, store, signer, node, logger);
   const channelProvider = new ChannelProvider(connection);
   await channelProvider.enable();
   return channelProvider;
@@ -71,15 +84,25 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   public store: IClientStore;
 
   private signer: IChannelSigner;
+  private node: INodeApiClient;
+  private logger: ILoggerService;
   private config: ChannelProviderConfig;
 
-  constructor(cfCore: CFCore, store: IClientStore, signer: IChannelSigner, nodeUrl: string) {
+  constructor(
+    cfCore: CFCore,
+    store: IClientStore,
+    signer: IChannelSigner,
+    node: INodeApiClient,
+    logger: ILoggerService,
+  ) {
     super();
     this.cfCore = cfCore;
-    this.signer = signer;
     this.store = store;
+    this.signer = signer;
+    this.node = node;
+    this.logger = logger;
     this.config = {
-      nodeUrl,
+      nodeUrl: node.nodeUrl,
       signerAddress: signer.address,
       userIdentifier: signer.publicIdentifier,
     };
@@ -92,6 +115,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     switch (method) {
       case ChannelMethods.chan_config:
         result = this.config;
+        break;
+      case ChannelMethods.chan_enable:
+        result = await this.enableChannel();
         break;
       case ChannelMethods.chan_setUserWithdrawal:
         result = await this.setUserWithdrawal(params.withdrawalObject);
@@ -238,6 +264,41 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ): Promise<void> => {
     await this.store.createConditionalTransactionCommitment(appIdentityHash, commitment);
   };
+
+  private async enableChannel() {
+    // setup multisigAddress + assign to channelProvider
+    const myChannel = await this.node.getChannel();
+
+    let multisigAddress: string;
+    if (!myChannel) {
+      this.logger.debug("no channel detected, creating channel..");
+      const creationEventData = await Promise.race([
+        delayAndThrow(30_000, "Create channel event not fired within 30s"),
+        new Promise(
+          async (res: any): Promise<any> => {
+            this.cfCore.once(
+              EventNames.CREATE_CHANNEL_EVENT,
+              (data: CreateChannelMessage): void => {
+                this.logger.debug(`Received CREATE_CHANNEL_EVENT`);
+                res(data.data);
+              },
+            );
+
+            // FYI This continues async in the background after CREATE_CHANNEL_EVENT is recieved
+            const creationData = await this.node.createChannel();
+            this.logger.debug(`created channel, transaction: ${stringify(creationData)}`);
+          },
+        ),
+      ]);
+      multisigAddress = (creationEventData as MethodResults.CreateChannel).multisigAddress;
+    } else {
+      multisigAddress = myChannel.multisigAddress;
+    }
+    this.logger.debug(`multisigAddress: ${multisigAddress}`);
+
+    this.config.multisigAddress = multisigAddress;
+    return this.config;
+  }
 
   private subscribeChannelCreation() {
     this.cfCore.once(EventNames.CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {

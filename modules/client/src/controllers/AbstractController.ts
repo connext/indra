@@ -38,9 +38,7 @@ export abstract class AbstractController {
   /**
    * @returns {string} appIdentityHash - Installed app's identityHash
    */
-  proposeAndInstallLedgerApp = async (
-    params: MethodParams.ProposeInstall,
-  ): Promise<string> => {
+  proposeAndInstallLedgerApp = async (params: MethodParams.ProposeInstall): Promise<string> => {
     // 163 ms
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
@@ -67,7 +65,7 @@ export abstract class AbstractController {
 
           // set up install nats subscription
           const subject = `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`;
-          this.connext.messaging.subscribe(subject, res);
+          this.connext.node.messaging.subscribe(subject, res);
 
           // this.listener.on(INSTALL_EVENT, boundResolve, appIdentityHash);
           this.listener.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
@@ -122,7 +120,7 @@ export abstract class AbstractController {
   };
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {
-    this.connext.messaging.unsubscribe(
+    this.connext.node.messaging.unsubscribe(
       `${this.connext.nodeIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
     );
     this.listener.removeCfListener(EventNames.REJECT_INSTALL_EVENT, boundReject);

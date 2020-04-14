@@ -17,19 +17,19 @@ import { HashZero, Zero } from "ethers/constants";
 import { createLinkedHash, stringify } from "../lib";
 
 import { AbstractController } from "./AbstractController";
-import { validate, invalidAddress, invalid32ByteHexString, invalidPublicIdentifier } from "../validation";
+import {
+  validate,
+  invalidAddress,
+  invalid32ByteHexString,
+  invalidPublicIdentifier,
+} from "../validation";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
     params: PublicParams.LinkedTransfer,
   ): Promise<PublicResults.LinkedTransfer> => {
     const amount = toBN(params.amount);
-    const {
-      paymentId,
-      preImage,
-      meta,
-      recipient,
-    } = params;
+    const { paymentId, preImage, meta, recipient } = params;
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
@@ -41,14 +41,11 @@ export class LinkedTransferController extends AbstractController {
     );
 
     const submittedMeta = { ...(meta || {}) } as any;
-    
+
     if (recipient) {
       validate(invalidPublicIdentifier(recipient));
       // set recipient and encrypted pre-image on linked transfer
-      const encryptedPreImage = await this.channelProvider.encrypt(
-        preImage,
-        recipient,
-      );
+      const encryptedPreImage = await this.channelProvider.encrypt(preImage, recipient);
 
       // add encrypted preImage to meta so node can store it in the DB
       submittedMeta.encryptedPreImage = encryptedPreImage;
@@ -122,13 +119,13 @@ export class LinkedTransferController extends AbstractController {
       eventData.transferMeta.encryptedPreImage = submittedMeta.encryptedPreImage;
 
       // publish encrypted secret for receiver
-      await this.connext.messaging.publish(
+      await this.connext.node.messaging.publish(
         `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.transfer.linked.to.${recipient}`,
         stringify(eventData),
       );
 
       // need to flush here so that the client can exit knowing that messages are in the NATS server
-      await this.connext.messaging.flush();
+      await this.connext.node.messaging.flush();
     }
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
     return { appIdentityHash, paymentId, preImage };
