@@ -11,10 +11,9 @@ import {
   DefaultApp,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getAddressFromAssetId, toBN } from "@connext/utils";
+import { getAddressFromAssetId, stringify, toBN } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
-
-import { createLinkedHash, stringify } from "../lib";
+import { solidityKeccak256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
 import { validate, invalidAddress, invalid32ByteHexString, invalidPublicIdentifier } from "../validation";
@@ -55,8 +54,10 @@ export class LinkedTransferController extends AbstractController {
       submittedMeta.recipient = recipient;
     }
 
-    // install the transfer application
-    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+    const linkedHash = solidityKeccak256(
+      ["uint256", "address", "bytes32", "bytes32"],
+      [amount, assetId, paymentId, preImage],
+    );
 
     const initialState: SimpleLinkedTransferAppState = {
       amount,

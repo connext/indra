@@ -1,12 +1,22 @@
 import { ConnextStore } from "@connext/store";
 import { ClientOptions, StoreTypes } from "@connext/types";
+import { removeUndefinedFields } from "@connext/utils";
 
-import {
-  isMainnet,
-  isRinkeby,
-  isLocalhost,
-  removeUndefinedFields,
-} from "./utils";
+export const MAINNET_NETWORK = "mainnet";
+export const RINKEBY_NETWORK = "rinkeby";
+export const LOCALHOST_NETWORK = "localhost";
+
+export function isMainnet(network: string): boolean {
+  return network.toLowerCase() === MAINNET_NETWORK.toLowerCase();
+}
+
+export function isRinkeby(network: string): boolean {
+  return network.toLowerCase() === RINKEBY_NETWORK.toLowerCase();
+}
+
+export function isLocalhost(network: string): boolean {
+  return network.toLowerCase() === LOCALHOST_NETWORK.toLowerCase();
+}
 
 export function getOptionIfAvailable(option: string, opts?: Partial<ClientOptions>) {
   return opts && opts[option] ? opts[option] : undefined;

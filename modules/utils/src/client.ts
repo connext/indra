@@ -1,11 +1,5 @@
 import { ILogger } from "@connext/types";
-import { createRandom32ByteHexString } from "@connext/utils";
-import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
-import { isNullOrUndefined } from "util";
-
-export const MAINNET_NETWORK = "mainnet";
-export const RINKEBY_NETWORK = "rinkeby";
-export const LOCALHOST_NETWORK = "localhost";
+import { bigNumberify } from "ethers/utils";
 
 export const logTime = (log: ILogger, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -20,7 +14,7 @@ export const logTime = (log: ILogger, start: number, msg: string) => {
 };
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "address6FEC..kuQk"
-export const stringify = (obj: object, abrv: boolean = false): string =>
+export const stringifyReborn = (obj: object, abrv: boolean = false): string =>
   JSON.stringify(
     obj,
     (key: string, value: any): any =>
@@ -68,56 +62,26 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   const adjusted = {} as any;
   keys.concat(Object.keys(obj)).forEach((k: any): any => {
     // check by index and undefined
-    adjusted[k] = isNullOrUndefined(obj[k])
+    adjusted[k] = (typeof obj[k] === "undefined" || obj[k] === null)
       ? val // not supplied set as default val
       : obj[k];
   });
   return adjusted;
 };
 
-export const delay = (ms: number): Promise<void> =>
+export const delayReborn = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
 export const delayAndThrow = (ms: number, msg: string = ""): Promise<void> =>
   new Promise((res: any, rej: any): any => setTimeout((): void => rej(new Error(msg)), ms));
-
-export const createLinkedHash = (
-  amount: BigNumber,
-  assetId: string,
-  paymentId: string,
-  preImage: string,
-): string => {
-  return solidityKeccak256(
-    ["uint256", "address", "bytes32", "bytes32"],
-    [amount, assetId, paymentId, preImage],
-  );
-};
-
-export const withdrawalKey = (address: string): string => {
-  return `${address}/latestNodeSubmittedWithdrawal`;
-};
-
-export const createPaymentId = createRandom32ByteHexString;
-export const createPreImage = createRandom32ByteHexString;
 
 export const isNode = () =>
   typeof process !== "undefined" &&
   typeof process.versions !== "undefined" &&
   typeof process.versions.node !== "undefined";
 
-export function isMainnet(network: string): boolean {
-  return network.toLowerCase() === MAINNET_NETWORK.toLowerCase();
-}
-
-export function isRinkeby(network: string): boolean {
-  return network.toLowerCase() === RINKEBY_NETWORK.toLowerCase();
-}
-
-export function isLocalhost(network: string): boolean {
-  return network.toLowerCase() === LOCALHOST_NETWORK.toLowerCase();
-}
-
 export function removeUndefinedFields<T>(obj: T): T {
   Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
   return obj;
 }
+

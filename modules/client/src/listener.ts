@@ -40,10 +40,9 @@ import {
   WithdrawAppName,
   WithdrawAppState,
 } from "@connext/types";
-import { bigNumberifyJson } from "@connext/utils";
+import { bigNumberifyJson, stringify } from "@connext/utils";
 
 import { ConnextClient } from "./connext";
-import { stringify } from "./lib";
 
 const {
   CONDITIONAL_TRANSFER_CREATED_EVENT,

@@ -21,6 +21,5 @@ export function invalidEthSignature(value: any): string | undefined {
   if (hexDataLength(value) !== 65) {
     return `Value "${value.toString()}" is not a valid 65 byte hex string`;
   }
-
   return undefined;
 }

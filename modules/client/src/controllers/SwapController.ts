@@ -1,5 +1,5 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { delayAndThrow, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
   CF_METHOD_TIMEOUT,
   DefaultApp,
@@ -14,7 +14,6 @@ import { calculateExchange, getAddressFromAssetId, toBN } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
-import { delayAndThrow } from "../lib";
 import {
   notGreaterThan,
   notLessThanOrEqualTo,

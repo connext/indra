@@ -14,19 +14,14 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
-import { ChannelSigner, ConsoleLogger } from "@connext/utils";
+import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
+  
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import {
-  delayAndThrow,
-  getDefaultOptions,
-  getDefaultStore,
-  logTime,
-  stringify,
-} from "./lib";
+import { getDefaultOptions, getDefaultStore } from "./default";
 import { createMessagingService } from "./messaging";
 import { NodeApiClient } from "./node";
 

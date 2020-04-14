@@ -36,7 +36,12 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   WithdrawalMonitorObject,
 } from "@connext/types";
-import { createRandom32ByteHexString, getSignerAddressFromPublicIdentifier, getAddressFromAssetId } from "@connext/utils";
+import {
+  createRandom32ByteHexString,
+  getAddressFromAssetId,
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+} from "@connext/utils";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -55,7 +60,6 @@ import {
   SwapController,
   WithdrawalController,
 } from "./controllers";
-import { stringify } from "./lib";
 import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
 

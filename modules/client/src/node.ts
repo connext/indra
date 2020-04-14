@@ -9,12 +9,11 @@ import {
   NodeResponses,
   StringMapping,
 } from "@connext/types";
-import { bigNumberifyJson, delay, stringify } from "@connext/utils";
+import { bigNumberifyJson, delay, logTime, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
 
-import { logTime } from "./lib";
 import { NodeInitializationParameters } from "./types";
 
 const sendFailed = "Failed to send message";

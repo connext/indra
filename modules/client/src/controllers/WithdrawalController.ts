@@ -12,12 +12,11 @@ import {
   WithdrawAppState,
   DefaultApp,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { formatEther, getAddress, hexlify, randomBytes } from "ethers/utils";
 
-import { stringify } from "../lib";
 import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
