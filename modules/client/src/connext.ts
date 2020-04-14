@@ -690,10 +690,12 @@ export class ConnextClient implements IConnextClient {
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
+    console.log(`[${this.publicIdentifier}] found ${pendingTransfers.length} transfers to reclaim`);
     for (const transfer of pendingTransfers) {
       const { encryptedPreImage, paymentId } = transfer;
       await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     }
+    console.log(`[${this.publicIdentifier}] reclaimed successfully`);
   };
 
   // must be public so it can easily be used by the listener

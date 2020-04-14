@@ -8,7 +8,7 @@ import {
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, stringify } from "@connext/utils";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -132,6 +132,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
 
+    console.error(`[initiator] proposed app instance (${appInstanceProposal.identityHash}): ${stringify(proposedAppInstance)}`);
+    console.error(`[initiator] setStateCommitment: ${stringify(setStateCommitment)}`);
     substart = Date.now();
     // 6ms
     const initiatorSignatureOnInitialState = yield [
@@ -293,6 +295,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
+
+    console.error(`[responder] proposed app instance (${appInstanceProposal.identityHash}): ${stringify(proposedAppInstance)}`);
+    console.error(`[responder] setStateCommitment: ${stringify(setStateCommitment)}`);
 
     // 0ms
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
