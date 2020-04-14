@@ -1,16 +1,12 @@
 [![](https://github.com/ConnextProject/indra/workflows/CD%20Master/badge.svg)](https://github.com/ConnextProject/indra/actions)
 [![](https://github.com/ConnextProject/indra/workflows/CD%20Staging/badge.svg)](https://github.com/ConnextProject/indra/actions)
 
-[![Discord](https://img.shields.io/discord/454734546869551114)](https://discord.gg/m93Sqf4)
-[![Twitter Follow](https://img.shields.io/twitter/follow/ConnextNetwork?style=social)](https://twitter.com/ConnextNetwork)
+[![](https://img.shields.io/discord/454734546869551114)](https://discord.gg/m93Sqf4)
+[![](https://img.shields.io/twitter/follow/ConnextNetwork?style=social)](https://twitter.com/ConnextNetwork)
 
 # Indra
 
 Connext's counterfactually-instantiated generalized state-channel platform. To learn more about this project, check out our [docs](https://docs.connext.network).
-
-## Contents
-
- - TBD
 
 For any unanswered questions, open a [new issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our [Discord channel](https://discord.gg/SmMSFf) & we'll be happy to help.
 
