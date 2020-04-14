@@ -9,7 +9,10 @@ export function safeJsonParse(value: any): any {
   }
 }
 
-function convertObjectValuesRecursive(obj: object, target: any, replacement: any): any {
+function convertObjectValuesRecursive(obj: any, target: any, replacement: any): any {
+  if (typeof obj === "object" && typeof obj.length === "number") {
+    return obj;
+  }
   const ret = { ...obj };
   Object.keys(ret).forEach(key => {
     if (ret[key] === target) {
