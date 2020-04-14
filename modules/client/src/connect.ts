@@ -9,7 +9,7 @@ import {
   IChannelSigner,
 } from "@connext/types";
 import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
-  
+
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
@@ -137,7 +137,7 @@ export const connect = async (
       async (resolve: any, reject: any): Promise<any> => {
         // Wait for channel to be available
         const channelIsAvailable = async (): Promise<boolean> => {
-          const chan = await node.getChannel();
+          const chan = await client.node.getChannel();
           return chan && chan.available;
         };
         while (!(await channelIsAvailable())) {
@@ -211,5 +211,6 @@ export const connect = async (
   }
 
   logTime(logger, start, `Client successfully connected`);
+
   return client;
 };

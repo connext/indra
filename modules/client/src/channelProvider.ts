@@ -107,7 +107,6 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       signerAddress: signer.address,
       userIdentifier: signer.publicIdentifier,
     };
-    this.subscribeChannelCreation();
   }
 
   public async send(payload: JsonRpcRequest): Promise<any> {
@@ -233,7 +232,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private setUserWithdrawal = async (
-    value: WithdrawalMonitorObject, 
+    value: WithdrawalMonitorObject,
     remove: boolean = false,
   ): Promise<void> => {
     if (remove) {
@@ -287,11 +286,13 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   }
 
   private async enableChannel() {
-    // setup multisigAddress + assign to channelProvider
-    const myChannel = await this.node.getChannel();
+    const channel = await this.node.getChannel();
 
     let multisigAddress: string;
-    if (!myChannel) {
+
+    if (channel) {
+      multisigAddress = channel.multisigAddress;
+    } else {
       this.logger.debug("no channel detected, creating channel..");
       const creationEventData = await Promise.race([
         delayAndThrow(30_000, "Create channel event not fired within 30s"),
@@ -312,19 +313,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         ),
       ]);
       multisigAddress = (creationEventData as MethodResults.CreateChannel).multisigAddress;
-    } else {
-      multisigAddress = myChannel.multisigAddress;
     }
+
     this.logger.debug(`multisigAddress: ${multisigAddress}`);
-
     this.config.multisigAddress = multisigAddress;
-    return this.config;
-  }
 
-  private subscribeChannelCreation() {
-    this.cfCore.once(EventNames.CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
-      this.config.multisigAddress = data.data.multisigAddress;
-    });
+    return this.config;
   }
 
   private routerDispatch = async (method: string, params: any = {}) => {
