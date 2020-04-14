@@ -83,6 +83,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_createConditionalCommitment:
         result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
+      case ChannelMethods.chan_getSchemaVersion:
+        result = await this.getSchemaVersion();
+        break;
+      case ChannelMethods.chan_updateSchemaVersion:
+        result = await this.updateSchemaVersion(params.version);
+        break;
       default:
         result = await this._send(method, params);
         break;
@@ -212,6 +218,14 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       commitment,
     });
   };
+
+  public getSchemaVersion(): Promise<number> {
+    return this._send(ChannelMethods.chan_getSchemaVersion);
+  }
+
+  public updateSchemaVersion(version?: number): Promise<void> {
+    return this._send(ChannelMethods.chan_updateSchemaVersion, { version });
+  }
 
   /// ////////////////////////////////////////////
   /// // PRIVATE METHODS

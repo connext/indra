@@ -157,16 +157,14 @@ export const connect = async (
 
   logger.debug(`Channel is available`);
 
-  if (isSigner) {
-    // Make sure our store schema is up-to-date
-    const schemaVersion = await client.store.getSchemaVersion();
-    if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
-      logger.debug(`Outdated store schema detected, restoring state`);
-      await client.restoreState();
-      // increment / update store schema version, defaults to types const
-      // of `STORE_SCHEMA_VERSION`
-      await client.store.updateSchemaVersion();
-    }
+  // Make sure our store schema is up-to-date
+  const schemaVersion = await client.channelProvider.getSchemaVersion();
+  if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
+    logger.debug(`Outdated store schema detected, restoring state`);
+    await client.restoreState();
+    // increment / update store schema version, defaults to types const
+    // of `STORE_SCHEMA_VERSION`
+    await client.channelProvider.updateSchemaVersion();
   }
 
   try {

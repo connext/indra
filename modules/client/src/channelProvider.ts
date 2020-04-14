@@ -155,6 +155,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
       case ChannelMethods.chan_createConditionalCommitment:
         result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
+      case ChannelMethods.chan_getSchemaVersion:
+        result = await this.getSchemaVersion();
+        break;
+      case ChannelMethods.chan_updateSchemaVersion:
+        result = await this.updateSchemaVersion(params.version);
+        break;
       default:
         result = await this.routerDispatch(method, params);
         break;
@@ -244,7 +250,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     await this.store.restore();
   };
 
-  public createSetupCommitment = async (
+  private createSetupCommitment = async (
     multisigAddress: string,
     commitment: MinimalTransaction,
   ): Promise<void> => {
@@ -254,19 +260,27 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     await this.store.updateSchemaVersion();
   };
 
-  public createSetStateCommitment = async (
+  private createSetStateCommitment = async (
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> => {
     await this.store.createSetStateCommitment(appIdentityHash, commitment);
   };
 
-  public createConditionalCommitment = async (
+  private createConditionalCommitment = async (
     appIdentityHash: string,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> => {
     await this.store.createConditionalTransactionCommitment(appIdentityHash, commitment);
   };
+
+  private async getSchemaVersion() {
+    return await this.store.getSchemaVersion();
+  }
+
+  private async updateSchemaVersion(version?: number) {
+    return await this.store.updateSchemaVersion(version);
+  }
 
   private async enableChannel() {
     // setup multisigAddress + assign to channelProvider

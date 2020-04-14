@@ -2,7 +2,6 @@ import {
   EventNames,
   EventPayloads,
   IChannelProvider,
-  IChannelSigner,
   ILoggerService,
   INodeApiClient,
   MethodParams,
@@ -22,13 +21,11 @@ export abstract class AbstractController {
   public channelProvider: IChannelProvider;
   public listener: ConnextListener;
   public ethProvider: providers.JsonRpcProvider;
-  public signer: IChannelSigner;
 
   public constructor(name: string, connext: ConnextClient) {
     this.connext = connext;
     this.name = name;
     this.node = connext.node;
-    this.signer = connext.signer;
     this.channelProvider = connext.channelProvider;
     this.listener = connext.listener;
     this.log = connext.log.newContext(name);

@@ -32,6 +32,8 @@ export const ChannelMethods = enumify({
   chan_createSetupCommitment: "chan_createSetupCommitment",
   chan_createSetStateCommitment: "chan_createSetStateCommitment",
   chan_createConditionalCommitment: "chan_createConditionalCommitment",
+  chan_getSchemaVersion: "chan_getSchemaVersion",
+  chan_updateSchemaVersion: "chan_updateSchemaVersion",
 });
 export type ChannelMethods = typeof ChannelMethods[keyof typeof ChannelMethods];
 
@@ -135,4 +137,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
     appIdentityHash: Bytes32,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
+  getSchemaVersion(): Promise<number>;
+  updateSchemaVersion(version?: number): Promise<void>;
 }
