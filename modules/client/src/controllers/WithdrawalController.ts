@@ -58,25 +58,37 @@ export class WithdrawalController extends AbstractController {
     // TODO: try to remove this with deposit redesign
     await this.cleanupPendingDeposit(assetId);
 
-    const withdrawCommitment = await this.createWithdrawCommitment(params);
-    const hash = withdrawCommitment.hashToSign();
-    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
-      hash,
-    );
+    let withdrawCommitment: WithdrawCommitment;
+    let withdrawerSignatureOnWithdrawCommitment: string;
+    try {
+      withdrawCommitment = await this.createWithdrawCommitment(params);
+      const hash = withdrawCommitment.hashToSign();
+      withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
+        hash,
+      );
 
-    await this.proposeWithdrawApp(params, hash, withdrawerSignatureOnWithdrawCommitment);
+      await this.proposeWithdrawApp(params, hash, withdrawerSignatureOnWithdrawCommitment);
 
-    this.connext.listener.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
-      params,
-      withdrawCommitment,
-      withdrawerSignatureOnWithdrawCommitment,
-    });
+      this.connext.listener.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
+        params,
+        withdrawCommitment,
+        withdrawerSignatureOnWithdrawCommitment,
+      });
 
-    [transaction] = await this.connext.watchForUserWithdrawal();
-    this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
-    this.log.debug(`Transaction details: ${stringify(transaction)}`);
+      [transaction] = await this.connext.watchForUserWithdrawal();
+      this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
+      this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
-    this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
+      this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
+    } catch (e) {
+      this.connext.listener.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
+        params,
+        withdrawCommitment,
+        withdrawerSignatureOnWithdrawCommitment,
+        error: e.stack || e.message,
+      });
+      throw new Error(e.stack || e.message);
+    }
 
     // Note that we listen for the signed commitment and save it to store only in listener.ts
 

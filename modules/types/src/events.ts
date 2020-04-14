@@ -13,6 +13,9 @@ import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
 import { PublicIdentifier } from "./identifiers";
 import { ProtocolMessageData } from "./messaging";
+import { PublicParams } from "./public";
+import { MinimalTransaction } from "./commitments";
+import { TransactionResponse } from "ethers/providers";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -158,14 +161,24 @@ type UpdateStateEventData = {
 ////////////////////////////////////////
 const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
 
+type WithdrawalConfirmedEventData = {
+  transaction: TransactionResponse;
+};
+
 ////////////////////////////////////////
 const WITHDRAWAL_FAILED_EVENT = "WITHDRAWAL_FAILED_EVENT";
+
+type WithdrawalFailedEventData = WithdrawalStartedEventData & {
+  error: string;
+};
 
 ////////////////////////////////////////
 const WITHDRAWAL_STARTED_EVENT = "WITHDRAWAL_STARTED_EVENT";
 
-type WithdrawEventData = {
-  amount: BigNumber;
+type WithdrawalStartedEventData = {
+  params: PublicParams.Withdraw;
+  withdrawCommitment: MinimalTransaction;
+  withdrawerSignatureOnCommitment: string;
 };
 
 ////////////////////////////////////////
@@ -221,6 +234,10 @@ export namespace EventPayloads {
   export type DepositStarted = DepositStartedEventData;
   export type DepositConfirmed = DepositConfirmedEventData;
   export type DepositFailed = DepositFailedEventData;
+
+  export type WithdrawalStarted = WithdrawalStartedEventData;
+  export type WithdrawalConfirmed = WithdrawalConfirmedEventData;
+  export type WithdrawalFailed = WithdrawalFailedEventData;
 
   // protocol events
   export type CreateMultisig = CreateMultisigEventData;
