@@ -72,7 +72,7 @@ export class WithdrawalController extends AbstractController {
       withdrawerSignatureOnWithdrawCommitment,
     });
 
-    transaction = await this.connext.watchForUserWithdrawal();
+    [transaction] = await this.connext.watchForUserWithdrawal();
     this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
     this.log.debug(`Transaction details: ${stringify(transaction)}`);
 

@@ -18,7 +18,7 @@ export class MemoryStorage implements IClientStore {
   private withdrawals: Map<string, MinimalTransaction> = new Map();
   private proposedApps: Map<string, AppInstanceProposal> = new Map();
   private appInstances: Map<string, AppInstanceJson> = new Map();
-  private userWithdrawals: WithdrawalMonitorObject | undefined = undefined;
+  private userWithdrawals: WithdrawalMonitorObject[] = [];
   private freeBalances: Map<string, AppInstanceJson> = new Map();
   private setupCommitments: Map<string, MinimalTransaction> = new Map();
 
@@ -280,23 +280,26 @@ export class MemoryStorage implements IClientStore {
     return this.createWithdrawalCommitment(multisigAddress, commitment);
   }
 
-  getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
+  getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
     return Promise.resolve(this.userWithdrawals);
   }
 
   createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    this.userWithdrawals = withdrawalObject;
+    this.userWithdrawals.push(withdrawalObject);
     return Promise.resolve();
   }
 
   updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    if (!this.userWithdrawals || withdrawalObject.tx.data !== this.userWithdrawals.tx.data) {
+    const idx = this.userWithdrawals.findIndex(v => v === withdrawalObject);
+    if (idx === -1) {
       throw new Error(`Could not find user withdrawal to update`);
     }
-    return this.updateUserWithdrawal(withdrawalObject);
+    this.userWithdrawals[idx] = withdrawalObject;
+    return Promise.resolve();
   }
-  removeUserWithdrawal(): Promise<void> {
-    this.userWithdrawals = undefined;
+
+  removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
+    this.userWithdrawals.filter(x => x !== toRemove);
     return Promise.resolve();
   }
 

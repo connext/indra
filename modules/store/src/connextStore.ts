@@ -256,8 +256,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.updateWithdrawalCommitment(multisigAddress, commitment);
   }
 
-  getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
-    return this.internalStore.getUserWithdrawal();
+  getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
+    return this.internalStore.getUserWithdrawals();
   }
 
   createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
@@ -268,8 +268,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.updateUserWithdrawal(withdrawalObject);
   }
 
-  removeUserWithdrawal(): Promise<void> {
-    return this.internalStore.removeUserWithdrawal();
+  removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
+    return this.internalStore.removeUserWithdrawal(toRemove);
   }
 
   clear(): Promise<void> {

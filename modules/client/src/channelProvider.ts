@@ -94,10 +94,10 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
         result = this.config;
         break;
       case ChannelMethods.chan_setUserWithdrawal:
-        result = await this.setUserWithdrawal(params.withdrawalObject);
+        result = await this.setUserWithdrawal(params.withdrawalObject, params.remove);
         break;
       case ChannelMethods.chan_getUserWithdrawal:
-        result = await this.getUserWithdrawal();
+        result = await this.getUserWithdrawals();
         break;
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
@@ -192,16 +192,19 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return hash;
   };
 
-  private getUserWithdrawal = async (): Promise<WithdrawalMonitorObject | undefined> => {
-    return this.store.getUserWithdrawal();
+  private getUserWithdrawals = async (): Promise<WithdrawalMonitorObject[]> => {
+    return this.store.getUserWithdrawals();
   };
 
-  private setUserWithdrawal = async (value: WithdrawalMonitorObject | undefined): Promise<void> => {
-    if (!value) {
-      return this.store.removeUserWithdrawal();
+  private setUserWithdrawal = async (
+    value: WithdrawalMonitorObject, 
+    remove: boolean = false,
+  ): Promise<void> => {
+    if (remove) {
+      return this.store.removeUserWithdrawal(value);
     }
-    const existing = await this.store.getUserWithdrawal();
-    if (!existing) {
+    const existing = await this.store.getUserWithdrawals();
+    if (!existing || existing.length === 0) {
       return this.store.createUserWithdrawal(value);
     }
     return this.store.updateUserWithdrawal(value);
