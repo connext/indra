@@ -1,9 +1,9 @@
 import {
-  delay,
   EventNames,
   IConnextClient,
   LinkedTransferStatus,
 } from "@connext/types";
+import { delay } from "@connext/utils";
 import * as lolex from "lolex";
 
 import {

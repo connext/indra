@@ -1,13 +1,11 @@
 import {
   MethodParams,
   DepositAppState,
-  stringify,
   UninstallMiddlewareContext,
   ProtocolRoles,
-  getAddressFromAssetId,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
 
 import { baseCoinTransferValidation } from "../shared";

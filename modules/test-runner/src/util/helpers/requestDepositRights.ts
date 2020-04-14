@@ -1,11 +1,12 @@
-import { AppInstanceJson, IConnextClient, DepositAppState, delay, DepositAppName, DefaultApp } from "@connext/types";
+import { AppInstanceJson, IConnextClient, DepositAppState, DepositAppName, DefaultApp } from "@connext/types";
+import { delay } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
-import { bigNumberify } from "ethers/utils";
 
 
 export const requestDepositRights = async (

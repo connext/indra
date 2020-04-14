@@ -1,5 +1,4 @@
 /* global before */
-import { getRandomChannelSigner } from "@connext/utils";
 import {
   ConditionalTransferTypes,
   EventNames,
@@ -9,6 +8,7 @@ import {
   SignedTransferStatus,
   EventPayloads,
 } from "@connext/types";
+import { getRandomChannelSigner } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { providers } from "ethers";

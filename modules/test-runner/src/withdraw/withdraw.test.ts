@@ -1,3 +1,4 @@
+import { MinimumViableMultisig } from "@connext/contracts";
 import { IConnextClient, EventNames, BigNumberish } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -7,14 +8,12 @@ import {
   expect,
   fundChannel,
   NEGATIVE_ZERO_ZERO_ONE_ETH,
-  NODE_HAS_RIGHTS_ERROR,
   requestDepositRights,
   withdrawFromChannel,
   ZERO_ZERO_ONE_ETH,
   ZERO_ZERO_TWO_ETH,
   ZERO_ZERO_ZERO_ONE_ETH,
 } from "../util";
-import { MinimumViableMultisig } from "@connext/contracts";
 
 describe("Withdrawal", () => {
   let client: IConnextClient;

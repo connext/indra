@@ -1,6 +1,7 @@
 import { connect } from "@connext/client";
 import { ConnextStore } from "@connext/store";
 import { ClientOptions, IChannelProvider, IChannelSigner, IConnextClient, StoreTypes } from "@connext/types";
+import { getRandomChannelSigner, ChannelSigner } from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -10,7 +11,6 @@ import { env } from "./env";
 import { ethWallet } from "./ethprovider";
 import { Logger } from "./logger";
 import { MessageCounter, TestMessagingService } from "./messaging";
-import { getRandomChannelSigner, ChannelSigner } from "@connext/utils";
 
 export const createClient = async (
   opts: Partial<ClientOptions | any> = {},

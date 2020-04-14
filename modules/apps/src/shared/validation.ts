@@ -1,10 +1,9 @@
 import {
   CoinTransfer,
   MethodParams,
-  stringify,
   DepositAppName,
-  getAddressFromAssetId,
 } from "@connext/types";
+import { getAddressFromAssetId, stringify } from "@connext/utils";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 

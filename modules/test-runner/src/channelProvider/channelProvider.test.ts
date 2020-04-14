@@ -1,10 +1,9 @@
 import {
   EventNames,
-  getAddressFromAssetId,
   IConnextClient,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { AddressZero, One } from "ethers/constants";
 
 import {

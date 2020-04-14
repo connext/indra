@@ -1,5 +1,5 @@
-import { getRandomChannelSigner } from "@connext/utils";
 import { VerifyNonceDtoType } from "@connext/types";
+import { getRandomChannelSigner } from "@connext/utils";
 import { connect, Client } from "ts-nats";
 import axios, { AxiosResponse } from "axios";
 

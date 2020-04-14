@@ -5,8 +5,8 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   StoreTypes,
-  toBN,
 } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { Client as DBClient } from "pg";
 import { before } from "mocha";
 import SQL from "sql-template-strings";

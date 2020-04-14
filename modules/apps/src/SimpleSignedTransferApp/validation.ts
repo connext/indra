@@ -5,7 +5,6 @@ import {
 } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
-
 import { unidirectionalCoinTransferValidation } from "../shared";
 
 export const validateSignedTransferApp = (

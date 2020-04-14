@@ -1,4 +1,5 @@
 import { IConnextClient } from "@connext/types";
+import { Wallet } from "ethers";
 
 import {
   createClient,
@@ -9,7 +10,6 @@ import {
   SETUP_RESPONDER_SENT_COUNT,
   TestMessagingService,
 } from "../util";
-import { Wallet } from "ethers";
 
 describe("Create Channel", () => {
   let client: IConnextClient;

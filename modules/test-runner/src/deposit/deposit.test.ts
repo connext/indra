@@ -2,18 +2,16 @@ import {
   IConnextClient,
   BigNumberish,
   BigNumber,
-  toBN,
   DepositAppState,
-  delay,
 } from "@connext/types";
+import { delay, toBN } from "@connext/utils";
+import { Contract } from "ethers";
 import { AddressZero, Zero, One } from "ethers/constants";
+import tokenAbi from "human-standard-token-abi";
 
 import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS, TOKEN_AMOUNT_SM, TOKEN_AMOUNT } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance, ethProvider } from "../util/ethprovider";
-import { Contract } from "ethers";
-import tokenAbi from "human-standard-token-abi";
-
 
 describe("Deposits", () => {
   let client: IConnextClient;

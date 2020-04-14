@@ -2,10 +2,8 @@ import {
   MethodParams,
   CoinTransfer,
   SimpleLinkedTransferAppState,
-  stringify,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
-
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 

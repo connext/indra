@@ -1,5 +1,7 @@
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
+import * as lolex from "lolex";
 
 import {
   APP_PROTOCOL_TOO_LONG,
@@ -21,9 +23,6 @@ import {
   UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
 } from "../util";
-import { BigNumber } from "ethers/utils";
-
-import * as lolex from "lolex";
 
 let clock: any;
 

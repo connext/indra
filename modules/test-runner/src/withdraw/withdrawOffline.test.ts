@@ -1,5 +1,5 @@
-import { ChannelSigner, getRandomChannelSigner } from "@connext/utils";
-import { delay, EventNames, IConnextClient, IChannelSigner } from "@connext/types";
+import { EventNames, IConnextClient, IChannelSigner } from "@connext/types";
+import { ChannelSigner, delay, getRandomChannelSigner } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";

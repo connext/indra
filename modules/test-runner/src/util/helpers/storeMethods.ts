@@ -19,9 +19,8 @@ import {
   SetStateCommitmentJSON,
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
-  createRandomBytesHexString,
-  toBN,
 } from "@connext/types";
+import { createRandomBytesHexString, toBN } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
