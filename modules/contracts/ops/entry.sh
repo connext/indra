@@ -33,7 +33,7 @@ then
       --port="8545" \
       --defaultBalanceEther="1000000000" \
        > $dir/.ganache.log &
-    bash /wait-for.sh localhost:8545
+    wait-for localhost:8545
   fi
   echo "Deploying contracts.."
   touch $dir/address-book.json
