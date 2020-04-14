@@ -275,11 +275,17 @@ export const connect = async (
 
   // cleanup any hanging registry apps
   log.debug("Cleaning up registry apps");
-  await client.cleanupRegistryApps();
+  try {
+    await client.cleanupRegistryApps();
+  } catch (e) {
+    log.error(
+      `Could not clean up registry: ${e.stack || e.message}... will attempt again on next connection`,
+    );
+  }
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
-  log.debug("Reclaiming pending async transfers");
+  log.info("Reclaiming pending async transfers");
   // NOTE: Removing the following await results in a subtle race condition during bot tests.
   //       Don't remove this await again unless you really know what you're doing & bot tests pass
   // no need to await this if it needs collateral
@@ -289,7 +295,7 @@ export const connect = async (
     await client.reclaimPendingAsyncTransfers();
   } catch (e) {
     log.error(
-      `Could not reclaim pending async transfers: ${e}... will attempt again on next connection`,
+      `Could not reclaim pending async transfers: ${e.stack || e.message}... will attempt again on next connection`,
     );
   }
 
@@ -297,7 +303,7 @@ export const connect = async (
   try {
     await client.clientCheckIn();
   } catch (e) {
-    log.error(`Could not complete node check-in: ${e}... will attempt again on next connection`);
+    log.error(`Could not complete node check-in: ${e.stack || e.message}... will attempt again on next connection`);
   }
 
   // watch for/prune lingering withdrawals
@@ -317,6 +323,7 @@ export const connect = async (
     log.error(`Could not complete watching for user withdrawals: ${e.stack || e.message}... will attempt again on next connection`);
   }
 
+  log.info(`Client ${client.publicIdentifier} connected!`);
   logTime(log, start, `Client successfully connected`);
   return client;
 };
