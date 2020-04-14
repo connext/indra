@@ -141,7 +141,7 @@ describe("Daicard", () => {
     it(`should not withdraw to an invalid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToCashout();
-        cy.get(`input[type="text"]`)
+        cy.get(`input[type="string"]`)
           .clear()
           .type("0xabc123");
         cy.contains("p", /invalid/i).should("exist");
