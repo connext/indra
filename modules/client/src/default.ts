@@ -11,16 +11,11 @@ export const getDefaultOptions = async (
   network: string,
   opts?: Partial<ClientOptions>,
 ): Promise<ClientOptions> => {
-  let urlOptions = { ethProviderUrl: `http://localhost:8545`, nodeUrl: `http://localhost:8080` };
+  let urlOptions;
 
-  if (!opts) {
-    return ({
-      store: new ConnextStore(StoreTypes.LocalStorage),
-      ...urlOptions,
-    });
-  }
-
-  if (network.toLowerCase() !== "localhost") {
+  if (network.toLowerCase() === "localhost") {
+    urlOptions = { ethProviderUrl: `http://localhost:8545`, nodeUrl: `http://localhost:8080` };
+  } else {
     const baseUrl = network.toLowerCase() === "mainnet"
       ? "indra.connext.network/api"
       : network.toLowerCase() === "rinkeby"
@@ -35,8 +30,16 @@ export const getDefaultOptions = async (
     };
   }
 
+  if (!opts) {
+    return ({
+      store: new ConnextStore(StoreTypes.LocalStorage),
+      ...urlOptions,
+    });
+  }
+
   return ({
     store: opts.store || getDefaultStore(opts),
     ...urlOptions,
+    ...opts,
   });
 };

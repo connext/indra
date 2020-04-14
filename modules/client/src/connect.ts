@@ -110,10 +110,6 @@ export const connect = async (
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
 
-    if (!opts.signer) {
-      throw new Error("Client must be instantiated with signer if not using a channelProvider");
-    }
-
     signer = typeof opts.signer === "string" 
       ? new ChannelSigner(opts.signer, ethProvider) 
       : opts.signer;
