@@ -14,6 +14,7 @@ import {
 import {
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
+  logTime,
 } from "@connext/utils";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -28,7 +29,7 @@ import {
   PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
-import { assertSufficientFundsWithinFreeBalance, logTime } from "../utils";
+import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 

@@ -8,12 +8,11 @@ import {
   UninstallMiddlewareContext,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance, StateChannel } from "../models";
-import { logTime } from "../utils";
 import {
   Context,
   PersistAppType,

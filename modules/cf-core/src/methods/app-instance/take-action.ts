@@ -9,7 +9,7 @@ import {
   UpdateStateMessage,
   PublicIdentifier,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { getFirstElementInListNotEqualTo, toBN } from "@connext/utils";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
@@ -24,8 +24,6 @@ import {
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import { } from "../../types";
-import { getFirstElementInListNotEqualTo } from "../../utils";
 
 import { NodeController } from "../controller";
 import { AppInstance } from "../../models";

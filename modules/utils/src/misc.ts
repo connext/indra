@@ -8,6 +8,10 @@ import {
 } from "ethers/utils";
 import { isBN, toBN } from "./math";
 
+export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
+  return list.filter(x => x !== test)[0];
+}
+
 export const bigNumberifyJson = (json: any): object =>
   typeof json === "string"
     ? json

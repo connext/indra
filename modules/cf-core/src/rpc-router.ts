@@ -1,9 +1,8 @@
 import { ILoggerService } from "@connext/types";
-import { bigNumberifyJson } from "@connext/utils";
+import { bigNumberifyJson, logTime } from "@connext/utils";
 import { Controller, JsonRpcResponse, jsonRpcSerializeAsResponse, Router, Rpc } from "rpc-server";
 
 import { RequestHandler } from "./request-handler";
-import { logTime } from "./utils";
 
 type AsyncCallback = (...args: any) => Promise<any>;
 

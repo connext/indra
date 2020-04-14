@@ -7,6 +7,7 @@ import {
   PublicIdentifier,
   SolidityValueType,
 } from "@connext/types";
+import { getFirstElementInListNotEqualTo } from "@connext/utils";
 import { Zero } from "ethers/constants";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
@@ -21,7 +22,6 @@ import {
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import { getFirstElementInListNotEqualTo } from "../../utils";
 import { NodeController } from "../controller";
 import { AppInstance } from "../../models";
 
