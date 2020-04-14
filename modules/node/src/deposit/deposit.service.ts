@@ -20,6 +20,7 @@ import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
+import { OnchainTransaction, TransactionReason } from "../onchainTransactions/onchainTransaction.entity";
 
 @Injectable()
 export class DepositService {
@@ -87,6 +88,14 @@ export class DepositService {
   async rescindDepositRights(appIdentityHash: string): Promise<void> {
     this.log.debug(`Uninstalling deposit app`);
     await this.cfCoreService.uninstallApp(appIdentityHash);
+  }
+
+  async findByHash(hash: string): Promise<OnchainTransaction | undefined> {
+    const tx = await this.onchainTransactionService.findByHash(hash);
+    if (!tx || tx.reason !== TransactionReason.COLLATERALIZATION) {
+      return undefined;
+    }
+    return tx;
   }
 
   private async sendDepositToChain(
