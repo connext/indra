@@ -310,7 +310,12 @@ export const connect = async (
     log.error(`Could not complete node check-in: ${e}... will attempt again on next connection`);
   }
 
-  // check in with node to do remaining work
+  // watch for/prune lingering withdrawals
+  const previouslyActive = await client.getUserWithdrawals();
+  if (previouslyActive.length === 0) {
+    logTime(log, start, `Client successfully connected`);
+    return client;
+  }
   try {
     const transactions = await client.watchForUserWithdrawal();
     if (transactions.length > 0) {

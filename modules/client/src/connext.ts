@@ -326,19 +326,19 @@ export class ConnextClient implements IConnextClient {
     }) as Promise<PublicResults.LinkedTransfer>;
   };
 
-  public withdraw = async (params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> => {
-    return await this.withdrawalController.withdraw(params);
+  public withdraw = (params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> => {
+    return this.withdrawalController.withdraw(params);
   };
 
-  public respondToNodeWithdraw = async (appInstance: AppInstanceJson): Promise<void> => {
-    return await this.withdrawalController.respondToNodeWithdraw(appInstance);
+  public respondToNodeWithdraw = (appInstance: AppInstanceJson): Promise<void> => {
+    return this.withdrawalController.respondToNodeWithdraw(appInstance);
   };
 
-  public saveWithdrawCommitmentToStore = async (
+  public saveWithdrawCommitmentToStore = (
     params: PublicParams.Withdraw,
     signatures: string[],
   ): Promise<void> => {
-    return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
+    return this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
   };
 
   public resolveCondition = async (
@@ -399,20 +399,27 @@ export class ConnextClient implements IConnextClient {
     return values;
   };
 
+  // this function should be called when the user knows a withdrawal should
+  // be submitted. if there is no withdrawal expected, this promise will last
+  // for the duration of the timeout
   public watchForUserWithdrawal = async (): Promise<TransactionResponse[]> => {
     // poll for withdrawal tx submitted to multisig matching tx data
     const maxBlocks = 15;
     const startingBlock = await this.ethProvider.getBlockNumber();
     const transactions: TransactionResponse[] = [];
 
-    // TODO: poller should not be completely blocking, but safe to leave for now
-    // because the channel should be blocked
     try {
       await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on(
           "block",
           async (blockNumber: number): Promise<void> => {
             const withdrawals = await this.checkForUserWithdrawals(blockNumber);
+            if (withdrawals.length === 0) {
+              // in the `WithdrawalController` the user does not store the
+              // commitment until `takeAction` happens, so this may be 0
+              // meaning the withdrawal has not been saved to the store yet
+              return;
+            }
             withdrawals.forEach(async ([storedValue, tx]) => {
               if (tx) {
                 transactions.push(tx);
