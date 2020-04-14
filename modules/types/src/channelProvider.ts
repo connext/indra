@@ -1,8 +1,8 @@
-import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { Address, Bytes32, DecString, PublicIdentifier, PublicKey } from "./basic";
+import { Address, Bytes32, DecString, PublicIdentifier, PublicKey, UrlString } from "./basic";
 import { ContractAddresses } from "./contracts";
+import { IChannelSigner } from "./crypto";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
@@ -34,19 +34,10 @@ export const ChannelMethods = enumify({
 });
 export type ChannelMethods = typeof ChannelMethods[keyof typeof ChannelMethods];
 
-export interface IChannelSigner extends Signer {
-  address: Address;
-  decrypt(message: string): Promise<string>;
-  encrypt(message: string, publicKey: string): Promise<string>;
-  signMessage(message: string): Promise<string>;
-  publicKey: string;
-  publicIdentifier: string;
-}
-
 export type ChannelProviderConfig = {
   signerAddress: Address;
   multisigAddress?: Address; // may not be deployed yet
-  nodeUrl: string;
+  nodeUrl: UrlString;
   userIdentifier: PublicIdentifier;
 };
 
@@ -58,7 +49,7 @@ export interface CFChannelProviderOptions {
   messaging: IMessagingService;
   contractAddresses: ContractAddresses;
   nodeConfig: any;
-  nodeUrl: string;
+  nodeUrl: UrlString;
   store: IClientStore;
 }
 
@@ -127,7 +118,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // TRANSFER METHODS
-  walletDeposit(params: WalletDepositParams): Promise<string>;
   setStateChannel(state: StateChannelJSON): Promise<void>;
   createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   createSetStateCommitment(

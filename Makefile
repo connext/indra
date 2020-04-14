@@ -89,7 +89,7 @@ clean: stop
 	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
 	rm -rf modules/*/node_modules/*/.git
 	rm -rf modules/*/build modules/*/dist
-	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/*/cache
+	rm -rf modules/*/.*cache* modules/*/node_modules/.cache
 
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'

@@ -13,7 +13,8 @@ export type Bytes32 = string; // aka HexString of length 66
 export type DecString = string; // eg "3.14"
 export type HexString = string; // eg "0xabc123" of arbitrary length
 export type PublicIdentifier = string; // "indra" + base58(<publicKey>)
-export type PublicKey = string; // Hex string representing a public key string
+export type PublicKey = string; // Hex string representing a public key
+export type UrlString = string; // eg "<protocol>://<host>[:<port>]/<path>
 
 export type BigNumber = ethersBN;
 export const BigNumber = ethersBN;

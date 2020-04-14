@@ -4,15 +4,8 @@ ENV HOME /root
 RUN apk add --update --no-cache bash curl g++ gcc git jq make python
 RUN npm config set unsafe-perm true
 RUN npm install -g npm@6.12.0
-
 COPY modules/node/package.json package.json
 RUN npm install --only=production > /dev/null 2>&1
-
-# https://github.com/moby/moby/issues/37965#issuecomment-426853382
-COPY ops/wait-for.sh ops/wait-for.sh
-RUN true
-COPY modules/node/ops ops
-RUN true
-COPY modules/node/dist dist
-
+RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/ed77b63706ea721766a62ff22d3a251d8b4a6a30/wait-for-it.sh > /wait-for.sh
+COPY modules/node .
 ENTRYPOINT ["bash", "ops/entry.sh"]

@@ -6,6 +6,7 @@ export * from "./client";
 export * from "./commitments";
 export * from "./constants";
 export * from "./contracts";
+export * from "./crypto";
 export * from "./events";
 export * from "./lock";
 export * from "./logger";
