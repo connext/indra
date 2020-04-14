@@ -189,7 +189,8 @@ export const connect = async (
     await client.cleanupRegistryApps();
   } catch (e) {
     logger.error(
-      `Could not clean up registry: ${e.stack || e.message}... will attempt again on next connection`,
+      `Could not clean up registry: ${e.stack ||
+        e.message}... will attempt again on next connection`,
     );
   }
 
@@ -205,7 +206,8 @@ export const connect = async (
     await client.reclaimPendingAsyncTransfers();
   } catch (e) {
     logger.error(
-      `Could not reclaim pending async transfers: ${e.stack || e.message}... will attempt again on next connection`,
+      `Could not reclaim pending async transfers: ${e.stack ||
+        e.message}... will attempt again on next connection`,
     );
   }
 
@@ -213,13 +215,16 @@ export const connect = async (
   try {
     await client.clientCheckIn();
   } catch (e) {
-    logger.error(`Could not complete node check-in: ${e.stack || e.message}... will attempt again on next connection`);
+    logger.error(
+      `Could not complete node check-in: ${e.stack ||
+        e.message}... will attempt again on next connection`,
+    );
   }
 
   // watch for/prune lingering withdrawals
   const previouslyActive = await client.getUserWithdrawals();
   if (previouslyActive.length === 0) {
-    logTime(log, start, `Client successfully connected`);
+    logTime(logger, start, `Client successfully connected`);
     return client;
   }
 
@@ -227,7 +232,7 @@ export const connect = async (
     logger.debug(`Watching for user withdrawals`);
     const transactions = await client.watchForUserWithdrawal();
     if (transactions.length > 0) {
-      log.debug(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+      logger.debug(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
     }
   } catch (e) {
     logger.error(
@@ -237,6 +242,6 @@ export const connect = async (
   }
 
   logger.info(`Client ${client.publicIdentifier} connected!`);
-  logTime(log, start, `Client successfully connected`);
+  logTime(logger, start, `Client successfully connected`);
   return client;
 };
