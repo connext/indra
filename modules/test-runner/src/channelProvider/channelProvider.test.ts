@@ -1,5 +1,10 @@
-import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, EventNames } from "@connext/types";
+import {
+  EventNames,
+  getAddressFromAssetId,
+  IConnextClient,
+  CONVENTION_FOR_ETH_ASSET_ID,
+} from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { AddressZero, One } from "ethers/constants";
 
 import {
@@ -18,15 +23,15 @@ import {
 describe("ChannelProvider", () => {
   let client: IConnextClient;
   let remoteClient: IConnextClient;
-  let nodeFreeBalanceAddress: string;
-  let nodePublicIdentifier: string;
+  let nodeSignerAddress: string;
+  let nodeIdentifier: string;
   let tokenAddress: string;
 
   beforeEach(async () => {
     client = await createClient({ id: "A" });
     remoteClient = await createRemoteClient(await createChannelProvider(client));
-    nodePublicIdentifier = client.config.nodePublicIdentifier;
-    nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+    nodeIdentifier = client.config.nodeIdentifier;
+    nodeSignerAddress = client.nodeSignerAddress;;
     tokenAddress = client.config.contractAddresses.Token;
   });
 
@@ -36,25 +41,25 @@ describe("ChannelProvider", () => {
 
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
-    const _nodePublicIdentifier = remoteClient.config.nodePublicIdentifier;
-    const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+    const _nodeIdentifier = remoteClient.config.nodeIdentifier;
+    const _nodeSignerAddress = getSignerAddressFromPublicIdentifier(nodeIdentifier);
     expect(_tokenAddress).to.be.eq(tokenAddress);
-    expect(_nodePublicIdentifier).to.be.eq(nodePublicIdentifier);
-    expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
+    expect(_nodeIdentifier).to.be.eq(nodeIdentifier);
+    expect(_nodeSignerAddress).to.be.eq(nodeSignerAddress);
   });
 
-  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
-    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async () => {
+    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: CONVENTION_FOR_ETH_ASSET_ID };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
     await fundChannel(client, input.amount, input.assetId);
-    await remoteClient.requestCollateral(output.assetId);
+    await remoteClient.requestCollateral(getAddressFromAssetId(output.assetId));
 
     ////////////////////////////////////////
     // SWAP FLOW
-    await swapAsset(remoteClient, input, output, nodeFreeBalanceAddress);
+    await swapAsset(remoteClient, input, output, nodeSignerAddress);
 
     ////////////////////////////////////////
     // TRANSFER FLOW
@@ -65,7 +70,7 @@ describe("ChannelProvider", () => {
     const transferFinished = Promise.all([
       new Promise(async resolve => {
         await clientB.messaging.subscribe(
-          `${client.nodePublicIdentifier}.channel.*.app-instance.*.uninstall`,
+          `${client.nodeIdentifier}.channel.*.app-instance.*.uninstall`,
           resolve,
         );
       }),

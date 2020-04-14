@@ -1,20 +1,20 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { verifyChannelMessage } from "@connext/crypto";
 import { bigNumberifyJson, MethodParams, WithdrawAppState } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 
 export const validateWithdrawApp = async (
   params: MethodParams.ProposeInstall,
-  initiatorPublicIdentifier: string,
-  responderPublicIdentifier: string,
+  initiatorIdentifier: string,
+  responderIdentifier: string,
 ) => {
   const { responderDeposit, initiatorDeposit } = params;
   const initialState = bigNumberifyJson(params.initialState) as WithdrawAppState;
 
-  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+  const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
   const initiatorTransfer = initialState.transfers[0];
   const responderTransfer = initialState.transfers[1];
@@ -37,8 +37,8 @@ export const validateWithdrawApp = async (
   }
 
   if (
-    initialState.signers[0] !== initiatorFreeBalanceAddress ||
-    initialState.signers[1] !== responderFreeBalanceAddress
+    initialState.signers[0] !== initiatorSignerAddress ||
+    initialState.signers[1] !== responderSignerAddress
   ) {
     throw new Error(
       `Cannot install a withdraw app if signers[] do not match multisig participant addresses. Signers[]: ${initialState.signers}`,

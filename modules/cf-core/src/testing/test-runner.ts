@@ -1,13 +1,12 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { OutcomeType, ProtocolNames, toBN, ProtocolParams } from "@connext/types";
+import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
-import { One, Two, Zero, HashZero } from "ethers/constants";
+import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { getCreate2MultisigAddress } from "../utils";
-import { xkeyKthAddress } from "../xkeys";
 
 import { IdentityApp } from "./contracts";
 import { toBeEq } from "./bignumber-jest-matcher";
@@ -56,8 +55,8 @@ export class TestRunner {
     this.mininodeC = new MiniNode(network, this.provider, new MemoryStoreService());
 
     this.multisigAB = await getCreate2MultisigAddress(
-      this.mininodeA.xpub,
-      this.mininodeB.xpub,
+      this.mininodeA.publicIdentifier,
+      this.mininodeB.publicIdentifier,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -66,8 +65,8 @@ export class TestRunner {
     );
 
     this.multisigAC = await getCreate2MultisigAddress(
-      this.mininodeA.xpub,
-      this.mininodeC.xpub,
+      this.mininodeA.publicIdentifier,
+      this.mininodeC.publicIdentifier,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -76,8 +75,8 @@ export class TestRunner {
     );
 
     this.multisigBC = await getCreate2MultisigAddress(
-      this.mininodeB.xpub,
-      this.mininodeC.xpub,
+      this.mininodeB.publicIdentifier,
+      this.mininodeC.publicIdentifier,
       {
         proxyFactory: network.ProxyFactory,
         multisigMastercopy: network.MinimumViableMultisig,
@@ -94,8 +93,8 @@ export class TestRunner {
   */
   async setup() {
     await this.mininodeA.protocolRunner.runSetupProtocol({
-      initiatorXpub: this.mininodeA.xpub,
-      responderXpub: this.mininodeB.xpub,
+      initiatorIdentifier: this.mininodeA.publicIdentifier,
+      responderIdentifier: this.mininodeB.publicIdentifier,
       multisigAddress: this.multisigAB,
     });
 
@@ -105,8 +104,8 @@ export class TestRunner {
     await this.mr.waitForAllPendingPromises();
 
     await this.mininodeB.protocolRunner.runSetupProtocol({
-      initiatorXpub: this.mininodeB.xpub,
-      responderXpub: this.mininodeC.xpub,
+      initiatorIdentifier: this.mininodeB.publicIdentifier,
+      responderIdentifier: this.mininodeC.publicIdentifier,
       multisigAddress: this.multisigBC,
     });
 
@@ -125,13 +124,13 @@ export class TestRunner {
       const json = await mininode.store.getStateChannel(this.multisigAB)!;
       const sc = StateChannel.fromJson(json!);
       const updatedBalance = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
-        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-          [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
-          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+        [AddressZero]: {
+          [this.mininodeA.address]: One,
+          [this.mininodeB.address]: One,
         },
         [TestRunner.TEST_TOKEN_ADDRESS]: {
-          [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
-          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+          [this.mininodeA.address]: One,
+          [this.mininodeB.address]: One,
         },
       });
       await mininode.store.updateFreeBalance(
@@ -145,13 +144,13 @@ export class TestRunner {
       const json = await mininode.store.getStateChannel(this.multisigBC)!;
       const sc = StateChannel.fromJson(json!);
       const updatedSc = sc.addActiveAppAndIncrementFreeBalance(HashZero, {
-        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-          [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
+        [AddressZero]: {
+          [this.mininodeB.address]: One,
+          [this.mininodeC.address]: One,
         },
         [TestRunner.TEST_TOKEN_ADDRESS]: {
-          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-          [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
+          [this.mininodeB.address]: One,
+          [this.mininodeC.address]: One,
         },
       });
       await mininode.store.updateFreeBalance(
@@ -173,22 +172,22 @@ export class TestRunner {
       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
         {
-          to: xkeyKthAddress(this.mininodeA.xpub, 0),
+          to: this.mininodeA.address,
           amount: Two,
         },
         {
-          to: xkeyKthAddress(this.mininodeB.xpub, 0),
+          to: this.mininodeB.address,
           amount: Zero,
         },
       ],
       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
         [
           {
-            to: xkeyKthAddress(this.mininodeA.xpub, 0),
+            to: this.mininodeA.address,
             amount: Two,
           },
           {
-            to: xkeyKthAddress(this.mininodeB.xpub, 0),
+            to: this.mininodeB.address,
             amount: Zero,
           },
         ],
@@ -197,22 +196,22 @@ export class TestRunner {
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.propose, {
       multisigAddress: this.multisigAB,
-      initiatorXpub: this.mininodeA.xpub,
-      responderXpub: this.mininodeB.xpub,
+      initiatorIdentifier: this.mininodeA.publicIdentifier,
+      responderIdentifier: this.mininodeB.publicIdentifier,
       appDefinition: this.identityApp.address,
       abiEncodings: {
         stateEncoding,
         actionEncoding: undefined,
       },
       initiatorDeposit: One,
-      initiatorDepositTokenAddress: tokenAddress,
+      initiatorDepositAssetId: tokenAddress,
       responderDeposit: One,
-      responderDepositTokenAddress: tokenAddress,
+      responderDepositAssetId: tokenAddress,
       defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       initialState,
       outcomeType,
-    });
+    } as ProtocolParams.Propose);
 
     const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
     const [proposal] = [
@@ -231,18 +230,15 @@ export class TestRunner {
       disableLimit: false,
       initialState,
       initiatorBalanceDecrement: One,
-      initiatorDepositTokenAddress: tokenAddress,
-      initiatorXpub: this.mininodeA.xpub,
+      initiatorDepositAssetId: tokenAddress,
+      initiatorIdentifier: this.mininodeA.publicIdentifier,
       multisigAddress: this.multisigAB,
       outcomeType,
       responderBalanceDecrement: One,
-      responderDepositTokenAddress: tokenAddress,
-      responderXpub: this.mininodeB.xpub,
-      appInitiatorAddress: xkeyKthAddress(
-        this.mininodeA.xpub,
-        proposal.appSeqNo,
-      ),
-      appResponderAddress: xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
+      responderDepositAssetId: tokenAddress,
+      responderIdentifier: this.mininodeB.publicIdentifier,
+      appInitiatorIdentifier: this.mininodeA.publicIdentifier,
+      appResponderIdentifier: this.mininodeB.publicIdentifier,
     } as ProtocolParams.Install);
   }
 
@@ -261,22 +257,22 @@ export class TestRunner {
       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
         {
-          to: xkeyKthAddress(this.mininodeA.xpub, 0),
+          to: this.mininodeA.address,
           amount: Two,
         },
         {
-          to: xkeyKthAddress(this.mininodeB.xpub, 0),
+          to: this.mininodeB.address,
           amount: Zero,
         },
       ],
       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
         [
           {
-            to: xkeyKthAddress(this.mininodeA.xpub, 0),
+            to: this.mininodeA.address,
             amount: Two,
           },
           {
-            to: xkeyKthAddress(this.mininodeB.xpub, 0),
+            to: this.mininodeB.address,
             amount: Zero,
           },
         ],
@@ -285,22 +281,22 @@ export class TestRunner {
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.propose, {
       multisigAddress: this.multisigAB,
-      initiatorXpub: this.mininodeA.xpub,
-      responderXpub: this.mininodeB.xpub,
+      initiatorIdentifier: this.mininodeA.publicIdentifier,
+      responderIdentifier: this.mininodeB.publicIdentifier,
       appDefinition: this.identityApp.address,
       abiEncodings: {
         stateEncoding,
         actionEncoding: undefined,
       },
       initiatorDeposit: One,
-      initiatorDepositTokenAddress: tokenAddressA,
+      initiatorDepositAssetId: tokenAddressA,
       responderDeposit: One,
-      responderDepositTokenAddress: tokenAddressB,
+      responderDepositAssetId: tokenAddressB,
       defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
       initialState,
       outcomeType,
-    });
+    } as ProtocolParams.Propose);
 
     const postProposalStateChannel = await this.mininodeA.store.getStateChannel(this.multisigAB);
     const [proposal] = [
@@ -310,8 +306,8 @@ export class TestRunner {
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.install, {
       outcomeType,
       initialState,
-      initiatorXpub: this.mininodeA.xpub,
-      responderXpub: this.mininodeB.xpub,
+      initiatorIdentifier: this.mininodeA.publicIdentifier,
+      responderIdentifier: this.mininodeB.publicIdentifier,
       multisigAddress: this.multisigAB,
       initiatorBalanceDecrement: One,
       responderBalanceDecrement: One,
@@ -323,11 +319,11 @@ export class TestRunner {
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: this.defaultTimeout,
       stateTimeout: Zero,
-      initiatorDepositTokenAddress: tokenAddressA,
-      responderDepositTokenAddress: tokenAddressB,
+      initiatorDepositAssetId: tokenAddressA,
+      responderDepositAssetId: tokenAddressB,
       disableLimit: false,
-      appInitiatorAddress: xkeyKthAddress(this.mininodeA.xpub, proposal.appSeqNo),
-      appResponderAddress: xkeyKthAddress(this.mininodeB.xpub, proposal.appSeqNo),
+      appInitiatorIdentifier: this.mininodeA.publicIdentifier,
+      appResponderIdentifier: this.mininodeB.publicIdentifier,
     } as ProtocolParams.Install);
   }
 
@@ -344,8 +340,8 @@ export class TestRunner {
 
     await this.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.uninstall, {
       appIdentityHash: key,
-      initiatorXpub: this.mininodeA.xpub,
-      responderXpub: this.mininodeB.xpub,
+      initiatorIdentifier: this.mininodeA.publicIdentifier,
+      responderIdentifier: this.mininodeB.publicIdentifier,
       multisigAddress: this.multisigAB,
     });
 
@@ -364,7 +360,7 @@ export class TestRunner {
           mininode.scm
             .get(multisig)!
             .getFreeBalanceClass()
-            .getBalance(tokenAddress, xkeyKthAddress(mininode.xpub, 0)),
+            .getBalance(tokenAddress, getSignerAddressFromPublicIdentifier(mininode.publicIdentifier)),
         ).toBeEq(expected);
       }
     }

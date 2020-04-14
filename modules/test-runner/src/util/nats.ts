@@ -1,10 +1,9 @@
+import { getRandomChannelSigner } from "@connext/crypto";
 import { VerifyNonceDtoType } from "@connext/types";
 import { connect, Client } from "ts-nats";
 import axios, { AxiosResponse } from "axios";
 
 import { env } from "./env";
-import { Wallet } from "ethers";
-import { HDNode } from "ethers/utils";
 
 let natsClient: Client | undefined = undefined;
 
@@ -17,11 +16,11 @@ export const getNatsClient = (): Client => {
 };
 
 export const connectNats = async (): Promise<Client> => {
-  const hDNode = HDNode.fromMnemonic(Wallet.createRandom().mnemonic);
+  const signer = getRandomChannelSigner();
   if (!natsClient) {
     const adminJWT: AxiosResponse<string> = await axios.post(`${env.nodeUrl}/auth`, {
       sig: "0xbeef",
-      userPublicIdentifier: hDNode.neuter().extendedKey,
+      userIdentifier: signer.publicIdentifier,
       adminToken: env.adminToken,
     } as VerifyNonceDtoType);
     natsClient = await connect({ servers: ["nats://172.17.0.1:4222"], userJWT: adminJWT.data });

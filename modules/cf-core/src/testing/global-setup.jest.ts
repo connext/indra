@@ -1,15 +1,13 @@
-import { CF_PATH } from "@connext/types";
 import dotenvExtended from "dotenv-extended";
 import { Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { parseEther } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { deployTestArtifactsToChain } from "./contracts";
 import {
-  A_EXTENDED_PRIVATE_KEY,
-  B_EXTENDED_PRIVATE_KEY,
-  C_EXTENDED_PRIVATE_KEY,
+  A_PRIVATE_KEY,
+  B_PRIVATE_KEY,
+  C_PRIVATE_KEY,
 } from "./test-constants.jest";
 
 dotenvExtended.load();
@@ -30,8 +28,8 @@ const fundAddress = async (to: string, ethProvider: JsonRpcProvider): Promise<vo
 export default async function globalSetup(): Promise<void> {
   const ethProvider = new JsonRpcProvider(env.ETHPROVIDER_URL) as any;
   const fundedAccount = Wallet.createRandom().connect(ethProvider);
-  const addresses = [A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY, C_EXTENDED_PRIVATE_KEY].map(
-    (xprv: string): string => fromExtendedKey(xprv).derivePath(`${CF_PATH}/0`).address,
+  const addresses = [A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY].map(
+    (prv: string): string => (new Wallet(prv)).address,
   );
   await fundAddress(addresses[0], ethProvider);
   await fundAddress(addresses[1], ethProvider);

@@ -1,11 +1,7 @@
 import { BigNumber as ethersBN, BigNumberish, Interface, ParamType } from "ethers/utils";
 
 export { Contract } from "ethers";
-export {
-  JsonRpcProvider,
-  TransactionReceipt,
-  TransactionResponse,
-} from "ethers/providers";
+export { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
 export { BigNumberish, Network, Transaction } from "ethers/utils";
 
 // special strings
@@ -15,12 +11,14 @@ export type Address = string; // aka HexString of length 42
 export type Bytes32 = string; // aka HexString of length 66
 export type DecString = string; // eg "3.14"
 export type HexString = string; // eg "0xabc123" of arbitrary length
-export type Xpub = string; // eg "xpub6AbC...123" (str length = 111)
+export type PublicKey = string; // Hex string representing a public key string
 
 export type BigNumber = ethersBN;
 export const BigNumber = ethersBN;
 
 export type HexObject = { _hex: HexString };
+
+export type StringMapping = { [key: string]: string };
 
 export interface EthSignature {
   r: string;

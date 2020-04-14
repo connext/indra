@@ -13,7 +13,6 @@ import {
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getMnemonic,
   getProtocolFromData,
   MessagingEventData,
   PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
@@ -24,10 +23,12 @@ import {
   TOKEN_AMOUNT,
   TOKEN_AMOUNT_SM,
   getNatsClient,
+  env,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 import { before } from "mocha";
+import { getRandomChannelSigner } from "@connext/crypto";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,
@@ -142,9 +143,11 @@ describe("Async transfer offline tests", () => {
    * and money is returned to the hubs channel (redeemed payment)
    */
   it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later (sender offline for take action)", async () => {
+    const senderSigner = getRandomChannelSigner(env.ethProviderUrl);
+    const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
     // create the sender client and receiver clients + fund
-    senderClient = await createClientWithMessagingLimits();
-    receiverClient = await createClientWithMessagingLimits();
+    senderClient = await createClientWithMessagingLimits({ signer: senderSigner });
+    receiverClient = await createClientWithMessagingLimits({ signer: receiverSigner });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
     // transfer from the sender to the receiver, then take the
@@ -165,16 +168,16 @@ describe("Async transfer offline tests", () => {
     // verify transfer
     const expected = {
       amount: TOKEN_AMOUNT_SM,
-      receiverPublicIdentifier: receiverClient.publicIdentifier,
+      receiverIdentifier: receiverClient.publicIdentifier,
       paymentId,
-      senderPublicIdentifier: senderClient.publicIdentifier,
+      senderIdentifier: senderClient.publicIdentifier,
       status: LinkedTransferStatus.COMPLETED,
       assetId: tokenAddress,
     };
     await verifyTransfer(receiverClient, expected);
     // reconnect the sender
     const reconnected = await createClient({
-      mnemonic: getMnemonic(senderClient.publicIdentifier),
+      signer: senderSigner,
       store: senderClient.store,
     });
     // NOTE: fast forwarding does not propagate to node timers
@@ -184,7 +187,7 @@ describe("Async transfer offline tests", () => {
     // an extended timeout)
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
-    expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
+    expect(reconnected.signerAddress).to.be.equal(senderClient.signerAddress);
     // make sure the transfer is properly reclaimed
     const reconnectedApps = await senderClient.getAppInstances();
     expect(reconnectedApps.length).to.be.equal(senderApps.length - 1);
@@ -200,12 +203,15 @@ describe("Async transfer offline tests", () => {
    * and money is returned to the hubs channel (redeemed payment)
    */
   it("sender installs, receiver installs, takesAction, then uninstalls. Node takes action with sender then tries to uninstall, but sender is offline then comes online later (sender offline for uninstall)", async () => {
+    const senderSigner = getRandomChannelSigner(env.ethProviderUrl);
+    const receiverSigner = getRandomChannelSigner(env.ethProviderUrl);
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits({
       ceiling: { sent: 1 }, // for deposit app
       protocol: "uninstall",
+      signer: senderSigner,
     });
-    receiverClient = await createClientWithMessagingLimits();
+    receiverClient = await createClientWithMessagingLimits({ signer: receiverSigner });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
 
@@ -236,9 +242,9 @@ describe("Async transfer offline tests", () => {
     const expected = {
       amount: TOKEN_AMOUNT_SM,
       assetId: tokenAddress,
-      receiverPublicIdentifier: receiverClient.publicIdentifier,
+      receiverIdentifier: receiverClient.publicIdentifier,
       paymentId,
-      senderPublicIdentifier: senderClient.publicIdentifier,
+      senderIdentifier: senderClient.publicIdentifier,
       status: LinkedTransferStatus.COMPLETED,
     };
     await verifyTransfer(receiverClient, expected);
@@ -246,12 +252,12 @@ describe("Async transfer offline tests", () => {
     clock.tick(60_000 * 3);
     // reconnect the sender
     const reconnected = await createClient({
-      mnemonic: getMnemonic(senderClient.publicIdentifier),
+      signer: senderSigner,
       store: senderClient.store,
     });
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
-    expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
+    expect(reconnected.signerAddress).to.be.equal(senderClient.signerAddress);
     // make sure the transfer is properly reclaimed
     const reconnectedApps = await senderClient.getAppInstances();
     expect(reconnectedApps.length).to.be.equal(senderApps.length);

@@ -60,7 +60,7 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
   ).deploy();
 
   const mvmContract = await new ContractFactory(
-    MinimumViableMultisig.abi,
+    MinimumViableMultisig.abi as any,
     MinimumViableMultisig.bytecode,
     wallet,
   ).deploy();

@@ -1,15 +1,16 @@
 import {
   bigNumberifyJson,
   EventNames,
+  IChannelSigner,
   ILoggerService,
   IMessagingService,
   IStoreService,
+  Message,
   MethodName,
   NetworkContext,
-  Message,
   ProtocolMessage,
+  PublicIdentifier,
 } from "@connext/types";
-import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
@@ -17,7 +18,7 @@ import { eventNameToImplementation, methodNameToImplementation } from "./methods
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
-import { MethodRequest, MethodResponse } from "./types"; 
+import { MethodRequest, MethodResponse } from "./types";
 import { logTime } from "./utils";
 /**
  * This class registers handlers for requests to get or set some information
@@ -30,7 +31,7 @@ export class RequestHandler {
   router!: RpcRouter;
 
   constructor(
-    readonly publicIdentifier: string,
+    readonly publicIdentifier: PublicIdentifier,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
     readonly store: IStoreService,
@@ -38,7 +39,7 @@ export class RequestHandler {
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
     readonly provider: JsonRpcProvider,
-    readonly wallet: Signer,
+    readonly signer: IChannelSigner,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
     public readonly log: ILoggerService,
@@ -58,10 +59,7 @@ export class RequestHandler {
    * @param method
    * @param req
    */
-  public async callMethod(
-    method: MethodName,
-    req: MethodRequest,
-  ): Promise<MethodResponse> {
+  public async callMethod(method: MethodName, req: MethodRequest): Promise<MethodResponse> {
     const start = Date.now();
     const result: MethodResponse = {
       type: req.type,
@@ -144,12 +142,12 @@ export class RequestHandler {
     return this.events.has(event);
   }
 
-  public async getSigner(): Promise<Signer> {
-    return this.wallet;
+  public getSigner(): IChannelSigner {
+    return this.signer;
   }
 
   public async getSignerAddress(): Promise<string> {
-    const signer = await this.getSigner();
+    const signer = this.getSigner();
     return await signer.getAddress();
   }
 }

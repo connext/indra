@@ -18,22 +18,22 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
   }
 
   async findByUserPublicIdentifier(
-    userPublicIdentifier: string,
+    userIdentifier: string,
   ): Promise<OnchainTransaction[] | undefined> {
     const txs = await this.createQueryBuilder("onchainTransaction")
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
-      .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
+      .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
       .orderBy("onchainTransaction.id", "ASC")
       .getMany();
     return txs;
   }
 
   async findLatestWithdrawalByUserPublicIdentifier(
-    userPublicIdentifier: string,
+    userIdentifier: string,
   ): Promise<OnchainTransaction | undefined> {
     const tx = await this.createQueryBuilder("onchainTransaction")
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
-      .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
+      .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
       .where("onchainTransaction.reason = :reason", { reason: TransactionReason.USER_WITHDRAWAL })
       .orderBy("onchainTransaction.id", "DESC")
       .getOne();

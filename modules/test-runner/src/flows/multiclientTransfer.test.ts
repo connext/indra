@@ -50,7 +50,7 @@ describe.skip("Full Flow: Multi-client transfer", () => {
         async (data: EventPayloads.LinkedTransferUnlocked) => {
           gatewayTransfers.received += 1;
           const freeBalance = await gateway.getFreeBalance();
-          if (freeBalance[gateway.freeBalanceAddress].isZero()) {
+          if (freeBalance[gateway.signerAddress].isZero()) {
             res();
           }
           if (Date.now() - startTime >= DURATION) {

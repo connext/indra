@@ -1,18 +1,13 @@
-import { CF_PATH, IMessagingService, IStoreService } from "@connext/types";
+import { ChannelSigner } from "@connext/crypto";
+import { IMessagingService, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
 import { JsonRpcProvider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { Node } from "../node";
-import { computeRandomExtendedPrvKey } from "../xkeys";
 
 import { MemoryLockService, MemoryMessagingService, MemoryStoreServiceFactory } from "./services";
-import {
-  A_EXTENDED_PRIVATE_KEY,
-  B_EXTENDED_PRIVATE_KEY,
-  C_EXTENDED_PRIVATE_KEY,
-} from "./test-constants.jest";
+import { A_PRIVATE_KEY, B_PRIVATE_KEY, C_PRIVATE_KEY } from "./test-constants.jest";
 import { Logger } from "./logger";
 
 export const env = {
@@ -38,22 +33,23 @@ export async function setup(
   const setupContext: SetupContext = {};
 
   const nodeConfig = { STORE_KEY_PREFIX: "test" };
-  const provider = new JsonRpcProvider(global["wallet"].provider.connection.url);
-
-  const extendedPrvKeyA = A_EXTENDED_PRIVATE_KEY;
-  let extendedPrvKeyB = B_EXTENDED_PRIVATE_KEY;
+  const ethUrl = global["network"]["provider"].connection.url;
+  const provider = new JsonRpcProvider(ethUrl);
+  const prvKeyA = A_PRIVATE_KEY;
+  let prvKeyB = B_PRIVATE_KEY;
 
   if (newExtendedPrvKey) {
     const newExtendedPrvKeys = await generateNewFundedExtendedPrvKeys(
       global["wallet"].privateKey,
       provider,
     );
-    extendedPrvKeyB = newExtendedPrvKeys.B_EXTENDED_PRV_KEY;
+    prvKeyB = newExtendedPrvKeys.B_PRV_KEY;
   }
 
   const lockService = new MemoryLockService();
 
-  const hdNodeA = fromExtendedKey(extendedPrvKeyA).derivePath(CF_PATH);
+  const channelSignerA = new ChannelSigner(prvKeyA, ethUrl);
+
   const storeServiceA = storeServiceFactory.createStoreService();
   const nodeA = await Node.create(
     messagingService,
@@ -61,9 +57,8 @@ export async function setup(
     global["network"],
     nodeConfig,
     provider,
+    channelSignerA,
     lockService,
-    hdNodeA.neuter().extendedKey,
-    (index: string): Promise<string> => Promise.resolve(hdNodeA.derivePath(index).privateKey),
     0,
     new Logger("CreateClient", env.logLevel, true, "A"),
   );
@@ -73,7 +68,7 @@ export async function setup(
     store: storeServiceA,
   };
 
-  const hdNodeB = fromExtendedKey(extendedPrvKeyB).derivePath(CF_PATH);
+  const channelSignerB = new ChannelSigner(prvKeyB, ethUrl);
   const storeServiceB = storeServiceFactory.createStoreService();
   const nodeB = await Node.create(
     messagingService,
@@ -81,9 +76,8 @@ export async function setup(
     global["network"],
     nodeConfig,
     provider,
+    channelSignerB,
     lockService,
-    hdNodeB.neuter().extendedKey,
-    (index: string): Promise<string> => Promise.resolve(hdNodeB.derivePath(index).privateKey),
     0,
     new Logger("CreateClient", env.logLevel, true, "B"),
   );
@@ -94,7 +88,7 @@ export async function setup(
 
   let nodeC: Node;
   if (nodeCPresent) {
-    const hdNodeC = fromExtendedKey(C_EXTENDED_PRIVATE_KEY).derivePath(CF_PATH);
+    const channelSignerC = new ChannelSigner(C_PRIVATE_KEY, ethUrl);
     const storeServiceC = storeServiceFactory.createStoreService();
     nodeC = await Node.create(
       messagingService,
@@ -102,9 +96,8 @@ export async function setup(
       global["network"],
       nodeConfig,
       provider,
+      channelSignerC,
       lockService,
-      hdNodeC.neuter().extendedKey,
-      (index: string): Promise<string> => Promise.resolve(hdNodeC.derivePath(index).privateKey),
       0,
       new Logger("CreateClient", env.logLevel, true, "C"),
     );
@@ -134,27 +127,21 @@ export async function generateNewFundedExtendedPrvKeys(
   provider: JsonRpcProvider,
 ) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
-  const A_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();
-  const B_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();
-
-  const signerAPrivateKey = fromExtendedKey(A_EXTENDED_PRV_KEY).derivePath(CF_PATH).privateKey;
-  const signerBPrivateKey = fromExtendedKey(B_EXTENDED_PRV_KEY).derivePath(CF_PATH).privateKey;
-
-  const signerAAddress = new Wallet(signerAPrivateKey).address;
-  const signerBAddress = new Wallet(signerBPrivateKey).address;
+  const walletA = Wallet.createRandom();
+  const walletB = Wallet.createRandom();
 
   const transactionToA: TransactionRequest = {
-    to: signerAAddress,
+    to: walletA.address,
     value: parseEther("1").toHexString(),
   };
   const transactionToB: TransactionRequest = {
-    to: signerBAddress,
+    to: walletB.address,
     value: parseEther("1").toHexString(),
   };
   await fundedWallet.sendTransaction(transactionToA);
   await fundedWallet.sendTransaction(transactionToB);
   return {
-    A_EXTENDED_PRV_KEY,
-    B_EXTENDED_PRV_KEY,
+    A_PRV_KEY: walletA.privateKey,
+    B_PRV_KEY: walletB.privateKey,
   };
 }

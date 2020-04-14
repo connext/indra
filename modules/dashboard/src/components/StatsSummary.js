@@ -71,7 +71,7 @@ const StatsSummary = ({ classes, messaging }) => {
       const res = await messaging.getAllChannelStates();
       let xPubsToSearch = [];
       for (let row of res) {
-        xPubsToSearch.push(row.userPublicIdentifier);
+        xPubsToSearch.push(row.userIdentifier);
       }
 
       setAllChannels(xPubsToSearch);

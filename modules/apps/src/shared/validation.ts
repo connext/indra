@@ -3,6 +3,7 @@ import {
   MethodParams,
   stringify,
   DepositAppName,
+  getAddressFromAssetId,
 } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -36,8 +37,8 @@ const appProposalMatchesRegistry = (
  * is uninstalled.
  *
  * @param params
- * @param initiatorPublicIdentifier
- * @param responderPublicIdentifier
+ * @param initiatorIdentifier
+ * @param responderIdentifier
  */
 export const baseCoinTransferValidation = (
   initiatorDeposit: BigNumber,
@@ -66,8 +67,8 @@ export const baseCoinTransferValidation = (
  * is a unidirectional receiver.
  *
  * @param params
- * @param initiatorPublicIdentifier
- * @param responderPublicIdentifier
+ * @param initiatorIdentifier
+ * @param responderIdentifier
  */
 export const unidirectionalCoinTransferValidation = (
   initiatorDeposit: BigNumber,
@@ -113,19 +114,24 @@ export const commonAppProposalValidation = (
 ): void => {
   const {
     initiatorDeposit,
-    initiatorDepositTokenAddress,
+    initiatorDepositAssetId,
     responderDeposit,
-    responderDepositTokenAddress,
+    responderDepositAssetId,
   } = params;
 
   appProposalMatchesRegistry(params, appRegistryInfo);
+
+  const initiatorDepositTokenAddress = 
+    getAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = 
+    getAddressFromAssetId(responderDepositAssetId);
 
   if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
     throw new Error(`Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}`);
   }
 
   if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported responderDepositTokenAddress: ${responderDepositTokenAddress}`);
+    throw new Error(`Unsupported responderDepositAssetId: ${responderDepositTokenAddress}`);
   }
 
   // NOTE: may need to remove this condition if we start working

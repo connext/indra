@@ -2,7 +2,6 @@ export {
   getCreate2MultisigAddress,
   Node as CFCore,
   scanForCriticalAddresses,
-  xkeyKthAddress,
 } from "@connext/cf-core";
 
 export {

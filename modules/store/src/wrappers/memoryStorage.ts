@@ -58,7 +58,7 @@ export class MemoryStorage implements IClientStore {
 
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     const channel = [...this.channels.values()].find(
-      channel => [...channel.userNeuteredExtendedKeys].sort().toString() 
+      channel => [...channel.userIdentifiers].sort().toString() 
         === owners.sort().toString(),
     );
     if (!channel) {

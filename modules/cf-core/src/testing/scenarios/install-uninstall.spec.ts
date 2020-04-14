@@ -1,7 +1,5 @@
 import { OutcomeType } from "@connext/types";
-import { Two, Zero } from "ethers/constants";
-
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
+import { Two, Zero, AddressZero } from "ethers/constants";
 
 import { toBeEq } from "../bignumber-jest-matcher";
 import { Participant, TestRunner } from "../test-runner";
@@ -28,18 +26,18 @@ async function runDirectInstallUninstallTest(
   if (testFundingType === TestFundingType.SPLIT) {
     await tr.installSplitDeposits(
       outcomeType,
-      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      AddressZero,
       TestRunner.TEST_TOKEN_ADDRESS,
     );
-    tr.assertFB(Participant.A, CONVENTION_FOR_ETH_TOKEN_ADDRESS, Zero);
+    tr.assertFB(Participant.A, AddressZero, Zero);
     tr.assertFB(Participant.B, TestRunner.TEST_TOKEN_ADDRESS, Zero);
 
     await tr.uninstall();
-    tr.assertFB(Participant.A, CONVENTION_FOR_ETH_TOKEN_ADDRESS, Two);
+    tr.assertFB(Participant.A, AddressZero, Two);
     tr.assertFB(Participant.B, TestRunner.TEST_TOKEN_ADDRESS, Zero);
   } else {
     const tokenAddress = {
-      [TestFundingType.ETH]: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      [TestFundingType.ETH]: AddressZero,
       [TestFundingType.ERC20]: TestRunner.TEST_TOKEN_ADDRESS,
     }[testFundingType];
 

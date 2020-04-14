@@ -1,24 +1,24 @@
-import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
-import { EthereumCommitment, createRandom32ByteHexString } from "@connext/types";
+import { getRandomChannelSigner, verifyChannelMessage } from "@connext/crypto";
+import { IChannelSigner, EthereumCommitment } from "@connext/types";
 import { HashZero } from "ethers/constants";
-import { SigningKey, hashMessage } from "ethers/utils";
+import { hashMessage } from "ethers/utils";
 
 import { assertIsValidSignature } from "./utils";
 
 describe("Signature Validator Helper", () => {
-  let signer: SigningKey;
+  let signer: IChannelSigner;
   let signature: string;
   let commitment: EthereumCommitment;
   let commitmentHash: string;
 
   beforeEach(async () => {
-    signer = new SigningKey(createRandom32ByteHexString());
+    signer = getRandomChannelSigner();
 
     commitment = {
       hashToSign: () => hashMessage("test"),
     } as EthereumCommitment;
     commitmentHash = commitment.hashToSign();
-    signature = await signChannelMessage(signer.privateKey, commitmentHash);
+    signature = await signer.signMessage(commitmentHash);
   });
 
   it("validates signatures correctly", async () => {
@@ -42,7 +42,7 @@ describe("Signature Validator Helper", () => {
   it("throws if the signature is wrong", async () => {
     const rightHash = commitment.hashToSign();
     const wrongHash = HashZero.replace("00", "11"); // 0x11000...
-    const signature = await signChannelMessage(signer.privateKey, wrongHash);
+    const signature = await signer.signMessage(wrongHash);
     const wrongSigner = await verifyChannelMessage(rightHash, signature);
     await expect(assertIsValidSignature(signer.address, commitmentHash, signature)).rejects.toThrow(
       `Validating a signature with expected signer ${signer.address} but recovered ${wrongSigner} for commitment hash ${rightHash}.`,

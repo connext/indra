@@ -1,23 +1,21 @@
-import { AppIdentity, CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
+import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, PublicIdentifier } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import {
   BigNumber,
-  defaultAbiCoder,
   getAddress,
   Interface,
   keccak256,
   solidityKeccak256,
   solidityPack,
 } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 import memoize from "memoizee";
 
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
-import { xkeyKthAddress } from "./xkeys";
 
 export const logTime = (log: ILoggerService, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -42,7 +40,7 @@ export function appIdentityToHash(appIdentity: AppIdentity): string {
         appIdentity.channelNonce,
         keccak256(solidityPack(["address[]"], [appIdentity.participants])),
         appIdentity.appDefinition,
-        appIdentity.defaultTimeout
+        appIdentity.defaultTimeout,
       ],
     ),
   );
@@ -76,22 +74,14 @@ export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
  * existing channels
  */
 export const getCreate2MultisigAddress = async (
-  initiatorXpub: string,
-  responderXpub: string,
+  initiatorIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   addresses: CriticalStateChannelAddresses,
   ethProvider: JsonRpcProvider,
   legacyKeygen?: boolean,
   toxicBytecode?: string,
 ): Promise<string> => {
   const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
-
-  const xkeysToKthAddresses = xkeys =>
-    xkeys
-      .map(xkey =>
-        legacyKeygen === true
-          ? fromExtendedKey(xkey).address
-          : fromExtendedKey(xkey).derivePath("0").address,
-      );
 
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
@@ -107,7 +97,10 @@ export const getCreate2MultisigAddress = async (
             keccak256(
               // see encoding notes
               new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                xkeysToKthAddresses([initiatorXpub, responderXpub]),
+                [
+                  getSignerAddressFromPublicIdentifier(initiatorIdentifier),
+                  getSignerAddressFromPublicIdentifier(responderIdentifier),
+                ],
               ]),
             ),
             // hash chainId + saltNonce to ensure multisig addresses are *always* unique
@@ -133,8 +126,8 @@ const memoizedGetAddress = memoize((params: string): string => getAddress(params
 });
 
 export const scanForCriticalAddresses = async (
-  initiatorXpub: string,
-  responderXpub: string,
+  initiatorIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   expectedMultisig: string,
   ethProvider: JsonRpcProvider,
   moreAddressHistory?: {
@@ -186,8 +179,8 @@ export const scanForCriticalAddresses = async (
       for (const multisigMastercopy of mastercopies) {
         for (const proxyFactory of proxyFactories) {
           let calculated = await getCreate2MultisigAddress(
-            initiatorXpub,
-            responderXpub,
+            initiatorIdentifier,
+            responderIdentifier,
             { proxyFactory, multisigMastercopy },
             ethProvider,
             legacyKeygen,
@@ -215,8 +208,11 @@ export function assertSufficientFundsWithinFreeBalance(
   depositAmount: BigNumber,
 ): void {
   const freeBalanceForToken =
-    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
-    Zero;
+    channel.getFreeBalanceClass()
+      .getBalance(
+        tokenAddress, 
+        getSignerAddressFromPublicIdentifier(publicIdentifier),
+      ) || Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw new Error(

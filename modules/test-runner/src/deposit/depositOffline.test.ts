@@ -8,7 +8,6 @@ import {
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getMnemonic,
   getProtocolFromData,
   MessagingEvent,
   MessagingEventData,
@@ -17,9 +16,11 @@ import {
   TestMessagingService,
   TOKEN_AMOUNT,
   ZERO_ZERO_ONE_ETH,
+  env,
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
+import { getRandomChannelSigner } from "@connext/crypto";
 
 const { CF_METHOD_TIMEOUT } = utils;
 
@@ -154,9 +155,11 @@ describe("Deposit offline tests", () => {
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
+    const signer = getRandomChannelSigner(env.ethProviderUrl);
     client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: 0 },
+      signer,
     });
 
     await makeDepositCall({
@@ -167,7 +170,7 @@ describe("Deposit offline tests", () => {
       protocol: "install",
     });
 
-    await createClient({ mnemonic: getMnemonic(client.publicIdentifier) });
+    await createClient({ signer });
   });
 
 });

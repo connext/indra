@@ -1,4 +1,5 @@
-import { delay, EventNames, IConnextClient } from "@connext/types";
+import { ChannelSigner, getRandomChannelSigner } from "@connext/crypto";
+import { delay, EventNames, IConnextClient, IChannelSigner } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 import * as lolex from "lolex";
@@ -10,7 +11,6 @@ import {
   ethProvider,
   expect,
   fundChannel,
-  getMnemonic,
   getProtocolFromData,
   MessagingEventData,
   RECEIVED,
@@ -18,19 +18,28 @@ import {
   TestMessagingService,
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
+  env,
 } from "../util";
 
 describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
+  let signer: IChannelSigner;
 
   const createAndFundChannel = async (
     messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
     amount: BigNumber = ETH_AMOUNT_SM,
     assetId: string = AddressZero,
   ): Promise<IConnextClient> => {
-    // make sure the tokenAddress is set
-    client = await createClientWithMessagingLimits(messagingConfig);
+    // make sure the signer is set
+    messagingConfig.signer = messagingConfig.signer || getRandomChannelSigner(env.ethProviderUrl);
+    signer = typeof messagingConfig.signer === "string" 
+      ? new ChannelSigner(messagingConfig.signer, env.ethProviderUrl) 
+      : messagingConfig.signer;
+    client = await createClientWithMessagingLimits({
+      signer,
+      ...messagingConfig,
+    });
     await fundChannel(client, amount, assetId);
     return client;
   };
@@ -111,12 +120,12 @@ describe("Withdraw offline tests", () => {
 
     // restart the client
     const reconnected = await createClient({
-      mnemonic: getMnemonic(client.publicIdentifier),
+      signer,
       store: client.store,
     });
     expect(reconnected.publicIdentifier).to.be.equal(client.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(client.multisigAddress);
-    expect(reconnected.freeBalanceAddress).to.be.equal(client.freeBalanceAddress);
+    expect(reconnected.signerAddress).to.be.equal(client.signerAddress);
 
     await new Promise((resolve: Function) => {
       ethProvider.once(client.multisigAddress, async () => {

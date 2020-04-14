@@ -1,13 +1,15 @@
 import { SupportedApplications } from "@connext/apps";
-import { xkeyKthAddress as xpubToAddress } from "@connext/cf-core";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
+  getAddressFromAssetId,
   Address,
   AppAction,
   AppInstanceJson,
   AppInstanceProposal,
   AppRegistry,
   AppState,
+  AssetId,
   ChannelMethods,
   ChannelProviderConfig,
   ConditionalTransferTypes,
@@ -18,11 +20,11 @@ import {
   DepositAppState,
   EventNames,
   IChannelProvider,
+  IChannelSigner,
   IClientStore,
   IConnextClient,
   ILoggerService,
   INodeApiClient,
-  KeyGen,
   MethodNames,
   MethodParams,
   MethodResults,
@@ -34,12 +36,12 @@ import {
   SimpleLinkedTransferAppName,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { decryptWithPrivateKey } from "@connext/crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
@@ -63,31 +65,31 @@ export class ConnextClient implements IConnextClient {
   public channelProvider: IChannelProvider;
   public config: NodeResponses.GetConfig;
   public ethProvider: providers.JsonRpcProvider;
-  public freeBalanceAddress: string;
   public listener: ConnextListener;
   public log: ILoggerService;
   public messaging: MessagingService;
   public multisigAddress: Address;
   public network: Network;
   public node: INodeApiClient;
-  public nodePublicIdentifier: string;
-  public nodeFreeBalanceAddress: string;
+  public nodeIdentifier: string;
+  public nodeSignerAddress: string;
   public publicIdentifier: string;
+  public signer: IChannelSigner;
+  public signerAddress: string;
   public store: IClientStore;
   public token: Contract;
 
   private opts: InternalClientOptions;
-  private keyGen: KeyGen;
 
   private depositController: DepositController;
+  private hashlockTransferController: HashLockTransferController;
+  private linkedTransferController: LinkedTransferController;
+  private resolveHashLockTransferController: ResolveHashLockTransferController;
+  private resolveLinkedTransferController: ResolveLinkedTransferController;
+  private resolveSignedTransferController: ResolveSignedTransferController;
+  private signedTransferController: SignedTransferController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
-  private linkedTransferController: LinkedTransferController;
-  private resolveLinkedTransferController: ResolveLinkedTransferController;
-  private hashlockTransferController: HashLockTransferController;
-  private resolveHashLockTransferController: ResolveHashLockTransferController;
-  private signedTransferController: SignedTransferController;
-  private resolveSignedTransferController: ResolveSignedTransferController;
 
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -95,7 +97,7 @@ export class ConnextClient implements IConnextClient {
     this.channelProvider = opts.channelProvider;
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
-    this.keyGen = opts.keyGen;
+    this.signer = opts.signer;
     this.log = opts.logger.newContext("ConnextClient");
     this.messaging = opts.messaging;
     this.network = opts.network;
@@ -103,11 +105,11 @@ export class ConnextClient implements IConnextClient {
     this.store = opts.store;
     this.token = opts.token;
 
-    this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
-    this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
+    this.signerAddress = this.channelProvider.config.signerAddress;
+    this.publicIdentifier = this.channelProvider.config.userIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
-    this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.nodeFreeBalanceAddress = xpubToAddress(this.nodePublicIdentifier);
+    this.nodeIdentifier = this.opts.config.nodeIdentifier;
+    this.nodeSignerAddress = getSignerAddressFromPublicIdentifier(this.nodeIdentifier);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -170,8 +172,8 @@ export class ConnextClient implements IConnextClient {
       return;
     }
 
-    // ensure that node and user xpub are different
-    if (this.nodePublicIdentifier === this.publicIdentifier) {
+    // ensure that node and user address are different
+    if (this.nodeIdentifier === this.publicIdentifier) {
       throw new Error(
         "Client must be instantiated with a secret that is different from the node's secret",
       );
@@ -181,14 +183,13 @@ export class ConnextClient implements IConnextClient {
     // End goal is to use this to restart the cfNode after restoring state
     const channelProvider = await createCFChannelProvider({
       ethProvider: this.ethProvider,
-      keyGen: this.keyGen,
+      signer: this.signer,
       lockService: { acquireLock: this.node.acquireLock.bind(this.node) },
       messaging: this.messaging as any,
       contractAddresses: this.config.contractAddresses,
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl: this.channelProvider.config.nodeUrl,
       store: this.store,
-      xpub: this.publicIdentifier,
       logger: this.log.newContext("CFChannelProvider"),
     });
     // TODO: this is very confusing to have to do, lets try to figure out a better way
@@ -243,14 +244,9 @@ export class ConnextClient implements IConnextClient {
     }
     const { name, chainId, appDefinitionAddress } = appDetails as any;
     if (name) {
-      return registry.find(app => 
-        app.name === name &&
-        app.chainId === chainId,
-      );
+      return registry.find(app => app.name === name && app.chainId === chainId);
     }
-    return registry.find(app =>
-      app.appDefinitionAddress === appDefinitionAddress,
-    );
+    return registry.find(app => app.appDefinitionAddress === appDefinitionAddress);
   };
 
   public createChannel = async (): Promise<NodeResponses.CreateChannel> => {
@@ -320,7 +316,7 @@ export class ConnextClient implements IConnextClient {
   ): Promise<PublicResults.LinkedTransfer> => {
     return this.linkedTransferController.linkedTransfer({
       amount: params.amount,
-      assetId: params.assetId || AddressZero,
+      assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       meta: params.meta,
       paymentId: params.paymentId || createRandom32ByteHexString(),
@@ -341,10 +337,7 @@ export class ConnextClient implements IConnextClient {
     params: PublicParams.Withdraw,
     signatures: string[],
   ): Promise<void> => {
-    return await this.withdrawalController.saveWithdrawCommitmentToStore(
-      params,
-      signatures,
-    );
+    return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
   };
 
   public resolveCondition = async (
@@ -455,7 +448,7 @@ export class ConnextClient implements IConnextClient {
       await this.channelProvider.send(ChannelMethods.chan_restoreState, {});
       this.log.info(`Found state to restore from store's backup`);
     } catch (e) {
-      const { 
+      const {
         channel,
         setupCommitment,
         setStateCommitments,
@@ -538,27 +531,27 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getFreeBalance = async (
-    assetId: string = AddressZero,
+    assetId: AssetId | Address = AddressZero,
   ): Promise<MethodResults.GetFreeBalanceState> => {
     if (typeof assetId !== "string") {
       throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
     }
-    const normalizedAssetId = getAddress(assetId);
+    const tokenAddress = getAddressFromAssetId(assetId);
     try {
       return await this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
         multisigAddress: this.multisigAddress,
-        tokenAddress: getAddress(assetId),
+        assetId: tokenAddress,
       } as MethodParams.GetFreeBalanceState);
     } catch (e) {
-      const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
+      const error = `No free balance exists for the specified token: ${tokenAddress}`;
       if (e.message.includes(error)) {
         // if there is no balance, return undefined
         // NOTE: can return free balance obj with 0s,
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[this.nodeFreeBalanceAddress] = new BigNumber(0);
-        obj[this.freeBalanceAddress] = new BigNumber(0);
+        obj[this.nodeSignerAddress] = new BigNumber(0);
+        obj[this.signerAddress] = new BigNumber(0);
         return obj;
       }
       throw e;
@@ -607,7 +600,8 @@ export class ConnextClient implements IConnextClient {
     }
     // check state is not finalized
     const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
-    if ((state as any).finalized) { // FIXME: casting?
+    if ((state as any).finalized) {
+      // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(MethodNames.chan_takeAction, {
@@ -630,7 +624,8 @@ export class ConnextClient implements IConnextClient {
     }
     // check state is not finalized
     const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
-    if ((state as any).finalized) { // FIXME: casting?
+    if ((state as any).finalized) {
+      // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(MethodNames.chan_updateState, {
@@ -698,8 +693,9 @@ export class ConnextClient implements IConnextClient {
   ): Promise<PublicResults.ResolveLinkedTransfer> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
-    let privateKey = await this.keyGen("0");
-    const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
+    const preImage = await this.channelProvider.send(ChannelMethods.chan_decrypt, {
+      encryptedPreImage,
+    });
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveLinkedTransferController.resolveLinkedTransfer({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
@@ -803,7 +799,9 @@ export class ConnextClient implements IConnextClient {
       try {
         await this.rejectInstallApp(hanging.identityHash);
       } catch (e) {
-        this.log.error(`Could not remove proposal: ${hanging.identityHash}. Error: ${e.stack || e.message}`);
+        this.log.error(
+          `Could not remove proposal: ${hanging.identityHash}. Error: ${e.stack || e.message}`,
+        );
       }
     }
   };
@@ -820,7 +818,9 @@ export class ConnextClient implements IConnextClient {
       try {
         await this.uninstallApp(app.identityHash);
       } catch (e) {
-        this.log.error(`Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`);
+        this.log.error(
+          `Could not uninstall app: ${app.identityHash}. Error: ${e.stack || e.message}`,
+        );
       }
     }
   };
@@ -841,23 +841,27 @@ export class ConnextClient implements IConnextClient {
 
       // if we are not the initiator, continue
       const latestState = appInstance.latestState as DepositAppState;
-      if (latestState.transfers[0].to !== this.freeBalanceAddress) {
+      if (latestState.transfers[0].to !== this.signerAddress) {
         continue;
       }
 
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
-      const currentMultisigBalance = assetId === AddressZero
-        ? await this.ethProvider.getBalance(this.multisigAddress)
-        : await new Contract(assetId, tokenAbi, this.ethProvider)
-            .functions.balanceOf(this.multisigAddress);
+      const currentMultisigBalance =
+        assetId === AddressZero
+          ? await this.ethProvider.getBalance(this.multisigAddress)
+          : await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
+              this.multisigAddress,
+            );
 
       if (currentMultisigBalance.gt(latestState.startingMultisigBalance)) {
         // deposit has occurred, rescind
         try {
           await this.rescindDepositRights({ assetId, appIdentityHash });
         } catch (e) {
-          this.log.warn(`Could not uninstall deposit app ${appIdentityHash}. Error: ${e.stack || e.message}`);
+          this.log.warn(
+            `Could not uninstall deposit app ${appIdentityHash}. Error: ${e.stack || e.message}`,
+          );
         }
         continue;
       }
@@ -865,14 +869,11 @@ export class ConnextClient implements IConnextClient {
       // there is still an active deposit, setup a listener to
       // rescind deposit rights when deposit is sent to multisig
       if (assetId === AddressZero) {
-        this.ethProvider.on(
-          this.multisigAddress, 
-          async (balance: BigNumber) => {
-            if (balance.gt(latestState.startingMultisigBalance)) {
-              await this.rescindDepositRights({ assetId, appIdentityHash });
-            }
-          },
-        );
+        this.ethProvider.on(this.multisigAddress, async (balance: BigNumber) => {
+          if (balance.gt(latestState.startingMultisigBalance)) {
+            await this.rescindDepositRights({ assetId, appIdentityHash });
+          }
+        });
         continue;
       }
 
@@ -880,8 +881,9 @@ export class ConnextClient implements IConnextClient {
         "Transfer",
         async (sender: string, recipient: string, amount: BigNumber) => {
           if (recipient === this.multisigAddress && amount.gt(0)) {
-            const bal = await new Contract(assetId, tokenAbi, this.ethProvider)
-              .functions.balanceOf(this.multisigAddress);
+            const bal = await new Contract(assetId, tokenAbi, this.ethProvider).functions.balanceOf(
+              this.multisigAddress,
+            );
             if (bal.gt(latestState.startingMultisigBalance)) {
               await this.rescindDepositRights({ assetId, appIdentityHash });
             }

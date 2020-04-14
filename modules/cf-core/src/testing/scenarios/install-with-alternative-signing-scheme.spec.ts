@@ -1,11 +1,10 @@
-import { ProposeMessage } from "@connext/types";
+import { ChannelSigner } from "@connext/crypto";
+import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
 import { Node } from "../../node";
-import { generatePrivateKeyGeneratorAndXPubPair } from "../../private-keys-generator";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 
 import { toBeLt } from "../bignumber-jest-matcher";
 import { NetworkContextForTestSuite } from "../contracts";
@@ -14,7 +13,7 @@ import {
   MemoryMessagingService,
   MemoryStoreServiceFactory,
 } from "../services";
-import { A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY } from "../test-constants.jest";
+import { A_PRIVATE_KEY, B_PRIVATE_KEY } from "../test-constants.jest";
 import {
   collateralizeChannel,
   createChannel,
@@ -46,33 +45,26 @@ describe(`Uses a provided signing key generation function to sign channel state 
         const lockService = new MemoryLockService();
 
         const storeServiceA = new MemoryStoreServiceFactory().createStoreService();
-        const [privateKeyGeneratorA, xpubA] = generatePrivateKeyGeneratorAndXPubPair(
-          A_EXTENDED_PRIVATE_KEY,
-        );
+
         nodeA = await Node.create(
           messagingService,
           storeServiceA,
           global[`network`],
           nodeConfig,
           provider,
+          new ChannelSigner(A_PRIVATE_KEY),
           lockService,
-          xpubA,
-          privateKeyGeneratorA,
         );
 
         const storeServiceB = new MemoryStoreServiceFactory().createStoreService();
-        const [privateKeyGeneratorB, xpubB] = generatePrivateKeyGeneratorAndXPubPair(
-          B_EXTENDED_PRIVATE_KEY,
-        );
         nodeB = await Node.create(
           messagingService,
           storeServiceB,
           global[`network`],
           nodeConfig,
           provider,
+          new ChannelSigner(B_PRIVATE_KEY),
           lockService,
-          xpubB,
-          privateKeyGeneratorB,
         );
 
         multisigAddress = await createChannel(nodeA, nodeB);
@@ -91,7 +83,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+            CONVENTION_FOR_ETH_ASSET_ID,
           );
           makeInstallCall(nodeB, msg.data.appIdentityHash);
         });
@@ -106,7 +98,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+            CONVENTION_FOR_ETH_ASSET_ID,
           );
 
           expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
@@ -123,9 +115,9 @@ describe(`Uses a provided signing key generation function to sign channel state 
             multisigAddress,
             undefined,
             One,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+            CONVENTION_FOR_ETH_ASSET_ID,
             One,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+            CONVENTION_FOR_ETH_ASSET_ID,
           ),
         );
       });

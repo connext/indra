@@ -15,17 +15,17 @@ const emptyResult = {
 
 export const ScanCriticalAddresses = ({ messaging }) => {
   const [targetAddress, setTargetAddress] = useState("0x1508eCF431F5DeF63d708fa657a9c8dB5d153a78");
-  const [ownerXpub1, setOwnerXpub1] = useState(
-    "xpub6Di1bLRzeR8icvPKfZxir23fE54AhgWn6bxeuDD4yGWtgHK59LDQgojdyNqtjeg134svT126JzrKR9vjn1UWdUFzTHzNMER9QpS8UuQ9L8m",
+  const [ownerAddress1, setOwnerAddress1] = useState(
+    "address6Di1bLRzeR8icvPKfZxir23fE54AhgWn6bxeuDD4yGWtgHK59LDQgojdyNqtjeg134svT126JzrKR9vjn1UWdUFzTHzNMER9QpS8UuQ9L8m",
   );
-  const [ownerXpub2, setOwnerXpub2] = useState(
-    "xpub6EMezVbdgTLk3tVi4sU6RGSXuUqnTkdi78DpHcoEUemuhHEypFkUMoRo4WCD37famujT1NYspsi7h7dzZpkyx9BkCizUCP5XfAKHjtiHCcR",
+  const [ownerAddress2, setOwnerAddress2] = useState(
+    "address6EMezVbdgTLk3tVi4sU6RGSXuUqnTkdi78DpHcoEUemuhHEypFkUMoRo4WCD37famujT1NYspsi7h7dzZpkyx9BkCizUCP5XfAKHjtiHCcR",
   );
   const [result, setResult] = useState(emptyResult);
   const [disabled, setDisabled] = useState(false);
 
   const scan = async () => {
-    if (!targetAddress || !ownerXpub1 || !ownerXpub2) {
+    if (!targetAddress || !ownerAddress1 || !ownerAddress2) {
       return;
     }
     setDisabled(true);
@@ -33,7 +33,7 @@ export const ScanCriticalAddresses = ({ messaging }) => {
     console.log(`Searching for historical addresses needed to deploy ${targetAddress}`);
     console.log(`scanForCriticalAddresses is a ${typeof scanForCriticalAddresses}`);
     const res = await scanForCriticalAddresses(
-      [ownerXpub1, ownerXpub2],
+      [ownerAddress1, ownerAddress2],
       targetAddress,
       getDefaultProvider("homestead"),
     );
@@ -63,22 +63,22 @@ export const ScanCriticalAddresses = ({ messaging }) => {
       />
       <br />
       <TextField
-        id="owner-1-xpub"
+        id="owner-1-address"
         type="text"
-        value={ownerXpub1}
-        onChange={e => setOwnerXpub1(e.target.value)}
+        value={ownerAddress1}
+        onChange={e => setOwnerAddress1(e.target.value)}
         variant={"outlined"}
-        label={"Owner #1 xpub"}
+        label={"Owner #1 address"}
         margin={"normal"}
       />
       <br />
       <TextField
-        id="owner-2-xpub"
+        id="owner-2-address"
         type="text"
-        value={ownerXpub2}
-        onChange={e => setOwnerXpub2(e.target.value)}
+        value={ownerAddress2}
+        onChange={e => setOwnerAddress2(e.target.value)}
         variant={"outlined"}
-        label={"Owner #2 xpub"}
+        label={"Owner #2 address"}
         margin={"normal"}
       />
       <br /> <br />

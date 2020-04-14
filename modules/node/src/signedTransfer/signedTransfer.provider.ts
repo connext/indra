@@ -68,9 +68,9 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
       ? latestState.coinTransfers[1].amount
       : latestState.coinTransfers[0].amount;
     return {
-      receiverPublicIdentifier: receiverApp ? receiverApp.proposedToIdentifier : undefined,
-      senderPublicIdentifier: senderApp.proposedByIdentifier,
-      assetId: senderApp.initiatorDepositTokenAddress,
+      receiverIdentifier: receiverApp ? receiverApp.responderIdentifier : undefined,
+      senderIdentifier: senderApp.initiatorIdentifier,
+      assetId: senderApp.initiatorDepositAssetId,
       amount: amount.toString(),
       paymentId,
       status,
@@ -81,12 +81,12 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "*.transfer.resolve-signed",
-      this.authService.parseXpub(this.resolveSignedTransfer.bind(this)),
+      this.authService.parseIdentifier(this.resolveSignedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
       "*.transfer.fetch-signed",
-      this.authService.parseXpub(this.getSignedTransferByPaymentId.bind(this)),
+      this.authService.parseIdentifier(this.getSignedTransferByPaymentId.bind(this)),
     );
   }
 }

@@ -10,7 +10,7 @@ import {
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
-import { IsEthAddress, IsKeccak256Hash, IsXpub } from "../util";
+import { IsEthAddress, IsKeccak256Hash, IsAddress, IsValidPublicIdentifier } from "../util";
 import { HexString } from "../../../types/src/basic";
 
 export enum AppType {
@@ -65,18 +65,18 @@ export class AppInstance<T extends AppState = any> {
 
   @Column("text")
   @IsEthAddress()
-  initiatorDepositTokenAddress!: string;
+  initiatorDepositAssetId!: string;
 
   @Column({ type: "enum", enum: OutcomeType })
   outcomeType!: OutcomeType;
 
   @Column("text")
-  @IsXpub()
-  proposedByIdentifier!: string;
+  @IsAddress()
+  initiatorIdentifier!: string;
 
   @Column("text")
-  @IsXpub()
-  proposedToIdentifier!: string;
+  @IsAddress()
+  responderIdentifier!: string;
 
   @Column("text", {
     transformer: {
@@ -88,7 +88,7 @@ export class AppInstance<T extends AppState = any> {
 
   @Column("text")
   @IsEthAddress()
-  responderDepositTokenAddress!: string;
+  responderDepositAssetId!: string;
 
   @Column("text")
   defaultTimeout!: HexString;
@@ -98,13 +98,13 @@ export class AppInstance<T extends AppState = any> {
 
   // assigned a value on installation not proposal
   @Column("text", { nullable: true })
-  @IsEthAddress()
-  userParticipantAddress?: string;
+  @IsValidPublicIdentifier()
+  userIdentifier?: string;
 
   // assigned a value on installation not proposal
   @Column("text", { nullable: true })
-  @IsEthAddress()
-  nodeParticipantAddress?: string;
+  @IsValidPublicIdentifier()
+  nodeIdentifier?: string;
 
   @Column("jsonb", { nullable: true })
   meta?: object;

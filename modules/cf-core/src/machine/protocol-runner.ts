@@ -20,7 +20,7 @@ import { MiddlewareContainer } from "./middleware";
 
 function firstRecipientFromProtocolName(protocolName: ProtocolName) {
   if (Object.values(ProtocolNames).includes(protocolName)) {
-    return "responderXpub";
+    return "responderIdentifier";
   }
   throw new Error(`Unknown protocolName ${protocolName} passed to firstRecipientFromProtocolName`);
 }
@@ -60,7 +60,7 @@ export class ProtocolRunner {
       protocol: protocolName,
       processID: uuid(),
       seq: 0,
-      toXpub: params[firstRecipientFromProtocolName(protocolName)],
+      to: params[firstRecipientFromProtocolName(protocolName)],
       customData: {},
     });
   }
@@ -72,7 +72,7 @@ export class ProtocolRunner {
       params,
       processID: uuid(),
       seq: 0,
-      toXpub: params.responderXpub,
+      to: params[firstRecipientFromProtocolName(protocol)],
       customData: {},
     });
   }

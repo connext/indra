@@ -3,10 +3,10 @@ import {
   MethodParams,
   MethodResults,
   ProtocolNames,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import {
   NULL_INITIAL_STATE_FOR_PROPOSAL, NO_STATE_CHANNEL_FOR_OWNERS,
 } from "../../errors";
@@ -30,13 +30,13 @@ export class ProposeInstallAppInstanceController extends NodeController {
     params: MethodParams.ProposeInstall,
   ): Promise<string[]> {
     const { publicIdentifier, store } = requestHandler;
-    const { proposedToIdentifier } = params;
+    const { responderIdentifier } = params;
 
-    const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
+    const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
     if (!json) {
       throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([
         publicIdentifier,
-        proposedToIdentifier,
+        responderIdentifier,
       ].toString()));
     }
 
@@ -54,18 +54,18 @@ export class ProposeInstallAppInstanceController extends NodeController {
     }
 
     const {
-      initiatorDepositTokenAddress: initiatorDepositTokenAddressParam,
-      responderDepositTokenAddress: responderDepositTokenAddressParam,
+      initiatorDepositAssetId: initiatorDepositAssetIdParam,
+      responderDepositAssetId: responderDepositAssetIdParam,
     } = params;
 
-    const initiatorDepositTokenAddress =
-      initiatorDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const initiatorDepositAssetId =
+      initiatorDepositAssetIdParam || CONVENTION_FOR_ETH_ASSET_ID;
 
-    const responderDepositTokenAddress =
-      responderDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const responderDepositAssetId =
+      responderDepositAssetIdParam || CONVENTION_FOR_ETH_ASSET_ID;
 
-    params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
-    params.responderDepositTokenAddress = responderDepositTokenAddress;
+    params.initiatorDepositAssetId = initiatorDepositAssetId;
+    params.responderDepositAssetId = responderDepositAssetId;
   }
 
   protected async executeMethodImplementation(
@@ -74,13 +74,13 @@ export class ProposeInstallAppInstanceController extends NodeController {
   ): Promise<MethodResults.ProposeInstall> {
     const { protocolRunner, publicIdentifier, store } = requestHandler;
 
-    const { proposedToIdentifier, stateTimeout, defaultTimeout } = params;
+    const { responderIdentifier, stateTimeout, defaultTimeout } = params;
 
-    const json = await store.getStateChannelByOwners([publicIdentifier, proposedToIdentifier]);
+    const json = await store.getStateChannelByOwners([publicIdentifier, responderIdentifier]);
     if (!json) {
       throw new Error(NO_STATE_CHANNEL_FOR_OWNERS([
         publicIdentifier,
-        proposedToIdentifier,
+        responderIdentifier,
       ].toString()));
     }
 
@@ -88,8 +88,8 @@ export class ProposeInstallAppInstanceController extends NodeController {
       ...params,
       stateTimeout: stateTimeout || defaultTimeout,
       multisigAddress: json.multisigAddress,
-      initiatorXpub: publicIdentifier,
-      responderXpub: proposedToIdentifier,
+      initiatorIdentifier: publicIdentifier,
+      responderIdentifier: responderIdentifier,
     });
 
     const updated = await store.getStateChannel(json.multisigAddress);

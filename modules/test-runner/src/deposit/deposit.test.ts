@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import {
   IConnextClient,
   BigNumberish,
@@ -19,16 +18,16 @@ import tokenAbi from "human-standard-token-abi";
 describe("Deposits", () => {
   let client: IConnextClient;
   let tokenAddress: string;
-  let nodeFreeBalanceAddress: string;
+  let nodeSignerAddress: string;
 
   const assertClientFreeBalance = async (
     client: IConnextClient,
     expected: { node: BigNumberish; client: BigNumberish; assetId?: string },
   ): Promise<void> => {
     const freeBalance = await client.getFreeBalance(expected.assetId || AddressZero);
-    expect(freeBalance[client.freeBalanceAddress]).to.equal(expected.client);
+    expect(freeBalance[client.signerAddress]).to.equal(expected.client);
     // does not need to be equal, because node may be collateralizing
-    expect(freeBalance[nodeFreeBalanceAddress]).to.be.at.least(expected.node);
+    expect(freeBalance[nodeSignerAddress]).to.be.at.least(expected.node);
   };
 
   const assertNodeFreeBalance = async (
@@ -54,7 +53,7 @@ describe("Deposits", () => {
   beforeEach(async () => {
     client = await createClient();
     tokenAddress = client.config.contractAddresses.Token;
-    nodeFreeBalanceAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
+    nodeSignerAddress = client.nodeSignerAddress;;
   });
 
   afterEach(async () => {
@@ -85,7 +84,7 @@ describe("Deposits", () => {
   });
 
   it("client should not be able to deposit with invalid token address", async () => {
-    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith("invalid address");
+    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejectedWith("invalid");
   });
 
   it("client should not be able to deposit with negative amount", async () => {
@@ -97,7 +96,7 @@ describe("Deposits", () => {
   it("client should not be able to propose deposit with value it doesn't have", async () => {
     await expect(
       client.deposit({
-        amount: (await getOnchainBalance(client.freeBalanceAddress, tokenAddress))
+        amount: (await getOnchainBalance(client.signerAddress, tokenAddress))
           .add(1)
           .toString(),
         assetId: client.config.contractAddresses.Token,
@@ -131,9 +130,9 @@ describe("Deposits", () => {
     };
     await client.deposit({ assetId: expected.assetId, amount: expected.client });
     await assertClientFreeBalance(client, expected);
-    
+
     const receiver = await createClient();
-    
+
     // TODO: chan_install events and nats subscription don't seem
     // to trigger promise resolution here...
     // cannot use INSTALL_EVENT because receiver will call install
@@ -165,8 +164,8 @@ describe("Deposits", () => {
 
     expect(depositApp).to.exist;
     const latestState = depositApp.latestState as DepositAppState;
-    expect(latestState.transfers[0].to).to.be.eq(nodeFreeBalanceAddress);
-    expect(latestState.transfers[1].to).to.be.eq(receiver.freeBalanceAddress);
+    expect(latestState.transfers[0].to).to.be.eq(nodeSignerAddress);
+    expect(latestState.transfers[1].to).to.be.eq(receiver.signerAddress);
 
     // try to deposit
     await expect(receiver.deposit({ amount: ONE, assetId: expected.assetId })).to.be.rejectedWith("Node has unfinalized deposit");

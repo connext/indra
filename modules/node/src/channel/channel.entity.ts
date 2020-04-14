@@ -14,7 +14,7 @@ import {
 import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { IsEthAddress, IsXpub } from "../util";
+import { IsEthAddress, IsAddress } from "../util";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
 import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 import { AddressZero } from "ethers/constants";
@@ -31,13 +31,13 @@ export class Channel {
   addresses!: CriticalStateChannelAddresses;
 
   @Column("text")
-  @IsXpub()
-  userPublicIdentifier!: string;
+  @IsAddress()
+  userIdentifier!: string;
 
   // might not need this
   @Column("text")
-  @IsXpub()
-  nodePublicIdentifier!: string;
+  @IsAddress()
+  nodeIdentifier!: string;
 
   @Column("text", { unique: true })
   @IsEthAddress()

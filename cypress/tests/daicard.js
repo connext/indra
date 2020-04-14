@@ -59,7 +59,7 @@ describe("Daicard", () => {
           .clear()
           .type("1" + tokensDeposited);
         cy.contains("p", /less than your balance/i).should("exist");
-        // No invalid xpub addresses
+        // No invalid publicId addresses
         cy.get(`input[type="string"]`)
           .clear()
           .type("0xabc123");
@@ -71,7 +71,7 @@ describe("Daicard", () => {
       my.getAccount().then(recipient => {
         my.burnCard();
         my.deposit(depositEth).then(tokensDeposited => {
-          my.pay(recipient.xpub, payTokens);
+          my.pay(recipient.publicId, payTokens);
           my.restoreMnemonic(recipient.mnemonic);
           cy.resolve(my.getChannelTokenBalance).should("contain", payTokens);
         });
@@ -81,19 +81,19 @@ describe("Daicard", () => {
 
   describe("Request", () => {
     it(`should properly populate the send page when opening a request link`, () => {
-      my.getXpub().then(xpub => {
+      my.getPublicId().then(publicId => {
         my.goToRequest();
         cy.get(`input[type="number"]`)
           .clear()
           .type(payTokens);
-        cy.contains("button", `recipient=${xpub}`).should("exist");
+        cy.contains("button", `recipient=${publicId}`).should("exist");
         cy.contains("button", `amount=${payTokens}`)
           .invoke("text")
           .then(requestLink => {
             my.burnCard();
             cy.visit(requestLink);
             cy.get(`input[value="${payTokens}"]`).should("exist");
-            cy.get(`input[value="${xpub}"]`).should("exist");
+            cy.get(`input[value="${publicId}"]`).should("exist");
           });
       });
     });
@@ -141,7 +141,7 @@ describe("Daicard", () => {
     it(`should not withdraw to an invalid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToCashout();
-        cy.get(`input[type="text"]`)
+        cy.get(`input[type="string"]`)
           .clear()
           .type("0xabc123");
         cy.contains("p", /invalid/i).should("exist");

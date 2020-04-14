@@ -6,6 +6,7 @@ import {
   ProtocolRoles,
   UpdateMiddlewareContext,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
@@ -16,7 +17,6 @@ import {
   PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
-import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
@@ -48,7 +48,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const {
       appIdentityHash,
       multisigAddress,
-      responderXpub,
+      responderIdentifier,
       newState,
       stateTimeout,
     } = params as ProtocolParams.Update;
@@ -78,14 +78,13 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    const responderEphemeralKey = xkeyKthAddress(responderXpub, appInstance.appSeqNo);
+    const responderAddr = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     const mySignature = yield [
       OP_SIGN,
       setStateCommitment.hashToSign(),
-      appInstance.appSeqNo,
     ];
 
     substart = Date.now();
@@ -98,7 +97,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         params,
         seq: 1,
-        toXpub: responderXpub,
+        to: responderIdentifier,
         customData: {
           signature: mySignature,
         },
@@ -108,14 +107,14 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     await assertIsValidSignature(
-      responderEphemeralKey,
+      responderAddr,
       setStateCommitment.hashToSign(),
       counterpartySig,
     );
     logTime(log, substart, `Verified responder's sig`);
 
     // add signatures and write commitment to store
-    const isAppInitiator = appInstance.initiator !== responderEphemeralKey;
+    const isAppInitiator = appInstance.initiatorIdentifier !== responderIdentifier;
     await setStateCommitment.addSignatures(
       isAppInitiator
         ? mySignature as any
@@ -157,7 +156,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const {
       appIdentityHash,
       multisigAddress,
-      initiatorXpub,
+      initiatorIdentifier,
       newState,
       stateTimeout,
     } = params as ProtocolParams.Update;
@@ -186,13 +185,13 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
-    const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appInstance.appSeqNo);
+    const initiatorAddr = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
     const setStateCommitment = getSetStateCommitment(context, appInstance);
 
     substart = Date.now();
     await assertIsValidSignature(
-      initiatorEphemeralKey,
+      initiatorAddr,
       setStateCommitment.hashToSign(),
       counterpartySig,
     );
@@ -201,11 +200,10 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const mySignature = yield [
       OP_SIGN,
       setStateCommitment.hashToSign(),
-      appInstance.appSeqNo,
     ];
 
     // add signatures and write commitment to store
-    const isAppInitiator = appInstance.initiator !== initiatorEphemeralKey;
+    const isAppInitiator = appInstance.initiatorIdentifier !== initiatorIdentifier;
     await setStateCommitment.addSignatures(
       isAppInitiator
         ? mySignature as any
@@ -234,7 +232,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       {
         protocol,
         processID,
-        toXpub: initiatorXpub,
+        to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
           signature: mySignature,

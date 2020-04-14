@@ -36,8 +36,8 @@ export const TEST_STORE_ETH_ADDRESS: string = "0x5a0b54d5dc17e0aadc383d2db43b0a0
 export const TEST_STORE_APP_INSTANCE: AppInstanceJson = {
   identityHash: "identityHashApp",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
-  initiator: "sender",
-  responder: "receiver",
+  initiatorIdentifier: "sender",
+  responderIdentifier: "receiver",
   defaultTimeout: "0x00",
   appInterface: {
     addr: TEST_STORE_ETH_ADDRESS,
@@ -70,12 +70,12 @@ export const TEST_STORE_PROPOSAL: AppInstanceProposal = {
     counter: 4,
   },
   initiatorDeposit: "10",
-  initiatorDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
+  initiatorDepositAssetId: TEST_STORE_ETH_ADDRESS,
   outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-  proposedByIdentifier: "xpub1",
-  proposedToIdentifier: "xpub2",
+  initiatorIdentifier: "address1",
+  responderIdentifier: "address2",
   responderDeposit: "11",
-  responderDepositTokenAddress: TEST_STORE_ETH_ADDRESS,
+  responderDepositAssetId: TEST_STORE_ETH_ADDRESS,
   defaultTimeout: "0x01",
   stateTimeout: "0x00",
   singleAssetTwoPartyCoinTransferInterpreterParams: {
@@ -91,7 +91,7 @@ export const TEST_STORE_CHANNEL: StateChannelJSON = {
     multisigMastercopy: TEST_STORE_ETH_ADDRESS,
     proxyFactory: TEST_STORE_ETH_ADDRESS,
   },
-  userNeuteredExtendedKeys: ["xpub1", "xpub2"],
+  userIdentifiers: ["address1", "address2"],
   proposedAppInstances: [[TEST_STORE_PROPOSAL.identityHash, TEST_STORE_PROPOSAL]],
   appInstances: [[TEST_STORE_APP_INSTANCE.identityHash, TEST_STORE_APP_INSTANCE]],
   freeBalanceAppInstance: TEST_STORE_APP_INSTANCE,
@@ -107,7 +107,7 @@ export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentity: {
     channelNonce: TEST_STORE_APP_INSTANCE.appSeqNo.toString(),
-    participants: [TEST_STORE_APP_INSTANCE.initiator, TEST_STORE_APP_INSTANCE.responder],
+    participants: [TEST_STORE_APP_INSTANCE.initiatorIdentifier, TEST_STORE_APP_INSTANCE.responderIdentifier],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
     appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
     defaultTimeout: "35",
@@ -126,7 +126,7 @@ export const TEST_STORE_CONDITIONAL_COMMITMENT: ConditionalTransactionCommitment
   interpreterAddr: TEST_STORE_ETH_ADDRESS,
   interpreterParams: "conditionalInterpreter",
   multisigAddress: TEST_STORE_ETH_ADDRESS,
-  multisigOwners: TEST_STORE_CHANNEL.userNeuteredExtendedKeys,
+  multisigOwners: TEST_STORE_CHANNEL.userIdentifiers,
   networkContext: {} as NetworkContext,
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };

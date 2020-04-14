@@ -76,7 +76,7 @@ export class MessagingService implements IMessagingService {
 
   async send(to: string, msg: Message): Promise<void> {
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
-    this.service!.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
+    return this.service!.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
 
   ////////////////////////////////////////

@@ -1,4 +1,3 @@
-import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
@@ -64,7 +63,7 @@ const fundChannelAndSwap = async (opts: {
   await requestCollateral(client, output.assetId);
   // swap call back
   const swapCb = async () =>
-    await swapAsset(client, input, output, xkeyKthAddress(client.nodePublicIdentifier));
+    await swapAsset(client, input, output, client.nodeSignerAddress);
   // try to swap, first check if test must be fast forwarded
   if (fastForward) {
     // fast forward the clock for tests with delay
@@ -174,7 +173,7 @@ describe("Swap offline", () => {
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
     await (providedClient.messaging as TestMessagingService)!.subscribe(
-      `${providedClient.nodePublicIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
+      `${providedClient.nodeIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
       async (msg: any) => {
         const { appInterface } = msg.data;
         if (appInterface.addr !== providedClient.config.contractAddresses.SimpleTwoPartySwapApp) {

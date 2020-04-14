@@ -1,12 +1,16 @@
 import {
   delay,
+  IChannelSigner,
   ILoggerService,
   MethodNames,
   MethodParams,
   MethodResults,
   NetworkContext,
+  PublicIdentifier,
   stringify,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
@@ -27,7 +31,6 @@ import { RequestHandler } from "../../request-handler";
 import { getCreate2MultisigAddress } from "../../utils";
 
 import { NodeController } from "../controller";
-import { xkeyKthAddress } from "../../xkeys";
 
 // Estimate based on rinkeby transaction:
 // 0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec
@@ -59,8 +62,8 @@ export class DeployStateDepositController extends NodeController {
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userNeuteredExtendedKeys[0],
-      channel.userNeuteredExtendedKeys[1],
+      channel.userIdentifiers[0],
+      channel.userIdentifiers[1],
       channel.addresses,
       provider,
     );
@@ -75,7 +78,7 @@ export class DeployStateDepositController extends NodeController {
     params: MethodParams.DeployStateDepositHolder,
   ): Promise<MethodResults.DeployStateDepositHolder> {
     const { multisigAddress, retryCount } = params;
-    const { log, networkContext, store, provider, wallet } = requestHandler;
+    const { log, networkContext, store, provider, signer } = requestHandler;
 
     // By default, if the contract has been deployed and
     // DB has records of it, controller will return HashZero
@@ -89,8 +92,8 @@ export class DeployStateDepositController extends NodeController {
 
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.userNeuteredExtendedKeys[0],
-      channel.userNeuteredExtendedKeys[1],
+      channel.userIdentifiers[0],
+      channel.userIdentifiers[1],
       channel.addresses,
       provider,
     );
@@ -101,7 +104,13 @@ export class DeployStateDepositController extends NodeController {
 
     // Check if the contract has already been deployed on-chain
     if ((await provider.getCode(multisigAddress)) === `0x`) {
-      tx = await sendMultisigDeployTx(wallet, channel, networkContext, retryCount, log);
+      tx = await sendMultisigDeployTx(
+        signer,
+        channel,
+        networkContext,
+        retryCount,
+        log,
+      );
     }
 
     return { transactionHash: tx.hash! };
@@ -109,25 +118,28 @@ export class DeployStateDepositController extends NodeController {
 }
 
 async function sendMultisigDeployTx(
-  signer: Signer,
+  signer: IChannelSigner,
   stateChannel: StateChannel,
   networkContext: NetworkContext,
   retryCount: number = 1,
   log: ILoggerService,
 ): Promise<TransactionResponse> {
+  if (!signer.provider || !Signer.isSigner(signer)) {
+    throw new Error(`Signer must be connected to provider`);
+  }
+  const provider = signer.provider!;
+
   // make sure that the proxy factory used to deploy is the same as the one
   // used when the channel was created
-  const proxyFactory = new Contract(stateChannel.addresses.proxyFactory, ProxyFactory.abi, signer);
+  const proxyFactory = new Contract(
+    stateChannel.addresses.proxyFactory, 
+    ProxyFactory.abi, 
+    signer,
+  );
 
-  const owners = stateChannel.userNeuteredExtendedKeys;
+  const owners = stateChannel.userIdentifiers;
 
-  const provider = signer.provider as JsonRpcProvider;
-
-  if (!provider) {
-    throw new Error(`wallet must have a provider`);
-  }
-
-  const freeBalanceAddress = await signer.getAddress();
+  const signerAddress = await signer.getAddress();
 
   let error;
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
@@ -140,12 +152,12 @@ async function sendMultisigDeployTx(
         // hash chainId plus nonce for x-chain replay protection
         solidityKeccak256(
           ["uint256", "uint256"],
-          [provider.network.chainId, 0],
+          [(await provider.getNetwork()).chainId, 0],
         ), // TODO: Increment nonce as needed
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,
           gasPrice: provider.getGasPrice(),
-          nonce: await provider.getTransactionCount(freeBalanceAddress),
+          nonce: provider.getTransactionCount(signerAddress),
         },
       );
 
@@ -155,7 +167,7 @@ async function sendMultisigDeployTx(
 
       const ownersAreCorrectlySet = await checkForCorrectOwners(
         tx!,
-        provider,
+        provider as JsonRpcProvider,
         owners,
         stateChannel.multisigAddress,
       );
@@ -186,16 +198,16 @@ async function sendMultisigDeployTx(
 async function checkForCorrectOwners(
   tx: TransactionResponse,
   provider: JsonRpcProvider,
-  xpubs: string[], // [initiator, responder]
+  identifiers: PublicIdentifier[], // [initiator, responder]
   multisigAddress: string,
 ): Promise<boolean> {
   await tx.wait();
 
-  const contract = new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
+  const contract = new Contract(multisigAddress, MinimumViableMultisig.abi as any, provider);
 
   const expectedOwners = [
-    xkeyKthAddress(xpubs[0], 0),
-    xkeyKthAddress(xpubs[1], 0),
+    getSignerAddressFromPublicIdentifier(identifiers[0]),
+    getSignerAddressFromPublicIdentifier(identifiers[1]),
   ];
 
   const actualOwners = await contract.functions.getOwners();

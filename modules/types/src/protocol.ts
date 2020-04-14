@@ -1,13 +1,14 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType, Xpub } from "./basic";
+import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
 import { OutcomeType } from "./contracts";
+import { AssetId, PublicIdentifier } from "./identifiers";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {
-  initiatorXpub: Xpub;
-  initiatorDepositTokenAddress: Address;
-  responderXpub: Xpub;
-  responderDepositTokenAddress: Address;
+  initiatorIdentifier: PublicIdentifier;
+  initiatorDepositAssetId: Address;
+  responderIdentifier: PublicIdentifier;
+  responderDepositAssetId: Address;
   multisigAddress: Address;
   initiatorBalanceDecrement: BigNumber;
   responderBalanceDecrement: BigNumber;
@@ -26,20 +27,20 @@ type InstallProtocolParams = {
   disableLimit: boolean;
   // these are set during the proposal for the app instance
   // set state commitment generation
-  appInitiatorAddress: string;
-  appResponderAddress: string;
+  appInitiatorIdentifier: string;
+  appResponderIdentifier: string;
 };
 
 type ProposeProtocolParams = {
   multisigAddress: Address;
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   appDefinition: Address;
   abiEncodings: AppABIEncodings;
   initiatorDeposit: BigNumber;
-  initiatorDepositTokenAddress: Address;
+  initiatorDepositAssetId: AssetId;
   responderDeposit: BigNumber;
-  responderDepositTokenAddress: string;
+  responderDepositAssetId: AssetId;
   defaultTimeout: BigNumber;
   stateTimeout: BigNumber; // optional in api, but should be defined in protocol
   initialState: SolidityValueType;
@@ -48,14 +49,14 @@ type ProposeProtocolParams = {
 };
 
 type SetupProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
 };
 
 type TakeActionProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
   appIdentityHash: Address;
   action: SolidityValueType;
@@ -64,15 +65,15 @@ type TakeActionProtocolParams = {
 
 type UninstallProtocolParams = {
   appIdentityHash: Bytes32;
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
   blockNumberToUseIfNecessary?: number;
 };
 
 type UpdateProtocolParams = {
-  initiatorXpub: Xpub;
-  responderXpub: Xpub;
+  initiatorIdentifier: PublicIdentifier;
+  responderIdentifier: PublicIdentifier;
   multisigAddress: Address;
   appIdentityHash: Address;
   newState: SolidityValueType;

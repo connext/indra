@@ -1,4 +1,5 @@
 import { HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   bigNumberifyJson,
   HashLockTransferAppName,
@@ -12,7 +13,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { xkeyKthAddress } from "../util";
 import { TIMEOUT_BUFFER } from "../constants";
 import { ConfigService } from "../config/config.service";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
@@ -79,15 +79,15 @@ export class HashLockTransferService {
   }
 
   async resolveHashLockTransfer(
-    senderPublicIdentifier: string,
-    receiverPublicIdentifier: string,
+    senderIdentifier: string,
+    receiverIdentifier: string,
     appState: HashLockTransferAppState,
     assetId: string,
     meta: any = {},
   ): Promise<any> {
     this.log.debug(`resolveHashLockTransfer()`);
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      receiverPublicIdentifier,
+      receiverIdentifier,
     );
 
     // sender amount
@@ -106,28 +106,28 @@ export class HashLockTransferService {
       );
     }
 
-    const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
+    const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
 
     const receiverFreeBal = await this.cfCoreService.getFreeBalance(
-      receiverPublicIdentifier,
+      receiverIdentifier,
       receiverChannel.multisigAddress,
       assetId,
     );
     if (receiverFreeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.channelService.rebalance(
-        receiverPublicIdentifier,
+        receiverIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amount,
       );
       if (!depositReceipt) {
-        throw new Error(`Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverPublicIdentifier}`);
+        throw new Error(`Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverIdentifier}`);
       }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
-        receiverPublicIdentifier,
+        receiverIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amount,
@@ -142,7 +142,7 @@ export class HashLockTransferService {
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(receiverPublicIdentifier),
+          to: getSignerAddressFromPublicIdentifier(receiverIdentifier),
         },
       ],
       lockHash: appState.lockHash,
@@ -159,7 +159,7 @@ export class HashLockTransferService {
       Zero,
       assetId,
       HashLockTransferAppName,
-      { ...meta, sender: senderPublicIdentifier },
+      { ...meta, sender: senderIdentifier },
       HASHLOCK_TRANSFER_STATE_TIMEOUT,
     );
 
@@ -188,7 +188,7 @@ export class HashLockTransferService {
     // node receives from sender
     const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndReceiver(
       lockHash,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     return normalizeHashLockTransferAppState(app);
   }
@@ -197,7 +197,7 @@ export class HashLockTransferService {
     // node sends to receiver
     const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndSender(
       lockHash,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     return normalizeHashLockTransferAppState(app);
   }

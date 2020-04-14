@@ -1,12 +1,17 @@
-import { ContractAddresses, SwapRate, MessagingConfig, CF_PATH } from "@connext/types";
+import { ChannelSigner } from "@connext/crypto";
+import {
+  ContractAddresses,
+  IChannelSigner,
+  MessagingConfig,
+  SwapRate,
+} from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { getAddress, Network as EthNetwork, parseEther, HDNode } from "ethers/utils";
+import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { fromMnemonic } from "ethers/utils/hdnode";
 
 type PostgresConfig = {
   database: string;
@@ -27,16 +32,27 @@ type TokenConfig = {
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
   private readonly ethProvider: JsonRpcProvider;
-  private wallet: Wallet;
-  public publicIdentifier: string;
+  private signer: IChannelSigner;
 
   constructor() {
     this.envConfig = process.env;
     this.ethProvider = new JsonRpcProvider(this.getEthRpcUrl());
+    this.signer = new ChannelSigner(
+      this.getPrivateKey(),
+      this.getEthRpcUrl(),
+    );
   }
 
   get(key: string): string {
     return this.envConfig[key];
+  }
+
+  private getPrivateKey(): string {
+    return Wallet.fromMnemonic(this.get(`INDRA_ETH_MNEMONIC`)).privateKey;
+  }
+
+  getSigner(): IChannelSigner {
+    return this.signer;
   }
 
   getEthRpcUrl(): string {
@@ -45,17 +61,6 @@ export class ConfigService implements OnModuleInit {
 
   getEthProvider(): JsonRpcProvider {
     return this.ethProvider;
-  }
-
-  getHDNode(): HDNode.HDNode {
-    return fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
-  }
-
-  getEthWallet(): Wallet {
-    if (!this.wallet) {
-      throw new Error(`Wallet does not exist.`);
-    }
-    return this.wallet;
   }
 
   async getEthNetwork(): Promise<EthNetwork> {
@@ -152,12 +157,11 @@ export class ConfigService implements OnModuleInit {
   }
 
   getPublicIdentifier(): string {
-    if (this.publicIdentifier) {
-      return this.publicIdentifier;
-    }
-    const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
-    this.publicIdentifier = hdNode.neuter().extendedKey;
-    return this.publicIdentifier;
+    return this.signer.publicIdentifier;
+  }
+
+  async getSignerAddress(): Promise<string> {
+    return this.signer.getAddress();
   }
 
   getLogLevel(): number {
@@ -166,10 +170,6 @@ export class ConfigService implements OnModuleInit {
 
   isDevMode(): boolean {
     return this.get(`NODE_ENV`) !== `production`;
-  }
-
-  getMnemonic(): string {
-    return this.get(`INDRA_ETH_MNEMONIC`);
   }
 
   getMessagingConfig(): MessagingConfig {
@@ -181,6 +181,10 @@ export class ConfigService implements OnModuleInit {
       token: this.get(`INDRA_NATS_TOKEN`),
       // websocketUrl: (this.get(`INDRA_NATS_WS_ENDPOINT`) || ``).split(`,`),
     };
+  }
+
+  getMessagingKey(): string {
+    return `INDRA`;
   }
 
   getPort(): number {
@@ -235,10 +239,5 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  async onModuleInit(): Promise<void> {
-    const wallet = Wallet.fromMnemonic(this.getMnemonic(), `${CF_PATH}/0`);
-    this.wallet = wallet.connect(this.getEthProvider());
-    const hdNode = fromMnemonic(this.getMnemonic()).derivePath(CF_PATH);
-    this.publicIdentifier = hdNode.neuter().extendedKey;
-  }
+  async onModuleInit(): Promise<void> {}
 }

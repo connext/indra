@@ -1,4 +1,6 @@
 /* global before */
+import { ChannelSigner } from "@connext/crypto";
+import { toBN } from "@connext/types";
 import { Contract, Wallet, ContractFactory } from "ethers";
 
 import {
@@ -10,12 +12,11 @@ import {
   AppWithCounterState,
   computeCancelDisputeHash,
   AppWithCounterClass,
+  sortSignaturesBySignerAddress,
 } from "../utils";
 
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
-import { sortSignaturesBySignerAddress, toBN } from "@connext/types";
-import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
 
 describe("cancelDispute", () => {
   let appRegistry: Contract;
@@ -108,7 +109,7 @@ describe("cancelDispute", () => {
     await expect(cancelDispute(1)).to.be.revertedWith(
       "VM Exception while processing transaction: revert cancelDispute called on challenge that cannot be cancelled",
     );
-  })
+  });
 
   it("fails if incorrect sigs", async () => {
     const versionNumber = 2;
@@ -119,10 +120,9 @@ describe("cancelDispute", () => {
     const signatures = await sortSignaturesBySignerAddress(
       digest,
       [
-        await signChannelMessage(wallet.privateKey, digest),
-        await signChannelMessage(bob.privateKey, digest),
+        await (new ChannelSigner(wallet.privateKey).signMessage(digest)),
+        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
       ],
-      verifyChannelMessage,
     );
     await expect(cancelDispute(versionNumber, signatures)).to.be.revertedWith(
       "Invalid signature",

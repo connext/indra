@@ -19,10 +19,9 @@ export const messagingProviderFactory: FactoryProvider<Promise<MessagingService>
       const token = await auth.vendAdminToken(config.getPublicIdentifier());
       return token;
     };
-    const network = await config.getEthNetwork();
     const messagingService = new MessagingService(
       config.getMessagingConfig(),
-      `INDRA.${network.chainId}`,
+      config.getMessagingKey(),
       getBearerToken,
     );
     await messagingService.connect();

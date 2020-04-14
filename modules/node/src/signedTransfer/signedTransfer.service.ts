@@ -6,8 +6,9 @@ import {
   SignedTransferStatus,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  Xpub,
+  Address,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 
@@ -15,7 +16,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
-import { xkeyKthAddress } from "../util";
 import { AppType, AppInstance } from "../appInstance/appInstance.entity";
 import { SignedTransferRepository } from "./signedTransfer.repository";
 
@@ -63,12 +63,12 @@ export class SignedTransferService {
   }
 
   async installSignedTransferReceiverApp(
-    userPublicIdentifier: Xpub,
+    userIdentifier: Address,
     paymentId: Bytes32,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    this.log.debug(`resolveLinkedTransfer(${userPublicIdentifier}, ${paymentId})`);
+    this.log.debug(`resolveLinkedTransfer(${userIdentifier}, ${paymentId})`);
     const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userPublicIdentifier,
+      userIdentifier,
     );
 
     // TODO: could there be more than 1? how to handle that case?
@@ -89,30 +89,31 @@ export class SignedTransferService {
     // sender amount
     const amount = senderApp.latestState.coinTransfers[0].amount;
 
-    const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
+    const freeBalanceAddr = this.cfCoreService.cfCore.signerAddress;
 
     const freeBal = await this.cfCoreService.getFreeBalance(
-      userPublicIdentifier,
+      userIdentifier,
       channel.multisigAddress,
       assetId,
     );
     if (freeBal[freeBalanceAddr].lt(amount)) {
       // request collateral and wait for deposit to come through
       const depositReceipt = await this.channelService.rebalance(
-        userPublicIdentifier,
+        userIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amount,
       );
       if (!depositReceipt) {
         throw new Error(
-          `Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userPublicIdentifier}`,
+          `Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`,
         );
+        throw new Error(`Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`);
       }
     } else {
       // request collateral normally without awaiting
       this.channelService.rebalance(
-        userPublicIdentifier,
+        userIdentifier,
         assetId,
         RebalanceType.COLLATERALIZE,
         amount,
@@ -127,7 +128,7 @@ export class SignedTransferService {
         },
         {
           amount: Zero,
-          to: xkeyKthAddress(userPublicIdentifier),
+          to: getSignerAddressFromPublicIdentifier(userIdentifier),
         },
       ],
       paymentId,
@@ -135,7 +136,7 @@ export class SignedTransferService {
       finalized: false,
     };
 
-    const meta = { ...senderApp.meta, sender: senderChannel.userPublicIdentifier };
+    const meta = { ...senderApp.meta, sender: senderChannel.userIdentifier };
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(
       channel,
       initialState,
@@ -154,7 +155,7 @@ export class SignedTransferService {
 
     return {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
-      sender: senderChannel.userPublicIdentifier,
+      sender: senderChannel.userIdentifier,
       meta,
       amount,
       assetId,
@@ -176,7 +177,7 @@ export class SignedTransferService {
     // node receives from sender
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndReceiver(
       paymentId,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     return normalizeSignedTransferAppState(app);
   }
@@ -185,7 +186,7 @@ export class SignedTransferService {
     // node sends to receiver
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndSender(
       paymentId,
-      this.cfCoreService.cfCore.freeBalanceAddress,
+      this.cfCoreService.cfCore.signerAddress,
     );
     return normalizeSignedTransferAppState(app);
   }

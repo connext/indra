@@ -1,9 +1,8 @@
-import { signChannelMessage, verifyChannelMessage } from "@connext/crypto";
+import { ChannelSigner, signChannelMessage } from "@connext/crypto";
 import {
   AppChallengeBigNumber,
   toBN,
   ChallengeStatus,
-  sortSignaturesBySignerAddress,
   createRandom32ByteHexString,
   ChallengeEvents,
   createRandomAddress,
@@ -26,6 +25,7 @@ import {
   encodeOutcome,
   computeCancelDisputeHash,
 } from "./index";
+import { sortSignaturesBySignerAddress } from "../../utils";
 
 export const setupContext = async (
   appRegistry: Contract,
@@ -116,14 +116,10 @@ export const setupContext = async (
     signers?: string[],
   ) => {
     if (!signatures) {
-      signatures = await sortSignaturesBySignerAddress(
-        digest,
-        [
-          await signChannelMessage(bob.privateKey, digest),
-          await signChannelMessage(alice.privateKey, digest),
-        ],
-        verifyChannelMessage,
-      );
+      signatures = await sortSignaturesBySignerAddress(digest, [
+        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
+        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
+      ]);
     }
 
     if (!signers) {
@@ -180,14 +176,10 @@ export const setupContext = async (
       versionNumber,
       appStateHash: stateHash,
       timeout,
-      signatures: await sortSignaturesBySignerAddress(
-        digest,
-        [
-          await signChannelMessage(alice.privateKey, digest),
-          await signChannelMessage(bob.privateKey, digest),
-        ],
-        verifyChannelMessage,
-      ),
+      signatures: await sortSignaturesBySignerAddress(digest, [
+        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
+        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
+      ]),
     });
     await wrapInEventVerification(call, {
       status: ChallengeStatus.IN_DISPUTE,
@@ -354,7 +346,6 @@ export const setupContext = async (
           await signChannelMessage(alice.privateKey, stateDigest),
           await signChannelMessage(bob.privateKey, stateDigest),
         ],
-        verifyChannelMessage,
       ),
     };
     const req2 = {
@@ -375,14 +366,10 @@ export const setupContext = async (
   const cancelDispute = async (versionNumber: number, signatures?: string[]): Promise<void> => {
     const digest = computeCancelDisputeHash(appInstance.identityHash, toBN(versionNumber));
     if (!signatures) {
-      signatures = await sortSignaturesBySignerAddress(
-        digest,
-        [
-          await signChannelMessage(alice.privateKey, digest),
-          await signChannelMessage(bob.privateKey, digest),
-        ],
-        verifyChannelMessage,
-      );
+      signatures = await sortSignaturesBySignerAddress(digest, [
+        await (new ChannelSigner(alice.privateKey).signMessage(digest)),
+        await (new ChannelSigner(bob.privateKey).signMessage(digest)),
+      ]);
     }
     // TODO: why does event verification fail?
     // await wrapInEventVerification(

@@ -31,7 +31,7 @@ export const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
       .filter(app => app.type === AppType.PROPOSAL)
       .map(app => [app.identityHash, convertAppToProposedInstanceJSON(app)]),
     schemaVersion: channel.schemaVersion,
-    userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier], // always [initiator, responder] -- node will always be initiator
+    userIdentifiers: [channel.nodeIdentifier, channel.userIdentifier], // always [initiator, responder] -- node will always be initiator
   };
   return json;
 };
@@ -80,12 +80,12 @@ export class ChannelRepository extends Repository<Channel> {
     .getOne();
   }
 
-  async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
+  async findByUserPublicIdentifier(userIdentifier: string): Promise<Channel | undefined> {
     return this.createQueryBuilder("channel")
     .leftJoinAndSelect("channel.appInstances", "appInstance")
     .where(
-      "channel.userPublicIdentifier = :userPublicIdentifier",
-      { userPublicIdentifier },
+      "channel.userIdentifier = :userIdentifier",
+      { userIdentifier },
     )
     .getOne();
   }
@@ -112,27 +112,27 @@ export class ChannelRepository extends Repository<Channel> {
     return channel;
   }
 
-  async findByUserPublicIdentifierOrThrow(userPublicIdentifier: string): Promise<Channel> {
-    const channel = await this.findByUserPublicIdentifier(userPublicIdentifier);
+  async findByUserPublicIdentifierOrThrow(userIdentifier: string): Promise<Channel> {
+    const channel = await this.findByUserPublicIdentifier(userIdentifier);
     if (!channel) {
-      throw new Error(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
+      throw new Error(`Channel does not exist for userIdentifier ${userIdentifier}`);
     }
 
     return channel;
   }
 
   async addRebalanceProfileToChannel(
-    userPublicIdentifier: string,
+    userIdentifier: string,
     rebalanceProfile: RebalanceProfile,
   ): Promise<RebalanceProfile> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")
-      .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
+      .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
       .getOne();
 
     if (!channel) {
       throw new NotFoundException(
-        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
+        `Channel does not exist for userIdentifier ${userIdentifier}`,
       );
     }
 
@@ -162,17 +162,17 @@ export class ChannelRepository extends Repository<Channel> {
   }
 
   async getRebalanceProfileForChannelAndAsset(
-    userPublicIdentifier: string,
+    userIdentifier: string,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")
-      .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
+      .where("channel.userIdentifier = :userIdentifier", { userIdentifier })
       .getOne();
 
     if (!channel) {
       throw new NotFoundException(
-        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
+        `Channel does not exist for userIdentifier ${userIdentifier}`,
       );
     }
 

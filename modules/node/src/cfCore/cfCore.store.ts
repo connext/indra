@@ -25,7 +25,6 @@ import {
 } from "../conditionalCommitment/conditionalCommitment.repository";
 import { ChannelRepository, convertChannelToJSON } from "../channel/channel.repository";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
-import { xkeyKthAddress } from "../util";
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.entity";
 import { Channel } from "../channel/channel.entity";
@@ -81,9 +80,9 @@ export class CFCoreStore implements IStoreService {
       stateChannel.multisigAddress,
     );
 
-    const nodePublicIdentifier = this.configService.getPublicIdentifier();
-    const userPublicIdentifier = stateChannel.userNeuteredExtendedKeys.find(
-      xpub => xpub !== this.configService.getPublicIdentifier(),
+    const nodeIdentifier = this.configService.getPublicIdentifier();
+    const userIdentifier = stateChannel.userIdentifiers.find(
+      id => id !== nodeIdentifier,
     );
 
     const {
@@ -94,8 +93,8 @@ export class CFCoreStore implements IStoreService {
     } = stateChannel;
     const channel = new Channel();
     channel.schemaVersion = this.schemaVersion;
-    channel.userPublicIdentifier = userPublicIdentifier;
-    channel.nodePublicIdentifier = nodePublicIdentifier;
+    channel.userIdentifier = userIdentifier;
+    channel.nodeIdentifier = nodeIdentifier;
     channel.multisigAddress = multisigAddress;
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
@@ -107,14 +106,12 @@ export class CFCoreStore implements IStoreService {
     });
     channel.activeCollateralizations = activeCollateralizations;
 
-    const userFreeBalance = xkeyKthAddress(userPublicIdentifier);
-    const nodeFreeBalance = xkeyKthAddress(this.configService.getPublicIdentifier());
     const participants = [
-      freeBalanceAppInstance.initiator,
-      freeBalanceAppInstance.responder,
+      freeBalanceAppInstance.initiatorIdentifier,
+      freeBalanceAppInstance.responderIdentifier,
     ];
-    const userParticipantAddress = participants.find(p => p === userFreeBalance);
-    const nodeParticipantAddress = participants.find(p => p === nodeFreeBalance);
+    const userId = participants.find(p => p === userIdentifier);
+    const nodeId = participants.find(p => p === nodeIdentifier);
     const {
       identityHash,
       appInterface: { stateEncoding, actionEncoding, addr },
@@ -141,13 +138,13 @@ export class CFCoreStore implements IStoreService {
 
     // app proposal defaults
     freeBalanceApp.initiatorDeposit = Zero;
-    freeBalanceApp.initiatorDepositTokenAddress = AddressZero;
+    freeBalanceApp.initiatorDepositAssetId = AddressZero;
     freeBalanceApp.responderDeposit = Zero;
-    freeBalanceApp.responderDepositTokenAddress = AddressZero;
-    freeBalanceApp.proposedToIdentifier = userPublicIdentifier;
-    freeBalanceApp.proposedByIdentifier = nodePublicIdentifier;
-    freeBalanceApp.userParticipantAddress = userParticipantAddress;
-    freeBalanceApp.nodeParticipantAddress = nodeParticipantAddress;
+    freeBalanceApp.responderDepositAssetId = AddressZero;
+    freeBalanceApp.responderIdentifier = userIdentifier;
+    freeBalanceApp.initiatorIdentifier = nodeIdentifier;
+    freeBalanceApp.userIdentifier = userId;
+    freeBalanceApp.nodeIdentifier = nodeId;
     freeBalanceApp.type = AppType.FREE_BALANCE;
 
     channel.appInstances = [freeBalanceApp];
@@ -165,8 +162,8 @@ export class CFCoreStore implements IStoreService {
   ): Promise<void> {
     const {
       identityHash,
-      initiator,
-      responder,
+      initiatorIdentifier,
+      responderIdentifier,
       latestState,
       stateTimeout,
       latestVersionNumber,
@@ -183,13 +180,12 @@ export class CFCoreStore implements IStoreService {
 
     // upgrade proposal to instance
     proposal.type = AppType.INSTANCE;
-    // save participants
-    const nodeAddr = xkeyKthAddress(
-      this.configService.getPublicIdentifier(),
-      proposal.appSeqNo,
-    );
-    proposal.userParticipantAddress = [initiator, responder].find(p => p !== nodeAddr);
-    proposal.nodeParticipantAddress = [initiator, responder].find(p => p === nodeAddr);
+    // save user/node specific ids
+    const nodeId = this.configService.getPublicIdentifier();
+    proposal.userIdentifier = [initiatorIdentifier, responderIdentifier]
+      .find(p => p !== nodeId);
+    proposal.nodeIdentifier = [initiatorIdentifier, responderIdentifier]
+      .find(p => p === nodeId);
 
     proposal.meta = meta;
 
@@ -317,22 +313,41 @@ export class CFCoreStore implements IStoreService {
     app.appDefinition = appProposal.appDefinition;
     app.appSeqNo = appProposal.appSeqNo;
     app.initiatorDeposit = bigNumberify(appProposal.initiatorDeposit);
-    app.initiatorDepositTokenAddress = appProposal.initiatorDepositTokenAddress;
+    app.initiatorDepositAssetId = appProposal.initiatorDepositAssetId;
     app.responderDeposit = bigNumberify(appProposal.responderDeposit);
-    app.responderDepositTokenAddress = appProposal.responderDepositTokenAddress;
+    app.responderDepositAssetId = appProposal.responderDepositAssetId;
     app.defaultTimeout = appProposal.defaultTimeout;
     app.stateTimeout = appProposal.stateTimeout;
-    app.proposedToIdentifier = appProposal.proposedToIdentifier;
-    app.proposedByIdentifier = appProposal.proposedByIdentifier;
+    app.responderIdentifier = appProposal.responderIdentifier;
+    app.initiatorIdentifier = appProposal.initiatorIdentifier;
     app.outcomeType = appProposal.outcomeType;
     app.meta = appProposal.meta;
     app.initialState = appProposal.initialState;
     app.latestState = appProposal.initialState;
     app.latestVersionNumber = 0;
+    app.channel = channel;
 
-    channel.monotonicNumProposedApps = numProposedApps;
-    channel.appInstances.push(app);
-    await this.channelRepository.save(channel);
+    // because the app instance has `cascade` set to true, saving
+    // the channel will involve multiple queries and should be put
+    // within a transaction
+    await getManager().transaction(async transactionalEntityManager => {
+      await transactionalEntityManager.save(app);
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(Channel)
+        .set({
+          monotonicNumProposedApps: numProposedApps,
+        })
+        .where("multisigAddress = :multisigAddress", { multisigAddress })
+        .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Channel, "appInstances")
+        .of(channel.id)
+        .add(app.id);
+    });
   }
 
   async removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {

@@ -6,10 +6,12 @@ import {
   ProtocolNames,
   ProtocolParams,
   ProtocolRoles,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS, UNASSIGNED_SEQ_NO } from "../constants";
+import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
 import { AppInstance } from "../models";
 import {
@@ -19,7 +21,6 @@ import {
   ProtocolExecutionFlow,
 } from "../types";
 import { appIdentityToHash, logTime } from "../utils";
-import { xkeyKthAddress } from "../xkeys";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 
@@ -48,20 +49,20 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { processID, params } = message;
 
     const {
-      multisigAddress,
-      initiatorXpub,
-      responderXpub,
-      appDefinition,
       abiEncodings,
-      initiatorDeposit,
-      initiatorDepositTokenAddress,
-      responderDeposit,
-      responderDepositTokenAddress,
+      appDefinition,
       defaultTimeout,
-      stateTimeout,
       initialState,
-      outcomeType,
+      initiatorDeposit,
+      initiatorDepositAssetId,
+      initiatorIdentifier,
       meta,
+      multisigAddress,
+      outcomeType,
+      responderDeposit,
+      responderDepositAssetId,
+      responderIdentifier,
+      stateTimeout,
     } = params as ProtocolParams.Propose;
 
     const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
@@ -83,20 +84,19 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: bigNumberify(preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
-          initiatorXpub,
-          responderXpub,
-          preProtocolStateChannel.numProposedApps + 1,
+          initiatorIdentifier,
+          responderIdentifier,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: defaultTimeout.toHexString(),
       }),
-      proposedByIdentifier: initiatorXpub,
-      proposedToIdentifier: responderXpub,
+      initiatorIdentifier,
+      responderIdentifier,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositTokenAddress:
-        initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      responderDepositTokenAddress:
-        responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      initiatorDepositAssetId: initiatorDepositAssetId 
+        || CONVENTION_FOR_ETH_ASSET_ID,
+      responderDepositAssetId: responderDepositAssetId 
+        || CONVENTION_FOR_ETH_ASSET_ID,
       meta,
     };
 
@@ -117,9 +117,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
-          initiatorXpub,
-          responderXpub,
-          preProtocolStateChannel.numProposedApps + 1,
+          initiatorIdentifier,
+          responderIdentifier,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: defaultTimeout.toHexString(),
@@ -138,7 +137,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const initiatorSignatureOnInitialState = yield [
       OP_SIGN,
       setStateCommitment.hashToSign(),
-      appInstanceProposal.appSeqNo,
     ];
     logTime(log, substart, `Signed initial state initiator propose`);
 
@@ -147,7 +145,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       processID,
       params,
       seq: 1,
-      toXpub: responderXpub,
+      to: responderIdentifier,
       customData: {
         signature: initiatorSignatureOnInitialState,
       },
@@ -166,7 +164,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     await assertIsValidSignature(
-      xkeyKthAddress(responderXpub, appInstanceProposal.appSeqNo),
+      getSignerAddressFromPublicIdentifier(responderIdentifier),
       setStateCommitment.hashToSign(),
       responderSignatureOnInitialState,
     );
@@ -212,19 +210,19 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
 
     const {
-      multisigAddress,
-      initiatorXpub,
-      responderXpub,
-      appDefinition,
       abiEncodings,
-      initiatorDeposit,
-      initiatorDepositTokenAddress,
-      responderDeposit,
-      responderDepositTokenAddress,
+      appDefinition,
       defaultTimeout,
       initialState,
-      outcomeType,
+      initiatorDeposit,
+      initiatorDepositAssetId,
+      initiatorIdentifier,
       meta,
+      multisigAddress,
+      outcomeType,
+      responderDeposit,
+      responderDepositAssetId,
+      responderIdentifier,
       stateTimeout,
     } = params as ProtocolParams.Propose;
 
@@ -247,25 +245,24 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
-          initiatorXpub,
-          responderXpub,
-          preProtocolStateChannel.numProposedApps + 1,
+          initiatorIdentifier,
+          responderIdentifier,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: defaultTimeout.toHexString(),
       }),
       defaultTimeout: defaultTimeout.toHexString(),
       stateTimeout: stateTimeout.toHexString(),
-      initiatorDeposit: responderDeposit.toHexString(),
-      responderDeposit: initiatorDeposit.toHexString(),
-      proposedByIdentifier: initiatorXpub,
-      proposedToIdentifier: responderXpub,
+      initiatorDeposit: initiatorDeposit.toHexString(),
+      responderDeposit: responderDeposit.toHexString(),
+      initiatorIdentifier,
+      responderIdentifier,
       meta,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositTokenAddress:
-        responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      responderDepositTokenAddress:
-        initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      initiatorDepositAssetId: initiatorDepositAssetId
+        || CONVENTION_FOR_ETH_ASSET_ID,
+      responderDepositAssetId: responderDepositAssetId 
+        || CONVENTION_FOR_ETH_ASSET_ID,
     };
 
     yield [
@@ -282,9 +279,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: (preProtocolStateChannel.numProposedApps + 1).toString(),
         participants: preProtocolStateChannel.getSigningKeysFor(
-          initiatorXpub,
-          responderXpub,
-          preProtocolStateChannel.numProposedApps + 1,
+          initiatorIdentifier,
+          responderIdentifier,
         ),
         multisigAddress: preProtocolStateChannel.multisigAddress,
         defaultTimeout: defaultTimeout.toHexString(),
@@ -303,7 +299,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     substart = Date.now();
     await assertIsValidSignature(
-      xkeyKthAddress(initiatorXpub, appInstanceProposal.appSeqNo),
+      getSignerAddressFromPublicIdentifier(initiatorIdentifier),
       setStateCommitment.hashToSign(),
       initiatorSignatureOnInitialState,
     );
@@ -314,7 +310,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const responderSignatureOnInitialState = yield [
       OP_SIGN,
       setStateCommitment.hashToSign(),
-      appInstanceProposal.appSeqNo,
     ];
     logTime(log, substart, `Signed initial state responder propose`);
 
@@ -325,7 +320,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         protocol,
         processID,
         seq: UNASSIGNED_SEQ_NO,
-        toXpub: initiatorXpub,
+        to: initiatorIdentifier,
         customData: {
           signature: responderSignatureOnInitialState,
         },

@@ -1,5 +1,6 @@
 import { MessagingService } from "@connext/messaging";
 import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   AppAction,
   ConnextNodeStorePrefix,
@@ -11,9 +12,11 @@ import {
   StateChannelJSON,
   stringify,
   toBN,
+  AssetId,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
-import { AddressZero, Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -26,7 +29,6 @@ import {
   CFCore,
   InstallMessage,
   RejectProposalMessage,
-  xkeyKthAddress,
 } from "../util";
 import { ChannelRepository } from "../channel/channel.repository";
 import { Channel } from "../channel/channel.entity";
@@ -54,7 +56,7 @@ export class CFCoreService {
   async getFreeBalance(
     userPubId: string,
     multisigAddress: string,
-    assetId: string = AddressZero,
+    assetId?: string,
   ): Promise<MethodResults.GetFreeBalanceState> {
     try {
       const freeBalance = await this.cfCore.rpcRouter.dispatch({
@@ -62,7 +64,7 @@ export class CFCoreService {
         methodName: MethodNames.chan_getFreeBalanceState,
         parameters: {
           multisigAddress,
-          tokenAddress: assetId,
+          assetId: assetId || CONVENTION_FOR_ETH_ASSET_ID,
         },
       });
       return freeBalance.result.result as MethodResults.GetFreeBalanceState;
@@ -73,8 +75,8 @@ export class CFCoreService {
         // NOTE: can return free balance obj with 0s,
         // but need the free balance address in the multisig
         const obj = {};
-        obj[this.cfCore.freeBalanceAddress] = Zero;
-        obj[xkeyKthAddress(userPubId)] = Zero;
+        obj[this.cfCore.signerAddress] = Zero;
+        obj[getSignerAddressFromPublicIdentifier(userPubId)] = Zero;
         return obj;
       }
       this.log.error(e.message, e.stack);
@@ -94,12 +96,12 @@ export class CFCoreService {
     return getStateChannelRes.result.result;
   }
 
-  async createChannel(counterpartyPublicIdentifier: string): Promise<MethodResults.CreateChannel> {
+  async createChannel(counterpartyIdentifier: string): Promise<MethodResults.CreateChannel> {
     const params = {
       id: Date.now(),
       methodName: MethodNames.chan_create,
       parameters: {
-        owners: [this.cfCore.publicIdentifier, counterpartyPublicIdentifier],
+        owners: [this.cfCore.publicIdentifier, counterpartyIdentifier],
       } as MethodParams.CreateChannel,
     };
     this.log.debug(`Calling createChannel with params: ${stringify(params)}`);
@@ -138,13 +140,18 @@ export class CFCoreService {
     const contractAddresses = await this.configService.getContractAddresses(
       (await this.configService.getEthNetwork()).chainId.toString(),
     );
+    const multisigOwners = [
+      getSignerAddressFromPublicIdentifier(
+        channel.userIdentifiers[0],
+      ),
+      getSignerAddressFromPublicIdentifier(
+        channel.userIdentifiers[1],
+      ),
+    ];
     return new WithdrawCommitment(
       contractAddresses,
       channel.multisigAddress,
-      [
-        channel.freeBalanceAppInstance.initiator,
-        channel.freeBalanceAppInstance.responder,
-      ],
+      multisigOwners,
       recipient,
       assetId,
       amount,
@@ -169,9 +176,9 @@ export class CFCoreService {
     channel: Channel,
     initialState: any,
     initiatorDeposit: BigNumber,
-    initiatorDepositTokenAddress: string,
+    initiatorDepositAssetId: AssetId,
     responderDeposit: BigNumber,
-    responderDepositTokenAddress: string,
+    responderDepositAssetId: AssetId,
     app: string,
     meta: object = {},
     stateTimeout: BigNumber = Zero,
@@ -197,12 +204,12 @@ export class CFCoreService {
       appDefinition,
       initialState,
       initiatorDeposit,
-      initiatorDepositTokenAddress,
+      initiatorDepositAssetId,
       meta,
       outcomeType,
-      proposedToIdentifier: channel.userPublicIdentifier,
+      responderIdentifier: channel.userIdentifier,
       responderDeposit,
-      responderDepositTokenAddress,
+      responderDepositAssetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout,
     };
@@ -262,7 +269,11 @@ export class CFCoreService {
     return rejectRes.result.result as MethodResults.RejectInstall;
   }
 
-  async takeAction(appIdentityHash: string, action: AppAction, stateTimeout?: BigNumber): Promise<MethodResults.TakeAction> {
+  async takeAction(
+    appIdentityHash: string,
+    action: AppAction,
+    stateTimeout?: BigNumber,
+  ): Promise<MethodResults.TakeAction> {
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_takeAction,
@@ -361,7 +372,7 @@ export class CFCoreService {
 
   /**
    * Returns value from `node_records` table stored at:
-   * `{prefix}/{nodeXpub}/channel/{multisig}`
+   * `{prefix}/{nodeAddress}/channel/{multisig}`
    */
   async getChannelRecord(multisig: string, prefix: string = ConnextNodeStorePrefix): Promise<any> {
     const path = `${prefix}/${this.cfCore.publicIdentifier}/channel/${multisig}`;

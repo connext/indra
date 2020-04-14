@@ -1,32 +1,32 @@
-import { signChannelMessage } from "@connext/crypto";
 import {
   AppInstanceProposal,
   delay,
   EventNames,
+  IChannelSigner,
   ILockService,
   ILoggerService,
   IMessagingService,
   IStoreService,
+  Message,
   MethodName,
   MiddlewareContext,
   MinimalTransaction,
   NetworkContext,
-  Message,
-  ProtocolMessage,
   nullLogger,
   Opcode,
+  ProtocolMessage,
   ProtocolMessageData,
   ProtocolName,
   STORE_SCHEMA_VERSION,
   ValidationMiddleware,
+  Address,
+  PublicIdentifier,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";
 
 import { createRpcRouter } from "./methods";
-import AutoNonceWallet from "./auto-nonce-wallet";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { Deferred } from "./deferred";
 import {
@@ -35,18 +35,11 @@ import {
   ConditionalTransactionCommitment,
 } from "./ethereum";
 import { ProtocolRunner } from "./machine";
-import { getFreeBalanceAddress, StateChannel, AppInstance } from "./models";
-import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
+import { StateChannel, AppInstance } from "./models";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import {
-  IPrivateKeyGenerator,
-  MethodRequest,
-  MethodResponse,
-  PersistAppType,
-  PersistCommitmentType,
-} from "./types";
+import { MethodRequest, MethodResponse, PersistAppType, PersistCommitmentType } from "./types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -71,7 +64,6 @@ export class Node {
    * via `create` which immediately calls `asynchronouslySetupUsingRemoteServices`, these are
    * always non-null when the Node is being used.
    */
-  private signer!: SigningKey;
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
 
@@ -81,21 +73,13 @@ export class Node {
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: JsonRpcProvider,
+    signer: IChannelSigner,
     lockService?: ILockService,
-    publicExtendedKey?: string,
-    privateKeyGenerator?: IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,
     logger?: ILoggerService,
   ): Promise<Node> {
-    const [privateKeysGenerator, extendedPubKey] = await getPrivateKeysGeneratorAndXPubOrThrow(
-      storeService,
-      privateKeyGenerator,
-      publicExtendedKey,
-    );
-
     const node = new Node(
-      extendedPubKey,
-      privateKeysGenerator,
+      signer,
       messagingService,
       storeService,
       nodeConfig,
@@ -110,8 +94,7 @@ export class Node {
   }
 
   private constructor(
-    private readonly publicExtendedKey: string,
-    private readonly privateKeyGetter: PrivateKeysGetter,
+    private readonly signer: IChannelSigner,
     private readonly messagingService: IMessagingService,
     private readonly storeService: IStoreService,
     private readonly nodeConfig: NodeConfig,
@@ -128,10 +111,18 @@ export class Node {
     this.protocolRunner = this.buildProtocolRunner();
   }
 
+  @Memoize()
+  get signerAddress(): Address {
+    return this.signer.address;
+  }
+
+  @Memoize()
+  get publicIdentifier(): PublicIdentifier {
+    return this.signer.publicIdentifier;
+  }
+
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
-    this.signer = new SigningKey(await this.privateKeyGetter.getPrivateKey("0"));
-    this.log.info(`Node signer address: ${this.signer.address}`);
-    this.log.info(`Node public identifier: ${this.publicIdentifier}`);
+    this.log.info(`Node signer address: ${await this.signer.getAddress()}`);
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -141,12 +132,14 @@ export class Node {
       this.protocolRunner,
       this.networkContext,
       this.provider,
-      new AutoNonceWallet(
-        this.signer.privateKey,
-        // Creating copy of the provider fixes a mysterious big, details:
-        // https://github.com/ethers-io/ethers.js/issues/761
-        new JsonRpcProvider(this.provider.connection.url),
-      ),
+      this.signer,
+      // // TODO: should the below be replaced by signer?
+      // new AutoNonceWallet(
+      //   this.signer.privateKey,
+      //   // Creating copy of the provider fixes a mysterious big, details:
+      //   // https://github.com/ethers-io/ethers.js/issues/761
+      //   new JsonRpcProvider(this.provider.connection.url),
+      // ),
       this.blocksNeededForConfirmation!,
       new ProcessQueue(this.lockService),
       this.log,
@@ -157,31 +150,15 @@ export class Node {
     return this;
   }
 
-  @Memoize()
-  get publicIdentifier(): string {
-    return this.publicExtendedKey;
-  }
-
-  @Memoize()
-  get freeBalanceAddress(): string {
-    return getFreeBalanceAddress(this.publicIdentifier);
-  }
-
   /**
    * Attaches middleware for the chosen opcode. Currently, only `OP_VALIDATE`
    * is accepted as an injected middleware
    */
-  public injectMiddleware(
-    opcode: Opcode,
-    middleware: ValidationMiddleware,
-  ): void {
+  public injectMiddleware(opcode: Opcode, middleware: ValidationMiddleware): void {
     if (opcode !== Opcode.OP_VALIDATE) {
       throw new Error(`Cannot inject middleware for opcode: ${opcode}`);
     }
-    this.protocolRunner.register(
-      opcode,
-      async (args: [ProtocolName, MiddlewareContext],
-    ) => {
+    this.protocolRunner.register(opcode, async (args: [ProtocolName, MiddlewareContext]) => {
       const [protocol, context] = args;
       return middleware(protocol, context);
     });
@@ -200,33 +177,27 @@ export class Node {
     );
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
-      if (args.length !== 1 && args.length !== 2) {
+      if (args.length !== 1) {
         throw new Error("OP_SIGN middleware received wrong number of arguments.");
       }
 
-      const [commitmentHash, overrideKeyIndex] = args;
-      const keyIndex = overrideKeyIndex || 0;
+      const [commitmentHash] = args;
 
-      const privateKey = await this.privateKeyGetter.getPrivateKey(keyIndex);
-
-      return signChannelMessage(privateKey, commitmentHash);
+      return this.signer.signMessage(commitmentHash);
     });
 
     protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessageData]) => {
       const [data] = args;
-      const fromXpub = this.publicIdentifier;
-      const to = data.toXpub;
 
-      await this.messagingService.send(to, {
+      await this.messagingService.send(data.to, {
         data,
-        from: fromXpub,
+        from: this.publicIdentifier,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
     });
 
     protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [ProtocolMessageData]) => {
       const [data] = args;
-      const to = data.toXpub;
 
       const deferral = new Deferred<ProtocolMessage>();
 
@@ -234,14 +205,17 @@ export class Node {
 
       const counterpartyResponse = deferral.promise;
 
-      await this.messagingService.send(to, {
+      await this.messagingService.send(data.to, {
         data,
         from: this.publicIdentifier,
         type: EventNames.PROTOCOL_MESSAGE_EVENT,
       } as ProtocolMessage);
 
       // 90 seconds is the default lock acquiring time time
-      const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
+      const msg = await Promise.race([
+        counterpartyResponse,
+        delay(IO_SEND_AND_WAIT_TIMEOUT),
+      ]);
 
       if (!msg || !("data" in (msg as ProtocolMessage))) {
         throw new Error(

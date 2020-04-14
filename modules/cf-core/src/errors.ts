@@ -1,8 +1,6 @@
 import { stringify } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "./constants";
-
 export const APP_ALREADY_UNINSTALLED = (appIdentityHash: string): string =>
   `Cannot uninstall app ${appIdentityHash}, it has already been uninstalled`;
 
@@ -66,9 +64,6 @@ export const INSUFFICIENT_FUNDS_TO_WITHDRAW = (
   amount: BigNumber,
   balance: BigNumber,
 ): string => {
-  if (address === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
-    return `Node has ${balance} and needs ${amount} ETH to withdraw`;
-  }
   return `Node has ${balance} and needs ${amount} of token ${address} to withdraw`;
 };
 

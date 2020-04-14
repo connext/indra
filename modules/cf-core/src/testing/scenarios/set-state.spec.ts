@@ -1,15 +1,13 @@
 import { NetworkContext, createRandomAddress } from "@connext/types";
 import { Contract, Wallet } from "ethers";
-import { WeiPerEther } from "ethers/constants";
-import { signChannelMessage } from "@connext/crypto";
+import { WeiPerEther, AddressZero } from "ethers/constants";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../constants";
 import { SetStateCommitment } from "../../ethereum";
 import { FreeBalanceClass, StateChannel } from "../../models";
 
 import { ChallengeRegistry } from "../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
-import { getRandomHDNodes } from "../random-signing-keys";
+import { getRandomChannelSigners } from "../random-signing-keys";
 import { getAddress } from "ethers/utils";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
@@ -33,7 +31,7 @@ beforeAll(async () => {
  */
 describe("set state on free balance", () => {
   it("should have the correct versionNumber", async done => {
-    const [initiatorNode, responderNode] = getRandomHDNodes(2);
+    const [initiatorNode, responderNode] = getRandomChannelSigners(2);
     // State channel testing values
     let stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
@@ -42,17 +40,17 @@ describe("set state on free balance", () => {
         multisigMastercopy: network.MinimumViableMultisig,
       },
       getAddress(createRandomAddress()),
-      initiatorNode.neuter().extendedKey,
-      responderNode.neuter().extendedKey,
+      initiatorNode.publicIdentifier,
+      responderNode.publicIdentifier,
     );
 
-    expect(stateChannel.userNeuteredExtendedKeys[0]).toEqual(initiatorNode.neuter().extendedKey);
-    expect(stateChannel.userNeuteredExtendedKeys[1]).toEqual(responderNode.neuter().extendedKey);
+    expect(stateChannel.userIdentifiers[0]).toEqual(initiatorNode.publicIdentifier);
+    expect(stateChannel.userIdentifiers[1]).toEqual(responderNode.publicIdentifier);
 
     // Set the state to some test values
     stateChannel = stateChannel.setFreeBalance(
       FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+        AddressZero,
       ]),
     );
 
@@ -68,16 +66,8 @@ describe("set state on free balance", () => {
     const setStateCommitmentHash = setStateCommitment.hashToSign();
 
     await setStateCommitment.addSignatures(
-      await signChannelMessage(
-        initiatorNode.derivePath(freeBalanceETH.appSeqNo.toString())
-          .privateKey, 
-        setStateCommitmentHash,
-      ),
-      await signChannelMessage(
-        responderNode.derivePath(freeBalanceETH.appSeqNo.toString())
-          .privateKey,
-        setStateCommitmentHash,
-      ),
+      await initiatorNode.signMessage(setStateCommitmentHash),
+      await responderNode.signMessage(setStateCommitmentHash),
     );
 
     const setStateTx = await setStateCommitment.getSignedTransaction();

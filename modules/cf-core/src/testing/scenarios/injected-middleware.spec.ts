@@ -49,8 +49,8 @@ describe("injected validation middleware", () => {
     expect(capturedProtocol!).toBe(ProtocolNames.setup);
     expect(capturedContext!).toEqual({
       params: {
-        initiatorXpub: nodeA.publicIdentifier,
-        responderXpub: nodeB.publicIdentifier,
+        initiatorIdentifier: nodeA.publicIdentifier,
+        responderIdentifier: nodeB.publicIdentifier,
         multisigAddress,
       },
       role: ProtocolRoles.initiator,

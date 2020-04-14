@@ -5,6 +5,8 @@ import {
   MethodParams,
   MethodResults,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../request-handler";
@@ -12,7 +14,6 @@ import { RequestHandler } from "../../request-handler";
 import { NodeController } from "../controller";
 import { getCreate2MultisigAddress } from "../../utils";
 import { NO_MULTISIG_FOR_COUNTERPARTIES } from "../../errors";
-import { xkeyKthAddress } from "../../xkeys";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
@@ -56,7 +57,7 @@ export class CreateChannelController extends NodeController {
     }
     const multisigAddress = storedMultisig || await getCreate2MultisigAddress(
       requestHandler.publicIdentifier,
-      owners.find(xpub => xpub !== requestHandler.publicIdentifier)!,
+      owners.find(id => id !== requestHandler.publicIdentifier)!,
       { 
         proxyFactory: networkContext.ProxyFactory, 
         multisigMastercopy: networkContext.MinimumViableMultisig,
@@ -79,18 +80,18 @@ export class CreateChannelController extends NodeController {
     const { owners } = params;
     const { publicIdentifier, protocolRunner, outgoing } = requestHandler;
 
-    const [responderXpub] = owners.filter(x => x !== publicIdentifier);
+    const [responderIdentifier] = owners.filter(x => x !== publicIdentifier);
 
     await protocolRunner.runSetupProtocol({
       multisigAddress,
-      responderXpub,
-      initiatorXpub: publicIdentifier,
+      responderIdentifier,
+      initiatorIdentifier: publicIdentifier,
     });
 
     // use state channel for owners
     const addressOwners = [
-      xkeyKthAddress(publicIdentifier, 0),
-      xkeyKthAddress(responderXpub, 0),
+      getSignerAddressFromPublicIdentifier(publicIdentifier),
+      getSignerAddressFromPublicIdentifier(responderIdentifier),
     ];
 
     const msg: CreateChannelMessage = {
@@ -99,7 +100,7 @@ export class CreateChannelController extends NodeController {
       data: {
         multisigAddress,
         owners: addressOwners,
-        counterpartyXpub: responderXpub,
+        counterpartyIdentifier: responderIdentifier,
       } as MethodResults.CreateChannel,
     };
 

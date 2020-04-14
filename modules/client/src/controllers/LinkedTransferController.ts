@@ -1,26 +1,23 @@
+import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   ConditionalTransferTypes,
   EventNames,
   EventPayloads,
+  getAddressFromAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
   toBN,
+  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { DEFAULT_APP_TIMEOUT, LINKED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
-import { encryptWithPublicKey } from "@connext/crypto";
 import { HashZero, Zero } from "ethers/constants";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { createLinkedHash, stringify } from "../lib";
-import {
-  invalidXpub,
-  validate,
-} from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { validate, invalidAddress, invalid32ByteHexString, invalidPublicIdentifier } from "../validation";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
@@ -28,22 +25,29 @@ export class LinkedTransferController extends AbstractController {
   ): Promise<PublicResults.LinkedTransfer> => {
     const amount = toBN(params.amount);
     const {
-      assetId,
       paymentId,
       preImage,
       meta,
       recipient,
     } = params;
+    const assetId = params.assetId
+      ? getAddressFromAssetId(params.assetId)
+      : CONVENTION_FOR_ETH_ASSET_ID;
+
+    validate(
+      invalidAddress(assetId),
+      invalid32ByteHexString(paymentId),
+      invalid32ByteHexString(preImage),
+    );
 
     const submittedMeta = { ...(meta || {}) } as any;
     
     if (recipient) {
-      validate(invalidXpub(recipient));
+      validate(invalidPublicIdentifier(recipient));
       // set recipient and encrypted pre-image on linked transfer
-      const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
-      const encryptedPreImage = await encryptWithPublicKey(
-        recipientPublicKey.replace(/^0x/, ``),
+      const encryptedPreImage = await this.channelProvider.encrypt(
         preImage,
+        recipient,
       );
 
       // add encrypted preImage to meta so node can store it in the DB
@@ -60,11 +64,11 @@ export class LinkedTransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: this.connext.freeBalanceAddress,
+          to: this.connext.signerAddress,
         },
         {
           amount: Zero,
-          to: this.connext.nodeFreeBalanceAddress,
+          to: this.connext.nodeSignerAddress,
         },
       ],
       linkedHash,
@@ -86,12 +90,12 @@ export class LinkedTransferController extends AbstractController {
       appDefinition,
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: assetId,
+      initiatorDepositAssetId: assetId,
       meta: submittedMeta,
       outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
+      responderDepositAssetId: assetId,
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: LINKED_TRANSFER_STATE_TIMEOUT,
     };
