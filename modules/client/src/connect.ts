@@ -15,7 +15,7 @@ import {
   IChannelSigner,
 } from "@connext/types";
 import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
-  
+
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
@@ -32,7 +32,7 @@ export const connect = async (
   const start = Date.now();
   const opts =
     typeof clientOptions === "string"
-      ? await getDefaultOptions(clientOptions, overrideOptions)
+      ? getDefaultOptions(clientOptions, overrideOptions)
       : clientOptions;
 
   const {
@@ -110,9 +110,8 @@ export const connect = async (
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
 
-    signer = typeof opts.signer === "string" 
-      ? new ChannelSigner(opts.signer, ethProvider) 
-      : opts.signer;
+    signer =
+      typeof opts.signer === "string" ? new ChannelSigner(opts.signer, ethProvider) : opts.signer;
 
     store = store || getDefaultStore(opts);
 
@@ -320,7 +319,10 @@ export const connect = async (
       log.debug(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
     }
   } catch (e) {
-    log.error(`Could not complete watching for user withdrawals: ${e.stack || e.message}... will attempt again on next connection`);
+    log.error(
+      `Could not complete watching for user withdrawals: ${e.stack ||
+        e.message}... will attempt again on next connection`,
+    );
   }
 
   log.info(`Client ${client.publicIdentifier} connected!`);

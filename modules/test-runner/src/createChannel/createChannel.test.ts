@@ -47,7 +47,7 @@ describe("Create Channel", () => {
 
   it("Creating a channel with mainnet network string fails if no signer is provided", async () => {
     await expect(createDefaultClient("mainnet", { signer: undefined })).to.be.rejectedWith(
-      "Must provide channelProvider or signer",
+      "Signer required for Mainnet",
     );
   });
 
