@@ -12,6 +12,7 @@ import {
 import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
 import { PublicIdentifier } from "./identifiers";
+import { ProtocolMessageData } from "./messaging";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -206,6 +207,7 @@ export namespace EventPayloads {
   export type RejectInstall = RejectInstallEventData;
   export type Uninstall = UninstallEventData;
   export type UpdateState = UpdateStateEventData;
+  export type ProtocolMessage = ProtocolMessageData;
 }
 
 export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventNames> {}
