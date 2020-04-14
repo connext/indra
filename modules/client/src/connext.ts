@@ -1,8 +1,6 @@
 import { SupportedApplications } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
-  getAddressFromAssetId,
   Address,
   AppAction,
   AppInstanceJson,
@@ -14,7 +12,6 @@ import {
   ChannelProviderConfig,
   ConditionalTransferTypes,
   ConnextClientStorePrefix,
-  createRandom32ByteHexString,
   DefaultApp,
   DepositAppName,
   DepositAppState,
@@ -37,7 +34,14 @@ import {
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
   CONVENTION_FOR_ETH_ASSET_ID,
+  WithdrawalMonitorObject,
 } from "@connext/types";
+import {
+  createRandom32ByteHexString,
+  getAddressFromAssetId,
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+} from "@connext/utils";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -56,7 +60,6 @@ import {
   SwapController,
   WithdrawalController,
 } from "./controllers";
-import { stringify, withdrawalKey } from "./lib";
 import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
 
@@ -325,19 +328,19 @@ export class ConnextClient implements IConnextClient {
     }) as Promise<PublicResults.LinkedTransfer>;
   };
 
-  public withdraw = async (params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> => {
-    return await this.withdrawalController.withdraw(params);
+  public withdraw = (params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> => {
+    return this.withdrawalController.withdraw(params);
   };
 
-  public respondToNodeWithdraw = async (appInstance: AppInstanceJson): Promise<void> => {
-    return await this.withdrawalController.respondToNodeWithdraw(appInstance);
+  public respondToNodeWithdraw = (appInstance: AppInstanceJson): Promise<void> => {
+    return this.withdrawalController.respondToNodeWithdraw(appInstance);
   };
 
-  public saveWithdrawCommitmentToStore = async (
+  public saveWithdrawCommitmentToStore = (
     params: PublicParams.Withdraw,
     signatures: string[],
   ): Promise<void> => {
-    return await this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
+    return this.withdrawalController.saveWithdrawCommitmentToStore(params, signatures);
   };
 
   public resolveCondition = async (
@@ -382,50 +385,63 @@ export class ConnextClient implements IConnextClient {
     return await this.node.getHashLockTransfer(lockHash);
   };
 
-  public getLatestWithdrawal = async (): Promise<
-    { retry: number; tx: MinimalTransaction } | undefined
-  > => {
-    const value = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
+  public getUserWithdrawals = async (): Promise<WithdrawalMonitorObject[]> => {
+    const values = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
-    if (!value || typeof value === "undefined") {
-      return undefined;
-    }
+    // sanity check
+    values.forEach(val => {
+      const noRetry = typeof val.retry === "undefined" || val.retry === null;
+      if (!val.tx || noRetry) {
+        const msg = `Can not find tx or retry in retrieved user withdrawal ${stringify(val())}`;
+        this.log.error(msg);
+        throw new Error(msg);
+      }
+    });
 
-    const noRetry = typeof value.retry === "undefined" || value.retry === null;
-    if (!value.tx || noRetry) {
-      const msg = `Can not find tx or retry in store under key ${withdrawalKey(
-        this.publicIdentifier,
-      )}`;
-      this.log.error(msg);
-      throw new Error(msg);
-    }
-    return value;
+    return values;
   };
 
-  public watchForUserWithdrawal = async (): Promise<TransactionResponse | undefined> => {
+  // this function should be called when the user knows a withdrawal should
+  // be submitted. if there is no withdrawal expected, this promise will last
+  // for the duration of the timeout
+  public watchForUserWithdrawal = async (): Promise<TransactionResponse[]> => {
     // poll for withdrawal tx submitted to multisig matching tx data
     const maxBlocks = 15;
     const startingBlock = await this.ethProvider.getBlockNumber();
-    let transaction: TransactionResponse;
+    const transactions: TransactionResponse[] = [];
 
-    // TODO: poller should not be completely blocking, but safe to leave for now
-    // because the channel should be blocked
     try {
-      transaction = await new Promise((resolve: any, reject: any): any => {
+      await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on(
           "block",
           async (blockNumber: number): Promise<void> => {
-            const transaction = await this.checkForUserWithdrawal(blockNumber);
-            if (transaction) {
-              await this.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-                withdrawalObject: undefined,
-              });
+            const withdrawals = await this.checkForUserWithdrawals(blockNumber);
+            if (withdrawals.length === 0) {
+              // in the `WithdrawalController` the user does not store the
+              // commitment until `takeAction` happens, so this may be 0
+              // meaning the withdrawal has not been saved to the store yet
+              return;
+            }
+            withdrawals.forEach(async ([storedValue, tx]) => {
+              if (tx) {
+                transactions.push(tx);
+                await this.channelProvider.send(
+                  ChannelMethods.chan_setUserWithdrawal, 
+                  {
+                    withdrawalObject: storedValue,
+                    remove: true,
+                  },
+                );
+              }
+            });
+            if (transactions.length === withdrawals.length) {
+              // no more to resolve
               this.ethProvider.removeAllListeners("block");
-              resolve(transaction);
+              return resolve();
             }
             if (blockNumber - startingBlock >= maxBlocks) {
               this.ethProvider.removeAllListeners("block");
-              reject(`More than ${maxBlocks} have passed: ${blockNumber - startingBlock}`);
+              return reject(`More than ${maxBlocks} have passed: ${blockNumber - startingBlock}`);
             }
           },
         );
@@ -437,7 +453,7 @@ export class ConnextClient implements IConnextClient {
       // }
       throw new Error(`Error watching for user withdrawal: ${e}`);
     }
-    return transaction;
+    return transactions;
   };
 
   ////////////////////////////////////////
@@ -687,6 +703,7 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
+  // must be public so it can easily be used by the listener
   public reclaimPendingAsyncTransfer = async (
     paymentId: string,
     encryptedPreImage: string,
@@ -708,21 +725,6 @@ export class ConnextClient implements IConnextClient {
 
   ///////////////////////////////////
   // LOW LEVEL METHODS
-
-  public getRegisteredAppDetails = (appName: SupportedApplications): DefaultApp => {
-    const appInfo = this.appRegistry.filter((app: DefaultApp): boolean => {
-      return app.name === appName && app.chainId === this.network.chainId;
-    });
-
-    if (!appInfo || appInfo.length === 0) {
-      throw new Error(`Could not find ${appName} app details on chain ${this.network.chainId}`);
-    }
-
-    if (appInfo.length > 1) {
-      throw new Error(`Found multiple ${appName} app details on chain ${this.network.chainId}`);
-    }
-    return appInfo[0];
-  };
 
   public matchTx = (
     givenTransaction: Transaction | undefined,
@@ -927,35 +929,44 @@ export class ConnextClient implements IConnextClient {
     return undefined;
   };
 
-  private checkForUserWithdrawal = async (
+  private checkForUserWithdrawals = async (
     inBlock: number,
-  ): Promise<TransactionResponse | undefined> => {
-    const val = await this.getLatestWithdrawal();
-    if (!val) {
+  ): Promise<[WithdrawalMonitorObject, TransactionResponse][]> => {
+    const vals = await this.getUserWithdrawals();
+    if (vals.length === 0) {
       this.log.error("No transaction found in store.");
-      return undefined;
+      return [];
     }
 
-    const { tx } = val;
-    // get the transaction hash that we should be looking for from
-    // the contract method
-    const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
-    if (txsTo === 0) {
-      return undefined;
-    }
-
-    const block = await this.ethProvider.getBlock(inBlock);
-    const { transactions } = block;
-    if (transactions.length === 0) {
-      return undefined;
-    }
-
-    for (const transactionHash of transactions) {
-      const transaction = await this.ethProvider.getTransaction(transactionHash);
-      if (this.matchTx(transaction, tx)) {
-        return transaction;
+    const getTransactionResponse = async (
+      tx: MinimalTransaction,
+    ): Promise<TransactionResponse | undefined> => {
+      // get the transaction hash that we should be looking for from
+      // the contract method
+      const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
+      if (txsTo === 0) {
+        return undefined;
       }
+
+      const block = await this.ethProvider.getBlock(inBlock);
+      const { transactions } = block;
+      if (transactions.length === 0) {
+        return undefined;
+      }
+
+      for (const transactionHash of transactions) {
+        const transaction = await this.ethProvider.getTransaction(transactionHash);
+        if (this.matchTx(transaction, tx)) {
+          return transaction;
+        }
+      }
+      return undefined;
+    };
+
+    let responses = [];
+    for (const val of vals) {
+      responses.push([val, await getTransactionResponse(val.tx)]);
     }
-    return undefined;
+    return responses;
   };
 }

@@ -1,10 +1,10 @@
 import { providers } from "ethers";
 
 import { AppRegistry, DefaultApp, AppInstanceJson } from "./app";
-import { Address, Bytes32, DecString } from "./basic";
-import { IChannelSigner, ChannelProviderConfig, IChannelProvider } from "./channelProvider";
+import { Address, Bytes32, DecString, PublicIdentifier } from "./basic";
+import { ChannelProviderConfig, IChannelProvider } from "./channelProvider";
+import { IChannelSigner } from "./crypto";
 import { EventNames } from "./events";
-import { PublicIdentifier } from "./identifiers";
 import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
@@ -98,7 +98,6 @@ export interface IConnextClient {
         }
       | { appDefinitionAddress: Address },
   ): Promise<AppRegistry | DefaultApp | undefined>;
-  getRegisteredAppDetails(appName: string /* AppNames */): DefaultApp;
   createChannel(): Promise<NodeResponses.CreateChannel>;
   subscribeToSwapRates(from: Address, to: Address, callback: any): Promise<any>;
   getLatestSwapRate(from: Address, to: Address): Promise<DecString>;
@@ -107,12 +106,6 @@ export interface IConnextClient {
   getRebalanceProfile(assetId?: Address): Promise<NodeResponses.GetRebalanceProfile | undefined>;
   getTransferHistory(): Promise<NodeResponses.GetTransferHistory>;
   reclaimPendingAsyncTransfers(): Promise<void>;
-  reclaimPendingAsyncTransfer(
-    amount: DecString,
-    assetId: Address,
-    paymentId: Bytes32,
-    encryptedPreImage: string,
-  ): Promise<NodeResponses.ResolveLinkedTransfer>;
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS

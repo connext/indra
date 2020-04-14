@@ -1,6 +1,5 @@
 import { DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   Address,
   BigNumber,
@@ -8,10 +7,10 @@ import {
   DepositAppName,
   DepositAppState,
   MinimalTransaction,
-  stringify,
   TransactionReceipt,
   TransactionResponse,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { Zero, AddressZero } from "ethers/constants";
 

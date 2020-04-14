@@ -10,6 +10,7 @@ import {
   WithdrawalMonitorObject,
   WrappedStorage,
 } from "@connext/types";
+import { stringify } from "@connext/utils";
 
 import {
   CHANNEL_KEY,
@@ -385,34 +386,41 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(withdrawalKey, commitment);
   }
 
-  async getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
+  async getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    const item = await this.getItem<WithdrawalMonitorObject>(withdrawalKey);
+    const item = await this.getItem<WithdrawalMonitorObject[]>(withdrawalKey);
     if (!item) {
-      return undefined;
+      return [];
     }
     return item;
   }
 
   async createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    if (await this.getItem(withdrawalKey)) {
-      throw new Error(`Could not find existing withdrawal commitment for ${withdrawalKey}`);
+    const withdrawals = await this.getUserWithdrawals();
+    const existing = withdrawals.find(x => x === withdrawalObject);
+    if (existing) {
+      throw new Error(`Found existing withdrawal commitment matching: ${stringify(withdrawalObject)}`);
     }
-    return this.setItem(withdrawalKey, withdrawalObject);
+    const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
+    return this.setItem(withdrawalKey, withdrawals.concat([withdrawalObject]));
   }
 
   async updateUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    if (!(await this.getItem(withdrawalKey))) {
-      throw new Error(`Could not find existing withdrawal commitment for ${withdrawalKey}`);
+    const withdrawals = await this.getUserWithdrawals();
+    const idx = withdrawals.findIndex(x => x === withdrawalObject);
+    if (idx === -1) {
+      throw new Error(`Could not find withdrawal commitment to update`);
     }
-    return this.setItem(withdrawalKey, withdrawalObject);
+    withdrawals[idx] = withdrawalObject;
+    return this.setItem(withdrawalKey, withdrawals);
   }
 
-  async removeUserWithdrawal(): Promise<void> {
+  async removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
-    return this.removeItem(withdrawalKey);
+    const withdrawals = await this.getUserWithdrawals();
+    const updated = withdrawals.filter(x => x !== toRemove);
+    return this.setItem(withdrawalKey, updated);
   }
 
   ////// Helper methods

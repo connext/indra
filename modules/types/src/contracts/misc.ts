@@ -1,24 +1,8 @@
-import { AbiCoder, hexlify } from "ethers/utils";
-
 import { Address, JsonRpcProvider } from "../basic";
-import { enumify } from "../utils";
-
-export const tidy = (str: string): string =>
-  `${str.replace(/\n/g, "").replace(/ +/g, " ")}`;
+import { enumify, tidy } from "../utils";
 
 ////////////////////////////////////////
 // Generic contract ops & network config
-
-export const abiCoder = new AbiCoder((type: string, value: any) => {
-  const match = type.match(/^(u?int)([0-9]*)$/);
-  if (match) {
-    // convert small int types to JS number
-    if (parseInt(match[2]) <= 48) { return value.toNumber(); }
-    // convert large int types to hex string
-    return hexlify(value);
-  }
-  return value;
-});
 
 export type AddressBook = {
   [chainId: string]: {

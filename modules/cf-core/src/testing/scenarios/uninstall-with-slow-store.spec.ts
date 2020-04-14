@@ -1,4 +1,5 @@
-import { delay, UninstallMessage } from "@connext/types";
+import { UninstallMessage } from "@connext/types";
+import { delay } from "@connext/utils";
 
 import { Node } from "../../node";
 

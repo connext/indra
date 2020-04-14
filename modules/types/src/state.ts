@@ -1,6 +1,5 @@
 import { AppInstanceProposal, AppInstanceJson } from "./app";
-import { Address, Bytes32 } from "./basic";
-import { PublicIdentifier } from "./identifiers";
+import { Address, Bytes32, PublicIdentifier } from "./basic";
 
 // Increment this every time StateChannelJSON is modified
 // This is used to signal to clients that they need to delete/restore their state

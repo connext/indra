@@ -1,9 +1,9 @@
 import {
-  delay,
   EventNames,
   IConnextClient,
   LinkedTransferStatus,
 } from "@connext/types";
+import { delay } from "@connext/utils";
 import * as lolex from "lolex";
 
 import {
@@ -28,7 +28,7 @@ import {
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 import { before } from "mocha";
-import { getRandomChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner } from "@connext/utils";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,

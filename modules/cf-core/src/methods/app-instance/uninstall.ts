@@ -1,4 +1,12 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, PublicIdentifier } from "@connext/types";
+import {
+  IStoreService,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  PublicIdentifier,
+} from "@connext/types";
+import { getFirstElementInListNotEqualTo } from "@connext/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
@@ -10,7 +18,6 @@ import {
 } from "../../errors";
 import { ProtocolRunner } from "../../machine";
 import { RequestHandler } from "../../request-handler";
-import { getFirstElementInListNotEqualTo } from "../../utils";
 import { NodeController } from "../controller";
 import { StateChannel } from "../../models";
 

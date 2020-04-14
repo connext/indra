@@ -1,20 +1,23 @@
+import { Node as CFCore } from "@connext/cf-core";
 import { MessagingService } from "@connext/messaging";
 import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   AppAction,
+  AppInstanceJson,
+  AppInstanceProposal,
+  AssetId,
   ConnextNodeStorePrefix,
+  CONVENTION_FOR_ETH_ASSET_ID,
   EventNames,
+  InstallMessage,
   MethodNames,
   MethodParams,
   MethodResults,
   PublicParams,
+  RejectProposalMessage,
   StateChannelJSON,
-  stringify,
-  toBN,
-  AssetId,
-  CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -23,13 +26,6 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
-import {
-  AppInstanceJson,
-  AppInstanceProposal,
-  CFCore,
-  InstallMessage,
-  RejectProposalMessage,
-} from "../util";
 import { ChannelRepository } from "../channel/channel.repository";
 import { Channel } from "../channel/channel.entity";
 

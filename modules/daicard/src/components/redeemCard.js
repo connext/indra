@@ -1,4 +1,5 @@
 import { ConditionalTransferTypes } from "@connext/types";
+import { Currency } from "@connext/utils";
 import {
   Button,
   CircularProgress,
@@ -23,7 +24,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
 import { redeemMachine } from "../state";
-import { Currency } from "../utils";
 
 const style = withStyles(theme => ({
   icon: {

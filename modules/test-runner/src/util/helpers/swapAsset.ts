@@ -1,4 +1,5 @@
-import { calculateExchange, IConnextClient, inverse, PublicParams, getAddressFromAssetId } from "@connext/types";
+import { IConnextClient, PublicParams } from "@connext/types";
+import { calculateExchange, getAddressFromAssetId, inverse } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 
 import { expect } from "../";

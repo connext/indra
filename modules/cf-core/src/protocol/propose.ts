@@ -8,7 +8,7 @@ import {
   ProtocolRoles,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 import { defaultAbiCoder, keccak256, bigNumberify } from "ethers/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
@@ -20,7 +20,7 @@ import {
   PersistCommitmentType,
   ProtocolExecutionFlow,
 } from "../types";
-import { appIdentityToHash, logTime } from "../utils";
+import { appIdentityToHash } from "../utils";
 
 import { assertIsValidSignature, stateChannelClassFromStoreByMultisig } from "./utils";
 

@@ -1,5 +1,5 @@
-import { getRandomChannelSigner } from "@connext/crypto";
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
+import { getRandomChannelSigner } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "./node";

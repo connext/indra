@@ -1,7 +1,7 @@
 import * as connext from "@connext/client";
-import { ChannelSigner } from "@connext/crypto";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
+import { Currency, minBN, toBN, tokenToWei, weiToToken } from "@connext/utils";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
@@ -31,16 +31,8 @@ import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 import { WithdrawSaiDialog } from "./components/withdrawSai";
 import { rootMachine } from "./state";
-import {
-  cleanWalletConnect,
-  Currency,
-  migrate,
-  minBN,
-  toBN,
-  tokenToWei,
-  weiToToken,
-  initWalletConnect,
-} from "./utils";
+import { cleanWalletConnect, migrate, initWalletConnect } from "./utils";
+
 
 const urls = {
   ethProviderUrl:

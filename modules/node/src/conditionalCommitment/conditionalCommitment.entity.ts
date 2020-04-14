@@ -1,6 +1,7 @@
-import { IsEthAddress, IsKeccak256Hash } from "../util";
-import { AppInstance } from "../appInstance/appInstance.entity";
 import { OneToOne, JoinColumn, PrimaryGeneratedColumn, Entity, Column } from "typeorm";
+
+import { AppInstance } from "../appInstance/appInstance.entity";
+import { IsEthAddress, IsKeccak256Hash } from "../validate";
 
 @Entity()
 export class ConditionalTransactionCommitment {

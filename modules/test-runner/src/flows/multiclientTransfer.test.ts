@@ -2,8 +2,8 @@ import {
   IConnextClient,
   EventPayloads,
   EventNames,
-  toBN,
 } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 

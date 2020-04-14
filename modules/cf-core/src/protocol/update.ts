@@ -6,11 +6,10 @@ import {
   ProtocolRoles,
   UpdateMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment } from "../ethereum";
-import { logTime } from "../utils";
 import {
   Context,
   PersistAppType,

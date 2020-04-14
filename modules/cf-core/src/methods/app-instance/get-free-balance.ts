@@ -1,4 +1,5 @@
-import { MethodNames, MethodParams, MethodResults, getAddressFromAssetId } from "@connext/types";
+import { MethodNames, MethodParams, MethodResults } from "@connext/types";
+import { getAddressFromAssetId } from "@connext/utils";
 import { getAddress } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 

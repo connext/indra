@@ -10,9 +10,9 @@ import {
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
 } from "@connext/types";
+import { BigNumber } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
-import { BigNumber } from "ethers/utils";
 
 export class ResolveSignedTransferController extends AbstractController {
   public resolveSignedTransfer = async (

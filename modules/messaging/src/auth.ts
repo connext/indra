@@ -1,5 +1,6 @@
+import { MessagingConfig, ILoggerService } from "@connext/types";
+import { nullLogger } from "@connext/utils";
 import { AuthService } from "ts-natsutil";
-import { MessagingConfig, nullLogger, ILoggerService } from "@connext/types";
 
 export class MessagingAuthService {
   private log: ILoggerService;

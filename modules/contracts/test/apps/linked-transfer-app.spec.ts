@@ -1,5 +1,6 @@
 /* global before */
-import { Address, SolidityValueType, createRandom32ByteHexString } from "@connext/types";
+import { Address, SolidityValueType } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";

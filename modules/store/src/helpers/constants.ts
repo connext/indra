@@ -1,4 +1,4 @@
-import { safeJsonStringify } from "./utils";
+import { safeJsonStringify } from "@connext/utils";
 
 export const DEFAULT_ASYNC_STORAGE_KEY = "CONNEXT_STORE";
 export const DEFAULT_STORE_PREFIX = "INDRA_CLIENT_CF_CORE";

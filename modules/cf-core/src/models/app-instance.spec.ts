@@ -1,4 +1,5 @@
-import { OutcomeType, createRandomAddress, toBN } from "@connext/types";
+import { OutcomeType } from "@connext/types";
+import { createRandomAddress, toBN } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 

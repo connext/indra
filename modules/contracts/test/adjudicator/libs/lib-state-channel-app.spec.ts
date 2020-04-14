@@ -1,4 +1,6 @@
 /* global before */
+import { AppChallengeBigNumber, ChallengeStatus } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
 
 import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWithCounterAction, ActionType } from "../utils";
@@ -6,7 +8,6 @@ import { provider, snapshot, setupContext, restore, expect, moveToBlock, AppWith
 import AppWithAction from "../../../build/AppWithAction.json";
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 import { BigNumberish } from "ethers/utils";
-import { AppChallengeBigNumber, ChallengeStatus, toBN } from "@connext/types";
 
 describe("LibStateChannelApp", () => {
 
@@ -169,7 +170,10 @@ describe("LibStateChannelApp", () => {
     });
 
     it("should return false if it is explicitly finalized", async () => {
-      await setAndProgressState(1, { actionType: ActionType.SUBMIT_COUNTER_INCREMENT, increment: toBN(10) });
+      await setAndProgressState(1, {
+        actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
+        increment: toBN(10),
+      });
       await verifyChallenge({ status: ChallengeStatus.EXPLICITLY_FINALIZED });
       expect(await isProgressable()).to.be.false;
       expect(await isCancellable()).to.be.false;

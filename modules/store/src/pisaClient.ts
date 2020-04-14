@@ -1,23 +1,14 @@
-import { ethers } from "ethers";
-
-import {
-  arrayify,
-  hexlify,
-  IBackupServiceAPI,
-  IPisaClient,
-  keccak256,
-  safeJsonParse,
-  safeJsonStringify,
-  StorePair,
-  toUtf8Bytes,
-  toUtf8String,
-} from "./helpers";
+import { IBackupServiceAPI, StorePair } from "@connext/types";
+import { safeJsonParse, safeJsonStringify } from "@connext/utils";
+import { Wallet } from "ethers";
+import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
+import { PisaClient as IPisaClient } from "pisa-client";
 
 export class PisaClientBackupAPI implements IBackupServiceAPI {
   private pisaClient: IPisaClient;
-  private wallet: ethers.Wallet;
+  private wallet: Wallet;
 
-  constructor(pisaClient: IPisaClient, wallet: ethers.Wallet) {
+  constructor(pisaClient: IPisaClient, wallet: Wallet) {
     this.pisaClient = pisaClient;
     this.wallet = wallet;
   }

@@ -1,11 +1,12 @@
-import { AppInstanceJson, IConnextClient, DepositAppState, delay } from "@connext/types";
+import { AppInstanceJson, IConnextClient, DepositAppState, DepositAppName, DefaultApp } from "@connext/types";
+import { delay } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
-import { bigNumberify } from "ethers/utils";
 
 
 export const requestDepositRights = async (
@@ -21,9 +22,13 @@ export const requestDepositRights = async (
           client.multisigAddress,
         );
   // get coin balance app details
+  const network = await ethProvider.getNetwork();
   const {
     appDefinitionAddress: appDefinition,
-  } = client.getRegisteredAppDetails("DepositApp");
+  } = await client.getAppRegistry({
+    name: DepositAppName,
+    chainId: network.chainId,
+  }) as DefaultApp;
   // install the app and get the state
   let depositApp: DepositAppState;
   if (clientIsRecipient) {

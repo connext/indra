@@ -1,8 +1,8 @@
 import { MessagingService } from "@connext/messaging";
+import { isAddress } from "@connext/utils";
 import { RpcException } from "@nestjs/microservices";
 
 import { LoggerService } from "../logger/logger.service";
-import { isAddress } from "./validate";
 
 export interface IMessagingProvider {
   setupSubscriptions(): void;

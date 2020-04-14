@@ -1,5 +1,5 @@
-import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, PublicIdentifier } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { AppIdentity, CriticalStateChannelAddresses, PublicIdentifier } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -17,20 +17,6 @@ import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
 
-export const logTime = (log: ILoggerService, start: number, msg: string) => {
-  const diff = Date.now() - start;
-  const message = `${msg} in ${diff} ms`;
-  if (diff < 5) {
-    log.debug(message);
-  } else if (diff < 50) {
-    log.info(message);
-  } else if (diff < 250) {
-    log.warn(message);
-  } else {
-    log.error(message);
-  }
-};
-
 export function appIdentityToHash(appIdentity: AppIdentity): string {
   return keccak256(
     solidityPack(
@@ -46,10 +32,30 @@ export function appIdentityToHash(appIdentity: AppIdentity): string {
   );
 }
 
-export const APP_IDENTITY = `tuple(address[] participants,address appDefinition,uint256 defaultTimeout)`;
+export function assertSufficientFundsWithinFreeBalance(
+  channel: StateChannel,
+  publicIdentifier: string,
+  tokenAddress: string,
+  depositAmount: BigNumber,
+): void {
+  const freeBalanceForToken =
+    channel.getFreeBalanceClass()
+      .getBalance(
+        tokenAddress, 
+        getSignerAddressFromPublicIdentifier(publicIdentifier),
+      ) || Zero;
 
-export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
-  return list.filter(x => x !== test)[0];
+  if (freeBalanceForToken.lt(depositAmount)) {
+    throw new Error(
+      INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
+        publicIdentifier,
+        channel.multisigAddress,
+        tokenAddress,
+        freeBalanceForToken,
+        depositAmount,
+      ),
+    );
+  }
 }
 
 /**
@@ -200,29 +206,3 @@ export const scanForCriticalAddresses = async (
   }
   return;
 };
-
-export function assertSufficientFundsWithinFreeBalance(
-  channel: StateChannel,
-  publicIdentifier: string,
-  tokenAddress: string,
-  depositAmount: BigNumber,
-): void {
-  const freeBalanceForToken =
-    channel.getFreeBalanceClass()
-      .getBalance(
-        tokenAddress, 
-        getSignerAddressFromPublicIdentifier(publicIdentifier),
-      ) || Zero;
-
-  if (freeBalanceForToken.lt(depositAmount)) {
-    throw new Error(
-      INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
-        publicIdentifier,
-        channel.multisigAddress,
-        tokenAddress,
-        freeBalanceForToken,
-        depositAmount,
-      ),
-    );
-  }
-}

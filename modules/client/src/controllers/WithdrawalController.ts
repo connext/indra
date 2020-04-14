@@ -1,5 +1,4 @@
 import { DEFAULT_APP_TIMEOUT, WITHDRAW_STATE_TIMEOUT, WithdrawCommitment } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
   AppInstanceJson,
   ChannelMethods,
@@ -8,17 +7,21 @@ import {
   MinimalTransaction,
   PublicParams,
   PublicResults,
-  toBN,
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
+  DefaultApp,
 } from "@connext/types";
+import {
+  getSignerAddressFromPublicIdentifier,
+  invalidAddress,
+  stringify,
+  toBN,
+  validate,
+} from "@connext/utils";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { formatEther, getAddress, hexlify, randomBytes } from "ethers/utils";
-
-import { stringify } from "../lib";
-import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -57,25 +60,37 @@ export class WithdrawalController extends AbstractController {
     // TODO: try to remove this with deposit redesign
     await this.cleanupPendingDeposit(assetId);
 
-    const withdrawCommitment = await this.createWithdrawCommitment(params);
-    const hash = withdrawCommitment.hashToSign();
-    const withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
-      hash,
-    );
+    let withdrawCommitment: WithdrawCommitment;
+    let withdrawerSignatureOnWithdrawCommitment: string;
+    try {
+      withdrawCommitment = await this.createWithdrawCommitment(params);
+      const hash = withdrawCommitment.hashToSign();
+      withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
+        hash,
+      );
 
-    await this.proposeWithdrawApp(params, hash, withdrawerSignatureOnWithdrawCommitment);
+      await this.proposeWithdrawApp(params, hash, withdrawerSignatureOnWithdrawCommitment);
 
-    this.connext.listener.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
-      params,
-      withdrawCommitment,
-      withdrawerSignatureOnWithdrawCommitment,
-    });
+      this.connext.listener.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
+        params,
+        withdrawCommitment,
+        withdrawerSignatureOnWithdrawCommitment,
+      });
 
-    transaction = await this.connext.watchForUserWithdrawal();
-    this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
-    this.log.debug(`Transaction details: ${stringify(transaction)}`);
+      [transaction] = await this.connext.watchForUserWithdrawal();
+      this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
+      this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
-    this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
+      this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
+    } catch (e) {
+      this.connext.listener.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
+        params,
+        withdrawCommitment,
+        withdrawerSignatureOnWithdrawCommitment,
+        error: e.stack || e.message,
+      });
+      throw new Error(e.stack || e.message);
+    }
 
     // Note that we listen for the signed commitment and save it to store only in listener.ts
 
@@ -144,7 +159,11 @@ export class WithdrawalController extends AbstractController {
   ): Promise<string> {
     const amount = toBN(params.amount);
     const { assetId, nonce, recipient } = params;
-    const appInfo = this.connext.getRegisteredAppDetails(WithdrawAppName);
+    const network = await this.ethProvider.getNetwork();
+    const appInfo = await this.connext.getAppRegistry({
+      name: WithdrawAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
     const {
       appDefinitionAddress: appDefinition,
       outcomeType,
@@ -192,10 +211,8 @@ export class WithdrawalController extends AbstractController {
     const commitment = await this.createWithdrawCommitment(params);
     await commitment.addSignatures(signatures[0], signatures[1]);
     const minTx: MinimalTransaction = await commitment.getSignedTransaction();
-    const value = { tx: minTx, retry: 0 };
-    await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, { ...value });
     await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
-      withdrawalObject: value,
+      withdrawalObject: { tx: minTx, retry: 0 },
     });
     return;
   }

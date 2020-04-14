@@ -1,12 +1,12 @@
+import { Node as CFCore } from "@connext/cf-core";
 import { MessagingService } from "@connext/messaging";
-import { ConnextNodeStorePrefix, IMessagingService, Opcode, ContractAddresses } from "@connext/types";
+import { ConnextNodeStorePrefix, Opcode, ContractAddresses } from "@connext/types";
 import { Provider } from "@nestjs/common";
 
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
 import { LoggerService } from "../logger/logger.service";
-import { CFCore } from "../util/cfCore";
 
 import { CFCoreStore } from "./cfCore.store";
 import { generateMiddleware } from "./middleware";

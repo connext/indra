@@ -1,21 +1,20 @@
 import {
   AppRegistry,
-  bigNumberifyJson,
-  delay,
   IChannelProvider,
   ILoggerService,
-  INodeApiClient,
-  NodeResponses,
-  stringify,
   IMessagingService,
+  INodeApiClient,
+  NATS_ATTEMPTS,
+  NATS_TIMEOUT,
+  NodeResponses,
   StringMapping,
 } from "@connext/types";
+import { bigNumberifyJson, delay, logTime, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
-import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
+
 import { NodeInitializationParameters } from "./types";
-import { invalidAddress } from "./validation";
 
 const sendFailed = "Failed to send message";
 
@@ -153,13 +152,13 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userIdentifier}.transfer.fetch-linked`, {
+    return this.send(`${this.userIdentifier}.transfer.get-linked`, {
       paymentId,
     });
   }
 
   public async fetchSignedTransfer(paymentId: string): Promise<any> {
-    return this.send(`${this.userIdentifier}.transfer.fetch-signed`, {
+    return this.send(`${this.userIdentifier}.transfer.get-signed`, {
       paymentId,
     });
   }
@@ -167,7 +166,7 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveLinkedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.resolve-linked`, {
+    return this.send(`${this.userIdentifier}.transfer.install-linked`, {
       paymentId,
     });
   }
@@ -175,7 +174,7 @@ export class NodeApiClient implements INodeApiClient {
   public async resolveSignedTransfer(
     paymentId: string,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    return this.send(`${this.userIdentifier}.transfer.resolve-signed`, {
+    return this.send(`${this.userIdentifier}.transfer.install-signed`, {
       paymentId,
     });
   }

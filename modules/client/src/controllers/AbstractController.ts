@@ -1,4 +1,5 @@
 import {
+  CF_METHOD_TIMEOUT,
   EventNames,
   EventPayloads,
   IChannelProvider,
@@ -8,10 +9,10 @@ import {
   MethodParams,
   MethodResults,
 } from "@connext/types";
+import { delayAndThrow, stringify } from "@connext/utils";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
-import { CF_METHOD_TIMEOUT, delayAndThrow, stringify } from "../lib";
 import { ConnextListener } from "../listener";
 
 export abstract class AbstractController {

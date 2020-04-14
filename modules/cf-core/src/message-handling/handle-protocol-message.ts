@@ -1,5 +1,4 @@
 import {
-  bigNumberifyJson,
   EventNames,
   IStoreService,
   Message,
@@ -12,6 +11,7 @@ import {
   EventPayloads,
   Address,
 } from "@connext/types";
+import { bigNumberifyJson } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";

@@ -1,4 +1,5 @@
-import { DepositConfirmationMessage, MethodParams, DepositStartedMessage, getAddressFromAssetId, deBigNumberifyJson } from "@connext/types";
+import { DepositConfirmationMessage, MethodParams, DepositStartedMessage } from "@connext/types";
+import { getAddressFromAssetId, deBigNumberifyJson } from "@connext/utils";
 import { Contract } from "ethers";
 import { One, Two, Zero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

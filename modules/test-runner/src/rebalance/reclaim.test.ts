@@ -1,4 +1,5 @@
-import { createRandom32ByteHexString, EventNames, IConnextClient, toBN } from "@connext/types";
+import { EventNames, IConnextClient } from "@connext/types";
+import { createRandom32ByteHexString, toBN } from "@connext/utils";
 import { AddressZero, One, Two } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 import { before, describe } from "mocha";

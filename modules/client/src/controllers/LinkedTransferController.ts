@@ -3,21 +3,27 @@ import {
   ConditionalTransferTypes,
   EventNames,
   EventPayloads,
-  getAddressFromAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
-  toBN,
+  DefaultApp,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
+import {
+  getAddressFromAssetId,
+  invalid32ByteHexString,
+  invalidAddress,
+  invalidPublicIdentifier,
+  stringify,
+  toBN,
+  validate,
+} from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
-
-import { createLinkedHash, stringify } from "../lib";
+import { solidityKeccak256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
-import { validate, invalidAddress, invalid32ByteHexString, invalidPublicIdentifier } from "../validation";
 
 export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
@@ -55,8 +61,10 @@ export class LinkedTransferController extends AbstractController {
       submittedMeta.recipient = recipient;
     }
 
-    // install the transfer application
-    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+    const linkedHash = solidityKeccak256(
+      ["uint256", "address", "bytes32", "bytes32"],
+      [amount, assetId, paymentId, preImage],
+    );
 
     const initialState: SimpleLinkedTransferAppState = {
       amount,
@@ -76,12 +84,16 @@ export class LinkedTransferController extends AbstractController {
       preImage: HashZero,
     };
 
+    const network = await this.ethProvider.getNetwork();
     const {
       actionEncoding,
-      stateEncoding,
       appDefinitionAddress: appDefinition,
+      stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(SimpleLinkedTransferAppName);
+    } = await this.connext.getAppRegistry({
+      name: SimpleLinkedTransferAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,

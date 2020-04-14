@@ -1,13 +1,15 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import {
-  createRandom32ByteHexString,
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
-  nullLogger,
   ProtocolNames,
   IStoreService,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import {
+  createRandom32ByteHexString,
+  getSignerAddressFromPublicIdentifier,
+  nullLogger,
+} from "@connext/utils";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -127,7 +129,9 @@ describe("Can handle correct & incorrect installs", () => {
 
     when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getStateChannelByAppIdentityHash(appIdentityHash)).thenResolve(stateChannel.toJson());
+    when(
+      mockedStore.getStateChannelByAppIdentityHash(appIdentityHash),
+    ).thenResolve(stateChannel.toJson());
 
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the

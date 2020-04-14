@@ -10,8 +10,8 @@ import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
+import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
-import { AbstractMessagingProvider } from "../util";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";

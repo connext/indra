@@ -1,7 +1,7 @@
 import { MessagingService } from "@connext/messaging";
 import { MessagingConfig, VerifyNonceDtoType, ILoggerService, Address, PublicKey } from "@connext/types";
+import { isNode } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
-import { isNode } from "./lib";
 
 export const replaceUrlProtocol = (url: string, protocol: string, delimiter: string = "://") => {
   let arr = url.split(delimiter);

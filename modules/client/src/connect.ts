@@ -1,4 +1,3 @@
-import { ChannelSigner } from "@connext/crypto";
 import { MessagingService } from "@connext/messaging";
 import {
   ChannelMethods,
@@ -15,19 +14,14 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
+import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
+  
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import {
-  delayAndThrow,
-  getDefaultOptions,
-  getDefaultStore,
-  Logger,
-  logTime,
-  stringify,
-} from "./lib";
+import { getDefaultOptions, getDefaultStore } from "./default";
 import { createMessagingService } from "./messaging";
 import { NodeApiClient } from "./node";
 
@@ -52,7 +46,7 @@ export const connect = async (
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
-    : new Logger("ConnextConnect", logLevel, logger);
+    : new ConsoleLogger("ConnextConnect", logLevel, logger);
 
   // setup ethProvider + network information
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
@@ -114,10 +108,6 @@ export const connect = async (
   } else if (opts.signer) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
-    }
-
-    if (!opts.signer) {
-      throw new Error("Client must be instantiated with signer if not using a channelProvider");
     }
 
     signer = typeof opts.signer === "string" 
@@ -308,6 +298,23 @@ export const connect = async (
     await client.clientCheckIn();
   } catch (e) {
     log.error(`Could not complete node check-in: ${e}... will attempt again on next connection`);
+  }
+
+  // watch for/prune lingering withdrawals
+  const previouslyActive = await client.getUserWithdrawals();
+  if (previouslyActive.length === 0) {
+    logTime(log, start, `Client successfully connected`);
+    return client;
+  }
+
+  try {
+    log.debug(`Watching for user withdrawals`);
+    const transactions = await client.watchForUserWithdrawal();
+    if (transactions.length > 0) {
+      log.debug(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+    }
+  } catch (e) {
+    log.error(`Could not complete watching for user withdrawals: ${e.stack || e.message}... will attempt again on next connection`);
   }
 
   logTime(log, start, `Client successfully connected`);

@@ -1,5 +1,5 @@
 import { MethodParams, CoinTransfer, HashLockTransferAppState } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 

@@ -3,8 +3,8 @@ import {
   ILoggerService,
   IMessagingService,
   MessagingConfig,
-  nullLogger,
 } from "@connext/types";
+import { nullLogger } from "@connext/utils";
 import * as natsutil from "ts-natsutil";
 
 export class MessagingService implements IMessagingService {

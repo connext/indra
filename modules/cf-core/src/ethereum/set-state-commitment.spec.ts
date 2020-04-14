@@ -1,4 +1,5 @@
-import { MinimalTransaction, createRandomAddress, CommitmentTarget } from "@connext/types";
+import { MinimalTransaction, CommitmentTarget } from "@connext/types";
+import { createRandomAddress } from "@connext/utils";
 import {
   bigNumberify,
   Interface,

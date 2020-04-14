@@ -1,4 +1,5 @@
-import { calculateExchange, IConnextClient, PublicParams } from "@connext/types";
+import { IConnextClient, PublicParams } from "@connext/types";
+import { calculateExchange } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 

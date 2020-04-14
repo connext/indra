@@ -7,8 +7,8 @@ import {
   SimpleSignedTransferAppName,
   SimpleTwoPartySwapAppName,
   WithdrawAppName,
-  toBN,
 } from "@connext/types";
+import { toBN } from "@connext/utils";
 
 export const SupportedApplications = enumify({
   [SimpleLinkedTransferAppName]: SimpleLinkedTransferAppName,

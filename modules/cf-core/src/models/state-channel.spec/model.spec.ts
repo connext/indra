@@ -1,4 +1,5 @@
-import { bigNumberifyJson, createRandomAddress, StateChannelJSON } from "@connext/types";
+import { StateChannelJSON } from "@connext/types";
+import { bigNumberifyJson, createRandomAddress } from "@connext/utils";
 import { getAddress } from "ethers/utils";
 
 import { generateRandomNetworkContext } from "../../testing/mocks";

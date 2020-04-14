@@ -8,9 +8,7 @@ RUN npm config set unsafe-perm true
 RUN npm install -g npm@6.14.0
 RUN npm install -g lerna@3.20.2
 COPY --from=solc /usr/local/bin/solc /usr/local/bin/solc
-RUN true
-COPY ops/wait-for.sh /wait-for.sh
-RUN true
-COPY ops /ops
+RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/ed77b63706ea721766a62ff22d3a251d8b4a6a30/wait-for-it.sh > /bin/wait-for && chmod +x /bin/wait-for
+COPY entry.sh /entry.sh
 ENV PATH="./node_modules/.bin:${PATH}"
-ENTRYPOINT ["bash", "/ops/permissions-fixer.sh"]
+ENTRYPOINT ["bash", "/entry.sh"]

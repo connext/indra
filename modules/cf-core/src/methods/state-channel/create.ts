@@ -5,7 +5,7 @@ import {
   MethodParams,
   MethodResults,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { jsonRpcMethod } from "rpc-server";
 

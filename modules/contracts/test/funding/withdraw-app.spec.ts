@@ -1,6 +1,4 @@
 /* global before */
-import { ChannelSigner } from "@connext/crypto";
-
 import {
   CoinTransfer,
   singleAssetTwoPartyCoinTransferEncoding,
@@ -9,6 +7,7 @@ import {
   WithdrawAppState,
   WithdrawAppStateEncoding,
 } from "@connext/types";
+import { ChannelSigner } from "@connext/utils";
 import { Wallet, ContractFactory, Contract } from "ethers";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes, SigningKey } from "ethers/utils";
 

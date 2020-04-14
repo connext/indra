@@ -1,4 +1,5 @@
 import { RejectProposalMessage } from "@connext/types";
+
 import { RequestHandler } from "../request-handler";
 import { NO_STATE_CHANNEL_FOR_APP_IDENTITY_HASH } from "../errors";
 import { StateChannel } from "../models";

@@ -1,11 +1,14 @@
-import { IAsyncStorage, IBackupServiceAPI, WrappedStorage } from "@connext/types";
-
 import {
   AsyncStorageData,
-  DEFAULT_ASYNC_STORAGE_KEY,
+  IAsyncStorage,
+  IBackupServiceAPI,
   InitCallback,
-  safeJsonParse,
-  safeJsonStringify,
+  WrappedStorage,
+} from "@connext/types";
+import { safeJsonParse, safeJsonStringify } from "@connext/utils"; 
+
+import {
+  DEFAULT_ASYNC_STORAGE_KEY,
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
   CHANNEL_KEY,

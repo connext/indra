@@ -1,10 +1,10 @@
 import { ConnextStore } from "@connext/store";
 import {
   ConditionalTransferTypes,
-  createRandom32ByteHexString,
   IConnextClient,
   StoreTypes,
 } from "@connext/types";
+import { ChannelSigner, createRandom32ByteHexString } from "@connext/utils";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
@@ -28,7 +28,6 @@ import {
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { getNatsClient } from "../util/nats";
-import { ChannelSigner } from "@connext/crypto";
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;

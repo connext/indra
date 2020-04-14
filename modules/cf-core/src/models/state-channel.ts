@@ -2,16 +2,18 @@ import {
   AppInstanceJson,
   AppInstanceProposal,
   CriticalStateChannelAddresses,
-  deBigNumberifyJson,
   IStoreService,
   PublicIdentifier,
   SolidityValueType,
   StateChannelJSON,
   StateSchemaVersion,
+} from "@connext/types";
+import {
+  deBigNumberifyJson,
+  getSignerAddressFromPublicIdentifier,
   stringify,
   toBN,
-} from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+} from "@connext/utils";
 
 import { BigNumber } from "ethers/utils";
 

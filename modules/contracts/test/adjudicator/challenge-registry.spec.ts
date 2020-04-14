@@ -1,5 +1,11 @@
 /* global before */
+import { ChallengeStatus, AppChallengeBigNumber } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
+import { keccak256 } from "ethers/utils";
+
+import AppWithAction from "../../build/AppWithAction.json";
+import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
 import {
   expect,
@@ -10,15 +16,8 @@ import {
   AppWithCounterState,
   AppWithCounterAction,
   encodeState,
-  encodeAction,
   moveToBlock,
 } from "./utils";
-
-import AppWithAction from "../../build/AppWithAction.json";
-import ChallengeRegistry from "../../build/ChallengeRegistry.json";
-import { ChallengeStatus, toBN, AppChallengeBigNumber } from "@connext/types";
-import { keccak256 } from "ethers/utils";
-import { ChannelSigner } from "@connext/crypto";
 
 describe("ChallengeRegistry", () => {
   let appRegistry: Contract;

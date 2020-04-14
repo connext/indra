@@ -1,12 +1,13 @@
 import { MessagingService } from "@connext/messaging";
-import { bigNumberifyJson, NodeResponses, SimpleSignedTransferAppState } from "@connext/types";
+import { NodeResponses, SimpleSignedTransferAppState } from "@connext/types";
+import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
-import { AbstractMessagingProvider } from "../util";
+import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 
@@ -80,12 +81,12 @@ export class SignedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.resolve-signed",
+      "*.transfer.install-signed",
       this.authService.parseIdentifier(this.resolveSignedTransfer.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "*.transfer.fetch-signed",
+      "*.transfer.get-signed",
       this.authService.parseIdentifier(this.getSignedTransferByPaymentId.bind(this)),
     );
   }

@@ -5,13 +5,12 @@ import {
   CoinTransfer,
   MinimalTransaction,
   PublicParams,
-  stringify,
   TransactionResponse,
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero, AddressZero } from "ethers/constants";
 import { bigNumberify, hexlify, randomBytes } from "ethers/utils";

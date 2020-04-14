@@ -1,4 +1,5 @@
-import { NetworkContext, createRandomAddress } from "@connext/types";
+import { NetworkContext } from "@connext/types";
+import { createRandomAddress } from "@connext/utils";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, AddressZero } from "ethers/constants";
 

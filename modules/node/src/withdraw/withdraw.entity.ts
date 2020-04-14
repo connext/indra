@@ -11,7 +11,7 @@ import {
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
-import { IsEthAddress, IsBytes32, IsEthSignature } from "../util";
+import { IsEthAddress, IsBytes32, IsEthSignature } from "../validate";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 
 @Entity()

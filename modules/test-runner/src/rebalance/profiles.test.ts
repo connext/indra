@@ -1,4 +1,5 @@
-import { IConnextClient, RebalanceProfile, toBN } from "@connext/types";
+import { IConnextClient, RebalanceProfile } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { AddressZero } from "ethers/constants";
 import { before } from "mocha";
 import { Client } from "ts-nats";

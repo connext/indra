@@ -1,7 +1,8 @@
 /* global before */
-import DolphinCoin from "../../build/DolphinCoin.json";
 import { Contract, Wallet, ContractFactory } from "ethers";
 import { bigNumberify } from "ethers/utils";
+
+import DolphinCoin from "../../build/DolphinCoin.json";
 
 import { expect, provider } from "../utils";
 

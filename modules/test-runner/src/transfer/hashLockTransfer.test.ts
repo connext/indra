@@ -1,7 +1,6 @@
 /* global before */
 import {
   ConditionalTransferTypes,
-  createRandom32ByteHexString,
   EventNames,
   HashLockTransferStatus,
   IConnextClient,
@@ -9,9 +8,10 @@ import {
   PublicParams,
   EventPayloads,
 } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/utils";
+import { providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { soliditySha256, bigNumberify } from "ethers/utils";
-import { providers } from "ethers";
 
 import {
   AssetOptions,
