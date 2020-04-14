@@ -1,4 +1,11 @@
-import { MethodNames, MethodParams, MethodResults, ProtocolNames, IStoreService, PublicIdentifier } from "@connext/types";
+import {
+  IStoreService,
+  MethodNames,
+  MethodParams,
+  MethodResults,
+  ProtocolNames,
+  PublicIdentifier,
+} from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import {

@@ -1,4 +1,5 @@
-import { deBigNumberifyJson, ProposeMessage, MethodParams } from "@connext/types";
+import { ProposeMessage, MethodParams } from "@connext/types";
+import { deBigNumberifyJson } from "@connext/utils";
 
 import { Node } from "../../node";
 

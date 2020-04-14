@@ -1,4 +1,5 @@
-import { bigNumberifyJson, ILoggerService } from "@connext/types";
+import { ILoggerService } from "@connext/types";
+import { bigNumberifyJson } from "@connext/utils";
 import { Controller, JsonRpcResponse, jsonRpcSerializeAsResponse, Router, Rpc } from "rpc-server";
 
 import { RequestHandler } from "./request-handler";

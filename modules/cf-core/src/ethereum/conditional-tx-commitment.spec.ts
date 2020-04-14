@@ -1,7 +1,6 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import {
-  createRandomAddress,
-  MultisigTransaction } from "@connext/types";
+import { MultisigTransaction } from "@connext/types";
+import { createRandomAddress } from "@connext/utils";
 import { WeiPerEther, AddressZero } from "ethers/constants";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 

@@ -1,5 +1,5 @@
-import { getRandomChannelSigner, verifyChannelMessage } from "@connext/utils";
 import { IChannelSigner, EthereumCommitment } from "@connext/types";
+import { getRandomChannelSigner, verifyChannelMessage } from "@connext/utils";
 import { HashZero } from "ethers/constants";
 import { hashMessage } from "ethers/utils";
 

@@ -2,22 +2,24 @@ import {
   AppIdentity,
   AppInstanceJson,
   AppInterface,
-  bigNumberifyJson,
-  deBigNumberifyJson,
   HexString,
-  isBN,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
   OutcomeType,
+  PublicIdentifier,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   SolidityValueType,
-  stringify,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  PublicIdentifier,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import {
+  bigNumberifyJson,
+  deBigNumberifyJson,
+  getSignerAddressFromPublicIdentifier,
+  isBN,
+  stringify,
+} from "@connext/utils";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

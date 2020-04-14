@@ -4,8 +4,8 @@ import {
   MethodParams,
   MethodResults,
   ProtocolNames,
-  SolidityValueType,
   PublicIdentifier,
+  SolidityValueType,
 } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { INVALID_ARGUMENT } from "ethers/errors";

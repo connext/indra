@@ -1,4 +1,4 @@
-import { stringify } from "@connext/types";
+import { stringify } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 
 export const APP_ALREADY_UNINSTALLED = (appIdentityHash: string): string =>

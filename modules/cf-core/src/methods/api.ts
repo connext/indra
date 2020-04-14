@@ -1,4 +1,5 @@
 import { EventNames } from "@connext/types";
+
 import { handleRejectProposalMessage, handleReceivedProtocolMessage } from "../message-handling";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";

@@ -1,7 +1,6 @@
+import { createRandomAddress, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { WeiPerEther, Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { createRandomAddress } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { generateRandomNetworkContext } from "../../testing/mocks";
@@ -41,7 +40,10 @@ describe("StateChannel::uninstallApp", () => {
 
     sc1 = sc1.setFreeBalance(
       FreeBalanceClass.createWithFundedTokenAmounts(
-        [getSignerAddressFromPublicIdentifier(ids[0]), getSignerAddressFromPublicIdentifier(ids[1])],
+        [
+          getSignerAddressFromPublicIdentifier(ids[0]),
+          getSignerAddressFromPublicIdentifier(ids[1]),
+        ],
         WeiPerEther,
         [AddressZero],
       ),

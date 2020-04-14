@@ -1,5 +1,4 @@
 import {
-  bigNumberifyJson,
   EventNames,
   IChannelSigner,
   ILoggerService,
@@ -11,6 +10,7 @@ import {
   ProtocolMessage,
   PublicIdentifier,
 } from "@connext/types";
+import { bigNumberifyJson } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 

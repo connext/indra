@@ -1,6 +1,5 @@
 import {
   AppInstanceProposal,
-  delay,
   EventNames,
   IChannelSigner,
   ILockService,
@@ -12,7 +11,6 @@ import {
   MiddlewareContext,
   MinimalTransaction,
   NetworkContext,
-  nullLogger,
   Opcode,
   ProtocolMessage,
   ProtocolMessageData,
@@ -22,6 +20,7 @@ import {
   Address,
   PublicIdentifier,
 } from "@connext/types";
+import { delay, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import { Memoize } from "typescript-memoize";

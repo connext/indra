@@ -10,10 +10,11 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
   AssetId,
-  getAddressFromAssetId,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
-
+import {
+  getAddressFromAssetId,
+  getSignerAddressFromPublicIdentifier,
+} from "@connext/utils";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 

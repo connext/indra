@@ -6,10 +6,10 @@ import {
   MethodResults,
   ProtocolNames,
   SolidityValueType,
-  toBN,
   UpdateStateMessage,
   PublicIdentifier,
 } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";

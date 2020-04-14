@@ -1,8 +1,8 @@
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
-  createRandomAddress,
 } from "@connext/types";
+import { createRandomAddress } from "@connext/utils";
 import { getAddress } from "ethers/utils";
 
 /// todo(xuanji): make this random but deterministically generated from some seed

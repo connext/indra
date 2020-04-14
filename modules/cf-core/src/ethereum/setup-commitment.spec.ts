@@ -1,6 +1,10 @@
-import { getRandomChannelSigner } from "@connext/utils";
-import { createRandomAddress, MultisigTransaction } from "@connext/types";
-import { getAddress, Interface, TransactionDescription } from "ethers/utils";
+import { MultisigTransaction } from "@connext/types";
+import { createRandomAddress, getRandomChannelSigner } from "@connext/utils";
+import {
+  getAddress,
+  Interface,
+  TransactionDescription,
+} from "ethers/utils";
 
 import { generateRandomNetworkContext } from "../testing/mocks";
 
