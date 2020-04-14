@@ -10,7 +10,7 @@ import { env } from "./env";
 import { ethWallet } from "./ethprovider";
 import { Logger } from "./logger";
 import { MessageCounter, TestMessagingService } from "./messaging";
-import { getRandomChannelSigner, ChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner, ChannelSigner } from "@connext/utils";
 
 export const createClient = async (
   opts: Partial<ClientOptions | any> = {},

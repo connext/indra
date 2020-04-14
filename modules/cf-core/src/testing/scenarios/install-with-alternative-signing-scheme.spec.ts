@@ -1,4 +1,4 @@
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 import { CONVENTION_FOR_ETH_ASSET_ID, ProposeMessage } from "@connext/types";
 import { One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

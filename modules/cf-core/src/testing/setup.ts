@@ -1,4 +1,4 @@
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 import { IMessagingService, IStoreService } from "@connext/types";
 import { Wallet } from "ethers";
 import { JsonRpcProvider, TransactionRequest } from "ethers/providers";

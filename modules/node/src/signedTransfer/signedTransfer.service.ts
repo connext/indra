@@ -8,7 +8,7 @@ import {
   SimpleSignedTransferAppState,
   Address,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 

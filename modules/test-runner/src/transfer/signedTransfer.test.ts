@@ -1,5 +1,5 @@
 /* global before */
-import { getRandomChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner } from "@connext/utils";
 import {
   ConditionalTransferTypes,
   EventNames,

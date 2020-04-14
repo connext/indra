@@ -25,7 +25,7 @@
     "@connext/apps": "6.0.0-alpha.14",
     "@connext/cf-core": "6.0.0-alpha.14",
     "@connext/contracts": "2.0.2",
-    "@connext/crypto": "6.0.0-alpha.14",
+    "@connext/utils": "6.0.0-alpha.14",
     "@connext/messaging": "6.0.0-alpha.14",
     "@connext/store": "6.0.0-alpha.14",
     "@connext/types": "6.0.0-alpha.14",

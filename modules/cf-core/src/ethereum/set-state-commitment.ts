@@ -9,7 +9,7 @@ import {
   toBN,
 } from "@connext/types";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
-import { verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/utils";
 
 import { ChallengeRegistry } from "../contracts";
 import { AppInstance } from "../models";

@@ -9,7 +9,7 @@ import {
   PublicIdentifier,
   stringify,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";

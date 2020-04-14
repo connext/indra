@@ -1,5 +1,5 @@
 import { HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
   bigNumberifyJson,
   HashLockTransferAppName,

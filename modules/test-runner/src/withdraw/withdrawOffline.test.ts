@@ -1,4 +1,4 @@
-import { ChannelSigner, getRandomChannelSigner } from "@connext/crypto";
+import { ChannelSigner, getRandomChannelSigner } from "@connext/utils";
 import { delay, EventNames, IConnextClient, IChannelSigner } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { AddressZero } from "ethers/constants";

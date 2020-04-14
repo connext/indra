@@ -1,5 +1,5 @@
 import { AppIdentity, CriticalStateChannelAddresses, ILoggerService, PublicIdentifier } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

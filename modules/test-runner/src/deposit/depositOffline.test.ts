@@ -20,7 +20,7 @@ import {
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
-import { getRandomChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner } from "@connext/utils";
 
 const { CF_METHOD_TIMEOUT } = utils;
 

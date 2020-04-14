@@ -1,5 +1,5 @@
 /* global before */
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 
 import {
   CoinTransfer,

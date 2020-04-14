@@ -161,11 +161,11 @@ test-cf: cf-core
 test-client: client
 	bash ops/test/client.sh
 
-test-contracts: contracts crypto
+test-contracts: contracts utils
 	bash ops/test/contracts.sh
 
-test-crypto: crypto
-	bash ops/test/crypto.sh
+test-utils: utils
+	bash ops/test/utils.sh
 
 test-daicard:
 	bash ops/test/ui.sh daicard
@@ -264,7 +264,7 @@ webserver: daicard $(shell find ops/webserver $(find_options))
 # Keep prerequisites synced w the @connext/* dependencies of that module's package.json
 # Each rule here should only depend on rules that come after (ie first no dependents, last no dependencies)
 
-test-runner: types crypto contracts store cf-core apps channel-provider messaging client $(shell find modules/test-runner $(find_options))
+test-runner: types utils contracts store cf-core apps channel-provider messaging client $(shell find modules/test-runner $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
@@ -299,7 +299,7 @@ cf-core: contracts store $(shell find modules/cf-core $(find_options))
 	$(docker_run) "cd modules/cf-core && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-contracts: crypto $(shell find modules/contracts $(find_options))
+contracts: utils $(shell find modules/contracts $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
@@ -309,9 +309,9 @@ channel-provider: types $(shell find modules/channel-provider $(find_options))
 	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-crypto: types $(shell find modules/crypto $(find_options))
+utils: types $(shell find modules/utils $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/crypto && npm run build"
+	$(docker_run) "cd modules/utils && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 messaging: types $(shell find modules/messaging $(find_options))

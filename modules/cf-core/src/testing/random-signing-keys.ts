@@ -1,4 +1,4 @@
-import { getRandomChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner } from "@connext/utils";
 import { IChannelSigner, createRandom32ByteHexString } from "@connext/types";
 import { SigningKey } from "ethers/utils";
 

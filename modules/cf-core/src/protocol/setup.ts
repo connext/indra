@@ -6,7 +6,7 @@ import {
   ProtocolRoles,
   SetupMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";

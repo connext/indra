@@ -1,4 +1,4 @@
-import { getRandomChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner } from "@connext/utils";
 import { VerifyNonceDtoType } from "@connext/types";
 import { connect, Client } from "ts-nats";
 import axios, { AxiosResponse } from "axios";

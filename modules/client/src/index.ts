@@ -4,7 +4,7 @@ import {
   getPublicKeyFromPublicIdentifier,
   getPublicIdentifierFromPublicKey,
   getSignerAddressFromPublicIdentifier,
-} from "@connext/crypto";
+} from "@connext/utils";
 
 import { connect } from "./connect";
 import { ConnextClient } from "./connext";

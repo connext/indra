@@ -4,7 +4,7 @@ import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { getCreate2MultisigAddress } from "../utils";
 

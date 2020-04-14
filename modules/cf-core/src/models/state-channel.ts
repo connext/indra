@@ -11,7 +11,7 @@ import {
   stringify,
   toBN,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { BigNumber } from "ethers/utils";
 

@@ -1,4 +1,4 @@
-import { getRandomChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner } from "@connext/utils";
 import { createRandomAddress, MultisigTransaction } from "@connext/types";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
 

@@ -1,7 +1,7 @@
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 import { createRandomAddress } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { createAppInstanceForTest } from "../../testing/utils";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";

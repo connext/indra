@@ -5,7 +5,7 @@ import { solidity } from "ethereum-waffle";
 import { use } from "chai";
 import { BigNumber, BigNumberish, parseEther } from "ethers/utils";
 import { Wallet } from "ethers";
-import { verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/utils";
 
 export function mkXpub(prefix: string = "xpub"): string {
   return prefix.padEnd(111, "0");

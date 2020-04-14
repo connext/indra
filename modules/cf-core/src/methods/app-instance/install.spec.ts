@@ -7,7 +7,7 @@ import {
   ProtocolNames,
   IStoreService,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

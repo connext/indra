@@ -1,6 +1,6 @@
 import { DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
 import { MinimumViableMultisig, ERC20 } from "@connext/contracts";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
   Address,
   BigNumber,

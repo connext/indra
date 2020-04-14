@@ -1,5 +1,5 @@
 import * as connext from "@connext/client";
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
 import { ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";

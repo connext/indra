@@ -12,7 +12,7 @@ import {
   AssetId,
   getAddressFromAssetId,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";

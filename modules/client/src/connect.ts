@@ -1,4 +1,4 @@
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 import { MessagingService } from "@connext/messaging";
 import {
   ChannelMethods,

@@ -1,7 +1,7 @@
-import { verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/utils";
 import { bigNumberifyJson, MethodParams, WithdrawAppState } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
 

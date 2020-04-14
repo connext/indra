@@ -1,5 +1,5 @@
 import { SupportedApplications } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { MessagingService } from "@connext/messaging";
 import {
   getAddressFromAssetId,

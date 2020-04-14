@@ -28,7 +28,7 @@ import {
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 import { before } from "mocha";
-import { getRandomChannelSigner } from "@connext/crypto";
+import { getRandomChannelSigner } from "@connext/utils";
 
 const fundForTransfers = async (
   receiverClient: IConnextClient,

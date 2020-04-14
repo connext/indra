@@ -1,4 +1,4 @@
-import { ChannelSigner, signChannelMessage } from "@connext/crypto";
+import { ChannelSigner, signChannelMessage } from "@connext/utils";
 import {
   AppChallengeBigNumber,
   toBN,

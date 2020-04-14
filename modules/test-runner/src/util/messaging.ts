@@ -1,5 +1,5 @@
 import { MessagingService } from "@connext/messaging";
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 import {
   ConnextEventEmitter,
   delay,

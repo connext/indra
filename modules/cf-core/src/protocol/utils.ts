@@ -8,7 +8,7 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
-import { verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 

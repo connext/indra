@@ -1,4 +1,4 @@
-import { getRandomChannelSigner, getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getRandomChannelSigner, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
   Address,
   AppABIEncodings,

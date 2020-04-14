@@ -1,7 +1,7 @@
 import { AppInterface, OutcomeType, stringify, toBN, PublicIdentifier } from "@connext/types";
 import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { HARD_CODED_ASSUMPTIONS } from "../constants";
 

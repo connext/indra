@@ -1,6 +1,6 @@
 import { MessagingService } from "@connext/messaging";
 import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
   AppAction,
   ConnextNodeStorePrefix,

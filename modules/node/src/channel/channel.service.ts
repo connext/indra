@@ -1,4 +1,4 @@
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
   maxBN,
   MethodResults,

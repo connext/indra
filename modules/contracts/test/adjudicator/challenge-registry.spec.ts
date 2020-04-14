@@ -18,7 +18,7 @@ import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 import { ChallengeStatus, toBN, AppChallengeBigNumber } from "@connext/types";
 import { keccak256 } from "ethers/utils";
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 
 describe("ChallengeRegistry", () => {
   let appRegistry: Contract;

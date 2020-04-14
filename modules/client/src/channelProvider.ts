@@ -28,7 +28,7 @@ import { ChannelProvider } from "@connext/channel-provider";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
-import { getPublicKeyFromPublicIdentifier } from "@connext/crypto";
+import { getPublicKeyFromPublicIdentifier } from "@connext/utils";
 
 export const createCFChannelProvider = async ({
   ethProvider,

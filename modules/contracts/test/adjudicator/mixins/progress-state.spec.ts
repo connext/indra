@@ -1,5 +1,5 @@
 /* global before */
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 import { AppChallengeBigNumber } from "@connext/types";
 import { Wallet, Contract, ContractFactory } from "ethers";
 import { keccak256 } from "ethers/utils";

@@ -1,6 +1,6 @@
 import { registerDecorator, ValidationOptions } from "class-validator";
 import { arrayify, isHexString } from "ethers/utils";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 export const isValidHex = (hex: string, bytes?: number): boolean =>
   isHexString(hex) && (bytes ? arrayify(hex).length === bytes : true);

@@ -1,6 +1,6 @@
 import { CommitmentTarget, EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
 import { Interface, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
-import { verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/utils";
 
 import { MinimumViableMultisig } from "../contracts";
 

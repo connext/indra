@@ -28,7 +28,7 @@ import {
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { getNatsClient } from "../util/nats";
-import { ChannelSigner } from "@connext/crypto";
+import { ChannelSigner } from "@connext/utils";
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;

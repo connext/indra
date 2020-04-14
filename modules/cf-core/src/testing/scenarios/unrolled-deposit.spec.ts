@@ -5,7 +5,7 @@ import {
   getAddressFromAssetId,
 } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Node } from "../../node";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";
