@@ -134,12 +134,14 @@ export class AppRegistryService implements OnModuleInit {
         break;
       }
       case SimpleTwoPartySwapAppName: {
-        const allowedSwaps = this.configService.getAllowedSwaps();
-        const ourRate = await this.swapRateService.getOrFetchRate(
-          getAddressFromAssetId(proposeInstallParams.initiatorDepositAssetId),
-          getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
+        validateSimpleSwapApp(
+          proposeInstallParams,
+          this.configService.getAllowedSwaps(),
+          await this.swapRateService.getOrFetchRate(
+            getAddressFromAssetId(proposeInstallParams.initiatorDepositAssetId),
+            getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
+          ),
         );
-        validateSimpleSwapApp(proposeInstallParams, allowedSwaps, ourRate);
         break;
       }
       case WithdrawAppName: {

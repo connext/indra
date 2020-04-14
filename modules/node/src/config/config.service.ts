@@ -150,7 +150,7 @@ export class ConfigService implements OnModuleInit {
     if (from === AddressZero && to === tokenAddress) {
       return "100.0";
     }
-    if (from === tokenAddress && to === tokenAddress) {
+    if (from === tokenAddress && to === AddressZero) {
       return "0.01";
     }
     return undefined;
