@@ -58,7 +58,7 @@ jobs:
     - run: make contracts
     - run: make test-contracts
 
-  test-crypto:
+  test-utils:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -68,8 +68,8 @@ jobs:
         path: .npm
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
-    - run: make crypto
-    - run: make test-crypto
+    - run: make utils
+    - run: make test-utils
   
   test-node:
     runs-on: ubuntu-latest
@@ -139,7 +139,7 @@ jobs:
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_RINKEBY }}
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       STAGING_DOMAINNAME: staging.indra.connext.network
-    needs: [test-cf, test-client, test-contracts, test-crypto, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-cf, test-client, test-contracts, test-utils, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
