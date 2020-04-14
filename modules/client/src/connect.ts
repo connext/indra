@@ -128,9 +128,11 @@ export const connect = async (
 
   logger.debug(`Done creating connext client`);
 
+  const isSigner = await client.channelProvider.isSigner();
+
   // return before any cleanup using the assumption that all injected clients
   // have an online client that it can access that has done the cleanup
-  if (!(await client.channelProvider.isSigner())) {
+  if (!isSigner) {
     logTime(logger, start, `Client successfully connected`);
     return client;
   }
@@ -155,14 +157,16 @@ export const connect = async (
 
   logger.debug(`Channel is available`);
 
-  // Make sure our store schema is up-to-date
-  const schemaVersion = await store.getSchemaVersion();
-  if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
-    logger.debug(`Outdated store schema detected, restoring state`);
-    await client.restoreState();
-    // increment / update store schema version, defaults to types const
-    // of `STORE_SCHEMA_VERSION`
-    await client.store.updateSchemaVersion();
+  if (isSigner) {
+    // Make sure our store schema is up-to-date
+    const schemaVersion = await client.store.getSchemaVersion();
+    if (!schemaVersion || schemaVersion !== STORE_SCHEMA_VERSION) {
+      logger.debug(`Outdated store schema detected, restoring state`);
+      await client.restoreState();
+      // increment / update store schema version, defaults to types const
+      // of `STORE_SCHEMA_VERSION`
+      await client.store.updateSchemaVersion();
+    }
   }
 
   try {
