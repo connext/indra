@@ -18,6 +18,7 @@ import { INodeApiClient } from "./api";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
+  chan_isSigner: "chan_isSigner",
   chan_config: "chan_config",
   chan_enable: "chan_enable",
   chan_signMessage: "chan_signMessage",
@@ -98,7 +99,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // GETTERS / SETTERS
-  isSigner: boolean;
   config: ChannelProviderConfig | undefined;
   multisigAddress: Address | undefined;
   signerAddress: Address | undefined;
@@ -110,6 +110,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // SIGNER METHODS
+  isSigner(): Promise<boolean>;
   signMessage(message: string): Promise<string>;
   encrypt(message: string, publicKey: PublicKey): Promise<string>;
   decrypt(encryptedPreImage: string): Promise<string>;

@@ -166,7 +166,7 @@ export class ConnextClient implements IConnextClient {
   // Unsorted methods pulled from the old abstract wrapper class
 
   public restart = async (): Promise<void> => {
-    if (!this.channelProvider.isSigner) {
+    if (!(await this.channelProvider.isSigner())) {
       this.log.warn("Cannot restart with an injected provider.");
       return;
     }

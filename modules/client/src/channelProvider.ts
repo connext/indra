@@ -113,6 +113,9 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     const { method, params } = payload;
     let result;
     switch (method) {
+      case ChannelMethods.chan_isSigner:
+        result = true;
+        break;
       case ChannelMethods.chan_config:
         result = this.config;
         break;

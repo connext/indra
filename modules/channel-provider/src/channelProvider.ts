@@ -97,10 +97,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ///////////////
   /// // GETTERS / SETTERS
-  get isSigner(): boolean {
-    return false;
-  }
-
   get config(): ChannelProviderConfig | undefined {
     return this._config;
   }
@@ -141,6 +137,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
+  public isSigner() {
+    return this._send(ChannelMethods.chan_isSigner);
+  }
+
   public signMessage(message: string): Promise<string> {
     return this._send(ChannelMethods.chan_signMessage, { message });
   }

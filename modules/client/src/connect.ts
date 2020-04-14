@@ -57,7 +57,7 @@ export const connect = async (
 
   // setup channelProvider
   let channelProvider: IChannelProvider;
-  let isInjected = !!providedChannelProvider;
+
   // setup signer
   let signer: IChannelSigner;
 
@@ -130,7 +130,7 @@ export const connect = async (
 
   // return before any cleanup using the assumption that all injected clients
   // have an online client that it can access that has done the cleanup
-  if (isInjected) {
+  if (!(await client.channelProvider.isSigner())) {
     logTime(logger, start, `Client successfully connected`);
     return client;
   }
