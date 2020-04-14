@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@connext/types": "6.0.0-alpha.14",
+    "@connext/utils": "6.0.0-alpha.14",
     "ts-natsutil": "1.0.4"
   },
   "devDependencies": {

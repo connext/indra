@@ -1,12 +1,15 @@
-import { ChannelSigner, signChannelMessage } from "@connext/utils";
 import {
   AppChallengeBigNumber,
-  toBN,
   ChallengeStatus,
-  createRandom32ByteHexString,
   ChallengeEvents,
-  createRandomAddress,
 } from "@connext/types";
+import {
+  ChannelSigner,
+  createRandomAddress,
+  createRandom32ByteHexString,
+  signChannelMessage,
+  toBN,
+} from "@connext/utils";
 import { Wallet, Contract } from "ethers";
 import { Zero, One, HashZero } from "ethers/constants";
 import { keccak256, BigNumberish } from "ethers/utils";
@@ -36,9 +39,6 @@ export const setupContext = async (
   const alice = new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
   const bob = new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
-
-  // eth helpers
-  const wallet = providedWallet || (await provider.getWallets())[0];
 
   // app helpers
   const ONCHAIN_CHALLENGE_TIMEOUT = 30;
@@ -219,7 +219,8 @@ export const setupContext = async (
           : state.counter.add(action.increment),
     };
     const resultingStateHash = keccak256(encodeState(resultingState));
-    resultingStateVersionNumber = resultingStateVersionNumber ?? existingChallenge.versionNumber.add(One);
+    resultingStateVersionNumber =
+      resultingStateVersionNumber ?? existingChallenge.versionNumber.add(One);
     resultingStateTimeout = resultingStateTimeout ?? 0;
     const digest = computeAppChallengeHash(
       appInstance.identityHash,

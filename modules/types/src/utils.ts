@@ -1,4 +1,4 @@
-// NOTE: These are very simple utils that are ONLY used w/in types
+// NOTE: These are very simple type-specific utils
 // To prevent cyclic dependencies, these should not be moved to the utils module
 
 // stolen from https://github.com/microsoft/TypeScript/issues/3192#issuecomment-261720275

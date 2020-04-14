@@ -32,3 +32,4 @@ export * from "./public";
 export * from "./state";
 export * from "./store";
 export * from "./transfers";
+export * from "./utils";
