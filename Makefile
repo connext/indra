@@ -36,13 +36,16 @@ log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%
 log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(startTime); echo "[Makefile] => Finished building $@ in `cat $(totalTime)` seconds";echo "=============";echo
 
 ########################################
-# Alias & Control Shortcuts
+# Build Shortcuts
 
 default: dev
 all: dev staging release
 dev: proxy node test-runner
 staging: database ethprovider proxy node-staging test-runner-staging webserver
 release: database ethprovider proxy node-release test-runner-release webserver
+
+########################################
+# Command & Control Shortcuts
 
 start: start-daicard
 
@@ -51,9 +54,6 @@ start-headless: dev
 
 start-daicard: dev
 	INDRA_UI=daicard bash ops/start-dev.sh
-
-start-dashboard: dev
-	INDRA_UI=dashboard bash ops/start-dev.sh
 
 start-test: start-test-staging
 start-test-staging:
@@ -75,10 +75,6 @@ restart-headless: dev
 restart-daicard: dev
 	bash ops/stop.sh
 	INDRA_UI=daicard bash ops/start-dev.sh
-
-restart-dashboard: dev
-	bash ops/stop.sh
-	INDRA_UI=dashboard bash ops/start-dev.sh
 
 restart: restart-daicard
 
@@ -170,10 +166,6 @@ test-utils: utils
 test-daicard:
 	bash ops/test/ui.sh daicard
 
-# ensure you've run "make start-dashboard" first & not just "make start"
-test-dashboard:
-	bash ops/test/ui.sh dashboard
-
 test-integration:
 	bash ops/test/integration.sh
 
@@ -186,12 +178,94 @@ watch-cf: cf-core
 watch-integration:
 	bash ops/test/integration.sh watch
 
-# You can interactively select daicard or dashboard tests after running below
 watch-ui: node-modules
 	bash ops/test/ui.sh --watch
 
 watch-node: node
 	bash ops/test/node.sh --watch
+
+########################################
+# Begin Real Build Rules: Common Prerequisites
+
+# All rules from here on should only depend on rules that come before it
+# ie first no dependencies, last no dependents
+
+builder: $(shell find ops/builder)
+	$(log_start)
+	docker build --file ops/builder/Dockerfile --build-arg SOLC_VERSION=$(solc_version) $(image_cache) --tag $(project)_builder ops/builder
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+node-modules: builder package.json $(shell ls modules/*/package.json)
+	$(log_start)
+	$(docker_run) "lerna bootstrap --hoist --no-progress"
+	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
+	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+########################################
+# Build JS & bundles
+
+# Keep prerequisites synced w the @connext/* dependencies of each module's package.json
+
+types: node-modules $(shell find modules/types $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/types && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+utils: types $(shell find modules/utils $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/utils && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+channel-provider: types $(shell find modules/channel-provider $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/channel-provider && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+messaging: types $(shell find modules/messaging $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/messaging && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+store: types $(shell find modules/store $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/store && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+contracts: types utils $(shell find modules/contracts $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+cf-core: types utils store contracts $(shell find modules/cf-core $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-core && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+apps: types utils contracts cf-core $(shell find modules/apps $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/apps && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+client: types utils channel-provider messaging store contracts cf-core apps $(shell find modules/client $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/client && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+node: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+daicard: types utils store client $(shell find modules/daicard $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/daicard && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+test-runner: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/test-runner $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/test-runner && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################
 # Build Docker Images
@@ -256,90 +330,4 @@ webserver: daicard $(shell find ops/webserver $(find_options))
 	$(log_start)
 	docker build --file ops/webserver/nginx.dockerfile $(image_cache) --tag $(project)_webserver .
 	docker tag $(project)_webserver $(project)_webserver:$(commit)
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-########################################
-# Build JS & bundles
-
-# Keep prerequisites synced w the @connext/* dependencies of that module's package.json
-# Each rule here should only depend on rules that come after (ie first no dependents, last no dependencies)
-
-test-runner: types utils contracts store cf-core apps channel-provider messaging client $(shell find modules/test-runner $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/test-runner && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-daicard: client $(shell find modules/daicard $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/daicard && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-client: apps channel-provider messaging $(shell find modules/client $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/client && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-node: apps messaging $(shell find modules/node $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-apps: cf-core $(shell find modules/apps $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/apps && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-dashboard: cf-core messaging $(shell find modules/dashboard $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/dashboard && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-cf-core: contracts store $(shell find modules/cf-core $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-core && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-contracts: utils $(shell find modules/contracts $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-channel-provider: types $(shell find modules/channel-provider $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/channel-provider && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-utils: types $(shell find modules/utils $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/utils && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-messaging: types $(shell find modules/messaging $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/messaging && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-store: types $(shell find modules/store $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/store && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-types: node-modules $(shell find modules/types $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/types && npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-########################################
-# Common Prerequisites
-
-node-modules: builder package.json $(shell ls modules/*/package.json)
-	$(log_start)
-	$(docker_run) "lerna bootstrap --hoist --no-progress"
-	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
-	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-builder: ops/builder.dockerfile
-	$(log_start)
-	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(image_cache) --tag $(project)_builder .
 	$(log_finish) && mv -f $(totalTime) .flags/$@
