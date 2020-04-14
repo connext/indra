@@ -5,7 +5,7 @@ import { getRandomPrivateKey, removeUndefinedFields } from "@connext/utils";
 const CONNEXT_DEFAULT_SIGNER_KEY = "CONNEXT_DEFAULT_SIGNER";
 
 const getGeneratedSigner = (): string => {
-  if (typeof window === "undefined" || typeof window.localStorage === undefined) {
+  if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
     return getRandomPrivateKey();
   }
   let signer: string = window.localStorage.getItem(CONNEXT_DEFAULT_SIGNER_KEY);
@@ -44,7 +44,7 @@ const getOverrideOptions = (_opts?: Partial<ClientOptions>): Partial<ClientOptio
     return undefined;
   }
   const opts = removeUndefinedFields(_opts);
-  if (Object.keys(opts)) {
+  if (!Object.keys(opts).length) {
     return undefined;
   }
   return opts;
@@ -56,24 +56,21 @@ export const getDefaultStore = (opts: Partial<ClientOptions>): IClientStore => {
   return new ConnextStore(storeType, { backupService });
 };
 
-export const getDefaultOptions = async (
+export const getDefaultOptions = (
   network: string,
   _opts?: Partial<ClientOptions>,
-): Promise<ClientOptions> => {
+): ClientOptions => {
   const urlOptions = getUrlOptions(network);
-
   const opts = getOverrideOptions(_opts);
-
   const store = opts
     ? opts.store || getDefaultStore(opts)
     : new ConnextStore(StoreTypes.LocalStorage);
-
-  const signer = opts.signer
-    ? opts.signer
-    : network.toLowerCase() !== "mainnet"
-    ? getGeneratedSigner()
-    : undefined;
-
+  const signer =
+    opts && opts.signer
+      ? opts.signer
+      : network.toLowerCase() !== "mainnet"
+      ? getGeneratedSigner()
+      : undefined;
   if (!signer) {
     throw new Error("Signer required for Mainnet");
   }
