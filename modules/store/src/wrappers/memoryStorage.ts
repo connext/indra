@@ -281,7 +281,7 @@ export class MemoryStorage implements IClientStore {
   }
 
   getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
-    return Promise.resolve(this.userWithdrawals);
+    return Promise.resolve(this.userWithdrawals || []);
   }
 
   createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
