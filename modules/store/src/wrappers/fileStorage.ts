@@ -1,4 +1,5 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
+import { safeJsonParse, safeJsonStringify } from "@connext/utils"; 
 import path from "path";
 
 import {
@@ -14,8 +15,6 @@ import {
   DEFAULT_STORE_PREFIX,
   CHANNEL_KEY,
   COMMITMENT_KEY,
-  safeJsonParse,
-  safeJsonStringify,
 } from "../helpers";
 
 export class FileStorage implements WrappedStorage {
