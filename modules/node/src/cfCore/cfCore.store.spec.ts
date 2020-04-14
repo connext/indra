@@ -1,6 +1,8 @@
+import { AppInstanceJson } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 import { getConnection } from "typeorm";
 
@@ -13,10 +15,6 @@ import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.re
 import { ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
-
-import { CFCoreRecordRepository } from "./cfCore.repository";
-import { CFCoreStore } from "./cfCore.store";
-import { AddressZero } from "ethers/constants";
 import { mkHash, mkAddress } from "../test/utils";
 import {
   createStateChannelJSON,
@@ -29,7 +27,9 @@ import {
   createMinimalTransaction,
 } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
-import { AppInstanceJson } from "../util";
+
+import { CFCoreRecordRepository } from "./cfCore.repository";
+import { CFCoreStore } from "./cfCore.store";
 
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
