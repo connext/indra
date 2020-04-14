@@ -299,7 +299,7 @@ export class MemoryStorage implements IClientStore {
   }
 
   removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
-    this.userWithdrawals.filter(x => x !== toRemove);
+    this.userWithdrawals = this.userWithdrawals.filter(x => x !== toRemove);
     return Promise.resolve();
   }
 

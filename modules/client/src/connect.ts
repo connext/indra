@@ -310,6 +310,16 @@ export const connect = async (
     log.error(`Could not complete node check-in: ${e}... will attempt again on next connection`);
   }
 
+  // check in with node to do remaining work
+  try {
+    const transactions = await client.watchForUserWithdrawal();
+    if (transactions.length > 0) {
+      console.log(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+    }
+  } catch (e) {
+    log.error(`Could not complete watching for user withdrawals: ${e.stack || e.message}... will attempt again on next connection`);
+  }
+
   logTime(log, start, `Client successfully connected`);
   return client;
 };

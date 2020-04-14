@@ -383,34 +383,32 @@ export class ConnextClient implements IConnextClient {
     return await this.node.getHashLockTransfer(lockHash);
   };
 
-  public getWithdrawals = async (): Promise<WithdrawalMonitorObject[] | undefined> => {
-    const value = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
+  public getUserWithdrawals = async (): Promise<WithdrawalMonitorObject[]> => {
+    const values = await this.channelProvider.send(ChannelMethods.chan_getUserWithdrawal, {});
 
-    if (!value || value.length === 0) {
-      return undefined;
-    }
+    // sanity check
+    values.forEach(val => {
+      const noRetry = typeof val.retry === "undefined" || val.retry === null;
+      if (!val.tx || noRetry) {
+        const msg = `Can not find tx or retry in retrieved user withdrawal ${stringify(val())}`;
+        this.log.error(msg);
+        throw new Error(msg);
+      }
+    });
 
-    const noRetry = typeof value.retry === "undefined" || value.retry === null;
-    if (!value.tx || noRetry) {
-      const msg = `Can not find tx or retry in store under key ${withdrawalKey(
-        this.publicIdentifier,
-      )}`;
-      this.log.error(msg);
-      throw new Error(msg);
-    }
-    return value;
+    return values;
   };
 
   public watchForUserWithdrawal = async (): Promise<TransactionResponse[]> => {
     // poll for withdrawal tx submitted to multisig matching tx data
     const maxBlocks = 15;
     const startingBlock = await this.ethProvider.getBlockNumber();
-    let transactions: TransactionResponse[];
+    const transactions: TransactionResponse[] = [];
 
     // TODO: poller should not be completely blocking, but safe to leave for now
     // because the channel should be blocked
     try {
-      transactions = await new Promise((resolve: any, reject: any): any => {
+      await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on(
           "block",
           async (blockNumber: number): Promise<void> => {
@@ -430,7 +428,7 @@ export class ConnextClient implements IConnextClient {
             if (transactions.length === withdrawals.length) {
               // no more to resolve
               this.ethProvider.removeAllListeners("block");
-              return resolve(transactions);
+              return resolve();
             }
             if (blockNumber - startingBlock >= maxBlocks) {
               this.ethProvider.removeAllListeners("block");
@@ -925,10 +923,10 @@ export class ConnextClient implements IConnextClient {
   private checkForUserWithdrawals = async (
     inBlock: number,
   ): Promise<[WithdrawalMonitorObject, TransactionResponse][]> => {
-    const vals = await this.getWithdrawals();
+    const vals = await this.getUserWithdrawals();
     if (vals.length === 0) {
       this.log.error("No transaction found in store.");
-      return undefined;
+      return [];
     }
 
     const getTransactionResponse = async (
