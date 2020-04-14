@@ -66,7 +66,7 @@ export class Channel {
   withdrawalCommitments!: WithdrawCommitment[];
 
   @OneToOne(
-    (type: any) => WithdrawCommitment,
+    (type: any) => SetupCommitment,
     (commitment: SetupCommitment) => commitment.channel,
     { cascade: true },
   )
