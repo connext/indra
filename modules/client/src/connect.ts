@@ -316,10 +316,12 @@ export const connect = async (
     logTime(log, start, `Client successfully connected`);
     return client;
   }
+
   try {
+    log.debug(`Watching for user withdrawals`);
     const transactions = await client.watchForUserWithdrawal();
     if (transactions.length > 0) {
-      console.log(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+      log.debug(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
     }
   } catch (e) {
     log.error(`Could not complete watching for user withdrawals: ${e.stack || e.message}... will attempt again on next connection`);
