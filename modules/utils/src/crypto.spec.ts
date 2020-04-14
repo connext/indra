@@ -1,4 +1,7 @@
-import { recoverAddressWithEthers, signDigestWithEthers } from "@connext/types";
+import * as eccryptoJS from "eccrypto-js";
+import * as EthCrypto from "eth-crypto";
+import * as ethers from "ethers";
+
 import {
   INDRA_PUB_ID_PREFIX,
   signChannelMessage,
@@ -9,10 +12,8 @@ import {
   getPublicKeyFromPublicIdentifier,
   getSignerAddressFromPublicIdentifier,
   ChannelSigner,
-} from "../src";
-import * as eccryptoJS from "eccrypto-js";
-import * as EthCrypto from "eth-crypto";
-import * as ethers from "ethers";
+} from "./crypto";
+import { recoverAddressWithEthers, signDigestWithEthers } from "./misc";
 
 const prvKey = ethers.Wallet.createRandom().privateKey;
 const pubKey = eccryptoJS.removeHexPrefix(ethers.utils.computePublicKey(prvKey));
