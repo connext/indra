@@ -1,5 +1,5 @@
 import { Transaction } from "ethers/utils";
-import { EntityRepository, Repository, Between } from "typeorm";
+import { EntityRepository, Repository, Between, getManager } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 
@@ -14,6 +14,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
   async findByHash(txHash: string): Promise<OnchainTransaction | undefined> {
     return await this.findOne({
       where: { hash: txHash },
+      relations: [ "channel" ],
     });
   }
 
@@ -40,61 +41,67 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     return tx;
   }
 
-  async addWithdrawal(tx: Transaction, channel: Channel): Promise<OnchainTransaction> {
-    const onchain = new OnchainTransaction();
-    onchain.reason = TransactionReason.USER_WITHDRAWAL;
-    onchain.value = tx.value;
-    onchain.gasPrice = tx.gasPrice;
-    onchain.gasLimit = tx.gasLimit;
-    onchain.nonce = tx.nonce;
-    onchain.to = tx.to;
-    onchain.from = tx.from;
-    onchain.hash = tx.hash;
-    onchain.data = tx.data;
-    onchain.v = tx.v;
-    onchain.r = tx.r;
-    onchain.s = tx.s;
+  async addWithdrawal(tx: Transaction, channel: Channel): Promise<void> {
+    return getManager().transaction(async transactionalEntityManager => {
+      const { identifiers } = await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(OnchainTransaction)
+        .values({
+          ...tx,
+          reason: TransactionReason.USER_WITHDRAWAL,
+          channel,
+        })
+        .execute();
 
-    onchain.channel = channel;
-    return await this.save(onchain);
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Channel, "transactions")
+        .of(channel.id)
+        .add((identifiers[0] as OnchainTransaction).id);
+    });
   }
 
-  async addCollateralization(tx: Transaction, channel: Channel): Promise<OnchainTransaction> {
-    const onchain = new OnchainTransaction();
-    onchain.reason = TransactionReason.COLLATERALIZATION;
-    onchain.value = tx.value;
-    onchain.gasPrice = tx.gasPrice;
-    onchain.gasLimit = tx.gasLimit;
-    onchain.nonce = tx.nonce;
-    onchain.to = tx.to;
-    onchain.from = tx.from;
-    onchain.hash = tx.hash;
-    onchain.data = tx.data;
-    onchain.v = tx.v;
-    onchain.r = tx.r;
-    onchain.s = tx.s;
+  async addCollateralization(tx: Transaction, channel: Channel): Promise<void> {
+    return getManager().transaction(async transactionalEntityManager => {
+      const { identifiers } = await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(OnchainTransaction)
+        .values({
+          ...tx,
+          reason: TransactionReason.COLLATERALIZATION,
+          channel,
+        })
+        .execute();
 
-    onchain.channel = channel;
-    return await this.save(onchain);
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Channel, "transactions")
+        .of(channel.id)
+        .add((identifiers[0] as OnchainTransaction).id);
+    });
   }
 
-  async addReclaim(tx: Transaction, channel: Channel): Promise<OnchainTransaction> {
-    const onchain = new OnchainTransaction();
-    onchain.reason = TransactionReason.NODE_WITHDRAWAL;
-    onchain.value = tx.value;
-    onchain.gasPrice = tx.gasPrice;
-    onchain.gasLimit = tx.gasLimit;
-    onchain.nonce = tx.nonce;
-    onchain.to = tx.to;
-    onchain.from = tx.from;
-    onchain.hash = tx.hash;
-    onchain.data = tx.data;
-    onchain.v = tx.v;
-    onchain.r = tx.r;
-    onchain.s = tx.s;
+  async addReclaim(tx: Transaction, channel: Channel): Promise<void> {
+    return getManager().transaction(async transactionalEntityManager => {
+      const { identifiers } = await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(OnchainTransaction)
+        .values({
+          ...tx,
+          reason: TransactionReason.NODE_WITHDRAWAL,
+          channel,
+        })
+        .execute();
 
-    onchain.channel = channel;
-    return await this.save(onchain);
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .relation(Channel, "transactions")
+        .of(channel.id)
+        .add((identifiers[0] as OnchainTransaction).id);
+    });
   }
 }
 
