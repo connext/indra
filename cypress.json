@@ -1,7 +1,7 @@
 {
   "defaultCommandTimeout": 270000,
   "env": {
-    "mnemonic": "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
+    "funder": "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
     "provider": "/api/ethprovider",
     "publicUrl": "http://localhost:3000"
   },
