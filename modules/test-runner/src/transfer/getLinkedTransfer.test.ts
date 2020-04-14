@@ -1,4 +1,5 @@
-import { IConnextClient, ConditionalTransferTypes, createRandom32ByteHexString } from "@connext/types";
+import { IConnextClient, ConditionalTransferTypes } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/utils";
 import { AddressZero, One } from "ethers/constants";
 
 import { expect } from "../util";

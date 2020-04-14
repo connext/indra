@@ -1,4 +1,5 @@
-import { AppABIEncodings, createRandom32ByteHexString } from "@connext/types";
+import { AppABIEncodings } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { bigNumberify, BigNumberish, solidityKeccak256 } from "ethers/utils";
 

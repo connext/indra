@@ -1,25 +1,31 @@
+import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
+import { MinimumViableMultisig } from "@connext/contracts";
 import {
   AppInstanceJson,
   DefaultApp,
   DepositAppName,
   DepositAppState,
   EventNames,
-  getAddressFromAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
-  toBN,
   CONVENTION_FOR_ETH_ASSET_ID,
+  EventPayloads,
 } from "@connext/types";
-import { MinimumViableMultisig } from "@connext/contracts";
-import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
+import {
+  getAddressFromAssetId,
+  invalidAddress,
+  notGreaterThan,
+  notLessThanOrEqualTo,
+  toBN,
+  validate,
+} from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { AbstractController } from "./AbstractController";
-import { validate, notLessThanOrEqualTo, notGreaterThan, invalidAddress } from "../validation";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: PublicParams.Deposit): Promise<PublicResults.Deposit> => {
@@ -45,10 +51,10 @@ export class DepositController extends AbstractController {
     try {
       this.log.debug(`Starting deposit`);
       this.connext.emit(EventNames.DEPOSIT_STARTED_EVENT, {
-        amount: amount.toString(),
+        amount: amount,
         assetId: tokenAddress,
         appIdentityHash,
-      });
+      } as EventPayloads.DepositStarted);
       const hash = await this.connext.channelProvider.walletDeposit({
         amount: amount.toString(),
         assetId: tokenAddress,
@@ -59,10 +65,10 @@ export class DepositController extends AbstractController {
       await tx.wait();
     } catch (e) {
       this.connext.emit(EventNames.DEPOSIT_FAILED_EVENT, {
-        amount: amount.toString(),
+        amount: amount,
         assetId: tokenAddress,
         error: e.stack || e.message,
-      });
+      } as EventPayloads.DepositFailed);
       throw new Error(e.stack || e.message);
     } finally {
       ret = await this.rescindDepositRights({ appIdentityHash, assetId });
@@ -71,9 +77,9 @@ export class DepositController extends AbstractController {
     if (transactionHash) {
       this.connext.emit(EventNames.DEPOSIT_CONFIRMED_EVENT, {
         hash: transactionHash,
-        amount: amount.toString(),
+        amount: amount,
         assetId: tokenAddress,
-      });
+      } as EventPayloads.DepositConfirmed);
     }
 
     return ret;
@@ -211,12 +217,16 @@ export class DepositController extends AbstractController {
       startingMultisigBalance,
     };
 
+    const network = await this.ethProvider.getNetwork();
     const {
       actionEncoding,
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(DepositAppName);
+    } = await this.connext.getAppRegistry({
+      name: DepositAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
 
     const params: MethodParams.ProposeInstall = {
       abiEncodings: {

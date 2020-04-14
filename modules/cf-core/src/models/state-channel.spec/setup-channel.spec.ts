@@ -1,7 +1,7 @@
+import { AppInstanceProposal } from "@connext/types";
+import { createRandomAddress, getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
-import { AppInstanceProposal, createRandomAddress, toBN } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { HARD_CODED_ASSUMPTIONS } from "../../constants";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";

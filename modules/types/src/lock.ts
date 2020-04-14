@@ -1,4 +1,3 @@
-// Centralized locking service (i.e. redis)
 export interface ILockService {
   acquireLock(
     lockName: string /* Bytes32? */,

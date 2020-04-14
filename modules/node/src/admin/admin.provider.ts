@@ -1,5 +1,6 @@
 import { MessagingService } from "@connext/messaging";
-import { bigNumberifyJson, StateChannelJSON, stringify, RebalanceProfile } from "@connext/types";
+import { StateChannelJSON, RebalanceProfile } from "@connext/types";
+import { bigNumberifyJson, stringify } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -7,8 +8,8 @@ import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
-import { AbstractMessagingProvider } from "../util";
 import { ChannelService } from "../channel/channel.service";
+import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 

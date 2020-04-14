@@ -1,8 +1,7 @@
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect, TOKEN_AMOUNT } from "../util";
-import { createClient, ETH_AMOUNT_SM } from "../util";
+import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM } from "../util";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;

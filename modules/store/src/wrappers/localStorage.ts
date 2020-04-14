@@ -1,12 +1,11 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
+import { safeJsonParse, safeJsonStringify } from "@connext/utils"; 
 
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
   CHANNEL_KEY,
   COMMITMENT_KEY,
-  safeJsonParse,
-  safeJsonStringify,
 } from "../helpers";
 
 // @ts-ignore

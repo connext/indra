@@ -1,7 +1,8 @@
 /* global before */
 import { Contract, Wallet, ContractFactory } from "ethers";
 import { One } from "ethers/constants";
-import { ChallengeStatus, AppChallengeBigNumber, toBN } from "@connext/types";
+import { ChallengeStatus, AppChallengeBigNumber } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { keccak256 } from "ethers/utils";
 
 import { expect, provider, restore, setupContext, snapshot, moveToBlock, encodeState, AppWithCounterState, AppWithCounterAction } from "../utils";
@@ -23,7 +24,11 @@ describe("MChallengeRegistryCore", () => {
   let action: AppWithCounterAction;
 
   let setState: (versionNumber: number, appState?: string, timeout?: number) => Promise<void>;
-  let setAndProgressState: (versionNumber: number, state?: AppWithCounterState, turnTaker?: Wallet) => Promise<void>;
+  let setAndProgressState: (
+    versionNumber: number,
+    state?: AppWithCounterState,
+    turnTaker?: Wallet,
+  ) => Promise<void>;
 
   let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
   let isFinalized: () => Promise<boolean>;
@@ -96,7 +101,9 @@ describe("MChallengeRegistryCore", () => {
 
       // must have passed:
       // appChallenge.finalizesAt.add(defaultTimeout))
-      await moveToBlock(await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+      await moveToBlock(
+        await provider.getBlockNumber() + ONCHAIN_CHALLENGE_TIMEOUT + ONCHAIN_CHALLENGE_TIMEOUT + 2,
+      );
 
       expect(await isFinalized()).to.be.true;
     });

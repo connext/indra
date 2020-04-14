@@ -1,13 +1,12 @@
-import { getRandomChannelSigner } from "@connext/crypto";
 import {
   AppInstanceProposal,
   IChannelSigner,
   IStoreService,
   NetworkContext,
-  nullLogger,
   Opcode,
   PublicIdentifier,
 } from "@connext/types";
+import { getRandomChannelSigner, nullLogger } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { ProtocolRunner } from "../machine";

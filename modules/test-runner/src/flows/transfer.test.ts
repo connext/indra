@@ -4,6 +4,7 @@ import {
   EventNames,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
 import { Client } from "ts-nats";
 import { before } from "mocha";
 
@@ -17,7 +18,6 @@ import {
 } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 import { getNatsClient } from "../util/nats";
-import { bigNumberify } from "ethers/utils";
 
 describe("Full Flow: Transfer", () => {
   let clientA: IConnextClient;

@@ -5,6 +5,7 @@ import {
   OutcomeType,
   SimpleLinkedTransferAppName,
 } from "@connext/types";
+import { safeJsonParse } from "@connext/utils";
 import { EntityRepository, Repository } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
@@ -12,7 +13,6 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 
 import { AppInstance, AppType } from "./appInstance.entity";
 import { HashZero } from "ethers/constants";
-import { safeJsonParse } from "../util";
 
 export const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   if (!app) {

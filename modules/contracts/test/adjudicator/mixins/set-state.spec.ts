@@ -1,6 +1,6 @@
 /* global before */
-import { AppChallengeBigNumber, ChallengeStatus, toBN } from "@connext/types";
-import { ChannelSigner } from "@connext/crypto";
+import { AppChallengeBigNumber, ChallengeStatus } from "@connext/types";
+import { ChannelSigner, toBN } from "@connext/utils";
 import { One } from "ethers/constants";
 import { Contract, Wallet, ContractFactory } from "ethers";
 

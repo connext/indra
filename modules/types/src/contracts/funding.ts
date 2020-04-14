@@ -1,5 +1,5 @@
 import { Address, BigNumber, HexString, HexObject } from "../basic";
-import { tidy } from "./misc";
+import { tidy } from "../utils";
 
 ////////////////////////////////////////
 // keep synced w contracts/funding/default-apps/TimeLockedPassthrough.sol

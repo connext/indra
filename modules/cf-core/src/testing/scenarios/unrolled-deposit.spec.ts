@@ -2,10 +2,9 @@ import {
   BigNumber,
   CONVENTION_FOR_ETH_ASSET_ID,
   DepositAppState,
-  getAddressFromAssetId,
 } from "@connext/types";
+import { getAddressFromAssetId, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import { Node } from "../../node";
 
 import { toBeLt, toBeEq } from "../bignumber-jest-matcher";

@@ -1,21 +1,19 @@
 import { MessagingService } from "@connext/messaging";
-import { ChannelSigner } from "@connext/crypto";
 import {
   ConnextEventEmitter,
-  delay,
   IMessagingService,
   MessagingConfig,
   Message,
   VerifyNonceDtoType,
   IChannelSigner,
 } from "@connext/types";
+import { ChannelSigner, delay } from "@connext/utils";
+import axios, { AxiosResponse } from "axios";
+import { Wallet } from "ethers";
 
 import { env } from "./env";
 import { combineObjects } from "./misc";
 import { Logger } from "./logger";
-
-import axios, { AxiosResponse } from "axios";
-import { Wallet } from "ethers";
 
 const log = new Logger("Messaging", env.logLevel);
 

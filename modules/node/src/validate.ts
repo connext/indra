@@ -1,9 +1,13 @@
+import {
+  isAddress,
+  isBytes32,
+  isEthAddress,
+  isEthSignature,
+  isKeccak256Hash,
+  isValidHex,
+  isValidPublicIdentifier,
+} from "@connext/utils";
 import { registerDecorator, ValidationOptions } from "class-validator";
-import { arrayify, isHexString } from "ethers/utils";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
-
-export const isValidHex = (hex: string, bytes?: number): boolean =>
-  isHexString(hex) && (bytes ? arrayify(hex).length === bytes : true);
 
 export function IsValidHex(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
@@ -21,8 +25,6 @@ export function IsValidHex(validationOptions?: ValidationOptions): Function {
   };
 }
 
-export const isEthAddress = (address: string): boolean => isValidHex(address, 20);
-
 export function IsEthAddress(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
     registerDecorator({
@@ -38,8 +40,6 @@ export function IsEthAddress(validationOptions?: ValidationOptions): Function {
     });
   };
 }
-
-export const isKeccak256Hash = (address: string): boolean => isValidHex(address, 32);
 
 export function IsKeccak256Hash(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
@@ -57,8 +57,6 @@ export function IsKeccak256Hash(validationOptions?: ValidationOptions): Function
   };
 }
 
-export const isEthSignature = (signature: string): boolean => isValidHex(signature, 65);
-
 export function IsEthSignature(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
     registerDecorator({
@@ -74,8 +72,6 @@ export function IsEthSignature(validationOptions?: ValidationOptions): Function 
     });
   };
 }
-
-export const isBytes32 = (address: string): boolean => isValidHex(address, 32);
 
 export function IsBytes32(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
@@ -93,8 +89,6 @@ export function IsBytes32(validationOptions?: ValidationOptions): Function {
   };
 }
 
-export const isAddress = (address: string): boolean => /^address[a-zA-Z0-9]{107}$/.test(address);
-
 export function IsAddress(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
     registerDecorator({
@@ -110,15 +104,6 @@ export function IsAddress(validationOptions?: ValidationOptions): Function {
     });
   };
 }
-
-export const isValidPublicIdentifier = (id: string): boolean => {
-  try {
-    const addr = getSignerAddressFromPublicIdentifier(id);
-    return isEthAddress(addr);
-  } catch (e) {
-    return false;
-  }
-};
 
 export function IsValidPublicIdentifier(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {

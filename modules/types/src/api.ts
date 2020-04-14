@@ -1,8 +1,17 @@
 import { AppRegistry } from "./app";
-import { Address, Bytes32, DecString, Transaction, StringMapping } from "./basic";
-import { IChannelProvider, IChannelSigner } from "./channelProvider";
+
+import {
+  Address,
+  Bytes32,
+  DecString,
+  PublicIdentifier,
+  StringMapping,
+  Transaction,
+  UrlString,
+} from "./basic";
+import { IChannelProvider } from "./channelProvider";
+import { IChannelSigner } from "./crypto";
 import { NodeResponses } from "./node";
-import { PublicIdentifier } from "./identifiers";
 import { IMessagingService } from "./messaging";
 import { ILoggerService } from "./logger";
 import { JsonRpcProvider } from "ethers/providers";
@@ -27,7 +36,7 @@ export interface NodeInitializationParameters {
 }
 
 export interface INodeApiClient {
-  nodeUrl: string;
+  nodeUrl: UrlString;
   messaging: IMessagingService;
   latestSwapRates: StringMapping;
   log: ILoggerService;

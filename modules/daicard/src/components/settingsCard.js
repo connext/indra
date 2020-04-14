@@ -95,7 +95,7 @@ export const SettingsCard = style(
               window.close();
               return false;
             }}
-            size="large"
+            size="medium"
           >
             Support
           </Button>
@@ -108,7 +108,7 @@ export const SettingsCard = style(
             className={classes.button}
             variant="outlined"
             color="secondary"
-            size="large"
+            size="medium"
             onClick={() => setWalletConnext(!useWalletConnext)}
           >
             {useWalletConnext ? `Deactivate WalletConnext (beta)` : `Activate WalletConnext (beta)`}
@@ -123,13 +123,13 @@ export const SettingsCard = style(
               className={classes.button}
               variant="outlined"
               color="primary"
-              size="large"
+              size="medium"
               onClick={() => setShowRecovery(true)}
             >
               Show Backup Phrase
             </Button>
           ) : (
-            <Copyable color="primary" size="large" text={localStorage.getItem("mnemonic")} />
+            <Copyable color="primary" size="medium" text={localStorage.getItem("mnemonic")} />
           )}
         </Grid>
 
@@ -141,7 +141,7 @@ export const SettingsCard = style(
               className={classes.button}
               color="primary"
               variant="outlined"
-              size="large"
+              size="medium"
               onClick={() => setInputRecovery(true)}
             >
               Import from Backup
@@ -151,7 +151,7 @@ export const SettingsCard = style(
               style={{ height: "40px", width: "80%" }}
               color="primary"
               variant="outlined"
-              size="large"
+              size="medium"
               placeholder="Enter backup phrase and submit"
               value={mnemonic}
               onChange={event => setMnemonic(event.target.value)}
@@ -184,7 +184,7 @@ export const SettingsCard = style(
               border: "1px solid #F22424",
               color: "#F22424",
             }}
-            size="large"
+            size="medium"
             onClick={() => setShowWarning(true)}
           >
             Burn Card

@@ -1,5 +1,7 @@
+import { tidy } from "../../utils";
+
 import { CoinTransfer } from "../funding";
-import { multiAssetMultiPartyCoinTransferEncoding, tidy } from "../misc";
+import { multiAssetMultiPartyCoinTransferEncoding } from "../misc";
 
 export const SimpleTwoPartySwapAppName = "SimpleTwoPartySwapApp";
 

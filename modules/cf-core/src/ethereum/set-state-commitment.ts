@@ -6,10 +6,10 @@ import {
   MinimalTransaction,
   SetStateCommitmentJSON,
   SignedAppChallengeUpdate,
-  toBN,
 } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
-import { verifyChannelMessage } from "@connext/crypto";
+import { verifyChannelMessage } from "@connext/utils";
 
 import { ChallengeRegistry } from "../contracts";
 import { AppInstance } from "../models";

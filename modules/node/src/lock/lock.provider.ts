@@ -4,7 +4,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { LockProviderId, MessagingProviderId } from "../constants";
-import { AbstractMessagingProvider } from "../util";
+import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { LockService } from "./lock.service";
 

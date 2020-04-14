@@ -13,14 +13,14 @@ fi
 exec docker run \
   --entrypoint="bash" \
   $interactive \
-  --name="${project}_test_crypto" \
+  --name="${project}_test_utils" \
   --rm \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e
     echo "Crypto tester container launched!"
     
-    cd modules/crypto
+    cd modules/utils
 
     export PATH=./node_modules/.bin:$PATH
 

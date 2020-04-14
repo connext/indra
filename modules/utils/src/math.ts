@@ -1,7 +1,6 @@
+import { DecString, HexObject, HexString } from "@connext/types";
 import { BigNumber, BigNumberish, bigNumberify, parseEther, formatEther } from "ethers/utils";
 import { Zero, MaxUint256 } from "ethers/constants";
-
-import { DecString, HexObject, HexString } from "./basic";
 
 export const isBN = BigNumber.isBigNumber;
 

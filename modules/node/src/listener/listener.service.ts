@@ -1,4 +1,19 @@
-import { AppAction, EventNames, MethodNames, Message } from "@connext/types";
+import {
+  AppAction,
+  CreateChannelMessage,
+  DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
+  EventNames,
+  InstallMessage,
+  Message,
+  MethodNames,
+  ProposeMessage,
+  ProtocolMessage,
+  RejectProposalMessage,
+  UninstallMessage,
+  UpdateStateMessage,
+} from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
 import { AddressZero } from "ethers/constants";
@@ -8,18 +23,6 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
-import {
-  CreateChannelMessage,
-  DepositConfirmationMessage,
-  DepositFailedMessage,
-  DepositStartedMessage,
-  InstallMessage,
-  ProtocolMessage,
-  ProposeMessage,
-  RejectProposalMessage,
-  UninstallMessage,
-  UpdateStateMessage,
-} from "../util/cfCore";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { AppActionsService } from "../appRegistry/appActions.service";
 import { AppType } from "../appInstance/appInstance.entity";

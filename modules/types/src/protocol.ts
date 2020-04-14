@@ -1,7 +1,6 @@
 import { AppInterface, AppABIEncodings } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
+import { Address, BigNumber, Bytes32, AssetId, PublicIdentifier, SolidityValueType } from "./basic";
 import { OutcomeType } from "./contracts";
-import { AssetId, PublicIdentifier } from "./identifiers";
 import { enumify } from "./utils";
 
 type InstallProtocolParams = {
@@ -83,6 +82,7 @@ type UpdateProtocolParams = {
 ////////////////////////////////////////
 // exports
 
+// TODO: should we enumify?
 export enum Opcode {
   // Middleware hook to send a ProtocolMessage to a peer.
   IO_SEND,

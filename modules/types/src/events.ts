@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 
 import { AppInstanceProposal } from "./app";
-import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
+import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import { ChannelMethods } from "./channelProvider";
 import {
   ConditionalTransferTypes,
@@ -11,7 +11,10 @@ import {
 } from "./transfers";
 import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
-import { PublicIdentifier } from "./identifiers";
+import { ProtocolMessageData } from "./messaging";
+import { PublicParams } from "./public";
+import { MinimalTransaction } from "./commitments";
+import { TransactionResponse } from "ethers/providers";
 
 type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
 type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
@@ -91,12 +94,27 @@ type CreateMultisigEventData = {
 
 ////////////////////////////////////////
 const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
+type DepositConfirmedEventData = {
+  hash: string;
+  amount: BigNumber;
+  assetId: Address;
+};
 
 ////////////////////////////////////////
 const DEPOSIT_FAILED_EVENT = "DEPOSIT_FAILED_EVENT";
+type DepositFailedEventData = {
+  amount: BigNumber;
+  assetId: Address;
+  error: string;
+};
 
 ////////////////////////////////////////
 const DEPOSIT_STARTED_EVENT = "DEPOSIT_STARTED_EVENT";
+type DepositStartedEventData = {
+  amount: BigNumber;
+  assetId: Address;
+  appIdentityHash: string;
+};
 
 ////////////////////////////////////////
 const INSTALL_EVENT = "INSTALL_EVENT";
@@ -142,14 +160,24 @@ type UpdateStateEventData = {
 ////////////////////////////////////////
 const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
 
+type WithdrawalConfirmedEventData = {
+  transaction: TransactionResponse;
+};
+
 ////////////////////////////////////////
 const WITHDRAWAL_FAILED_EVENT = "WITHDRAWAL_FAILED_EVENT";
+
+type WithdrawalFailedEventData = WithdrawalStartedEventData & {
+  error: string;
+};
 
 ////////////////////////////////////////
 const WITHDRAWAL_STARTED_EVENT = "WITHDRAWAL_STARTED_EVENT";
 
-type WithdrawEventData = {
-  amount: BigNumber;
+type WithdrawalStartedEventData = {
+  params: PublicParams.Withdraw;
+  withdrawCommitment: MinimalTransaction;
+  withdrawerSignatureOnCommitment: string;
 };
 
 ////////////////////////////////////////
@@ -175,8 +203,9 @@ export const EventNames = enumify({
 });
 export type EventNames = typeof EventNames[keyof typeof EventNames];
 
+// ALL events -- both protocol and client/node specific
 export namespace EventPayloads {
-  export type CreateMultisig = CreateMultisigEventData;
+  // client/node specific
   export type HashLockTransferCreated = ConditionalTransferCreatedEventData<HashLockTransfer>;
   export type LinkedTransferCreated = ConditionalTransferCreatedEventData<LinkedTransfer>;
   export type SignedTransferCreated = ConditionalTransferCreatedEventData<SignedTransfer>;
@@ -201,24 +230,22 @@ export namespace EventPayloads {
   export type ConditionalTransferFailed<T> = ConditionalTransferFailedEventData<
     HashLockTransfer | LinkedTransfer | SignedTransfer
   >;
+  export type DepositStarted = DepositStartedEventData;
+  export type DepositConfirmed = DepositConfirmedEventData;
+  export type DepositFailed = DepositFailedEventData;
+
+  export type WithdrawalStarted = WithdrawalStartedEventData;
+  export type WithdrawalConfirmed = WithdrawalConfirmedEventData;
+  export type WithdrawalFailed = WithdrawalFailedEventData;
+
+  // protocol events
+  export type CreateMultisig = CreateMultisigEventData;
   export type Install = InstallEventData;
   export type Propose = ProposeEventData;
   export type RejectInstall = RejectInstallEventData;
   export type Uninstall = UninstallEventData;
   export type UpdateState = UpdateStateEventData;
+  export type ProtocolMessage = ProtocolMessageData;
 }
-
-export type EventPayload =
-  | InstallEventData
-  | ProposeEventData
-  | RejectInstallEventData
-  | UpdateStateEventData
-  | UninstallEventData
-  | CreateMultisigEventData;
-
-export type Event = {
-  type: EventNames;
-  data: EventPayload;
-};
 
 export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventNames> {}

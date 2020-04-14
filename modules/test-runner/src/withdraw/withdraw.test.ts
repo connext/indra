@@ -1,3 +1,4 @@
+import { MinimumViableMultisig } from "@connext/contracts";
 import { IConnextClient, EventNames, BigNumberish } from "@connext/types";
 import { Wallet, Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -7,14 +8,12 @@ import {
   expect,
   fundChannel,
   NEGATIVE_ZERO_ZERO_ONE_ETH,
-  NODE_HAS_RIGHTS_ERROR,
   requestDepositRights,
   withdrawFromChannel,
   ZERO_ZERO_ONE_ETH,
   ZERO_ZERO_TWO_ETH,
   ZERO_ZERO_ZERO_ONE_ETH,
 } from "../util";
-import { MinimumViableMultisig } from "@connext/contracts";
 
 describe("Withdrawal", () => {
   let client: IConnextClient;
@@ -81,7 +80,8 @@ describe("Withdrawal", () => {
     ).to.be.rejectedWith(`invalid address`);
   });
 
-  it("client successfully withdraws tokens and eth concurrently", async () => {
+  // TODO: fix race condition
+  it.skip("client successfully withdraws tokens and eth concurrently", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
     // withdraw (dont await first for concurrency). Note: don't withdraw

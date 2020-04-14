@@ -1,12 +1,11 @@
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 import {
-  maxBN,
+  CreateChannelMessage,
   MethodResults,
   NodeResponses,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
-  stringify,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, maxBN, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { AddressZero, Zero } from "ethers/constants";
@@ -19,7 +18,6 @@ import { LoggerService } from "../logger/logger.service";
 import { WithdrawService } from "../withdraw/withdraw.service";
 import { DepositService } from "../deposit/deposit.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";

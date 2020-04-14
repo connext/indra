@@ -1,11 +1,10 @@
+import { toBN, verifyChannelMessage } from "@connext/utils";
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { toBN } from "@connext/types";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { use } from "chai";
 import { BigNumber, BigNumberish, parseEther } from "ethers/utils";
 import { Wallet } from "ethers";
-import { verifyChannelMessage } from "@connext/crypto";
 
 export function mkXpub(prefix: string = "xpub"): string {
   return prefix.padEnd(111, "0");

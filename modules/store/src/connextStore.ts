@@ -2,11 +2,13 @@ import {
   AppInstanceJson,
   AppInstanceProposal,
   ConditionalTransactionCommitmentJSON,
+  IBackupServiceAPI,
   IClientStore,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
+  StoreFactoryOptions,
   StoreTypes,
   WithdrawalMonitorObject,
   WrappedStorage,
@@ -15,8 +17,6 @@ import {
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
-  IBackupServiceAPI,
-  StoreFactoryOptions,
   DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "./helpers";
 import {
@@ -25,8 +25,8 @@ import {
   MemoryStorage,
   WrappedAsyncStorage,
   WrappedLocalStorage,
+  WrappedPostgresStorage,
 } from "./wrappers";
-import { WrappedPostgresStorage } from "./wrappers/postgresStorage";
 
 export class ConnextStore implements IClientStore {
   private internalStore: IClientStore;
@@ -256,8 +256,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.updateWithdrawalCommitment(multisigAddress, commitment);
   }
 
-  getUserWithdrawal(): Promise<WithdrawalMonitorObject> {
-    return this.internalStore.getUserWithdrawal();
+  getUserWithdrawals(): Promise<WithdrawalMonitorObject[]> {
+    return this.internalStore.getUserWithdrawals();
   }
 
   createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
@@ -268,8 +268,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.updateUserWithdrawal(withdrawalObject);
   }
 
-  removeUserWithdrawal(): Promise<void> {
-    return this.internalStore.removeUserWithdrawal();
+  removeUserWithdrawal(toRemove: WithdrawalMonitorObject): Promise<void> {
+    return this.internalStore.removeUserWithdrawal(toRemove);
   }
 
   clear(): Promise<void> {

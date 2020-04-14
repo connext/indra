@@ -1,12 +1,12 @@
-import { ConnextStore, FileStorage, safeJsonStringify, KeyValueStorage } from "@connext/store";
+import { ConnextStore, FileStorage, KeyValueStorage } from "@connext/store";
 import {
   AppInstanceJson,
   ConnextClientStorePrefix,
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   StoreTypes,
-  toBN,
 } from "@connext/types";
+import { safeJsonStringify, toBN } from "@connext/utils";
 import { Client as DBClient } from "pg";
 import { before } from "mocha";
 import SQL from "sql-template-strings";
@@ -34,7 +34,10 @@ import {
   XPUB_V0_4,
 } from "./examples";
 
-const convertV0toV1JSON = (oldChannel: any, nodeAddress: string = env.nodePubId): StateChannelJSON => {
+const convertV0toV1JSON = (
+  oldChannel: any,
+  nodeAddress: string = env.nodePubId,
+): StateChannelJSON => {
   const removeIsVirtualTagAndTimeouts = (obj: any) => {
     const { isVirtualApp, participants, latestTimeout, timeout, ...ret } = obj;
     return ret;

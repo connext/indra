@@ -1,7 +1,8 @@
-import { Signer } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { Address, Bytes32, DecString, PublicKey } from "./basic";
+import { INodeApiClient } from "./api";
+import { Address, Bytes32, DecString, PublicIdentifier, PublicKey, UrlString } from "./basic";
+import { IChannelSigner } from "./crypto";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
@@ -13,8 +14,6 @@ import {
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
-import { PublicIdentifier } from "./identifiers";
-import { INodeApiClient } from "./api";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
@@ -37,19 +36,10 @@ export const ChannelMethods = enumify({
 });
 export type ChannelMethods = typeof ChannelMethods[keyof typeof ChannelMethods];
 
-export interface IChannelSigner extends Signer {
-  address: Address;
-  decrypt(message: string): Promise<string>;
-  encrypt(message: string, publicKey: string): Promise<string>;
-  signMessage(message: string): Promise<string>;
-  publicKey: string;
-  publicIdentifier: string;
-}
-
 export type ChannelProviderConfig = {
   signerAddress: Address;
   multisigAddress?: Address; // may not be deployed yet
-  nodeUrl: string;
+  nodeUrl: UrlString;
   userIdentifier: PublicIdentifier;
 };
 
@@ -120,13 +110,12 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // STORE METHODS
-  getUserWithdrawal(): Promise<WithdrawalMonitorObject>;
-  setUserWithdrawal(withdrawal: WithdrawalMonitorObject): Promise<void>;
+  getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
+  setUserWithdrawal(withdrawal: WithdrawalMonitorObject, remove?: boolean): Promise<void>;
   restoreState(state?: StateChannelJSON): Promise<void>;
 
   ///////////////////////////////////
   // TRANSFER METHODS
-  walletDeposit(params: WalletDepositParams): Promise<string>;
   setStateChannel(state: StateChannelJSON): Promise<void>;
   createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
   createSetStateCommitment(

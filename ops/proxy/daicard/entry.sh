@@ -20,7 +20,7 @@ loading_pid="$!"
 # Define service hostnames & ports we depend on
 
 echo "waiting for ${INDRA_URL#*://}..."
-bash wait_for.sh -t 60 ${INDRA_URL#*://} 2> /dev/null
+wait-for -t 60 ${INDRA_URL#*://} 2> /dev/null
 while ! curl -s $INDRA_URL > /dev/null
 do sleep 2
 done

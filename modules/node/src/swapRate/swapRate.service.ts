@@ -30,7 +30,7 @@ export class SwapRateService implements OnModuleInit {
     } else {
       const targetSwap = this.config.getAllowedSwaps().find(s => s.from === from && s.to === to);
       if (targetSwap) {
-        rate = await this.getSwapRate(from, to, targetSwap.priceOracleType);
+        rate = await this.fetchSwapRate(from, to, targetSwap.priceOracleType);
       } else {
         throw new Error(`No valid swap exists for ${from} to ${to}`);
       }
@@ -38,7 +38,7 @@ export class SwapRateService implements OnModuleInit {
     return rate;
   }
 
-  async getSwapRate(
+  async fetchSwapRate(
     from: string,
     to: string,
     priceOracleType: PriceOracleType,
@@ -89,6 +89,7 @@ export class SwapRateService implements OnModuleInit {
       if (process.env.NODE_ENV === "development") {
         newRate = await this.config.getDefaultSwapRate(from, to);
         if (!newRate) {
+          this.log.warn(`No default rate for swap from ${from} to ${to}, returning zero.`);
           return "0";
         }
       }
@@ -146,7 +147,7 @@ export class SwapRateService implements OnModuleInit {
     for (const swap of swaps) {
       // Check rate at each new block
       provider.on("block", (blockNumber: number) =>
-        this.getSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
+        this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
       );
     }
   }

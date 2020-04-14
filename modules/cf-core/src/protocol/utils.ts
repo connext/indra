@@ -8,7 +8,7 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
-import { verifyChannelMessage } from "@connext/crypto";
+import { logTime, verifyChannelMessage } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 
@@ -20,7 +20,6 @@ import {
   StateChannel,
 } from "../models";
 import { NO_STATE_CHANNEL_FOR_MULTISIG_ADDR } from "../errors";
-import { logTime } from "../utils";
 
 export async function assertIsValidSignature(
   expectedSigner: string,

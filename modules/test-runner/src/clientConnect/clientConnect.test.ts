@@ -1,9 +1,9 @@
+import { ConnextStore } from "@connext/store";
+import { StoreTypes, ClientOptions } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 
 import { createClient, expect, sendOnchainValue, env } from "../util";
-import { ConnextStore } from "@connext/store";
-import { StoreTypes, ClientOptions } from "@connext/types";
 
 describe("Client Connect", () => {
   it("Client should not rescind deposit rights if no transfers have been made to the multisig", async () => {

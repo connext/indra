@@ -1,11 +1,10 @@
 import {
   CONVENTION_FOR_ETH_ASSET_ID,
-  delay,
-  getAddressFromAssetId,
   InstallMessage,
   ProposeMessage,
   ProtocolParams,
 } from "@connext/types";
+import { delay, getAddressFromAssetId } from "@connext/utils";
 import { One } from "ethers/constants";
 import { BigNumber, isHexString } from "ethers/utils";
 

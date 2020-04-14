@@ -1,9 +1,8 @@
-import { Address, BigNumber, Bytes32, SolidityValueType } from "./basic";
+import { Address, AssetId, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
 import { AppState } from "./contracts";
 
 import { AppABIEncodings, AppInstanceJson, AppInstanceProposal } from "./app";
 import { OutcomeType } from "./contracts";
-import { AssetId, PublicIdentifier } from "./identifiers";
 import { PublicParams, PublicResults } from "./public";
 import { StateChannelJSON } from "./state";
 import { MinimalTransaction } from "./commitments";

@@ -1,6 +1,18 @@
 import { ILogger, ILoggerService } from "@connext/types";
 
-export class Logger implements ILoggerService {
+// Example implementation that can be used as a silent default
+export const nullLogger: ILoggerService = {
+  debug: (msg: string): void => {},
+  info: (msg: string): void => {},
+  warn: (msg: string): void => {},
+  error: (msg: string): void => {},
+  setContext: (context: string): void => {},
+  newContext: function(context: string): ILoggerService {
+    return this;
+  },
+};
+
+export class ConsoleLogger implements ILoggerService {
   private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
   private context = "UnknownContext";
   private log: ILogger = console;
@@ -16,8 +28,8 @@ export class Logger implements ILoggerService {
     this.context = context;
   }
 
-  public newContext(context: string): Logger {
-    return new Logger(context, this.level);
+  public newContext(context: string): ConsoleLogger {
+    return new ConsoleLogger(context, this.level);
   }
 
   public error(msg: string): void {
@@ -41,3 +53,4 @@ export class Logger implements ILoggerService {
     this.log[level](`${new Date().toISOString()} [${this.context}] ${msg}`);
   }
 }
+

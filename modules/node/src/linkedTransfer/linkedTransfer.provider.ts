@@ -1,18 +1,17 @@
 import { MessagingService } from "@connext/messaging";
 import {
-  bigNumberifyJson,
   LinkedTransferStatus,
   NodeResponses,
   SimpleLinkedTransferAppState,
-  stringify,
 } from "@connext/types";
+import { bigNumberifyJson, stringify } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, LinkedTransferProviderId } from "../constants";
-import { AbstractMessagingProvider } from "../util";
+import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { LinkedTransferService } from "./linkedTransfer.service";
 
@@ -103,11 +102,11 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "*.transfer.fetch-linked",
+      "*.transfer.get-linked",
       this.authService.parseIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
-      "*.transfer.resolve-linked",
+      "*.transfer.install-linked",
       this.authService.parseIdentifier(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(

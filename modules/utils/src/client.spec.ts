@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
 
-import { insertDefault, objMap, objMapPromise } from "./utils";
+import { insertDefault, objMap, objMapPromise } from "./client";
 
 describe("objMap", () => {
   // should apply the same function to every value in the given
@@ -55,3 +55,4 @@ describe("insertDefault", () => {
     });
   });
 });
+

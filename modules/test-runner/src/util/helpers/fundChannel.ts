@@ -1,11 +1,10 @@
 import {
   AssetId,
   CONVENTION_FOR_ETH_ASSET_ID,
-  delay,
   EventNames,
-  getAddressFromAssetId,
   IConnextClient,
 } from "@connext/types";
+import { delay, getAddressFromAssetId } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 
 import { env, expect, Logger } from "../";

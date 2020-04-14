@@ -51,10 +51,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     let result;
     switch (method) {
       case ChannelMethods.chan_setUserWithdrawal:
-        result = await this.setUserWithdrawal(params.withdrawalObject);
+        result = await this.setUserWithdrawal(params.withdrawalObject, params.remove);
         break;
       case ChannelMethods.chan_getUserWithdrawal:
-        result = await this.getUserWithdrawal();
+        result = await this.getUserWithdrawals();
         break;
       case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
@@ -171,13 +171,17 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 
-  public getUserWithdrawal = async (): Promise<any> => {
+  public getUserWithdrawals = async (): Promise<WithdrawalMonitorObject[]> => {
     return this._send(ChannelMethods.chan_getUserWithdrawal, {});
   };
 
-  public setUserWithdrawal = async (withdrawalObject: WithdrawalMonitorObject): Promise<void> => {
+  public setUserWithdrawal = async (
+    withdrawalObject: WithdrawalMonitorObject, 
+    remove: boolean = false,
+  ): Promise<void> => {
     return this._send(ChannelMethods.chan_setUserWithdrawal, {
       withdrawalObject,
+      remove,
     });
   };
 

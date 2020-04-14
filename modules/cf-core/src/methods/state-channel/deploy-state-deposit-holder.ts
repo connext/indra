@@ -1,5 +1,4 @@
 import {
-  delay,
   IChannelSigner,
   ILoggerService,
   MethodNames,
@@ -7,9 +6,12 @@ import {
   MethodResults,
   NetworkContext,
   PublicIdentifier,
-  stringify,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
+import {
+  delay,
+  getSignerAddressFromPublicIdentifier,
+  stringify,
+} from "@connext/utils";
 
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";

@@ -43,26 +43,26 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-bash wait_for.sh -t 60 $ETH_PROVIDER_HOST 2> /dev/null
+wait-for -t 60 $ETH_PROVIDER_HOST 2> /dev/null
 echo "waiting for $ETH_PROVIDER_HOST..."
 while ! curl -s $ETH_PROVIDER_HOST > /dev/null
 do sleep 2
 done
 
 echo "waiting for $MESSAGING_WS_URL..."
-bash wait_for.sh -t 60 $MESSAGING_WS_URL 2> /dev/null
+wait-for -t 60 $MESSAGING_WS_URL 2> /dev/null
 
 echo "waiting for $MESSAGING_TCP_URL..."
-bash wait_for.sh -t 60 $MESSAGING_TCP_URL 2> /dev/null
+wait-for -t 60 $MESSAGING_TCP_URL 2> /dev/null
 
 echo "waiting for $NODE_URL..."
-bash wait_for.sh -t 60 $NODE_URL 2> /dev/null
+wait-for -t 60 $NODE_URL 2> /dev/null
 while ! curl -s $NODE_URL > /dev/null
 do sleep 2
 done
 
 echo "waiting for $WEBSERVER_URL..."
-bash wait_for.sh -t 60 $WEBSERVER_URL 2> /dev/null
+wait-for -t 60 $WEBSERVER_URL 2> /dev/null
 while ! curl -s $WEBSERVER_URL > /dev/null
 do sleep 2
 done

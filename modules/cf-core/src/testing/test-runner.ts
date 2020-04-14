@@ -1,10 +1,10 @@
 import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero, HashZero, AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
-import { getSignerAddressFromPublicIdentifier } from "@connext/crypto";
 
 import { getCreate2MultisigAddress } from "../utils";
 

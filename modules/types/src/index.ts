@@ -6,10 +6,10 @@ export * from "./client";
 export * from "./commitments";
 export * from "./constants";
 export * from "./contracts";
+export * from "./crypto";
 export * from "./events";
 export * from "./lock";
 export * from "./logger";
-export * from "./math";
 export * from "./messaging";
 export {
   MethodName,
@@ -30,7 +30,6 @@ export {
 } from "./protocol";
 export * from "./middleware";
 export * from "./public";
-export * from "./identifiers";
 export * from "./state";
 export * from "./store";
 export * from "./transfers";

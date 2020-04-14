@@ -1,4 +1,3 @@
-import { ChannelSigner } from "@connext/crypto";
 import {
   ClientOptions,
   IChannelProvider,
@@ -9,18 +8,13 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
+import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
+  
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { ConnextClient } from "./connext";
-import {
-  delayAndThrow,
-  getDefaultOptions,
-  getDefaultStore,
-  Logger,
-  logTime,
-  stringify,
-} from "./lib";
+import { getDefaultOptions, getDefaultStore } from "./default";
 import { NodeApiClient } from "./node";
 
 export const connect = async (
@@ -44,7 +38,7 @@ export const connect = async (
 
   const logger = loggerService
     ? loggerService.newContext("ConnextConnect")
-    : new Logger("ConnextConnect", logLevel, providedLogger);
+    : new ConsoleLogger("ConnextConnect", logLevel, providedLogger);
 
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);

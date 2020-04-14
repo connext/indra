@@ -20,19 +20,6 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
-  test-client:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: Cache node modules
-      uses: actions/cache@v1
-      with:
-        path: .npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
-    - run: make client
-    - run: make test-client
-
   test-contracts:
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +33,7 @@ jobs:
     - run: make contracts
     - run: make test-contracts
 
-  test-crypto:
+  test-utils:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -56,8 +43,8 @@ jobs:
         path: .npm
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
-    - run: make crypto
-    - run: make test-crypto
+    - run: make utils
+    - run: make test-utils
 
   test-integration:
     env:

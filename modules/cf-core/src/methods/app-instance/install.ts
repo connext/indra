@@ -6,9 +6,9 @@ import {
   MethodResults,
   ProtocolNames,
   ProtocolParams,
-  toBN,
   PublicIdentifier,
 } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import {
