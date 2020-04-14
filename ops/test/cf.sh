@@ -87,7 +87,7 @@ docker run \
     set -e
     echo "CF tester container launched!"
     echo "Waiting for ethprovider to wake up.."
-    bash ops/wait-for.sh ${ETHPROVIDER_URL#*://} &> /dev/null
+    wait-for ${ETHPROVIDER_URL#*://} &> /dev/null
     cd modules/cf-core
     export PATH=./node_modules/.bin:$PATH
     function finish {

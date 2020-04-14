@@ -1,5 +1,8 @@
+import { toBN } from "@connext/utils";
 import { Test } from "@nestjs/testing";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { bigNumberify } from "ethers/utils";
+import { getConnection } from "typeorm";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -27,9 +30,6 @@ import {
 } from "../test/cfCore";
 import { ConfigService } from "../config/config.service";
 import { AppInstanceJson } from "../util";
-import { getConnection } from "typeorm";
-import { bigNumberify } from "ethers/utils";
-import { toBN } from "@connext/types";
 
 const createTestChannel = async (
   cfCoreStore: CFCoreStore,
