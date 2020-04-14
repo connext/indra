@@ -92,12 +92,27 @@ type CreateMultisigEventData = {
 
 ////////////////////////////////////////
 const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
+type DepositConfirmedEventData = {
+  hash: string;
+  amount: BigNumber;
+  assetId: Address;
+};
 
 ////////////////////////////////////////
 const DEPOSIT_FAILED_EVENT = "DEPOSIT_FAILED_EVENT";
+type DepositFailedEventData = {
+  amount: BigNumber;
+  assetId: Address;
+  error: string;
+};
 
 ////////////////////////////////////////
 const DEPOSIT_STARTED_EVENT = "DEPOSIT_STARTED_EVENT";
+type DepositStartedEventData = {
+  amount: BigNumber;
+  assetId: Address;
+  appIdentityHash: string;
+};
 
 ////////////////////////////////////////
 const INSTALL_EVENT = "INSTALL_EVENT";
@@ -176,8 +191,9 @@ export const EventNames = enumify({
 });
 export type EventNames = typeof EventNames[keyof typeof EventNames];
 
+// ALL events -- both protocol and client/node specific
 export namespace EventPayloads {
-  export type CreateMultisig = CreateMultisigEventData;
+  // client/node specific
   export type HashLockTransferCreated = ConditionalTransferCreatedEventData<HashLockTransfer>;
   export type LinkedTransferCreated = ConditionalTransferCreatedEventData<LinkedTransfer>;
   export type SignedTransferCreated = ConditionalTransferCreatedEventData<SignedTransfer>;
@@ -202,6 +218,12 @@ export namespace EventPayloads {
   export type ConditionalTransferFailed<T> = ConditionalTransferFailedEventData<
     HashLockTransfer | LinkedTransfer | SignedTransfer
   >;
+  export type DepositStarted = DepositStartedEventData;
+  export type DepositConfirmed = DepositConfirmedEventData;
+  export type DepositFailed = DepositFailedEventData;
+
+  // protocol events
+  export type CreateMultisig = CreateMultisigEventData;
   export type Install = InstallEventData;
   export type Propose = ProposeEventData;
   export type RejectInstall = RejectInstallEventData;
