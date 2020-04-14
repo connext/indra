@@ -208,17 +208,4 @@ export namespace EventPayloads {
   export type UpdateState = UpdateStateEventData;
 }
 
-export type EventPayload =
-  | InstallEventData
-  | ProposeEventData
-  | RejectInstallEventData
-  | UpdateStateEventData
-  | UninstallEventData
-  | CreateMultisigEventData;
-
-export type Event = {
-  type: EventNames;
-  data: EventPayload;
-};
-
 export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventNames> {}
