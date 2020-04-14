@@ -1,4 +1,4 @@
-import { AppState, OutcomeType } from "@connext/types";
+import { AppState, HexString, OutcomeType } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import {
   Entity,
@@ -10,8 +10,7 @@ import {
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
-import { IsEthAddress, IsKeccak256Hash, IsAddress, IsValidPublicIdentifier } from "../util";
-import { HexString } from "../../../types/src/basic";
+import { IsEthAddress, IsKeccak256Hash, IsAddress, IsValidPublicIdentifier } from "../validate";
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",

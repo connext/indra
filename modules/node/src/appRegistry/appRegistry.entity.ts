@@ -1,7 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-
-import { OutcomeType } from "../util/cfCore";
 import { SupportedApplications } from "@connext/apps";
+import { OutcomeType } from "@connext/types";
 
 @Entity()
 export class AppRegistry {

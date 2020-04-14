@@ -1,3 +1,4 @@
+import { getCreate2MultisigAddress, scanForCriticalAddresses } from "@connext/cf-core";
 import {
   ConnextNodeStorePrefix,
   CriticalStateChannelAddresses,
@@ -14,7 +15,6 @@ import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
 import { ChannelRepository, convertChannelToJSON } from "../channel/channel.repository";
 import { CFCoreStore } from "../cfCore/cfCore.store";
 import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";

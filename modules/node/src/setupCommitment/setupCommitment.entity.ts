@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from "ty
 import { BigNumber } from "ethers/utils";
 
 import { Channel } from "../channel/channel.entity";
-import { IsBytes32, IsEthAddress } from "../util";
+import { IsBytes32, IsEthAddress } from "../validate";
 
 @Entity()
 export class SetupCommitment {

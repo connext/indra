@@ -8,8 +8,8 @@ import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
-import { AbstractMessagingProvider } from "../util";
 import { ChannelService } from "../channel/channel.service";
+import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 
