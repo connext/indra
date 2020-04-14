@@ -1,4 +1,5 @@
 export * from "./crypto";
+export * from "./currency";
 export * from "./identifiers";
 export * from "./logger";
 export * from "./math";

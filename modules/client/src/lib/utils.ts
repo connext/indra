@@ -3,7 +3,9 @@ import { createRandom32ByteHexString } from "@connext/utils";
 import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
-import { RINKEBY_NETWORK, MAINNET_NETWORK, LOCALHOST_NETWORK } from "./constants";
+export const MAINNET_NETWORK = "mainnet";
+export const RINKEBY_NETWORK = "rinkeby";
+export const LOCALHOST_NETWORK = "localhost";
 
 export const logTime = (log: ILogger, start: number, msg: string) => {
   const diff = Date.now() - start;
@@ -70,7 +72,6 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
       ? val // not supplied set as default val
       : obj[k];
   });
-
   return adjusted;
 };
 

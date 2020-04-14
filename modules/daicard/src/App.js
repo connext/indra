@@ -31,16 +31,9 @@ import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 import { WithdrawSaiDialog } from "./components/withdrawSai";
 import { rootMachine } from "./state";
-import {
-  cleanWalletConnect,
-  Currency,
-  migrate,
-  minBN,
-  toBN,
-  tokenToWei,
-  weiToToken,
-  initWalletConnect,
-} from "./utils";
+import { cleanWalletConnect, migrate, initWalletConnect } from "./utils";
+
+const { Currency, minBN, toBN, tokenToWei, weiToToken } = connext.utils;
 
 const urls = {
   ethProviderUrl:

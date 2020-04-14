@@ -1,5 +1,4 @@
-import { IConnextClient } from "@connext/types";
-import { utils } from "@connext/client";
+import { CF_METHOD_TIMEOUT, IConnextClient } from "@connext/types";
 import * as lolex from "lolex";
 
 import {
@@ -21,8 +20,6 @@ import {
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { getRandomChannelSigner } from "@connext/utils";
-
-const { CF_METHOD_TIMEOUT } = utils;
 
 const makeDepositCall = async (opts: {
   client: IConnextClient;

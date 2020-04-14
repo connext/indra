@@ -14,7 +14,7 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
-import { ChannelSigner } from "@connext/utils";
+import { ChannelSigner, ConsoleLogger } from "@connext/utils";
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
@@ -24,7 +24,6 @@ import {
   delayAndThrow,
   getDefaultOptions,
   getDefaultStore,
-  Logger,
   logTime,
   stringify,
 } from "./lib";
@@ -52,7 +51,7 @@ export const connect = async (
 
   const log = loggerService
     ? loggerService.newContext("ConnextConnect")
-    : new Logger("ConnextConnect", logLevel, logger);
+    : new ConsoleLogger("ConnextConnect", logLevel, logger);
 
   // setup ethProvider + network information
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);

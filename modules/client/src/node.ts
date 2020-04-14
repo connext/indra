@@ -2,16 +2,19 @@ import {
   AppRegistry,
   IChannelProvider,
   ILoggerService,
-  INodeApiClient,
-  NodeResponses,
   IMessagingService,
+  INodeApiClient,
+  NATS_ATTEMPTS,
+  NATS_TIMEOUT,
+  NodeResponses,
   StringMapping,
 } from "@connext/types";
 import { bigNumberifyJson, delay, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
-import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
+
+import { logTime } from "./lib";
 import { NodeInitializationParameters } from "./types";
 
 const sendFailed = "Failed to send message";
