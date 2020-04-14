@@ -1,6 +1,12 @@
 import { connect } from "@connext/client";
 import { ConnextStore } from "@connext/store";
-import { ClientOptions, IChannelProvider, IChannelSigner, IConnextClient, StoreTypes } from "@connext/types";
+import {
+  ClientOptions,
+  IChannelProvider,
+  IChannelSigner,
+  IConnextClient,
+  StoreTypes,
+} from "@connext/types";
 import { getRandomChannelSigner, ChannelSigner } from "@connext/utils";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
@@ -74,7 +80,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     loggerService: new Logger("TestRunner", env.logLevel, true),
     store: new ConnextStore(StoreTypes.LocalStorage), // TODO: replace with polyfilled window.localStorage
   };
-  if (network === "mainnet" || network === "rinkeby") {
+  if (network === "mainnet") {
     clientOpts = {
       signer: Wallet.createRandom().privateKey,
       ...clientOpts,

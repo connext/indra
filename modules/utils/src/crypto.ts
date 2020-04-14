@@ -157,8 +157,10 @@ export async function verifyChannelMessage(
   return verifyMessage(message, sig, INDRA_SIGN_PREFIX);
 }
 
+export const getRandomPrivateKey = () => bufferToHex(randomBytes(32), true);
+
 export const getRandomChannelSigner = (ethProviderUrl?: string) =>
-  new ChannelSigner(bufferToHex(randomBytes(32), true), ethProviderUrl);
+  new ChannelSigner(getRandomPrivateKey(), ethProviderUrl);
 
 export class ChannelSigner implements IChannelSigner {
   public address: string;

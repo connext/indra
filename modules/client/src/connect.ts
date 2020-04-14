@@ -24,7 +24,7 @@ export const connect = async (
   const start = Date.now();
   const opts =
     typeof clientOptions === "string"
-      ? await getDefaultOptions(clientOptions, overrideOptions)
+      ? getDefaultOptions(clientOptions, overrideOptions)
       : clientOptions;
 
   const {
@@ -185,11 +185,17 @@ export const connect = async (
 
   // cleanup any hanging registry apps
   logger.debug("Cleaning up registry apps");
-  await client.cleanupRegistryApps();
+  try {
+    await client.cleanupRegistryApps();
+  } catch (e) {
+    logger.error(
+      `Could not clean up registry: ${e.stack || e.message}... will attempt again on next connection`,
+    );
+  }
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
-  logger.debug("Reclaiming pending async transfers");
+  logger.info("Reclaiming pending async transfers");
   // NOTE: Removing the following await results in a subtle race condition during bot tests.
   //       Don't remove this await again unless you really know what you're doing & bot tests pass
   // no need to await this if it needs collateral
@@ -199,7 +205,7 @@ export const connect = async (
     await client.reclaimPendingAsyncTransfers();
   } catch (e) {
     logger.error(
-      `Could not reclaim pending async transfers: ${e}... will attempt again on next connection`,
+      `Could not reclaim pending async transfers: ${e.stack || e.message}... will attempt again on next connection`,
     );
   }
 
@@ -207,10 +213,30 @@ export const connect = async (
   try {
     await client.clientCheckIn();
   } catch (e) {
-    logger.error(`Could not complete node check-in: ${e}... will attempt again on next connection`);
+    logger.error(`Could not complete node check-in: ${e.stack || e.message}... will attempt again on next connection`);
   }
 
-  logTime(logger, start, `Client successfully connected`);
+  // watch for/prune lingering withdrawals
+  const previouslyActive = await client.getUserWithdrawals();
+  if (previouslyActive.length === 0) {
+    logTime(log, start, `Client successfully connected`);
+    return client;
+  }
 
+  try {
+    logger.debug(`Watching for user withdrawals`);
+    const transactions = await client.watchForUserWithdrawal();
+    if (transactions.length > 0) {
+      log.debug(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+    }
+  } catch (e) {
+    logger.error(
+      `Could not complete watching for user withdrawals: ${e.stack ||
+        e.message}... will attempt again on next connection`,
+    );
+  }
+
+  logger.info(`Client ${client.publicIdentifier} connected!`);
+  logTime(log, start, `Client successfully connected`);
   return client;
 };
