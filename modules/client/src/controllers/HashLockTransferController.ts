@@ -1,3 +1,4 @@
+import { DEFAULT_APP_TIMEOUT, HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   ConditionalTransferTypes,
   EventNames,
@@ -7,10 +8,9 @@ import {
   MethodParams,
   PublicParams,
   PublicResults,
-  toBN,
   DefaultApp,
 } from "@connext/types";
-import { DEFAULT_APP_TIMEOUT, HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
+import { toBN } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";

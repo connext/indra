@@ -1,19 +1,18 @@
+import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
+import { MinimumViableMultisig } from "@connext/contracts";
 import {
   AppInstanceJson,
   DefaultApp,
   DepositAppName,
   DepositAppState,
   EventNames,
-  getAddressFromAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
-  toBN,
   CONVENTION_FOR_ETH_ASSET_ID,
   EventPayloads,
 } from "@connext/types";
-import { MinimumViableMultisig } from "@connext/contracts";
-import { DEFAULT_APP_TIMEOUT, DEPOSIT_STATE_TIMEOUT } from "@connext/apps";
+import { getAddressFromAssetId, toBN } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";

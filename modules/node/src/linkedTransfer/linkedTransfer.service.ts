@@ -4,9 +4,8 @@ import {
   NodeResponses,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
-  toBN,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";

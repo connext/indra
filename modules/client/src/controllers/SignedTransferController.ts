@@ -1,3 +1,4 @@
+import { DEFAULT_APP_TIMEOUT, SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
   ConditionalTransferTypes,
   MethodParams,
@@ -7,10 +8,9 @@ import {
   PublicResults,
   SimpleSignedTransferAppName,
   SimpleSignedTransferAppState,
-  toBN,
   DefaultApp,
 } from "@connext/types";
-import { DEFAULT_APP_TIMEOUT, SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
+import { toBN } from "@connext/utils";
 import { Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";

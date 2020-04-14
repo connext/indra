@@ -1,4 +1,5 @@
-import { ILogger, createRandom32ByteHexString } from "@connext/types";
+import { ILogger } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/utils";
 import { BigNumber, bigNumberify, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 

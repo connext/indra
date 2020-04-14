@@ -20,8 +20,8 @@ import {
   HashLockTransferAppState,
   SimpleSignedTransferAppState,
   DepositAppName,
-  getAddressFromAssetId,
 } from "@connext/types";
+import { getAddressFromAssetId } from "@connext/utils";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { MessagingService } from "@connext/messaging";
 import { bigNumberify } from "ethers/utils";

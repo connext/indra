@@ -1,4 +1,5 @@
-import { MinimalTransaction, stringify } from "@connext/types";
+import { MinimalTransaction } from "@connext/types";
+import { stringify } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { TransactionResponse } from "ethers/providers";
 

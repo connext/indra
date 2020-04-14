@@ -3,9 +3,8 @@ import {
   CriticalStateChannelAddresses,
   StateChannelJSON,
   OutcomeType,
-  toBN,
-  stringify,
 } from "@connext/types";
+import { toBN, stringify } from "@connext/utils";
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 import { HashZero, AddressZero, Zero } from "ethers/constants";
 

@@ -1,13 +1,12 @@
 import { generateValidationMiddleware } from "@connext/apps";
+import { ChannelProvider } from "@connext/channel-provider";
 import { Node as CFCore } from "@connext/cf-core";
-
 import {
   CFChannelProviderOptions,
   ChannelMethods,
   ChannelProviderConfig,
   ConditionalTransactionCommitmentJSON,
   ConnextEventEmitter,
-  deBigNumberifyJson,
   EventNames,
   IChannelProvider,
   IChannelSigner,
@@ -19,12 +18,11 @@ import {
   Opcode,
   SetStateCommitmentJSON,
   StateChannelJSON,
-  toBN,
   WalletDepositParams,
   WithdrawalMonitorObject,
   CreateChannelMessage,
 } from "@connext/types";
-import { ChannelProvider } from "@connext/channel-provider";
+import { deBigNumberifyJson, toBN } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";

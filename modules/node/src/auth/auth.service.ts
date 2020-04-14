@@ -1,6 +1,6 @@
-import { verifyChannelMessage, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { MessagingAuthService } from "@connext/messaging";
-import { createRandomBytesHexString, PublicIdentifier } from "@connext/types";
+import { PublicIdentifier } from "@connext/types";
+import { createRandomBytesHexString, verifyChannelMessage, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Injectable, Inject } from "@nestjs/common";
 
 import { ChannelRepository } from "../channel/channel.repository";

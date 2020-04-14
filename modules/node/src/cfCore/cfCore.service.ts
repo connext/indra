@@ -1,6 +1,5 @@
 import { MessagingService } from "@connext/messaging";
 import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
   AppAction,
   ConnextNodeStorePrefix,
@@ -10,11 +9,10 @@ import {
   MethodResults,
   PublicParams,
   StateChannelJSON,
-  stringify,
-  toBN,
   AssetId,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
 import { Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";

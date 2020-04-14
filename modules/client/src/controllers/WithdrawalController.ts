@@ -1,5 +1,4 @@
 import { DEFAULT_APP_TIMEOUT, WITHDRAW_STATE_TIMEOUT, WithdrawCommitment } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
   AppInstanceJson,
   ChannelMethods,
@@ -8,12 +7,12 @@ import {
   MinimalTransaction,
   PublicParams,
   PublicResults,
-  toBN,
   WithdrawAppAction,
   WithdrawAppName,
   WithdrawAppState,
   DefaultApp,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, toBN } from "@connext/utils";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { formatEther, getAddress, hexlify, randomBytes } from "ethers/utils";

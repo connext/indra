@@ -1,4 +1,3 @@
-import { ChannelSigner } from "@connext/utils";
 import { MessagingService } from "@connext/messaging";
 import {
   ChannelMethods,
@@ -15,6 +14,7 @@ import {
   STORE_SCHEMA_VERSION,
   IChannelSigner,
 } from "@connext/types";
+import { ChannelSigner } from "@connext/utils";
 import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 

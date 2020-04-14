@@ -1,11 +1,10 @@
 import { HASHLOCK_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
-  bigNumberifyJson,
   HashLockTransferAppName,
   HashLockTransferAppState,
   HashLockTransferStatus,
 } from "@connext/types";
+import { bigNumberifyJson, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 

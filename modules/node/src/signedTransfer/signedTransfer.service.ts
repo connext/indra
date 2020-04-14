@@ -1,6 +1,5 @@
 import { SIGNED_TRANSFER_STATE_TIMEOUT } from "@connext/apps";
 import {
-  bigNumberifyJson,
   Bytes32,
   NodeResponses,
   SignedTransferStatus,
@@ -8,7 +7,7 @@ import {
   SimpleSignedTransferAppState,
   Address,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { bigNumberifyJson, getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 

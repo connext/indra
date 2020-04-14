@@ -1,5 +1,6 @@
 import { MessagingService } from "@connext/messaging";
-import { bigNumberifyJson, NodeResponses, SimpleSignedTransferAppState } from "@connext/types";
+import { NodeResponses, SimpleSignedTransferAppState } from "@connext/types";
+import { bigNumberifyJson } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 

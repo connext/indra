@@ -1,21 +1,18 @@
 import {
   AppRegistry,
-  bigNumberifyJson,
-  delay,
   IChannelProvider,
   ILoggerService,
   INodeApiClient,
   NodeResponses,
-  stringify,
   IMessagingService,
   StringMapping,
 } from "@connext/types";
+import { bigNumberifyJson, delay, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
 import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT } from "./lib";
 import { NodeInitializationParameters } from "./types";
-import { invalidAddress } from "./validation";
 
 const sendFailed = "Failed to send message";
 

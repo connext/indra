@@ -1,17 +1,15 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
-  calculateExchange,
   DefaultApp,
-  getAddressFromAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
   SimpleSwapAppState,
-  toBN,
   SimpleTwoPartySwapAppName,
   Address,
 } from "@connext/types";
+import { calculateExchange, getAddressFromAssetId, toBN } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, parseEther } from "ethers/utils";
 

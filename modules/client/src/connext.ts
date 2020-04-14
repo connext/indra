@@ -1,8 +1,6 @@
 import { SupportedApplications } from "@connext/apps";
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { MessagingService } from "@connext/messaging";
 import {
-  getAddressFromAssetId,
   Address,
   AppAction,
   AppInstanceJson,
@@ -14,7 +12,6 @@ import {
   ChannelProviderConfig,
   ConditionalTransferTypes,
   ConnextClientStorePrefix,
-  createRandom32ByteHexString,
   DefaultApp,
   DepositAppName,
   DepositAppState,
@@ -39,6 +36,7 @@ import {
   CONVENTION_FOR_ETH_ASSET_ID,
   WithdrawalMonitorObject,
 } from "@connext/types";
+import { createRandom32ByteHexString, getSignerAddressFromPublicIdentifier, getAddressFromAssetId } from "@connext/utils";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -57,7 +55,7 @@ import {
   SwapController,
   WithdrawalController,
 } from "./controllers";
-import { stringify, withdrawalKey } from "./lib";
+import { stringify } from "./lib";
 import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
 

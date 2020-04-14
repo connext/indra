@@ -1,5 +1,6 @@
 import { MessagingService } from "@connext/messaging";
-import { bigNumberifyJson, StateChannelJSON, stringify, RebalanceProfile } from "@connext/types";
+import { StateChannelJSON, RebalanceProfile } from "@connext/types";
+import { bigNumberifyJson, stringify } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 

@@ -1,11 +1,10 @@
 import { MessagingService } from "@connext/messaging";
 import {
-  bigNumberifyJson,
   LinkedTransferStatus,
   NodeResponses,
   SimpleLinkedTransferAppState,
-  stringify,
 } from "@connext/types";
+import { bigNumberifyJson, stringify } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 

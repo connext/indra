@@ -3,16 +3,15 @@ import {
   ConditionalTransferTypes,
   EventNames,
   EventPayloads,
-  getAddressFromAssetId,
   MethodParams,
   PublicParams,
   PublicResults,
   SimpleLinkedTransferAppName,
   SimpleLinkedTransferAppState,
-  toBN,
   DefaultApp,
   CONVENTION_FOR_ETH_ASSET_ID,
 } from "@connext/types";
+import { getAddressFromAssetId, toBN } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 
 import { createLinkedHash, stringify } from "../lib";

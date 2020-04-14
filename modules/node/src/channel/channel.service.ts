@@ -1,12 +1,10 @@
-import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import {
-  maxBN,
   MethodResults,
   NodeResponses,
   RebalanceProfile as RebalanceProfileType,
   StateChannelJSON,
-  stringify,
 } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, maxBN, stringify } from "@connext/utils";
 import { Injectable, HttpService } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { AddressZero, Zero } from "ethers/constants";
