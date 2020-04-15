@@ -172,7 +172,7 @@ async function sendMultisigDeployTx(
       if (tryCount > 1) {
         log.debug(`Deploying multisig failed on first try, but succeeded on try #${tryCount}`);
       }
-      log.info(`Multisig deployment complete fro ${stateChannel.multisigAddress}`);
+      log.info(`Multisig deployment complete for ${stateChannel.multisigAddress}`);
       return tx;
     } catch (e) {
       error = e;
