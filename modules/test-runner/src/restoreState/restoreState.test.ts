@@ -1,8 +1,9 @@
-import { IConnextClient, IChannelSigner, EventNames, EventPayloads } from "@connext/types";
+import { IConnextClient, IChannelSigner, EventNames, EventPayloads, StoreTypes } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
 import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM, fundChannel, TOKEN_AMOUNT_SM, env } from "../util";
-import { getRandomChannelSigner, stringify } from "@connext/utils";
+import { getRandomChannelSigner, stringify, delay } from "@connext/utils";
+import { ConnextStore } from "@connext/store";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -12,7 +13,7 @@ describe("Restore State", () => {
 
   beforeEach(async () => {
     signerA = getRandomChannelSigner(env.ethProviderUrl);
-    clientA = await createClient({ signer: signerA });
+    clientA = await createClient({ signer: signerA, store: new ConnextStore(StoreTypes.LocalStorage) });
     tokenAddress = clientA.config.contractAddresses.Token;
     nodeSignerAddress = clientA.nodeSignerAddress;
   });
@@ -99,13 +100,9 @@ describe("Restore State", () => {
         (msg: EventPayloads.LinkedTransferFailed) => {
           return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg, 2)}`);
       });
-      clientA.on(
-        EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, 
-        (msg: EventPayloads.LinkedTransferUnlocked) => {
-          return resolve();
-      });
       clientA = await createClient({ 
         signer: signerA, 
+        store: new ConnextStore(StoreTypes.LocalStorage),
       });
       expect(clientA.signerAddress).to.be.eq(signerA.address);
       expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
