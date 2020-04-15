@@ -523,55 +523,22 @@ class App extends React.Component {
 
     if (availableWeiToSwap.isZero()) {
       // can happen if the balance.channel.ether.wad is 1 due to rounding
-      console.debug(`Will not exchange 0 wei. This is still weird, so here are some logs:`);
-      console.debug(`   - maxSwap: ${maxSwap.toString()}`);
-      console.debug(`   - swapRate: ${swapRate.toString()}`);
-      console.debug(`   - balance.channel.ether.wad: ${balance.channel.ether.wad.toString()}`);
+      console.warn(`Will not exchange 0 wei. This is still weird, so here are some logs:`);
+      console.warn(`   - maxSwap: ${maxSwap.toString()}`);
+      console.warn(`   - swapRate: ${swapRate.toString()}`);
+      console.warn(`   - balance.channel.ether.wad: ${balance.channel.ether.wad.toString()}`);
       return;
     }
 
-    const hubSignerAddresss = connext.utils.getSignerAddressFromPublicIdentifier(
-      channel.nodeIdentifier,
-    );
-    // in swap, collateral needed is just weiToToken(availableWeiToSwap)
-    const tokensForWei = weiToToken(availableWeiToSwap, swapRate);
-    let collateral = (await channel.getFreeBalance(token.address))[hubSignerAddresss];
-
     console.log(
-      `Hub token collateral: ${formatEther(collateral)}, amount to swap: ${formatEther(
-        tokensForWei,
-      )}`,
-    );
-    const { collateralizationInFlight } = await channel.getChannel();
-    if (tokensForWei.gt(collateral) && !collateralizationInFlight) {
-      console.log(`Requesting more collateral...`);
-      await channel.requestCollateral(token.address);
-      collateral = (await channel.getFreeBalance(token.address))[hubSignerAddresss];
-      console.debug(
-        `[after collateral request] Hub token collateral: ${formatEther(
-          collateral,
-        )}, amount to swap: ${formatEther(tokensForWei)}`,
-      );
-      // dont return here, will have added the collateral possible
-      // upon return of request collateral function
-    }
-
-    // depending on payment profile for user and amount to swap,
-    // the amount the hub collateralized could be lte token equivalent
-    // of client eth deposit
-    const weiToSwap = collateral.sub(tokensForWei).gte(Zero)
-      ? availableWeiToSwap.toString() // sufficient collateral for entire swap
-      : tokenToWei(collateral, swapRate).toString(); // insufficient, claim all hubs balance
-
-    console.log(
-      `Attempting to swap ${formatEther(weiToSwap)} eth for ${formatEther(
-        weiToToken(weiToSwap, swapRate),
+      `Attempting to swap ${formatEther(availableWeiToSwap)} eth for ${formatEther(
+        weiToToken(availableWeiToSwap, swapRate),
       )} dai at rate: ${swapRate}`,
     );
     machine.send(["START_SWAP"]);
 
     await channel.swap({
-      amount: weiToSwap,
+      amount: availableWeiToSwap,
       fromAssetId: AddressZero,
       swapRate,
       toAssetId: token.address,
