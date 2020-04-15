@@ -47,7 +47,6 @@ import { TransactionResponse } from "ethers/providers";
 import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
-import { createCFChannelProvider } from "./channelProvider";
 import {
   DepositController,
   HashLockTransferController,
@@ -61,6 +60,7 @@ import {
 } from "./controllers";
 import { ConnextListener } from "./listener";
 import { InternalClientOptions } from "./types";
+import { NodeApiClient } from "./node";
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
@@ -114,7 +114,7 @@ export class ConnextClient implements IConnextClient {
     this.nodeSignerAddress = getSignerAddressFromPublicIdentifier(this.nodeIdentifier);
 
     // establish listeners
-    this.listener = new ConnextListener(opts.channelProvider, this);
+    this.listener = new ConnextListener(this);
 
     // instantiate controllers with log and cf
     this.depositController = new DepositController("DepositController", this);
@@ -183,16 +183,20 @@ export class ConnextClient implements IConnextClient {
 
     // Create a fresh channelProvider & start using that.
     // End goal is to use this to restart the cfNode after restoring state
-    const channelProvider = await createCFChannelProvider({
-      ethProvider: this.ethProvider,
+    await this.messaging.unsubscribe(`${this.publicIdentifier}*`);
+    this.node = await NodeApiClient.init({
+      messaging: this.messaging,
+      messagingUrl: this.config.messagingUrl[0],
       signer: this.signer,
-      node: this.node,
-      logger: this.log.newContext("CFChannelProvider"),
+      nodeUrl: this.node.nodeUrl,
+      ethProvider: this.ethProvider,
+      logger: this.log,
       store: this.store,
+      userIdentifier: this.publicIdentifier,
     });
-    this.node.channelProvider = channelProvider;
-    this.channelProvider = channelProvider;
-    this.listener = new ConnextListener(channelProvider, this);
+    this.channelProvider = this.node.channelProvider;
+    this.listener = new ConnextListener(this);
+    await this.listener.register();
     await this.isAvailable();
   };
 
