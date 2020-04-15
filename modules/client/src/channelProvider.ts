@@ -5,7 +5,7 @@ import {
   CFChannelProviderOptions,
   ChannelMethods,
   ChannelProviderConfig,
-  ConditionalTransactionCommitmentJSON,
+  ConditionalTransactionCommitmentJSON,   
   ConnextClientStorePrefix,
   ConnextEventEmitter,
   CreateChannelMessage,
