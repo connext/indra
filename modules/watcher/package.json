@@ -1,0 +1,27 @@
+{
+  "name": "@connext/watcher",
+  "version": "0.0.1",
+  "description": "Responds to disputes on behalf of a channel participant.",
+  "main": "dist/index.js",
+  "types": "dist/src/index.d.ts",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
+  },
+  "dependencies": {
+    "@connext/apps": "6.0.1",
+    "@connext/contracts": "6.0.1",
+    "@connext/types": "6.0.1",
+    "@connext/utils": "6.0.1",
+    "ethers": "4.0.46",
+    "eventemitter3": "4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "3.7.5"
+  }
+}
