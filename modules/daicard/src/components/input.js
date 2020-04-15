@@ -66,7 +66,7 @@ export const AddressInput = ({ address, setAddress }) => {
       <TextField
         fullWidth
         id="outlined"
-        label="Recipient Public Identifier"
+        label="Recipient Address"
         type="string"
         value={address.display || ""}
         onChange={evt => setAddress(evt.target.value)}
