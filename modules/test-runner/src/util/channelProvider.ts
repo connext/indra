@@ -4,6 +4,7 @@ import {
   IChannelProvider,
   IConnextClient,
   IRpcConnection,
+  ChannelMethods,
 } from "@connext/types";
 
 export const createChannelProvider = async (channel: IConnextClient): Promise<IChannelProvider> => {
@@ -26,6 +27,9 @@ export class MockRpcConnection extends ConnextEventEmitter implements IRpcConnec
     if (!this.connected) {
       // IRL this would take 30s to throw
       throw new Error("RpcConnection: Timeout - JSON-RPC not responded within 30s");
+    }
+    if (payload.method === ChannelMethods.chan_isSigner) {
+      return false;
     }
     const result = await this.channel.channelProvider.send(payload.method, payload.params);
     return result;

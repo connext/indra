@@ -70,18 +70,34 @@ export class LinkedTransferService {
 
     // TODO: handle offline case
     // node is receiver in sender app
-    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
-      paymentId,
-      this.cfCoreService.cfCore.signerAddress,
-    );
+    const senderApp = await this
+      .appInstanceRepository
+      .findLinkedTransferAppByPaymentIdAndReceiver(
+        paymentId,
+        this.cfCoreService.cfCore.signerAddress,
+      );
     if (!senderApp) {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
 
     const latestState = senderApp.latestState as SimpleLinkedTransferAppState;
+    if (latestState.preImage !== HashZero) {
+      throw new Error(`Sender app has action, refusing to redeem`);
+    }
     const amount = toBN(latestState.amount);
     const { assetId, linkedHash } = latestState;
     const amountBN = bigNumberify(amount);
+
+    // check if receiver app exists
+    const receiverApp = await this
+      .appInstanceRepository
+      .findLinkedTransferAppByPaymentIdAndReceiver(
+        paymentId, 
+        getSignerAddressFromPublicIdentifier(userIdentifier),
+      );
+    if (receiverApp) {
+      throw new Error(`Found existing receiver app, refusing to install receiver app for paymentId ${paymentId}`);
+    }
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
 

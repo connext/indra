@@ -1,25 +1,25 @@
 import { JsonRpcProvider } from "ethers/providers";
 
+import { INodeApiClient } from "./api";
 import { Address, Bytes32, DecString, PublicIdentifier, PublicKey, UrlString } from "./basic";
-import { ContractAddresses } from "./contracts";
 import { IChannelSigner } from "./crypto";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
 import { MethodNames } from "./methods";
 import { WithdrawalMonitorObject, IClientStore } from "./store";
 import { StateChannelJSON } from "./state";
-import { ILockService } from "./lock";
 import { enumify } from "./utils";
 import {
   ConditionalTransactionCommitmentJSON,
   SetStateCommitmentJSON,
   MinimalTransaction,
 } from "./commitments";
-import { IMessagingService } from "./messaging";
 
 export const ChannelMethods = enumify({
   ...MethodNames,
+  chan_isSigner: "chan_isSigner",
   chan_config: "chan_config",
+  chan_enable: "chan_enable",
   chan_signMessage: "chan_signMessage",
   chan_encrypt: "chan_encrypt",
   chan_decrypt: "chan_decrypt",
@@ -31,6 +31,8 @@ export const ChannelMethods = enumify({
   chan_createSetupCommitment: "chan_createSetupCommitment",
   chan_createSetStateCommitment: "chan_createSetStateCommitment",
   chan_createConditionalCommitment: "chan_createConditionalCommitment",
+  chan_getSchemaVersion: "chan_getSchemaVersion",
+  chan_updateSchemaVersion: "chan_updateSchemaVersion",
 });
 export type ChannelMethods = typeof ChannelMethods[keyof typeof ChannelMethods];
 
@@ -44,12 +46,8 @@ export type ChannelProviderConfig = {
 export interface CFChannelProviderOptions {
   ethProvider: JsonRpcProvider;
   signer: IChannelSigner;
-  lockService?: ILockService;
+  node: INodeApiClient;
   logger?: ILoggerService;
-  messaging: IMessagingService;
-  contractAddresses: ContractAddresses;
-  nodeConfig: any;
-  nodeUrl: UrlString;
   store: IClientStore;
 }
 
@@ -93,7 +91,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // GETTERS / SETTERS
-  isSigner: boolean;
   config: ChannelProviderConfig | undefined;
   multisigAddress: Address | undefined;
   signerAddress: Address | undefined;
@@ -105,6 +102,7 @@ export interface IChannelProvider extends ConnextEventEmitter {
 
   ///////////////////////////////////
   // SIGNER METHODS
+  isSigner(): Promise<boolean>;
   signMessage(message: string): Promise<string>;
   encrypt(message: string, publicKey: PublicKey): Promise<string>;
   decrypt(encryptedPreImage: string): Promise<string>;
@@ -128,4 +126,6 @@ export interface IChannelProvider extends ConnextEventEmitter {
     appIdentityHash: Bytes32,
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void>;
+  getSchemaVersion(): Promise<number>;
+  updateSchemaVersion(version?: number): Promise<void>;
 }

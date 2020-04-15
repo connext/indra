@@ -97,7 +97,7 @@ export class AppRegistryService implements OnModuleInit {
         );
         if (!depositReceipt) {
           throw new Error(
-            `Could not collateralize sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
+            `Could not obtain sufficient collateral to install app for channel ${installerChannel.multisigAddress}.`,
           );
         }
       }

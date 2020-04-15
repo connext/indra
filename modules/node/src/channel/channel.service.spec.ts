@@ -43,8 +43,8 @@ class MockChannelRepository extends ChannelRepository {
 }
 
 class MockOnchainTransactionRepository extends OnchainTransactionRepository {
-  async addCollateralization(): Promise<OnchainTransaction> {
-    return new OnchainTransaction();
+  async addCollateralization(): Promise<void> {
+    return;
   }
 }
 

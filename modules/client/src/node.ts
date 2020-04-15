@@ -8,13 +8,17 @@ import {
   NATS_TIMEOUT,
   NodeResponses,
   StringMapping,
+  ChannelMethods,
+  NodeInitializationParameters,
+  AsyncNodeInitializationParameters,
 } from "@connext/types";
 import { bigNumberifyJson, delay, logTime, stringify } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { getAddress, Transaction } from "ethers/utils";
 import { v4 as uuid } from "uuid";
 
-import { NodeInitializationParameters } from "./types";
+import { createCFChannelProvider } from "./channelProvider";
+import { createMessagingService } from "./messaging";
 
 const sendFailed = "Failed to send message";
 
@@ -23,6 +27,78 @@ const sendFailed = "Failed to send message";
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
+  public static async init(opts: AsyncNodeInitializationParameters) {
+    let getSignature: (msg: string) => Promise<string>;
+    let userIdentifier: string;
+    let messaging: IMessagingService;
+    let channelProvider: IChannelProvider;
+    const {
+      ethProvider,
+      channelProvider: providedChannelProvider,
+      signer,
+      logger,
+      nodeUrl,
+      messaging: providedMessaging,
+      messagingUrl,
+    } = opts;
+
+    if (signer) {
+      getSignature = (msg: string) => signer.signMessage(msg);
+      userIdentifier = signer.publicIdentifier;
+    } else if (providedChannelProvider) {
+      getSignature = async (message: string) => {
+        const sig = await providedChannelProvider.send(ChannelMethods.chan_signMessage, {
+          message,
+        });
+        return sig;
+      };
+      userIdentifier = providedChannelProvider.config.userIdentifier;
+    } else {
+      throw new Error("Must provide channelProvider or signer");
+    }
+
+    if (!providedMessaging) {
+      messaging = await createMessagingService(
+        logger,
+        nodeUrl,
+        userIdentifier,
+        getSignature,
+        messagingUrl,
+      );
+    } else {
+      messaging = providedMessaging;
+      await messaging.connect();
+    }
+
+    const node = new NodeApiClient({ ...opts, messaging });
+    const config = await node.getConfig();
+    node.userIdentifier = userIdentifier;
+
+    if (!providedChannelProvider) {
+      // ensure that node and user identifiers are different
+      if (config.nodeIdentifier === signer.publicIdentifier) {
+        throw new Error(
+          "Client must be instantiated with a signer that is different from the node's",
+        );
+      }
+
+      if (!opts.store) {
+        "Client must be instanatied with a store if no channelProvider is available";
+      }
+
+      channelProvider = await createCFChannelProvider({
+        ethProvider,
+        signer,
+        node,
+        logger,
+        store: opts.store,
+      });
+      logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
+      node.channelProvider = channelProvider;
+    }
+    return node;
+  }
+
   public nodeUrl: string;
   public messaging: IMessagingService;
   public latestSwapRates: StringMapping = {};
@@ -30,6 +106,7 @@ export class NodeApiClient implements INodeApiClient {
 
   private _userIdentifier: string | undefined;
   private _nodeIdentifier: string | undefined;
+  private _config: NodeResponses.GetConfig | undefined;
   private _channelProvider: IChannelProvider | undefined;
 
   constructor(opts: NodeInitializationParameters) {
@@ -41,21 +118,8 @@ export class NodeApiClient implements INodeApiClient {
     this.nodeUrl = opts.nodeUrl;
   }
 
-  public static async config(nodeUrl: string): Promise<NodeResponses.GetConfig> {
-    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(`${nodeUrl}/config`);
-    return response.data;
-  }
-
   ////////////////////////////////////////
   // GETTERS/SETTERS
-  get channelProvider(): IChannelProvider | undefined {
-    return this._channelProvider;
-  }
-
-  set channelProvider(channelProvider: IChannelProvider) {
-    this._channelProvider = channelProvider;
-  }
-
   get userIdentifier(): string | undefined {
     return this._userIdentifier;
   }
@@ -70,6 +134,22 @@ export class NodeApiClient implements INodeApiClient {
 
   set nodeIdentifier(nodeAddress: string) {
     this._nodeIdentifier = nodeAddress;
+  }
+
+  get config(): NodeResponses.GetConfig | undefined {
+    return this._config;
+  }
+
+  set config(config: NodeResponses.GetConfig) {
+    this._config = config;
+  }
+
+  get channelProvider(): IChannelProvider | undefined {
+    return this._channelProvider;
+  }
+
+  set channelProvider(channelProvider: IChannelProvider) {
+    this._channelProvider = channelProvider;
   }
 
   ////////////////////////////////////////
@@ -101,11 +181,13 @@ export class NodeApiClient implements INodeApiClient {
     return response.data;
   }
 
-  public async config(): Promise<NodeResponses.GetConfig> {
-    const response: AxiosResponse<NodeResponses.GetConfig> = await axios.get(
+  public async getConfig(): Promise<NodeResponses.GetConfig> {
+    const { data: config }: AxiosResponse<NodeResponses.GetConfig> = await axios.get(
       `${this.nodeUrl}/config`,
     );
-    return response.data;
+    this.config = config;
+    this.nodeIdentifier = config.nodeIdentifier;
+    return config;
   }
 
   public async createChannel(): Promise<NodeResponses.CreateChannel> {

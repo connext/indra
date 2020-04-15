@@ -117,11 +117,11 @@ export class ConnextListener extends ConnextEventEmitter {
         this.log.debug(`Received proposal from our own node, doing nothing ${time()}`);
         return;
       }
+      this.handleAppProposal(params, appIdentityHash, from);
+      this.log.info(`Done processing propose install event ${time()}`);
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
-      this.handleAppProposal(params, appIdentityHash, from);
-      this.log.info(`Done processing propose install event ${time()}`);
     },
     PROTOCOL_MESSAGE_EVENT: (msg: ProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
@@ -134,8 +134,7 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     UPDATE_STATE_EVENT: async (msg: UpdateStateMessage): Promise<void> => {
       this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
-      const appInstance = (await this.connext.getAppInstance(msg.data.appIdentityHash))
-        .appInstance;
+      const appInstance = (await this.connext.getAppInstance(msg.data.appIdentityHash)).appInstance;
       const state = msg.data.newState as WithdrawAppState;
       const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
         return app.appDefinitionAddress === appInstance.appInterface.addr;
@@ -147,10 +146,7 @@ export class ConnextListener extends ConnextEventEmitter {
           assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
           nonce: state.nonce,
         };
-        await this.connext.saveWithdrawCommitmentToStore(
-          params,
-          state.signatures,
-        );
+        await this.connext.saveWithdrawCommitmentToStore(params, state.signatures);
       }
     },
     WITHDRAWAL_CONFIRMED_EVENT: (msg: UninstallMessage): void => {
@@ -164,9 +160,9 @@ export class ConnextListener extends ConnextEventEmitter {
     },
   };
 
-  constructor(channelProvider: IChannelProvider, connext: ConnextClient) {
+  constructor(connext: ConnextClient) {
     super();
-    this.channelProvider = channelProvider;
+    this.channelProvider = connext.channelProvider;
     this.connext = connext;
     this.log = connext.log.newContext("ConnextListener");
   }
@@ -216,7 +212,7 @@ export class ConnextListener extends ConnextEventEmitter {
             result: { appInstance },
           },
         } = msg;
-        await this.connext.messaging.publish(
+        await this.connext.node.messaging.publish(
           `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appInstance.appIdentityHash}.uninstall`,
           appInstance,
         );
@@ -233,7 +229,7 @@ export class ConnextListener extends ConnextEventEmitter {
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
     const subject = `${this.connext.publicIdentifier}.online`;
-    await this.connext.messaging.subscribe(
+    await this.connext.node.messaging.subscribe(
       subject,
       async (msg: any): Promise<any> => {
         if (!msg.reply) {
@@ -242,7 +238,7 @@ export class ConnextListener extends ConnextEventEmitter {
         }
 
         const response = true;
-        this.connext.messaging.publish(msg.reply, {
+        this.connext.node.messaging.publish(msg.reply, {
           err: null,
           response,
         });
@@ -253,7 +249,7 @@ export class ConnextListener extends ConnextEventEmitter {
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
     const subject = `*.channel.*.transfer.linked.to.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(subject, async (msg: any) => {
+    await this.connext.node.messaging.subscribe(subject, async (msg: any) => {
       this.log.debug(`Received message for ${subject} subscription`);
       if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
@@ -336,14 +332,20 @@ export class ConnextListener extends ConnextEventEmitter {
       // the proposal is automatically removed from the store
       await this.connext.installApp(appIdentityHash);
     } catch (e) {
-      console.error(`Caught error: ${e.message}`);
-      await this.connext.rejectInstallApp(appIdentityHash);
+      this.log.error(`Caught error: ${e.message}`);
+      // TODO: first proposal after reset is responded to
+      // twice
+      if (e.message.includes("No proposed AppInstance exists")) {
+        return;
+      } else {
+        await this.connext.rejectInstallApp(appIdentityHash);
+      }
       throw e;
     }
     // install and run post-install tasks
     await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
     const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
-    await this.connext.messaging.publish(
+    await this.connext.node.messaging.publish(
       `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
       stringify(appInstance),
     );
@@ -364,67 +366,58 @@ export class ConnextListener extends ConnextEventEmitter {
         const initalState = params.initialState as SimpleSignedTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
-        this.connext.emit(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
-          {
-            amount,
-            appIdentityHash,
-            assetId,
-            meta,
-            sender: meta["sender"],
-            transferMeta: {
-              signer: initalState.signer,
-            } as CreatedSignedTransferMeta,
-            type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
-            paymentId: initalState.paymentId,
-            recipient: meta["recipient"],
-          } as EventPayloads.SignedTransferReceived,
-        );
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, {
+          amount,
+          appIdentityHash,
+          assetId,
+          meta,
+          sender: meta["sender"],
+          transferMeta: {
+            signer: initalState.signer,
+          } as CreatedSignedTransferMeta,
+          type: ConditionalTransferTypes[ConditionalTransferTypes.SignedTransfer],
+          paymentId: initalState.paymentId,
+          recipient: meta["recipient"],
+        } as EventPayloads.SignedTransferReceived);
         break;
       }
       case HashLockTransferAppName: {
         const initalState = params.initialState as HashLockTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
-        this.connext.emit(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
-          {
-            amount,
-            appIdentityHash,
-            assetId,
-            meta,
-            sender: meta["sender"],
-            transferMeta: {
-              lockHash: initalState.lockHash,
-              timelock: initalState.timelock,
-            } as CreatedHashLockTransferMeta,
-            type: ConditionalTransferTypes[ConditionalTransferTypes.HashLockTransfer],
-            paymentId: initalState.lockHash,
-            recipient: meta["recipient"],
-          } as EventPayloads.HashLockTransferReceived,
-        );
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, {
+          amount,
+          appIdentityHash,
+          assetId,
+          meta,
+          sender: meta["sender"],
+          transferMeta: {
+            lockHash: initalState.lockHash,
+            timelock: initalState.timelock,
+          } as CreatedHashLockTransferMeta,
+          type: ConditionalTransferTypes[ConditionalTransferTypes.HashLockTransfer],
+          paymentId: initalState.lockHash,
+          recipient: meta["recipient"],
+        } as EventPayloads.HashLockTransferReceived);
         break;
       }
       case SimpleLinkedTransferAppName: {
         const initalState = params.initialState as SimpleLinkedTransferAppState;
         const { initiatorDepositAssetId: assetId, meta } = params;
         const amount = initalState.coinTransfers[0].amount;
-        this.connext.emit(
-          EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT,
-          {
-            amount,
-            appIdentityHash,
-            assetId,
-            meta,
-            sender: meta["sender"],
-            transferMeta: {
-              encryptedPreImage: meta["encryptedPreImage"],
-            } as CreatedLinkedTransferMeta,
-            type: ConditionalTransferTypes[ConditionalTransferTypes.LinkedTransfer],
-            paymentId: initalState.paymentId,
-            recipient: meta["recipient"],
-          } as EventPayloads.LinkedTransferReceived,
-        );
+        this.connext.emit(EventNames.CONDITIONAL_TRANSFER_RECEIVED_EVENT, {
+          amount,
+          appIdentityHash,
+          assetId,
+          meta,
+          sender: meta["sender"],
+          transferMeta: {
+            encryptedPreImage: meta["encryptedPreImage"],
+          } as CreatedLinkedTransferMeta,
+          type: ConditionalTransferTypes[ConditionalTransferTypes.LinkedTransfer],
+          paymentId: initalState.paymentId,
+          recipient: meta["recipient"],
+        } as EventPayloads.LinkedTransferReceived);
         break;
       }
     }

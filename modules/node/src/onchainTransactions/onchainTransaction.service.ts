@@ -8,6 +8,7 @@ import { ConfigService } from "../config/config.service";
 
 import { OnchainTransactionRepository } from "./onchainTransaction.repository";
 import { LoggerService } from "../logger/logger.service";
+import { OnchainTransaction } from "./onchainTransaction.entity";
 
 const NO_TX_HASH = "no transaction hash found in tx response";
 export const MAX_RETRIES = 3;
@@ -51,6 +52,10 @@ export class OnchainTransactionService {
     const tx = await this.sendTransaction(transaction);
     await this.onchainTransactionRepository.addCollateralization(tx, channel);
     return tx;
+  }
+
+  findByHash(hash: string): Promise<OnchainTransaction | undefined> {
+    return this.onchainTransactionRepository.findByHash(hash);
   }
 
   private async sendTransaction(

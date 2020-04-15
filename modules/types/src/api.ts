@@ -1,4 +1,5 @@
 import { AppRegistry } from "./app";
+
 import {
   Address,
   Bytes32,
@@ -9,18 +10,40 @@ import {
   UrlString,
 } from "./basic";
 import { IChannelProvider } from "./channelProvider";
+import { IChannelSigner } from "./crypto";
 import { NodeResponses } from "./node";
 import { IMessagingService } from "./messaging";
 import { ILoggerService } from "./logger";
+import { JsonRpcProvider } from "ethers/providers";
+import { IClientStore } from "./store";
+
+export interface AsyncNodeInitializationParameters extends NodeInitializationParameters {
+  ethProvider: JsonRpcProvider;
+  messaging: IMessagingService;
+  messagingUrl?: string;
+  store?: IClientStore;
+  signer?: IChannelSigner;
+  channelProvider?: IChannelProvider;
+}
+
+export interface NodeInitializationParameters {
+  nodeUrl: string;
+  messaging: IMessagingService;
+  logger?: ILoggerService;
+  userIdentifier?: Address;
+  nodeIdentifier?: Address;
+  channelProvider?: IChannelProvider;
+}
 
 export interface INodeApiClient {
   nodeUrl: UrlString;
   messaging: IMessagingService;
   latestSwapRates: StringMapping;
   log: ILoggerService;
-  channelProvider: IChannelProvider | undefined;
   userIdentifier: PublicIdentifier | undefined;
   nodeIdentifier: PublicIdentifier | undefined;
+  config: NodeResponses.GetConfig | undefined;
+  channelProvider: IChannelProvider | undefined;
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
   appRegistry(
     appDetails?:
@@ -30,7 +53,7 @@ export interface INodeApiClient {
         }
       | { appDefinitionAddress: Address },
   ): Promise<AppRegistry>;
-  config(): Promise<NodeResponses.GetConfig>;
+  getConfig(): Promise<NodeResponses.GetConfig>;
   createChannel(): Promise<NodeResponses.CreateChannel>;
   clientCheckIn(): Promise<void>;
   getChannel(): Promise<NodeResponses.GetChannel>;

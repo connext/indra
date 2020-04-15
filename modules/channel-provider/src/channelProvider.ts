@@ -29,7 +29,7 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config: ChannelProviderConfig = await this._send(ChannelMethods.chan_config);
+        const config: ChannelProviderConfig = await this._send(ChannelMethods.chan_enable);
         if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;
@@ -83,6 +83,12 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       case ChannelMethods.chan_createConditionalCommitment:
         result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
         break;
+      case ChannelMethods.chan_getSchemaVersion:
+        result = await this.getSchemaVersion();
+        break;
+      case ChannelMethods.chan_updateSchemaVersion:
+        result = await this.updateSchemaVersion(params.version);
+        break;
       default:
         result = await this._send(method, params);
         break;
@@ -97,10 +103,6 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ///////////////
   /// // GETTERS / SETTERS
-  get isSigner(): boolean {
-    return false;
-  }
-
   get config(): ChannelProviderConfig | undefined {
     return this._config;
   }
@@ -141,6 +143,10 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
+  public isSigner() {
+    return this._send(ChannelMethods.chan_isSigner);
+  }
+
   public signMessage(message: string): Promise<string> {
     return this._send(ChannelMethods.chan_signMessage, { message });
   }
@@ -216,6 +222,14 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
       commitment,
     });
   };
+
+  public getSchemaVersion(): Promise<number> {
+    return this._send(ChannelMethods.chan_getSchemaVersion);
+  }
+
+  public updateSchemaVersion(version?: number): Promise<void> {
+    return this._send(ChannelMethods.chan_updateSchemaVersion, { version });
+  }
 
   /// ////////////////////////////////////////////
   /// // PRIVATE METHODS

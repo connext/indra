@@ -30,6 +30,7 @@ import { SetStateCommitment } from "../setStateCommitment/setStateCommitment.ent
 import { Channel } from "../channel/channel.entity";
 import { ConditionalTransactionCommitment } from "../conditionalCommitment/conditionalCommitment.entity";
 import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
+import { stringify } from "@connext/utils";
 
 @Injectable()
 export class CFCoreStore implements IStoreService {
@@ -469,15 +470,29 @@ export class CFCoreStore implements IStoreService {
     commitment: ConditionalTransactionCommitmentJSON,
   ): Promise<void> {
     const app = await this.appInstanceRepository.findByIdentityHashOrThrow(appIdentityHash);
-    const commitmentEntity = new ConditionalTransactionCommitment();
-    commitmentEntity.app = app;
-    commitmentEntity.freeBalanceAppIdentityHash = commitment.freeBalanceAppIdentityHash;
-    commitmentEntity.multisigAddress = commitment.multisigAddress;
-    commitmentEntity.multisigOwners = commitment.multisigOwners;
-    commitmentEntity.interpreterAddr = commitment.interpreterAddr;
-    commitmentEntity.interpreterParams = commitment.interpreterParams;
-    commitmentEntity.signatures = commitment.signatures;
-    await this.conditionalTransactionCommitmentRepository.save(commitmentEntity);
+
+    const existing = await this
+      .conditionalTransactionCommitmentRepository
+      .findByAppIdentityHash(appIdentityHash);
+
+    if (existing) {
+      throw new Error(`Found existing conditional transaction commitment for ${appIdentityHash}`);
+    }
+
+    await this.conditionalTransactionCommitmentRepository
+      .createQueryBuilder()
+      .insert()
+      .into(ConditionalTransactionCommitment)
+      .values({
+        freeBalanceAppIdentityHash: commitment.freeBalanceAppIdentityHash,
+        multisigAddress: commitment.multisigAddress,
+        multisigOwners: commitment.multisigOwners,
+        interpreterAddr: commitment.interpreterAddr,
+        interpreterParams: commitment.interpreterParams,
+        signatures: commitment.signatures,
+        app,
+      })
+      .execute();
   }
 
   async updateConditionalTransactionCommitment(
