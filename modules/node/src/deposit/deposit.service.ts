@@ -20,7 +20,10 @@ import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
-import { OnchainTransaction, TransactionReason } from "../onchainTransactions/onchainTransaction.entity";
+import {
+  OnchainTransaction,
+  TransactionReason,
+} from "../onchainTransactions/onchainTransaction.entity";
 
 @Injectable()
 export class DepositService {
@@ -34,22 +37,23 @@ export class DepositService {
     this.log.setContext("DepositService");
   }
 
-  async deposit(channel: Channel, amount: BigNumber, tokenAddress: string): Promise<TransactionReceipt> {
+  async deposit(
+    channel: Channel,
+    amount: BigNumber,
+    tokenAddress: string,
+  ): Promise<TransactionReceipt> {
     // don't allow deposit if user's balance refund app is installed
-    const depositRegistry = await this.appRegistryRepository
-      .findByNameAndNetwork(
-        DepositAppName,
-        (await this.configService.getEthNetwork()).chainId,
-      );
+    const depositRegistry = await this.appRegistryRepository.findByNameAndNetwork(
+      DepositAppName,
+      (await this.configService.getEthNetwork()).chainId,
+    );
     const depositApp = channel.appInstances.filter(
-      app => app.appDefinition === depositRegistry.appDefinitionAddress
-        && app.latestState.assetId === tokenAddress,
+      app =>
+        app.appDefinition === depositRegistry.appDefinitionAddress &&
+        app.latestState.assetId === tokenAddress,
     )[0];
     this.log.debug(`Found deposit app: ${stringify(depositApp, 2)}`);
-    if (
-      depositApp && 
-      depositApp.latestState.transfers[0].to === channel.userIdentifier
-    ) {
+    if (depositApp && depositApp.latestState.transfers[0].to === channel.userIdentifier) {
       throw new Error(
         `Cannot deposit, user has deposit app installed for asset ${tokenAddress}, app: ${depositApp.identityHash}`,
       );
@@ -63,7 +67,7 @@ export class DepositService {
     // deposit app for asset id with node as initiator is already installed
     // send deposit to chain
     let receipt;
-    try { 
+    try {
       const tx = await this.sendDepositToChain(channel, amount, tokenAddress);
       receipt = await tx.wait();
     } catch (e) {
@@ -80,7 +84,9 @@ export class DepositService {
   ): Promise<string | undefined> {
     const appIdentityHash = await this.proposeDepositInstall(channel, tokenAddress);
     if (!appIdentityHash) {
-      throw new Error(`Failed to install deposit app for ${tokenAddress} in channel ${channel.multisigAddress}`);
+      throw new Error(
+        `Failed to install deposit app for ${tokenAddress} in channel ${channel.multisigAddress}`,
+      );
     }
     return appIdentityHash;
   }
@@ -103,7 +109,7 @@ export class DepositService {
     amount: BigNumber,
     tokenAddress: Address,
   ): Promise<TransactionResponse> {
-    // derive the proper minimal transaction for the 
+    // derive the proper minimal transaction for the
     // onchain transaction service
     let tx: MinimalTransaction;
     if (tokenAddress === AddressZero) {
@@ -114,30 +120,31 @@ export class DepositService {
       };
     } else {
       const token = new Contract(
-        tokenAddress, 
-        ERC20.abi as any, 
+        tokenAddress,
+        ERC20.abi as any,
         this.configService.getEthProvider(),
       );
       tx = {
         to: tokenAddress,
         value: 0,
-        data: await token.interface.functions.transfer.encode([
-          channel.multisigAddress,
-          amount,
-        ]),
+        data: token.interface.functions.transfer.encode([channel.multisigAddress, amount]),
       };
     }
     return this.onchainTransactionService.sendDeposit(channel, tx);
   }
 
-  private async proposeDepositInstall (
+  private async proposeDepositInstall(
     channel: Channel,
     tokenAddress: string = AddressZero,
   ): Promise<string | undefined> {
     const ethProvider = this.configService.getEthProvider();
 
     // generate initial totalAmountWithdrawn
-    const multisig = new Contract(channel.multisigAddress, MinimumViableMultisig.abi as any, ethProvider);
+    const multisig = new Contract(
+      channel.multisigAddress,
+      MinimumViableMultisig.abi as any,
+      ethProvider,
+    );
     let startingTotalAmountWithdrawn: BigNumber;
     try {
       startingTotalAmountWithdrawn = await multisig.functions.totalAmountWithdrawn(tokenAddress);
@@ -174,22 +181,21 @@ export class DepositService {
       ],
       multisigAddress: channel.multisigAddress,
       assetId: tokenAddress,
-      startingTotalAmountWithdrawn, 
+      startingTotalAmountWithdrawn,
       startingMultisigBalance,
     };
 
     const res = await this.cfCoreService.proposeAndWaitForInstallApp(
-        channel,
-        initialState,
-        Zero,
-        tokenAddress,
-        Zero,
-        tokenAddress,
-        DepositAppName,
-        { reason: "Node deposit" }, // meta
-        DEPOSIT_STATE_TIMEOUT,
+      channel,
+      initialState,
+      Zero,
+      tokenAddress,
+      Zero,
+      tokenAddress,
+      DepositAppName,
+      { reason: "Node deposit" }, // meta
+      DEPOSIT_STATE_TIMEOUT,
     );
     return res ? res.appIdentityHash : undefined;
-  };
-
+  }
 }

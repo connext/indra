@@ -7,11 +7,7 @@ import {
   NetworkContext,
   PublicIdentifier,
 } from "@connext/types";
-import {
-  delay,
-  getSignerAddressFromPublicIdentifier,
-  stringify,
-} from "@connext/utils";
+import { delay, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -106,13 +102,7 @@ export class DeployStateDepositController extends NodeController {
 
     // Check if the contract has already been deployed on-chain
     if ((await provider.getCode(multisigAddress)) === `0x`) {
-      tx = await sendMultisigDeployTx(
-        signer,
-        channel,
-        networkContext,
-        retryCount,
-        log,
-      );
+      tx = await sendMultisigDeployTx(signer, channel, networkContext, retryCount, log);
     }
 
     return { transactionHash: tx.hash! };
@@ -133,11 +123,7 @@ async function sendMultisigDeployTx(
 
   // make sure that the proxy factory used to deploy is the same as the one
   // used when the channel was created
-  const proxyFactory = new Contract(
-    stateChannel.addresses.proxyFactory, 
-    ProxyFactory.abi, 
-    signer,
-  );
+  const proxyFactory = new Contract(stateChannel.addresses.proxyFactory, ProxyFactory.abi, signer);
 
   const owners = stateChannel.userIdentifiers;
 
@@ -152,10 +138,7 @@ async function sendMultisigDeployTx(
           stateChannel.multisigOwners,
         ]),
         // hash chainId plus nonce for x-chain replay protection
-        solidityKeccak256(
-          ["uint256", "uint256"],
-          [(await provider.getNetwork()).chainId, 0],
-        ), // TODO: Increment nonce as needed
+        solidityKeccak256(["uint256", "uint256"], [(await provider.getNetwork()).chainId, 0]), // TODO: Increment nonce as needed
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,
           gasPrice: provider.getGasPrice(),
@@ -166,6 +149,9 @@ async function sendMultisigDeployTx(
       if (!tx.hash) {
         throw new Error(`${NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT}: ${stringify(tx)}`);
       }
+      log.info(`Sent multisig deployment tx, waiting for tx hash: ${tx.hash}`);
+      await tx.wait();
+      log.info(`Done waiting for tx hash: ${tx.hash}`);
 
       const ownersAreCorrectlySet = await checkForCorrectOwners(
         tx!,
@@ -186,11 +172,14 @@ async function sendMultisigDeployTx(
       if (tryCount > 1) {
         log.debug(`Deploying multisig failed on first try, but succeeded on try #${tryCount}`);
       }
+      log.info(`Multisig deployment complete fro ${stateChannel.multisigAddress}`);
       return tx;
     } catch (e) {
       error = e;
-      log.error(`Channel creation attempt ${tryCount} failed: ${e}.\n
-                    Retrying ${retryCount - tryCount} more times`);
+      log.error(
+        `Channel creation attempt ${tryCount} failed: ${e}.\n Retrying ${retryCount -
+          tryCount} more times`,
+      );
     }
   }
 
