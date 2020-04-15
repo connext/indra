@@ -16,7 +16,7 @@ release=$(shell cat package.json | grep '"version"' | head -n 1 | cut -d '"' -f 
 solc_version=$(shell cat modules/contracts/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(commit) #$(shell echo $(release) | cut -d '.' -f 1-2).0
+backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1-2).0
 
 # If Linux, give the container our uid & gid so we know what to reset permissions to. If Mac, the docker-VM takes care of this for us so pass root's id (ie noop)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo "`id -u`:`id -g`"; fi)
