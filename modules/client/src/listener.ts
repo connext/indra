@@ -117,11 +117,11 @@ export class ConnextListener extends ConnextEventEmitter {
         this.log.debug(`Received proposal from our own node, doing nothing ${time()}`);
         return;
       }
+      this.handleAppProposal(params, appIdentityHash, from);
+      this.log.info(`Done processing propose install event ${time()}`);
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
-      this.handleAppProposal(params, appIdentityHash, from);
-      this.log.info(`Done processing propose install event ${time()}`);
     },
     PROTOCOL_MESSAGE_EVENT: (msg: ProtocolMessage): void => {
       this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
@@ -160,9 +160,9 @@ export class ConnextListener extends ConnextEventEmitter {
     },
   };
 
-  constructor(channelProvider: IChannelProvider, connext: ConnextClient) {
+  constructor(connext: ConnextClient) {
     super();
-    this.channelProvider = channelProvider;
+    this.channelProvider = connext.channelProvider;
     this.connext = connext;
     this.log = connext.log.newContext("ConnextListener");
   }
@@ -333,7 +333,13 @@ export class ConnextListener extends ConnextEventEmitter {
       await this.connext.installApp(appIdentityHash);
     } catch (e) {
       this.log.error(`Caught error: ${e.message}`);
-      await this.connext.rejectInstallApp(appIdentityHash);
+      // TODO: first proposal after reset is responded to
+      // twice
+      if (e.message.includes("No proposed AppInstance exists")) {
+        return;
+      } else {
+        await this.connext.rejectInstallApp(appIdentityHash);
+      }
       throw e;
     }
     // install and run post-install tasks
