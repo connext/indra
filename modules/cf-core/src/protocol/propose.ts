@@ -132,8 +132,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
 
-    console.error(`[initiator] proposed app instance (${appInstanceProposal.identityHash}): ${stringify(proposedAppInstance)}`);
-    console.error(`[initiator] setStateCommitment: ${stringify(setStateCommitment)}`);
     substart = Date.now();
     // 6ms
     const initiatorSignatureOnInitialState = yield [
@@ -295,9 +293,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const setStateCommitment = getSetStateCommitment(context, proposedAppInstance as AppInstance);
-
-    console.error(`[responder] proposed app instance (${appInstanceProposal.identityHash}): ${stringify(proposedAppInstance)}`);
-    console.error(`[responder] setStateCommitment: ${stringify(setStateCommitment)}`);
 
     // 0ms
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);

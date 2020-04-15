@@ -332,7 +332,7 @@ export class ConnextListener extends ConnextEventEmitter {
       // the proposal is automatically removed from the store
       await this.connext.installApp(appIdentityHash);
     } catch (e) {
-      console.error(`Caught error: ${e.message}`);
+      this.log.error(`Caught error: ${e.message}`);
       await this.connext.rejectInstallApp(appIdentityHash);
       throw e;
     }
