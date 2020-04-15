@@ -57,9 +57,6 @@ export class WithdrawalController extends AbstractController {
       } from multisig to ${recipient}`,
     );
 
-    // TODO: try to remove this with deposit redesign
-    await this.cleanupPendingDeposit(assetId);
-
     let withdrawCommitment: WithdrawCommitment;
     let withdrawerSignatureOnWithdrawCommitment: string;
     try {
@@ -82,6 +79,8 @@ export class WithdrawalController extends AbstractController {
       this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
       this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
+
+      await this.removeWithdrawCommitmentFromStore(transaction)
     } catch (e) {
       this.connext.listener.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
         params,
@@ -115,17 +114,6 @@ export class WithdrawalController extends AbstractController {
       signature: counterpartySignatureOnWithdrawCommitment,
     } as WithdrawAppAction);
     await this.connext.uninstallApp(appInstance.identityHash);
-  }
-
-  private async cleanupPendingDeposit(assetId: string) {
-    /*
-      TODO: We should find some way to avoid this case completely if possible.
-            Otherwise, it's too easy for collisions between deposits and withdraws
-            to occur, which would completely fuck up a user channel.
-            Circle back after deposit redesign is done.
-    */
-    this.log.info(`Rescinding deposit rights before withdrawal`);
-    await this.connext.rescindDepositRights({ assetId });
   }
 
   private async createWithdrawCommitment(
@@ -215,5 +203,19 @@ export class WithdrawalController extends AbstractController {
       withdrawalObject: { tx: minTx, retry: 0 },
     });
     return;
+  }
+
+  public async removeWithdrawCommitmentFromStore(
+    transaction: TransactionResponse,
+  ): Promise<void> {
+    const minTx: MinimalTransaction = {
+      to: transaction.to,
+      value: transaction.value,
+      data: transaction.data
+    }
+    await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
+      withdrawalObject: { tx: minTx, retry: 0 },
+      remove: true,
+    });
   }
 }
