@@ -33,7 +33,6 @@ import { WithdrawSaiDialog } from "./components/withdrawSai";
 import { rootMachine } from "./state";
 import { cleanWalletConnect, migrate, initWalletConnect } from "./utils";
 
-
 const urls = {
   ethProviderUrl:
     process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
@@ -44,12 +43,13 @@ const urls = {
       : chainId.toString() === "4"
       ? "https://rinkeby.hub.connext.network/api/hub"
       : undefined,
-  pisaUrl: chainId =>
-    chainId.toString() === "1"
-      ? "https://connext.pisa.watch"
-      : chainId.toString() === "4"
-      ? "https://connext-rinkeby.pisa.watch"
-      : undefined,
+  // pisaUrl: chainId =>
+  //   chainId.toString() === "1"
+  //     ? "https://connext.pisa.watch"
+  //     : chainId.toString() === "4"
+  //     ? "https://connext-rinkeby.pisa.watch"
+  //     : undefined,
+  pisaUrl: chainId => undefined,
 };
 
 // LogLevel for testing ChannelProvider
