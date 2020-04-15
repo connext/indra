@@ -8,7 +8,7 @@ contract IdentityApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bytes memory)
     {
         return encodedState;

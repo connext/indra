@@ -1,36 +1,25 @@
-import { SupportedApplication } from "@connext/apps";
-import { IMessagingService } from "@connext/messaging";
-import {
-  ILoggerService,
-  ResolveFastSignedTransferResponse,
-  ResolveHashLockTransferResponse,
-} from "@connext/types";
-import { TransactionResponse } from "ethers/providers";
-import { Transaction } from "ethers/utils";
-import uuid from "uuid";
-import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
-  CFCoreTypes,
-  ChannelAppSequences,
-  CreateChannelResponse,
-  GetChannelResponse,
-  GetConfigResponse,
   IChannelProvider,
+  ILoggerService,
+  IMessagingService,
   INodeApiClient,
-  makeChecksumOrEthAddress,
+  NATS_ATTEMPTS,
+  NATS_TIMEOUT,
+  NodeResponses,
+  StringMapping,
+  ChannelMethods,
   NodeInitializationParameters,
-  RebalanceProfile,
-  PendingAsyncTransfer,
-  RequestCollateralResponse,
-  ResolveLinkedTransferResponse,
-  Transfer,
-} from "./types";
-import { invalidXpub } from "./validation";
-import { chan_nodeAuth } from "@connext/types";
+  AsyncNodeInitializationParameters,
+} from "@connext/types";
+import { bigNumberifyJson, delay, logTime, stringify } from "@connext/utils";
+import axios, { AxiosResponse } from "axios";
+import { getAddress, Transaction } from "ethers/utils";
+import { v4 as uuid } from "uuid";
 
-// Include our access token when interacting with these subjects
-const guardedSubjects = [];
+import { createCFChannelProvider } from "./channelProvider";
+import { createMessagingService } from "./messaging";
+
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
@@ -38,47 +27,129 @@ const sendFailed = "Failed to send message";
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
+  public static async init(opts: AsyncNodeInitializationParameters) {
+    let getSignature: (msg: string) => Promise<string>;
+    let userIdentifier: string;
+    let messaging: IMessagingService;
+    let channelProvider: IChannelProvider;
+    const {
+      ethProvider,
+      channelProvider: providedChannelProvider,
+      signer,
+      logger,
+      nodeUrl,
+      messaging: providedMessaging,
+      messagingUrl,
+    } = opts;
+
+    if (signer) {
+      getSignature = (msg: string) => signer.signMessage(msg);
+      userIdentifier = signer.publicIdentifier;
+    } else if (providedChannelProvider) {
+      getSignature = async (message: string) => {
+        const sig = await providedChannelProvider.send(ChannelMethods.chan_signMessage, {
+          message,
+        });
+        return sig;
+      };
+      userIdentifier = providedChannelProvider.config.userIdentifier;
+    } else {
+      throw new Error("Must provide channelProvider or signer");
+    }
+
+    if (!providedMessaging) {
+      messaging = await createMessagingService(
+        logger,
+        nodeUrl,
+        userIdentifier,
+        getSignature,
+        messagingUrl,
+      );
+    } else {
+      messaging = providedMessaging;
+      await messaging.connect();
+    }
+
+    const node = new NodeApiClient({ ...opts, messaging });
+    const config = await node.getConfig();
+    node.userIdentifier = userIdentifier;
+
+    if (!providedChannelProvider) {
+      // ensure that node and user identifiers are different
+      if (config.nodeIdentifier === signer.publicIdentifier) {
+        throw new Error(
+          "Client must be instantiated with a signer that is different from the node's",
+        );
+      }
+
+      if (!opts.store) {
+        "Client must be instanatied with a store if no channelProvider is available";
+      }
+
+      channelProvider = await createCFChannelProvider({
+        ethProvider,
+        signer,
+        node,
+        logger,
+        store: opts.store,
+      });
+      logger.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
+      node.channelProvider = channelProvider;
+    }
+    return node;
+  }
+
+  public nodeUrl: string;
   public messaging: IMessagingService;
-  public latestSwapRates: { [key: string]: string } = {};
+  public latestSwapRates: StringMapping = {};
   public log: ILoggerService;
 
-  private _userPublicIdentifier: string | undefined;
-  private _nodePublicIdentifier: string | undefined;
+  private _userIdentifier: string | undefined;
+  private _nodeIdentifier: string | undefined;
+  private _config: NodeResponses.GetConfig | undefined;
   private _channelProvider: IChannelProvider | undefined;
-  private _authToken: any;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
     this.log = opts.logger.newContext("NodeApiClient");
-    this._userPublicIdentifier = opts.userPublicIdentifier;
-    this._nodePublicIdentifier = opts.nodePublicIdentifier;
+    this._userIdentifier = opts.userIdentifier;
+    this._nodeIdentifier = opts.nodeIdentifier;
     this._channelProvider = opts.channelProvider;
+    this.nodeUrl = opts.nodeUrl;
   }
 
   ////////////////////////////////////////
   // GETTERS/SETTERS
+  get userIdentifier(): string | undefined {
+    return this._userIdentifier;
+  }
+
+  set userIdentifier(userAddress: string) {
+    this._userIdentifier = userAddress;
+  }
+
+  get nodeIdentifier(): string | undefined {
+    return this._nodeIdentifier;
+  }
+
+  set nodeIdentifier(nodeAddress: string) {
+    this._nodeIdentifier = nodeAddress;
+  }
+
+  get config(): NodeResponses.GetConfig | undefined {
+    return this._config;
+  }
+
+  set config(config: NodeResponses.GetConfig) {
+    this._config = config;
+  }
+
   get channelProvider(): IChannelProvider | undefined {
     return this._channelProvider;
   }
 
   set channelProvider(channelProvider: IChannelProvider) {
     this._channelProvider = channelProvider;
-  }
-
-  get userPublicIdentifier(): string | undefined {
-    return this._userPublicIdentifier;
-  }
-
-  set userPublicIdentifier(userXpub: string) {
-    this._userPublicIdentifier = userXpub;
-  }
-
-  get nodePublicIdentifier(): string | undefined {
-    return this._nodePublicIdentifier;
-  }
-
-  set nodePublicIdentifier(nodeXpub: string) {
-    this._nodePublicIdentifier = nodeXpub;
   }
 
   ////////////////////////////////////////
@@ -89,61 +160,67 @@ export class NodeApiClient implements INodeApiClient {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
-    // this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    const lockValue = await this.send(`${this.userIdentifier}.lock.acquire.${lockName}`, {
+      lockTTL: timeout,
+    });
+    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
       retVal = await callback();
     } catch (e) {
       this.log.error(`Failed to execute callback while lock is held: ${e.stack || e.message}`);
     } finally {
-      await this.send(`lock.release.${lockName}`, { lockValue });
-      // this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
+      await this.send(`${this.userIdentifier}.lock.release.${lockName}`, { lockValue });
+      this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
   }
 
-  public async appRegistry(
-    appDetails?:
-      | {
-          name: SupportedApplication;
-          chainId: number;
-        }
-      | { appDefinitionAddress: string },
-  ): Promise<AppRegistry> {
-    return (await this.send("app-registry", { data: appDetails })) as AppRegistry;
+  public async appRegistry(): Promise<AppRegistry> {
+    const response: AxiosResponse<AppRegistry> = await axios.get(`${this.nodeUrl}/app-registry`);
+    return response.data;
   }
 
-  public async config(): Promise<GetConfigResponse> {
-    return (await this.send("config.get")) as GetConfigResponse;
+  public async getConfig(): Promise<NodeResponses.GetConfig> {
+    const { data: config }: AxiosResponse<NodeResponses.GetConfig> = await axios.get(
+      `${this.nodeUrl}/config`,
+    );
+    this.config = config;
+    this.nodeIdentifier = config.nodeIdentifier;
+    return config;
   }
 
-  public async createChannel(): Promise<CreateChannelResponse> {
-    return await this.send(`channel.create.${this.userPublicIdentifier}`);
+  public async createChannel(): Promise<NodeResponses.CreateChannel> {
+    return this.send(`${this.userIdentifier}.channel.create`);
   }
 
-  public async getChannel(): Promise<GetChannelResponse> {
-    return await this.send(`channel.get.${this.userPublicIdentifier}`);
+  public async getChannel(): Promise<NodeResponses.GetChannel> {
+    return this.send(`${this.userIdentifier}.channel.get`);
   }
 
-  public async getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]> {
-    return (await this.send(`transfer.get-pending.${this.userPublicIdentifier}`)) || [];
+  public async getPendingAsyncTransfers(): Promise<NodeResponses.GetPendingAsyncTransfers> {
+    return (await this.send(`${this.userIdentifier}.transfer.get-pending`)) || [];
   }
 
-  // TODO: do we want this? thought this would be a blocking operation...
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
-    return await this.send(`swap-rate.${from}.${to}`);
+    return this.send(`${this.userIdentifier}.swap-rate.${from}.${to}`);
   }
 
-  public async getTransferHistory(): Promise<Transfer[]> {
-    return (await this.send(`transfer.get-history.${this.userPublicIdentifier}`)) || [];
+  public async getTransferHistory(): Promise<NodeResponses.GetTransferHistory> {
+    return (await this.send(`${this.userIdentifier}.transfer.get-history`)) || [];
+  }
+
+  public async getHashLockTransfer(lockHash: string): Promise<NodeResponses.GetHashLockTransfer> {
+    return this.send(`${this.userIdentifier}.transfer.get-hashlock`, {
+      lockHash,
+    });
   }
 
   // TODO: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
-  public async requestCollateral(assetId: string): Promise<RequestCollateralResponse | void> {
+  public async requestCollateral(assetId: string): Promise<NodeResponses.RequestCollateral | void> {
     try {
-      return await this.send(`channel.request-collateral.${this.userPublicIdentifier}`, {
+      return this.send(`${this.userIdentifier}.channel.request-collateral`, {
         assetId,
       });
     } catch (e) {
@@ -156,66 +233,45 @@ export class NodeApiClient implements INodeApiClient {
     }
   }
 
-  public async withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse> {
-    return await this.send(`channel.withdraw.${this.userPublicIdentifier}`, {
-      tx,
-    });
-  }
-
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return await this.send(`transfer.fetch-linked.${this.userPublicIdentifier}`, {
+    return this.send(`${this.userIdentifier}.transfer.get-linked`, {
       paymentId,
     });
   }
 
-  public async resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse> {
-    return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
+  public async fetchSignedTransfer(paymentId: string): Promise<any> {
+    return this.send(`${this.userIdentifier}.transfer.get-signed`, {
       paymentId,
     });
   }
 
-  public async resolveFastSignedTransfer(
+  public async resolveLinkedTransfer(
     paymentId: string,
-  ): Promise<ResolveFastSignedTransferResponse> {
-    return await this.send(`transfer.resolve-fast-signed.${this.userPublicIdentifier}`, {
+  ): Promise<NodeResponses.ResolveLinkedTransfer> {
+    return this.send(`${this.userIdentifier}.transfer.install-linked`, {
       paymentId,
     });
   }
 
-  public async resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse> {
-    return await this.send(`transfer.resolve-hashlock.${this.userPublicIdentifier}`, {
-      lockHash,
+  public async resolveSignedTransfer(
+    paymentId: string,
+  ): Promise<NodeResponses.ResolveSignedTransfer> {
+    return this.send(`${this.userIdentifier}.transfer.install-signed`, {
+      paymentId,
     });
   }
 
-  public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
-    return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
-      assetId: makeChecksumOrEthAddress(assetId),
-    });
-  }
-
-  public async setRecipientAndEncryptedPreImageForLinkedTransfer(
-    recipientPublicIdentifier: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }> {
-    return await this.send(`transfer.set-recipient.${this.userPublicIdentifier}`, {
-      encryptedPreImage,
-      linkedHash,
-      recipientPublicIdentifier,
-    });
-  }
-
-  public async verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences> {
-    return await this.send(`channel.verify-app-sequence.${this.userPublicIdentifier}`, {
-      userAppSequenceNumber: appSequenceNumber,
+  public async getRebalanceProfile(assetId?: string): Promise<NodeResponses.GetRebalanceProfile> {
+    return this.send(`${this.userIdentifier}.channel.get-profile`, {
+      assetId: getAddress(assetId),
     });
   }
 
   // NOTE: maybe move since its not directly to the node just through messaging?
-  public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
+  // TODO -- What needs to happen here for JWT auth refactor?
+  public recipientOnline = async (recipientIdentifier: string): Promise<boolean> => {
     try {
-      return await this.send(`online.${recipientPublicIdentifier}`);
+      return this.send(`online.${recipientIdentifier}`);
     } catch (e) {
       if (e.message.startsWith("Request timed out")) {
         return false;
@@ -223,22 +279,6 @@ export class NodeApiClient implements INodeApiClient {
       throw e;
     }
   };
-
-  public setUserPublicIdentifier(publicIdentifier: string): void {
-    const ret = invalidXpub(publicIdentifier);
-    if (ret !== undefined) {
-      throw new Error(ret);
-    }
-    this.userPublicIdentifier = publicIdentifier;
-  }
-
-  public setNodePublicIdentifier(publicIdentifier: string): void {
-    const ret = invalidXpub(publicIdentifier);
-    if (ret !== undefined) {
-      throw new Error(ret);
-    }
-    this.nodePublicIdentifier = publicIdentifier;
-  }
 
   public async subscribeToSwapRates(from: string, to: string, callback: any): Promise<void> {
     await this.messaging.subscribe(`swap-rate.${from}.${to}`, callback);
@@ -248,52 +288,27 @@ export class NodeApiClient implements INodeApiClient {
     await this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
-  // TODO: type
-  public async restoreState(publicIdentifier: string): Promise<any> {
-    return this.send(`channel.restore-states.${publicIdentifier}`);
+  public async restoreState(): Promise<NodeResponses.ChannelRestore> {
+    return this.send(`${this.userIdentifier}.channel.restore`);
   }
 
   public async getLatestWithdrawal(): Promise<Transaction> {
-    return await this.send(`channel.latestWithdrawal.${this.userPublicIdentifier}`);
+    return this.send(`${this.userIdentifier}.channel.latestWithdrawal`);
   }
 
   public async clientCheckIn(): Promise<void> {
-    return await this.send(`client.check-in.${this.userPublicIdentifier}`);
+    return this.send(`${this.userIdentifier}.client.check-in`);
   }
 
   ////////////////////////////////////////
   // PRIVATE
 
-  private async getAuthToken(): Promise<string> {
-    if (!this.channelProvider) {
-      throw new Error(
-        "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
-      );
-    }
-    let token;
-    // If we have a cached token, use it. Otherwise, get a new one.
-    if (this._authToken && this._authToken.expiry < Date.now()) {
-      token = this._authToken;
-    } else {
-      const unsignedToken = await this.send("auth.getNonce", {
-        address: this.channelProvider.signerAddress,
-      });
-      if (unsignedToken.expiry < Date.now()) {
-        throw new Error("Got expired authentication nonce from hub - this shouldnt happen!");
-      }
-      const sig = await this.channelProvider.send(chan_nodeAuth, { message: unsignedToken.nonce });
-      this._authToken = token = {
-        expiry: unsignedToken.expiry,
-        value: `${unsignedToken.nonce}:${sig}`,
-      };
-    }
-    return token.value;
-  }
-
   private async send(subject: string, data?: any): Promise<any | undefined> {
     let error;
     for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
-      const timeout = new Promise((resolve: any): any => setTimeout(resolve, NATS_TIMEOUT));
+      if (attempt >= 2) {
+        this.log.debug(`Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject}`);
+      }
       try {
         return await this.sendAttempt(subject, data);
       } catch (e) {
@@ -305,10 +320,10 @@ export class NodeApiClient implements INodeApiClient {
           await this.messaging.disconnect();
           await this.messaging.connect();
           if (attempt + 1 <= NATS_ATTEMPTS) {
-            await timeout; // Wait at least a NATS_TIMEOUT before retrying
+            await delay(NATS_TIMEOUT); // Wait at least a NATS_TIMEOUT before retrying
           }
         } else {
-          throw e;
+          throw new Error(e);
         }
       }
     }
@@ -317,36 +332,24 @@ export class NodeApiClient implements INodeApiClient {
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
     const start = Date.now();
-    this.log.debug(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
-    );
     const payload = {
       ...data,
-      id: uuid.v4(),
+      id: uuid(),
     };
-    if (guardedSubjects.includes(subject.split(".")[0])) {
-      throw new Error("We are not doing auth right now, this should not ever happen!");
-      payload.token = await this.getAuthToken();
-    }
     let msg: any;
     try {
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
     } catch (e) {
       throw new Error(`${sendFailed}: ${e.message}`);
     }
-    let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
-    if (error && error.startsWith("Invalid token")) {
-      this.log.info("Auth error, token might have expired. Let's get a fresh token & try again.");
-      payload.token = await this.getAuthToken();
-      msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
-      error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
-    }
-    if (!msg.data) {
+    const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
+    let error = msg ? (parsedData ? (parsedData.response ? parsedData.response.err : "") : "") : "";
+    if (!parsedData) {
       this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
       return undefined;
     }
-    const { err, response } = msg.data;
-    if (err || error || msg.data.err) {
+    const { err, response } = parsedData;
+    if (err || error || parsedData.err) {
       throw new Error(`Error sending request to subject ${subject}. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
@@ -355,6 +358,6 @@ export class NodeApiClient implements INodeApiClient {
       start,
       `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
     );
-    return !response || isEmptyObj ? undefined : response;
+    return !response || isEmptyObj ? undefined : bigNumberifyJson(response);
   }
 }

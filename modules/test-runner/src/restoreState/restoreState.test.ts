@@ -1,21 +1,21 @@
-import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, IChannelSigner, EventNames, EventPayloads, StoreTypes } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect, TOKEN_AMOUNT } from "../util";
-import { createClient, ETH_AMOUNT_SM } from "../util";
+import { expect, TOKEN_AMOUNT, createClient, ETH_AMOUNT_SM, fundChannel, TOKEN_AMOUNT_SM, env } from "../util";
+import { getRandomChannelSigner, stringify, delay } from "@connext/utils";
+import { ConnextStore } from "@connext/store";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
   let tokenAddress: string;
-  let nodeFreeBalanceAddress: string;
-  let nodePublicIdentifier: string;
+  let nodeSignerAddress: string;
+  let signerA: IChannelSigner;
 
   beforeEach(async () => {
-    clientA = await createClient();
+    signerA = getRandomChannelSigner(env.ethProviderUrl);
+    clientA = await createClient({ signer: signerA, store: new ConnextStore(StoreTypes.LocalStorage) });
     tokenAddress = clientA.config.contractAddresses.Token;
-    nodePublicIdentifier = clientA.config.nodePublicIdentifier;
-    nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+    nodeSignerAddress = clientA.nodeSignerAddress;
   });
 
   afterEach(async () => {
@@ -30,13 +30,13 @@ describe("Restore State", () => {
     // check balances pre
     const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPre = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPre[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
-    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
+    expect(freeBalanceEthPre[clientA.signerAddress]).to.be.eq(ETH_AMOUNT_SM);
+    expect(freeBalanceEthPre[nodeSignerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[clientA.signerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
-    clientA.store.reset && clientA.store.reset();
+    clientA.store.clear();
 
     // check that getting balances will now error
     await expect(clientA.getFreeBalance(AddressZero)).to.be.rejectedWith(
@@ -51,9 +51,65 @@ describe("Restore State", () => {
     // check balances post
     const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPost = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
-    expect(freeBalanceEthPost[nodeFreeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
+    expect(freeBalanceEthPost[clientA.signerAddress]).to.be.eq(ETH_AMOUNT_SM);
+    expect(freeBalanceEthPost[nodeSignerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[clientA.signerAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[nodeSignerAddress]).to.be.least(TOKEN_AMOUNT);
+  });
+
+  it("happy case: client can delete its store, restore from a node backup, and receive any pending transfers", async () => {
+    const transferAmount = TOKEN_AMOUNT_SM;
+    const assetId = tokenAddress;
+    const recipient = clientA.publicIdentifier;
+    expect(recipient).to.be.eq(signerA.publicIdentifier);
+    const senderClient = await createClient();
+    await fundChannel(senderClient, TOKEN_AMOUNT, assetId);
+
+    // first clear the client store and take client offline
+    await clientA.store.clear();
+    await clientA.messaging.disconnect();
+
+    // send the transfer
+    await Promise.all([
+      new Promise((resolve, reject) => {
+        senderClient.on(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, () => {
+          return resolve();
+        });
+        senderClient.on(EventNames.REJECT_INSTALL_EVENT, () => {
+          return reject();
+        });
+      }),
+      new Promise(async resolve => {
+        const result = await senderClient.transfer({
+          amount: transferAmount,
+          assetId,
+          recipient,
+        });
+        return resolve(result);
+      }),
+    ]);
+    const freeBalanceSender = await senderClient.getFreeBalance(assetId);
+    expect(freeBalanceSender[senderClient.signerAddress]).to.be.eq(
+      TOKEN_AMOUNT.sub(TOKEN_AMOUNT_SM),
+    );
+
+    // bring clientA back online
+    await new Promise(async (resolve, reject) => {
+      clientA.on(
+        EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, 
+        (msg: EventPayloads.LinkedTransferFailed) => {
+          return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg, 2)}`);
+      });
+      clientA = await createClient({ 
+        signer: signerA, 
+        store: new ConnextStore(StoreTypes.LocalStorage),
+      });
+      expect(clientA.signerAddress).to.be.eq(signerA.address);
+      expect(clientA.publicIdentifier).to.be.eq(signerA.publicIdentifier);
+      return resolve();
+    });
+
+    const freeBalanceA = await clientA.getFreeBalance(assetId);
+    expect(freeBalanceA[clientA.signerAddress]).to.be.eq(transferAmount);
   });
 });

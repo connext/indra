@@ -1,43 +1,84 @@
-import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
+import { CommitmentTarget, EthereumCommitment, MinimalTransaction, MultisigTransaction } from "@connext/types";
+import { verifyChannelMessage } from "@connext/utils";
+import { Interface, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
 
 import { MinimumViableMultisig } from "../contracts";
-import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
-import { sortSignaturesBySignerAddress } from "../utils";
 
-/// A commitment to make MinimumViableMultisig perform a message call
-export abstract class MultisigCommitment extends EthereumCommitment {
-  constructor(readonly multisigAddress: string, readonly multisigOwners: string[]) {
-    super();
-  }
+// A commitment to make MinimumViableMultisig perform a message call
+export abstract class MultisigCommitment implements EthereumCommitment {
+  constructor(
+    readonly multisigAddress: string,
+    readonly multisigOwners: string[],
+    private initiatorSignature?: string,
+    private responderSignature?: string,
+  ) {}
 
   abstract getTransactionDetails(): MultisigTransaction;
 
-  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
-    const multisigInput = this.getTransactionDetails();
+  get signatures(): string[] {
+    if (!this.initiatorSignature && !this.responderSignature) {
+      return [];
+    }
+    return [this.initiatorSignature!, this.responderSignature!];
+  }
 
-    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(
-      joinSignature,
-    );
+  public async addSignatures(
+    signature1: string,
+    signature2: string,
+  ): Promise<void> {
+    for (const sig of [signature1, signature2]) {
+      const recovered = await verifyChannelMessage(this.hashToSign(), sig);
+      if (recovered === this.multisigOwners[0]) {
+        this.initiatorSignature = sig;
+      } else if (recovered === this.multisigOwners[1]) {
+        this.responderSignature = sig;
+      } else {
+        throw new Error(`Invalid signer detected. Got ${recovered}, expected one of: ${this.multisigOwners}`);
+      }
+    }
+  }
+
+  set signatures(sigs: string[]) {
+    throw new Error(`Use "addSignatures" to ensure the correct sorting`);
+  }
+
+  public async getSignedTransaction(): Promise<MinimalTransaction> {
+    this.assertSignatures();
+    const multisigInput = this.getTransactionDetails();
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,
       multisigInput.value,
       multisigInput.data,
       multisigInput.operation,
-      signaturesList,
+      this.signatures,
     ]);
 
-    // TODO: Deterministically compute `to` address
     return { to: this.multisigAddress, value: 0, data: txData };
   }
 
-  public hashToSign(): string {
+  public encode(): string {
     const { to, value, data, operation } = this.getTransactionDetails();
-    return keccak256(
-      solidityPack(
-        ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
-        ["0x19", this.multisigOwners, to, value, data, operation],
-      ),
+    return solidityPack(
+      ["uint8", "address", "address", "uint256", "bytes32", "uint8"],
+      [
+        CommitmentTarget.MULTISIG,
+        this.multisigAddress,
+        to,
+        value,
+        solidityKeccak256(["bytes"], [data]),
+        operation,
+      ],
     );
+  }
+
+  public hashToSign(): string {
+    return keccak256(this.encode());
+  }
+
+  private async assertSignatures() {
+    if (!this.signatures || this.signatures.length === 0) {
+      throw new Error(`No signatures detected`);
+    }
   }
 }

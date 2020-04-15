@@ -1,225 +1,204 @@
 /* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
-import * as waffle from "ethereum-waffle";
-import { Contract, Wallet } from "ethers";
-import { HashZero } from "ethers/constants";
-import {
-  BigNumberish,
-  hexlify,
-  joinSignature,
-  keccak256,
-  randomBytes,
-  SigningKey,
-} from "ethers/utils";
+import { ChallengeStatus, AppChallengeBigNumber } from "@connext/types";
+import { toBN } from "@connext/utils";
+import { Contract, Wallet, ContractFactory } from "ethers";
+import { keccak256 } from "ethers/utils";
 
+import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
+
 import {
-  AppIdentityTestClass,
-  computeAppChallengeHash,
   expect,
-  sortSignaturesBySignerAddress,
+  provider,
+  restore,
+  setupContext,
+  snapshot,
+  AppWithCounterState,
+  AppWithCounterAction,
+  encodeState,
+  moveToBlock,
 } from "./utils";
 
-type Challenge = {
-  status: 0 | 1 | 2;
-  latestSubmitter: string;
-  appStateHash: string;
-  challengeCounter: number;
-  finalizesAt: number;
-  versionNumber: number;
-};
-
-const ALICE =
-  // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
-  new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
-
-const BOB =
-  // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
-  new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
-
-// HELPER DATA
-const ONCHAIN_CHALLENGE_TIMEOUT = 30;
-
 describe("ChallengeRegistry", () => {
-  let provider = buidler.provider;
-  let wallet: Wallet;
-  let globalChannelNonce = 0;
-
   let appRegistry: Contract;
+  let appDefinition: Contract;
+  let wallet: Wallet;
 
-  let setStateWithSignatures: (
-    versionNumber: BigNumberish,
-    appState?: string,
-    timeout?: number,
+  let snapshotId: any;
+
+  let ONCHAIN_CHALLENGE_TIMEOUT: number;
+  let alice: Wallet;
+  let action: AppWithCounterAction;
+  let state1: AppWithCounterState;
+  let state0: AppWithCounterState;
+
+  // helpers
+  let setState: (versionNumber: number, appState?: string, timeout?: number) => Promise<void>;
+  let setAndProgressState: (
+    versionNumber: number,
+    state?: AppWithCounterState,
+    turnTaker?: Wallet,
   ) => Promise<void>;
-  let cancelChallenge: () => Promise<void>;
-  let sendSignedFinalizationToChain: () => Promise<any>;
-  let getChallenge: () => Promise<Challenge>;
-  let latestAppStateHash: () => Promise<string>;
-  let latestVersionNumber: () => Promise<number>;
-  let isStateFinalized: () => Promise<boolean>;
+  let setOutcome: (finalState?: string) => Promise<void>;
+  let progressState: (
+    state: AppWithCounterState,
+    action: AppWithCounterAction,
+    signer: Wallet,
+  ) => Promise<void>;
+  let progressStateAndVerify: (
+    state: AppWithCounterState,
+    action: AppWithCounterAction,
+    signer?: Wallet,
+  ) => Promise<void>;
+  let cancelDisputeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
+
+  let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
+  let isProgressable: () => Promise<boolean>;
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    // TODO: sometimes using the [0] indexed wallet will fail to deploy the
+    // contracts in the first test suite (almost like a promised tx isnt
+    // completed). Hacky fix -- use a different wallet
+    wallet = (await provider.getWallets())[2];
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
-      gasLimit: 6000000, // override default of 4 million
-    });
+    appRegistry = await new ContractFactory(
+      ChallengeRegistry.abi as any,
+      ChallengeRegistry.bytecode,
+      wallet,
+    ).deploy();
+    appRegistry = await appRegistry.deployed();
+
+    appDefinition = await new ContractFactory(
+      AppWithAction.abi as any,
+      AppWithAction.bytecode,
+      wallet,
+    ).deploy();
+    appDefinition = await appDefinition.deployed();
   });
 
   beforeEach(async () => {
-    const appIdentityTestObject = new AppIdentityTestClass(
-      [ALICE.address, BOB.address],
-      hexlify(randomBytes(20)),
-      10,
-      globalChannelNonce,
+    snapshotId = await snapshot();
+    const context = await setupContext(appRegistry, appDefinition, wallet);
+
+    // apps / constants
+    ONCHAIN_CHALLENGE_TIMEOUT = context["ONCHAIN_CHALLENGE_TIMEOUT"];
+    alice = context["alice"];
+    state0 = context["state0"];
+    action = context["action"];
+    state1 = context["state1"];
+
+    // helpers
+    setState = context["setStateAndVerify"];
+    progressState = context["progressState"];
+    progressStateAndVerify = context["progressStateAndVerify"];
+    setOutcome = context["setOutcomeAndVerify"];
+    setAndProgressState = (
+      versionNumber: number,
+      state?: AppWithCounterState,
+      turnTaker?: Wallet,
+    ) =>
+      context["setAndProgressStateAndVerify"](
+        versionNumber, // nonce
+        state || state0, // state
+        action, // action
+        undefined, // timeout
+        turnTaker || context["bob"], // turn taker
+      );
+    verifyChallenge = context["verifyChallenge"];
+    isProgressable = context["isProgressable"];
+    cancelDisputeAndVerify = context["cancelDisputeAndVerify"];
+  });
+
+  afterEach(async () => {
+    await restore(snapshotId);
+  });
+
+  it("Can successfully dispute using: `setAndProgressState` + `progressState` + `setOutcome`", async () => {
+    // first set the state
+    await setAndProgressState(1, state0);
+
+    // update with `progressState` to finalized state
+    // state finalizes when counter > 5
+    const finalizingAction = { ...action, increment: toBN(10) };
+    await progressState(state1, finalizingAction, alice);
+    // verify explicitly finalized
+    const finalState = {
+      counter: state1.counter.add(finalizingAction.increment),
+    };
+    await verifyChallenge({
+      appStateHash: keccak256(encodeState(finalState)),
+      status: ChallengeStatus.EXPLICITLY_FINALIZED,
+      versionNumber: toBN(3),
+    });
+
+    // set + verify outcome
+    await setOutcome(encodeState(finalState));
+  });
+
+  it("Can successfully dispute using: `setState` + `setState` + `setOutcome`", async () => {
+    await setState(1, encodeState(state0));
+
+    await setState(10, encodeState(state0));
+
+    await setState(15, encodeState(state0));
+
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+
+    await setOutcome(encodeState(state0));
+  });
+
+  it("Can successfully dispute using: `setState` + `progressState` + `progressState` + `setOutcome`", async () => {
+    await setState(1, encodeState(state0));
+
+    await setState(10, encodeState(state0));
+
+    await setState(15, encodeState(state0));
+
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 2);
+    expect(await isProgressable()).to.be.true;
+
+    await progressStateAndVerify(state0, action);
+    await progressStateAndVerify(state1, action, alice);
+
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
+    expect(await isProgressable()).to.be.false;
+
+    await setOutcome(
+      encodeState({
+        ...state1,
+        counter: state1.counter.add(action.increment),
+      }),
+    );
+  });
+
+  it("Cannot cancel challenge at `setState` phase", async () => {
+    await setState(1, encodeState(state0));
+    await expect(cancelDisputeAndVerify(1)).to.be.revertedWith(
+      "cancelDispute called on challenge that cannot be cancelled",
     );
 
-    globalChannelNonce += 1;
-
-    getChallenge = () => appRegistry.functions.getAppChallenge(appIdentityTestObject.identityHash);
-
-    latestAppStateHash = async () => (await getChallenge()).appStateHash;
-
-    latestVersionNumber = async () => (await getChallenge()).versionNumber;
-
-    isStateFinalized = async () =>
-      await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
-
-    cancelChallenge = async () => {
-      const digest = computeAppChallengeHash(
-        appIdentityTestObject.identityHash,
-        await latestAppStateHash(),
-        await latestVersionNumber(),
-        appIdentityTestObject.defaultTimeout,
-      );
-
-      await appRegistry.functions.cancelChallenge(
-        appIdentityTestObject.appIdentity,
-        sortSignaturesBySignerAddress(digest, [
-          await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest),
-        ]).map(joinSignature),
-      );
-    };
-
-    setStateWithSignatures = async (
-      versionNumber: BigNumberish,
-      appState: string = HashZero,
-      timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
-    ) => {
-      const stateHash = keccak256(appState);
-      const digest = computeAppChallengeHash(
-        appIdentityTestObject.identityHash,
-        stateHash,
-        versionNumber,
-        timeout,
-      );
-      await appRegistry.functions.setState(appIdentityTestObject.appIdentity, {
-        timeout,
-        versionNumber,
-        appStateHash: stateHash,
-        signatures: sortSignaturesBySignerAddress(digest, [
-          await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest),
-        ]).map(joinSignature),
-      });
-    };
-
-    sendSignedFinalizationToChain = async () =>
-      await setStateWithSignatures(
-        (await latestVersionNumber()) + 1,
-        await latestAppStateHash(),
-        0,
-      );
+    await setState(15, encodeState(state0));
+    await expect(cancelDisputeAndVerify(15)).to.be.revertedWith(
+      "cancelDispute called on challenge that cannot be cancelled",
+    );
   });
 
-  describe("updating app state", () => {
-    describe("with signing keys", async () => {
-      it("should work with higher versionNumber", async () => {
-        expect(await latestVersionNumber()).to.eq(0);
-        await setStateWithSignatures(1);
-        expect(await latestVersionNumber()).to.eq(1);
-      });
+  it("Can cancel challenge at `progressState` phase", async () => {
+    await setAndProgressState(1, state0);
+    await cancelDisputeAndVerify(2);
 
-      it("should work many times", async () => {
-        expect(await latestVersionNumber()).to.eq(0);
-        await setStateWithSignatures(1);
-        expect(await latestVersionNumber()).to.eq(1);
-        await cancelChallenge();
-        await setStateWithSignatures(2);
-        expect(await latestVersionNumber()).to.eq(2);
-        await cancelChallenge();
-        await setStateWithSignatures(3);
-        expect(await latestVersionNumber()).to.eq(3);
-      });
-
-      it("should work with much higher versionNumber", async () => {
-        expect(await latestVersionNumber()).to.eq(0);
-        await setStateWithSignatures(1000);
-        expect(await latestVersionNumber()).to.eq(1000);
-      });
-
-      it("shouldn't work with an equal versionNumber", async () => {
-        await expect(setStateWithSignatures(0)).to.be.reverted;
-        expect(await latestVersionNumber()).to.eq(0);
-      });
-
-      it("shouldn't work with a lower versionNumber", async () => {
-        await setStateWithSignatures(1);
-        await expect(setStateWithSignatures(0)).to.be.reverted;
-        expect(await latestVersionNumber()).to.eq(1);
-      });
-    });
+    await setAndProgressState(2, state0);
+    await cancelDisputeAndVerify(3);
   });
 
-  describe("finalizing app state", async () => {
-    it("should work with keys", async () => {
-      expect(await isStateFinalized()).to.be.false;
-      await sendSignedFinalizationToChain();
-      expect(await isStateFinalized()).to.be.true;
-    });
-  });
+  it("Cannot cancel challenge after outcome set", async () => {
+    await setState(1, encodeState(state0));
 
-  describe("waiting for timeout", async () => {
-    it("should block updates after the timeout", async () => {
-      expect(await isStateFinalized()).to.be.false;
+    await moveToBlock((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT + 15);
 
-      await setStateWithSignatures(1);
-
-      for (let index = 0; index <= ONCHAIN_CHALLENGE_TIMEOUT + 1; index++) {
-        await provider.send("evm_mine", []);
-      }
-
-      expect(await isStateFinalized()).to.be.true;
-
-      await expect(setStateWithSignatures(2)).to.be.reverted;
-
-      await expect(setStateWithSignatures(0)).to.be.reverted;
-    });
-  });
-
-  it("is possible to call setState to put state on-chain", async () => {
-    // Tell the ChallengeRegistry to start timer
-    const state = hexlify(randomBytes(32));
-
-    await setStateWithSignatures(1, state);
-
-    // Verify the correct data was put on-chain
-    const {
-      status,
-      latestSubmitter,
-      appStateHash,
-      challengeCounter,
-      finalizesAt,
-      versionNumber,
-    } = await getChallenge();
-
-    expect(status).to.be.eq(1);
-    expect(latestSubmitter).to.be.eq(await wallet.getAddress());
-    expect(appStateHash).to.be.eq(keccak256(state));
-    expect(challengeCounter).to.be.eq(1);
-    expect(finalizesAt).to.be.eq((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT);
-    expect(versionNumber).to.be.eq(1);
+    await setOutcome(encodeState(state0));
+    await expect(cancelDisputeAndVerify(1)).to.be.revertedWith(
+      "cancelDispute called on challenge that cannot be cancelled",
+    );
   });
 });

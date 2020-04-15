@@ -32,7 +32,7 @@ function wait_for {
     fi
   fi
   echo "Waiting for $name at $target ($host) to wake up..."
-  bash ops/wait-for.sh -t 60 $host 2> /dev/null
+  wait-for -t 60 $host 2> /dev/null
 }
 
 wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
@@ -47,6 +47,7 @@ then
     --delay 1 \
     --exitcrash \
     --ignore *.test.ts \
+    --ignore *.swp \
     --legacy-watch \
     --polling-interval 1000 \
     --watch src \

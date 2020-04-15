@@ -1,47 +1,55 @@
-import { AddressZero } from "ethers/constants";
-import { TransactionResponse } from "ethers/providers";
-import { bigNumberify, formatEther, getAddress } from "ethers/utils";
-
-import { stringify, withdrawalKey } from "../lib";
+import { DEFAULT_APP_TIMEOUT, WITHDRAW_STATE_TIMEOUT, WithdrawCommitment } from "@connext/apps";
 import {
-  BigNumber,
-  CFCoreTypes,
-  convert,
-  ProtocolTypes,
-  WithdrawalResponse,
-  WithdrawParameters,
-} from "../types";
-import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
+  AppInstanceJson,
+  ChannelMethods,
+  EventNames,
+  MethodParams,
+  MinimalTransaction,
+  PublicParams,
+  PublicResults,
+  WithdrawAppAction,
+  WithdrawAppName,
+  WithdrawAppState,
+  DefaultApp,
+} from "@connext/types";
+import {
+  getSignerAddressFromPublicIdentifier,
+  invalidAddress,
+  stringify,
+  toBN,
+  validate,
+} from "@connext/utils";
+import { AddressZero, Zero, HashZero } from "ethers/constants";
+import { TransactionResponse } from "ethers/providers";
+import { formatEther, getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
-import { chan_storeSet } from "@connext/types";
 
 export class WithdrawalController extends AbstractController {
-  public async withdraw(params: WithdrawParameters): Promise<WithdrawalResponse> {
-    if (params.assetId) {
-      try {
-        params.assetId = getAddress(params.assetId);
-      } catch (e) {
-        // likely means that this is an invalid eth address, so
-        // use validator fn for better error message
-        validate(invalidAddress(params.assetId));
-      }
+  public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
+    //Set defaults
+    if (!params.assetId) {
+      params.assetId = AddressZero;
     }
-    const myFreeBalanceAddress = this.connext.freeBalanceAddress;
+    params.assetId = getAddress(params.assetId);
 
-    const { amount, assetId, recipient, userSubmitted } = convert.Withdraw(`bignumber`, params);
-    const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.connext.freeBalanceAddress];
+    if (!params.recipient) {
+      params.recipient = this.connext.signerAddress;
+    }
+    params.recipient = getAddress(params.recipient);
+
+    if (!params.nonce) {
+      params.nonce = hexlify(randomBytes(32));
+    }
+
+    const amount = toBN(params.amount);
+    const { assetId, recipient } = params;
+    let transaction: TransactionResponse | undefined;
+
     validate(
-      notPositive(amount),
-      notLessThanOrEqualTo(amount, preWithdrawalBal),
-      invalidAddress(assetId), // check address of asset
+      invalidAddress(recipient),
+      invalidAddress(assetId),
     );
-    if (recipient) {
-      validate(invalidAddress(recipient));
-    }
-
-    const preWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
     this.log.info(
       `Withdrawing ${formatEther(amount)} ${
@@ -49,69 +57,165 @@ export class WithdrawalController extends AbstractController {
       } from multisig to ${recipient}`,
     );
 
-    let transaction: TransactionResponse | undefined;
+    let withdrawCommitment: WithdrawCommitment;
+    let withdrawerSignatureOnWithdrawCommitment: string;
     try {
-      this.log.info(`Rescinding deposit rights before withdrawal`);
-      await this.connext.rescindDepositRights({ assetId });
-      if (!userSubmitted) {
-        const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
-        this.log.info(`WithdrawCommitment submitted`);
-        this.log.debug(`Details of submitted withdrawal: ${stringify(withdrawResponse)}`);
-        const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
-        // set the withdrawal tx in the store
-        await this.connext.channelProvider.send(chan_storeSet, {
-          pairs: [
-            { path: withdrawalKey(this.connext.publicIdentifier), value: { tx: minTx, retry: 0 } },
-          ],
-        });
+      withdrawCommitment = await this.createWithdrawCommitment(params);
+      const hash = withdrawCommitment.hashToSign();
+      withdrawerSignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
+        hash,
+      );
 
-        transaction = await this.node.withdraw(minTx);
+      await this.proposeWithdrawApp(params, hash, withdrawerSignatureOnWithdrawCommitment);
 
-        await this.connext.watchForUserWithdrawal();
+      this.connext.listener.emit(EventNames.WITHDRAWAL_STARTED_EVENT, {
+        params,
+        withdrawCommitment,
+        withdrawerSignatureOnWithdrawCommitment,
+      });
 
-        this.log.info(`Node responded with transaction: ${transaction.hash}`);
-        this.log.debug(`Transaction details: ${stringify(transaction)}`);
-      } else {
-        // first deploy the multisig
-        const deployRes = await this.connext.deployMultisig();
-        this.log.info(`Deploying multisig: ${deployRes.transactionHash}`);
-        this.log.debug(`Multisig deploy transaction: ${stringify(deployRes)}`);
-        if (deployRes.transactionHash !== AddressZero) {
-          // wait for multisig deploy transaction
-          // will be 0x000.. if the multisig has already been deployed.
-          this.ethProvider.waitForTransaction(deployRes.transactionHash);
-        }
-        this.log.info(`Calling ${ProtocolTypes.chan_withdraw}`);
-        // user submitting the withdrawal
-        const withdrawResponse = await this.connext.providerWithdraw(
-          assetId,
-          new BigNumber(amount),
-          recipient,
-        );
-        this.log.info(`Node responded with transaction: ${withdrawResponse.txHash}`);
-        this.log.debug(`Withdraw Response: ${stringify(withdrawResponse)}`);
-        transaction = await this.ethProvider.getTransaction(withdrawResponse.txHash);
-      }
-      const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
+      [transaction] = await this.connext.watchForUserWithdrawal();
+      this.log.info(`Node put withdrawal onchain: ${transaction.hash}`);
+      this.log.debug(`Transaction details: ${stringify(transaction)}`);
 
-      this.log.debug(`Pre-Withdraw Balances: ${stringify(preWithdrawBalances)}`);
-      const expectedFreeBal = bigNumberify(preWithdrawBalances[myFreeBalanceAddress]).sub(amount);
+      this.connext.listener.emit(EventNames.WITHDRAWAL_CONFIRMED_EVENT, { transaction });
 
-      // sanity check the free balance decrease
-      if (postWithdrawBalances && !postWithdrawBalances[myFreeBalanceAddress].eq(expectedFreeBal)) {
-        this.log.error(`My free balance was not decreased by the expected amount.`);
-      }
-
-      this.log.info(`Successfully Withdrew`);
+      await this.removeWithdrawCommitmentFromStore(transaction)
     } catch (e) {
-      this.log.error(`Failed to withdraw: ${e.stack || e.message}`);
-      throw new Error(e);
+      this.connext.listener.emit(EventNames.WITHDRAWAL_FAILED_EVENT, {
+        params,
+        withdrawCommitment,
+        withdrawerSignatureOnWithdrawCommitment,
+        error: e.stack || e.message,
+      });
+      throw new Error(e.stack || e.message);
     }
 
-    return {
-      apps: await this.connext.getAppInstances(),
-      freeBalance: await this.connext.getFreeBalance(),
-      transaction,
+    // Note that we listen for the signed commitment and save it to store only in listener.ts
+
+    return { transaction };
+  }
+
+  public async respondToNodeWithdraw(appInstance: AppInstanceJson) {
+    const state = appInstance.latestState as WithdrawAppState;
+
+    const generatedCommitment = await this.createWithdrawCommitment({
+      amount: state.transfers[0].amount,
+      assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+      recipient: state.transfers[0].to,
+      nonce: state.nonce,
+    } as PublicParams.Withdraw);
+    const hash = generatedCommitment.hashToSign();
+
+    // Dont need to validate anything because we already did it during the propose flow
+    const counterpartySignatureOnWithdrawCommitment = await this
+      .connext.channelProvider.signMessage(hash);
+    await this.connext.takeAction(appInstance.identityHash, {
+      signature: counterpartySignatureOnWithdrawCommitment,
+    } as WithdrawAppAction);
+    await this.connext.uninstallApp(appInstance.identityHash);
+  }
+
+  private async createWithdrawCommitment(
+    params: PublicParams.Withdraw,
+  ): Promise<WithdrawCommitment> {
+    const { assetId, amount, nonce, recipient } = params;
+    const { data: channel } = await this.connext.getStateChannel();
+    const multisigOwners = [
+      getSignerAddressFromPublicIdentifier(
+        channel.userIdentifiers[0],
+      ),
+      getSignerAddressFromPublicIdentifier(
+        channel.userIdentifiers[1],
+      ),
+    ];
+    return new WithdrawCommitment(
+      this.connext.config.contractAddresses,
+      channel.multisigAddress,
+      multisigOwners,
+      recipient,
+      assetId,
+      amount,
+      nonce,
+    );
+  }
+
+  private async proposeWithdrawApp(
+    params: PublicParams.Withdraw,
+    withdrawCommitmentHash: string,
+    withdrawerSignatureOnWithdrawCommitment: string,
+  ): Promise<string> {
+    const amount = toBN(params.amount);
+    const { assetId, nonce, recipient } = params;
+    const network = await this.ethProvider.getNetwork();
+    const appInfo = await this.connext.getAppRegistry({
+      name: WithdrawAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
+    const {
+      appDefinitionAddress: appDefinition,
+      outcomeType,
+      stateEncoding,
+      actionEncoding,
+    } = appInfo;
+    const initialState: WithdrawAppState = {
+      transfers: [
+        { amount: amount, to: recipient },
+        { amount: Zero, to: this.connext.nodeSignerAddress },
+      ],
+      signatures: [withdrawerSignatureOnWithdrawCommitment, HashZero],
+      signers: [
+        this.connext.signerAddress,
+        this.connext.nodeSignerAddress,
+      ],
+      data: withdrawCommitmentHash,
+      nonce,
+      finalized: false,
     };
+    const installParams: MethodParams.ProposeInstall = {
+      abiEncodings: {
+        actionEncoding,
+        stateEncoding,
+      },
+      appDefinition,
+      initialState,
+      initiatorDeposit: amount,
+      initiatorDepositAssetId: assetId,
+      outcomeType,
+      responderIdentifier: this.connext.nodeIdentifier,
+      responderDeposit: Zero,
+      responderDepositAssetId: assetId,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: WITHDRAW_STATE_TIMEOUT,
+    };
+    return await this.proposeAndInstallLedgerApp(installParams);
+  }
+
+  public async saveWithdrawCommitmentToStore(
+    params: PublicParams.Withdraw,
+    signatures: string[],
+  ): Promise<void> {
+    // set the withdrawal tx in the store
+    const commitment = await this.createWithdrawCommitment(params);
+    await commitment.addSignatures(signatures[0], signatures[1]);
+    const minTx: MinimalTransaction = await commitment.getSignedTransaction();
+    await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
+      withdrawalObject: { tx: minTx, retry: 0 },
+    });
+    return;
+  }
+
+  public async removeWithdrawCommitmentFromStore(
+    transaction: TransactionResponse,
+  ): Promise<void> {
+    const minTx: MinimalTransaction = {
+      to: transaction.to,
+      value: transaction.value,
+      data: transaction.data
+    }
+    await this.connext.channelProvider.send(ChannelMethods.chan_setUserWithdrawal, {
+      withdrawalObject: { tx: minTx, retry: 0 },
+      remove: true,
+    });
   }
 }

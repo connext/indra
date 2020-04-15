@@ -11,6 +11,7 @@ export enum Network {
 // to account for 3 IO_SEND_AND_WAITs by intermediary in
 // the install virtual protocol
 export const LOCK_SERVICE_TTL = 90_000;
+export const TIMEOUT_BUFFER = 100;
 
 // PROVIDERS
 export const AdminMessagingProviderId = "ADMIN_MESSAGING";
@@ -21,8 +22,8 @@ export const ChannelMessagingProviderId = "CHANNEL_MESSAGING";
 export const ConfigMessagingProviderId = "CONFIG_MESSAGING";
 export const LockProviderId = "LOCK";
 export const MedianizerProviderId = "MEDIANIZER";
-export const MessagingClientProviderId = "MESSAGING_CLIENT";
 export const MessagingProviderId = "MESSAGING";
+export const MessagingAuthProviderId = "MESSAGING_AUTH";
 export const RedisProviderId = "REDIS";
 export const RedlockProviderId = "REDLOCK";
 export const SwapRateProviderId = "SWAP_RATE";

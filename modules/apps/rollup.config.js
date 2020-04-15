@@ -1,4 +1,5 @@
 import typescript from "rollup-plugin-typescript2";
+import json from "@rollup/plugin-json";
 
 import pkg from "./package.json";
 
@@ -20,6 +21,6 @@ export default [
         name: "window.apps",
       },
     ],
-    plugins: [typescript()],
+    plugins: [typescript(), json()],
   },
 ];

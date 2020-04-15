@@ -41,7 +41,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
         bytes calldata encodedAction
     )
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));
@@ -54,7 +54,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
 
     function computeOutcome(bytes calldata encodedState)
         external
-        pure
+        view
         returns (bytes memory)
     {
         AppState memory state = abi.decode(encodedState, (AppState));

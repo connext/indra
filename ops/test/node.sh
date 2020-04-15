@@ -25,8 +25,15 @@ eth_network="ganache"
 
 ethprovider_host="${project}_ethprovider_$suffix"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
 eth_rpc_url="http://$ethprovider_host:8545"
+
+# get supported addresses
+token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
+allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"UNISWAP"}]'
 
 postgres_db="${project}_$suffix"
 postgres_host="${project}_database_$suffix"
@@ -95,7 +102,7 @@ docker run \
   --name="$nats_host" \
   --network="$network" \
   --rm \
-  nats:2.0.0-linux
+  provide/nats-server:latest
 
 echo "Starting $redis_host.."
 docker run \
@@ -111,6 +118,7 @@ docker run \
 echo "Starting $node_host.."
 docker run \
   --entrypoint="bash" \
+  --env="INDRA_ALLOWED_SWAPS=$allowed_swaps" \
   --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
   --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
   --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
@@ -135,13 +143,13 @@ docker run \
     echo "Node Tester Container launched!";echo
 
     echo "Waiting for ${INDRA_ETH_RPC_URL#*://}..."
-    bash ops/wait-for.sh -t 60 ${INDRA_ETH_RPC_URL#*://} 2> /dev/null
+    wait-for -t 60 ${INDRA_ETH_RPC_URL#*://} 2> /dev/null
     echo "Waiting for $INDRA_PG_HOST:$INDRA_PG_PORT..."
-    bash ops/wait-for.sh -t 60 $INDRA_PG_HOST:$INDRA_PG_PORT 2> /dev/null
+    wait-for -t 60 $INDRA_PG_HOST:$INDRA_PG_PORT 2> /dev/null
     echo "Waiting for ${INDRA_NATS_SERVERS#*://}..."
-    bash ops/wait-for.sh -t 60 ${INDRA_NATS_SERVERS#*://} 2> /dev/null
-    echo "Waiting for $redis_host:6379..."
-    bash ops/wait-for.sh -t 60 $redis_host:6379 2> /dev/null
+    wait-for -t 60 ${INDRA_NATS_SERVERS#*://} 2> /dev/null
+    echo "Waiting for ${INDRA_REDIS_URL#*://}..."
+    wait-for -t 60 ${INDRA_REDIS_URL#*://} 2> /dev/null
     echo
 
     cd modules/node

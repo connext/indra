@@ -80,7 +80,7 @@ const channel = await connext.connect("rinkeby", { asyncStorage: AsyncStorage })
 
 Connext is opinionated in that all channels are associated with a BIP32 mnemonic, xpriv, or HDWallet rather than a simple private key. This is done as part of the core protocols in order to protect against replay attacks on the channel's state. When making updates to the state, the protocol generates a new ephemeral key for each interaction, where the generated key is the `nth` key along a custom state-channel-specific path.
 
-`const CF_PATH = "m/44'/60'/0'/25446";`
+`const CF_PATH = "m/44'/60'/0'/25446/0";`
 
 This has a couple of consequences:
 
@@ -90,7 +90,7 @@ Second, wallets should consider how they wish to expose the client to the mnemon
 
 Ideally, the master key is hosted outside of the client. The wallet can then derive the `xpub` associated with the mnemonic,
 ```javascript
-const hdWallet = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+const hdWallet = fromMnemonic(mnemonic).derivePath(CF_PATH);
 const xpub = hdNode.neuter().extendedKey;
 ```
 And then pass it in along with a wrapper function to derive ephemeral keys as needed:

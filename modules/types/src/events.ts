@@ -1,101 +1,251 @@
 import EventEmitter from "eventemitter3";
-import { CFCoreTypes } from "./cfCore";
+
+import { AppInstanceProposal } from "./app";
+import { Address, BigNumber, Bytes32, PublicIdentifier, SolidityValueType } from "./basic";
+import { ChannelMethods } from "./channelProvider";
 import {
-  LINKED_TRANSFER,
-  LINKED_TRANSFER_TO_RECIPIENT,
-  FAST_SIGNED_TRANSFER,
   ConditionalTransferTypes,
-} from "./apps";
+  CreatedHashLockTransferMeta,
+  CreatedLinkedTransferMeta,
+  CreatedSignedTransferMeta,
+} from "./transfers";
+import { enumify } from "./utils";
+import { ProtocolParams } from "./protocol";
+import { ProtocolMessageData } from "./messaging";
+import { PublicParams } from "./public";
+import { MinimalTransaction } from "./commitments";
+import { TransactionResponse } from "ethers/providers";
 
-export const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
-export const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
-export const DEPOSIT_FAILED_EVENT = "DEPOSIT_FAILED_EVENT";
-export const DEPOSIT_STARTED_EVENT = "DEPOSIT_STARTED_EVENT";
-export const INSTALL_EVENT = "INSTALL_EVENT";
-export const INSTALL_VIRTUAL_EVENT = "INSTALL_VIRTUAL_EVENT";
-export const REJECT_INSTALL_EVENT = "REJECT_INSTALL_EVENT";
-export const UNINSTALL_EVENT = "UNINSTALL_EVENT";
-export const UNINSTALL_VIRTUAL_EVENT = "UNINSTALL_VIRTUAL_EVENT";
-export const UPDATE_STATE_EVENT = "UPDATE_STATE_EVENT";
-export const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
-export const WITHDRAWAL_FAILED_EVENT = "WITHDRAWAL_FAILED_EVENT";
-export const WITHDRAWAL_STARTED_EVENT = "WITHDRAWAL_STARTED_EVENT";
-export const PROPOSE_INSTALL_EVENT = "PROPOSE_INSTALL_EVENT";
-export const PROTOCOL_MESSAGE_EVENT = "PROTOCOL_MESSAGE_EVENT";
-export const RECEIVE_TRANSFER_FAILED_EVENT = "RECEIVE_TRANSFER_FAILED_EVENT";
-export const RECEIVE_TRANSFER_FINISHED_EVENT = "RECEIVE_TRANSFER_FINISHED_EVENT";
-export const RECEIVE_TRANSFER_STARTED_EVENT = "RECEIVE_TRANSFER_STARTED_EVENT";
-export const CREATE_TRANSFER = "CREATE_TRANSFER";
+type SignedTransfer = typeof ConditionalTransferTypes.SignedTransfer;
+type HashLockTransfer = typeof ConditionalTransferTypes.HashLockTransfer;
+type LinkedTransfer = typeof ConditionalTransferTypes.LinkedTransfer;
 
-// TODO: should really be named "ProtocolEventNames"
-export const EventNames = {
+////////////////////////////////////////
+const CONDITIONAL_TRANSFER_CREATED_EVENT = "CONDITIONAL_TRANSFER_CREATED_EVENT";
+
+type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
+  amount: BigNumber;
+  assetId: Address;
+  paymentId?: Bytes32;
+  sender: Address;
+  recipient?: Address;
+  meta: any;
+  type: T;
+  transferMeta: T extends LinkedTransfer
+    ? CreatedLinkedTransferMeta
+    : T extends HashLockTransfer
+    ? CreatedHashLockTransferMeta
+    : T extends SignedTransfer
+    ? CreatedSignedTransferMeta
+    : undefined;
+};
+
+////////////////////////////////////////
+const CONDITIONAL_TRANSFER_RECEIVED_EVENT = "CONDITIONAL_TRANSFER_RECEIVED_EVENT";
+
+export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTypes> = {
+  amount: BigNumber;
+  appIdentityHash: Bytes32;
+  assetId: Address;
+  paymentId?: Bytes32;
+  sender: PublicIdentifier;
+  recipient?: PublicIdentifier;
+  meta: any;
+  type: T;
+  transferMeta: T extends LinkedTransfer
+    ? CreatedLinkedTransferMeta
+    : T extends HashLockTransfer
+    ? CreatedHashLockTransferMeta
+    : T extends SignedTransfer
+    ? CreatedSignedTransferMeta
+    : undefined;
+};
+
+////////////////////////////////////////
+const CONDITIONAL_TRANSFER_UNLOCKED_EVENT = "CONDITIONAL_TRANSFER_UNLOCKED_EVENT";
+
+export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTypes> = {
+  amount: BigNumber;
+  assetId: Address;
+  paymentId?: Bytes32;
+  sender: PublicIdentifier;
+  recipient?: PublicIdentifier;
+  meta: any;
+  type: T;
+};
+
+////////////////////////////////////////
+const CONDITIONAL_TRANSFER_FAILED_EVENT = "CONDITIONAL_TRANSFER_FAILED_EVENT";
+
+export type ConditionalTransferFailedEventData<T extends ConditionalTransferTypes> = {
+  paymentId: Bytes32;
+  type: T;
+  error: any;
+};
+
+////////////////////////////////////////
+const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
+
+type CreateMultisigEventData = {
+  owners: Address[];
+  multisigAddress: Address;
+  counterpartyIdentifier?: PublicIdentifier;
+};
+
+////////////////////////////////////////
+const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
+type DepositConfirmedEventData = {
+  hash: string;
+  amount: BigNumber;
+  assetId: Address;
+};
+
+////////////////////////////////////////
+const DEPOSIT_FAILED_EVENT = "DEPOSIT_FAILED_EVENT";
+type DepositFailedEventData = {
+  amount: BigNumber;
+  assetId: Address;
+  error: string;
+};
+
+////////////////////////////////////////
+const DEPOSIT_STARTED_EVENT = "DEPOSIT_STARTED_EVENT";
+type DepositStartedEventData = {
+  amount: BigNumber;
+  assetId: Address;
+  appIdentityHash: string;
+};
+
+////////////////////////////////////////
+const INSTALL_EVENT = "INSTALL_EVENT";
+
+type InstallEventData = {
+  appIdentityHash: Bytes32;
+};
+
+////////////////////////////////////////
+const PROPOSE_INSTALL_EVENT = "PROPOSE_INSTALL_EVENT";
+
+type ProposeEventData = {
+  params: ProtocolParams.Propose;
+  appInstanceId: string;
+};
+
+////////////////////////////////////////
+const PROTOCOL_MESSAGE_EVENT = "PROTOCOL_MESSAGE_EVENT";
+
+////////////////////////////////////////
+const REJECT_INSTALL_EVENT = "REJECT_INSTALL_EVENT";
+
+type RejectInstallEventData = {
+  appInstance: AppInstanceProposal;
+};
+
+////////////////////////////////////////
+const UNINSTALL_EVENT = "UNINSTALL_EVENT";
+
+type UninstallEventData = {
+  appIdentityHash: Bytes32;
+};
+
+////////////////////////////////////////
+const UPDATE_STATE_EVENT = "UPDATE_STATE_EVENT";
+
+type UpdateStateEventData = {
+  appIdentityHash: Bytes32;
+  newState: SolidityValueType;
+  action?: SolidityValueType;
+};
+
+////////////////////////////////////////
+const WITHDRAWAL_CONFIRMED_EVENT = "WITHDRAWAL_CONFIRMED_EVENT";
+
+type WithdrawalConfirmedEventData = {
+  transaction: TransactionResponse;
+};
+
+////////////////////////////////////////
+const WITHDRAWAL_FAILED_EVENT = "WITHDRAWAL_FAILED_EVENT";
+
+type WithdrawalFailedEventData = WithdrawalStartedEventData & {
+  error: string;
+};
+
+////////////////////////////////////////
+const WITHDRAWAL_STARTED_EVENT = "WITHDRAWAL_STARTED_EVENT";
+
+type WithdrawalStartedEventData = {
+  params: PublicParams.Withdraw;
+  withdrawCommitment: MinimalTransaction;
+  withdrawerSignatureOnCommitment: string;
+};
+
+////////////////////////////////////////
+// Exports
+export const EventNames = enumify({
+  [CONDITIONAL_TRANSFER_CREATED_EVENT]: CONDITIONAL_TRANSFER_CREATED_EVENT,
+  [CONDITIONAL_TRANSFER_RECEIVED_EVENT]: CONDITIONAL_TRANSFER_RECEIVED_EVENT,
+  [CONDITIONAL_TRANSFER_UNLOCKED_EVENT]: CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+  [CONDITIONAL_TRANSFER_FAILED_EVENT]: CONDITIONAL_TRANSFER_FAILED_EVENT,
   [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
   [DEPOSIT_CONFIRMED_EVENT]: DEPOSIT_CONFIRMED_EVENT,
   [DEPOSIT_FAILED_EVENT]: DEPOSIT_FAILED_EVENT,
   [DEPOSIT_STARTED_EVENT]: DEPOSIT_STARTED_EVENT,
   [INSTALL_EVENT]: INSTALL_EVENT,
-  [INSTALL_VIRTUAL_EVENT]: INSTALL_VIRTUAL_EVENT,
   [PROPOSE_INSTALL_EVENT]: PROPOSE_INSTALL_EVENT,
   [PROTOCOL_MESSAGE_EVENT]: PROTOCOL_MESSAGE_EVENT,
   [REJECT_INSTALL_EVENT]: REJECT_INSTALL_EVENT,
   [UNINSTALL_EVENT]: UNINSTALL_EVENT,
-  [UNINSTALL_VIRTUAL_EVENT]: UNINSTALL_VIRTUAL_EVENT,
   [UPDATE_STATE_EVENT]: UPDATE_STATE_EVENT,
   [WITHDRAWAL_CONFIRMED_EVENT]: WITHDRAWAL_CONFIRMED_EVENT,
   [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
-};
-export type EventName = keyof typeof EventNames;
+});
+export type EventNames = typeof EventNames[keyof typeof EventNames];
 
-export const ConnextEvents = {
-  ...EventNames,
-  [RECEIVE_TRANSFER_FAILED_EVENT]: RECEIVE_TRANSFER_FAILED_EVENT,
-  [RECEIVE_TRANSFER_FINISHED_EVENT]: RECEIVE_TRANSFER_FINISHED_EVENT,
-  [RECEIVE_TRANSFER_STARTED_EVENT]: RECEIVE_TRANSFER_STARTED_EVENT,
-  [CREATE_TRANSFER]: CREATE_TRANSFER,
-};
-export type ConnextEvent = keyof typeof ConnextEvents;
+// ALL events -- both protocol and client/node specific
+export namespace EventPayloads {
+  // client/node specific
+  export type HashLockTransferCreated = ConditionalTransferCreatedEventData<HashLockTransfer>;
+  export type LinkedTransferCreated = ConditionalTransferCreatedEventData<LinkedTransfer>;
+  export type SignedTransferCreated = ConditionalTransferCreatedEventData<SignedTransfer>;
+  export type HashLockTransferReceived = ConditionalTransferReceivedEventData<HashLockTransfer>;
+  export type LinkedTransferReceived = ConditionalTransferReceivedEventData<LinkedTransfer>;
+  export type SignedTransferReceived = ConditionalTransferReceivedEventData<SignedTransfer>;
+  export type HashLockTransferUnlocked = ConditionalTransferUnlockedEventData<HashLockTransfer>;
+  export type LinkedTransferUnlocked = ConditionalTransferUnlockedEventData<LinkedTransfer>;
+  export type SignedTransferUnlocked = ConditionalTransferUnlockedEventData<SignedTransfer>;
+  export type HashLockTransferFailed = ConditionalTransferFailedEventData<HashLockTransfer>;
+  export type LinkedTransferFailed = ConditionalTransferFailedEventData<LinkedTransfer>;
+  export type SignedTransferFailed = ConditionalTransferFailedEventData<SignedTransfer>;
+  export type ConditionalTransferCreated<T> = ConditionalTransferCreatedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  export type ConditionalTransferReceived<T> = ConditionalTransferReceivedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  export type ConditionalTransferUnlocked<T> = ConditionalTransferUnlockedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  export type ConditionalTransferFailed<T> = ConditionalTransferFailedEventData<
+    HashLockTransfer | LinkedTransfer | SignedTransfer
+  >;
+  export type DepositStarted = DepositStartedEventData;
+  export type DepositConfirmed = DepositConfirmedEventData;
+  export type DepositFailed = DepositFailedEventData;
 
-export type CreatedLinkedTransferMeta = {};
-export type CreatedLinkedTransferToRecipientMeta = {
-  encryptedPreImage: string;
-};
-export type CreatedFastSignedTransferMeta = {
-  signer: string;
-};
+  export type WithdrawalStarted = WithdrawalStartedEventData;
+  export type WithdrawalConfirmed = WithdrawalConfirmedEventData;
+  export type WithdrawalFailed = WithdrawalFailedEventData;
 
-export type ReceiveTransferFinishedEventData<
-  T extends ConditionalTransferTypes | undefined = undefined
-> = {
-  amount: string;
-  assetId: string;
-  paymentId: string;
-  sender: string;
-  recipient?: string;
-  meta: any;
-  type: T;
-};
+  // protocol events
+  export type CreateMultisig = CreateMultisigEventData;
+  export type Install = InstallEventData;
+  export type Propose = ProposeEventData;
+  export type RejectInstall = RejectInstallEventData;
+  export type Uninstall = UninstallEventData;
+  export type UpdateState = UpdateStateEventData;
+  export type ProtocolMessage = ProtocolMessageData;
+}
 
-export type CreateTransferEventData<T extends ConditionalTransferTypes | undefined = undefined> = {
-  amount: string;
-  assetId: string;
-  paymentId: string;
-  sender: string;
-  recipient?: string;
-  meta: any;
-  type: T;
-  transferMeta: T extends typeof LINKED_TRANSFER
-    ? CreatedLinkedTransferMeta
-    : T extends typeof LINKED_TRANSFER_TO_RECIPIENT
-    ? CreatedLinkedTransferToRecipientMeta
-    : T extends typeof FAST_SIGNED_TRANSFER
-    ? CreatedFastSignedTransferMeta
-    : undefined;
-};
-
-export class ConnextEventEmitter extends EventEmitter<
-  string | ConnextEvent | CFCoreTypes.RpcMethodName
-> {}
-
-export type NodeEvent = EventName;
-export const NODE_EVENTS = EventNames;
+export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventNames> {}

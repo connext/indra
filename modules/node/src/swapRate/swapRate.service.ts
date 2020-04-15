@@ -1,4 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import { AllowedSwap, PriceOracleType, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
@@ -17,7 +17,7 @@ export class SwapRateService implements OnModuleInit {
   constructor(
     private readonly config: ConfigService,
     private readonly log: LoggerService,
-    @Inject(MessagingProviderId) private readonly messaging: IMessagingService,
+    @Inject(MessagingProviderId) private readonly messaging: MessagingService,
   ) {
     this.log.setContext("SwapRateService");
   }
@@ -30,7 +30,7 @@ export class SwapRateService implements OnModuleInit {
     } else {
       const targetSwap = this.config.getAllowedSwaps().find(s => s.from === from && s.to === to);
       if (targetSwap) {
-        rate = await this.getSwapRate(from, to, targetSwap.priceOracleType);
+        rate = await this.fetchSwapRate(from, to, targetSwap.priceOracleType);
       } else {
         throw new Error(`No valid swap exists for ${from} to ${to}`);
       }
@@ -38,7 +38,7 @@ export class SwapRateService implements OnModuleInit {
     return rate;
   }
 
-  async getSwapRate(
+  async fetchSwapRate(
     from: string,
     to: string,
     priceOracleType: PriceOracleType,
@@ -66,18 +66,30 @@ export class SwapRateService implements OnModuleInit {
     // check rate based on configured price oracle
     let newRate: string;
     try {
-      switch (priceOracleType) {
-        case "UNISWAP":
-          newRate = await this.getUniswapRate(from, to);
-          break;
-        default:
-          throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
-      }
+      newRate = await Promise.race([
+        new Promise(async (resolve, reject): Promise<void> => {
+          switch (priceOracleType) {
+            case "UNISWAP":
+              resolve(await this.getUniswapRate(from, to));
+              break;
+            default:
+              throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
+          }
+        }),
+        new Promise((res: any, rej: any): void => {
+          const timeout = 15_000;
+          setTimeout(
+            ():void => rej(new Error(`Took longer than ${timeout/1000}s`)),
+            timeout,
+          );
+        }),
+      ]) as string;
     } catch (e) {
-      this.log.warn(`Failed to fetch swap rate from ${priceOracleType} for ${from} to ${to}`);
+      this.log.warn(`Failed to fetch swap rate from ${priceOracleType} for ${from} to ${to}: ${e.message}`);
       if (process.env.NODE_ENV === "development") {
         newRate = await this.config.getDefaultSwapRate(from, to);
         if (!newRate) {
+          this.log.warn(`No default rate for swap from ${from} to ${to}, returning zero.`);
           return "0";
         }
       }
@@ -135,7 +147,7 @@ export class SwapRateService implements OnModuleInit {
     for (const swap of swaps) {
       // Check rate at each new block
       provider.on("block", (blockNumber: number) =>
-        this.getSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
+        this.fetchSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
       );
     }
   }

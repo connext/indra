@@ -1,11 +1,16 @@
-import { CFCoreTypes, stringify, bigNumberifyObj, CoinTransferBigNumber, CoinBalanceRefundApp } from "@connext/types";
+import {
+  CoinTransfer,
+  MethodParams,
+  DepositAppName,
+} from "@connext/types";
+import { getAddressFromAssetId, stringify } from "@connext/utils";
+import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 
 import { AppRegistryInfo } from "./registry";
-import { BigNumber } from "ethers/utils";
-import { Zero } from "ethers/constants";
 
 const appProposalMatchesRegistry = (
-  proposal: CFCoreTypes.ProposeInstallParams,
+  proposal: MethodParams.ProposeInstall,
   appRegistryInfo: AppRegistryInfo,
 ): void => {
   if (
@@ -31,14 +36,14 @@ const appProposalMatchesRegistry = (
  * is uninstalled.
  *
  * @param params
- * @param initiatorPublicIdentifier
- * @param responderPublicIdentifier
+ * @param initiatorIdentifier
+ * @param responderIdentifier
  */
 export const baseCoinTransferValidation = (
   initiatorDeposit: BigNumber,
   responderDeposit: BigNumber,
-  initiatorTransfer: CoinTransferBigNumber,
-  responderTransfer: CoinTransferBigNumber,
+  initiatorTransfer: CoinTransfer,
+  responderTransfer: CoinTransfer,
 ) => {
   if (!initiatorTransfer || !responderTransfer) {
     throw new Error(
@@ -61,14 +66,14 @@ export const baseCoinTransferValidation = (
  * is a unidirectional receiver.
  *
  * @param params
- * @param initiatorPublicIdentifier
- * @param responderPublicIdentifier
+ * @param initiatorIdentifier
+ * @param responderIdentifier
  */
 export const unidirectionalCoinTransferValidation = (
   initiatorDeposit: BigNumber,
   responderDeposit: BigNumber,
-  initiatorTransfer: CoinTransferBigNumber,
-  responderTransfer: CoinTransferBigNumber,
+  initiatorTransfer: CoinTransfer,
+  responderTransfer: CoinTransfer,
 ) => {
   baseCoinTransferValidation(
     initiatorDeposit,
@@ -102,33 +107,39 @@ export const unidirectionalCoinTransferValidation = (
 };
 
 export const commonAppProposalValidation = (
-  params: CFCoreTypes.ProposeInstallParams,
+  params: MethodParams.ProposeInstall,
   appRegistryInfo: AppRegistryInfo,
   supportedTokenAddresses: string[],
 ): void => {
   const {
     initiatorDeposit,
-    initiatorDepositTokenAddress,
+    initiatorDepositAssetId,
     responderDeposit,
-    responderDepositTokenAddress,
-  } = bigNumberifyObj(params);
+    responderDepositAssetId,
+  } = params;
 
   appProposalMatchesRegistry(params, appRegistryInfo);
 
+  const initiatorDepositTokenAddress = 
+    getAddressFromAssetId(initiatorDepositAssetId);
+  const responderDepositTokenAddress = 
+    getAddressFromAssetId(responderDepositAssetId);
+
   if (!supportedTokenAddresses.includes(initiatorDepositTokenAddress)) {
-    throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
+    throw new Error(`Unsupported initiatorDepositTokenAddress: ${initiatorDepositTokenAddress}`);
   }
 
   if (!supportedTokenAddresses.includes(responderDepositTokenAddress)) {
-    throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
+    throw new Error(`Unsupported responderDepositAssetId: ${responderDepositTokenAddress}`);
   }
 
   // NOTE: may need to remove this condition if we start working
   // with games
+  const isDeposit = appRegistryInfo.name === DepositAppName;
   if (
     responderDeposit.isZero() &&
     initiatorDeposit.isZero() &&
-    appRegistryInfo.name !== CoinBalanceRefundApp
+    !isDeposit
   ) {
     throw new Error(
       `Cannot install an app with zero valued deposits for both initiator and responder.`,

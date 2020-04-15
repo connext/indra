@@ -1,32 +1,28 @@
-import { xkeyKthAddress } from "@connext/cf-core";
-import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj, stringify } from "@connext/types";
+import {
+  MethodParams,
+  CoinTransfer,
+  SimpleLinkedTransferAppState,
+} from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
-import { convertLinkedTransferAppState } from "./convert";
 
 export const validateSimpleLinkedTransferApp = (
-  params: CFCoreTypes.ProposeInstallParams,
-  initiatorPublicIdentifier: string,
-  responderPublicIdentifier: string,
+  params: MethodParams.ProposeInstall,
+  initiatorIdentifier: string,
+  responderIdentifier: string,
 ) => {
-  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
-    params,
-  );
+  const { responderDeposit, initiatorDeposit } = params;
+  const initialState = params.initialState as SimpleLinkedTransferAppState;
 
-  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+  const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
-  const initialState = convertLinkedTransferAppState("bignumber", initialStateBadType);
-
-  initialState.coinTransfers = initialState.coinTransfers.map((transfer: CoinTransferBigNumber) =>
-    bigNumberifyObj(transfer),
-  ) as any;
-
-  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
-    return transfer.to === initiatorFreeBalanceAddress;
+  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
+    return transfer.to === initiatorSignerAddress;
   })[0];
-  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
-    return transfer.to === responderFreeBalanceAddress;
+  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
+    return transfer.to === responderSignerAddress;
   })[0];
 
   unidirectionalCoinTransferValidation(

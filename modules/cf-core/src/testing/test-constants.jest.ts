@@ -1,0 +1,8 @@
+export const A_PRIVATE_KEY =
+  "0xbbf5c344906e0671362a9c11ae52f4306fcb6bf21b2a25761ae9df19a218257f";
+
+export const B_PRIVATE_KEY =
+  "0x96b85aaca43eaf2fd3e6912f053afa8446ace4e057fc372367c8041f422b6b83";
+
+export const C_PRIVATE_KEY =
+  "0x083d039052683d5e61cd2491f606b3b6fe4f9bc53bab365c276c93f97a965e8c";

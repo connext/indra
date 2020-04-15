@@ -1,54 +1,72 @@
 import {
-  RECEIVE_TRANSFER_FAILED_EVENT,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
-  ReceiveTransferFinishedEventData,
-  ResolveHashLockTransferParameters,
-  ResolveHashLockTransferResponse,
-  HASHLOCK_TRANSFER,
+  ConditionalTransferTypes,
+  EventNames,
+  EventPayloads,
+  HashLockTransferAppState,
+  PublicParams,
+  PublicResults,
 } from "@connext/types";
+import { HashZero } from "ethers/constants";
 import { soliditySha256 } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
 
 export class ResolveHashLockTransferController extends AbstractController {
   public resolveHashLockTransfer = async (
-    params: ResolveHashLockTransferParameters,
-  ): Promise<ResolveHashLockTransferResponse> => {
+    params: PublicParams.ResolveHashLockTransfer,
+  ): Promise<PublicResults.ResolveHashLockTransfer> => {
     const { preImage } = params;
 
     this.log.info(`Resolving hash lock transfer with preImage ${preImage}`);
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
-    this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
-      lockHash,
-      publicIdentifier: this.connext.publicIdentifier,
-    });
 
-    let resolveRes: ResolveHashLockTransferResponse;
-    try {
-      // node installs app, validation happens in listener
-      resolveRes = await this.connext.node.resolveHashLockTransfer(lockHash);
-      await this.connext.takeAction(resolveRes.appId, { preImage });
-      await this.connext.uninstallApp(resolveRes.appId);
-    } catch (e) {
-      this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
-        error: e.stack || e.message,
-        lockHash,
-      });
-      throw e;
+    const installedApps = await this.connext.getAppInstances();
+    const hashlockApp = installedApps.find(
+      app => (app.latestState as HashLockTransferAppState).lockHash === lockHash,
+    );
+    if (!hashlockApp) {
+      throw new Error(`Hashlock app has not been installed`);
     }
 
-    this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
-      type: HASHLOCK_TRANSFER,
-      amount: resolveRes.amount,
-      assetId: resolveRes.assetId,
-      paymentId: "",
-      sender: resolveRes.sender,
-      recipient: this.connext.publicIdentifier,
-      meta: resolveRes.meta,
-    } as ReceiveTransferFinishedEventData<typeof HASHLOCK_TRANSFER>);
+    const amount = (hashlockApp.latestState as HashLockTransferAppState).coinTransfers[0].amount;
+    const assetId = hashlockApp.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress;
 
-    return resolveRes;
+    try {
+      // node installs app, validation happens in listener
+      await this.connext.takeAction(
+        hashlockApp.identityHash, 
+        { preImage },
+      );
+      await this.connext.uninstallApp(hashlockApp.identityHash);
+    } catch (e) {
+      this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
+        error: e.stack || e.message,
+        paymentId: lockHash,
+        type: ConditionalTransferTypes[ConditionalTransferTypes.HashLockTransfer],
+      } as EventPayloads.HashLockTransferFailed);
+      throw e;
+    }
+    const sender = hashlockApp.meta["sender"];
+    this.connext.emit(
+      EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT,
+      {
+        type: ConditionalTransferTypes.HashLockTransfer,
+        amount: amount,
+        assetId: assetId,
+        paymentId: HashZero,
+        sender,
+        recipient: this.connext.publicIdentifier,
+        meta: hashlockApp.meta,
+      } as EventPayloads.HashLockTransferCreated,
+    );
+
+    return {
+      amount,
+      appIdentityHash: hashlockApp.identityHash,
+      assetId,
+      sender,
+      meta: hashlockApp.meta,
+    };
   };
 }

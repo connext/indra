@@ -1,106 +1,61 @@
-import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
+import { AppIdentity, CriticalStateChannelAddresses, PublicIdentifier } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
-import { Provider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import {
   BigNumber,
-  bigNumberify,
   getAddress,
   Interface,
-  joinSignature,
   keccak256,
-  recoverAddress,
-  Signature,
   solidityKeccak256,
+  solidityPack,
 } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
+import memoize from "memoizee";
 
-import { JSON_STRINGIFY_SPACE } from "./constants";
+import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
-import { xkeyKthAddress } from "./machine";
-import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods";
 
-export const logTime = (log: ILoggerService, start: number, msg: string) => {
-  const diff = Date.now() - start;
-  const message = `${msg} in ${diff} ms`;
-  if (diff < 10) {
-    log.debug(message);
-  } else if (diff < 100) {
-    log.info(message);
-  } else if (diff < 1000) {
-    log.warn(message);
-  } else {
-    log.error(message);
-  }
-};
-
-export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
-  return list.filter(x => x !== test)[0];
-}
-
-export function timeout(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
-
-export const bigNumberifyJson = (json: object) =>
-  JSON.parse(JSON.stringify(json), (key, val) => (val && val["_hex"] ? bigNumberify(val) : val));
-
-export const deBigNumberifyJson = (json: object) =>
-  JSON.parse(JSON.stringify(json), (key, val) =>
-    val && BigNumber.isBigNumber(val) ? val.toHexString() : val,
+export function appIdentityToHash(appIdentity: AppIdentity): string {
+  return keccak256(
+    solidityPack(
+      ["address", "uint256", "bytes32", "address", "uint256"],
+      [
+        appIdentity.multisigAddress,
+        appIdentity.channelNonce,
+        keccak256(solidityPack(["address[]"], [appIdentity.participants])),
+        appIdentity.appDefinition,
+        appIdentity.defaultTimeout,
+      ],
+    ),
   );
-/**
- * Converts an array of signatures into a single string
- *
- * @param signatures An array of etherium signatures
- */
-export function signaturesToBytes(...signatures: Signature[]): string {
-  return signatures
-    .map(joinSignature)
-    .map(s => s.substr(2))
-    .reduce((acc, v) => acc + v, "0x");
 }
 
-/**
- * Sorts signatures in ascending order of signer address
- *
- * @param signatures An array of etherium signatures
- */
-export function sortSignaturesBySignerAddress(
-  digest: string,
-  signatures: Signature[],
-): Signature[] {
-  const ret = signatures.slice();
-  ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, signaturesToBytes(sigA));
-    const addrB = recoverAddress(digest, signaturesToBytes(sigB));
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-  });
-  return ret;
-}
+export function assertSufficientFundsWithinFreeBalance(
+  channel: StateChannel,
+  publicIdentifier: string,
+  tokenAddress: string,
+  depositAmount: BigNumber,
+): void {
+  const freeBalanceForToken =
+    channel.getFreeBalanceClass()
+      .getBalance(
+        tokenAddress, 
+        getSignerAddressFromPublicIdentifier(publicIdentifier),
+      ) || Zero;
 
-/**
- * Sorts signatures in ascending order of signer address
- * and converts them into bytes
- *
- * @param signatures An array of etherium signatures
- */
-export function signaturesToBytesSortedBySignerAddress(
-  digest: string,
-  ...signatures: Signature[]
-): string {
-  return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
-}
-
-export function prettyPrintObject(object: any) {
-  return JSON.stringify(object, null, JSON_STRINGIFY_SPACE);
-}
-
-export async function sleep(timeInMilliseconds: number) {
-  return new Promise(resolve => setTimeout(resolve, timeInMilliseconds));
+  if (freeBalanceForToken.lt(depositAmount)) {
+    throw new Error(
+      INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
+        publicIdentifier,
+        channel.multisigAddress,
+        tokenAddress,
+        freeBalanceForToken,
+        depositAmount,
+      ),
+    );
+  }
 }
 
 /**
@@ -114,37 +69,29 @@ export async function sleep(timeInMilliseconds: number) {
  *
  * @export
  * @param {string[]} owners - the addresses of the owners of the multisig
- * @param {string} proxyFactoryAddress - address of ProxyFactory library
- * @param {string} multisigMastercopyAddress - address of masterCopy of multisig
- * @param {string} provider - to fetch proxyBytecode from the proxyFactoryAddress
+ * @param {string} addresses - critical addresses required to deploy multisig
+ * @param {string} ethProvider - to fetch proxyBytecode from the proxyFactoryAddress
+ * @param {string} legacyKeygen - Should we use CF_PATH or `${CF_PATH}/0` ?
+ * @param {string} toxicBytecode - Use given bytecode if given instead of fetching from proxyFactory
  *
  * @returns {string} the address of the multisig
  *
  * NOTE: if the encoding of the multisig owners is changed YOU WILL break all
  * existing channels
  */
-// TODO: memoize?
 export const getCreate2MultisigAddress = async (
-  owners: string[],
+  initiatorIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   addresses: CriticalStateChannelAddresses,
-  ethProvider: Provider,
+  ethProvider: JsonRpcProvider,
   legacyKeygen?: boolean,
   toxicBytecode?: string,
 ): Promise<string> => {
   const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
 
-  const xkeysToSortedKthAddresses = xkeys =>
-    xkeys
-      .map(xkey =>
-        legacyKeygen === true
-          ? fromExtendedKey(xkey).address
-          : fromExtendedKey(xkey).derivePath("0").address,
-      )
-      .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-
   const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
-  return getAddress(
+  return memoizedGetAddress(
     solidityKeccak256(
       ["bytes1", "address", "uint256", "bytes32"],
       [
@@ -156,10 +103,17 @@ export const getCreate2MultisigAddress = async (
             keccak256(
               // see encoding notes
               new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                xkeysToSortedKthAddresses(owners),
+                [
+                  getSignerAddressFromPublicIdentifier(initiatorIdentifier),
+                  getSignerAddressFromPublicIdentifier(responderIdentifier),
+                ],
               ]),
             ),
-            0,
+            // hash chainId + saltNonce to ensure multisig addresses are *always* unique
+            solidityKeccak256(
+              ["uint256", "uint256"],
+              [ethProvider.network.chainId, 0],
+            ),
           ],
         ),
         solidityKeccak256(
@@ -171,10 +125,17 @@ export const getCreate2MultisigAddress = async (
   );
 };
 
+const memoizedGetAddress = memoize((params: string): string => getAddress(params), {
+  max: 100,
+  maxAge: 60 * 1000,
+  primitive: true,
+});
+
 export const scanForCriticalAddresses = async (
-  ownerXpubs: string[],
+  initiatorIdentifier: PublicIdentifier,
+  responderIdentifier: PublicIdentifier,
   expectedMultisig: string,
-  ethProvider: Provider,
+  ethProvider: JsonRpcProvider,
   moreAddressHistory?: {
     ProxyFactory: string[];
     MinimumViableMultisig: string[];
@@ -224,7 +185,8 @@ export const scanForCriticalAddresses = async (
       for (const multisigMastercopy of mastercopies) {
         for (const proxyFactory of proxyFactories) {
           let calculated = await getCreate2MultisigAddress(
-            ownerXpubs,
+            initiatorIdentifier,
+            responderIdentifier,
             { proxyFactory, multisigMastercopy },
             ethProvider,
             legacyKeygen,
@@ -244,31 +206,3 @@ export const scanForCriticalAddresses = async (
   }
   return;
 };
-
-// NOTE: will not fail if there is no free balance class. there is
-// no free balance in the case of a channel between virtual
-// participants
-export function assertSufficientFundsWithinFreeBalance(
-  channel: StateChannel,
-  publicIdentifier: string,
-  tokenAddress: string,
-  depositAmount: BigNumber,
-): void {
-  if (!channel.hasFreeBalance) return;
-
-  const freeBalanceForToken =
-    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
-    Zero;
-
-  if (freeBalanceForToken.lt(depositAmount)) {
-    throw Error(
-      INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
-        publicIdentifier,
-        channel.multisigAddress,
-        tokenAddress,
-        freeBalanceForToken,
-        depositAmount,
-      ),
-    );
-  }
-}

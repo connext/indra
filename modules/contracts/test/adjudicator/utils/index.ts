@@ -1,18 +1,68 @@
-import { AppIdentity } from "@connext/types";
-import * as chai from "chai";
-import { solidity } from "ethereum-waffle";
+import { AppIdentity, ChallengeStatus, CommitmentTarget } from "@connext/types";
 import {
-  BigNumber,
   BigNumberish,
   defaultAbiCoder,
-  joinSignature,
   keccak256,
-  recoverAddress,
-  Signature,
+  hexlify,
+  randomBytes,
   solidityPack,
+  BigNumber,
 } from "ethers/utils";
 
-export const expect = chai.use(solidity).expect;
+import { AddressZero, Zero, HashZero } from "ethers/constants";
+export * from "./context";
+
+// include all top level utils
+export * from "../../utils";
+
+export const randomState = (numBytes: number = 64) => hexlify(randomBytes(numBytes));
+
+// App State With Action types for testing
+export type AppWithCounterState = {
+  counter: BigNumber;
+}
+
+export enum ActionType {
+  SUBMIT_COUNTER_INCREMENT,
+  ACCEPT_INCREMENT,
+}
+
+export enum TwoPartyFixedOutcome {
+  SEND_TO_ADDR_ONE,
+  SEND_TO_ADDR_TWO,
+  SPLIT_AND_SEND_TO_BOTH_ADDRS
+}
+
+export type AppWithCounterAction = {
+  actionType: ActionType,
+  increment: BigNumber,
+}
+
+export function encodeState(state: AppWithCounterState) {
+  return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
+}
+
+export function encodeAction(action: AppWithCounterAction) {
+  return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
+}
+
+export function encodeOutcome() {
+  return defaultAbiCoder.encode([`uint`], [TwoPartyFixedOutcome.SEND_TO_ADDR_ONE]);
+}
+
+// TS version of MChallengeRegistryCore::computeCancelDisputeHash
+export const computeCancelDisputeHash = (
+  identityHash: string,
+  versionNumber: BigNumber,
+) => keccak256(
+  solidityPack(
+    ["uint8", "bytes32", "uint256"],
+    [CommitmentTarget.CANCEL_DISPUTE, identityHash, versionNumber],
+  ),
+);
+
+// TS version of MChallengeRegistryCore::appStateToHash
+export const appStateToHash = (state: string) => keccak256(state);
 
 // TS version of MChallengeRegistryCore::computeAppChallengeHash
 export const computeAppChallengeHash = (
@@ -23,88 +73,49 @@ export const computeAppChallengeHash = (
 ) =>
   keccak256(
     solidityPack(
-      ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-      ["0x19", id, versionNumber, timeout, appStateHash],
+      ["uint8", "bytes32", "bytes32", "uint256", "uint256"],
+      [CommitmentTarget.SET_STATE, id, appStateHash, versionNumber, timeout],
     ),
   );
 
-// TS version of MChallengeRegistryCore::computeActionHash
-export const computeActionHash = (
-  turnTaker: string,
-  previousState: string,
-  action: string,
-  versionNumber: number,
-) =>
-  keccak256(
-    solidityPack(
-      ["bytes1", "address", "bytes", "bytes", "uint256"],
-      ["0x19", turnTaker, previousState, action, versionNumber],
-    ),
-  );
-
-export class AppIdentityTestClass {
+export class AppWithCounterClass {
   get identityHash(): string {
     return keccak256(
-      defaultAbiCoder.encode(["uint256", "address[]"], [this.channelNonce, this.participants]),
+      solidityPack(
+        ["address", "uint256", "bytes32", "address", "uint256"],
+        [
+          this.multisigAddress,
+          this.channelNonce,
+          keccak256(solidityPack(["address[]"], [this.participants])),
+          this.appDefinition,
+          this.defaultTimeout
+        ],
+      ),
     );
   }
 
   get appIdentity(): AppIdentity {
     return {
       participants: this.participants,
+      multisigAddress: this.multisigAddress,
       appDefinition: this.appDefinition,
-      defaultTimeout: this.defaultTimeout,
-      channelNonce: this.channelNonce,
+      defaultTimeout: this.defaultTimeout.toString(),
+      channelNonce: this.channelNonce.toString(),
     };
   }
 
   constructor(
     readonly participants: string[],
+    readonly multisigAddress: string,
     readonly appDefinition: string,
     readonly defaultTimeout: number,
     readonly channelNonce: number,
   ) {}
 }
 
-/**
- * Converts an array of signatures into a single string
- *
- * @param signatures An array of etherium signatures
- */
-export function signaturesToBytes(...signatures: Signature[]): string {
-  return signatures
-    .map(joinSignature)
-    .map(s => s.substr(2))
-    .reduce((acc, v) => acc + v, "0x");
-}
-
-/**
- * Sorts signatures in ascending order of signer address
- *
- * @param signatures An array of etherium signatures
- */
-export function sortSignaturesBySignerAddress(
-  digest: string,
-  signatures: Signature[],
-): Signature[] {
-  const ret = signatures.slice();
-  ret.sort((sigA, sigB) => {
-    const addrA = recoverAddress(digest, signaturesToBytes(sigA));
-    const addrB = recoverAddress(digest, signaturesToBytes(sigB));
-    return new BigNumber(addrA).lt(addrB) ? -1 : 1;
-  });
-  return ret;
-}
-
-/**
- * Sorts signatures in ascending order of signer address
- * and converts them into bytes
- *
- * @param signatures An array of etherium signatures
- */
-export function signaturesToBytesSortedBySignerAddress(
-  digest: string,
-  ...signatures: Signature[]
-): string {
-  return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
-}
+export const EMPTY_CHALLENGE = {
+  versionNumber: Zero,
+  appStateHash: HashZero,
+  status: ChallengeStatus.NO_CHALLENGE,
+  finalizesAt: Zero,
+};

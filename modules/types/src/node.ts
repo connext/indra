@@ -1,159 +1,113 @@
-import { AppRegistry } from "./app";
-import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
-import { NetworkContext } from "./contracts";
-import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
-import { IChannelProvider } from "./channelProvider";
-import { ILoggerService } from "./logger";
-import { IMessagingService, MessagingConfig } from "./messaging";
-import { ProtocolTypes } from "./protocol";
+import { Address, BigNumber, Bytes32, DecString, Network, PublicIdentifier } from "./basic";
 import {
-  ResolveLinkedTransferResponse,
-  ResolveFastSignedTransferResponse,
-  ResolveHashLockTransferResponse,
-} from "./apps";
+  ConditionalTransactionCommitmentJSON,
+  MinimalTransaction,
+  SetStateCommitmentJSON,
+} from "./commitments";
+import { ContractAddresses } from "./contracts";
+import { MethodResults } from "./methods";
+import { PublicResults } from "./public";
+import { StateChannelJSON } from "./state";
+import { LinkedTransferStatus, HashLockTransferStatus, SignedTransferStatus } from "./transfers";
+import { Collateralizations, RebalanceProfile } from "./misc";
 
-////////////////////////////////////
-///////// NODE RESPONSE TYPES
+type GetRebalanceProfileResponse = RebalanceProfile;
 
-export type ContractAddresses = NetworkContext & {
-  Token: string;
-  [SupportedApplication: string]: string;
+type GetHashLockTransferResponse =
+  | {
+      senderIdentifier: PublicIdentifier;
+      receiverIdentifier?: PublicIdentifier;
+      assetId: Address;
+      amount: DecString;
+      lockHash: Bytes32;
+      status: HashLockTransferStatus;
+      meta?: any;
+    }
+  | undefined;
+
+type GetSignedTransferResponse = {
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier?: PublicIdentifier;
+  assetId: Address;
+  amount: DecString;
+  paymentId: Bytes32;
+  status: SignedTransferStatus;
+  meta?: any;
 };
 
-export interface NodeConfig {
-  nodePublicIdentifier: string; // x-pub of node
-  chainId: string; // network that your channel is on
-  nodeUrl: string;
-}
-
-// TODO: is this the type that is actually returned?
-// i think you get status, etc.
-export type Transfer<T = string> = {
-  paymentId: string;
-  amount: T;
-  assetId: string;
-  senderPublicIdentifier: string;
-  receiverPublicIdentifier: string;
+type GetTransferResponse = {
+  paymentId: Bytes32;
+  amount: BigNumber;
+  assetId: Address;
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier: PublicIdentifier;
   meta: any;
 };
-export type TransferBigNumber = Transfer<BigNumber>;
 
-// nats stuff
-type successResponse = {
-  status: "success";
-};
-
-type errorResponse = {
-  status: "error";
-  message: string;
-};
-
-export type NatsResponse = {
-  data: string;
-} & (errorResponse | successResponse);
-
-export type GetConfigResponse = {
+type GetConfigResponse = {
   ethNetwork: Network;
   contractAddresses: ContractAddresses;
-  nodePublicIdentifier: string;
-  messaging: MessagingConfig;
-  supportedTokenAddresses: string[];
+  nodeIdentifier: PublicIdentifier;
+  messagingUrl: string[];
+  supportedTokenAddresses: Address[];
 };
 
-export type GetChannelResponse = CFCoreChannel;
+type GetChannelResponse = {
+  id: number;
+  nodeIdentifier: PublicIdentifier;
+  userIdentifier: PublicIdentifier;
+  multisigAddress: Address;
+  available: boolean;
+  activeCollateralizations: Collateralizations;
+};
 
 // returns the transaction hash of the multisig deployment
 // TODO: this will likely change
-export type CreateChannelResponse = {
-  transactionHash: string;
+type CreateChannelResponse = {
+  transactionHash: Bytes32;
 };
 
-// TODO: why was this changed?
-export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
+type RequestCollateralResponse = MethodResults.Deposit | undefined;
 
-////////////////////////////////////
-///////// NODE API CLIENT
+// returned by the node when client calls channel.restore
+type ChannelRestoreResponse = {
+  channel: StateChannelJSON;
+  setupCommitment: MinimalTransaction | undefined;
+  setStateCommitments: [Bytes32, SetStateCommitmentJSON][]; // appIdentityHash, commitment
+  conditionalCommitments: [Bytes32, ConditionalTransactionCommitmentJSON][]; // appIdentityHash, commitment
+};
 
-export interface PendingAsyncTransfer {
-  assetId: string;
-  amount: string;
-  encryptedPreImage: string;
-  linkedHash: string;
-  paymentId: string;
-}
-
-export interface PendingFastSignedTransfer {
-  assetId: string;
-  amount: string;
-  paymentId: string;
-  signer: string;
-}
-
-enum LinkedTransferStatus {
-  PENDING = "PENDING",
-  REDEEMED = "REDEEMED",
-  FAILED = "FAILED",
-  RECLAIMED = "RECLAIMED",
-}
-
-export interface FetchedLinkedTransfer {
-  paymentId: string;
+type FetchedLinkedTransfer = {
+  paymentId: Bytes32;
   createdAt: Date;
-  amount: string;
-  assetId: string;
-  senderPublicIdentifier: string;
-  receiverPublicIdentifier: string;
-  type: string;
+  amount: BigNumber;
+  assetId: Address;
+  senderIdentifier: PublicIdentifier;
+  receiverIdentifier?: PublicIdentifier;
   status: LinkedTransferStatus;
   meta: any;
-}
+  encryptedPreImage?: string;
+};
 
-export interface NodeInitializationParameters {
-  messaging: IMessagingService;
-  logger?: ILoggerService;
-  userPublicIdentifier?: string;
-  nodePublicIdentifier?: string;
-  channelProvider?: IChannelProvider;
-}
+type GetLinkedTransferResponse = FetchedLinkedTransfer;
+type GetPendingAsyncTransfersResponse = FetchedLinkedTransfer[];
 
-export interface INodeApiClient {
-  channelProvider: IChannelProvider | undefined;
-  userPublicIdentifier: string | undefined;
-  nodePublicIdentifier: string | undefined;
+////////////////////////////////////
+// exports
 
-  acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
-  appRegistry(
-    appDetails?:
-      | {
-          name: string;
-          chainId: number;
-        }
-      | { appDefinitionAddress: string },
-  ): Promise<AppRegistry>;
-  config(): Promise<GetConfigResponse>;
-  createChannel(): Promise<CreateChannelResponse>;
-  clientCheckIn(): Promise<void>;
-  getChannel(): Promise<GetChannelResponse>;
-  getLatestSwapRate(from: string, to: string): Promise<string>;
-  getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
-  getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
-  getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
-  getLatestWithdrawal(): Promise<Transaction>;
-  requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  withdraw(tx: ProtocolTypes.MinimalTransaction): Promise<TransactionResponse>;
-  fetchLinkedTransfer(paymentId: string): Promise<FetchedLinkedTransfer>;
-  resolveLinkedTransfer(paymentId: string): Promise<ResolveLinkedTransferResponse>;
-  resolveFastSignedTransfer(paymentId: string): Promise<ResolveFastSignedTransferResponse>;
-  resolveHashLockTransfer(lockHash: string): Promise<ResolveHashLockTransferResponse>;
-  recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
-  restoreState(publicIdentifier: string): Promise<any>;
-  subscribeToSwapRates(from: string, to: string, callback: any): void;
-  unsubscribeFromSwapRates(from: string, to: string): void;
-  // TODO: fix types
-  verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
-  setRecipientAndEncryptedPreImageForLinkedTransfer(
-    recipient: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<{ linkedHash: string }>;
+export namespace NodeResponses {
+  export type GetConfig = GetConfigResponse;
+  export type GetTransfer = GetTransferResponse;
+  export type GetTransferHistory = GetTransferResponse[];
+  export type GetLinkedTransfer = GetLinkedTransferResponse;
+  export type GetPendingAsyncTransfers = GetPendingAsyncTransfersResponse;
+  export type ResolveLinkedTransfer = PublicResults.ResolveLinkedTransfer;
+  export type ResolveSignedTransfer = PublicResults.ResolveSignedTransfer;
+  export type GetRebalanceProfile = GetRebalanceProfileResponse;
+  export type GetHashLockTransfer = GetHashLockTransferResponse;
+  export type GetSignedTransfer = GetSignedTransferResponse
+  export type GetChannel = GetChannelResponse
+  export type CreateChannel = CreateChannelResponse
+  export type RequestCollateral = RequestCollateralResponse
+  export type ChannelRestore = ChannelRestoreResponse
 }

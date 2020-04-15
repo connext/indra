@@ -1,29 +1,32 @@
-import { xkeyKthAddress } from "@connext/cf-core";
-import { CFCoreTypes, CoinTransferBigNumber, bigNumberifyObj } from "@connext/types";
+import { MethodParams, CoinTransfer, HashLockTransferAppState } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 
 import { unidirectionalCoinTransferValidation } from "../shared";
-import { convertHashLockTransferAppState } from "./convert";
 
 export const validateHashLockTransferApp = (
-  params: CFCoreTypes.ProposeInstallParams,
-  initiatorPublicIdentifier: string,
-  responderPublicIdentifier: string,
+  params: MethodParams.ProposeInstall,
+  blockNumber: number,
+  initiatorIdentifier: string,
+  responderIdentifier: string,
 ) => {
-  const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = bigNumberifyObj(
-    params,
-  );
+  const { responderDeposit, initiatorDeposit } = params;
+  const initialState = params.initialState as HashLockTransferAppState;
 
-  const initiatorFreeBalanceAddress = xkeyKthAddress(initiatorPublicIdentifier);
-  const responderFreeBalanceAddress = xkeyKthAddress(responderPublicIdentifier);
+  const initiatorSignerAddress = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
+  const responderSignerAddress = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
-  const initialState = convertHashLockTransferAppState("bignumber", initialStateBadType);
-
-  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
-    return transfer.to === initiatorFreeBalanceAddress;
+  const initiatorTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
+    return transfer.to === initiatorSignerAddress;
   })[0];
-  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
-    return transfer.to === responderFreeBalanceAddress;
+  const responderTransfer = initialState.coinTransfers.filter((transfer: CoinTransfer) => {
+    return transfer.to === responderSignerAddress;
   })[0];
+
+  if (initialState.timelock.lt(blockNumber)) {
+    throw new Error(
+      `Cannot install an app with an expired timelock. Timelock in state: ${initialState.timelock}. Current block: ${blockNumber}`,
+    );
+  }
 
   unidirectionalCoinTransferValidation(
     initiatorDeposit,

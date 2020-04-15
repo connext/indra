@@ -8,14 +8,8 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
-# Constants
-ganacheId="4447"
 localProvider="http://localhost:8545"
-
-# Command line args
 ETH_PROVIDER="${1:-$localProvider}"
-
-# Env vars
 mode="${MODE:-local}"
 
 ########################################
@@ -29,52 +23,25 @@ commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 name=${project}_contract_deployer
 
-chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $ETH_PROVIDER | jq .result | tr -d '"'`"
-
-if [[ -z "$chainId" ]]
-then
-  if [[ "$ETH_PROVIDER" == "$localProvider" ]]
-  then chainId="$ganacheId"
-  else echo "Unable to retrieve chainId from provider: $ETH_PROVIDER" && exit 1
-  fi
-fi
-
 if [[ -f "$cwd/address-book.json" ]]
 then address_book="$cwd/address-book.json"
 else address_book="$cwd/modules/contracts/address-book.json"
 fi
 
-echo "Deploying contracts to chain $chainId via provider: $ETH_PROVIDER"
-sleep 1
-
-########################################
-# Remove this deployer service when we're done
-
-function cleanup {
-  echo
-  echo "Contract deployment complete, removing service:"
-  docker service remove $name 2> /dev/null || true
-  if [[ -n "$logs_pid" ]]
-  then kill $logs_pid
-  fi
-  echo "Done!"
-}
-trap cleanup EXIT
-echo
-
 ########################################
 # Load private key into secret store
 # Unless we're using ganache, in which case we'll use the ETH_MNEMONIC
 
-if [[ "$chainId" == "$ganacheId" ]]
+if [[ "$ETH_PROVIDER" == "$localProvider" ]]
 then
   SECRET_ENV="--env=ETH_MNEMONIC=candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 else
-  echo "Copy the mnemonic for an account that holds funds on chain $chainId to your clipboard"
+  echo "Copy the mnemonic for an account that holds funds for given provider to your clipboard"
   echo "Paste it below & hit enter (no echo)"
   echo -n "> "
   read -s secret
   SECRET_ENV="--env=ETH_MNEMONIC=$secret"
+  echo
 fi
 
 ########################################
@@ -86,7 +53,7 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
-if [[ "$mode" == "local" && "$chainId" == "$ganacheId" ]]
+if [[ "$mode" == "local" ]]
 then
   echo "Deploying $mode-mode contract deployer (image: builder)..."
   exec docker run \
@@ -104,7 +71,6 @@ elif [[ "$mode" == "release" ]]
 then image="${registry}/${project}_ethprovider:$release"
 elif [[ "$mode" == "staging" ]]
 then image="${project}_ethprovider:$commit"
-else image="${project}_ethprovider:latest"
 fi
 
 echo "Deploying $mode-mode contract deployer (image: $image)..."

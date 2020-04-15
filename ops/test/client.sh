@@ -20,15 +20,12 @@ exec docker run \
     set -e
     echo "Client tester container launched!"
     
-    if [[ ! -d modules/client/node_modules/secp256k1 ]]
-    then cp -r node_modules/secp256k1 modules/client/node_modules/secp256k1
-    fi
     cd modules/client
 
     export PATH=./node_modules/.bin:$PATH
 
     function finish {
-      echo && echo "CF tester container exiting.." && exit
+      echo && echo "Client tester container exiting.." && exit
     }
     trap finish SIGTERM SIGINT
 

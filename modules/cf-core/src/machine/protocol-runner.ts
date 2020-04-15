@@ -1,69 +1,28 @@
-import { ILoggerService } from "@connext/types";
-import { BaseProvider } from "ethers/providers";
-import uuid from "uuid";
-
-import { StateChannel } from "../models";
-import { getProtocolFromName } from "../protocol";
 import {
-  Context,
-  InstallProtocolParams,
-  InstallVirtualAppProtocolParams,
-  Middleware,
+  GenericMiddleware,
+  ILoggerService,
+  IStoreService,
   NetworkContext,
-  ProposeInstallProtocolParams,
-  ProtocolMessage,
-  SetupProtocolParams,
-  TakeActionProtocolParams,
-  UninstallProtocolParams,
-  UninstallVirtualAppProtocolParams,
-  UpdateProtocolParams,
-  WithdrawProtocolParams,
-} from "../types";
+  Opcode,
+  ProtocolMessageData,
+  ProtocolName,
+  ProtocolNames,
+  ProtocolParam,
+  ProtocolParams,
+} from "@connext/types";
+import { JsonRpcProvider } from "ethers/providers";
+import { v4 as uuid } from "uuid";
 
-import { Opcode, Protocol } from "./enums";
+import { getProtocolFromName } from "../protocol";
+import { Context } from "../types";
+
 import { MiddlewareContainer } from "./middleware";
 
-/**
-Type-level mapping from Protocol to Protocol Param
-For e.g., ParamTypeOf<Protocol.Install> = InstallProtocolParams
-This syntax is preferred according to:
-https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types
-**/
-type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
-  ? InstallProtocolParams
-  : T extends Protocol.Update
-  ? UpdateProtocolParams
-  : T extends Protocol.Uninstall
-  ? UninstallProtocolParams
-  : T extends Protocol.InstallVirtualApp
-  ? InstallVirtualAppProtocolParams
-  : T extends Protocol.UninstallVirtualApp
-  ? UninstallVirtualAppProtocolParams
-  : T extends Protocol.TakeAction
-  ? TakeActionProtocolParams
-  : T extends Protocol.Withdraw
-  ? WithdrawProtocolParams
-  : T extends Protocol.Propose
-  ? ProposeInstallProtocolParams
-  : never;
-
-function firstRecipientFromProtocolName(protocolName: Protocol) {
-  if ([Protocol.UninstallVirtualApp, Protocol.InstallVirtualApp].indexOf(protocolName) !== -1) {
-    return "intermediaryXpub";
+function firstRecipientFromProtocolName(protocolName: ProtocolName) {
+  if (Object.values(ProtocolNames).includes(protocolName)) {
+    return "responderIdentifier";
   }
-  if (
-    [
-      Protocol.Update,
-      Protocol.Uninstall,
-      Protocol.TakeAction,
-      Protocol.Install,
-      Protocol.Withdraw,
-      Protocol.Propose,
-    ].indexOf(protocolName) !== -1
-  ) {
-    return "responderXpub";
-  }
-  throw Error(`Unknown protocolName ${protocolName} passed to firstRecipientFromProtocolName`);
+  throw new Error(`Unknown protocolName ${protocolName} passed to firstRecipientFromProtocolName`);
 }
 
 export class ProtocolRunner {
@@ -71,67 +30,62 @@ export class ProtocolRunner {
 
   constructor(
     public readonly network: NetworkContext,
-    public readonly provider: BaseProvider,
+    public readonly provider: JsonRpcProvider,
+    public readonly store: IStoreService,
     public readonly log: ILoggerService,
   ) {
     this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
   }
 
-  public register(scope: Opcode, method: Middleware) {
+  public register(scope: Opcode, method: GenericMiddleware) {
     this.middlewares.add(scope, method);
   }
 
   /// Starts executing a protocol in response to a message received. This
   /// function should not be called with messages that are waited for by
   /// `IO_SEND_AND_WAIT`
-  public async runProtocolWithMessage(msg: ProtocolMessage, sc: Map<string, StateChannel>) {
+  public async runProtocolWithMessage(msg: ProtocolMessageData) {
     const protocol = getProtocolFromName(msg.protocol);
     const step = protocol[msg.seq];
-    if (step === undefined) {
-      throw Error(`Received invalid seq ${msg.seq} for protocol ${msg.protocol}`);
+    if (typeof step === "undefined") {
+      throw new Error(`Received invalid seq ${msg.seq} for protocol ${msg.protocol}`);
     }
-    return this.runProtocol(sc, step, msg);
+    return this.runProtocol(step, msg);
   }
 
-  public async initiateProtocol<T extends Protocol>(
-    protocolName: T,
-    sc: Map<string, StateChannel>,
-    params: ParamTypeOf<T>,
-  ) {
-    return this.runProtocol(sc, getProtocolFromName(protocolName)[0], {
+  public async initiateProtocol(protocolName: ProtocolName, params: ProtocolParam) {
+    return this.runProtocol(getProtocolFromName(protocolName)[0], {
       params,
       protocol: protocolName,
-      processID: uuid.v1(),
+      processID: uuid(),
       seq: 0,
-      toXpub: params[firstRecipientFromProtocolName(protocolName)],
+      to: params[firstRecipientFromProtocolName(protocolName)],
       customData: {},
     });
   }
 
-  public async runSetupProtocol(params: SetupProtocolParams) {
-    const protocol = Protocol.Setup;
-    return this.runProtocol(new Map<string, StateChannel>(), getProtocolFromName(protocol)[0], {
+  public async runSetupProtocol(params: ProtocolParams.Setup) {
+    const protocol = ProtocolNames.setup;
+    return this.runProtocol(getProtocolFromName(protocol)[0], {
       protocol,
       params,
-      processID: uuid.v1(),
+      processID: uuid(),
       seq: 0,
-      toXpub: params.responderXpub,
+      to: params[firstRecipientFromProtocolName(protocol)],
       customData: {},
     });
   }
 
   private async runProtocol(
-    stateChannelsMap: Map<string, StateChannel>,
     instruction: (context: Context) => AsyncIterableIterator<any>,
-    message: ProtocolMessage,
-  ): Promise<Map<string, StateChannel>> {
+    message: ProtocolMessageData,
+  ): Promise<void> {
     const context: Context = {
       log: this.log,
       message,
+      store: this.store,
       network: this.network,
-      provider: this.provider,
-      stateChannelsMap,
     };
 
     let lastMiddlewareRet: any = undefined;
@@ -144,10 +98,5 @@ export class ProtocolRunner {
       const [opcode, ...args] = ret.value;
       lastMiddlewareRet = await this.middlewares.run(opcode, args);
     }
-
-    // TODO: it is possible to compute a diff of the original state channel
-    //       objects and the new state channel objects at this point
-    //       probably useful!
-    return context.stateChannelsMap;
   }
 }

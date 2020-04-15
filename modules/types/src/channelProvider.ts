@@ -1,9 +1,79 @@
-import { CFCoreTypes } from "./cfCore";
-import { NetworkContext } from "./contracts";
+import { JsonRpcProvider } from "ethers/providers";
+
+import { INodeApiClient } from "./api";
+import { Address, Bytes32, DecString, PublicIdentifier, PublicKey, UrlString } from "./basic";
+import { IChannelSigner } from "./crypto";
 import { ConnextEventEmitter } from "./events";
 import { ILoggerService } from "./logger";
-import { ProtocolTypes } from "./protocol";
-import { Store, StorePair } from "./store";
+import { MethodNames } from "./methods";
+import { WithdrawalMonitorObject, IClientStore } from "./store";
+import { StateChannelJSON } from "./state";
+import { enumify } from "./utils";
+import {
+  ConditionalTransactionCommitmentJSON,
+  SetStateCommitmentJSON,
+  MinimalTransaction,
+} from "./commitments";
+
+export const ChannelMethods = enumify({
+  ...MethodNames,
+  chan_isSigner: "chan_isSigner",
+  chan_config: "chan_config",
+  chan_enable: "chan_enable",
+  chan_signMessage: "chan_signMessage",
+  chan_encrypt: "chan_encrypt",
+  chan_decrypt: "chan_decrypt",
+  chan_restoreState: "chan_restoreState",
+  chan_getUserWithdrawal: "chan_getUserWithdrawal",
+  chan_setUserWithdrawal: "chan_setUserWithdrawal",
+  chan_setStateChannel: "chan_setStateChannel",
+  chan_walletDeposit: "chan_walletDeposit",
+  chan_createSetupCommitment: "chan_createSetupCommitment",
+  chan_createSetStateCommitment: "chan_createSetStateCommitment",
+  chan_createConditionalCommitment: "chan_createConditionalCommitment",
+  chan_getSchemaVersion: "chan_getSchemaVersion",
+  chan_updateSchemaVersion: "chan_updateSchemaVersion",
+});
+export type ChannelMethods = typeof ChannelMethods[keyof typeof ChannelMethods];
+
+export type ChannelProviderConfig = {
+  signerAddress: Address;
+  multisigAddress?: Address; // may not be deployed yet
+  nodeUrl: UrlString;
+  userIdentifier: PublicIdentifier;
+};
+
+export interface CFChannelProviderOptions {
+  ethProvider: JsonRpcProvider;
+  signer: IChannelSigner;
+  node: INodeApiClient;
+  logger?: ILoggerService;
+  store: IClientStore;
+}
+
+export type JsonRpcRequest = {
+  id: number;
+  jsonrpc: "2.0";
+  method: string; // MethodNames?
+  params: any;
+};
+
+export type WalletDepositParams = {
+  amount: DecString;
+  assetId: Address;
+};
+
+export interface IRpcConnection extends ConnextEventEmitter {
+  ////////////////////////////////////////
+  // Properties
+  connected: boolean;
+
+  ////////////////////////////////////////
+  // Methods
+  send(payload: JsonRpcRequest): Promise<any>;
+  open(): Promise<void>;
+  close(): Promise<void>;
+}
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -16,15 +86,14 @@ export interface IChannelProvider extends ConnextEventEmitter {
   // Methods
 
   enable(): Promise<ChannelProviderConfig>;
-  send(method: ChannelProviderRpcMethod, params: any): Promise<any>;
+  send(method: ChannelMethods, params: any): Promise<any>;
   close(): Promise<void>;
 
   ///////////////////////////////////
   // GETTERS / SETTERS
-  isSigner: boolean;
   config: ChannelProviderConfig | undefined;
-  multisigAddress: string | undefined;
-  signerAddress: string | undefined;
+  multisigAddress: Address | undefined;
+  signerAddress: Address | undefined;
 
   ///////////////////////////////////
   // LISTENER METHODS
@@ -32,75 +101,31 @@ export interface IChannelProvider extends ConnextEventEmitter {
   once(event: string, listener: (...args: any[]) => void): any;
 
   ///////////////////////////////////
-  // SIGNING METHODS
+  // SIGNER METHODS
+  isSigner(): Promise<boolean>;
   signMessage(message: string): Promise<string>;
+  encrypt(message: string, publicKey: PublicKey): Promise<string>;
+  decrypt(encryptedPreImage: string): Promise<string>;
+  walletDeposit(params: WalletDepositParams): Promise<string>;
 
   ///////////////////////////////////
   // STORE METHODS
-  get(path: string): Promise<any>;
-  set(pairs: StorePair[], allowDelete?: Boolean): Promise<void>;
-  restoreState(path: string): Promise<void>;
-}
+  getUserWithdrawals(): Promise<WithdrawalMonitorObject[]>;
+  setUserWithdrawal(withdrawal: WithdrawalMonitorObject, remove?: boolean): Promise<void>;
+  restoreState(state?: StateChannelJSON): Promise<void>;
 
-export const chan_config = "chan_config";
-export const chan_nodeAuth = "chan_nodeAuth";
-export const chan_restoreState = "chan_restoreState";
-export const chan_storeGet = "chan_storeGet";
-export const chan_storeSet = "chan_storeSet";
-
-// TODO: merge ConnextRpcMethods and RpcMethodNames???
-
-export const ConnextRpcMethods = {
-  [chan_config]: chan_config,
-  [chan_nodeAuth]: chan_nodeAuth,
-  [chan_restoreState]: chan_restoreState,
-  [chan_storeGet]: chan_storeGet,
-  [chan_storeSet]: chan_storeSet,
-};
-export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
-
-export type ChannelProviderRpcMethod = ConnextRpcMethod | CFCoreTypes.RpcMethodName;
-
-export type ChannelProviderConfig = {
-  freeBalanceAddress: string;
-  multisigAddress?: string; // may not be deployed yet
-  natsClusterId?: string;
-  natsToken?: string;
-  nodeUrl: string;
-  signerAddress: string;
-  userPublicIdentifier: string;
-};
-
-export interface CFChannelProviderOptions {
-  ethProvider: any;
-  keyGen: ProtocolTypes.IPrivateKeyGenerator;
-  lockService?: ProtocolTypes.ILockService;
-  logger?: ILoggerService;
-  messaging: any;
-  networkContext: NetworkContext;
-  nodeConfig: any;
-  nodeUrl: string;
-  xpub: string;
-  store: Store;
-}
-
-export type JsonRpcRequest = {
-  id: number;
-  jsonrpc: "2.0";
-  method: string;
-  params: any;
-};
-
-export type KeyGen = (index: string) => Promise<string>;
-
-export interface IRpcConnection extends ConnextEventEmitter {
-  ////////////////////////////////////////
-  // Properties
-  connected: boolean;
-
-  ////////////////////////////////////////
-  // Methods
-  send(payload: JsonRpcRequest): Promise<any>;
-  open(): Promise<void>;
-  close(): Promise<void>;
+  ///////////////////////////////////
+  // TRANSFER METHODS
+  setStateChannel(state: StateChannelJSON): Promise<void>;
+  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void>;
+  createSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void>;
+  createConditionalCommitment(
+    appIdentityHash: Bytes32,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void>;
+  getSchemaVersion(): Promise<number>;
+  updateSchemaVersion(version?: number): Promise<void>;
 }

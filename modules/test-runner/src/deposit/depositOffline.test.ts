@@ -1,5 +1,4 @@
-import { IConnextClient } from "@connext/types";
-import { utils } from "@connext/client";
+import { CF_METHOD_TIMEOUT, IConnextClient } from "@connext/types";
 import * as lolex from "lolex";
 
 import {
@@ -8,7 +7,6 @@ import {
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getMnemonic,
   getProtocolFromData,
   MessagingEvent,
   MessagingEventData,
@@ -17,11 +15,11 @@ import {
   TestMessagingService,
   TOKEN_AMOUNT,
   ZERO_ZERO_ONE_ETH,
+  env,
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
-
-const { CF_METHOD_TIMEOUT } = utils;
+import { getRandomChannelSigner } from "@connext/utils";
 
 const makeDepositCall = async (opts: {
   client: IConnextClient;
@@ -99,7 +97,7 @@ describe("Deposit offline tests", () => {
    */
   it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async () => {
     // create client where the propose protocol will not complete
-    // in deposit, client will propose the `CoinBalanceRefund` app (is the
+    // in deposit, client will propose the `DepositApp` (is the
     // initiator in the `propose` protocol)
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
@@ -154,37 +152,22 @@ describe("Deposit offline tests", () => {
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
+    const signer = getRandomChannelSigner(env.ethProviderUrl);
     client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: 0 },
+      signer,
     });
 
     await makeDepositCall({
       client,
       clock,
-      failsWith: "Failed to deposit",
+      failsWith: "App install took longer than 90 seconds",
       subjectToFastforward: RECEIVED,
       protocol: "install",
     });
 
-    await createClient({ mnemonic: getMnemonic(client.publicIdentifier) });
+    await createClient({ signer });
   });
 
-  it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
-    client = await createClientWithMessagingLimits();
-    expect(client.messaging).to.be.ok;
-    // on proposal accepted message, delete the store
-    await (client.messaging as TestMessagingService).subscribe(
-      `indra.node.${client.nodePublicIdentifier}.proposalAccepted.${client.multisigAddress}`,
-      async () => {
-        // delete the client store
-        client.store.reset && client.store.reset();
-      },
-    );
-    await makeDepositCall({
-      client,
-      clock,
-      failsWith: "Failed to deposit",
-    });
-  });
 });

@@ -9,11 +9,12 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { TransferModule } from "../transfer/transfer.module";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 
 import { adminProviderFactory } from "./admin.provider";
 import { AdminService } from "./admin.service";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 
 @Module({
   controllers: [],
@@ -26,7 +27,12 @@ import { AdminService } from "./admin.service";
     LoggerModule,
     MessagingModule,
     TransferModule,
-    TypeOrmModule.forFeature([CFCoreRecordRepository, LinkedTransferRepository, ChannelRepository]),
+    TypeOrmModule.forFeature([
+      CFCoreRecordRepository,
+      ChannelRepository,
+      SetupCommitmentRepository,
+      AppInstanceRepository,
+    ]),
   ],
   providers: [AdminService, adminProviderFactory],
 })

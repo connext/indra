@@ -1,20 +1,41 @@
-import { BaseProvider } from "ethers/providers";
+import {
+  ILoggerService,
+  Opcode,
+  ProtocolMessageData,
+  ProtocolNames,
+  ProtocolParams,
+  ProtocolRoles,
+  UninstallMiddlewareContext,
+} from "@connext/types";
+import { JsonRpcProvider } from "ethers/providers";
+import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 
-import { SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol, xkeyKthAddress } from "../machine";
-import { StateChannel } from "../models";
-import { Context, ProtocolExecutionFlow, ProtocolMessage, UninstallProtocolParams } from "../types";
-import { logTime } from "../utils";
+import { UNASSIGNED_SEQ_NO } from "../constants";
+import { getSetStateCommitment } from "../ethereum";
+import { AppInstance, StateChannel } from "../models";
+import {
+  Context,
+  PersistAppType,
+  PersistCommitmentType,
+  ProtocolExecutionFlow,
+} from "../types";
 
 import {
   assertIsValidSignature,
   computeTokenIndexedFreeBalanceIncrements,
-  UNASSIGNED_SEQ_NO,
+  stateChannelClassFromStoreByMultisig,
 } from "./utils";
 
-const protocol = Protocol.Uninstall;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
 
+const protocol = ProtocolNames.uninstall;
+const {
+  OP_SIGN,
+  OP_VALIDATE,
+  IO_SEND,
+  IO_SEND_AND_WAIT,
+  PERSIST_APP_INSTANCE,
+  PERSIST_COMMITMENT,
+} = Opcode;
 /**
  * @description This exchange is described at the following URL:
  *
@@ -22,153 +43,239 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITM
  */
 export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, provider, stateChannelsMap, network } = context;
+    const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
-    let substart;
-    log.debug(`Initiation started`);
+    log.debug(`Initiation started for uninstall`);
 
     const { params, processID } = message;
-    const { responderXpub, appIdentityHash, multisigAddress } = params as UninstallProtocolParams;
+    const {
+      responderIdentifier,
+      appIdentityHash,
+      multisigAddress,
+    } = params as ProtocolParams.Uninstall;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress) as StateChannel;
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        appInstance: appToUninstall.toJson(),
+        role: ProtocolRoles.initiator,
+        stateChannel: preProtocolStateChannel.toJson(),
+      } as UninstallMiddlewareContext,
+    ];
+
+    // 47ms
     const postProtocolStateChannel = await computeStateTransition(
-      params as UninstallProtocolParams,
-      stateChannelsMap,
-      provider,
+      params as ProtocolParams.Uninstall,
+      network.provider,
+      preProtocolStateChannel,
+      appToUninstall,
+      log,
     );
 
-    const responderEphemeralKey = xkeyKthAddress(responderXpub, appToUninstall.appSeqNo);
+    // 0ms
+    const responderFreeBalanceKey = getSignerAddressFromPublicIdentifier(responderIdentifier);
 
-    const uninstallCommitment = new SetStateCommitment(
-      network,
-      postProtocolStateChannel.freeBalance.identity,
-      postProtocolStateChannel.freeBalance.hashOfLatestState,
-      postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout,
+    const uninstallCommitment = getSetStateCommitment(
+      context,
+      postProtocolStateChannel.freeBalance,
     );
+    const uninstallCommitmentHash = uninstallCommitment.hashToSign();
 
-    const signature = yield [OP_SIGN, uninstallCommitment, appToUninstall.appSeqNo];
+    let checkpoint = Date.now();
+    // 4ms
+    const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
+    logTime(log, checkpoint, `Signed uninstall commitment initiator`);
 
-    substart = Date.now();
+    // 94ms
     const {
-      customData: { signature: responderSignature },
+      customData: { signature: counterpartySignature },
     } = yield [
       IO_SEND_AND_WAIT,
       {
         protocol,
         processID,
         params,
-        toXpub: responderXpub,
-        customData: { signature },
+        to: responderIdentifier,
+        customData: { signature: mySignature },
         seq: 1,
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
-    logTime(log, substart, `Received responder's sig`);
 
-    substart = Date.now();
-    assertIsValidSignature(responderEphemeralKey, uninstallCommitment, responderSignature);
-    logTime(log, substart, `Verified responder's sig`);
-
-    const finalCommitment = uninstallCommitment.getSignedTransaction([
-      signature,
-      responderSignature,
-    ]);
-
-    yield [WRITE_COMMITMENT, protocol, finalCommitment, appIdentityHash];
-
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
+    checkpoint = Date.now();
+    // 6ms
+    await assertIsValidSignature(
+      responderFreeBalanceKey,
+      uninstallCommitmentHash,
+      counterpartySignature,
     );
-    logTime(log, start, `Finished Initiating`);
+    logTime(log, checkpoint, `Asserted valid signature in initiating uninstall`);
+
+    const isInitiator = postProtocolStateChannel
+      .multisigOwners[0] !== responderFreeBalanceKey;
+    // use channel initiator bc free balance app
+    await uninstallCommitment.addSignatures(
+      isInitiator 
+        ? mySignature as any
+        : counterpartySignature,
+      isInitiator
+        ? counterpartySignature
+        : mySignature as any,
+    );
+
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      uninstallCommitment,
+      postProtocolStateChannel.freeBalance.identityHash,
+    ];
+
+    // 24ms
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.RemoveInstance,
+      postProtocolStateChannel,
+      appToUninstall,
+    ];
+
+    // 204ms
+    logTime(log, start, `Finished Initiating uninstall`);
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, provider, stateChannelsMap, network } = context;
+    const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
-    let substart;
-    log.debug(`Response started`);
+    log.debug(`Response started for uninstall`);
 
     const { params, processID } = message;
-    const { initiatorXpub, appIdentityHash, multisigAddress } = params as UninstallProtocolParams;
+    const {
+      initiatorIdentifier,
+      appIdentityHash,
+      multisigAddress,
+    } = params as ProtocolParams.Uninstall;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress) as StateChannel;
+    const preProtocolStateChannel = await stateChannelClassFromStoreByMultisig(
+      multisigAddress,
+      store,
+    );
     const appToUninstall = preProtocolStateChannel.getAppInstance(appIdentityHash);
 
+    yield [
+      OP_VALIDATE,
+      protocol,
+      {
+        params,
+        appInstance: appToUninstall.toJson(),
+        role: ProtocolRoles.responder,
+        stateChannel: preProtocolStateChannel.toJson(),
+      } as UninstallMiddlewareContext,
+    ];
+
+    // 40ms
     const postProtocolStateChannel = await computeStateTransition(
-      params as UninstallProtocolParams,
-      stateChannelsMap,
-      provider,
+      params as ProtocolParams.Uninstall,
+      network.provider,
+      preProtocolStateChannel,
+      appToUninstall,
+      log,
     );
 
-    const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appToUninstall.appSeqNo);
+    // 0ms
+    const initiatorFreeBalanceKey = getSignerAddressFromPublicIdentifier(initiatorIdentifier);
 
-    const uninstallCommitment = new SetStateCommitment(
-      network,
-      postProtocolStateChannel.freeBalance.identity,
-      postProtocolStateChannel.freeBalance.hashOfLatestState,
-      postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout,
+    const uninstallCommitment = getSetStateCommitment(
+      context,
+      postProtocolStateChannel.freeBalance,
     );
 
-    const initiatorSignature = context.message.customData.signature;
+    const counterpartySignature = context.message.customData.signature;
+    const uninstallCommitmentHash = uninstallCommitment.hashToSign();
 
-    substart = Date.now();
-    assertIsValidSignature(initiatorEphemeralKey, uninstallCommitment, initiatorSignature);
-    logTime(log, substart, `Verified initiator's sig`);
+    let checkpoint = Date.now();
+    // 15ms
+    await assertIsValidSignature(
+      initiatorFreeBalanceKey,
+      uninstallCommitmentHash,
+      counterpartySignature,
+    );
+    logTime(log, checkpoint, `Asserted valid signature in responding uninstall`);
+    checkpoint = Date.now();
 
-    const responderSignature = yield [OP_SIGN, uninstallCommitment, appToUninstall.appSeqNo];
+    // 10ms
+    const mySignature = yield [OP_SIGN, uninstallCommitmentHash];
+    logTime(log, checkpoint, `Signed commitment in responding uninstall`);
 
-    const finalCommitment = uninstallCommitment.getSignedTransaction([
-      responderSignature,
-      initiatorSignature,
-    ]);
+    const isInitiator = postProtocolStateChannel
+      .multisigOwners[0] !== initiatorFreeBalanceKey;
+    // use channel initiator bc free balance app
+    await uninstallCommitment.addSignatures(
+      isInitiator 
+        ? mySignature
+        : counterpartySignature as any,
+      isInitiator
+        ? counterpartySignature
+        : mySignature as any,
+    );
 
-    yield [WRITE_COMMITMENT, protocol, finalCommitment, appIdentityHash];
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      uninstallCommitment,
+      postProtocolStateChannel.freeBalance.identityHash,
+    ];
 
-    yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
+    // 59ms
+    yield [
+      PERSIST_APP_INSTANCE,
+      PersistAppType.RemoveInstance,
+      postProtocolStateChannel,
+      appToUninstall,
+    ];
 
+    // 0ms
     yield [
       IO_SEND,
       {
         protocol,
         processID,
-        toXpub: initiatorXpub,
+        to: initiatorIdentifier,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
-          signature: responderSignature,
+          signature: mySignature,
         },
-      } as ProtocolMessage,
+      } as ProtocolMessageData,
     ];
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
-    logTime(log, start, `Finished responding`);
+    // 100ms
+    logTime(log, start, `Finished responding to uninstall`);
   },
 };
 
 async function computeStateTransition(
-  params: UninstallProtocolParams,
-  stateChannelsMap: Map<string, StateChannel>,
-  provider: BaseProvider,
+  params: ProtocolParams.Uninstall,
+  provider: JsonRpcProvider,
+  stateChannel: StateChannel,
+  appInstance: AppInstance,
+  log?: ILoggerService,
 ) {
-  const { appIdentityHash, multisigAddress, blockNumberToUseIfNecessary } = params;
-  const stateChannel = stateChannelsMap.get(multisigAddress) as StateChannel;
+  const { blockNumberToUseIfNecessary } = params;
   return stateChannel.uninstallApp(
-    appIdentityHash,
+    appInstance,
     await computeTokenIndexedFreeBalanceIncrements(
-      stateChannel.getAppInstance(appIdentityHash),
+      appInstance,
       provider,
       undefined,
       blockNumberToUseIfNecessary,
+      log,
     ),
   );
 }

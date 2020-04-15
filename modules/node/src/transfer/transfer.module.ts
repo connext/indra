@@ -10,11 +10,8 @@ import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
-import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransfer.module";
 
 import { transferProviderFactory } from "./transfer.provider";
-import { TransferRepository } from "./transfer.repository";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { TransferService } from "./transfer.service";
 
 @Module({
@@ -25,16 +22,10 @@ import { TransferService } from "./transfer.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
-    FastSignedTransferModule,
     LoggerModule,
     LinkedTransferModule,
     MessagingModule,
-    TypeOrmModule.forFeature([
-      ChannelRepository,
-      AppRegistryRepository,
-      LinkedTransferRepository,
-      TransferRepository,
-    ]),
+    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository]),
   ],
   providers: [TransferService, transferProviderFactory],
 })

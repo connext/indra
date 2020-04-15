@@ -1,5 +1,10 @@
-import { MessagingConfig } from "@connext/messaging";
-import { ContractAddresses, SwapRate } from "@connext/types";
+import { ChannelSigner } from "@connext/utils";
+import {
+  ContractAddresses,
+  IChannelSigner,
+  MessagingConfig,
+  SwapRate,
+} from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -27,15 +32,27 @@ type TokenConfig = {
 export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
   private readonly ethProvider: JsonRpcProvider;
-  private wallet: Wallet;
+  private signer: IChannelSigner;
 
   constructor() {
     this.envConfig = process.env;
     this.ethProvider = new JsonRpcProvider(this.getEthRpcUrl());
+    this.signer = new ChannelSigner(
+      this.getPrivateKey(),
+      this.getEthRpcUrl(),
+    );
   }
 
   get(key: string): string {
     return this.envConfig[key];
+  }
+
+  private getPrivateKey(): string {
+    return Wallet.fromMnemonic(this.get(`INDRA_ETH_MNEMONIC`)).privateKey;
+  }
+
+  getSigner(): IChannelSigner {
+    return this.signer;
   }
 
   getEthRpcUrl(): string {
@@ -44,10 +61,6 @@ export class ConfigService implements OnModuleInit {
 
   getEthProvider(): JsonRpcProvider {
     return this.ethProvider;
-  }
-
-  getEthWallet(): Wallet {
-    return this.wallet;
   }
 
   async getEthNetwork(): Promise<EthNetwork> {
@@ -82,7 +95,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
-    const testnetTokenConfig = this.get("INDRA_TESTNET_TOKEN_CONFIG")
+    const testnetTokenConfig: TokenConfig[] = this.get("INDRA_TESTNET_TOKEN_CONFIG")
       ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
       : [];
     const currentChainId = (await this.getEthNetwork()).chainId;
@@ -135,12 +148,20 @@ export class ConfigService implements OnModuleInit {
   async getDefaultSwapRate(from: string, to: string): Promise<string | undefined> {
     const tokenAddress = await this.getTokenAddress();
     if (from === AddressZero && to === tokenAddress) {
-      return "100.00";
+      return "100.0";
     }
-    if (from === tokenAddress && to === tokenAddress) {
-      return "0.005";
+    if (from === tokenAddress && to === AddressZero) {
+      return "0.01";
     }
     return undefined;
+  }
+
+  getPublicIdentifier(): string {
+    return this.signer.publicIdentifier;
+  }
+
+  async getSignerAddress(): Promise<string> {
+    return this.signer.getAddress();
   }
 
   getLogLevel(): number {
@@ -151,16 +172,19 @@ export class ConfigService implements OnModuleInit {
     return this.get(`NODE_ENV`) !== `production`;
   }
 
-  getMnemonic(): string {
-    return this.get(`INDRA_ETH_MNEMONIC`);
-  }
-
   getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get(`INDRA_NATS_CLUSTER_ID`),
       messagingUrl: (this.get(`INDRA_NATS_SERVERS`) || ``).split(`,`),
+      privateKey: (this.get(`INDRA_NATS_JWT_SIGNER_PRIVATE_KEY`) || ``).replace(/\\n/g, "\n"),
+      publicKey: (this.get(`INDRA_NATS_JWT_SIGNER_PUBLIC_KEY`) || ``).replace(/\\n/g, "\n"),
       token: this.get(`INDRA_NATS_TOKEN`),
+      // websocketUrl: (this.get(`INDRA_NATS_WS_ENDPOINT`) || ``).split(`,`),
     };
+  }
+
+  getMessagingKey(): string {
+    return `INDRA`;
   }
 
   getPort(): number {
@@ -215,8 +239,5 @@ export class ConfigService implements OnModuleInit {
     }
   }
 
-  async onModuleInit(): Promise<void> {
-    const wallet = Wallet.fromMnemonic(this.getMnemonic());
-    this.wallet = wallet.connect(this.getEthProvider());
-  }
+  async onModuleInit(): Promise<void> {}
 }

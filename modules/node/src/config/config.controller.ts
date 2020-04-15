@@ -1,4 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
+import { NodeResponses } from "@connext/types";
 
 import { ConfigService } from "./config.service";
 
@@ -11,7 +12,9 @@ export class ConfigController {
     return JSON.stringify({
       contractAddresses: await this.configService.getContractAddresses(),
       ethNetwork: await this.configService.getEthNetwork(),
-      supportedTokens: this.configService.getSupportedTokenAddresses(),
-    });
+      supportedTokenAddresses: this.configService.getSupportedTokenAddresses(),
+      messagingUrl: this.configService.getMessagingConfig().messagingUrl,
+      nodeIdentifier: this.configService.getPublicIdentifier(),
+    } as NodeResponses.GetConfig);
   }
 }

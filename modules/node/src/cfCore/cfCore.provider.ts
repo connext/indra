@@ -1,68 +1,63 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, ConnextNodeStorePrefix } from "@connext/types";
+import { Node as CFCore } from "@connext/cf-core";
+import { MessagingService } from "@connext/messaging";
+import { ConnextNodeStorePrefix, Opcode, ContractAddresses } from "@connext/types";
 import { Provider } from "@nestjs/common";
-import { FactoryProvider } from "@nestjs/common/interfaces";
-import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
 import { LoggerService } from "../logger/logger.service";
-import { CFCore } from "../util/cfCore";
 
-import { CFCoreRecordRepository } from "./cfCore.repository";
+import { CFCoreStore } from "./cfCore.store";
+import { generateMiddleware } from "./middleware";
 
 export const cfCoreProviderFactory: Provider = {
-  inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreRecordRepository],
+  inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreStore],
   provide: CFCoreProviderId,
   useFactory: async (
     config: ConfigService,
     lockService: LockService,
     log: LoggerService,
-    messaging: IMessagingService,
-    store: CFCoreRecordRepository,
+    messaging: MessagingService,
+    store: CFCoreStore,
   ): Promise<CFCore> => {
-    const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
-    const publicExtendedKey = hdNode.neuter().extendedKey;
     const provider = config.getEthProvider();
+    const signer = config.getSigner();
+    const signerAddress = await signer.getAddress();
     log.setContext("CFCoreProvider");
-    log.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
+    log.info(`Derived address from mnemonic: ${signerAddress}`);
 
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
+    const contractAddresses = await config.getContractAddresses();
     const cfCore = await CFCore.create(
-      messaging as any, // TODO: FIX
+      messaging,
       store,
-      await config.getContractAddresses(),
+      contractAddresses,
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
+      config.getSigner(),
       { acquireLock: lockService.lockedOperation.bind(lockService) },
-      publicExtendedKey,
-      // key gen fn
-      (uniqueId: string): Promise<string> => {
-        return Promise.resolve(hdNode.derivePath(uniqueId).privateKey);
-      },
       undefined,
       log.newContext("CFCore"),
     );
-    const signerAddr = await cfCore.signerAddress();
-    const balance = (await provider.getBalance(signerAddr)).toString();
+    // inject any default middlewares
+    cfCore.injectMiddleware(
+      Opcode.OP_VALIDATE,
+      await generateMiddleware(
+        signerAddress,
+        {
+          ...contractAddresses,
+          provider,
+        } as ContractAddresses,
+        store,
+      ),
+    );
+    const balance = (await provider.getBalance(signerAddress)).toString();
     log.info(
-      `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
+      `Balance of signer address ${signerAddress} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
     log.info("CFCore created");
     return cfCore;
-  },
-};
-
-// TODO: bypass factory
-export const messagingProviderFactory: FactoryProvider<Promise<IMessagingService>> = {
-  inject: [ConfigService],
-  provide: MessagingProviderId,
-  useFactory: async (config: ConfigService): Promise<IMessagingService> => {
-    const messagingFactory = new MessagingServiceFactory(config.getMessagingConfig());
-    const messagingService = messagingFactory.createService("messaging");
-    await messagingService.connect();
-    return messagingService;
   },
 };

@@ -1,199 +1,201 @@
 import {
-  SimpleLinkedTransferAppState,
-  FastSignedTransferAppState,
-  FastSignedTransferAppAction,
-  FastSignedTransferActionType,
-  FastSignedTransferApp,
-  SimpleLinkedTransferApp,
-  HashLockTransferApp,
-  HashLockTransferAppState,
-  HashLockTransferAppAction,
-  FastSignedTransferAppActionBigNumber,
-} from "@connext/types";
-import {
-  SupportedApplication,
-  AppState,
   AppAction,
-  convertHashLockTransferAppState,
-  convertFastSignedTransferAppState,
-} from "@connext/apps";
+  AppState,
+  HashLockTransferAppAction,
+  HashLockTransferAppName,
+  HashLockTransferAppState,
+  SimpleSignedTransferAppAction,
+  SimpleSignedTransferAppState,
+  SimpleLinkedTransferAppAction,
+  SimpleLinkedTransferAppName,
+  SimpleLinkedTransferAppState,
+  SimpleSignedTransferAppName,
+  WithdrawAppAction,
+  WithdrawAppName,
+  WithdrawAppState,
+  AppInstanceJson,
+} from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { soliditySha256 } from "ethers/utils";
-import { AddressZero, Zero } from "ethers/constants";
 
-import { ChannelRepository } from "../channel/channel.repository";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
-import { LinkedTransferService } from "../linkedTransfer/linkedTransfer.service";
 import { LoggerService } from "../logger/logger.service";
-import { LinkedTransferStatus } from "../linkedTransfer/linkedTransfer.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { FastSignedTransferService } from "../fastSignedTransfer/fastSignedTransfer.service";
+import { WithdrawRepository } from "../withdraw/withdraw.repository";
+import { WithdrawService } from "../withdraw/withdraw.service";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { SignedTransferService } from "../signedTransfer/signedTransfer.service";
+import { SupportedApplications } from "@connext/apps";
 
 @Injectable()
 export class AppActionsService {
   constructor(
     private readonly log: LoggerService,
-    private readonly linkedTransferService: LinkedTransferService,
-    private readonly fastSignedTransferService: FastSignedTransferService,
+    private readonly withdrawService: WithdrawService,
     private readonly cfCoreService: CFCoreService,
-    private readonly linkedTransferRepository: LinkedTransferRepository,
-    private readonly channelRepository: ChannelRepository,
+    private readonly signedTransferService: SignedTransferService,
+    private readonly withdrawRepository: WithdrawRepository,
+    private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.log.setContext("AppRegistryService");
   }
 
   async handleAppAction(
-    appName: SupportedApplication,
-    appInstanceId: string,
+    appName: SupportedApplications,
+    app: AppInstanceJson,
     newState: AppState,
     action: AppAction,
     from: string,
   ): Promise<void> {
     switch (appName) {
-      case FastSignedTransferApp: {
-        await this.handleFastSignedTransferAppAction(
-          appInstanceId,
-          newState as FastSignedTransferAppState,
-          action as FastSignedTransferAppAction,
-          from,
-        );
-        break;
-      }
-      case SimpleLinkedTransferApp: {
+      case SimpleLinkedTransferAppName: {
         await this.handleSimpleLinkedTransferAppAction(
-          appInstanceId,
+          app,
           newState as SimpleLinkedTransferAppState,
+          action as SimpleLinkedTransferAppAction,
           from,
         );
         break;
       }
-      case HashLockTransferApp: {
+      case WithdrawAppName: {
+        await this.handleWithdrawAppAction(
+          app,
+          action as WithdrawAppAction,
+          newState as WithdrawAppState,
+        );
+        break;
+      }
+      case HashLockTransferAppName: {
         await this.handleHashLockTransferAppAction(
-          appInstanceId,
+          app,
           newState as HashLockTransferAppState,
           action as HashLockTransferAppAction,
           from,
         );
-      }
-    }
-  }
-
-  private async handleFastSignedTransferAppAction(
-    appInstanceId: string,
-    newState: FastSignedTransferAppState,
-    action: FastSignedTransferAppAction,
-    from: string,
-  ): Promise<void> {
-    switch (action.actionType) {
-      case FastSignedTransferActionType.CREATE: {
         break;
       }
-      case FastSignedTransferActionType.UNLOCK: {
-        const apps = await this.cfCoreService.getFastSignedTransferAppsByPaymentId(
-          action.paymentId,
+      case SimpleSignedTransferAppName: {
+        await this.handleSignedTransferAppAction(
+          app,
+          newState as SimpleSignedTransferAppState,
+          action as SimpleSignedTransferAppAction,
+          from,
         );
-
-        // find hashlock transfer app where node is receiver
-        // TODO: move to new store
-        const senderApp = apps.find(app => {
-          const state = convertFastSignedTransferAppState(
-            "bignumber",
-            app.latestState as FastSignedTransferAppState,
-          );
-          return state.coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress;
-        });
-        if (!senderApp) {
-          throw new Error(
-            `Action UNLOCK taken on FastSignedTransferApp without corresponding sender app! ${appInstanceId}`,
-          );
-        }
-        const senderAppState = convertFastSignedTransferAppState(
-          "bignumber",
-          senderApp.latestState as FastSignedTransferAppState,
-        );
-
-        const senderAppAction = {
-          actionType: FastSignedTransferActionType.UNLOCK,
-          data: action.data,
-          paymentId: action.paymentId,
-          signature: action.signature,
-          recipientXpub: senderAppState.recipientXpub, // not checked
-          amount: Zero, // not checked
-          signer: AddressZero, // not checked
-        } as FastSignedTransferAppActionBigNumber;
-        await this.cfCoreService.takeAction(senderApp.identityHash, senderAppAction);
-        this.log.log(`Unlocked transfer from ${senderApp.identityHash}`);
+        break;
       }
     }
   }
 
   private async handleSimpleLinkedTransferAppAction(
-    appInstanceId: string,
+    appInstance: AppInstanceJson,
     newState: SimpleLinkedTransferAppState,
+    action: SimpleLinkedTransferAppAction,
     from: string,
   ): Promise<void> {
-    let transfer = await this.linkedTransferRepository.findByPaymentIdOrThrow(newState.paymentId);
-    if (appInstanceId !== transfer.receiverAppInstanceId) {
-      this.log.debug(
-        `Not updating transfer preImage or marking as redeemed for sender update state events`,
-      );
-      return;
-    }
-    // update transfer
-    transfer.preImage = newState.preImage;
-
-    if (
-      transfer.status === LinkedTransferStatus.RECLAIMED ||
-      transfer.status === LinkedTransferStatus.REDEEMED
-    ) {
-      this.log.warn(
-        `Got update state event for a receiver's transfer app (transfer.id: ${transfer.id}) with unexpected status: ${transfer.status}`,
-      );
-      return;
-    }
-
-    // transfers are set to `PENDING` when created. They are set to
-    // `FAILED` when the receiver rejects an install event. If a transfer
-    // makes it to the `UPDATE_STATE_EVENT` portion, it means the transfer
-    // was successfully installed. There is no reason to not redeem it in
-    // that case.
-    transfer = await this.linkedTransferRepository.markAsRedeemed(
-      transfer,
-      await this.channelRepository.findByUserPublicIdentifierOrThrow(from),
+    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+      (newState as SimpleLinkedTransferAppState).paymentId,
+      this.cfCoreService.cfCore.signerAddress,
     );
-    this.log.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
+
+    // take action and uninstall
+    this.log.log(`Unlocking transfer ${senderApp.identityHash}`);
+    await this.cfCoreService.takeAction(
+      senderApp.identityHash,
+      {
+        preImage: action.preImage,
+      } as SimpleLinkedTransferAppAction,
+    );
+
+    await this.cfCoreService.uninstallApp(senderApp.identityHash);
+    this.log.log(`Unlocked transfer ${senderApp.identityHash}`);
+  }
+
+  private async handleWithdrawAppAction(
+    appInstance: AppInstanceJson,
+    action: WithdrawAppAction,
+    state: WithdrawAppState,
+  ): Promise<void> {
+    let withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
+    if (!withdraw) {
+      throw new Error(`No withdraw entity found for this appIdentityHash: ${appInstance.identityHash}`);
+    }
+    withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(
+      withdraw,
+      action.signature,
+    );
+
+    const commitment = await this.cfCoreService.createWithdrawCommitment(
+      {
+        amount: state.transfers[0].amount,
+        assetId: appInstance.singleAssetTwoPartyCoinTransferInterpreterParams.tokenAddress,
+        recipient: this.cfCoreService.cfCore.signerAddress,
+      },
+      appInstance.multisigAddress,
+    );
+    // TODO: remove any casting by using Signature type
+    commitment.signatures = state.signatures as any;
+    const tx = await commitment.getSignedTransaction();
+
+    this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstance.identityHash}`);
+    await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
   }
 
   private async handleHashLockTransferAppAction(
-    appInstanceId: string,
+    appInstance: AppInstanceJson,
     newState: HashLockTransferAppState,
     action: HashLockTransferAppAction,
     from: string,
   ): Promise<void> {
     const lockHash = soliditySha256(["bytes32"], [action.preImage]);
-    const apps = await this.cfCoreService.getHashLockTransferAppsByLockHash(lockHash);
+    const apps = await this.appInstanceRepository.findHashLockTransferAppsByLockHash(lockHash);
 
     // find hashlock transfer app where node is receiver
     // TODO: move to new store
     const senderApp = apps.find(app => {
-      const state = convertHashLockTransferAppState(
-        "bignumber",
-        app.latestState as HashLockTransferAppState,
-      );
-      return state.coinTransfers[1].to === this.cfCoreService.cfCore.freeBalanceAddress;
+      const state = app.latestState as HashLockTransferAppState;
+      return state.coinTransfers[1].to === this.cfCoreService.cfCore.signerAddress;
     });
     if (!senderApp) {
       throw new Error(
-        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstanceId}`,
+        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstance.identityHash}`,
       );
     }
 
     // take action and uninstall
-    await this.cfCoreService.takeAction(senderApp.identityHash, {
-      preImage: action.preImage,
-    } as HashLockTransferAppAction);
+    await this.cfCoreService.takeAction(
+      senderApp.identityHash,
+      {
+        preImage: action.preImage,
+      } as HashLockTransferAppAction,
+    );
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
-    this.log.info(`Reclaimed collateral from ${senderApp.identityHash}`);
+    this.log.info(`Unlocked transfer ${senderApp.identityHash}`);
+  }
+
+  private async handleSignedTransferAppAction(
+    appInstance: AppInstanceJson,
+    newState: SimpleSignedTransferAppState,
+    action: SimpleSignedTransferAppAction,
+    from: string,
+  ): Promise<void> {
+    const senderApp = await this.signedTransferService.findSenderAppByPaymentId(newState.paymentId);
+
+    if (!senderApp) {
+      throw new Error(
+        `Action taken on HashLockTransferApp without corresponding sender app! ${appInstance.identityHash}`,
+      );
+    }
+
+    // take action and uninstall
+    await this.cfCoreService.takeAction(
+      senderApp.identityHash, 
+      {
+        data: action.data,
+        signature: action.signature,
+      } as SimpleSignedTransferAppAction,
+    );
+
+    await this.cfCoreService.uninstallApp(senderApp.identityHash);
+    this.log.info(`Unlocked transfer ${senderApp.identityHash}`);
   }
 }

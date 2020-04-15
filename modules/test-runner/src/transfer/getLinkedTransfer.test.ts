@@ -1,11 +1,11 @@
-import { IConnextClient, LINKED_TRANSFER, LINKED_TRANSFER_TO_RECIPIENT } from "@connext/types";
+import { IConnextClient, ConditionalTransferTypes } from "@connext/types";
+import { createRandom32ByteHexString } from "@connext/utils";
 import { AddressZero, One } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
 
 import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
 
-describe("Async Transfers", () => {
+describe("Get Linked Transfer", () => {
   let clientA: IConnextClient;
 
   beforeEach(async () => {
@@ -17,15 +17,15 @@ describe("Async Transfers", () => {
   });
 
   it.skip("happy case: get linked transfer by payment id", async () => {
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: LINKED_TRANSFER,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
     });
@@ -35,55 +35,55 @@ describe("Async Transfers", () => {
     expect(linkedTransfer).to.be.ok;
 
     expect(linkedTransfer).to.deep.include({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
-      receiverPublicIdentifier: null,
-      senderPublicIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: null,
+      senderIdentifier: clientA.publicIdentifier,
     });
   });
 
   it("happy case: get linked transfer to recipient by payment id", async () => {
     const clientB = await createClient();
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
     expect(linkedTransfer).to.deep.include({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
       paymentId,
-      receiverPublicIdentifier: clientB.publicIdentifier,
-      senderPublicIdentifier: clientA.publicIdentifier,
+      receiverIdentifier: clientB.publicIdentifier,
+      senderIdentifier: clientA.publicIdentifier,
     });
   });
 
   it("cannot get linked transfer for invalid payment id", async () => {
     const clientB = await createClient();
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
-      amount: transfer.amount.toString(),
+      amount: transfer.amount,
       assetId: AddressZero,
-      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,
     });
-    const linkedTransfer = await clientA.getLinkedTransfer(hexlify(randomBytes(32)));
+    const linkedTransfer = await clientA.getLinkedTransfer(createRandom32ByteHexString());
     expect(linkedTransfer).to.not.be.ok;
   });
 });

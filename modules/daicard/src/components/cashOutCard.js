@@ -1,3 +1,4 @@
+import { inverse } from "@connext/utils";
 import { Button, CircularProgress, Grid, Typography, withStyles } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import { AddressZero, Zero } from "ethers/constants";
@@ -5,7 +6,6 @@ import React, { useState } from "react";
 
 import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
-import { inverse } from "../utils";
 
 import { useAddress, AddressInput } from "./input";
 
@@ -56,7 +56,7 @@ export const CashoutCard = style(
       setWithdrawing(true);
       console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
       const result = await channel.withdraw({
-        amount: balance.channel.token.wad.toString(),
+        amount: balance.channel.token.wad,
         assetId: token.address,
         recipient: value,
       });
@@ -77,9 +77,8 @@ export const CashoutCard = style(
       console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
       // swap all in-channel tokens for eth
       if (balance.channel.token.wad.gt(Zero)) {
-        await channel.requestCollateral(AddressZero);
         await channel.swap({
-          amount: balance.channel.token.wad.toString(),
+          amount: balance.channel.token.wad,
           fromAssetId: token.address,
           swapRate: inverse(swapRate),
           toAssetId: AddressZero,

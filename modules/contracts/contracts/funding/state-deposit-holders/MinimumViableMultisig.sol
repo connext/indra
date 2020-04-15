@@ -1,7 +1,9 @@
 pragma solidity 0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "./MultisigData.sol";
+import "../../shared/libs/LibCommitment.sol";
+import "../../shared/libs/LibChannelCrypto.sol";
 
 
 /// @title MinimumViableMultisig - A multisig wallet supporting the minimum
@@ -12,11 +14,9 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 /// (b) Requires n-of-n unanimous consent
 /// (c) Does not use on-chain address for signature verification
 /// (d) Uses hash-based instead of nonce-based replay protection
-contract MinimumViableMultisig {
+contract MinimumViableMultisig is MultisigData, LibCommitment {
 
-    using ECDSA for bytes32;
-
-    address masterCopy;
+    using LibChannelCrypto for bytes32;
 
     mapping(bytes32 => bool) isExecuted;
 
@@ -68,14 +68,13 @@ contract MinimumViableMultisig {
             "Transacation has already been executed"
         );
 
-        address lastSigner = address(0);
+        isExecuted[transactionHash] = true;
+
         for (uint256 i = 0; i < _owners.length; i++) {
             require(
-                _owners[i] == transactionHash.recover(signatures[i]),
+                _owners[i] == transactionHash.verifyChannelMessage(signatures[i]),
                 "Invalid signature"
             );
-            require(_owners[i] > lastSigner, "Signers not in alphanumeric order");
-            lastSigner = _owners[i];
         }
 
         execute(
@@ -84,8 +83,6 @@ contract MinimumViableMultisig {
             data,
             operation
         );
-
-        isExecuted[transactionHash] = true;
     }
 
     /// @notice Compute a unique transaction hash for a particular (to, value, data, op) tuple
@@ -104,11 +101,11 @@ contract MinimumViableMultisig {
     {
         return keccak256(
             abi.encodePacked(
-                byte(0x19),
-                _owners,
+                uint8(CommitmentTarget.MULTISIG),
+                address(this),
                 to,
                 value,
-                data,
+                keccak256(data),
                 uint8(operation)
             )
         );

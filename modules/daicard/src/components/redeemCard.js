@@ -1,3 +1,5 @@
+import { ConditionalTransferTypes } from "@connext/types";
+import { Currency } from "@connext/utils";
 import {
   Button,
   CircularProgress,
@@ -22,7 +24,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
 import { redeemMachine } from "../state";
-import { Currency } from "../utils";
 
 const style = withStyles(theme => ({
   icon: {
@@ -109,39 +110,12 @@ export const RedeemCard = style(({ channel, classes, history, location, token })
     if (!channel || !state.matches("modal.confirm")) {
       return;
     }
-    console.log(`Attempting to redeem payment.`);
-    let hubFreeBalanceAddress;
-    try {
-      // if the token profile cannot handle the amount
-      // update the profile, the hub will collateralize the
-      // correct amount anyway from the listeners
-      // Request token collateral if we don't have any yet
-      let freeTokenBalance = await channel.getFreeBalance(token.address);
-      hubFreeBalanceAddress = Object.keys(freeTokenBalance).find(
-        addr => addr.toLowerCase() !== channel.freeBalanceAddress.toLowerCase(),
-      );
-      // TODO: compare to default collateralization?
-      if (freeTokenBalance[hubFreeBalanceAddress].lt(link.amount.wad)) {
-        takeAction(`COLLATERALIZE`);
-        setMessage(`Requesting ${link.amount.format()} of collateral`);
-        await channel.requestCollateral(token.address);
-      }
-    } catch (e) {
-      takeAction("ERROR");
-      setMessage(`Error collateralizing: ${e.message}`);
-    }
 
     try {
-      const freeTokenBalance = await channel.getFreeBalance(token.address);
-      console.log(
-        `Hub has collateralized us with ${formatEther(
-          freeTokenBalance[hubFreeBalanceAddress],
-        )} tokens`,
-      );
       takeAction(`REDEEM`);
       setMessage(`This should take just a few seconds`);
       const result = await channel.resolveCondition({
-        conditionType: "LINKED_TRANSFER",
+        conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
         preImage: secret,
       });

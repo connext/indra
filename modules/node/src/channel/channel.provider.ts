@@ -1,24 +1,24 @@
-import { IMessagingService } from "@connext/messaging";
 import {
-  ChannelAppSequences,
-  GetChannelResponse,
-  GetConfigResponse,
-  StateChannelJSON,
-  RebalanceProfile,
-  convert,
+  MethodResults,
+  NodeResponses,
 } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { LoggerService } from "../logger/logger.service";
+import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId } from "../constants";
+import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
-import { AbstractMessagingProvider } from "../util";
-import { CFCoreTypes } from "../util/cfCore";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { CFCoreService } from "../cfCore/cfCore.service";
+
+import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
+
+import { setStateToJson, SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
+import { convertConditionalCommitmentToJson, ConditionalTransactionCommitmentRepository } from "../conditionalCommitment/conditionalCommitment.repository";
+import { convertSetupEntityToMinimalTransaction, SetupCommitmentRepository } from "../setupCommitment/setupCommitment.repository";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService, RebalanceType } from "./channel.service";
@@ -27,56 +27,41 @@ class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     private readonly channelService: ChannelService,
-    private readonly cfCoreService: CFCoreService,
+    private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
+    private readonly setupCommitmentRepository: SetupCommitmentRepository,
+    private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository:
+      ConditionalTransactionCommitmentRepository,
   ) {
     super(log, messaging);
   }
 
-  async getConfig(): Promise<GetConfigResponse> {
-    return await this.channelService.getConfig();
+  async getChannel(pubId: string, data?: unknown): Promise<NodeResponses.GetChannel | undefined> {
+    return this.channelService.getByUserPublicIdentifier(pubId);
   }
 
-  async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse> {
-    return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
-  }
-
-  async createChannel(pubId: string): Promise<CFCoreTypes.CreateChannelResult> {
-    return await this.channelService.create(pubId);
-  }
-
-  async verifyAppSequenceNumber(
-    pubId: string,
-    data: { userAppSequenceNumber: number },
-  ): Promise<ChannelAppSequences> {
-    return await this.channelService.verifyAppSequenceNumber(pubId, data.userAppSequenceNumber);
+  async createChannel(pubId: string): Promise<MethodResults.CreateChannel> {
+    return this.channelService.create(pubId);
   }
 
   async requestCollateral(
     pubId: string,
     data: { assetId?: string },
-  ): Promise<CFCoreTypes.DepositResult> {
+  ): Promise<MethodResults.Deposit> {
     // do not allow clients to specify an amount to collateralize with
     return (await (this.channelService.rebalance(
       pubId,
       getAddress(data.assetId),
       RebalanceType.COLLATERALIZE,
-    ) as unknown)) as CFCoreTypes.DepositResult;
-  }
-
-  async withdraw(
-    pubId: string,
-    data: { tx: CFCoreTypes.MinimalTransaction },
-  ): Promise<TransactionResponse> {
-    return await this.channelService.withdrawForClient(pubId, data.tx);
+    ) as unknown)) as MethodResults.Deposit;
   }
 
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
-    const profile = convert.RebalanceProfile("bignumber", data.profile);
-    await this.channelService.addRebalanceProfileToChannel(pubId, profile);
+    await this.channelService.addRebalanceProfileToChannel(pubId, data.profile);
   }
 
   async getRebalanceProfile(
@@ -87,79 +72,69 @@ class ChannelMessaging extends AbstractMessagingProvider {
       pubId,
       data.assetId,
     );
-
-    if (!prof) {
-      return undefined;
-    }
-
-    const {
-      upperBoundReclaim,
-      lowerBoundReclaim,
-      upperBoundCollateralize,
-      lowerBoundCollateralize,
-      assetId,
-    } = prof;
-    return convert.RebalanceProfile("str", {
-      assetId,
-      lowerBoundCollateralize,
-      lowerBoundReclaim,
-      upperBoundCollateralize,
-      upperBoundReclaim,
-    });
+    return prof ? prof : undefined;
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
-    const onchainTx = await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
-      pubId,
-    );
-    // TODO: conversions needed?
-    return onchainTx;
+    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(pubId);
   }
 
-  async getStatesForRestore(pubId: string): Promise<StateChannelJSON> {
-    return await this.channelService.getStateChannel(pubId);
+  async getChannelInformationForRestore(pubId: string): Promise<NodeResponses.ChannelRestore> {
+    const channel = await this.channelService.getStateChannel(pubId);
+    if (!channel) {
+      throw new Error(`No channel found for user: ${pubId}`);
+    }
+    // get setup commitment
+    const setupCommitment = await this.setupCommitmentRepository
+      .findByMultisigAddress(channel.multisigAddress);
+    if (!setupCommitment) {
+      throw new Error(`Found channel, but no setup commitment. This should not happen.`);
+    }
+    // get active app set state commitments
+    const setStateCommitments = await this.setStateCommitmentRepository
+      .findAllActiveCommitmentsByMultisig(channel.multisigAddress);
+    
+    // get active app conditional transaction commitments
+    const conditionalCommitments = await this
+      .conditionalTransactionCommitmentRepository
+      .findAllActiveCommitmentsByMultisig(channel.multisigAddress);
+    const network = await this.configService.getContractAddresses();
+    return {
+      channel,
+      setupCommitment: 
+        convertSetupEntityToMinimalTransaction(setupCommitment), 
+      setStateCommitments:
+        setStateCommitments.map(s => [s.app.identityHash, setStateToJson(s)]),
+      conditionalCommitments: conditionalCommitments
+        .map(c => [c.app.identityHash, convertConditionalCommitmentToJson(c, network)]),
+    };
   }
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "channel.get.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getChannel.bind(this)),
+      "*.channel.get",
+      this.authService.parseIdentifier(this.getChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.create.>",
-      this.authService.useUnverifiedPublicIdentifier(this.createChannel.bind(this)),
+      "*.channel.create",
+      this.authService.parseIdentifier(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.withdraw.>",
-      this.authService.useUnverifiedPublicIdentifier(this.withdraw.bind(this)),
+      "*.channel.request-collateral",
+      this.authService.parseIdentifier(this.requestCollateral.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.request-collateral.>",
-      this.authService.useUnverifiedPublicIdentifier(this.requestCollateral.bind(this)),
+      "*.channel.get-profile",
+      this.authService.parseIdentifier(this.getRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.add-profile.>",
-      this.authService.useAdminTokenWithPublicIdentifier(this.addRebalanceProfile.bind(this)),
+      "*.channel.restore",
+      this.authService.parseIdentifier(this.getChannelInformationForRestore.bind(this)),
     );
     await super.connectRequestReponse(
-      "channel.get-profile.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getRebalanceProfile.bind(this)),
+      "*.channel.latestWithdrawal",
+      this.authService.parseIdentifier(this.getLatestWithdrawal.bind(this)),
     );
-    await super.connectRequestReponse(
-      "channel.verify-app-sequence.>",
-      this.authService.useUnverifiedPublicIdentifier(this.verifyAppSequenceNumber.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "channel.restore-states.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getStatesForRestore.bind(this)),
-    );
-    await super.connectRequestReponse(
-      "channel.latestWithdrawal.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getLatestWithdrawal.bind(this)),
-    );
-
-    // should move this at some point, this will probably move to be an HTTP endpoint
-    await super.connectRequestReponse("config.get", this.getConfig.bind(this));
   }
 }
 
@@ -169,28 +144,37 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     LoggerService,
     MessagingProviderId,
     ChannelService,
-    CFCoreService,
+    ConfigService,
     ChannelRepository,
     OnchainTransactionRepository,
+    SetupCommitmentRepository,
+    SetStateCommitmentRepository,
+    ConditionalTransactionCommitmentRepository,
   ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
     channelService: ChannelService,
-    cfCore: CFCoreService,
+    config: ConfigService,
     channelRepo: ChannelRepository,
     onchain: OnchainTransactionRepository,
+    setup: SetupCommitmentRepository,
+    setState: SetStateCommitmentRepository,
+    conditional: ConditionalTransactionCommitmentRepository,
   ): Promise<void> => {
     const channel = new ChannelMessaging(
       authService,
       log,
       messaging,
       channelService,
-      cfCore,
+      config,
       channelRepo,
       onchain,
+      setup,
+      setState,
+      conditional,
     );
     await channel.setupSubscriptions();
   },

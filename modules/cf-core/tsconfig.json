@@ -7,11 +7,8 @@
     "outDir": "dist/",
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "typeRoots": [
-      "../../node_modules/@types",
-      "../../node_modules/@counterfactual/typescript-typings/types"
-    ],
+    "typeRoots": ["../../node_modules/@types"],
     "types": ["jest"]
   },
-  "include": ["src", "test"]
+  "include": ["src"]
 }

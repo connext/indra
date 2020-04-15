@@ -1,4 +1,4 @@
-import { Button, Fab, Grid, Modal, withStyles, Typography } from "@material-ui/core";
+import { Button, Fab, Grid, Modal, withStyles } from "@material-ui/core";
 import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useState } from "react";

@@ -1,11 +1,29 @@
+import { VerifyNonceDtoType } from "@connext/types";
+import { getRandomChannelSigner } from "@connext/utils";
 import { connect, Client } from "ts-nats";
+import axios, { AxiosResponse } from "axios";
+
 import { env } from "./env";
 
-export let natsClient: Client | undefined = undefined;
+let natsClient: Client | undefined = undefined;
+
+export const getNatsClient = (): Client => {
+  if (!natsClient || natsClient.isClosed()) {
+    throw new Error(`NATS is not connected, use connectNats first`);
+  }
+
+  return natsClient;
+};
 
 export const connectNats = async (): Promise<Client> => {
+  const signer = getRandomChannelSigner();
   if (!natsClient) {
-    natsClient = await connect({ servers: [env.nodeUrl] });
+    const adminJWT: AxiosResponse<string> = await axios.post(`${env.nodeUrl}/auth`, {
+      sig: "0xbeef",
+      userIdentifier: signer.publicIdentifier,
+      adminToken: env.adminToken,
+    } as VerifyNonceDtoType);
+    natsClient = await connect({ servers: ["nats://172.17.0.1:4222"], userJWT: adminJWT.data });
   }
   return natsClient;
 };

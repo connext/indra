@@ -1,17 +1,11 @@
 import * as connext from "@connext/client";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
-import {
-  CF_PATH,
-  ConnextClientStorePrefix,
-  RECEIVE_TRANSFER_FINISHED_EVENT,
-  RECEIVE_TRANSFER_STARTED_EVENT,
-  RECEIVE_TRANSFER_FAILED_EVENT,
-} from "@connext/types";
+import { ConnextClientStorePrefix, EventNames, StoreTypes } from "@connext/types";
+import { Currency, minBN, toBN, tokenToWei, weiToToken } from "@connext/utils";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
@@ -37,35 +31,25 @@ import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 import { WithdrawSaiDialog } from "./components/withdrawSai";
 import { rootMachine } from "./state";
-import {
-  cleanWalletConnect,
-  Currency,
-  migrate,
-  minBN,
-  toBN,
-  tokenToWei,
-  weiToToken,
-  initWalletConnect,
-} from "./utils";
+import { cleanWalletConnect, migrate, initWalletConnect } from "./utils";
 
 const urls = {
   ethProviderUrl:
     process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
-  nodeUrl:
-    process.env.REACT_APP_NODE_URL_OVERRIDE ||
-    `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin}/api`,
   legacyUrl: chainId =>
     chainId.toString() === "1"
       ? "https://hub.connext.network/api/hub"
       : chainId.toString() === "4"
       ? "https://rinkeby.hub.connext.network/api/hub"
       : undefined,
-  pisaUrl: chainId =>
-    chainId.toString() === "1"
-      ? "https://connext.pisa.watch"
-      : chainId.toString() === "4"
-      ? "https://connext-rinkeby.pisa.watch"
-      : undefined,
+  // pisaUrl: chainId =>
+  //   chainId.toString() === "1"
+  //     ? "https://connext.pisa.watch"
+  //     : chainId.toString() === "4"
+  //     ? "https://connext-rinkeby.pisa.watch"
+  //     : undefined,
+  pisaUrl: chainId => undefined,
 };
 
 // LogLevel for testing ChannelProvider
@@ -207,7 +191,7 @@ class App extends React.Component {
     await ethProvider.ready;
     const network = await ethProvider.getNetwork();
     if (!useWalletConnext) {
-      wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + "/0").connect(ethProvider);
+      wallet = eth.Wallet.fromMnemonic(mnemonic).connect(ethProvider);
       this.setState({ network, wallet });
     }
 
@@ -235,9 +219,9 @@ class App extends React.Component {
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
-        store = new ConnextStore(window.localStorage, { backupService });
+        store = new ConnextStore(StoreTypes.LocalStorage, { backupService });
       } else {
-        store = new ConnextStore(window.localStorage);
+        store = new ConnextStore(StoreTypes.LocalStorage);
       }
 
       // If store has double prefixes, flush and restore
@@ -248,27 +232,15 @@ class App extends React.Component {
         }
       }
 
-      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-      const xpub = hdNode.neuter().extendedKey;
-      const keyGen = index => {
-        const res = hdNode.derivePath(index);
-        return Promise.resolve(res.privateKey);
-      };
+      const { privateKey } = eth.Wallet.fromMnemonic(mnemonic);
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
-        keyGen,
+        signer: privateKey,
         logLevel: LOG_LEVEL,
         nodeUrl: urls.nodeUrl,
         store,
-        xpub,
       });
       console.log(`mnemonic address: ${wallet.address} (path: ${wallet.path})`);
-      console.log(`xpub address: ${eth.utils.computeAddress(fromExtendedKey(xpub).publicKey)}`);
-      console.log(
-        `keygen address: ${new eth.Wallet(await keyGen("1")).address} (path ${
-          new eth.Wallet(await keyGen("1")).path
-        })`,
-      );
     } else if (useWalletConnext) {
       const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
@@ -303,8 +275,7 @@ class App extends React.Component {
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.multisigAddress}`);
-    console.log(` - CF Account address: ${channel.signerAddress}`);
-    console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
+    console.log(` - Free balance address: ${channel.signerAddress}`);
     console.log(` - Token address: ${token.address}`);
     console.log(` - Swap rate: ${swapRate}`);
 
@@ -314,18 +285,18 @@ class App extends React.Component {
       this.setState({ swapRate: res.swapRate });
     });
 
-    channel.on(RECEIVE_TRANSFER_STARTED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_STARTED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_STARTED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_STARTED_EVENT} event: `, data);
       machine.send("START_RECEIVE");
     });
 
-    channel.on(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_FINISHED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_FINISHED_EVENT} event: `, data);
       machine.send("SUCCESS_RECEIVE");
     });
 
-    channel.on(RECEIVE_TRANSFER_FAILED_EVENT, data => {
-      console.log(`Received ${RECEIVE_TRANSFER_FAILED_EVENT} event: `, data);
+    channel.on(EventNames.RECEIVE_TRANSFER_FAILED_EVENT, data => {
+      console.log(`Received ${EventNames.RECEIVE_TRANSFER_FAILED_EVENT} event: `, data);
       machine.send("ERROR_RECEIVE");
     });
 
@@ -354,7 +325,7 @@ class App extends React.Component {
     }
     const saiToken = new Contract(channel.config.contractAddresses.SAIToken, tokenAbi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
-    const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
+    const mySaiBalance = freeSaiBalance[channel.signerAddress];
     return mySaiBalance;
   };
 
@@ -422,14 +393,8 @@ class App extends React.Component {
       swapRate,
     ).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
-    balance.channel.ether = Currency.WEI(
-      freeEtherBalance[channel.freeBalanceAddress],
-      swapRate,
-    ).toETH();
-    balance.channel.token = Currency.DEI(
-      freeTokenBalance[channel.freeBalanceAddress],
-      swapRate,
-    ).toDAI();
+    balance.channel.ether = Currency.WEI(freeEtherBalance[channel.signerAddress], swapRate).toETH();
+    balance.channel.token = Currency.DEI(freeTokenBalance[channel.signerAddress], swapRate).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     const logIfNotZero = (wad, prefix) => {
       if (wad.isZero()) {
@@ -491,7 +456,7 @@ class App extends React.Component {
         ]);
         const depositParams = {
           amount: amount.toString(),
-          assetId: token.address.toLowerCase(),
+          assetId: token.address,
         };
         console.log(
           `Depositing ${depositParams.amount} tokens into channel: ${channel.multisigAddress}`,
@@ -522,7 +487,7 @@ class App extends React.Component {
 
       const amount = minBN([balance.onChain.ether.wad.sub(minDeposit.wad), nowMaxDeposit]);
       console.log(`Depositing ${amount} wei into channel: ${channel.multisigAddress}`);
-      const result = await channel.deposit({ amount: amount.toString() });
+      const result = await channel.deposit({ amount: amount.toString(), assetId: AddressZero });
       await this.refreshBalances();
       console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
 
@@ -558,53 +523,22 @@ class App extends React.Component {
 
     if (availableWeiToSwap.isZero()) {
       // can happen if the balance.channel.ether.wad is 1 due to rounding
-      console.debug(`Will not exchange 0 wei. This is still weird, so here are some logs:`);
-      console.debug(`   - maxSwap: ${maxSwap.toString()}`);
-      console.debug(`   - swapRate: ${swapRate.toString()}`);
-      console.debug(`   - balance.channel.ether.wad: ${balance.channel.ether.wad.toString()}`);
+      console.warn(`Will not exchange 0 wei. This is still weird, so here are some logs:`);
+      console.warn(`   - maxSwap: ${maxSwap.toString()}`);
+      console.warn(`   - swapRate: ${swapRate.toString()}`);
+      console.warn(`   - balance.channel.ether.wad: ${balance.channel.ether.wad.toString()}`);
       return;
     }
 
-    const hubFBAddress = connext.utils.xpubToAddress(channel.nodePublicIdentifier);
-    // in swap, collateral needed is just weiToToken(availableWeiToSwap)
-    const tokensForWei = weiToToken(availableWeiToSwap, swapRate);
-    let collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
-
     console.log(
-      `Hub token collateral: ${formatEther(collateral)}, amount to swap: ${formatEther(
-        tokensForWei,
-      )}`,
-    );
-    const { collateralizationInFlight } = await channel.getChannel();
-    if (tokensForWei.gt(collateral) && !collateralizationInFlight) {
-      console.log(`Requesting more collateral...`);
-      await channel.requestCollateral(token.address);
-      collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
-      console.debug(
-        `[after collateral request] Hub token collateral: ${formatEther(
-          collateral,
-        )}, amount to swap: ${formatEther(tokensForWei)}`,
-      );
-      // dont return here, will have added the collateral possible
-      // upon return of request collateral function
-    }
-
-    // depending on payment profile for user and amount to swap,
-    // the amount the hub collateralized could be lte token equivalent
-    // of client eth deposit
-    const weiToSwap = collateral.sub(tokensForWei).gte(Zero)
-      ? availableWeiToSwap.toString() // sufficient collateral for entire swap
-      : tokenToWei(collateral, swapRate).toString(); // insufficient, claim all hubs balance
-
-    console.log(
-      `Attempting to swap ${formatEther(weiToSwap)} eth for ${formatEther(
-        weiToToken(weiToSwap, swapRate),
+      `Attempting to swap ${formatEther(availableWeiToSwap)} eth for ${formatEther(
+        weiToToken(availableWeiToSwap, swapRate),
       )} dai at rate: ${swapRate}`,
     );
     machine.send(["START_SWAP"]);
 
     await channel.swap({
-      amount: weiToSwap,
+      amount: availableWeiToSwap,
       fromAssetId: AddressZero,
       swapRate,
       toAssetId: token.address,
@@ -731,7 +665,7 @@ class App extends React.Component {
                   setWalletConnext={this.setWalletConnext}
                   getWalletConnext={this.getWalletConnext}
                   store={channel ? channel.store : undefined}
-                  xpub={channel ? channel.publicIdentifier : "Unknown"}
+                  address={channel ? channel.publicIdentifier : "Unknown"}
                 />
               )}
             />
@@ -740,7 +674,7 @@ class App extends React.Component {
               render={props => (
                 <RequestCard
                   {...props}
-                  xpub={channel ? channel.publicIdentifier : "Unknown"}
+                  publicId={channel ? channel.publicIdentifier : "Unknown"}
                   maxDeposit={maxDeposit}
                 />
               )}

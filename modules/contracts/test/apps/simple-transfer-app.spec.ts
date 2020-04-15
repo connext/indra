@@ -1,13 +1,11 @@
 /* global before */
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
 import SimpleTransferApp from "../../build/SimpleTransferApp.json";
 
-chai.use(waffle.solidity);
+import { expect, provider } from "../utils";
 
 type CoinTransfer = {
   to: string;
@@ -17,8 +15,6 @@ type CoinTransfer = {
 type SimpleTransferAppState = {
   coinTransfers: CoinTransfer[];
 };
-
-const { expect } = chai;
 
 const multiAssetMultiPartyCoinTransferEncoding = `
   tuple(address to, uint256 amount)[2]
@@ -52,9 +48,12 @@ describe("SimpleTransferApp", () => {
   }
 
   before(async () => {
-    const provider = waffle.createMockProvider();
-    const wallet = waffle.getWallets(provider)[0];
-    simpleTransferApp = await waffle.deployContract(wallet, SimpleTransferApp);
+    const wallet = (await provider.getWallets())[0];
+    simpleTransferApp = await new ContractFactory(
+      SimpleTransferApp.abi,
+      SimpleTransferApp.bytecode,
+      wallet,
+    ).deploy();
   });
 
   describe("update state", () => {

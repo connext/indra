@@ -1,6 +1,7 @@
-import { utils } from "@connext/client";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
+import * as lolex from "lolex";
 
 import {
   APP_PROTOCOL_TOO_LONG,
@@ -22,14 +23,8 @@ import {
   UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
 } from "../util";
-import { BigNumber } from "ethers/utils";
-
-import * as lolex from "lolex";
-
-const { xpubToAddress } = utils;
 
 let clock: any;
-let client: IConnextClient;
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
@@ -53,7 +48,7 @@ const fundChannelAndSwap = async (opts: {
   } = opts;
   // these tests should not have collateral issues
   // so make sure they are always properly funded
-  client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
+  const client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
 
   const input = {
     amount: inputAmount,
@@ -67,7 +62,7 @@ const fundChannelAndSwap = async (opts: {
   await requestCollateral(client, output.assetId);
   // swap call back
   const swapCb = async () =>
-    await swapAsset(client, input, output, xpubToAddress(client.nodePublicIdentifier));
+    await swapAsset(client, input, output, client.nodeSignerAddress);
   // try to swap, first check if test must be fast forwarded
   if (fastForward) {
     // fast forward the clock for tests with delay
@@ -101,7 +96,7 @@ const fundChannelAndSwap = async (opts: {
 };
 
 describe("Swap offline", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clock = lolex.install({
       shouldAdvanceTime: true,
       advanceTimeDelta: 1,
@@ -109,9 +104,8 @@ describe("Swap offline", () => {
     });
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     clock && clock.reset && clock.reset();
-    await client.messaging.disconnect();
   });
 
   it("Bot A tries to install swap but there’s no response from node", async () => {
@@ -178,11 +172,15 @@ describe("Swap offline", () => {
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
     await (providedClient.messaging as TestMessagingService)!.subscribe(
-      `indra.node.${providedClient.nodePublicIdentifier}.install.*`,
-      async () => {
+      `${providedClient.nodeIdentifier}.channel.${providedClient.multisigAddress}.app-instance.*.install`,
+      async (msg: any) => {
+        const { appInterface } = msg.data;
+        if (appInterface.addr !== providedClient.config.contractAddresses.SimpleTwoPartySwapApp) {
+          return;
+        }
         // we know client has swap app installed,
         // so delete store here
-        await providedClient.store.reset!();
+        await providedClient.store.clear();
       },
     );
 

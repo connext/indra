@@ -1,8 +1,9 @@
-const path = require("path");
-const nodeExternals = require("webpack-node-externals");
+const path = require('path');
+const nodeExternals = require('webpack-node-externals');
+const webpack = require('webpack');
 
 const mode = process.env.MODE === "release" ? "release" : "staging";
-const whitelist = mode === "release" ? "" : /@connext\/.*/;
+const whitelist = mode === "release" ? "" : [/@connext\/.*/];
 
 console.log(`Building ${mode}-mode bundle`);
 
@@ -23,8 +24,6 @@ module.exports = {
 
   entry: {
     tests: path.join(__dirname, "../src/index.ts"),
-    flamegraph: path.join(__dirname, "../src/benchmarking/flamegraph.ts"),
-    flamegraphPrep: path.join(__dirname, "../src/benchmarking/flamegraphPrep.ts"),
   },
 
   output: {
@@ -56,4 +55,10 @@ module.exports = {
       },
     ],
   },
+
+  plugins: [
+    new webpack.DefinePlugin({
+      window: {},
+    }),
+  ],
 };

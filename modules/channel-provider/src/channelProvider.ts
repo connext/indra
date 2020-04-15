@@ -1,36 +1,35 @@
 import {
-  chan_config,
-  chan_nodeAuth,
-  chan_restoreState,
-  chan_storeGet,
-  chan_storeSet,
+  ChannelMethods,
   ChannelProviderConfig,
-  ChannelProviderRpcMethod,
   ConnextEventEmitter,
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
-  StorePair,
+  StateChannelJSON,
+  WithdrawalMonitorObject,
+  WalletDepositParams,
+  ConditionalTransactionCommitmentJSON,
+  SetStateCommitmentJSON,
+  MinimalTransaction,
 } from "@connext/types";
 
 export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
   public connected: boolean = false;
   public connection: IRpcConnection;
 
-  private _config: ChannelProviderConfig | undefined = undefined;
-  private _multisigAddress: string | undefined = undefined;
+  private _config: ChannelProviderConfig | undefined;
+  private _multisigAddress: string | undefined;
 
-  constructor(connection: IRpcConnection, config?: ChannelProviderConfig) {
+  constructor(connection: IRpcConnection) {
     super();
     this.connection = connection;
-    this._config = config;
   }
 
   public enable(): Promise<ChannelProviderConfig> {
     return new Promise(
       async (resolve, reject): Promise<void> => {
         await this.connection.open();
-        const config = this._config || (await this._send(chan_config));
+        const config: ChannelProviderConfig = await this._send(ChannelMethods.chan_enable);
         if (Object.keys(config).length > 0) {
           this.connected = true;
           this._config = config;
@@ -48,23 +47,47 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
     );
   }
 
-  public send = async (method: ChannelProviderRpcMethod, params: any = {}): Promise<any> => {
+  public send = async (method: ChannelMethods, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
-      case chan_storeSet:
-        result = await this.set(params.pairs);
+      case ChannelMethods.chan_setUserWithdrawal:
+        result = await this.setUserWithdrawal(params.withdrawalObject, params.remove);
         break;
-      case chan_storeGet:
-        result = await this.get(params.path);
+      case ChannelMethods.chan_getUserWithdrawal:
+        result = await this.getUserWithdrawals();
         break;
-      case chan_nodeAuth:
+      case ChannelMethods.chan_signMessage:
         result = await this.signMessage(params.message);
         break;
-      case chan_config:
-        result = this.config;
+      case ChannelMethods.chan_encrypt:
+        result = await this.encrypt(params.message, params.publicIdentifier);
         break;
-      case chan_restoreState:
-        result = await this.restoreState(params.path);
+      case ChannelMethods.chan_decrypt:
+        result = await this.decrypt(params.encryptedPreImage);
+        break;
+      case ChannelMethods.chan_restoreState:
+        result = await this.restoreState();
+        break;
+      case ChannelMethods.chan_setStateChannel:
+        result = await this.setStateChannel(params.state);
+        break;
+      case ChannelMethods.chan_walletDeposit:
+        result = await this.walletDeposit(params);
+        break;
+      case ChannelMethods.chan_createSetupCommitment:
+        result = await this.createSetupCommitment(params.multisigAddress, params.commitment);
+        break;
+      case ChannelMethods.chan_createSetStateCommitment:
+        result = await this.createSetStateCommitment(params.appIdentityHash, params.commitment);
+        break;
+      case ChannelMethods.chan_createConditionalCommitment:
+        result = await this.createConditionalCommitment(params.appIdentityHash, params.commitment);
+        break;
+      case ChannelMethods.chan_getSchemaVersion:
+        result = await this.getSchemaVersion();
+        break;
+      case ChannelMethods.chan_updateSchemaVersion:
+        result = await this.updateSchemaVersion(params.version);
         break;
       default:
         result = await this._send(method, params);
@@ -80,22 +103,19 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ///////////////
   /// // GETTERS / SETTERS
-  get isSigner(): boolean {
-    return false;
-  }
-
   get config(): ChannelProviderConfig | undefined {
     return this._config;
   }
 
   get multisigAddress(): string | undefined {
     const multisigAddress =
-      this._multisigAddress || (this._config ? this._config.multisigAddress : undefined);
+      this._multisigAddress ||
+      (typeof this._config !== "undefined" ? this._config.multisigAddress : undefined);
     return multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string | undefined) {
-    if (this._config) {
+    if (typeof this._config !== "undefined") {
       this._config.multisigAddress = multisigAddress;
     }
     this._multisigAddress = multisigAddress;
@@ -123,35 +143,98 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
 
   /// ////////////////////////////////////////////
   /// // SIGNING METHODS
+  public isSigner() {
+    return this._send(ChannelMethods.chan_isSigner);
+  }
 
-  public signMessage = async (message: string): Promise<string> => {
-    return this._send(chan_nodeAuth, { message });
+  public signMessage(message: string): Promise<string> {
+    return this._send(ChannelMethods.chan_signMessage, { message });
+  }
+
+  public encrypt(message: string, publicIdentifier: string): Promise<string> {
+    return this._send(ChannelMethods.chan_encrypt, {
+      message,
+      publicIdentifier,
+    });
+  }
+
+  public decrypt(encryptedPreImage: string): Promise<string> {
+    return this._send(ChannelMethods.chan_decrypt, {
+      encryptedPreImage,
+    });
+  }
+
+  public walletDeposit = async (params: WalletDepositParams) => {
+    return this._send(ChannelMethods.chan_walletDeposit, params);
   };
 
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 
-  public get = async (path: string): Promise<any> => {
-    return this._send(chan_storeGet, {
-      path,
+  public getUserWithdrawals = async (): Promise<WithdrawalMonitorObject[]> => {
+    return this._send(ChannelMethods.chan_getUserWithdrawal, {});
+  };
+
+  public setUserWithdrawal = async (
+    withdrawalObject: WithdrawalMonitorObject, 
+    remove: boolean = false,
+  ): Promise<void> => {
+    return this._send(ChannelMethods.chan_setUserWithdrawal, {
+      withdrawalObject,
+      remove,
     });
   };
 
-  public set = async (pairs: StorePair[], allowDelete?: Boolean): Promise<void> => {
-    return this._send(chan_storeSet, {
-      allowDelete,
-      pairs,
+  public restoreState = async (): Promise<void> => {
+    return this._send(ChannelMethods.chan_restoreState, {});
+  };
+
+  public setStateChannel = async (state: StateChannelJSON): Promise<void> => {
+    return this._send(ChannelMethods.chan_setStateChannel, { state });
+  };
+
+  public createSetupCommitment = async (
+    multisigAddress: string,
+    commitment: MinimalTransaction,
+  ): Promise<void> => {
+    return this._send(ChannelMethods.chan_createSetupCommitment, {
+      multisigAddress,
+      commitment,
     });
   };
 
-  public restoreState = async (path: string): Promise<void> => {
-    return this._send(chan_restoreState, { path });
+  public createSetStateCommitment = async (
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> => {
+    return this._send(ChannelMethods.chan_createSetStateCommitment, {
+      appIdentityHash,
+      commitment,
+    });
   };
+
+  public createConditionalCommitment = async (
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> => {
+    return this._send(ChannelMethods.chan_createConditionalCommitment, {
+      appIdentityHash,
+      commitment,
+    });
+  };
+
+  public getSchemaVersion(): Promise<number> {
+    return this._send(ChannelMethods.chan_getSchemaVersion);
+  }
+
+  public updateSchemaVersion(version?: number): Promise<void> {
+    return this._send(ChannelMethods.chan_updateSchemaVersion, { version });
+  }
 
   /// ////////////////////////////////////////////
   /// // PRIVATE METHODS
 
-  private async _send(method: ChannelProviderRpcMethod, params: any = {}): Promise<any> {
+  private async _send(method: ChannelMethods, params: any = {}): Promise<any> {
     const payload = { id: Date.now(), jsonrpc: "2.0", method, params };
     const result = await this.connection.send(payload as JsonRpcRequest);
     return result;

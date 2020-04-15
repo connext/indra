@@ -1,16 +1,13 @@
 /* global before */
 import { Address, SolidityValueType } from "@connext/types";
-import chai from "chai";
-import * as waffle from "ethereum-waffle";
-import { Contract } from "ethers";
+import { createRandom32ByteHexString } from "@connext/utils";
+import { Contract, ContractFactory } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
 import UnidirectionalLinkedTransferApp from "../../build/UnidirectionalLinkedTransferApp.json";
 
-chai.use(waffle.solidity);
-
-const { expect } = chai;
+import { expect, provider } from "../utils";
 
 type CoinTransfer = {
   to: string;
@@ -136,12 +133,12 @@ describe("LinkedUnidirectionalTransferApp", () => {
     unidirectionalLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const provider = waffle.createMockProvider();
-    const wallet = await waffle.getWallets(provider)[0];
-    unidirectionalLinkedTransferApp = await waffle.deployContract(
+    const wallet = (await provider.getWallets())[0];
+    unidirectionalLinkedTransferApp = await new ContractFactory(
+      UnidirectionalLinkedTransferApp.abi,
+      UnidirectionalLinkedTransferApp.bytecode,
       wallet,
-      UnidirectionalLinkedTransferApp,
-    );
+    ).deploy();
   });
 
   it("can redeem a payment with correct hash", async () => {
@@ -150,8 +147,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const amount = new BigNumber(10);
 
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
@@ -210,8 +207,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const amount = new BigNumber(10);
 
-    const paymentId = hexlify(randomBytes(32));
-    const preImage = hexlify(randomBytes(32));
+    const paymentId = createRandom32ByteHexString();
+    const preImage = createRandom32ByteHexString();
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
@@ -223,7 +220,7 @@ describe("LinkedUnidirectionalTransferApp", () => {
     const linkedHash = createLinkedHash(action);
     const suppliedAction: UnidirectionalLinkedTransferAppAction = {
       ...action,
-      preImage: hexlify(randomBytes(32)),
+      preImage: createRandom32ByteHexString(),
     };
 
     /**

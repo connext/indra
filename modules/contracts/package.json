@@ -1,6 +1,6 @@
 {
   "name": "@connext/contracts",
-  "version": "1.0.5",
+  "version": "2.0.2",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": [
@@ -20,8 +20,7 @@
   ],
   "scripts": {
     "build": "rm -rf ./dist/* && npm run compile && npm run transpile",
-    "compile": "waffle waffle.json",
-    "compile-native": "waffle waffle.native.json",
+    "compile": "npx buidler compile",
     "lint": "npm run lint-ts && npm run lint-sol",
     "lint-ts": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'test/**/*' 'index.ts'",
     "lint-sol": "solium -d .",
@@ -29,22 +28,25 @@
     "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@connext/types": "5.2.1",
-    "ethers": "4.0.45",
+    "@connext/utils": "6.0.1",
+    "@connext/types": "6.0.1",
+    "ethers": "4.0.46",
     "@openzeppelin/contracts": "2.5.0",
     "ganache-cli": "6.9.1",
-    "solc": "0.5.11"
+    "solc": "0.5.11",
+    "eventemitter3": "4.0.0"
   },
   "devDependencies": {
     "@nomiclabs/buidler": "1.2.0",
     "@nomiclabs/buidler-ethers": "1.2.0",
     "@nomiclabs/buidler-waffle": "1.2.0",
     "@types/chai": "4.2.9",
+    "@types/chai-subset": "1.3.3",
     "@types/mocha": "7.0.1",
-    "@types/node": "13.7.1",
+    "@types/node": "13.9.1",
     "@types/sinon-chai": "3.2.3",
     "chai": "4.2.0",
-    "ethereum-waffle": "2.3.2",
+    "ethereum-waffle": "2.4.0",
     "ethlint": "1.2.5",
     "event-target-shim": "5.0.1",
     "mocha": "7.0.1",

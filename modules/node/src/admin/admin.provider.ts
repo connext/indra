@@ -1,5 +1,6 @@
-import { IMessagingService } from "@connext/messaging";
-import { StateChannelJSON, stringify } from "@connext/types";
+import { MessagingService } from "@connext/messaging";
+import { StateChannelJSON, RebalanceProfile } from "@connext/types";
+import { bigNumberifyJson, stringify } from "@connext/utils";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
@@ -7,17 +8,18 @@ import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
 import { LoggerService } from "../logger/logger.service";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
-import { AbstractMessagingProvider } from "../util";
-import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
+import { ChannelService } from "../channel/channel.service";
+import { AbstractMessagingProvider } from "../messaging/abstract.provider";
 
 import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
-    private readonly adminService: AdminService,
     private readonly authService: AuthService,
-    log: LoggerService,
-    messaging: IMessagingService,
+    public readonly log: LoggerService,
+    messaging: MessagingService,
+    private readonly adminService: AdminService,
+    private readonly channelService: ChannelService,
   ) {
     super(log, messaging);
   }
@@ -27,30 +29,33 @@ class AdminMessaging extends AbstractMessagingProvider {
    *
    * Some channels do not have a `freeBalanceAppInstance` key stored in their
    * state channel object at the path:
-   * `{prefix}/{nodeXpub}/channel/{multisigAddress}`, meaning any attempts that
+   * `{prefix}/{nodeAddress}/channel/{multisigAddress}`, meaning any attempts that
    * rely on checking the free balance (read: all app protocols) will fail.
    *
    * Additionally, any `restoreState` or state migration methods will fail
    * since they will be migrating corrupted states.
    *
-   * This method will return the userXpub and the multisig address for all
+   * This method will return the userAddress and the multisig address for all
    * channels that fit this description.
    */
-  async getNoFreeBalance(): Promise<{ multisigAddress: string; userXpub: string; error: any }[]> {
+  async getNoFreeBalance(): Promise<{ multisigAddress: string; userAddress: string; error: any }[]> {
     return await this.adminService.getNoFreeBalance();
   }
 
   async getStateChannelByUserPublicIdentifier(data: {
-    userPublicIdentifier: string;
+    userIdentifier: string;
   }): Promise<StateChannelJSON> {
-    const { userPublicIdentifier } = data;
-    if (!userPublicIdentifier) {
+    const { userIdentifier } = data;
+    if (!userIdentifier) {
       throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
     }
-    return await this.adminService.getStateChannelByUserPublicIdentifier(userPublicIdentifier);
+    return await this.adminService.getStateChannelByUserPublicIdentifier(userIdentifier);
   }
 
-  async getStateChannelByMultisig(data: { multisigAddress: string }): Promise<StateChannelJSON> {
+  async getStateChannelByMultisig(
+    subject: string,
+    data: { multisigAddress: string },
+  ): Promise<StateChannelJSON> {
     const { multisigAddress } = data;
     if (!multisigAddress) {
       throw new RpcException(`No multisig address supplied: ${stringify(data)}`);
@@ -62,13 +67,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getAllChannels();
   }
 
-  async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
+  async getAllLinkedTransfers(): Promise<any> {
     return await this.adminService.getAllLinkedTransfers();
   }
 
-  async getLinkedTransferByPaymentId(data: {
-    paymentId: string;
-  }): Promise<LinkedTransfer | undefined> {
+  async getLinkedTransferByPaymentId(data: { paymentId: string }): Promise<any> {
     const { paymentId } = data;
     if (!paymentId) {
       throw new RpcException(`No paymentId supplied: ${stringify(data)}`);
@@ -84,59 +87,77 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.repairCriticalStateChannelAddresses();
   }
 
+  async migrateChannelStore(): Promise<any> {
+    return await this.adminService.migrateChannelStore();
+  }
+
+  async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
+    const address = subject.split(".")[1];
+    const profile = bigNumberifyJson(data.profile) as RebalanceProfile;
+    await this.channelService.addRebalanceProfileToChannel(address, profile);
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
-      this.authService.useAdminToken(this.getNoFreeBalance.bind(this)),
+      this.getNoFreeBalance.bind(this),
     );
 
     await super.connectRequestReponse(
-      "admin.get-state-channel-by-xpub",
-      this.authService.useAdminToken(this.getStateChannelByUserPublicIdentifier.bind(this)),
+      "admin.get-state-channel-by-address",
+      this.getStateChannelByUserPublicIdentifier.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.get-state-channel-by-multisig",
-      this.authService.useAdminToken(this.getStateChannelByMultisig.bind(this)),
+      this.getStateChannelByMultisig.bind(this),
     );
 
-    await super.connectRequestReponse(
-      "admin.get-all-channels",
-      this.authService.useAdminToken(this.getAllChannels.bind(this)),
-    );
+    await super.connectRequestReponse("admin.get-all-channels", this.getAllChannels.bind(this));
 
     await super.connectRequestReponse(
       "admin.get-all-linked-transfers",
-      this.authService.useAdminToken(this.getAllLinkedTransfers.bind(this)),
+      this.getAllLinkedTransfers.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.get-linked-transfer-by-payment-id",
-      this.authService.useAdminToken(this.getLinkedTransferByPaymentId.bind(this)),
+      this.getLinkedTransferByPaymentId.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.get-channels-for-merging",
-      this.authService.useAdminToken(this.getChannelsForMerging.bind(this)),
+      this.getChannelsForMerging.bind(this),
     );
 
     await super.connectRequestReponse(
       "admin.repair-critical-addresses",
-      this.authService.useAdminToken(this.repairCriticalStateChannelAddresses.bind(this)),
+      this.repairCriticalStateChannelAddresses.bind(this),
+    );
+
+    await super.connectRequestReponse(
+      "admin.migrate-channel-store",
+      this.migrateChannelStore.bind(this),
+    );
+
+    await super.connectRequestReponse(
+      "admin.*.channel.add-profile",
+      this.addRebalanceProfile.bind(this),
     );
   }
 }
 
 export const adminProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [AdminService, AuthService, LoggerService, MessagingProviderId],
+  inject: [AuthService, LoggerService, MessagingProviderId, AdminService, ChannelService],
   provide: AdminMessagingProviderId,
   useFactory: async (
-    adminService: AdminService,
     authService: AuthService,
     log: LoggerService,
-    messaging: IMessagingService,
+    messaging: MessagingService,
+    adminService: AdminService,
+    channelService: ChannelService,
   ): Promise<void> => {
-    const admin = new AdminMessaging(adminService, authService, log, messaging);
+    const admin = new AdminMessaging(authService, log, messaging, adminService, channelService);
     await admin.setupSubscriptions();
   },
 };

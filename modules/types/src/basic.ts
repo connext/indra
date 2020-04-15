@@ -1,14 +1,27 @@
 import { BigNumber as ethersBN, BigNumberish, Interface, ParamType } from "ethers/utils";
 
 export { Contract } from "ethers";
-export { BaseProvider, JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
+export { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
 export { BigNumberish, Network, Transaction } from "ethers/utils";
+
+// special strings
+// these function more as documentation for devs than checked types
+export type ABIEncoding = string; // eg "tuple(address to, uint256 amount)"
+export type Address = string; // aka HexString of length 42
+export type AssetId = Address; // address of ERC20 token contract (AddressZero for ETH)
+export type Bytes32 = string; // aka HexString of length 66
+export type DecString = string; // eg "3.14"
+export type HexString = string; // eg "0xabc123" of arbitrary length
+export type PublicIdentifier = string; // "indra" + base58(<publicKey>)
+export type PublicKey = string; // Hex string representing a public key
+export type UrlString = string; // eg "<protocol>://<host>[:<port>]/<path>
 
 export type BigNumber = ethersBN;
 export const BigNumber = ethersBN;
 
-export type ABIEncoding = string;
-export type Address = string;
+export type HexObject = { _hex: HexString };
+
+export type StringMapping = { [key: string]: string };
 
 export interface EthSignature {
   r: string;
@@ -25,15 +38,21 @@ type SolidityABIEncoderV2Struct = {
   [x: string]: SolidityValueType;
 };
 
-// Ideally this should be a `type` not an `interface` but self-referencial
-// types is not supported: github.com/Microsoft/TypeScript/issues/6230
-interface SolidityABIEncoderV2SArray extends Array<SolidityValueType> {}
+// TODO: fix circular type def
+// @ts-ignore
+type SolidityABIEncoderV2SArray = Array<SolidityValueType>;
 
 // The application-specific state of an app instance, to be interpreted by the
 // app developer. We just treat it as an opaque blob; however since we pass this
 // around in protocol messages and include this in transaction data in challenges,
 // we impose some restrictions on the type; they must be serializable both as
 // JSON and as solidity structs.
-export type SolidityValueType = SolidityPrimitiveType | SolidityABIEncoderV2Struct | SolidityABIEncoderV2SArray;
+
+// TODO: fix circular type def
+// @ts-ignore
+export type SolidityValueType =
+  | SolidityPrimitiveType
+  | SolidityABIEncoderV2Struct
+  | SolidityABIEncoderV2SArray;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;

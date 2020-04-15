@@ -1,48 +1,74 @@
-import { convertSwapParameters } from "@connext/apps";
-import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, formatEther, parseEther } from "ethers/utils";
-
-import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
-import { xpubToAddress } from "../lib/cfCore";
+import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
+import { delayAndThrow, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import {
+  CF_METHOD_TIMEOUT,
+  DefaultApp,
+  MethodParams,
+  PublicParams,
+  PublicResults,
+  SimpleSwapAppState,
+  SimpleTwoPartySwapAppName,
+  Address,
+} from "@connext/types";
 import {
   calculateExchange,
-  CFCoreChannel,
-  CFCoreTypes,
-  DefaultApp,
-  SwapParameters,
-} from "../types";
-import {
+  getAddressFromAssetId,
   invalidAddress,
   notGreaterThan,
   notLessThanOrEqualTo,
   notPositive,
+  toBN,
   validate,
-} from "../validation";
+} from "@connext/utils";
+import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
 import { AbstractController } from "./AbstractController";
-import { SimpleSwapAppStateBigNumber } from "@connext/types";
 
 export class SwapController extends AbstractController {
-  public async swap(params: SwapParameters): Promise<CFCoreChannel> {
-    // convert params + validate
-    const { amount, toAssetId, fromAssetId, swapRate } = convertSwapParameters("bignumber", params);
-    const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
-    const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
+  public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
+    const amount = toBN(params.amount);
+    const { swapRate } = params;
+
+    const toTokenAddress = getAddressFromAssetId(params.toAssetId);
+    const fromTokenAddress = getAddressFromAssetId(params.fromAssetId);
+  
+    const preSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);
+    const preSwapToBal = await this.connext.getFreeBalance(toTokenAddress);
+    const userBal = preSwapFromBal[this.connext.signerAddress];
     const swappedAmount = calculateExchange(amount, swapRate);
+
     validate(
-      invalidAddress(fromAssetId),
-      invalidAddress(toAssetId),
+      invalidAddress(fromTokenAddress),
+      invalidAddress(toTokenAddress),
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
       notPositive(parseEther(swapRate)),
     );
 
-    // get app definition from constants
-    const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
+    const error = notLessThanOrEqualTo(
+      amount,
+      toBN(preSwapFromBal[this.connext.signerAddress]),
+    );
+    if (error) {
+      throw new Error(error);
+    }
+
+    // get app definition
+    const network = await this.ethProvider.getNetwork();
+    const appInfo = await this.connext.getAppRegistry({
+      name: SimpleTwoPartySwapAppName,
+      chainId: network.chainId,
+    }) as DefaultApp;
 
     // install the swap app
-    const appId = await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
+    const appIdentityHash = await this.swapAppInstall(
+      amount,
+      toTokenAddress,
+      fromTokenAddress,
+      swapRate,
+      appInfo,
+    );
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     // if app installed, that means swap was accepted now uninstall
@@ -52,7 +78,7 @@ export class SwapController extends AbstractController {
           CF_METHOD_TIMEOUT,
           `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
-        this.connext.uninstallApp(appId),
+        this.connext.uninstallApp(appIdentityHash),
       ]);
     } catch (e) {
       const msg = `Failed to uninstall swap: ${e.stack || e.message}`;
@@ -61,42 +87,40 @@ export class SwapController extends AbstractController {
     }
 
     // Sanity check to ensure swap was executed correctly
-    const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const postSwapToBal = await this.connext.getFreeBalance(toAssetId);
+    const postSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);
+    const postSwapToBal = await this.connext.getFreeBalance(toTokenAddress);
     // balance decreases
-    const diffFrom = preSwapFromBal[this.connext.freeBalanceAddress].sub(
-      postSwapFromBal[this.connext.freeBalanceAddress],
+    const diffFrom = preSwapFromBal[this.connext.signerAddress].sub(
+      postSwapFromBal[this.connext.signerAddress],
     );
     // balance increases
-    const diffTo = postSwapToBal[this.connext.freeBalanceAddress].sub(
-      preSwapToBal[this.connext.freeBalanceAddress],
+    const diffTo = postSwapToBal[this.connext.signerAddress].sub(
+      preSwapToBal[this.connext.signerAddress],
     );
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
     }
-    const newState = await this.connext.getChannel();
+    const res = await this.connext.getChannel();
 
     // TODO: fix the state / types!!
-    return newState as CFCoreChannel;
+    return res as PublicResults.Swap;
   }
 
   /////////////////////////////////
   ////// PRIVATE METHODS
 
-  // TODO: fix for virtual exchanges!
   private swapAppInstall = async (
     amount: BigNumber,
-    toAssetId: string,
-    fromAssetId: string,
+    toTokenAddress: Address,
+    fromTokenAddress: Address,
     swapRate: string,
     appInfo: DefaultApp,
   ): Promise<string> => {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.log.info(
-      `Swapping ${formatEther(amount)} ${
-        fromAssetId === AddressZero ? "ETH" : "Tokens"
-      } for ${formatEther(swappedAmount)} ${toAssetId === AddressZero ? "ETH" : "Tokens"}`,
+      `Swapping ${formatEther(amount)} ${ toTokenAddress === AddressZero ? "ETH" : "Tokens"
+      } for ${formatEther(swappedAmount)} ${fromTokenAddress === AddressZero ? "ETH" : "Tokens"}`,
     );
 
     // NOTE: always put the initiators swap information FIRST
@@ -104,18 +128,18 @@ export class SwapController extends AbstractController {
     // fail, causing the balances to be indexed on the wrong token
     // address key in `get-outcome-increments.ts` in cf code base
     // ideally this would be fixed at some point
-    const initialState: SimpleSwapAppStateBigNumber = {
+    const initialState: SimpleSwapAppState = {
       coinTransfers: [
         [
           {
             amount,
-            to: this.connext.freeBalanceAddress,
+            to: this.connext.signerAddress,
           },
         ],
         [
           {
             amount: swappedAmount,
-            to: xpubToAddress(this.connext.nodePublicIdentifier),
+            to: getSignerAddressFromPublicIdentifier(this.connext.nodeIdentifier),
           },
         ],
       ],
@@ -123,7 +147,7 @@ export class SwapController extends AbstractController {
 
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
 
-    const params: CFCoreTypes.ProposeInstallParams = {
+    const params: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -131,16 +155,17 @@ export class SwapController extends AbstractController {
       appDefinition,
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: fromAssetId,
+      initiatorDepositAssetId: fromTokenAddress,
       outcomeType: appInfo.outcomeType,
-      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderIdentifier: this.connext.nodeIdentifier,
       responderDeposit: swappedAmount,
-      responderDepositTokenAddress: toAssetId,
-      timeout: Zero,
+      responderDepositAssetId: toTokenAddress,
+      defaultTimeout: DEFAULT_APP_TIMEOUT,
+      stateTimeout: SWAP_STATE_TIMEOUT,
     };
 
-    const appInstanceId = await this.proposeAndInstallLedgerApp(params);
-    this.log.info(`Successfully installed swap app with id ${appInstanceId}`);
-    return appInstanceId;
+    const appIdentityHash = await this.proposeAndInstallLedgerApp(params);
+    this.log.info(`Successfully installed swap app with id ${appIdentityHash}`);
+    return appIdentityHash;
   };
 }

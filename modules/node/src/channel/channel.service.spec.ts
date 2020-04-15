@@ -1,43 +1,31 @@
+import { DefaultApp, MethodResults, OutcomeType } from "@connext/types";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { One, AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
-import { mkHash, mkXpub } from "../test/utils";
-import { CFCoreTypes, AppInstanceJson } from "../util";
+import { mkHash, mkAddress } from "../test/utils";
 
 import { Channel } from "./channel.entity";
 import { ChannelService, RebalanceType } from "./channel.service";
 import { ChannelRepository } from "./channel.repository";
-import { mkAddress } from "../../dist/src/test/utils";
 import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { BigNumber } from "ethers/utils";
-import { DefaultApp, OutcomeType } from "@connext/types";
 
 class MockCFCoreService {
   cfCore = {
-    freeBalanceAddress: mkAddress("0xabcdef"),
+    signerAddress: mkAddress("0xabcdef"),
   };
 
-  async deposit(): Promise<CFCoreTypes.DepositResult> {
+  async deposit(): Promise<MethodResults.Deposit> {
     return {
-      multisigBalance: One,
-      tokenAddress: AddressZero,
-      transactionHash: mkHash("0xa"),
+      freeBalance: {
+        [AddressZero]: One,
+      },
     };
-  }
-
-  async proposeAndWaitForAccepted(): Promise<CFCoreTypes.ProposeInstallResult> {
-    return {
-      appInstanceId: mkHash("0xabc"),
-    };
-  }
-
-  async getCoinBalanceRefundApp(): Promise<AppInstanceJson | undefined> {
-    return undefined;
   }
 }
 
@@ -45,18 +33,18 @@ class MockChannelRepository extends ChannelRepository {
   async findByMultisigAddress(): Promise<Channel | undefined> {
     const channel = new Channel();
     channel.available = true;
-    channel.collateralizationInFlight = false;
+    channel.activeCollateralizations = { [AddressZero]: false };
     channel.multisigAddress = mkAddress("0xAAA");
-    channel.nodePublicIdentifier = mkXpub("xpubAAA");
-    channel.userPublicIdentifier = mkXpub("xpubBBB");
+    channel.nodeIdentifier = mkAddress("addressAAA");
+    channel.userIdentifier = mkAddress("addressBBB");
     channel.id = 1;
     return channel;
   }
 }
 
 class MockOnchainTransactionRepository extends OnchainTransactionRepository {
-  async addCollateralization(): Promise<OnchainTransaction> {
-    return new OnchainTransaction();
+  async addCollateralization(): Promise<void> {
+    return;
   }
 }
 
@@ -125,6 +113,6 @@ describe.skip("Channel Service", () => {
   });
 
   it("should add deposits to the onchain transaction table", async () => {
-    await channelService.rebalance(mkXpub("0xXpub"), AddressZero, RebalanceType.COLLATERALIZE, One);
+    await channelService.rebalance(mkAddress("0xAddress"), AddressZero, RebalanceType.COLLATERALIZE, One);
   });
 });

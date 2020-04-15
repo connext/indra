@@ -1,16 +1,16 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
+import "./state-deposit-holders/MultisigTransfer.sol";
 import "../adjudicator/ChallengeRegistry.sol";
 import "./libs/LibOutcome.sol";
 
 
 /// @title ConditionalTransactionDelegateTarget
 /// @author Liam Horne - <liam@l4v.io>
-contract ConditionalTransactionDelegateTarget {
+contract ConditionalTransactionDelegateTarget is MultisigTransfer {
 
     uint256 constant MAX_UINT256 = 2 ** 256 - 1;
-    address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
 
     struct FreeBalanceAppState {
         address[] tokenAddresses;
@@ -26,6 +26,17 @@ contract ConditionalTransactionDelegateTarget {
         address[] tokenAddresses;
     }
 
+    function withdrawWrapper(
+        address payable recipient,
+        address assetId,
+        uint256 amount,
+        bytes32 nonce
+    )
+        public
+    {
+        multisigTransfer(recipient, assetId, amount);
+    }
+
     function executeEffectOfFreeBalance(
         ChallengeRegistry challengeRegistry,
         bytes32 freeBalanceAppIdentityHash,
@@ -33,11 +44,6 @@ contract ConditionalTransactionDelegateTarget {
     )
         public
     {
-        require(
-            challengeRegistry.isStateFinalized(freeBalanceAppIdentityHash),
-            "Free Balance app instance is not finalized yet"
-        );
-
         FreeBalanceAppState memory freeBalanceAppState = abi.decode(
             challengeRegistry.getOutcome(freeBalanceAppIdentityHash),
             (FreeBalanceAppState)
@@ -89,7 +95,6 @@ contract ConditionalTransactionDelegateTarget {
     )
         public
     {
-
         bytes32[] memory activeApps = abi.decode(
             challengeRegistry.getOutcome(freeBalanceAppIdentityHash),
             (FreeBalanceAppState)
@@ -104,11 +109,6 @@ contract ConditionalTransactionDelegateTarget {
         }
 
         require(appIsFunded, "Referenced AppInstance is not funded");
-
-        require(
-            challengeRegistry.isStateFinalized(appIdentityHash),
-            "Referenced AppInstance is not finalized"
-        );
 
         bytes memory outcome = challengeRegistry.getOutcome(appIdentityHash);
 
@@ -129,5 +129,4 @@ contract ConditionalTransactionDelegateTarget {
             "Execution of executeEffectOfInterpretedAppOutcome failed"
         );
     }
-
 }

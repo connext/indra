@@ -242,7 +242,7 @@ await getPaymentProfile();
 ### getAppState
 
 ```typescript
-getAppState: (appInstanceId: string) => Promise<CFCoreTypes.GetStateResult>
+getAppState: (appIdentityHash: string) => Promise<CFCoreTypes.GetStateResult>
 ```
 
 #### Example
@@ -305,7 +305,6 @@ const params: CFCoreTypes.ProposeInstallVirtualParams = {
   initialState,
   initiatorDeposit: new BigNumber(1000), // wei units
   initiatorDepositTokenAddress: "0x0000...", // assetId, AddressZero for ethereum
-  intermediaryIdentifier: "xpub...", // xpub of intermediary node, returned from config endpoint
   outcomeType: appInfo.outcomeType, // CFCoreTypes.OutcomeType
   proposedToIdentifier: "0xabc...",
   responderDeposit: new BigNumber(0), // wei units
@@ -319,7 +318,7 @@ await proposeInstallApp(params);
 ### installApp
 
 ```typescript
-installApp: (appInstanceId: string) => Promise<CFCoreTypes.InstallResult>
+installApp: (appIdentityHash: string) => Promise<CFCoreTypes.InstallResult>
 ```
 
 #### Example
@@ -331,7 +330,7 @@ await installApp("0xabc...");
 ### rejectInstallApp
 
 ```typescript
-rejectInstallApp: (appInstanceId: string) => Promise<CFCoreTypes.UninstallResult>
+rejectInstallApp: (appIdentityHash: string) => Promise<CFCoreTypes.UninstallResult>
 ```
 
 #### Example
@@ -343,7 +342,7 @@ await rejectInstallApp("0xabc...");
 ### uninstallApp
 
 ```typescript
-uninstallApp: (appInstanceId: string) => Promise<CFCoreTypes.UninstallResult>
+uninstallApp: (appIdentityHash: string) => Promise<CFCoreTypes.UninstallResult>
 ```
 
 #### Example
@@ -355,7 +354,7 @@ await uninstallApp("0xabc...");
 ### installVirtualApp
 
 ```typescript
-installVirtualApp: (appInstanceId: string) => Promise<CFCoreTypes.InstallVirtualResult>
+installVirtualApp: (appIdentityHash: string) => Promise<CFCoreTypes.InstallVirtualResult>
 ```
 
 #### Example
@@ -367,7 +366,7 @@ await installVirtualApp("0xabc..");
 ### takeAction
 
 ```typescript
-takeAction: (appInstanceId: string, action: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.TakeActionResult>
+takeAction: (appIdentityHash: string, action: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.TakeActionResult>
 ```
 
 #### Example
@@ -383,7 +382,7 @@ await takeAction("0xabc...", action);
 ### updateState
 
 ```typescript
-updateState: (appInstanceId: string, newState: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.UpdateStateResult>
+updateState: (appIdentityHash: string, newState: CFCoreTypes.SolidityValueType) => Promise<CFCoreTypes.UpdateStateResult>
 ```
 
 #### Example
@@ -395,7 +394,7 @@ await updateState("0xabc...", { preImage: createPreImage() });
 ### getProposedAppInstance
 
 ```typescript
-getProposedAppInstance: (appInstanceId: string) => Promise<GetProposedAppInstanceResult | undefined>
+getProposedAppInstance: (appIdentityHash: string) => Promise<GetProposedAppInstanceResult | undefined>
 ```
 
 #### Example

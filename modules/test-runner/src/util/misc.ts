@@ -1,9 +1,3 @@
-import { expect } from ".";
-import { TestMessagingService } from "./messaging";
-
-export const delay = async (ms: number) =>
-  new Promise((res: Function): number => setTimeout(res, ms));
-
 export const combineObjects = (overrides: any, defaults: any): any => {
   if (!overrides && defaults) {
     return { ...defaults };

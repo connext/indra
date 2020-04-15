@@ -1,22 +1,24 @@
-import { DEPOSIT_CONFIRMED_EVENT, PROTOCOL_MESSAGE_EVENT, ILoggerService } from "@connext/types";
-import { Signer } from "ethers";
-import { BaseProvider } from "ethers/providers";
+import {
+  EventNames,
+  IChannelSigner,
+  ILoggerService,
+  IMessagingService,
+  IStoreService,
+  Message,
+  MethodName,
+  NetworkContext,
+  ProtocolMessage,
+  PublicIdentifier,
+} from "@connext/types";
+import { bigNumberifyJson, logTime } from "@connext/utils";
+import { JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 
 import { eventNameToImplementation, methodNameToImplementation } from "./methods";
 import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
-import { Store } from "./store";
-import {
-  CFCoreTypes,
-  NetworkContext,
-  NODE_EVENTS,
-  NodeEvent,
-  NodeMessageWrappedProtocolMessage,
-} from "./types";
-import { bigNumberifyJson, logTime } from "./utils";
-
+import { MethodRequest, MethodResponse } from "./types";
 /**
  * This class registers handlers for requests to get or set some information
  * about app instances and channels for this Node and any relevant peer Nodes.
@@ -25,25 +27,22 @@ export class RequestHandler {
   private readonly methods = new Map();
   private readonly events = new Map();
 
-  store: Store;
   router!: RpcRouter;
 
   constructor(
-    readonly publicIdentifier: string,
+    readonly publicIdentifier: PublicIdentifier,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
-    readonly storeService: CFCoreTypes.IStoreService,
-    readonly messagingService: CFCoreTypes.IMessagingService,
+    readonly store: IStoreService,
+    readonly messagingService: IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
-    readonly provider: BaseProvider,
-    readonly wallet: Signer,
-    storeKeyPrefix: string,
+    readonly provider: JsonRpcProvider,
+    readonly signer: IChannelSigner,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
     public readonly log: ILoggerService,
   ) {
-    this.store = new Store(storeService, storeKeyPrefix);
     this.log = this.log.newContext("CF-RequestHandler");
   }
 
@@ -59,12 +58,9 @@ export class RequestHandler {
    * @param method
    * @param req
    */
-  public async callMethod(
-    method: CFCoreTypes.MethodName,
-    req: CFCoreTypes.MethodRequest,
-  ): Promise<CFCoreTypes.MethodResponse> {
+  public async callMethod(method: MethodName, req: MethodRequest): Promise<MethodResponse> {
     const start = Date.now();
-    const result: CFCoreTypes.MethodResponse = {
+    const result: MethodResponse = {
       type: req.type,
       requestId: req.requestId,
       result: await this.methods.get(method)(this, req.params),
@@ -79,8 +75,8 @@ export class RequestHandler {
   private mapPublicApiMethods() {
     for (const methodName in methodNameToImplementation) {
       this.methods.set(methodName, methodNameToImplementation[methodName]);
-      this.incoming.on(methodName, async (req: CFCoreTypes.MethodRequest) => {
-        const res: CFCoreTypes.MethodResponse = {
+      this.incoming.on(methodName, async (req: MethodRequest) => {
+        const res: MethodResponse = {
           type: req.type,
           requestId: req.requestId,
           result: await this.methods.get(methodName)(this, bigNumberifyJson(req.params)),
@@ -95,7 +91,7 @@ export class RequestHandler {
    * These are the events being listened on to detect requests from peer Nodes.
    */
   private mapEventHandlers() {
-    for (const eventName of Object.values(NODE_EVENTS)) {
+    for (const eventName of Object.values(EventNames)) {
       this.events.set(eventName, eventNameToImplementation[eventName]);
     }
   }
@@ -106,13 +102,13 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: NodeEvent, msg: CFCoreTypes.NodeMessage) {
+  public async callEvent(event: EventNames, msg: Message) {
     const start = Date.now();
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
-      if (event === DEPOSIT_CONFIRMED_EVENT) {
+      if (event === EventNames.DEPOSIT_CONFIRMED_EVENT) {
         this.log.info(
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,
@@ -121,7 +117,7 @@ export class RequestHandler {
           )}`,
         );
       } else {
-        throw Error(`Recent ${event} which has no event handler`);
+        throw new Error(`Recent ${event} event which has no event handler`);
       }
     }
 
@@ -133,24 +129,24 @@ export class RequestHandler {
       this.log,
       start,
       `Event ${
-        event !== PROTOCOL_MESSAGE_EVENT
+        event !== EventNames.PROTOCOL_MESSAGE_EVENT
           ? event
-          : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
+          : `for ${(msg as ProtocolMessage).data.protocol} protocol`
       } was processed`,
     );
     this.router.emit(event, msg);
   }
 
-  public async isLegacyEvent(event: NodeEvent) {
+  public async isLegacyEvent(event: EventNames) {
     return this.events.has(event);
   }
 
-  public async getSigner(): Promise<Signer> {
-    return this.wallet;
+  public getSigner(): IChannelSigner {
+    return this.signer;
   }
 
   public async getSignerAddress(): Promise<string> {
-    const signer = await this.getSigner();
+    const signer = this.getSigner();
     return await signer.getAddress();
   }
 }

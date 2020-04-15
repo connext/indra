@@ -6,12 +6,15 @@ import { ChannelModule } from "../channel/channel.module";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { LoggerModule } from "../logger/logger.module";
-import { MessagingModule } from "../messaging/messaging.module";
+import { WithdrawModule } from "../withdraw/withdraw.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
 import { TransferModule } from "../transfer/transfer.module";
-import { LinkedTransferRepository } from "../linkedTransfer/linkedTransfer.repository";
 import { LinkedTransferModule } from "../linkedTransfer/linkedTransfer.module";
-import { FastSignedTransferModule } from "../fastSignedTransfer/fastSignedTransfer.module";
+import { MessagingModule } from "../messaging/messaging.module";
+import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { WithdrawRepository } from "../withdraw/withdraw.repository";
+import { SignedTransferModule } from "../signedTransfer/signedTransfer.module";
+import { HashLockTransferModule } from "../hashLockTransfer/hashLockTransfer.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -25,13 +28,21 @@ import { AppActionsService } from "./appActions.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
-    FastSignedTransferModule,
+    HashLockTransferModule,
     LinkedTransferModule,
     LoggerModule,
-    MessagingModule,
+    LinkedTransferModule,
+    SignedTransferModule,
     SwapRateModule,
+    MessagingModule,
     TransferModule,
-    TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository, LinkedTransferRepository]),
+    TypeOrmModule.forFeature([
+      AppInstanceRepository,
+      AppRegistryRepository,
+      ChannelRepository,
+      WithdrawRepository,
+    ]),
+    WithdrawModule,
   ],
   providers: [AppRegistryService, AppActionsService],
 })

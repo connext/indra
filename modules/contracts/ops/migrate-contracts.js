@@ -1,15 +1,9 @@
-const {
-  CF_PATH,
-  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts,
-} = require("@connext/types");
 const fs = require("fs");
 const eth = require("ethers");
 const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Mintable.json");
 
-/*
-const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
+const coreContracts = [
   "ChallengeRegistry",
-  "CoinBalanceRefundApp",
   "ConditionalTransactionDelegateTarget",
   "IdentityApp",
   "MinimumViableMultisig",
@@ -17,28 +11,25 @@ const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ProxyFactory",
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
   "TwoPartyFixedOutcomeInterpreter",
 ];
-*/
 
 const appContracts = [
+  "DepositApp",
+  "HashLockTransferApp",
   "SimpleLinkedTransferApp",
+  "SimpleSignedTransferApp",
   "SimpleTransferApp",
   "SimpleTwoPartySwapApp",
-  "FastSignedTransferApp",
-  "HashLockTransferApp",
+  "DepositApp",
+  "WithdrawApp",
 ];
 
 const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
 
 const artifacts = {};
 for (const contract of coreContracts) {
-  try {
-    artifacts[contract] = require(`../build/${contract}.json`);
-  } catch (e) {
-    artifacts[contract] = require(`../build/${contract}.json`);
-  }
+  artifacts[contract] = require(`../build/${contract}.json`);
 }
 
 for (const contract of appContracts) {
@@ -58,6 +49,10 @@ const botMnemonics = [
 const ganacheId = 4447;
 const addressBookPath = "./address-book.json";
 const addressBook = JSON.parse(fs.readFileSync(addressBookPath, "utf8") || "{}");
+
+const classicProviders = [
+  "https://www.ethercluster.com/etc",
+];
 
 // Global scope vars
 let chainId;
@@ -172,20 +167,21 @@ const sendGift = async (address, token) => {
 (async function() {
   let provider, balance, nonce, token;
 
-  if (process.env.ETH_PROVIDER) {
-    provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER);
-  } else {
-    provider = eth.getDefaultProvider(process.env.ETH_NETWORK);
-  }
-
-  if (process.env.ETH_MNEMONIC_FILE) {
-    mnemonic = fs.readFileSync(process.env.ETH_MNEMONIC_FILE, "utf8");
-  } else if (process.env.ETH_MNEMONIC) {
-    mnemonic = process.env.ETH_MNEMONIC;
-  } else {
-    console.error("Couldn't setup signer: no mnemonic found");
+  if (!process.env.ETH_PROVIDER) {
+    console.error("Couldn't setup provider: no url found in ETH_PROVIDER env var");
     process.exit(1);
   }
+
+  if (!process.env.ETH_MNEMONIC) {
+    console.error("Couldn't setup signer: no mnemonic found in ETH_MNEMONIC env var");
+    process.exit(1);
+  }
+
+  provider = new eth.providers.JsonRpcProvider(
+    process.env.ETH_PROVIDER,
+    classicProviders.includes(process.env.ETH_PROVIDER) ? "classic" : null,
+  );
+  mnemonic = process.env.ETH_MNEMONIC;
   wallet = eth.Wallet.fromMnemonic(mnemonic).connect(provider); // saved to global scope
 
   try {
@@ -197,17 +193,35 @@ const sendGift = async (address, token) => {
     process.exit(1);
   }
 
-  console.log(`\nPreparing to migrate contracts to network ${chainId}`);
+  console.log(`\nPreparing to migrate contracts to chain w id: ${chainId}`);
   console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`);
 
   ////////////////////////////////////////
   // Deploy contracts
 
-  for (const contract of coreContracts.concat(appContracts).sort()) {
+  let contractsToDeploy = [];
+  const knownContracts = coreContracts.concat(appContracts).sort();
+
+  // if args are provided, only deploy given contracts
+  const args = process.argv.slice(2);
+  if (args.length > 0) {
+    args.forEach(contractName => {
+      if (!knownContracts.includes(contractName)) {
+        console.error(`Unknown contract name: ${contractName}`);
+        return;
+      }
+      contractsToDeploy.push(contractName);
+    });
+  } else {
+    contractsToDeploy = knownContracts;
+  }
+  console.log(`Deploying contracts: ${contractsToDeploy}`);
+
+  for (const contract of contractsToDeploy) {
     await deployContract(contract, artifacts[contract], []);
   }
 
-  // If this network has not token yet, deploy one
+  // If this network has no token yet, deploy one
   if (chainId === ganacheId || !getSavedData("Token", "address")) {
     token = await deployContract("Token", tokenArtifacts, []);
   }
@@ -217,10 +231,8 @@ const sendGift = async (address, token) => {
 
   if (chainId === ganacheId) {
     await sendGift(eth.Wallet.fromMnemonic(mnemonic).address, token);
-    await sendGift(eth.Wallet.fromMnemonic(mnemonic, `${CF_PATH}/0`).address, token);
     for (const botMnemonic of botMnemonics) {
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic).address, token);
-      await sendGift(eth.Wallet.fromMnemonic(botMnemonic, `${CF_PATH}/0`).address, token);
     }
   }
 

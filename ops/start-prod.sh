@@ -7,6 +7,7 @@ docker swarm init 2> /dev/null || true
 ####################
 # External Env Vars
 
+INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-}"
 INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
 INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
@@ -14,7 +15,25 @@ INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl cer
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-release}" # One of: release, staging, test-staging, or test-release
-INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
+INDRA_NATS_JWT_SIGNER_PRIVATE_KEY="${INDRA_NATS_JWT_SIGNER_PRIVATE_KEY:-}" # pass this in through CI
+INDRA_NATS_JWT_SIGNER_PUBLIC_KEY="${INDRA_NATS_JWT_SIGNER_PUBLIC_KEY:-}" # pass this in through CI
+INDRA_LOG_LEVEL="${LOG_LEVEL:-3}"
+
+# load dev-mode hardcoded jwt keys if nothing provided by env vars
+if [[ -z "$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY" && -f .env ]]
+then echo "WARNING: Using hardcoded insecure dev-mode jwt keys" && source .env
+fi
+
+# Make sure keys have proper newlines inserted
+# (bc GitHub Actions strips newlines from secrets)
+INDRA_NATS_JWT_SIGNER_PRIVATE_KEY=`
+  echo $INDRA_NATS_JWT_SIGNER_PRIVATE_KEY | tr -d '\n\r' |\
+  sed 's/-----BEGIN RSA PRIVATE KEY-----/\\\n-----BEGIN RSA PRIVATE KEY-----\\\n/' |\
+  sed 's/-----END RSA PRIVATE KEY-----/\\\n-----END RSA PRIVATE KEY-----\\\n/'`
+INDRA_NATS_JWT_SIGNER_PUBLIC_KEY=`
+  echo $INDRA_NATS_JWT_SIGNER_PUBLIC_KEY | tr -d '\n\r' |\
+  sed 's/-----BEGIN PUBLIC KEY-----/\\\n-----BEGIN PUBLIC KEY-----\\\n/' | \
+  sed 's/-----END PUBLIC KEY-----/\\\n-----END PUBLIC KEY-----\\\n/'`
 
 ####################
 # Internal Config
@@ -24,8 +43,6 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 ganache_chain_id="4447"
-log_level="3" # set to 5 for all logs or to 0 for none
-nats_port="4222"
 node_port="8080"
 number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 
@@ -64,9 +81,9 @@ then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   new_secret "$db_secret" "$project"
-  db_port='ports:
-      - "5432:5432"
-  '
+  db_port="ports:
+      - '5432:5432'
+  "
 else
   db_volume="database"
   db_secret="${project}_database"
@@ -80,6 +97,11 @@ pg_password_file="/run/secrets/$db_secret"
 pg_port="5432"
 pg_user="$project"
 
+# nats bearer auth settings
+nats_port="4222"
+nats_ws_port="4221"
+
+# redis settings
 redis_url="redis://redis:6379"
 
 ########################################
@@ -97,14 +119,13 @@ then version="`cat $dir/../package.json | grep '"version":' | head -n 1 | cut -d
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
 
-ethprovider_image="$registry${project}_ethprovider:$version"
 database_image="$registry${project}_database:$version"
 logdna_image="logdna/logspout:v1.2.0"
-nats_image="nats:2.0.0-linux"
+nats_image="provide/nats-server:indra"
 node_image="$registry${project}_node:$version"
 proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
-relay_image="$registry${project}_relay:$version"
+webserver_image="$registry${project}_webserver:$version"
 
 pull_if_unavailable "$database_image"
 pull_if_unavailable "$logdna_image"
@@ -112,7 +133,7 @@ pull_if_unavailable "$nats_image"
 pull_if_unavailable "$node_image"
 pull_if_unavailable "$proxy_image"
 pull_if_unavailable "$redis_image"
-pull_if_unavailable "$relay_image"
+pull_if_unavailable "$webserver_image"
 
 ########################################
 ## Ethereum Config
@@ -138,34 +159,36 @@ token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.addre
 
 if [[ "$chainId" == "$ganache_chain_id" ]]
 then
+  ethprovider_image="$registry${project}_ethprovider:$version"
+  pull_if_unavailable "$ethprovider_image"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
   number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
-    image: $ethprovider_image
-    command: \"start\"
+    image: '$ethprovider_image'
+    command: 'start'
     environment:
-      ETH_MNEMONIC: $eth_mnemonic
+      ETH_MNEMONIC: '$eth_mnemonic'
     ports:
-      - 8545:8545
+      - '8545:8545'
     volumes:
-      - $eth_volume/data
+      - '$eth_volume/data'
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
-  pull_if_unavailable "$ethprovider_image"
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
 fi
 
-allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
+allowed_swaps='[{"from":"'"$token_address"'","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"'"$token_address"'","priceOracleType":"UNISWAP"}]'
 
 ########################################
 ## Deploy according to configuration
 
-echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
+echo "Deploying $number_of_services services eg node=$node_image to $INDRA_DOMAINNAME"
 
-mkdir -p ops/database/snapshots /tmp/$project
+mkdir -p `pwd`/ops/database/snapshots
+mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -184,100 +207,100 @@ services:
   $ethprovider_service
 
   proxy:
-    image: $proxy_image
+    image: '$proxy_image'
     environment:
-      DOMAINNAME: $INDRA_DOMAINNAME
-      EMAIL: $INDRA_EMAIL
-      ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      MESSAGING_URL: http://relay:4223
-      MODE: prod
+      DOMAINNAME: '$INDRA_DOMAINNAME'
+      EMAIL: '$INDRA_EMAIL'
+      ETH_PROVIDER_URL: '$INDRA_ETH_PROVIDER'
+      MESSAGING_TCP_URL: 'nats:4222'
+      MESSAGING_WS_URL: 'nats:4221'
+      MODE: 'prod'
+      NODE_URL: 'node:8080'
+      WEBSERVER_URL: 'webserver:80'
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-          max-file: 10
-          max-size: 10m
+          max-size: '100m'
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
+      - '4221:4221'
+      - '4222:4222'
     volumes:
-      - certs:/etc/letsencrypt
+      - 'certs:/etc/letsencrypt'
+
+  webserver:
+    image: '$webserver_image'
 
   node:
-    image: $node_image
-    entrypoint: bash ops/entry.sh
+    image: '$node_image'
+    entrypoint: 'bash ops/entry.sh'
     environment:
-      INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
+      INDRA_ADMIN_TOKEN: '$INDRA_ADMIN_TOKEN'
       INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
-      INDRA_ETH_MNEMONIC_FILE: /run/secrets/$eth_mnemonic_name
-      INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      INDRA_LOG_LEVEL: $log_level
+      INDRA_ETH_MNEMONIC_FILE: '/run/secrets/$eth_mnemonic_name'
+      INDRA_ETH_RPC_URL: '$INDRA_ETH_PROVIDER'
+      INDRA_LOG_LEVEL: '$INDRA_LOG_LEVEL'
       INDRA_NATS_CLUSTER_ID: abc123
-      INDRA_NATS_SERVERS: nats://nats:$nats_port
-      INDRA_NATS_TOKEN: abc123
-      INDRA_PG_DATABASE: $pg_db
-      INDRA_PG_HOST: $pg_host
-      INDRA_PG_PASSWORD_FILE: $pg_password_file
-      INDRA_PG_PORT: $pg_port
-      INDRA_PG_USERNAME: $pg_user
-      INDRA_PORT: $node_port
-      INDRA_REDIS_URL: $redis_url
-      NODE_ENV: production
+      INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: '$INDRA_NATS_JWT_SIGNER_PRIVATE_KEY'
+      INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
+      INDRA_NATS_SERVERS: 'nats://nats:$nats_port'
+      INDRA_NATS_WS_ENDPOINT: 'wss://nats:$nats_ws_port'
+      INDRA_NATS_TOKEN: 'abc123'
+      INDRA_PG_DATABASE: '$pg_db'
+      INDRA_PG_HOST: '$pg_host'
+      INDRA_PG_PASSWORD_FILE: '$pg_password_file'
+      INDRA_PG_PORT: '$pg_port'
+      INDRA_PG_USERNAME: '$pg_user'
+      INDRA_PORT: '$node_port'
+      INDRA_REDIS_URL: '$redis_url'
+      NODE_ENV: 'production'
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-          max-file: 10
-          max-size: 10m
+          max-size: '100m'
     secrets:
-      - $db_secret
-      - $eth_mnemonic_name
+      - '$db_secret'
+      - '$eth_mnemonic_name'
 
   database:
-    image: $database_image
+    image: '$database_image'
     deploy:
-      mode: global
+      mode: 'global'
     environment:
-      AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
-      AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
-      ETH_NETWORK: $chainId
-      POSTGRES_DB: $project
-      POSTGRES_PASSWORD_FILE: $pg_password_file
-      POSTGRES_USER: $project
+      AWS_ACCESS_KEY_ID: '$INDRA_AWS_ACCESS_KEY_ID'
+      AWS_SECRET_ACCESS_KEY: '$INDRA_AWS_SECRET_ACCESS_KEY'
+      ETH_NETWORK: '$chainId'
+      POSTGRES_DB: '$project'
+      POSTGRES_PASSWORD_FILE: '$pg_password_file'
+      POSTGRES_USER: '$project'
     secrets:
-      - $db_secret
+      - '$db_secret'
     volumes:
-      - $db_volume:/var/lib/postgresql/data
-      - `pwd`/ops/database/snapshots:/root/snapshots
+      - '$db_volume:/var/lib/postgresql/data'
+      - '`pwd`/ops/database/snapshots:/root/snapshots'
     $db_port
 
   nats:
-    image: $nats_image
-    command: -V
+    image: '$nats_image'
+    command: '-D -V'
+    environment:
+      JWT_SIGNER_PUBLIC_KEY: '$INDRA_NATS_JWT_SIGNER_PUBLIC_KEY'
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-          max-file: 10
-          max-size: 10m
-    ports:
-      - "4222:4222"
-
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    ports:
-      - "4223:4223"
+          max-size: '100m'
 
   redis:
-    image: $redis_image
-    ports:
-      - "6379:6379"
+    image: '$redis_image'
 
   logdna:
-    image: $logdna_image
+    image: '$logdna_image'
     environment:
-      LOGDNA_KEY: $INDRA_LOGDNA_KEY
+      LOGDNA_KEY: '$INDRA_LOGDNA_KEY'
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - '/var/run/docker.sock:/var/run/docker.sock'
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

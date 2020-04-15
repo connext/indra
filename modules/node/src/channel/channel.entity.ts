@@ -1,33 +1,76 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { CriticalStateChannelAddresses, Collateralizations } from "@connext/types";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from "typeorm";
+import { AddressZero } from "ethers/constants";
 
+import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { IsEthAddress, IsXpub } from "../util";
-import { LinkedTransfer } from "../linkedTransfer/linkedTransfer.entity";
+import { IsEthAddress, IsAddress } from "../validate";
+import { WithdrawCommitment } from "../withdrawCommitment/withdrawCommitment.entity";
+import { SetupCommitment } from "../setupCommitment/setupCommitment.entity";
 
 @Entity()
 export class Channel {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column("integer", { default: 0 })
+  schemaVersion!: number;
+
+  @Column("jsonb", { nullable: true })
+  addresses!: CriticalStateChannelAddresses;
+
   @Column("text")
-  @IsXpub()
-  userPublicIdentifier!: string;
+  @IsAddress()
+  userIdentifier!: string;
 
   // might not need this
   @Column("text")
-  @IsXpub()
-  nodePublicIdentifier!: string;
+  @IsAddress()
+  nodeIdentifier!: string;
 
-  @Column("text")
+  @Column("text", { unique: true })
   @IsEthAddress()
   multisigAddress!: string;
 
   @Column("boolean", { default: false })
   available!: boolean;
 
-  @Column("boolean", { default: false })
-  collateralizationInFlight!: boolean;
+  @Column("json", { default: { [AddressZero]: false } })
+  activeCollateralizations!: Collateralizations;
+
+  @OneToMany(
+    (type: any) => AppInstance,
+    (appInstance: AppInstance) => appInstance.channel,
+    { cascade: true },
+  )
+  appInstances!: AppInstance[];
+
+  @Column("integer", { nullable: true })
+  monotonicNumProposedApps!: number;
+
+  @OneToMany(
+    (type: any) => WithdrawCommitment,
+    (withdrawalCommitment: WithdrawCommitment) => withdrawalCommitment.channel,
+  )
+  withdrawalCommitments!: WithdrawCommitment[];
+
+  @OneToOne(
+    (type: any) => SetupCommitment,
+    (commitment: SetupCommitment) => commitment.channel,
+    { cascade: true },
+  )
+  setupCommitment!: SetupCommitment;
 
   @ManyToMany(
     (type: any) => RebalanceProfile,
@@ -37,20 +80,14 @@ export class Channel {
   rebalanceProfiles!: RebalanceProfile[];
 
   @OneToMany(
-    (type: any) => LinkedTransfer,
-    (transfer: LinkedTransfer) => transfer.senderChannel,
-  )
-  senderLinkedTransfers!: LinkedTransfer[];
-
-  @OneToMany(
-    (type: any) => LinkedTransfer,
-    (transfer: LinkedTransfer) => transfer.receiverChannel,
-  )
-  receiverLinkedTransfers!: LinkedTransfer[];
-
-  @OneToMany(
     (type: any) => OnchainTransaction,
     (tx: OnchainTransaction) => tx.channel,
   )
   transactions!: OnchainTransaction[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

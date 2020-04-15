@@ -1,3 +1,5 @@
+import { ConditionalTransferTypes } from "@connext/types";
+import { Currency, toBN, createRandom32ByteHexString } from "@connext/utils";
 import {
   Button,
   CircularProgress,
@@ -14,15 +16,13 @@ import {
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { useMachine } from "@xstate/react";
 import { Zero } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
-import { Currency, toBN } from "../utils";
 import { sendMachine } from "../state";
 
 import { Copyable } from "./copyable";
-import { useXpub, XpubInput } from "./input";
+import { usePublicIdentifier, PublicIdentifierInput } from "./input";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
@@ -55,7 +55,7 @@ export const SendCard = style(
     const [amount, setAmount] = useState({ display: "", error: null, value: null });
     const [link, setLink] = useState(undefined);
     const [paymentState, paymentAction] = useMachine(sendMachine);
-    const [recipient, setRecipient, setRecipientError] = useXpub(null, ethProvider);
+    const [recipient, setRecipient, setRecipientError] = usePublicIdentifier(null, ethProvider);
 
     // need to extract token balance so it can be used as a dependency for the hook properly
     const tokenBalance = balance.channel.token.wad;
@@ -106,9 +106,9 @@ export const SendCard = style(
           transferRes = await channel.conditionalTransfer({
             assetId: token.address,
             amount: amount.value.wad.toString(),
-            conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
-            paymentId: hexlify(randomBytes(32)),
-            preImage: hexlify(randomBytes(32)),
+            conditionType: ConditionalTransferTypes.LinkedTransfer,
+            paymentId: createRandom32ByteHexString(),
+            preImage: createRandom32ByteHexString(),
             recipient: recipient.value,
             meta: { source: "daicard" },
           });
@@ -139,9 +139,9 @@ export const SendCard = style(
         const link = await channel.conditionalTransfer({
           assetId: token.address,
           amount: amount.value.wad.toString(),
-          conditionType: "LINKED_TRANSFER",
-          paymentId: hexlify(randomBytes(32)),
-          preImage: hexlify(randomBytes(32)),
+          conditionType: ConditionalTransferTypes.LinkedTransfer,
+          paymentId: createRandom32ByteHexString(),
+          preImage: createRandom32ByteHexString(),
           meta: { source: "daicard" },
         });
         console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
@@ -236,7 +236,7 @@ export const SendCard = style(
         </Grid>
 
         <Grid item xs={12} style={{ width: "100%" }}>
-          <XpubInput xpub={recipient} setXpub={setRecipient} />
+          <PublicIdentifierInput address={recipient} setAddress={setRecipient} />
         </Grid>
 
         <Grid item xs={12}>

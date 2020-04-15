@@ -18,7 +18,7 @@ contract LibAppCaller {
         bytes memory appState
     )
         internal
-        pure
+        view
         returns (bool)
     {
         return CounterfactualApp(appDefinition).isStateTerminal(appState);
@@ -34,7 +34,7 @@ contract LibAppCaller {
         bytes memory appState
     )
         internal
-        pure
+        view
         returns (address)
     {
         return CounterfactualApp(appDefinition)
@@ -52,7 +52,7 @@ contract LibAppCaller {
         bytes memory action
     )
         internal
-        pure
+        view
         returns (bytes memory)
     {
         return CounterfactualApp(appDefinition).applyAction(appState, action);
@@ -66,7 +66,7 @@ contract LibAppCaller {
         bytes memory appState
     )
         internal
-        pure
+        view
         returns (bytes memory)
     {
         return CounterfactualApp(appDefinition).computeOutcome(appState);

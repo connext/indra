@@ -1,7 +1,7 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../state-deposit-holders/MultisigTransfer.sol";
 import "../libs/LibOutcome.sol";
 import "../Interpreter.sol";
 
@@ -10,9 +10,7 @@ import "../Interpreter.sol";
  * This file is excluded from ethlint/solium because of this issue:
  * https://github.com/duaraghav8/Ethlint/issues/261
  */
-contract SingleAssetTwoPartyCoinTransferInterpreter is Interpreter {
-
-    address constant CONVENTION_FOR_ETH_TOKEN_ADDRESS = address(0x0);
+contract SingleAssetTwoPartyCoinTransferInterpreter is MultisigTransfer, Interpreter {
 
     struct Params {
         uint256 limit;
@@ -29,7 +27,6 @@ contract SingleAssetTwoPartyCoinTransferInterpreter is Interpreter {
     )
         external
     {
-
         Params memory params = abi.decode(encodedParams, (Params));
 
         LibOutcome.CoinTransfer[2] memory outcome = abi.decode(
@@ -37,18 +34,8 @@ contract SingleAssetTwoPartyCoinTransferInterpreter is Interpreter {
             (LibOutcome.CoinTransfer[2])
         );
 
-        if (params.tokenAddress == CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
-            // note: send() is deliberately used instead of coinTransfer() here
-            // so that a revert does not stop the rest of the sends
-            // see decenter audit for context
-            /* solium-disable-next-line */
-            outcome[0].to.send(outcome[0].amount);
-            /* solium-disable-next-line */
-            outcome[1].to.send(outcome[1].amount);
-        } else {
-            ERC20(params.tokenAddress).transfer(outcome[0].to, outcome[0].amount);
-            ERC20(params.tokenAddress).transfer(outcome[1].to, outcome[1].amount);
-        }
-
+        multisigTransfer(outcome[0].to, params.tokenAddress, outcome[0].amount);
+        multisigTransfer(outcome[1].to, params.tokenAddress, outcome[1].amount);
     }
+
 }

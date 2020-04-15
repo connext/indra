@@ -1,4 +1,5 @@
 import { config } from "dotenv";
+import { Wallet } from "ethers";
 config();
 
 export const env = {
@@ -15,4 +16,7 @@ export const env = {
   nodeUrl: process.env.INDRA_NODE_URL || "",
   storeDir: process.env.STORE_DIR || "",
   adminToken: process.env.INDRA_ADMIN_TOKEN || "foo",
+  natsPrivateKey: process.env.INDRA_NATS_JWT_SIGNER_PRIVATE_KEY,
+  natsPublicKey: process.env.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY,
+  nodePubId: Wallet.fromMnemonic(process.env.INDRA_ETH_MNEMONIC!).address,
 };

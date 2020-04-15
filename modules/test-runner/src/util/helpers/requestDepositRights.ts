@@ -1,13 +1,13 @@
-import { utils } from "@connext/client";
-import { AppInstanceJson, IConnextClient, CoinBalanceRefundAppState } from "@connext/types";
+import { AppInstanceJson, IConnextClient, DepositAppState, DepositAppName, DefaultApp } from "@connext/types";
+import { delay } from "@connext/utils";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { expect } from "../";
 import { ethProvider } from "../ethprovider";
 
-const { xpubToAddress } = utils;
 
 export const requestDepositRights = async (
   client: IConnextClient,
@@ -22,14 +22,15 @@ export const requestDepositRights = async (
           client.multisigAddress,
         );
   // get coin balance app details
+  const network = await ethProvider.getNetwork();
   const {
-    actionEncoding,
     appDefinitionAddress: appDefinition,
-    stateEncoding,
-    outcomeType,
-  } = client.getRegisteredAppDetails("CoinBalanceRefundApp");
+  } = await client.getAppRegistry({
+    name: DepositAppName,
+    chainId: network.chainId,
+  }) as DefaultApp;
   // install the app and get the state
-  let coinBalanceAppState: CoinBalanceRefundAppState;
+  let depositApp: DepositAppState;
   if (clientIsRecipient) {
     // give client rights
     await client.requestDepositRights({ assetId });
@@ -39,42 +40,40 @@ export const requestDepositRights = async (
     )[0];
     // make sure its the coin balance refund app
     expect(latestApp.appInterface.addr).to.be.eq(appDefinition);
-    coinBalanceAppState = latestApp.latestState as CoinBalanceRefundAppState;
+    depositApp = latestApp.latestState as DepositAppState;
   } else {
     // node is installing, params must be manually generated
-    const initialState = {
-      multisig: client.multisigAddress,
-      recipient: xpubToAddress(client.nodePublicIdentifier),
-      threshold: multisigBalance,
-      tokenAddress: assetId,
-    };
-
-    const params = {
-      abiEncodings: {
-        actionEncoding,
-        stateEncoding,
-      },
-      appDefinition,
-      initialState,
-      initiatorDeposit: Zero,
-      initiatorDepositTokenAddress: assetId,
-      outcomeType,
-      proposedToIdentifier: client.nodePublicIdentifier,
-      responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
-      timeout: Zero,
-    };
-    const { appInstanceId } = await client.proposeInstallApp(params);
-    // hub will not automatically install, so manually install app
-    const { appInstance } = await client.installApp(appInstanceId);
-    // get latest coin balance state
-    coinBalanceAppState = appInstance.latestState as CoinBalanceRefundAppState;
-  }
-  // verify the latest coin balance state is correct
-  expect(coinBalanceAppState.multisig).to.be.eq(client.multisigAddress);
-  expect(coinBalanceAppState.recipient).to.be.eq(
-    clientIsRecipient ? client.freeBalanceAddress : xpubToAddress(client.nodePublicIdentifier),
+    const [latestState]: any = await Promise.race([
+      new Promise(async (res, rej) => {
+        await delay(10_000);
+        rej(`No install event caught within 10s`);
+      }),
+      Promise.all([
+        new Promise(async (resolve) => {
+          const subject = `${client.publicIdentifier}.channel.${client.multisigAddress}.app-instance.*.install`;
+          client.messaging.subscribe(subject, (msg: any) => {
+            const data = JSON.parse(msg.data);
+            resolve(data.latestState);
+          });
+        }),
+        await client.requestCollateral(assetId),
+      ]),
+    ]);
+    depositApp = latestState as DepositAppState;
+  };
+  // verify the latest deposit state is correct
+  expect(depositApp.multisigAddress).to.be.eq(client.multisigAddress);
+  expect(depositApp.assetId).to.be.eq(assetId);
+  expect(bigNumberify(depositApp.startingMultisigBalance).toString()).to.be.eq(
+    multisigBalance.toString(),
   );
-  expect(coinBalanceAppState.tokenAddress).to.be.eq(assetId);
-  expect(coinBalanceAppState.threshold.toString()).to.be.eq(multisigBalance.toString());
+  expect(bigNumberify(depositApp.startingTotalAmountWithdrawn).toString()).to.be.eq(
+    Zero,
+  );
+  const transfers = depositApp.transfers;
+  expect(transfers[0].amount).to.be.eq(Zero);
+  expect(transfers[1].amount).to.be.eq(Zero);
+  const clientIdx = clientIsRecipient ? 0 : 1;
+  expect(transfers[clientIdx].to).to.be.eq(client.signerAddress);
+  expect(transfers[clientIdx === 0 ? 1 : 0].to).to.be.eq(client.nodeSignerAddress);
 };

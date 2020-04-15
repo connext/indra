@@ -1,19 +1,20 @@
-import { Zero } from "ethers/constants";
+import { AppInterface, OutcomeType, PublicIdentifier } from "@connext/types";
+import { getSignerAddressFromPublicIdentifier, stringify, toBN } from "@connext/utils";
+import { Zero, AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import { getFreeBalanceAppInterface, merge } from "../ethereum";
-import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../machine/xkeys";
-import { OutcomeType } from "../types";
-import { prettyPrintObject } from "../utils";
+import { HARD_CODED_ASSUMPTIONS } from "../constants";
 
 import { AppInstance } from "./app-instance";
+import { merge } from "./utils";
 
-const HARD_CODED_ASSUMPTIONS = {
-  freeBalanceInitialStateTimeout: 172800,
-  // We assume the Free Balance is the first app ever installed
-  appSequenceNumberForFreeBalance: 0,
-};
+export function getFreeBalanceAppInterface(addr: string): AppInterface {
+  return {
+    actionEncoding: undefined, // because no actions exist for FreeBalanceApp
+    addr,
+    stateEncoding: `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`,
+  };
+}
 
 /*
 Keep in sync with the solidity struct LibOutcome::CoinTransfer
@@ -64,7 +65,7 @@ export type TokenIndexedCoinTransferMap = {
 };
 
 // todo(xuanji): replace with Set
-export type ActiveAppsMap = { [appInstanceIdentityHash: string]: true };
+export type ActiveAppsMap = { [appIdentityHash: string]: true };
 
 export class FreeBalanceClass {
   private constructor(
@@ -133,11 +134,15 @@ export class FreeBalanceClass {
 
   public withTokenAddress(tokenAddress: string): CoinTransferMap {
     let balances: CoinTransferMap = {};
-    balances = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
+    balances = convertCoinTransfersToCoinTransfersMap(
+      this.balancesIndexedByToken[tokenAddress],
+    );
     if (Object.keys(balances).length === 0) {
+      // get addresses from default token mapping and
+      // return 0 values
       const addresses = Object.keys(
         convertCoinTransfersToCoinTransfersMap(
-          this.balancesIndexedByToken[CONVENTION_FOR_ETH_TOKEN_ADDRESS],
+          this.balancesIndexedByToken[AddressZero],
         ),
       );
       for (const address of addresses) {
@@ -167,7 +172,6 @@ export class FreeBalanceClass {
       }
       ret[tokenAddress] = ret2;
     }
-    console.table(ret);
   }
 
   public increment(increments: TokenIndexedCoinTransferMap) {
@@ -177,9 +181,9 @@ export class FreeBalanceClass {
 
       for (const val of Object.values(t2)) {
         if (val.lt(Zero)) {
-          throw Error(
+          throw new Error(
             `FreeBalanceClass::increment ended up with a negative balance when
-            merging ${prettyPrintObject(t1)} and ${prettyPrintObject(increments[tokenAddress])}`,
+            merging ${stringify(t1)} and ${stringify(increments[tokenAddress])}`,
           );
         }
       }
@@ -195,38 +199,39 @@ export class FreeBalanceClass {
  * and only converted to more complex types (i.e. BigNumber) upon usage.
  */
 export function createFreeBalance(
-  userNeuteredExtendedKeys: string[],
+  initiatorId: PublicIdentifier,
+  responderId: PublicIdentifier,
   coinBucketAddress: string,
   freeBalanceTimeout: number,
+  multisigAddress: string,
 ) {
-  const sortedTopLevelKeys = xkeysToSortedKthAddresses(
-    userNeuteredExtendedKeys,
-    0, // NOTE: We re-use 0 which is also used as the keys for `multisigOwners`
-  );
+  const initiator = getSignerAddressFromPublicIdentifier(initiatorId);
+  const responder = getSignerAddressFromPublicIdentifier(responderId);
 
   const initialState: FreeBalanceState = {
     activeAppsMap: {},
     balancesIndexedByToken: {
       // NOTE: Extremely important to understand that the default
       // addresses of the recipients are the "top level keys" as defined
-      // as the 0th derived children of the xpubs.
-      [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: [
-        { to: sortedTopLevelKeys[0], amount: Zero },
-        { to: sortedTopLevelKeys[1], amount: Zero },
+      // as the 0th derived children of the addresss.
+      [AddressZero]: [
+        { to: initiator, amount: Zero },
+        { to: responder, amount: Zero },
       ],
     },
   };
 
   return new AppInstance(
-    /* participants */ sortedTopLevelKeys,
-    /* defaultTimeout */ freeBalanceTimeout,
+    /* initiator */ initiatorId,
+    /* responder */ responderId,
+    /* defaultTimeout */ toBN(freeBalanceTimeout).toHexString(),
     /* appInterface */ getFreeBalanceAppInterface(coinBucketAddress),
-    /* isVirtualApp */ false,
     /* appSeqNo */ HARD_CODED_ASSUMPTIONS.appSequenceNumberForFreeBalance,
     /* latestState */ serializeFreeBalanceState(initialState),
     /* latestVersionNumber */ 0,
-    /* latestTimeout */ HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout,
+    /* latestTimeout */ toBN(HARD_CODED_ASSUMPTIONS.freeBalanceInitialStateTimeout).toHexString(),
     /* outcomeType */ OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
+    /* multisigAddr */ multisigAddress,
   );
 }
 
@@ -278,11 +283,4 @@ function convertCoinTransfersMapToCoinTransfers(coinTransfersMap: CoinTransferMa
     to,
     amount,
   }));
-}
-
-/**
- * Address used for a Node's free balance
- */
-export function getFreeBalanceAddress(publicIdentifier: string) {
-  return xkeyKthAddress(publicIdentifier, 0);
 }

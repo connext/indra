@@ -1,68 +1,51 @@
+
+SHELL=/bin/bash # shell make will use to execute commands
+VPATH=.flags # prerequisite search path
+$(shell mkdir -p $(VPATH))
+
+########################################
+# Run shell commands to fetch info from environment
+
 dir=$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
 project=$(shell cat $(dir)/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4)
 registry=$(shell cat $(dir)/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4)
 
-# Specify make-specific variables (VPATH = prerequisite search path)
-flags=.makeflags
-VPATH=$(flags)
-SHELL=/bin/bash
-
+cwd=$(shell pwd)
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | head -n 1 | cut -d '"' -f 4)
-solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
+solc_version=$(shell cat modules/contracts/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1-2).0
+backwards_compatible_version=$(commit) #$(shell echo $(release) | cut -d '.' -f 1-2).0
 
-# Pool of images to pull cached layers from during docker build steps
-cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_builder"; else echo ""; fi)
-
-# Get absolute paths to important dirs
-cwd=$(shell pwd)
-apps=$(cwd)/modules/apps
-cf-core=$(cwd)/modules/cf-core
-channel-provider=$(cwd)/modules/channel-provider
-client=$(cwd)/modules/client
-contracts=$(cwd)/modules/contracts
-crypto=$(cwd)/modules/crypto
-daicard=$(cwd)/modules/daicard
-dashboard=$(cwd)/modules/dashboard
-database=$(cwd)/ops/database
-messaging=$(cwd)/modules/messaging
-node=$(cwd)/modules/node
-proxy=$(cwd)/ops/proxy
-ssh-action=$(cwd)/ops/ssh-action
-store=$(cwd)/modules/store
-tests=$(cwd)/modules/test-runner
-types=$(cwd)/modules/types
-apps=$(cwd)/modules/apps
-
-find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
-
-# Setup docker run time
-# If on Linux, give the container our uid & gid so we know what to reset permissions to
-# On Mac, the docker-VM takes care of this for us so pass root's id (ie noop)
-my_id=$(shell id -u):$(shell id -g)
-id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
+# If Linux, give the container our uid & gid so we know what to reset permissions to. If Mac, the docker-VM takes care of this for us so pass root's id (ie noop)
+id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo "`id -u`:`id -g`"; fi)
+image_cache=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_builder"; else echo ""; fi) # Pool of images to pull cached layers from during docker build steps
 interactive=$(shell if [[ -t 0 && -t 2 ]]; then echo "--interactive"; else echo ""; fi)
+
+########################################
+# Setup more vars
+
+find_options=-type f -not -path "*/node_modules/*" -not -name "address-book.json" -not -name "*.swp" -not -path "*/.*" -not -path "*/cache/*" -not -path "*/build/*" -not -path "*/dist/*" -not -name "*.log"
+
 docker_run=docker run --name=$(project)_builder $(interactive) --tty --rm --volume=$(cwd):/root $(project)_builder $(id)
 
-startTime=$(flags)/.startTime
-totalTime=$(flags)/.totalTime
+startTime=.flags/.startTime
+totalTime=.flags/.totalTime
 log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > $(startTime)
 log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(startTime); echo "[Makefile] => Finished building $@ in `cat $(totalTime)` seconds";echo "=============";echo
 
-# Env setup
-$(shell mkdir -p .makeflags $(node)/dist)
-
 ########################################
-# Alias & Control Shortcuts
+# Build Shortcuts
 
 default: dev
 all: dev staging release
-dev: database node client indra-proxy test-runner-js ws-tcp-relay
-staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging ws-tcp-relay
-release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release ws-tcp-relay
+dev: proxy node test-runner
+staging: database ethprovider proxy node-staging test-runner-staging webserver
+release: database ethprovider proxy node-release test-runner-release webserver
+
+########################################
+# Command & Control Shortcuts
 
 start: start-daicard
 
@@ -72,9 +55,6 @@ start-headless: dev
 start-daicard: dev
 	INDRA_UI=daicard bash ops/start-dev.sh
 
-start-dashboard: dev
-	INDRA_UI=dashboard bash ops/start-dev.sh
-
 start-test: start-test-staging
 start-test-staging:
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-staging bash ops/start-prod.sh
@@ -82,7 +62,7 @@ start-test-staging:
 start-test-release:
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-release bash ops/start-prod.sh
 
-start-prod: prod
+start-prod:
 	bash ops/start-prod.sh
 
 stop:
@@ -96,10 +76,6 @@ restart-daicard: dev
 	bash ops/stop.sh
 	INDRA_UI=daicard bash ops/start-dev.sh
 
-restart-dashboard: dev
-	bash ops/stop.sh
-	INDRA_UI=dashboard bash ops/start-dev.sh
-
 restart: restart-daicard
 
 restart-prod:
@@ -108,27 +84,21 @@ restart-prod:
 
 clean: stop
 	docker container prune -f
-	rm -rf $(flags)/*
-	rm -rf node_modules/@connext
-	rm -rf modules/**/node_modules/@connext
-	rm -rf node_modules/@counterfactual
-	rm -rf modules/**/node_modules/@counterfactual
-	rm -rf node_modules/@walletconnect
-	rm -rf modules/**/node_modules/@walletconnect
-	rm -rf modules/**/build
-	rm -rf modules/**/cache
-	rm -rf modules/**/dist
-	rm -rf modules/**/node_modules/**/.git
+	rm -rf .flags/*
+	rm -rf node_modules/@connext modules/*/node_modules/@connext
+	rm -rf node_modules/@walletconnect modules/*/node_modules/@walletconnect
+	rm -rf modules/*/node_modules/*/.git
+	rm -rf modules/*/build modules/*/dist
+	rm -rf modules/*/.*cache* modules/*/node_modules/.cache modules/contracts/cache/*.json
 
 quick-reset:
 	bash ops/db.sh 'truncate table app_registry cascade;'
 	bash ops/db.sh 'truncate table channel cascade;'
-	bash ops/db.sh 'truncate table channel_payment_profiles_payment_profile cascade;'
-	bash ops/db.sh 'truncate table linked_transfer cascade;'
+	bash ops/db.sh 'truncate table channel_rebalance_profiles_rebalance_profile cascade;'
 	bash ops/db.sh 'truncate table node_records cascade;'
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
-	bash ops/db.sh 'truncate table payment_profile cascade;'
-	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
+	bash ops/db.sh 'truncate table rebalance_profile cascade;'
+	bash ops/db.sh 'truncate table app_instance cascade;'
 	touch modules/node/src/main.ts
 
 reset: stop
@@ -137,7 +107,7 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
-	rm -rf $(flags)/deployed-contracts
+	rm -rf .flags/deployed-contracts
 
 push-commit:
 	bash ops/push-images.sh $(commit)
@@ -159,7 +129,7 @@ pull-backwards-compatible:
 
 deployed-contracts: contracts
 	bash ops/deploy-contracts.sh
-	touch $(flags)/$@
+	touch .flags/$@
 
 build-report:
 	bash ops/build-report.sh
@@ -171,9 +141,6 @@ dls:
 	@docker service ls
 	@echo "====="
 	@docker container ls -a
-
-flamegraph:
-	bash ops/test/integration.sh flamegraph
 
 ########################################
 # Test Runner Shortcuts
@@ -187,18 +154,14 @@ test-backwards-compatibility: pull-backwards-compatible
 test-cf: cf-core
 	bash ops/test/cf.sh
 
-test-client: client
-	bash ops/test/client.sh
-
-test-contracts: contracts types
+test-contracts: contracts utils
 	bash ops/test/contracts.sh
+
+test-utils: utils
+	bash ops/test/utils.sh
 
 test-daicard:
 	bash ops/test/ui.sh daicard
-
-# ensure you've run "make start-dashboard" first & not just "make start"
-test-dashboard:
-	bash ops/test/ui.sh dashboard
 
 test-integration:
 	bash ops/test/integration.sh
@@ -212,7 +175,6 @@ watch-cf: cf-core
 watch-integration:
 	bash ops/test/integration.sh watch
 
-# You can interactively select daicard or dashboard tests after running below
 watch-ui: node-modules
 	bash ops/test/ui.sh --watch
 
@@ -220,163 +182,149 @@ watch-node: node
 	bash ops/test/node.sh --watch
 
 ########################################
-# Docker Images
+# Begin Real Build Rules: Common Prerequisites
 
-daicard-proxy: $(shell find $(proxy) $(find_options))
+# All rules from here on should only depend on rules that come before it
+# ie first no dependencies, last no dependents
+
+builder: $(shell find ops/builder)
 	$(log_start)
-	docker build --file $(proxy)/daicard/prod.dockerfile $(cache_from) --tag daicard_proxy .
-	docker tag daicard_proxy daicard_proxy:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+	docker build --file ops/builder/Dockerfile --build-arg SOLC_VERSION=$(solc_version) $(image_cache) --tag $(project)_builder ops/builder
+	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-database: $(shell find $(database) $(find_options))
-	$(log_start)
-	docker build --file $(database)/db.dockerfile $(cache_from) --tag $(project)_database $(database)
-	docker tag $(project)_database $(project)_database:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-ethprovider: contracts $(shell find $(contracts)/ops $(find_options))
-	$(log_start)
-	docker build --file $(contracts)/ops/Dockerfile $(cache_from) --tag $(project)_ethprovider .
-	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-release: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
-	$(log_start)
-	$(docker_run) "MODE=release cd modules/node && npm run build-bundle"
-	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
-	docker tag $(project)_node $(project)_node:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
-	$(log_start)
-	$(docker_run) "MODE=staging cd modules/node && npm run build-bundle"
-	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
-	docker tag $(project)_node $(project)_node:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
-	$(log_start)
-	docker build --file $(proxy)/indra/dev.dockerfile $(cache_from) --tag $(project)_proxy .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
-	$(log_start)
-	docker build --file $(proxy)/indra/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-ssh-action: $(shell find $(ssh-action) $(find_options))
-	$(log_start)
-	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-test-runner: test-runner-staging
-
-test-runner-release: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
-	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-ws-tcp-relay: ops/ws-tcp-relay.dockerfile
-	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay .
-	docker tag $(project)_relay $(project)_relay:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-########################################
-# JS & bundles
-
-client: cf-core contracts types apps crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/client && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-core && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/channel-provider && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-	
-crypto: node-modules types $(shell find $(crypto)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/crypto && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/daicard && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-dashboard-prod: node-modules client $(shell find $(dashboard)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/dashboard && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-messaging: node-modules types $(shell find $(messaging)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/messaging && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node: cf-core contracts types apps messaging $(shell find $(node)/src $(node)/migrations $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-store: node-modules types $(shell find $(store)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/store && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-test-runner-js: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/test-runner && npm run build-bundle"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-types: node-modules $(shell find $(types)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/types && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-apps: node-modules cf-core types $(shell find $(apps)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/apps && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-########################################
-# Common Prerequisites
-
-contracts: node-modules contract-artifacts types $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run transpile"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-contract-artifacts: node-modules $(shell find $(contracts)/waffle.json $(contracts)/contracts $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run compile"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.native.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run compile-native"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-modules: builder package.json $(shell ls modules/**/package.json)
+node-modules: builder package.json $(shell ls modules/*/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+	# rm below hack once this PR gets merged: https://github.com/EthWorks/Waffle/pull/205
+	$(docker_run) "sed -i 's|{ input }|{ input, maxBuffer: 1024 * 1024 * 4 }|' node_modules/@ethereum-waffle/compiler/dist/cjs/compileNative.js"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-builder: ops/builder.dockerfile
+########################################
+# Build JS & bundles
+
+# Keep prerequisites synced w the @connext/* dependencies of each module's package.json
+
+types: node-modules $(shell find modules/types $(find_options))
 	$(log_start)
-	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(cache_from) --tag $(project)_builder .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+	$(docker_run) "cd modules/types && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+utils: types $(shell find modules/utils $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/utils && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+channel-provider: types $(shell find modules/channel-provider $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/channel-provider && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+messaging: types $(shell find modules/messaging $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/messaging && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+store: types $(shell find modules/store $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/store && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+contracts: types utils $(shell find modules/contracts $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+cf-core: types utils store contracts $(shell find modules/cf-core $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-core && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+apps: types utils contracts cf-core $(shell find modules/apps $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/apps && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+client: types utils channel-provider messaging store contracts cf-core apps $(shell find modules/client $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/client && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+node: types utils messaging store contracts cf-core apps client $(shell find modules/node $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+daicard: types utils store client $(shell find modules/daicard $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/daicard && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+test-runner: types utils channel-provider messaging store contracts cf-core apps client $(shell find modules/test-runner $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/test-runner && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+########################################
+# Build Docker Images
+
+database: $(shell find ops/database $(find_options))
+	$(log_start)
+	docker build --file ops/database/db.dockerfile $(image_cache) --tag $(project)_database ops/database
+	docker tag $(project)_database $(project)_database:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+ethprovider: contracts $(shell find modules/contracts/ops $(find_options))
+	$(log_start)
+	docker build --file modules/contracts/ops/Dockerfile $(image_cache) --tag $(project)_ethprovider .
+	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+node-release: node $(shell find modules/node/ops $(find_options))
+	$(log_start)
+	$(docker_run) "MODE=release cd modules/node && npm run build-bundle"
+	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
+	docker tag $(project)_node $(project)_node:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+node-staging: node $(shell find modules/node/ops $(find_options))
+	$(log_start)
+	$(docker_run) "MODE=staging cd modules/node && npm run build-bundle"
+	docker build --file modules/node/ops/Dockerfile $(image_cache) --tag $(project)_node .
+	docker tag $(project)_node $(project)_node:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+proxy: $(shell find ops/proxy $(find_options))
+	$(log_start)
+	docker build --file ops/proxy/indra/Dockerfile $(image_cache) --tag $(project)_proxy ops
+	docker tag $(project)_proxy $(project)_proxy:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+proxy-daicard: $(shell find ops/proxy $(find_options))
+	$(log_start)
+	docker build --file ops/proxy/daicard/Dockerfile $(image_cache) --tag daicard_proxy ops
+	docker tag daicard_proxy daicard_proxy:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+ssh-action: $(shell find ops/ssh-action $(find_options))
+	$(log_start)
+	docker build --file ops/ssh-action/Dockerfile --tag $(project)_ssh_action ops/ssh-action
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+test-runner-release: test-runner $(shell find modules/test-runner/ops $(find_options))
+	$(log_start)
+	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build"
+	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner:$(commit) .
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+test-runner-staging: test-runner $(shell find modules/test-runner/ops $(find_options))
+	$(log_start)
+	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build"
+	docker build --file modules/test-runner/ops/Dockerfile $(image_cache) --tag $(project)_test_runner .
+	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+webserver: daicard $(shell find ops/webserver $(find_options))
+	$(log_start)
+	docker build --file ops/webserver/nginx.dockerfile $(image_cache) --tag $(project)_webserver .
+	docker tag $(project)_webserver $(project)_webserver:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
