@@ -138,7 +138,7 @@ export class ChannelService {
         minimumRequiredCollateral,
       ]);
       return this.collateralizeIfNecessary(
-        channel,
+        channel.userIdentifier,
         tokenAddress,
         collateralNeeded,
         lowerBoundCollateralize,
@@ -157,16 +157,40 @@ export class ChannelService {
   }
 
   private async collateralizeIfNecessary(
-    channel: Channel,
+    userId: string,
     assetId: string,
     collateralNeeded: BigNumber,
     lowerBoundCollateral: BigNumber,
   ): Promise<TransactionReceipt | undefined> {
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userId);
     if (channel.activeCollateralizations[assetId]) {
       this.log.warn(
-        `Collateral request is in flight for ${assetId}, try request again for user ${channel.userIdentifier} later`,
+        `Collateral request is in flight for ${assetId}, waiting for transaction`,
       );
-      return undefined;
+      const ethProvider = this.configService.getEthProvider();
+      const startingBlock = await ethProvider.getBlockNumber();
+      // register listener
+      const depositReceipt: TransactionReceipt = await new Promise(async resolve => {
+        const BLOCKS_TO_WAIT = 3;
+        ethProvider.on("block", async (blockNumber: number) => {
+          if (blockNumber - startingBlock > BLOCKS_TO_WAIT) {
+            return resolve(undefined);
+          }
+          const { transactions } = await ethProvider.getBlock(blockNumber);
+          for (const hash of transactions) {
+            const tx = await this.depositService.findByHash(hash);
+            if (
+              tx &&
+              tx.channel.userIdentifier === userId && 
+              tx.from === await this.configService.getSignerAddress()
+            ) {
+              this.log.info(`Found deposit transaction: ${hash}`);
+              return resolve(await ethProvider.getTransactionReceipt(hash));
+            }
+          }
+        });
+      });
+      return depositReceipt;
     }
 
     const {
