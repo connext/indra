@@ -98,4 +98,16 @@ describe("Client Connect", () => {
     })
     expect(await createClient({ signer: pk, store })).rejectedWith("Something");
   })
+
+  it("Client should not need to wait for user withdrawal after successful withdraw", async () => {
+    const pk = Wallet.createRandom().privateKey;
+    const store: ConnextStore = await createConnextStore("Memory")
+    const client = await createClient({signer: pk, store})
+    await fundChannel(client, ETH_AMOUNT_SM)
+    await client.withdraw({amount: ETH_AMOUNT_SM, recipient: Wallet.createRandom().address, assetId: AddressZero});
+    await client.messaging.disconnect()
+
+    // now try to restart client (should succeed)
+    expect(await createClient({signer: pk, store})).to.be.ok;
+  })
 });
