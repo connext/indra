@@ -624,29 +624,6 @@ export class ConnextClient implements IConnextClient {
     } as MethodParams.TakeAction);
   };
 
-  public updateState = async (
-    appIdentityHash: string,
-    newState: AppState | any, // cast to any bc no supported apps use
-    // the update state method
-  ): Promise<MethodResults.UpdateState> => {
-    // check the app is actually installed
-    const err = await this.appNotInstalled(appIdentityHash);
-    if (err) {
-      this.log.error(err);
-      throw new Error(err);
-    }
-    // check state is not finalized
-    const { latestState: state } = (await this.getAppInstance(appIdentityHash)).appInstance;
-    if ((state as any).finalized) {
-      // FIXME: casting?
-      throw new Error("Cannot take action on an app with a finalized state.");
-    }
-    return await this.channelProvider.send(MethodNames.chan_updateState, {
-      appIdentityHash,
-      newState,
-    } as MethodParams.UpdateState);
-  };
-
   public proposeInstallApp = async (
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> => {

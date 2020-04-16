@@ -122,6 +122,5 @@ export interface IConnextClient {
   installApp(appIdentityHash: Bytes32): Promise<MethodResults.Install>;
   rejectInstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
   takeAction(appIdentityHash: Bytes32, action: any): Promise<MethodResults.TakeAction>;
-  updateState(appIdentityHash: Bytes32, newState: any): Promise<MethodResults.UpdateState>;
   uninstallApp(appIdentityHash: Bytes32): Promise<MethodResults.Uninstall>;
 }
