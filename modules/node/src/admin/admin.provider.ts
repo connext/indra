@@ -87,10 +87,6 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.repairCriticalStateChannelAddresses();
   }
 
-  async migrateChannelStore(): Promise<any> {
-    return await this.adminService.migrateChannelStore();
-  }
-
   async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
     const address = subject.split(".")[1];
     const profile = bigNumberifyJson(data.profile) as RebalanceProfile;
@@ -133,11 +129,6 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.repair-critical-addresses",
       this.repairCriticalStateChannelAddresses.bind(this),
-    );
-
-    await super.connectRequestReponse(
-      "admin.migrate-channel-store",
-      this.migrateChannelStore.bind(this),
     );
 
     await super.connectRequestReponse(
