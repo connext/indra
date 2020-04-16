@@ -435,7 +435,7 @@ export async function getMultisigAmountWithdrawn(
   const provider = global[`wallet`].provider;
   const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi as any, provider);
   try {
-    return multisig.functions.totalAmountWithdrawn(tokenAddress);
+    return await multisig.functions.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
       console.log(CONTRACT_NOT_DEPLOYED);

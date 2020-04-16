@@ -550,7 +550,7 @@ export class ConnextClient implements IConnextClient {
     }
     const tokenAddress = getAddressFromAssetId(assetId);
     try {
-      return this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
+      return await this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
         multisigAddress: this.multisigAddress,
         assetId: tokenAddress,
       } as MethodParams.GetFreeBalanceState);

@@ -310,7 +310,7 @@ export class NodeApiClient implements INodeApiClient {
         this.log.debug(`Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject}`);
       }
       try {
-        return this.sendAttempt(subject, data);
+        return await this.sendAttempt(subject, data);
       } catch (e) {
         error = e;
         if (e.message.startsWith(sendFailed)) {
