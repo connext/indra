@@ -9,14 +9,13 @@ import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
 import { MethodResults, MethodParams, MethodName } from "./methods";
-import { IBackupServiceAPI, IClientStore } from "./store";
+import { IClientStore } from "./store";
 import { PublicParams, PublicResults } from "./public";
 
 /////////////////////////////////
 
 // channelProvider / signer are both optional but one of them needs to be provided
 export interface ClientOptions {
-  backupService?: IBackupServiceAPI;
   channelProvider?: IChannelProvider;
   ethProviderUrl: string;
   signer?: string | IChannelSigner;

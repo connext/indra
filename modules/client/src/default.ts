@@ -50,20 +50,13 @@ const getOverrideOptions = (_opts?: Partial<ClientOptions>): Partial<ClientOptio
   return opts;
 };
 
-export const getDefaultStore = (opts: Partial<ClientOptions>): IClientStore => {
-  const backupService = opts && opts.backupService ? opts.backupService : undefined;
-  return new ConnextStore(StoreTypes.LocalStorage, { backupService });
-};
-
 export const getDefaultOptions = (
   network: string,
   _opts?: Partial<ClientOptions>,
 ): ClientOptions => {
   const urlOptions = getUrlOptions(network);
   const opts = getOverrideOptions(_opts);
-  const store = opts
-    ? opts.store || getDefaultStore(opts)
-    : new ConnextStore(StoreTypes.LocalStorage);
+  const store = opts && opts.store ? opts.store : new ConnextStore(StoreTypes.LocalStorage);
   const signer =
     opts && opts.signer
       ? opts.signer
