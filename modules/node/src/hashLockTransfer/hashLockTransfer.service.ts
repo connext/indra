@@ -87,7 +87,7 @@ export class HashLockTransferService {
     this.log.info(
       `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${appState} appState ${JSON.stringify(
         appState,
-      )} meta ${JSON.stringify(meta)}`,
+      )} meta ${JSON.stringify(meta)} started`,
     );
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       receiverIdentifier,
@@ -192,7 +192,9 @@ export class HashLockTransferService {
     const block = await this.configService.getEthProvider().getBlockNumber();
     const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
     const result = { senderApp, receiverApp, status };
-    this.log.info(`findSenderAndReceiverAppsWithStatus ${lockHash} completed: ${JSON.stringify(result)}`);
+    this.log.info(
+      `findSenderAndReceiverAppsWithStatus ${lockHash} completed: ${JSON.stringify(result)}`,
+    );
     return result;
   }
 

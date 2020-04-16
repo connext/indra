@@ -46,6 +46,11 @@ export class AppActionsService {
     action: AppAction,
     from: string,
   ): Promise<void> {
+    this.log.info(
+      `handleAppAction for app name ${appName} ${app.identityHash}, action ${JSON.stringify(
+        action,
+      )} started`,
+    );
     switch (appName) {
       case SimpleLinkedTransferAppName: {
         await this.handleSimpleLinkedTransferAppAction(
@@ -83,6 +88,9 @@ export class AppActionsService {
         break;
       }
     }
+    this.log.info(
+      `handleAppAction for app name ${appName} ${app.identityHash} complete`,
+    );
   }
 
   private async handleSimpleLinkedTransferAppAction(
@@ -97,16 +105,11 @@ export class AppActionsService {
     );
 
     // take action and uninstall
-    this.log.log(`Unlocking transfer ${senderApp.identityHash}`);
-    await this.cfCoreService.takeAction(
-      senderApp.identityHash,
-      {
-        preImage: action.preImage,
-      } as SimpleLinkedTransferAppAction,
-    );
+    await this.cfCoreService.takeAction(senderApp.identityHash, {
+      preImage: action.preImage,
+    } as SimpleLinkedTransferAppAction);
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
-    this.log.log(`Unlocked transfer ${senderApp.identityHash}`);
   }
 
   private async handleWithdrawAppAction(
@@ -116,7 +119,9 @@ export class AppActionsService {
   ): Promise<void> {
     let withdraw = await this.withdrawRepository.findByAppIdentityHash(appInstance.identityHash);
     if (!withdraw) {
-      throw new Error(`No withdraw entity found for this appIdentityHash: ${appInstance.identityHash}`);
+      throw new Error(
+        `No withdraw entity found for this appIdentityHash: ${appInstance.identityHash}`,
+      );
     }
     withdraw = await this.withdrawRepository.addCounterpartySignatureAndFinalize(
       withdraw,
@@ -135,7 +140,9 @@ export class AppActionsService {
     commitment.signatures = state.signatures as any;
     const tx = await commitment.getSignedTransaction();
 
-    this.log.debug(`Added new action to withdraw entity for this appInstance: ${appInstance.identityHash}`);
+    this.log.debug(
+      `Added new action to withdraw entity for this appInstance: ${appInstance.identityHash}`,
+    );
     await this.withdrawService.submitWithdrawToChain(appInstance.multisigAddress, tx);
   }
 
@@ -161,15 +168,11 @@ export class AppActionsService {
     }
 
     // take action and uninstall
-    await this.cfCoreService.takeAction(
-      senderApp.identityHash,
-      {
-        preImage: action.preImage,
-      } as HashLockTransferAppAction,
-    );
+    await this.cfCoreService.takeAction(senderApp.identityHash, {
+      preImage: action.preImage,
+    } as HashLockTransferAppAction);
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
-    this.log.info(`Unlocked transfer ${senderApp.identityHash}`);
   }
 
   private async handleSignedTransferAppAction(
@@ -187,15 +190,11 @@ export class AppActionsService {
     }
 
     // take action and uninstall
-    await this.cfCoreService.takeAction(
-      senderApp.identityHash, 
-      {
-        data: action.data,
-        signature: action.signature,
-      } as SimpleSignedTransferAppAction,
-    );
+    await this.cfCoreService.takeAction(senderApp.identityHash, {
+      data: action.data,
+      signature: action.signature,
+    } as SimpleSignedTransferAppAction);
 
     await this.cfCoreService.uninstallApp(senderApp.identityHash);
-    this.log.info(`Unlocked transfer ${senderApp.identityHash}`);
   }
 }
