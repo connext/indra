@@ -77,14 +77,18 @@ export class HashLockTransferService {
     this.log.setContext("HashLockTransferService");
   }
 
-  async resolveHashLockTransfer(
+  async installHashLockTransferReceiverApp(
     senderIdentifier: string,
     receiverIdentifier: string,
     appState: HashLockTransferAppState,
     assetId: string,
     meta: any = {},
-  ): Promise<any> {
-    this.log.debug(`resolveHashLockTransfer()`);
+  ): Promise<{ appIdentityHash: string }> {
+    this.log.info(
+      `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${appState} appState ${JSON.stringify(
+        appState,
+      )} meta ${JSON.stringify(meta)}`,
+    );
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       receiverIdentifier,
     );
@@ -121,7 +125,9 @@ export class HashLockTransferService {
         amount,
       );
       if (!depositReceipt) {
-        throw new Error(`Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverIdentifier}`);
+        throw new Error(
+          `Could not deposit sufficient collateral to resolve hash lock transfer app for reciever: ${receiverIdentifier}`,
+        );
       }
     } else {
       // request collateral normally without awaiting
@@ -166,38 +172,51 @@ export class HashLockTransferService {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    return {
+    const response = {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
     };
+    this.log.info(
+      `installHashLockTransferReceiverApp from ${senderIdentifier} to ${receiverIdentifier} assetId ${appState} completed: ${JSON.stringify(
+        response,
+      )}`,
+    );
+    return response;
   }
 
   async findSenderAndReceiverAppsWithStatus(
     lockHash: string,
   ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
-    // node receives from sender
+    this.log.info(`findSenderAndReceiverAppsWithStatus ${lockHash} started`);
     const senderApp = await this.findSenderAppByLockHash(lockHash);
-    // node is sender
     const receiverApp = await this.findReceiverAppByLockHash(lockHash);
     const block = await this.configService.getEthProvider().getBlockNumber();
     const status = appStatusesToHashLockTransferStatus(block, senderApp, receiverApp);
-    return { senderApp, receiverApp, status };
+    const result = { senderApp, receiverApp, status };
+    this.log.info(`findSenderAndReceiverAppsWithStatus ${lockHash} completed: ${JSON.stringify(result)}`);
+    return result;
   }
 
   async findSenderAppByLockHash(lockHash: string): Promise<AppInstance> {
+    this.log.info(`findSenderAppByLockHash ${lockHash} started`);
     // node receives from sender
     const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndReceiver(
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
     );
-    return normalizeHashLockTransferAppState(app);
+    const result = normalizeHashLockTransferAppState(app);
+    this.log.info(`findSenderAppByLockHash ${lockHash} completed: ${JSON.stringify(result)}`);
+    return result;
   }
 
   async findReceiverAppByLockHash(lockHash: string): Promise<AppInstance> {
+    this.log.info(`findReceiverAppByLockHash ${lockHash} started`);
     // node sends to receiver
     const app = await this.appInstanceRepository.findHashLockTransferAppsByLockHashAndSender(
       lockHash,
       this.cfCoreService.cfCore.signerAddress,
     );
-    return normalizeHashLockTransferAppState(app);
+    const result = normalizeHashLockTransferAppState(app);
+    this.log.info(`findReceiverAppByLockHash ${lockHash} completed: ${JSON.stringify(result)}`);
+    return result;
   }
 }
