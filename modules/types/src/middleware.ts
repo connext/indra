@@ -43,7 +43,7 @@ export type UninstallMiddlewareContext = {
   params: ProtocolParams.Uninstall;
   appInstance: AppInstanceJson;
   stateChannel: StateChannelJSON;
-};s
+};
 
 export type MiddlewareContext = 
   | SetupMiddlewareContext
