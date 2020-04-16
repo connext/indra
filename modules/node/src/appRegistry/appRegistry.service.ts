@@ -174,7 +174,7 @@ export class AppRegistryService implements OnModuleInit {
         // install for receiver or error
         // https://github.com/ConnextProject/indra/issues/942
         const recipient = proposeInstallParams.meta["recipient"];
-        await this.hashlockTransferService.resolveHashLockTransfer(
+        await this.hashlockTransferService.installHashLockTransferReceiverApp(
           from,
           recipient,
           proposeInstallParams.initialState as HashLockTransferAppState,
