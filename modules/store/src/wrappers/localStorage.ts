@@ -1,12 +1,12 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
-import { safeJsonParse, safeJsonStringify } from "@connext/utils"; 
+import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
   CHANNEL_KEY,
   COMMITMENT_KEY,
-} from "../helpers";
+} from "../constants";
 
 // @ts-ignore
 const getLocalStorage = () => global.localStorage || require("localStorage");
@@ -48,7 +48,10 @@ export class WrappedLocalStorage implements WrappedStorage {
   async getEntries(): Promise<[string, any][]> {
     return Object.entries(this.localStorage)
       .filter(([name, _]) => name.startsWith(this.prefix))
-      .map(([name, value]) => [name.replace(`${this.prefix}${this.separator}`, ""), safeJsonParse(value)]);
+      .map(([name, value]) => [
+        name.replace(`${this.prefix}${this.separator}`, ""),
+        safeJsonParse(value),
+      ]);
   }
 
   async clear(): Promise<void> {

@@ -7,6 +7,7 @@ import {
   StateSchemaVersion,
   STORE_SCHEMA_VERSION,
   IChannelSigner,
+  StoreTypes,
 } from "@connext/types";
 import { ChannelSigner, ConsoleLogger, delayAndThrow, logTime, stringify } from "@connext/utils";
 
@@ -14,8 +15,9 @@ import { Contract, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
 import { ConnextClient } from "./connext";
-import { getDefaultOptions, getDefaultStore } from "./default";
+import { getDefaultOptions } from "./default";
 import { NodeApiClient } from "./node";
+import { ConnextStore } from "@connext/store";
 
 export const connect = async (
   clientOptions: string | ClientOptions,
@@ -81,7 +83,7 @@ export const connect = async (
     signer =
       typeof opts.signer === "string" ? new ChannelSigner(opts.signer, ethProvider) : opts.signer;
 
-    store = store || getDefaultStore(opts);
+    store = store || new ConnextStore(StoreTypes.LocalStorage);
 
     node = await NodeApiClient.init({
       store,

@@ -1,15 +1,14 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
 import { Sequelize, Op } from "sequelize";
 
+import { ConnextClientData, ConnextClientDataInitParams } from "../helpers";
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
   CHANNEL_KEY,
   COMMITMENT_KEY,
-  ConnextClientData,
-  ConnextClientDataInitParams,
   DEFAULT_DATABASE_STORAGE_TABLE_NAME,
-} from "../helpers";
+} from "../constants";
 
 export class WrappedPostgresStorage implements WrappedStorage {
   public sequelize: Sequelize;
