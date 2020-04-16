@@ -67,7 +67,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    log.warn(`Initiation started for Install protocol`);
+    log.info(`Initiation started`);
 
     const {
       initiatorBalanceDecrement,
@@ -233,7 +233,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
     
     // 335ms
-    logTime(log, start, `Finished Initiating`);
+    logTime(log, start, `Initiation finished`);
   },
 
   /**
@@ -256,7 +256,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
     const log = context.log.newContext("CF-InstallProtocol");
     const start = Date.now();
-    log.warn(`Response started for install`);
+    log.info(`Response started`);
 
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = signature;
@@ -419,7 +419,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     yield [IO_SEND, m4];
     
     // 272ms
-    logTime(log, start, `Finished responding`);
+    logTime(log, start, `Response finished`);
   },
 };
 

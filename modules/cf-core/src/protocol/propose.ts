@@ -44,7 +44,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    log.debug(`Initiation started`);
+    log.info(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -197,7 +197,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // Total 298ms
-    logTime(log, start, `Finished Initiating proposal`);
+    logTime(log, start, `Initiation finished`);
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -205,7 +205,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-ProposeProtocol");
     const start = Date.now();
     let substart = start;
-    log.warn(`Response started`);
+    log.info(`Response started`);
 
     const { params, processID } = message;
 
@@ -351,6 +351,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       setStateCommitment,
       appInstanceProposal.identityHash,
     ];
-    logTime(log, start, `Finished responding`);
+    logTime(log, start, `Response finished`);
   },
 };

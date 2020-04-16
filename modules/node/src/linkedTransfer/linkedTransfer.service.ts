@@ -59,23 +59,21 @@ export class LinkedTransferService {
     this.log.setContext("LinkedTransferService");
   }
 
-  async resolveLinkedTransfer(
+  async installLinkedTransferReceiverApp(
     userIdentifier: string,
     paymentId: string,
   ): Promise<NodeResponses.ResolveLinkedTransfer> {
-    this.log.debug(`resolveLinkedTransfer(${userIdentifier}, ${paymentId})`);
+    this.log.info(
+      `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId} started`,
+    );
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
       userIdentifier,
     );
 
-    // TODO: handle offline case
-    // node is receiver in sender app
-    const senderApp = await this
-      .appInstanceRepository
-      .findLinkedTransferAppByPaymentIdAndReceiver(
-        paymentId,
-        this.cfCoreService.cfCore.signerAddress,
-      );
+    const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+      paymentId,
+      this.cfCoreService.cfCore.signerAddress,
+    );
     if (!senderApp) {
       throw new Error(`Sender app is not installed for paymentId ${paymentId}`);
     }
@@ -89,14 +87,14 @@ export class LinkedTransferService {
     const amountBN = bigNumberify(amount);
 
     // check if receiver app exists
-    const receiverApp = await this
-      .appInstanceRepository
-      .findLinkedTransferAppByPaymentIdAndReceiver(
-        paymentId, 
-        getSignerAddressFromPublicIdentifier(userIdentifier),
-      );
+    const receiverApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
+      paymentId,
+      getSignerAddressFromPublicIdentifier(userIdentifier),
+    );
     if (receiverApp) {
-      throw new Error(`Found existing receiver app, refusing to install receiver app for paymentId ${paymentId}`);
+      throw new Error(
+        `Found existing receiver app, refusing to install receiver app for paymentId ${paymentId}`,
+      );
     }
 
     this.log.debug(`Found linked transfer in our database, attempting to install...`);
@@ -117,7 +115,9 @@ export class LinkedTransferService {
         amountBN,
       );
       if (!depositReceipt) {
-        throw new Error(`Could not obtain sufficient collateral for receiver channel when resolving linked payment ${paymentId}`);
+        throw new Error(
+          `Could not obtain sufficient collateral for receiver channel when resolving linked payment ${paymentId}`,
+        );
       }
     } else {
       // request collateral normally without awaiting
@@ -171,6 +171,11 @@ export class LinkedTransferService {
       amount,
       assetId,
     };
+    this.log.info(
+      `installLinkedTransferReceiverApp from ${userIdentifier} paymentId ${paymentId}} complete ${JSON.stringify(
+        returnRes,
+      )}`,
+    );
     return returnRes;
   }
 
@@ -179,6 +184,7 @@ export class LinkedTransferService {
   ): Promise<
     { senderApp: AppInstance; receiverApp: AppInstance; status: LinkedTransferStatus } | undefined
   > {
+    this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
     const senderApp = await this.appInstanceRepository.findLinkedTransferAppByPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
@@ -205,12 +211,13 @@ export class LinkedTransferService {
   // sender installs app, goes offline
   // receiver redeems, app is installed and uninstalled
   // if we don't check for uninstalled receiver app, receiver can keep redeeming
-  async getLinkedTransfersForRedeem(userIdentifier: string): Promise<AppInstance[]> {
-    const transfersFromNodeToUser =
-      await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
-        userIdentifier,
-        this.cfCoreService.cfCore.signerAddress,
-      );
+  async getLinkedTransfersForReceiverUnlock(userIdentifier: string): Promise<AppInstance[]> {
+    this.log.info(`getLinkedTransfersForReceiverUnlock for ${userIdentifier} started`);
+    // eslint-disable-next-line max-len
+    const transfersFromNodeToUser = await this.appInstanceRepository.findActiveLinkedTransferAppsToRecipient(
+      userIdentifier,
+      this.cfCoreService.cfCore.signerAddress,
+    );
     const existingReceiverApps = (
       await Promise.all(
         transfersFromNodeToUser.map(
@@ -228,6 +235,11 @@ export class LinkedTransferService {
     const redeemableTransfers = transfersFromNodeToUser.filter(
       transfer => !alreadyRedeemedPaymentIds.includes(transfer.latestState["paymentId"]),
     );
+    this.log.info(
+      `getLinkedTransfersForReceiverUnlock for ${userIdentifier} complete: ${JSON.stringify(
+        redeemableTransfers,
+      )}`,
+    );
     return redeemableTransfers;
   }
 
@@ -242,6 +254,7 @@ export class LinkedTransferService {
   // receiver redeems, app is installed and uninstalled
   // sender comes back online, node can unlock transfer
   async unlockLinkedTransfersFromUser(userIdentifier: string): Promise<string[]> {
+    this.log.info(`unlockLinkedTransfersFromUser for ${userIdentifier} started`);
     // eslint-disable-next-line max-len
     const transfersFromUserToNode = await this.appInstanceRepository.findActiveLinkedTransferAppsFromSenderToNode(
       getSignerAddressFromPublicIdentifier(userIdentifier),
@@ -266,18 +279,18 @@ export class LinkedTransferService {
         const preImage: string = senderApp.latestState["preImage"];
         if (preImage === HashZero) {
           // no action has been taken, but is not uninstalled
-          await this.cfCoreService.takeAction(
-            senderApp.identityHash,
-            {
-              preImage,
-            },
-          );
+          await this.cfCoreService.takeAction(senderApp.identityHash, {
+            preImage,
+          });
         }
         await this.cfCoreService.uninstallApp(senderApp.identityHash);
         unlockedAppIds.push(senderApp.identityHash);
         this.log.log(`Unlocked transfer from app ${senderApp.identityHash}`);
       }
     }
+    this.log.info(
+      `unlockLinkedTransfersFromUser for ${userIdentifier} complete: ${unlockedAppIds}`,
+    );
     return unlockedAppIds;
   }
 }

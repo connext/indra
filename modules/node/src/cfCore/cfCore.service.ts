@@ -1,5 +1,4 @@
 import { Node as CFCore } from "@connext/cf-core";
-import { MessagingService } from "@connext/messaging";
 import { DEFAULT_APP_TIMEOUT, SupportedApplications, WithdrawCommitment } from "@connext/apps";
 import {
   AppAction,
@@ -25,8 +24,7 @@ import { BigNumber } from "ethers/utils";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { LoggerService } from "../logger/logger.service";
-import { CFCoreProviderId, MessagingProviderId } from "../constants";
-import { ChannelRepository } from "../channel/channel.repository";
+import { CFCoreProviderId } from "../constants";
 import { Channel } from "../channel/channel.entity";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
@@ -37,16 +35,22 @@ Injectable();
 export class CFCoreService {
   constructor(
     @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
-    private readonly configService: ConfigService,
-    @Inject(MessagingProviderId) private readonly messagingProvider: MessagingService,
-    private readonly cfCoreRepository: CFCoreRecordRepository,
-    private readonly channelRepository: ChannelRepository,
-    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,
+    private readonly configService: ConfigService,
+    private readonly cfCoreRepository: CFCoreRecordRepository,
+    private readonly appRegistryRepository: AppRegistryRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
   ) {
     this.cfCore = cfCore;
     this.log.setContext("CFCoreService");
+  }
+
+  private logCfCoreMethodStart<T = any>(name: string, params: T): void {
+    this.log.debug(`Calling cfCore RPC method ${name} with params: ${stringify(params)}`);
+  }
+
+  private logCfCoreMethodResult<T = any>(name: string, result: T): void {
+    this.log.debug(`${name} called with result: ${stringify(result)}`);
   }
 
   async getFreeBalance(
@@ -55,14 +59,17 @@ export class CFCoreService {
     assetId?: string,
   ): Promise<MethodResults.GetFreeBalanceState> {
     try {
+      const parameters: MethodParams.GetFreeBalanceState = {
+        multisigAddress,
+        assetId: assetId || CONVENTION_FOR_ETH_ASSET_ID,
+      };
+      this.logCfCoreMethodStart(MethodNames.chan_getFreeBalanceState, parameters);
       const freeBalance = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
         methodName: MethodNames.chan_getFreeBalanceState,
-        parameters: {
-          multisigAddress,
-          assetId: assetId || CONVENTION_FOR_ETH_ASSET_ID,
-        },
+        parameters,
       });
+      this.logCfCoreMethodResult(MethodNames.chan_getFreeBalanceState, freeBalance.result.result);
       return freeBalance.result.result as MethodResults.GetFreeBalanceState;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${assetId}`;
@@ -88,7 +95,10 @@ export class CFCoreService {
         multisigAddress,
       },
     };
+    this.logCfCoreMethodStart(MethodNames.chan_getStateChannel, params.parameters);
+
     const getStateChannelRes = await this.cfCore.rpcRouter.dispatch(params);
+    this.logCfCoreMethodResult(MethodNames.chan_getStateChannel, getStateChannelRes.result.result);
     return getStateChannelRes.result.result;
   }
 
@@ -100,9 +110,9 @@ export class CFCoreService {
         owners: [this.cfCore.publicIdentifier, counterpartyIdentifier],
       } as MethodParams.CreateChannel,
     };
-    this.log.debug(`Calling createChannel with params: ${stringify(params)}`);
+    this.logCfCoreMethodStart(MethodNames.chan_create, params.parameters);
     const createRes = await this.cfCore.rpcRouter.dispatch(params);
-    this.log.debug(`createChannel called with result: ${stringify(createRes.result.result)}`);
+    this.logCfCoreMethodResult(MethodNames.chan_create, createRes.result.result);
     return createRes.result.result as MethodResults.CreateChannel;
   }
 
@@ -114,15 +124,9 @@ export class CFCoreService {
         multisigAddress,
       } as MethodParams.DeployStateDepositHolder,
     };
-    this.log.debug(
-      `Calling ${MethodNames.chan_deployStateDepositHolder} with params: ${stringify(params)}`,
-    );
+    this.logCfCoreMethodStart(MethodNames.chan_deployStateDepositHolder, params.parameters);
     const deployRes = await this.cfCore.rpcRouter.dispatch(params);
-    this.log.debug(
-      `${MethodNames.chan_deployStateDepositHolder} called with result: ${stringify(
-        deployRes.result.result,
-      )}`,
-    );
+    this.logCfCoreMethodResult(MethodNames.chan_deployStateDepositHolder, deployRes.result.result);
     return deployRes.result.result as MethodResults.DeployStateDepositHolder;
   }
 
@@ -137,12 +141,8 @@ export class CFCoreService {
       (await this.configService.getEthNetwork()).chainId.toString(),
     );
     const multisigOwners = [
-      getSignerAddressFromPublicIdentifier(
-        channel.userIdentifiers[0],
-      ),
-      getSignerAddressFromPublicIdentifier(
-        channel.userIdentifiers[1],
-      ),
+      getSignerAddressFromPublicIdentifier(channel.userIdentifiers[0]),
+      getSignerAddressFromPublicIdentifier(channel.userIdentifiers[1]),
     ];
     return new WithdrawCommitment(
       contractAddresses,
@@ -158,13 +158,13 @@ export class CFCoreService {
   async proposeInstallApp(
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> {
-    this.log.debug(`Calling ${MethodNames.chan_proposeInstall} with params: ${stringify(params)}`);
+    this.logCfCoreMethodStart(MethodNames.chan_proposeInstall, params);
     const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_proposeInstall,
       parameters: params,
     });
-    this.log.debug(`proposeInstallApp called with result ${stringify(proposeRes.result.result)}`);
+    this.logCfCoreMethodResult(MethodNames.chan_proposeInstall, proposeRes.result.result);
     return proposeRes.result.result as MethodResults.ProposeInstall;
   }
 
@@ -209,6 +209,7 @@ export class CFCoreService {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout,
     };
+    this.log.info(`Attempting to install app: ${appInfo.name}`);
 
     let proposeRes: MethodResults.ProposeInstall;
     try {
@@ -221,7 +222,9 @@ export class CFCoreService {
           this.cfCore.on(EventNames.REJECT_INSTALL_EVENT, boundReject);
         },
       );
-      this.log.info(`App was installed successfully: ${proposeRes.appIdentityHash}`);
+      this.log.info(
+        `App ${appInfo.name} was installed successfully: ${proposeRes.appIdentityHash}`,
+      );
       this.log.debug(`App install result: ${stringify(proposeRes)}`);
       return proposeRes;
     } catch (e) {
@@ -233,19 +236,24 @@ export class CFCoreService {
   }
 
   async installApp(appIdentityHash: string): Promise<MethodResults.Install> {
+    const parameters: MethodParams.Install = {
+      appIdentityHash,
+    };
+    this.logCfCoreMethodStart(MethodNames.chan_install, parameters);
     const installRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_install,
-      parameters: {
-        appIdentityHash,
-      } as MethodParams.Install,
+      parameters,
     });
-    this.log.info(`installApp succeeded for app ${appIdentityHash}`);
-    this.log.debug(`installApp result: ${stringify(installRes.result.result)}`);
+    this.logCfCoreMethodResult(MethodNames.chan_install, installRes.result.result);
     return installRes.result.result as MethodResults.Install;
   }
 
   async rejectInstallApp(appIdentityHash: string): Promise<MethodResults.RejectInstall> {
+    const parameters: MethodParams.Install = {
+      appIdentityHash,
+    };
+    this.logCfCoreMethodStart(MethodNames.chan_rejectInstall, parameters);
     const rejectRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_rejectInstall,
@@ -253,8 +261,7 @@ export class CFCoreService {
         appIdentityHash,
       } as MethodParams.RejectInstall,
     });
-    this.log.info(`rejectInstallApp succeeded for app ${appIdentityHash}`);
-    this.log.debug(`rejectInstallApp result: ${stringify(rejectRes.result.result)}`);
+    this.logCfCoreMethodResult(MethodNames.chan_rejectInstall, rejectRes.result.result);
     // update app status
     const rejectedApp = await this.appInstanceRepository.findByIdentityHash(appIdentityHash);
     if (!rejectedApp) {
@@ -270,75 +277,88 @@ export class CFCoreService {
     action: AppAction,
     stateTimeout?: BigNumber,
   ): Promise<MethodResults.TakeAction> {
+    const parameters = {
+      action,
+      appIdentityHash,
+      stateTimeout,
+    } as MethodParams.TakeAction;
+    this.logCfCoreMethodStart(MethodNames.chan_takeAction, parameters);
+
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_takeAction,
-      parameters: {
-        action,
-        appIdentityHash,
-        stateTimeout,
-      } as MethodParams.TakeAction,
+      parameters,
     });
 
-    this.log.info(`takeAction succeeded for app ${appIdentityHash}`);
-    this.log.debug(`takeAction result: ${stringify(actionResponse.result)}`);
+    this.logCfCoreMethodResult(MethodNames.chan_takeAction, actionResponse.result.result);
     return actionResponse.result.result as MethodResults.TakeAction;
   }
 
   async uninstallApp(appIdentityHash: string): Promise<MethodResults.Uninstall> {
-    this.log.info(`Calling uninstallApp for appIdentityHash ${appIdentityHash}`);
+    const parameters = {
+      appIdentityHash,
+    } as MethodParams.Uninstall;
+    this.logCfCoreMethodStart(MethodNames.chan_uninstall, parameters);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_uninstall,
-      parameters: {
-        appIdentityHash,
-      },
+      parameters,
     });
 
-    this.log.info(`uninstallApp succeeded for app ${appIdentityHash}`);
-    this.log.debug(`uninstallApp result: ${stringify(uninstallResponse.result.result)}`);
+    this.logCfCoreMethodResult(MethodNames.chan_uninstall, uninstallResponse.result.result);
     return uninstallResponse.result.result as MethodResults.Uninstall;
   }
 
   async getAppInstances(multisigAddress: string): Promise<AppInstanceJson[]> {
+    const parameters = {
+      multisigAddress,
+    } as MethodParams.GetAppInstances;
+    this.logCfCoreMethodStart(MethodNames.chan_getAppInstances, parameters);
+
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_getAppInstances,
-      parameters: {
-        multisigAddress,
-      } as MethodParams.GetAppInstances,
+      parameters,
     });
 
-    /*
-    this.log.debug(
-      `getAppInstances called with result ${stringify(appInstanceResponse.result.result)}`,
-    );
-    */
+    this.logCfCoreMethodResult(MethodNames.chan_getAppInstances, appInstanceResponse.result.result);
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 
   async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
+    const parameters = {
+      multisigAddress,
+    } as MethodParams.GetProposedAppInstances;
+    this.logCfCoreMethodStart(MethodNames.chan_getProposedAppInstances, parameters);
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: MethodNames.chan_getProposedAppInstances,
-      parameters: { multisigAddress } as MethodParams.GetAppInstances,
+      parameters,
     });
 
-    this.log.info(`Got proposed app instances for multisig ${multisigAddress}`);
-    this.log.debug(
-      `getProposedAppInstances result: ${stringify(appInstanceResponse.result.result)}`,
+    this.logCfCoreMethodResult(
+      MethodNames.chan_getProposedAppInstances,
+      appInstanceResponse.result.result,
     );
     return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
 
   async getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
-    let appInstance: any;
+    const parameters = {
+      appIdentityHash,
+    } as MethodParams.GetAppInstanceDetails;
+    let appInstance: AppInstanceJson;
     try {
+      this.logCfCoreMethodStart(MethodNames.chan_getAppInstance, parameters);
       const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
         methodName: MethodNames.chan_getAppInstance,
         parameters: { appIdentityHash } as MethodParams.GetAppInstanceDetails,
       });
+      this.logCfCoreMethodResult(
+        MethodNames.chan_getAppInstance,
+        appInstanceResponse.result.result,
+      );
       appInstance = appInstanceResponse.result.result.appInstance;
     } catch (e) {
       if (e.message.includes(`No multisig address exists for the given appIdentityHash`)) {
@@ -348,8 +368,6 @@ export class CFCoreService {
         throw e;
       }
     }
-    this.log.info(`Got app instance details for app ${appIdentityHash}`);
-    this.log.debug(`getAppInstance result: ${stringify(appInstance)}`);
     return appInstance as AppInstanceJson;
   }
 
