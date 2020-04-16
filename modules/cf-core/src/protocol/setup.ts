@@ -41,7 +41,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
     let substart;
-    log.debug(`Initiation started`);
+    log.info(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -146,7 +146,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.freeBalance.identityHash,
     ];
 
-    logTime(log, start, `Finished initiating`);
+    logTime(log, start, `Initiation finished`);
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -154,7 +154,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-SetupProtocol");
     const start = Date.now();
     let substart;
-    log.debug(`Response started`);
+    log.info(`Response started`);
 
     const {
       processID,
@@ -249,6 +249,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessageData,
     ];
-    logTime(log, start, `Finished responding`);
+    logTime(log, start, `Response finished`);
   },
 };

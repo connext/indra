@@ -65,10 +65,10 @@ export class SignedTransferService {
     userIdentifier: Address,
     paymentId: Bytes32,
   ): Promise<NodeResponses.ResolveSignedTransfer> {
-    this.log.debug(`resolveLinkedTransfer(${userIdentifier}, ${paymentId})`);
-    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(
-      userIdentifier,
+    this.log.info(
+      `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} started`,
     );
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(userIdentifier);
 
     // TODO: could there be more than 1? how to handle that case?
     let [senderAppBadType] = await this.signedTransferRepository.findSignedTransferAppsByPaymentId(
@@ -107,16 +107,10 @@ export class SignedTransferService {
         throw new Error(
           `Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`,
         );
-        throw new Error(`Could not deposit sufficient collateral to resolve signed transfer app for receiver: ${userIdentifier}`);
       }
     } else {
       // request collateral normally without awaiting
-      this.channelService.rebalance(
-        userIdentifier,
-        assetId,
-        RebalanceType.COLLATERALIZE,
-        amount,
-      );
+      this.channelService.rebalance(userIdentifier, assetId, RebalanceType.COLLATERALIZE, amount);
     }
 
     const initialState: SimpleSignedTransferAppState = {
@@ -152,41 +146,56 @@ export class SignedTransferService {
       throw new Error(`Could not install app on receiver side.`);
     }
 
-    return {
+    const result: NodeResponses.ResolveSignedTransfer = {
       appIdentityHash: receiverAppInstallRes.appIdentityHash,
       sender: senderChannel.userIdentifier,
       meta,
       amount,
       assetId,
     };
+    this.log.info(
+      `installSignedTransferReceiverApp for ${userIdentifier} paymentId ${paymentId} complete: ${JSON.stringify(
+        result,
+      )}`,
+    );
+    return result;
   }
 
   async findSenderAndReceiverAppsWithStatus(
     paymentId: string,
   ): Promise<{ senderApp: AppInstance; receiverApp: AppInstance; status: any } | undefined> {
-    // node receives from sender
+    this.log.info(`findSenderAndReceiverAppsWithStatus ${paymentId} started`);
     const senderApp = await this.findSenderAppByPaymentId(paymentId);
-    // node is sender
     const receiverApp = await this.findReceiverAppByPaymentId(paymentId);
     const status = appStatusesToSignedTransferStatus(senderApp, receiverApp);
-    return { senderApp, receiverApp, status };
+    const result = { senderApp, receiverApp, status };
+    this.log.info(
+      `findSenderAndReceiverAppsWithStatus ${paymentId} complete: ${JSON.stringify(result)}`,
+    );
+    return result;
   }
 
   async findSenderAppByPaymentId(paymentId: string): Promise<AppInstance> {
+    this.log.info(`findSenderAppByPaymentId ${paymentId} started`);
     // node receives from sender
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndReceiver(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
-    return normalizeSignedTransferAppState(app);
+    const result = normalizeSignedTransferAppState(app);
+    this.log.info(`findSenderAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);
+    return result;
   }
 
   async findReceiverAppByPaymentId(paymentId: string): Promise<AppInstance> {
+    this.log.info(`findReceiverAppByPaymentId ${paymentId} started`);
     // node sends to receiver
     const app = await this.signedTransferRepository.findSignedTransferAppByPaymentIdAndSender(
       paymentId,
       this.cfCoreService.cfCore.signerAddress,
     );
-    return normalizeSignedTransferAppState(app);
+    const result = normalizeSignedTransferAppState(app);
+    this.log.info(`findReceiverAppByPaymentId ${paymentId} completed: ${JSON.stringify(result)}`);
+    return result;
   }
 }

@@ -64,6 +64,12 @@ export class AppRegistryService implements OnModuleInit {
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
+    this.log.info(
+      `validateAndInstallOrReject for app ${appIdentityHash} with params ${JSON.stringify(
+        proposeInstallParams,
+      )} from ${from} started`,
+    );
+
     let registryAppInfo: AppRegistry;
     let appInstance: AppInstanceJson;
 
@@ -122,6 +128,7 @@ export class AppRegistryService implements OnModuleInit {
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
+    this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} started`);
     const supportedAddresses = this.configService.getSupportedTokenAddresses();
     commonAppProposalValidation(proposeInstallParams, registryAppInfo, supportedAddresses);
     switch (registryAppInfo.name) {
@@ -174,7 +181,7 @@ export class AppRegistryService implements OnModuleInit {
         // install for receiver or error
         // https://github.com/ConnextProject/indra/issues/942
         const recipient = proposeInstallParams.meta["recipient"];
-        await this.hashlockTransferService.resolveHashLockTransfer(
+        await this.hashlockTransferService.installHashLockTransferReceiverApp(
           from,
           recipient,
           proposeInstallParams.initialState as HashLockTransferAppState,
@@ -197,6 +204,7 @@ export class AppRegistryService implements OnModuleInit {
         );
       }
     }
+    this.log.info(`runPreInstallValidation for app name ${registryAppInfo.name} completed`);
   }
 
   private async runPostInstallTasks(
@@ -205,6 +213,9 @@ export class AppRegistryService implements OnModuleInit {
     proposeInstallParams: MethodParams.ProposeInstall,
     from: string,
   ): Promise<void> {
+    this.log.info(
+      `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} started`,
+    );
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
         this.log.debug(`Doing withdrawal post-install tasks`);
@@ -251,6 +262,9 @@ export class AppRegistryService implements OnModuleInit {
       getAddressFromAssetId(proposeInstallParams.responderDepositAssetId),
       RebalanceType.RECLAIM,
     );
+    this.log.info(
+      `runPostInstallTasks for app name ${registryAppInfo.name} ${appIdentityHash} completed`,
+    );
   }
 
   async onModuleInit() {
@@ -265,7 +279,7 @@ export class AppRegistryService implements OnModuleInit {
         appRegistry = new AppRegistry();
       }
       const appDefinitionAddress = addressBook[app.name];
-      this.log.log(
+      this.log.info(
         `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${appDefinitionAddress}`,
       );
       appRegistry.actionEncoding = app.actionEncoding;
