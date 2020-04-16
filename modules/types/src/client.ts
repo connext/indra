@@ -9,7 +9,7 @@ import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import { NodeResponses } from "./node";
 import { MethodResults, MethodParams, MethodName } from "./methods";
-import { IBackupServiceAPI, IClientStore, StoreTypes } from "./store";
+import { IBackupServiceAPI, IClientStore } from "./store";
 import { PublicParams, PublicResults } from "./public";
 
 /////////////////////////////////
@@ -21,7 +21,6 @@ export interface ClientOptions {
   ethProviderUrl: string;
   signer?: string | IChannelSigner;
   store?: IClientStore;
-  storeType?: StoreTypes;
   logger?: ILogger;
   loggerService?: ILoggerService;
   logLevel?: number;

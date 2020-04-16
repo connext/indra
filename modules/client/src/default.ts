@@ -51,9 +51,8 @@ const getOverrideOptions = (_opts?: Partial<ClientOptions>): Partial<ClientOptio
 };
 
 export const getDefaultStore = (opts: Partial<ClientOptions>): IClientStore => {
-  const storeType = opts && opts.storeType ? opts.storeType : StoreTypes.LocalStorage;
-  const backupService = opts && opts.backupService ? opts.backupService : null;
-  return new ConnextStore(storeType, { backupService });
+  const backupService = opts && opts.backupService ? opts.backupService : undefined;
+  return new ConnextStore(StoreTypes.LocalStorage, { backupService });
 };
 
 export const getDefaultOptions = (
