@@ -46,7 +46,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
-    log.debug(`Initiation started for uninstall`);
+    log.info(`Initiation started`);
 
     const { params, processID } = message;
     const {
@@ -147,14 +147,14 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 204ms
-    logTime(log, start, `Finished Initiating uninstall`);
+    logTime(log, start, `Initiation finished`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { message, store, network } = context;
     const log = context.log.newContext("CF-UninstallProtocol");
     const start = Date.now();
-    log.debug(`Response started for uninstall`);
+    log.info(`Response started`);
 
     const { params, processID } = message;
     const {
@@ -256,7 +256,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     // 100ms
-    logTime(log, start, `Finished responding to uninstall`);
+    logTime(log, start, `Response finished`);
   },
 };
 

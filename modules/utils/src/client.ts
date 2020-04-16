@@ -5,11 +5,11 @@ export const logTime = (log: ILogger, start: number, msg: string) => {
   const diff = Date.now() - start;
   const message = `${msg} in ${diff} ms`;
   if (diff < 10) {
-    log.debug(message);
+    log.info(message);
   } else if (diff < 250) {
     log.info(message);
   } else {
-    log.warn(message);
+    log.info(message);
   }
 };
 

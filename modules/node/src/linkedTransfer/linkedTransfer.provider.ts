@@ -71,7 +71,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
     if (!paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(paymentId)}`);
     }
-    const response = await this.linkedTransferService.resolveLinkedTransfer(pubId, paymentId);
+    const response = await this.linkedTransferService.installLinkedTransferReceiverApp(pubId, paymentId);
     return {
       ...response,
       amount: response.amount,
@@ -81,7 +81,7 @@ export class LinkedTransferMessaging extends AbstractMessagingProvider {
   async getPendingTransfers(
     userIdentifier: string,
   ): Promise<NodeResponses.GetPendingAsyncTransfers> {
-    const transfers = await this.linkedTransferService.getLinkedTransfersForRedeem(
+    const transfers = await this.linkedTransferService.getLinkedTransfersForReceiverUnlock(
       userIdentifier,
     );
     return transfers.map(transfer => {
