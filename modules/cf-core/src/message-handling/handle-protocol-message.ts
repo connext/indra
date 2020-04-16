@@ -158,15 +158,14 @@ async function getOutgoingEventDataFromProtocol(
         },
       };
     case ProtocolNames.takeAction:
-    case ProtocolNames.update:
       return {
         ...baseEvent,
         type: EventNames.UPDATE_STATE_EVENT,
         data: getStateUpdateEventData(
-          params as ProtocolParams.Update,
+          params as ProtocolParams.TakeAction,
           AppInstance.fromJson(
             (await store.getAppInstance(
-              (params as ProtocolParams.TakeAction | ProtocolParams.Update).appIdentityHash,
+              (params as ProtocolParams.TakeAction).appIdentityHash,
             ))!,
           ).state,
         ),
@@ -179,12 +178,10 @@ async function getOutgoingEventDataFromProtocol(
 }
 
 function getStateUpdateEventData(
-  params: ProtocolParams.TakeAction | ProtocolParams.Update,
+  params: ProtocolParams.TakeAction,
   newState: SolidityValueType,
 ) {
-  // note: action does not exist on type `ProtocolParams.Update`
-  // so use any cast
-  const { appIdentityHash, action } = params as any;
+  const { appIdentityHash, action } = params;
   return { newState, appIdentityHash, action };
 }
 

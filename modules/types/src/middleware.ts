@@ -43,12 +43,7 @@ export type UninstallMiddlewareContext = {
   params: ProtocolParams.Uninstall;
   appInstance: AppInstanceJson;
   stateChannel: StateChannelJSON;
-};
-export type UpdateMiddlewareContext = {
-  role: ProtocolRole;
-  params: ProtocolParams.Update;
-  appInstance: AppInstanceJson; // pre-update
-};
+};s
 
 export type MiddlewareContext = 
   | SetupMiddlewareContext
@@ -56,8 +51,6 @@ export type MiddlewareContext =
   | InstallMiddlewareContext
   | TakeActionMiddlewareContext
   | UninstallMiddlewareContext
-  | UpdateMiddlewareContext
-
 
 export type ValidationMiddleware = {
   (protocol: ProtocolName, context: MiddlewareContext): Promise<void>;

@@ -24,7 +24,6 @@ export const generateValidationMiddleware = async (
       case (ProtocolNames.setup):
       case (ProtocolNames.propose):
       case (ProtocolNames.install):
-      case (ProtocolNames.update):
       case (ProtocolNames.takeAction): {
         break;
       }
