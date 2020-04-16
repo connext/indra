@@ -39,7 +39,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const { store, message, network } = context;
     const log = context.log.newContext("CF-TakeActionProtocol");
     const start = Date.now();
-    log.debug(`Initiation started for Take Action`);
+    log.info(`Initiation started`);
 
     const { processID, params } = message;
 

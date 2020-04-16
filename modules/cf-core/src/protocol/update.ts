@@ -40,7 +40,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-UpdateProtocol");
     const start = Date.now();
     let substart;
-    log.debug(`Initiation started`);
+    log.info(`Initiation started`);
 
     const { processID, params } = message;
 
@@ -144,7 +144,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const log = context.log.newContext("CF-UpdateProtocol");
     const start = Date.now();
     let substart;
-    log.debug(`Response started`);
+    log.info(`Response started`);
 
     const {
       processID,
@@ -238,6 +238,6 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessageData,
     ];
-    logTime(log, start, `Finished responding`);
+    logTime(log, start, `Response finished`);
   },
 };
