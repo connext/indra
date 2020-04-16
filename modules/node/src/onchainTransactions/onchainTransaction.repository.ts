@@ -12,7 +12,7 @@ import {
 @EntityRepository(OnchainTransaction)
 export class OnchainTransactionRepository extends Repository<OnchainTransaction> {
   async findByHash(txHash: string): Promise<OnchainTransaction | undefined> {
-    return await this.findOne({
+    return this.findOne({
       where: { hash: txHash },
       relations: [ "channel" ],
     });
@@ -110,7 +110,7 @@ export class AnonymizedOnchainTransactionRepository extends Repository<
   AnonymizedOnchainTransaction
 > {
   async findInTimeRange(start: number, end: number): Promise<AnonymizedOnchainTransaction[]> {
-    return await this.find({
+    return this.find({
       order: { createdAt: "DESC" },
       where: {
         createdAt: Between(new Date(start), new Date(end)),

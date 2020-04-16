@@ -54,7 +54,7 @@ export class ChannelService {
    * @param available available value of channel
    */
   async findAll(available: boolean = true): Promise<Channel[]> {
-    return await this.channelRepository.findAll(available);
+    return this.channelRepository.findAll(available);
   }
 
   // NOTE: this is used by the `channel.provider`. if you use the
@@ -298,7 +298,7 @@ export class ChannelService {
       throw new Error(`No channel exists for multisig ${multisigAddress}`);
     }
 
-    return await this.channelRepository.setInflightCollateralization(channel, assetId, false);
+    return this.channelRepository.setInflightCollateralization(channel, assetId, false);
   }
 
   async setCollateralizationInFlight(multisigAddress: string, assetId: string): Promise<Channel> {
@@ -307,7 +307,7 @@ export class ChannelService {
       throw new Error(`No channel exists for multisig ${multisigAddress}`);
     }
 
-    return await this.channelRepository.setInflightCollateralization(channel, assetId, true);
+    return this.channelRepository.setInflightCollateralization(channel, assetId, true);
   }
 
   async addRebalanceProfileToChannel(

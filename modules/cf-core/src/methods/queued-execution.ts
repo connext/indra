@@ -11,7 +11,7 @@ import { Deferred } from "../deferred";
  * @returns
  */
 export async function addToManyQueues(queues: Queue[], task: Task<any>) {
-  if (queues.length === 0) return await task();
+  if (queues.length === 0) return task();
 
   let promise: PromiseLike<any>;
 
@@ -54,5 +54,5 @@ export async function addToManyQueues(queues: Queue[], task: Task<any>) {
     ),
   );
 
-  return await runTaskWithMemoization();
+  return runTaskWithMemoization();
 }

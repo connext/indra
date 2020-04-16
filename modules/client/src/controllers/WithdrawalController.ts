@@ -188,7 +188,7 @@ export class WithdrawalController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: WITHDRAW_STATE_TIMEOUT,
     };
-    return await this.proposeAndInstallLedgerApp(installParams);
+    return this.proposeAndInstallLedgerApp(installParams);
   }
 
   public async saveWithdrawCommitmentToStore(

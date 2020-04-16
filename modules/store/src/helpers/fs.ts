@@ -110,7 +110,7 @@ export async function isDirectory(path: string): Promise<boolean> {
 
 export async function createDirectory(path: string): Promise<void> {
   if (!fs.existsSync(path)) {
-    return await fsMkDir(path);
+    return fsMkDir(path);
   }
   return;
 }

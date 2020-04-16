@@ -64,7 +64,7 @@ describe("DepositApp", () => {
   });
 
   const computeOutcome = async (state: DepositAppState): Promise<string> => {
-    return await depositApp.functions.computeOutcome(encodeAppState(state));
+    return depositApp.functions.computeOutcome(encodeAppState(state));
   };
 
   const createInitialState = async (assetId: string): Promise<DepositAppState> => {

@@ -145,8 +145,8 @@ export class RequestHandler {
     return this.signer;
   }
 
-  public async getSignerAddress(): Promise<string> {
+  public getSignerAddress(): Promise<string> {
     const signer = this.getSigner();
-    return await signer.getAddress();
+    return signer.getAddress();
   }
 }

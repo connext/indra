@@ -19,11 +19,11 @@ class LockMessaging extends AbstractMessagingProvider {
   }
 
   async acquireLock(lockName: string, data: { lockTTL: number }): Promise<string> {
-    return await this.lockService.acquireLock(lockName, data.lockTTL);
+    return this.lockService.acquireLock(lockName, data.lockTTL);
   }
 
   async releaseLock(lockName: string, data: { lockValue: string }): Promise<void> {
-    return await this.lockService.releaseLock(lockName, data.lockValue);
+    return this.lockService.releaseLock(lockName, data.lockValue);
   }
 
   async setupSubscriptions(): Promise<void> {

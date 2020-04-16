@@ -57,7 +57,7 @@ export class AdminService implements OnApplicationBootstrap {
 
   /** Get all channels */
   async getAllChannels(): Promise<Channel[]> {
-    return await this.channelRepository.findAll();
+    return this.channelRepository.findAll();
   }
 
   /** Get all transfers */
