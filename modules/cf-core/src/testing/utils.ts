@@ -435,7 +435,7 @@ export async function getMultisigAmountWithdrawn(
   const provider = global[`wallet`].provider;
   const multisig = new Contract(multisigAddr, MinimumViableMultisig.abi as any, provider);
   try {
-    return await multisig.functions.totalAmountWithdrawn(tokenAddress);
+    return multisig.functions.totalAmountWithdrawn(tokenAddress);
   } catch (e) {
     if (!e.message.includes(CONTRACT_NOT_DEPLOYED)) {
       console.log(CONTRACT_NOT_DEPLOYED);
@@ -825,7 +825,7 @@ export async function confirmAppInstanceInstallation(
 }
 
 export async function makeInstallCall(node: Node, appIdentityHash: string) {
-  return await node.rpcRouter.dispatch(constructInstallRpc(appIdentityHash));
+  return node.rpcRouter.dispatch(constructInstallRpc(appIdentityHash));
 }
 
 export function makeProposeCall(

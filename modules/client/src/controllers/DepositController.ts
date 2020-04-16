@@ -245,6 +245,6 @@ export class DepositController extends AbstractController {
       stateTimeout: DEPOSIT_STATE_TIMEOUT,
     };
 
-    return await this.proposeAndInstallLedgerApp(params);
+    return this.proposeAndInstallLedgerApp(params);
   };
 }

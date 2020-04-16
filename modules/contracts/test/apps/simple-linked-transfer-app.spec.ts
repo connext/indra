@@ -87,11 +87,11 @@ describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
 
   async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<string> {
-    return await simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
+    return simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(state: any, action: SolidityValueType): Promise<string> {
-    return await simpleLinkedTransferApp.functions.applyAction(
+    return simpleLinkedTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );

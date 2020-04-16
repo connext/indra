@@ -40,7 +40,7 @@ describe("SimpleTwoPartySwapApp", () => {
   let simpleSwapApp: Contract;
 
   async function computeOutcome(state: SimpleSwapAppState): Promise<string> {
-    return await simpleSwapApp.functions.computeOutcome(encodeAppState(state));
+    return simpleSwapApp.functions.computeOutcome(encodeAppState(state));
   }
 
   before(async () => {

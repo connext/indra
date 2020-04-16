@@ -201,14 +201,13 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getChannel = async (): Promise<NodeResponses.GetChannel> => {
-    return await this.node.getChannel();
+    return this.node.getChannel();
   };
 
   public requestCollateral = async (
     tokenAddress: string,
   ): Promise<NodeResponses.RequestCollateral | void> => {
-    const res = await this.node.requestCollateral(tokenAddress);
-    return res;
+    return this.node.requestCollateral(tokenAddress);
   };
 
   public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
@@ -218,13 +217,13 @@ export class ConnextClient implements IConnextClient {
   public getLinkedTransfer = async (
     paymentId: string,
   ): Promise<NodeResponses.GetLinkedTransfer> => {
-    return await this.node.fetchLinkedTransfer(paymentId);
+    return this.node.fetchLinkedTransfer(paymentId);
   };
 
   public getSignedTransfer = async (
     paymentId: string,
   ): Promise<NodeResponses.GetSignedTransfer> => {
-    return await this.node.fetchSignedTransfer(paymentId);
+    return this.node.fetchSignedTransfer(paymentId);
   };
 
   public getAppRegistry = async (
@@ -254,11 +253,11 @@ export class ConnextClient implements IConnextClient {
   };
 
   public subscribeToSwapRates = async (from: string, to: string, callback: any): Promise<any> => {
-    return await this.node.subscribeToSwapRates(from, to, callback);
+    return this.node.subscribeToSwapRates(from, to, callback);
   };
 
   public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
-    return await this.node.getLatestSwapRate(from, to);
+    return this.node.getLatestSwapRate(from, to);
   };
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
@@ -266,11 +265,11 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getRebalanceProfile = async (assetId?: string): Promise<RebalanceProfile | undefined> => {
-    return await this.node.getRebalanceProfile(assetId);
+    return this.node.getRebalanceProfile(assetId);
   };
 
   public getTransferHistory = async (): Promise<NodeResponses.GetTransferHistory> => {
-    return await this.node.getTransferHistory();
+    return this.node.getTransferHistory();
   };
 
   ///////////////////////////////////
@@ -379,7 +378,7 @@ export class ConnextClient implements IConnextClient {
   public getHashLockTransfer = async (
     lockHash: string,
   ): Promise<NodeResponses.GetHashLockTransfer> => {
-    return await this.node.getHashLockTransfer(lockHash);
+    return this.node.getHashLockTransfer(lockHash);
   };
 
   public getUserWithdrawals = async (): Promise<WithdrawalMonitorObject[]> => {
@@ -525,13 +524,13 @@ export class ConnextClient implements IConnextClient {
   // PROVIDER/ROUTER METHODS
 
   public deployMultisig = async (): Promise<MethodResults.DeployStateDepositHolder> => {
-    return await this.channelProvider.send(MethodNames.chan_deployStateDepositHolder, {
+    return this.channelProvider.send(MethodNames.chan_deployStateDepositHolder, {
       multisigAddress: this.multisigAddress,
     });
   };
 
   public getStateChannel = async (): Promise<MethodResults.GetStateChannel> => {
-    return await this.channelProvider.send(MethodNames.chan_getStateChannel, {
+    return this.channelProvider.send(MethodNames.chan_getStateChannel, {
       multisigAddress: this.multisigAddress,
     });
   };
@@ -551,7 +550,7 @@ export class ConnextClient implements IConnextClient {
     }
     const tokenAddress = getAddressFromAssetId(assetId);
     try {
-      return await this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
+      return this.channelProvider.send(MethodNames.chan_getFreeBalanceState, {
         multisigAddress: this.multisigAddress,
         assetId: tokenAddress,
       } as MethodParams.GetFreeBalanceState);
@@ -574,7 +573,7 @@ export class ConnextClient implements IConnextClient {
   public getProposedAppInstances = async (
     multisigAddress?: string,
   ): Promise<MethodResults.GetProposedAppInstances | undefined> => {
-    return await this.channelProvider.send(MethodNames.chan_getProposedAppInstances, {
+    return this.channelProvider.send(MethodNames.chan_getProposedAppInstances, {
       multisigAddress: multisigAddress || this.multisigAddress,
     } as MethodParams.GetProposedAppInstances);
   };
@@ -582,7 +581,7 @@ export class ConnextClient implements IConnextClient {
   public getProposedAppInstance = async (
     appIdentityHash: string,
   ): Promise<MethodResults.GetProposedAppInstance | undefined> => {
-    return await this.channelProvider.send(MethodNames.chan_getProposedAppInstance, {
+    return this.channelProvider.send(MethodNames.chan_getProposedAppInstance, {
       appIdentityHash,
     } as MethodParams.GetProposedAppInstance);
   };
@@ -595,7 +594,7 @@ export class ConnextClient implements IConnextClient {
       this.log.warn(err);
       return undefined;
     }
-    return await this.channelProvider.send(MethodNames.chan_getAppInstance, {
+    return this.channelProvider.send(MethodNames.chan_getAppInstance, {
       appIdentityHash,
     } as MethodParams.GetAppInstanceDetails);
   };
@@ -617,7 +616,7 @@ export class ConnextClient implements IConnextClient {
       // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    return await this.channelProvider.send(MethodNames.chan_takeAction, {
+    return this.channelProvider.send(MethodNames.chan_takeAction, {
       action,
       appIdentityHash,
       stateTimeout,
@@ -641,7 +640,7 @@ export class ConnextClient implements IConnextClient {
       // FIXME: casting?
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    return await this.channelProvider.send(MethodNames.chan_updateState, {
+    return this.channelProvider.send(MethodNames.chan_updateState, {
       appIdentityHash,
       newState,
     } as MethodParams.UpdateState);
@@ -650,7 +649,7 @@ export class ConnextClient implements IConnextClient {
   public proposeInstallApp = async (
     params: MethodParams.ProposeInstall,
   ): Promise<MethodResults.ProposeInstall> => {
-    return await this.channelProvider.send(
+    return this.channelProvider.send(
       MethodNames.chan_proposeInstall,
       params as MethodParams.ProposeInstall,
     );
@@ -662,7 +661,7 @@ export class ConnextClient implements IConnextClient {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    return await this.channelProvider.send(MethodNames.chan_install, {
+    return this.channelProvider.send(MethodNames.chan_install, {
       appIdentityHash,
     } as MethodParams.Install);
   };
@@ -674,13 +673,13 @@ export class ConnextClient implements IConnextClient {
       this.log.error(err);
       throw new Error(err);
     }
-    return await this.channelProvider.send(MethodNames.chan_uninstall, {
+    return this.channelProvider.send(MethodNames.chan_uninstall, {
       appIdentityHash,
     } as MethodParams.Uninstall);
   };
 
   public rejectInstallApp = async (appIdentityHash: string): Promise<MethodResults.Uninstall> => {
-    return await this.channelProvider.send(MethodNames.chan_rejectInstall, {
+    return this.channelProvider.send(MethodNames.chan_rejectInstall, {
       appIdentityHash,
     });
   };
@@ -689,7 +688,7 @@ export class ConnextClient implements IConnextClient {
   // NODE METHODS
 
   public clientCheckIn = async (): Promise<void> => {
-    return await this.node.clientCheckIn();
+    return this.node.clientCheckIn();
   };
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {

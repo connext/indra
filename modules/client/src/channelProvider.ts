@@ -278,11 +278,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private async getSchemaVersion() {
-    return await this.store.getSchemaVersion();
+    return this.store.getSchemaVersion();
   }
 
   private async updateSchemaVersion(version?: number) {
-    return await this.store.updateSchemaVersion(version);
+    return this.store.updateSchemaVersion(version);
   }
 
   private async enableChannel() {
