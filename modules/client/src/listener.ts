@@ -117,6 +117,7 @@ export class ConnextListener extends ConnextEventEmitter {
         this.log.debug(`Received proposal from our own node, doing nothing ${time()}`);
         return;
       }
+      this.log.info(`Processing proposal for ${appIdentityHash}`);
       this.handleAppProposal(params, appIdentityHash, from);
       this.log.info(`Done processing propose install event ${time()}`);
       // validate and automatically install for the known and supported
@@ -168,9 +169,11 @@ export class ConnextListener extends ConnextEventEmitter {
   }
 
   public register = async (): Promise<void> => {
+    this.log.debug(`Registering default listeners`);
     await this.registerAvailabilitySubscription();
     this.registerDefaultListeners();
     await this.registerLinkedTransferSubscription();
+    this.log.debug(`Registered default listeners`);
     return;
   };
 
@@ -330,7 +333,9 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       // NOTE: by trying to install here, if the installation fails,
       // the proposal is automatically removed from the store
+      this.log.info(`App ${appIdentityHash} validated, installing`);
       await this.connext.installApp(appIdentityHash);
+      this.log.info(`Installed!`);
     } catch (e) {
       this.log.error(`Caught error: ${e.message}`);
       // TODO: first proposal after reset is responded to
@@ -344,6 +349,7 @@ export class ConnextListener extends ConnextEventEmitter {
     }
     // install and run post-install tasks
     await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
+    this.log.debug(`Completed post install tasks`);
     const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
     await this.connext.node.messaging.publish(
       `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,

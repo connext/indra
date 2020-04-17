@@ -10,7 +10,7 @@ import {
   PublicResults,
   DefaultApp,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, stringify } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
@@ -19,6 +19,7 @@ export class HashLockTransferController extends AbstractController {
   public hashLockTransfer = async (
     params: PublicParams.HashLockTransfer,
   ): Promise<PublicResults.HashLockTransfer> => {
+    this.log.info(`Creating hashlock transfer with params: ${stringify(params)}`);
     // convert params + validate
     const amount = toBN(params.amount);
     const timelock = toBN(params.timelock);
@@ -71,7 +72,9 @@ export class HashLockTransferController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: HASHLOCK_TRANSFER_STATE_TIMEOUT,
     };
+    this.log.debug(`Installing HashLockTransfer app`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
+    this.log.debug(`Installed: ${appIdentityHash}`);
 
     if (!appIdentityHash) {
       throw new Error(`App was not installed`);
@@ -91,6 +94,7 @@ export class HashLockTransferController extends AbstractController {
     } as EventPayloads.HashLockTransferCreated;
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
+    this.log.info(`Completed hash lock transfer with lockHash: ${lockHash}`);
     return {
       appIdentityHash,
     };

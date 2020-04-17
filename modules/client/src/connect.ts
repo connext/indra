@@ -42,6 +42,7 @@ export const connect = async (
     ? loggerService.newContext("ConnextConnect")
     : new ConsoleLogger("ConnextConnect", logLevel, providedLogger);
 
+  logger.info(`Called connect with opts: ${stringify(opts)}`);
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -198,7 +199,7 @@ export const connect = async (
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
-  logger.info("Reclaiming pending async transfers");
+  logger.debug("Reclaiming pending async transfers");
   // NOTE: Removing the following await results in a subtle race condition during bot tests.
   //       Don't remove this await again unless you really know what you're doing & bot tests pass
   // no need to await this if it needs collateral
@@ -212,10 +213,10 @@ export const connect = async (
         e.message}... will attempt again on next connection`,
     );
   }
-  logger.info("Reclaimed pending async transfers");
+  logger.debug("Reclaimed pending async transfers");
 
   // check in with node to do remaining work
-  logger.info("Checking in with node");
+  logger.debug("Checking in with node");
   try {
     await client.clientCheckIn();
   } catch (e) {
@@ -224,22 +225,22 @@ export const connect = async (
         e.message}... will attempt again on next connection`,
     );
   }
-  logger.info("Checked in with node");
+  logger.debug("Checked in with node");
 
   // watch for/prune lingering withdrawals
-  logger.info("Getting user withdrawals");
+  logger.debug("Getting user withdrawals");
   const previouslyActive = await client.getUserWithdrawals();
   if (previouslyActive.length === 0) {
-    logger.info("No user withdrawals found");
+    logger.debug("No user withdrawals found");
     logTime(logger, start, `Client successfully connected`);
     return client;
   }
 
   try {
-    logger.info(`Watching for user withdrawals`);
+    logger.debug(`Watching for user withdrawals`);
     const transactions = await client.watchForUserWithdrawal();
     if (transactions.length > 0) {
-      logger.info(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+      logger.debug(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
     }
   } catch (e) {
     logger.error(
@@ -248,7 +249,6 @@ export const connect = async (
     );
   }
 
-  logger.info(`Client ${client.publicIdentifier} connected!`);
-  logTime(logger, start, `Client successfully connected`);
+  logTime(logger, start, `Client ${client.publicIdentifier} successfully connected`);
   return client;
 };

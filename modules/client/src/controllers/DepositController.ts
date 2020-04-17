@@ -37,6 +37,7 @@ export class DepositController extends AbstractController {
     // NOTE: when the `walletDeposit` is not used, these parameters
     // do not have to be validated
     const tokenAddress = getAddressFromAssetId(assetId);
+    this.log.info(`Depositing ${amount.toString()} of ${tokenAddress} into channel`);
     const startingBalance =
       tokenAddress === AddressZero
         ? await this.ethProvider.getBalance(this.connext.signerAddress)
@@ -59,7 +60,7 @@ export class DepositController extends AbstractController {
         amount: amount.toString(),
         assetId: tokenAddress,
       });
-      this.log.debug(`Sent deposit transaction to chain: ${hash}`);
+      this.log.info(`Sent deposit transaction to chain: ${hash}`);
       transactionHash = hash;
       const tx = await this.ethProvider.getTransaction(hash);
       await tx.wait();
@@ -82,6 +83,7 @@ export class DepositController extends AbstractController {
       } as EventPayloads.DepositConfirmed);
     }
 
+    this.log.info(`Successfully deposited`);
     return ret;
   };
 
@@ -91,6 +93,7 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
+    this.log.info(`Requesting deposit rights for ${assetId}`);
     validate(invalidAddress(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     const depositApp = await this.getDepositApp({ assetId: tokenAddress });
@@ -98,6 +101,7 @@ export class DepositController extends AbstractController {
     if (!depositApp) {
       this.log.debug(`No deposit app installed for ${assetId}. Installing.`);
       const appIdentityHash = await this.proposeDepositInstall(assetId);
+      this.log.info(`Successfully obtained deposit rights for ${assetId}`);
       return {
         appIdentityHash,
         multisigAddress: this.connext.multisigAddress,
@@ -116,6 +120,7 @@ export class DepositController extends AbstractController {
     this.log.debug(
       `Found existing, unfinalized deposit app for ${assetId}, doing nothing. (deposit app: ${depositApp.identityHash})`,
     );
+    this.log.info(`Successfully obtained deposit rights for ${assetId}`);
     return {
       appIdentityHash: depositApp.identityHash,
       multisigAddress: this.connext.multisigAddress,
@@ -128,6 +133,7 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
+    this.log.info(`Rescinding deposit rights for ${assetId}`);
     validate(invalidAddress(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     // get the app instance
@@ -135,6 +141,7 @@ export class DepositController extends AbstractController {
     if (!app) {
       this.log.debug(`No deposit app found for assset: ${assetId}`);
       const freeBalance = await this.connext.getFreeBalance(tokenAddress);
+      this.log.info(`Successfully rescinded deposit rights for ${assetId}`);
       return { freeBalance };
     }
 
@@ -142,6 +149,7 @@ export class DepositController extends AbstractController {
     await this.connext.uninstallApp(app.identityHash);
     this.log.debug(`Uninstalled deposit app`);
     const freeBalance = await this.connext.getFreeBalance(tokenAddress);
+    this.log.info(`Successfully rescinded deposit rights for ${assetId}`);
     return { freeBalance };
   };
 

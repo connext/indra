@@ -17,7 +17,7 @@ export class ResolveHashLockTransferController extends AbstractController {
   ): Promise<PublicResults.ResolveHashLockTransfer> => {
     const { preImage } = params;
 
-    this.log.info(`Resolving hash lock transfer with preImage ${preImage}`);
+    this.log.info(`Resolving hash lock transfer with preImage: ${preImage}`);
 
     const lockHash = soliditySha256(["bytes32"], [preImage]);
 
@@ -34,10 +34,12 @@ export class ResolveHashLockTransferController extends AbstractController {
 
     try {
       // node installs app, validation happens in listener
+      this.log.debug(`Taking action on transfer app ${hashlockApp.identityHash}`);
       await this.connext.takeAction(
         hashlockApp.identityHash, 
         { preImage },
       );
+      this.log.debug(`Uninstalling hashlock transfer app ${hashlockApp.identityHash}`);
       await this.connext.uninstallApp(hashlockApp.identityHash);
     } catch (e) {
       this.connext.emit(EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, {
@@ -61,6 +63,7 @@ export class ResolveHashLockTransferController extends AbstractController {
       } as EventPayloads.HashLockTransferCreated,
     );
 
+    this.log.info(`Successfully redeemed hash lock transfer using preimage: ${preImage}`);
     return {
       amount,
       appIdentityHash: hashlockApp.identityHash,

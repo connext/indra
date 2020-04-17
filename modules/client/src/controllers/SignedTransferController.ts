@@ -10,7 +10,7 @@ import {
   SimpleSignedTransferAppState,
   DefaultApp,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, stringify } from "@connext/utils";
 import { Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
@@ -19,6 +19,7 @@ export class SignedTransferController extends AbstractController {
   public signedTransfer = async (
     params: PublicParams.SignedTransfer,
   ): Promise<PublicResults.SignedTransfer> => {
+    this.log.debug(`Signed transfer called with ${stringify(params)}`);
     // convert params + validate
     const amount = toBN(params.amount);
     const { meta, paymentId, signer, assetId, recipient } = params;
@@ -47,10 +48,10 @@ export class SignedTransferController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = await this.connext.getAppRegistry({
+    } = (await this.connext.getAppRegistry({
       name: SimpleSignedTransferAppName,
       chainId: network.chainId,
-    }) as DefaultApp;
+    })) as DefaultApp;
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
@@ -68,11 +69,13 @@ export class SignedTransferController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: SIGNED_TRANSFER_STATE_TIMEOUT,
     };
+    this.log.debug(`Installing signed transfer app with params ${stringify(params, 2)}`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 
     if (!appIdentityHash) {
       throw new Error(`App was not installed`);
     }
+    this.log.debug(`Successfully installed signed transfer app ${appIdentityHash}`);
 
     const eventData = {
       type: ConditionalTransferTypes.SignedTransfer,
@@ -86,6 +89,7 @@ export class SignedTransferController extends AbstractController {
     } as EventPayloads.SignedTransferCreated;
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
+    this.log.info(`Signed transfer successfully created`);
     return {
       appIdentityHash,
       paymentId,
