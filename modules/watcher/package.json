@@ -14,7 +14,6 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/apps": "6.0.4",
     "@connext/contracts": "2.0.2",
     "@connext/types": "6.0.4",
     "@connext/utils": "6.0.4",
