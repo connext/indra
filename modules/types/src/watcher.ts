@@ -3,6 +3,8 @@ import {
   StateProgressedContractEvent,
   NetworkContext,
   ChallengeUpdatedContractEvent,
+  ChallengeEvent,
+  ChallengeEventData,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
@@ -74,7 +76,7 @@ export const WatcherEvents = {
 } as const;
 export type WatcherEvent = keyof typeof WatcherEvents;
 
-export interface WatcherEventDataMap {
+interface WatcherEventDataMap {
   [ChallengeInitiatedEvent]: ChallengeInitiatedEventData;
   [ChallengeInitiationFailedEvent]: ChallengeInitiationFailedEventData;
   [ChallengeUpdatedEvent]: ChallengeUpdatedEventData;
@@ -86,7 +88,8 @@ export type WatcherEventData = {
   [P in keyof WatcherEventDataMap]: WatcherEventDataMap[P];
 };
 
-export interface IWatcherEventEmitter {
+export interface IWatcher {
+  //////// Listener methods
   emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void;
   on<T extends WatcherEvent>(
     event: T,
@@ -98,6 +101,30 @@ export interface IWatcherEventEmitter {
   ): void;
   removeListener<T extends WatcherEvent>(event: T): void;
   removeAllListeners(): void;
+
+  //////// Public methods
+  enable(): Promise<void>;
+  disable(): Promise<void>;
+  initiate(appIdentityHash: string): Promise<void>;
+}
+
+export interface IChainListener {
+  //////// Listener methods
+  emit<T extends ChallengeEvent>(event: T, data: ChallengeEventData[T]): void;
+  on<T extends ChallengeEvent>(
+    event: T,
+    callback: (data: ChallengeEventData[T]) => Promise<void>,
+  ): void;
+  once<T extends ChallengeEvent>(
+    event: T,
+    callback: (data: ChallengeEventData[T]) => Promise<void>,
+  ): void;
+  removeListener<T extends ChallengeEvent>(event: T): void;
+  removeAllListeners(): void;
+
+  //////// Public methods
+  enable(): Promise<void>;
+  disable(): Promise<void>;
 }
 
 ////////////////////////////////////////

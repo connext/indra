@@ -81,6 +81,14 @@ export const ChallengeEvents = {
   [StateProgressed]: StateProgressed,
 } as const;
 export type ChallengeEvent = keyof typeof ChallengeEvents;
+// event payloads
+interface ChallengeEventsMap {
+  [ChallengeUpdated]: ChallengeUpdatedContractEvent;
+  [StateProgressed]: StateProgressedContractEvent;
+}
+export type ChallengeEventData = {
+  [P in keyof ChallengeEventsMap]: ChallengeEventsMap[P];
+};
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/mixins/MixinSetState.sol
