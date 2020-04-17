@@ -4,9 +4,11 @@ import { Address, Bytes32 } from "./basic";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import { MinimalTransaction, ConditionalTransactionCommitmentJSON, SetStateCommitmentJSON } from "./commitments";
 import { IChannelSigner } from "./crypto";
-import { JsonRpcProvider } from "ethers/providers";
+import { JsonRpcProvider, TransactionReceipt } from "ethers/providers";
 import { ILoggerService } from "./logger";
 
+////////////////////////////////////////
+// Watcher exxternal parameters
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
   provider: JsonRpcProvider | string;
@@ -15,6 +17,49 @@ export type WatcherInitOptions = {
   log?: ILoggerService;
 }
 
+////////////////////////////////////////
+// Events
+export const ChallengeInitiated = "ChallengeInitiated";
+export type ChallengeInitiatedPayload = {
+  transaction: TransactionReceipt;
+  challenge: AppChallengeBigNumber;
+  appInstanceId: Bytes32;
+  multisigAddress: Address;
+};
+
+export const ChallengeInitiationFailed = "ChallengeInitiationFailed";
+export type ChallengeInitiationFailedPayload = {
+  error: string;
+  appInstanceId: Bytes32;
+  multisigAddress: Address;
+};
+
+export const ChallengeUpdated = "ChallengeUpdated";
+export type ChallengeUpdatedPayload = ChallengeInitiatedPayload;
+
+export const ChallengeUpdateFailed = "ChallengeUpdateFailed";
+export type ChallengeUpdateFailedPayload = ChallengeInitiationFailedPayload & {
+  challenge: AppChallengeBigNumber;
+  params: any; // ProgressStateParams | SetStateParams | CancelChallengeParams
+};
+
+export const ChallengeCompleted = "ChallengeCompleted";
+export type ChallengeCompletedPayload = ChallengeInitiatedPayload;
+
+export const ChallengeCancelled = "ChallengeCancelled";
+export type ChallengeCancelledPayload = ChallengeInitiatedPayload;
+
+export const WatcherEvents = {
+  [ChallengeInitiated]: ChallengeInitiated,
+  [ChallengeInitiationFailed]: ChallengeInitiationFailed,
+  [ChallengeUpdated]: ChallengeUpdated,
+  [ChallengeUpdateFailed]: ChallengeUpdateFailed,
+  [ChallengeCompleted]: ChallengeCompleted,
+  [ChallengeCancelled]: ChallengeCancelled,
+} as const;
+export type WatcherEvent = keyof typeof WatcherEvents;
+
+////////////////////////////////////////
 ///// Storage
 export interface IWatcherStoreService {
   ///// Disputes
