@@ -14,10 +14,10 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/apps": "6.0.1",
-    "@connext/contracts": "6.0.1",
-    "@connext/types": "6.0.1",
-    "@connext/utils": "6.0.1",
+    "@connext/apps": "6.0.4",
+    "@connext/contracts": "2.0.2",
+    "@connext/types": "6.0.4",
+    "@connext/utils": "6.0.4",
     "ethers": "4.0.46",
     "eventemitter3": "4.0.0"
   },
