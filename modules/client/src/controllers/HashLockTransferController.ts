@@ -10,7 +10,7 @@ import {
   PublicResults,
   DefaultApp,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, stringify } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 
 import { AbstractController } from "./AbstractController";
@@ -19,6 +19,7 @@ export class HashLockTransferController extends AbstractController {
   public hashLockTransfer = async (
     params: PublicParams.HashLockTransfer,
   ): Promise<PublicResults.HashLockTransfer> => {
+    this.log.info(`hashLockTransfer started: ${stringify(params)}`);
     // convert params + validate
     const amount = toBN(params.amount);
     const timelock = toBN(params.timelock);
@@ -50,10 +51,10 @@ export class HashLockTransferController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = await this.connext.getAppRegistry({
+    } = (await this.connext.getAppRegistry({
       name: HashLockTransferAppName,
       chainId: network.chainId,
-    }) as DefaultApp;
+    })) as DefaultApp;
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
@@ -71,7 +72,9 @@ export class HashLockTransferController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: HASHLOCK_TRANSFER_STATE_TIMEOUT,
     };
+    this.log.debug(`Installing HashLockTransfer app`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
+    this.log.debug(`Installed: ${appIdentityHash}`);
 
     if (!appIdentityHash) {
       throw new Error(`App was not installed`);
@@ -90,9 +93,10 @@ export class HashLockTransferController extends AbstractController {
       },
     } as EventPayloads.HashLockTransferCreated;
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
-
-    return {
+    const result: PublicResults.HashLockTransfer = {
       appIdentityHash,
     };
+    this.log.info(`hashLockTransfer for lockhash ${lockHash} complete: ${JSON.stringify(result)}`);
+    return result;
   };
 }

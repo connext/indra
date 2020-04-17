@@ -40,7 +40,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     state: CoinTransfer[][],
     params: { limit: BigNumber[]; tokenAddresses: string[] },
   ) {
-    return await multiAssetMultiPartyCoinTransferInterpreter
+    return multiAssetMultiPartyCoinTransferInterpreter
       .functions
       .interpretOutcomeAndExecuteEffect(
         encodeOutcome(state),

@@ -306,9 +306,7 @@ export class NodeApiClient implements INodeApiClient {
   private async send(subject: string, data?: any): Promise<any | undefined> {
     let error;
     for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
-      if (attempt >= 2) {
-        this.log.debug(`Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject}`);
-      }
+      this.log[attempt >= 2 ? "info" : "debug"](`Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject}`);
       try {
         return await this.sendAttempt(subject, data);
       } catch (e) {
@@ -345,7 +343,7 @@ export class NodeApiClient implements INodeApiClient {
     const parsedData = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data;
     let error = msg ? (parsedData ? (parsedData.response ? parsedData.response.err : "") : "") : "";
     if (!parsedData) {
-      this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
+      this.log.info(`Could not parse data, is this message malformed? ${stringify(msg)}`);
       return undefined;
     }
     const { err, response } = parsedData;

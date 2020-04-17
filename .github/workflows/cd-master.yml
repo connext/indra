@@ -138,7 +138,7 @@ jobs:
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_RINKEBY }}
       RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
-    needs: [test-backwards-compatibility, test-cf, test-contracts, test-crypto, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-cf, test-contracts, test-daicard, test-integration, test-node, test-ssh, test-utils]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -168,7 +168,7 @@ jobs:
       INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: ${{ secrets.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY_MAINNET }}
       MAINNET_DOMAINNAME: indra.connext.network
       MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
-    needs: [test-backwards-compatibility, test-cf, test-contracts, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-cf, test-contracts, test-daicard, test-integration, test-node, test-ssh, test-utils]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

@@ -28,6 +28,17 @@ export type CreatedSignedTransferMeta = {
   signer: Address;
 };
 
+export type UnlockedLinkedTransferMeta = {
+  preImage: string;
+};
+
+export type UnlockedHashLockTransferMeta = {
+  lockHash: Bytes32;
+  preImage: Bytes32;
+};
+
+export type UnlockedSignedTransferMeta = {};
+
 ////////////////////////////////////////
 // Statuses
 

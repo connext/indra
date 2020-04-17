@@ -66,7 +66,7 @@ export class Node {
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
 
-  static async create(
+  static create(
     messagingService: IMessagingService,
     storeService: IStoreService,
     networkContext: NetworkContext,
@@ -89,7 +89,7 @@ export class Node {
       lockService,
     );
 
-    return await node.asynchronouslySetupUsingRemoteServices();
+    return node.asynchronouslySetupUsingRemoteServices();
   }
 
   private constructor(

@@ -22,7 +22,7 @@ import {
   SETUP_COMMITMENT_KEY,
   WITHDRAWAL_COMMITMENT_KEY,
   STORE_SCHEMA_VERSION_KEY,
-} from "../helpers";
+} from "../constants";
 
 function properlyConvertChannelNullVals(json: any): StateChannelJSON {
   return {

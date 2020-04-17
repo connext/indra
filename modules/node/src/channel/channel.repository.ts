@@ -152,7 +152,7 @@ export class ChannelRepository extends Repository<Channel> {
           .remove(existing);
       }
 
-      return await transactionalEntityManager
+      return transactionalEntityManager
         .createQueryBuilder()
         .relation(Channel, "rebalanceProfiles")
         .of(channel)

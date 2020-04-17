@@ -21,7 +21,7 @@ import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
   DEFAULT_DATABASE_STORAGE_TABLE_NAME,
-} from "./helpers";
+} from "./constants";
 import {
   FileStorage,
   KeyValueStorage,

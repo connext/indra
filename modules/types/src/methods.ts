@@ -179,18 +179,6 @@ type RejectInstallResult = {};
 
 ////////////////////////////////////////
 
-type UpdateStateParams = {
-  appIdentityHash: Bytes32;
-  newState: SolidityValueType;
-  stateTimeout?: BigNumber;
-};
-
-type UpdateStateResult = {
-  newState: SolidityValueType;
-};
-
-////////////////////////////////////////
-
 type TakeActionParams = {
   appIdentityHash: Bytes32;
   action: SolidityValueType;
@@ -264,7 +252,6 @@ export const MethodNames = enumify({
   chan_rejectInstall: "chan_rejectInstall",
   chan_takeAction: "chan_takeAction",
   chan_uninstall: "chan_uninstall",
-  chan_updateState: "chan_updateState",
   chan_withdraw: "chan_withdraw",
   chan_withdrawCommitment: "chan_withdrawCommitment",
 });
@@ -291,7 +278,6 @@ export namespace MethodParams {
   export type RescindDepositRights = RescindDepositRightsParams;
   export type TakeAction = TakeActionParams;
   export type Uninstall = UninstallParams;
-  export type UpdateState = UpdateStateParams;
   export type Withdraw = WithdrawParams;
   export type WithdrawCommitment = WithdrawCommitmentParams;
 }
@@ -316,7 +302,6 @@ export type MethodParam =
   | RescindDepositRightsParams
   | TakeActionParams
   | UninstallParams
-  | UpdateStateParams
   | WithdrawParams
   | WithdrawCommitmentParams;
 
@@ -340,7 +325,6 @@ export namespace MethodResults {
   export type RescindDepositRights = RescindDepositRightsResult;
   export type TakeAction = TakeActionResult;
   export type Uninstall = UninstallResult;
-  export type UpdateState = UpdateStateResult;
   export type Withdraw = WithdrawResult;
   export type WithdrawCommitment = WithdrawCommitmentResult;
 }
@@ -365,6 +349,5 @@ export type MethodResult =
   | RescindDepositRightsResult
   | TakeActionResult
   | UninstallResult
-  | UpdateStateResult
   | WithdrawResult
   | WithdrawCommitmentResult;

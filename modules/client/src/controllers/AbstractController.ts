@@ -1,7 +1,6 @@
 import {
   CF_METHOD_TIMEOUT,
   EventNames,
-  EventPayloads,
   IChannelProvider,
   ILoggerService,
   INodeApiClient,
@@ -38,6 +37,8 @@ export abstract class AbstractController {
    */
   proposeAndInstallLedgerApp = async (params: MethodParams.ProposeInstall): Promise<string> => {
     // 163 ms
+    this.log.info(`Calling propose install`);
+    this.log.debug(`Calling propose install with ${stringify(params)}`);
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
@@ -46,8 +47,8 @@ export abstract class AbstractController {
       ),
     ]);
     const { appIdentityHash } = proposeRes as MethodResults.ProposeInstall;
+    this.log.debug(`App instance successfully proposed`);
 
-    // let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
     try {
@@ -58,7 +59,6 @@ export abstract class AbstractController {
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise((res: () => any, rej: () => any): void => {
-          // boundResolve = this.resolveInstall.bind(null, res, appIdentityHash);
           boundReject = this.rejectInstall.bind(null, rej, appIdentityHash);
 
           // set up install nats subscription
@@ -71,7 +71,6 @@ export abstract class AbstractController {
       ]);
 
       this.log.info(`Installed app with id: ${appIdentityHash}`);
-      // this.log.debug(`Installed app details: ${stringify(res as object)}`);
       return appIdentityHash;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
@@ -80,17 +79,6 @@ export abstract class AbstractController {
       this.cleanupInstallListeners(boundReject, appIdentityHash);
     }
   };
-
-  // private resolveInstall = (
-  //   res: (value?: unknown) => void,
-  //   appIdentityHash: string,
-  //   message: any,
-  // ): void => {
-  //   const data = message.data ? message.data : message;
-  //   if (data.params.appIdentityHash === appIdentityHash) {
-  //     res();
-  //   }
-  // };
 
   private rejectInstall = (
     rej: (message?: Error) => void,
@@ -108,13 +96,6 @@ export abstract class AbstractController {
     }
 
     return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
-  };
-
-  private rejectProposal = (
-    rej: (reason?: Error) => void,
-    msg: EventPayloads.RejectInstall,
-  ): void => {
-    return rej(new Error(`Proposal rejected, event data: ${stringify(msg)}`));
   };
 
   private cleanupInstallListeners = (boundReject: any, appIdentityHash: string): void => {

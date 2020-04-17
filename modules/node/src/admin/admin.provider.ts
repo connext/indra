@@ -39,7 +39,7 @@ class AdminMessaging extends AbstractMessagingProvider {
    * channels that fit this description.
    */
   async getNoFreeBalance(): Promise<{ multisigAddress: string; userAddress: string; error: any }[]> {
-    return await this.adminService.getNoFreeBalance();
+    return this.adminService.getNoFreeBalance();
   }
 
   async getStateChannelByUserPublicIdentifier(data: {
@@ -49,7 +49,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     if (!userIdentifier) {
       throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
     }
-    return await this.adminService.getStateChannelByUserPublicIdentifier(userIdentifier);
+    return this.adminService.getStateChannelByUserPublicIdentifier(userIdentifier);
   }
 
   async getStateChannelByMultisig(
@@ -60,15 +60,15 @@ class AdminMessaging extends AbstractMessagingProvider {
     if (!multisigAddress) {
       throw new RpcException(`No multisig address supplied: ${stringify(data)}`);
     }
-    return await this.adminService.getStateChannelByMultisig(multisigAddress);
+    return this.adminService.getStateChannelByMultisig(multisigAddress);
   }
 
   async getAllChannels(): Promise<Channel[]> {
-    return await this.adminService.getAllChannels();
+    return this.adminService.getAllChannels();
   }
 
   async getAllLinkedTransfers(): Promise<any> {
-    return await this.adminService.getAllLinkedTransfers();
+    return this.adminService.getAllLinkedTransfers();
   }
 
   async getLinkedTransferByPaymentId(data: { paymentId: string }): Promise<any> {
@@ -76,19 +76,15 @@ class AdminMessaging extends AbstractMessagingProvider {
     if (!paymentId) {
       throw new RpcException(`No paymentId supplied: ${stringify(data)}`);
     }
-    return await this.adminService.getLinkedTransferByPaymentId(paymentId);
+    return this.adminService.getLinkedTransferByPaymentId(paymentId);
   }
 
   async getChannelsForMerging(): Promise<any[]> {
-    return await this.adminService.getChannelsForMerging();
+    return this.adminService.getChannelsForMerging();
   }
 
   async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
-    return await this.adminService.repairCriticalStateChannelAddresses();
-  }
-
-  async migrateChannelStore(): Promise<any> {
-    return await this.adminService.migrateChannelStore();
+    return this.adminService.repairCriticalStateChannelAddresses();
   }
 
   async addRebalanceProfile(subject: string, data: { profile: RebalanceProfile }): Promise<void> {
@@ -133,11 +129,6 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.repair-critical-addresses",
       this.repairCriticalStateChannelAddresses.bind(this),
-    );
-
-    await super.connectRequestReponse(
-      "admin.migrate-channel-store",
-      this.migrateChannelStore.bind(this),
     );
 
     await super.connectRequestReponse(

@@ -14,7 +14,6 @@ import {
   RejectInstallController,
   TakeActionController,
   UninstallController,
-  UpdateStateController,
 } from "./app-instance";
 import {
   GetProposedAppInstancesController,
@@ -37,7 +36,6 @@ const controllers = [
   RejectInstallController,
   TakeActionController,
   UninstallController,
-  UpdateStateController,
 
   /**
    * Constant methods

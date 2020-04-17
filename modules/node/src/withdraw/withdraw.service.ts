@@ -42,8 +42,8 @@ export class WithdrawService {
   }
 
   /*
-        Called in the case that node wants to withdraw funds from channel
-    */
+    Called in the case that node wants to withdraw funds from channel
+  */
   async withdraw(
     channel: Channel,
     amount: BigNumber,
@@ -56,8 +56,8 @@ export class WithdrawService {
   }
 
   /*
-        Primary response method to user withdrawal. Called from appRegistry service.
-      */
+    Primary response method to user withdrawal. Called from appRegistry service.
+  */
   async handleUserWithdraw(appInstance: AppInstanceJson): Promise<void> {
     let state = appInstance.latestState as WithdrawAppState;
 
@@ -133,25 +133,26 @@ export class WithdrawService {
     multisigAddress: string,
     tx: MinimalTransaction,
   ): Promise<TransactionResponse> {
+    this.log.info(`submitWithdrawToChain for ${multisigAddress}`);
     const channel = await this.channelRepository.findByMultisigAddressOrThrow(multisigAddress);
 
     const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
       channel.multisigAddress,
     );
-    this.log.debug(`Deploy multisig tx: ${deployTx}`);
+    this.log.info(`Deploy multisig tx: ${deployTx}`);
 
     const wallet = this.configService.getSigner();
     if (deployTx !== HashZero) {
-      this.log.debug(`Waiting for deployment transaction...`);
+      this.log.info(`Waiting for deployment transaction...`);
       wallet.provider.waitForTransaction(deployTx);
-      this.log.debug(`Deployment transaction complete!`);
+      this.log.info(`Deployment transaction complete!`);
     } else {
-      this.log.debug(`Multisig already deployed, proceeding with withdrawal`);
+      this.log.info(`Multisig already deployed, proceeding with withdrawal`);
     }
 
-    this.log.debug(`Sending withdrawal to chain`);
+    this.log.info(`Sending withdrawal to chain`);
     const txRes = await this.onchainTransactionService.sendWithdrawal(channel, tx);
-    this.log.debug(`Withdrawal tx sent! Hash: ${txRes.hash}`);
+    this.log.info(`Withdrawal tx sent! Hash: ${txRes.hash}`);
     return txRes;
   }
 
@@ -176,7 +177,7 @@ export class WithdrawService {
     withdraw.counterpartySignature = counterpartySignature;
     withdraw.finalized = false;
     withdraw.channel = channel;
-    return await this.withdrawRepository.save(withdraw);
+    return this.withdrawRepository.save(withdraw);
   }
 
   async getLatestWithdrawal(userIdentifier: string): Promise<OnchainTransaction | undefined> {
@@ -185,7 +186,7 @@ export class WithdrawService {
       throw new Error(`No channel exists for userIdentifier ${userIdentifier}`);
     }
 
-    return await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
       userIdentifier,
     );
   }
