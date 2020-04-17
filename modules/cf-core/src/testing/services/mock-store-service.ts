@@ -7,6 +7,9 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
+  AppChallengeBigNumber,
+  StateProgressedContractEvent,
+  ChallengeUpdatedContractEvent,
 } from "@connext/types";
 
 export class MockStoreService implements IStoreService {
@@ -65,10 +68,7 @@ export class MockStoreService implements IStoreService {
   getSetupCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return Promise.resolve(undefined);
   }
-  createSetupCommitment(
-    multisigAddress: string,
-    commitment: MinimalTransaction,
-  ): Promise<void> {
+  createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void> {
     return Promise.resolve();
   }
   getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {
@@ -103,9 +103,7 @@ export class MockStoreService implements IStoreService {
   ): Promise<void> {
     return Promise.resolve();
   }
-  getWithdrawalCommitment(
-    multisigAddress: string,
-  ): Promise<MinimalTransaction | undefined> {
+  getWithdrawalCommitment(multisigAddress: string): Promise<MinimalTransaction | undefined> {
     return Promise.resolve(undefined);
   }
   createWithdrawalCommitment(
@@ -124,6 +122,78 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve();
   }
   restore(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  ////// Watcher methods
+  async getAppChallenge(appIdentityHash: string): Promise<AppChallengeBigNumber | undefined> {
+    return Promise.resolve(undefined);
+  }
+
+  async createAppChallenge(
+    multisigAddress: string,
+    appChallenge: AppChallengeBigNumber,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async updateAppChallenge(
+    multisigAddress: string,
+    appChallenge: AppChallengeBigNumber,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  ///// Events
+  async getLatestProcessedBlock(): Promise<number> {
+    return Promise.resolve(4);
+  }
+
+  async createLatestProcessedBlock(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async getStateProgressedEvent(
+    appIdentityHash: string,
+  ): Promise<StateProgressedContractEvent | undefined> {
+    return Promise.resolve(undefined);
+  }
+
+  async createStateProgressedEvent(
+    multisigAddress: string,
+    appChallenge: StateProgressedContractEvent,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async updateStateProgressedEvent(
+    multisigAddress: string,
+    appChallenge: StateProgressedContractEvent,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async getChallengeUpdatedEvent(
+    appIdentityHash: string,
+  ): Promise<ChallengeUpdatedContractEvent | undefined> {
+    return Promise.resolve(undefined);
+  }
+
+  async createChallengeUpdatedEvent(
+    multisigAddress: string,
+    event: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async updateChallengeUpdatedEvent(
+    multisigAddress: string,
+    appChallenge: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
     return Promise.resolve();
   }
 }

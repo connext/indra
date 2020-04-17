@@ -9,6 +9,9 @@ import {
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
   WrappedStorage,
+  ChallengeUpdatedContractEvent,
+  StateProgressedContractEvent,
+  AppChallengeBigNumber,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 
@@ -104,8 +107,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
     return channels.find(
-      channel => [...channel.userIdentifiers].sort().toString() 
-        === owners.sort().toString(),
+      channel => [...channel.userIdentifiers].sort().toString() === owners.sort().toString(),
     );
   }
 
@@ -399,7 +401,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const withdrawals = await this.getUserWithdrawals();
     const existing = withdrawals.find(x => x === withdrawalObject);
     if (existing) {
-      throw new Error(`Found existing withdrawal commitment matching: ${stringify(withdrawalObject)}`);
+      throw new Error(
+        `Found existing withdrawal commitment matching: ${stringify(withdrawalObject)}`,
+      );
     }
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     return this.setItem(withdrawalKey, withdrawals.concat([withdrawalObject]));
@@ -421,6 +425,78 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const withdrawals = await this.getUserWithdrawals();
     const updated = withdrawals.filter(x => x !== toRemove);
     return this.setItem(withdrawalKey, updated);
+  }
+
+  ////// Watcher methods
+  async getAppChallenge(appIdentityHash: string): Promise<AppChallengeBigNumber | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createAppChallenge(
+    multisigAddress: string,
+    appChallenge: AppChallengeBigNumber,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateAppChallenge(
+    multisigAddress: string,
+    appChallenge: AppChallengeBigNumber,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  ///// Events
+  async getLatestProcessedBlock(): Promise<number> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createLatestProcessedBlock(): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async getStateProgressedEvent(
+    appIdentityHash: string,
+  ): Promise<StateProgressedContractEvent | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createStateProgressedEvent(
+    multisigAddress: string,
+    appChallenge: StateProgressedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateStateProgressedEvent(
+    multisigAddress: string,
+    appChallenge: StateProgressedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async getChallengeUpdatedEvent(
+    appIdentityHash: string,
+  ): Promise<ChallengeUpdatedContractEvent | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createChallengeUpdatedEvent(
+    multisigAddress: string,
+    event: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateChallengeUpdatedEvent(
+    multisigAddress: string,
+    appChallenge: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
   }
 
   ////// Helper methods

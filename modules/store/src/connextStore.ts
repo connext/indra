@@ -12,6 +12,9 @@ import {
   StoreTypes,
   WithdrawalMonitorObject,
   WrappedStorage,
+  ChallengeUpdatedContractEvent,
+  StateProgressedContractEvent,
+  AppChallengeBigNumber,
 } from "@connext/types";
 
 import {
@@ -109,7 +112,7 @@ export class ConnextStore implements IClientStore {
     }
   }
 
-  async getSchemaVersion(): Promise<number> {
+  getSchemaVersion(): Promise<number> {
     return this.internalStore.getSchemaVersion();
   }
 
@@ -278,5 +281,71 @@ export class ConnextStore implements IClientStore {
 
   restore(): Promise<void> {
     return this.internalStore.restore();
+  }
+
+  ////// Watcher methods
+  getAppChallenge(appIdentityHash: string): Promise<AppChallengeBigNumber | undefined> {
+    return this.internalStore.getAppChallenge(appIdentityHash);
+  }
+
+  createAppChallenge(multisigAddress: string, appChallenge: AppChallengeBigNumber): Promise<void> {
+    return this.internalStore.createAppChallenge(multisigAddress, appChallenge);
+  }
+
+  updateAppChallenge(multisigAddress: string, appChallenge: AppChallengeBigNumber): Promise<void> {
+    return this.internalStore.updateAppChallenge(multisigAddress, appChallenge);
+  }
+
+  ///// Events
+  getLatestProcessedBlock(): Promise<number> {
+    return this.internalStore.getLatestProcessedBlock();
+  }
+
+  createLatestProcessedBlock(): Promise<void> {
+    return this.internalStore.createLatestProcessedBlock();
+  }
+
+  updateLatestProcessedBlock(blockNumber: number): Promise<void> {
+    return this.internalStore.updateLatestProcessedBlock(blockNumber);
+  }
+
+  getStateProgressedEvent(
+    appIdentityHash: string,
+  ): Promise<StateProgressedContractEvent | undefined> {
+    return this.internalStore.getStateProgressedEvent(appIdentityHash);
+  }
+
+  createStateProgressedEvent(
+    multisigAddress: string,
+    event: StateProgressedContractEvent,
+  ): Promise<void> {
+    return this.internalStore.createStateProgressedEvent(multisigAddress, event);
+  }
+
+  updateStateProgressedEvent(
+    multisigAddress: string,
+    event: StateProgressedContractEvent,
+  ): Promise<void> {
+    return this.internalStore.updateStateProgressedEvent(multisigAddress, event);
+  }
+
+  getChallengeUpdatedEvent(
+    appIdentityHash: string,
+  ): Promise<ChallengeUpdatedContractEvent | undefined> {
+    return this.internalStore.getChallengeUpdatedEvent(appIdentityHash);
+  }
+
+  createChallengeUpdatedEvent(
+    multisigAddress: string,
+    event: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    return this.internalStore.createChallengeUpdatedEvent(multisigAddress, event);
+  }
+
+  updateChallengeUpdatedEvent(
+    multisigAddress: string,
+    event: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    return this.internalStore.updateChallengeUpdatedEvent(multisigAddress, event);
   }
 }

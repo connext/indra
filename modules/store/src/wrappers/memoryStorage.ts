@@ -9,6 +9,9 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
+  AppChallengeBigNumber,
+  StateProgressedContractEvent,
+  ChallengeUpdatedContractEvent,
 } from "@connext/types";
 
 export class MemoryStorage implements IClientStore {
@@ -58,8 +61,7 @@ export class MemoryStorage implements IClientStore {
 
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     const channel = [...this.channels.values()].find(
-      channel => [...channel.userIdentifiers].sort().toString() 
-        === owners.sort().toString(),
+      channel => [...channel.userIdentifiers].sort().toString() === owners.sort().toString(),
     );
     if (!channel) {
       return Promise.resolve(undefined);
@@ -285,7 +287,7 @@ export class MemoryStorage implements IClientStore {
   }
 
   createUserWithdrawal(withdrawalObject: WithdrawalMonitorObject): Promise<void> {
-    if(!this.userWithdrawals) {
+    if (!this.userWithdrawals) {
       this.userWithdrawals = [];
     }
     this.userWithdrawals.push(withdrawalObject);
@@ -320,6 +322,78 @@ export class MemoryStorage implements IClientStore {
       throw new Error(`No backup provided, store cleared`);
     }
     throw new Error(`Method not implemented for MemoryStorage`);
+  }
+
+  ////// Watcher methods
+  async getAppChallenge(appIdentityHash: string): Promise<AppChallengeBigNumber | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createAppChallenge(
+    multisigAddress: string,
+    appChallenge: AppChallengeBigNumber,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateAppChallenge(
+    multisigAddress: string,
+    appChallenge: AppChallengeBigNumber,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  ///// Events
+  async getLatestProcessedBlock(): Promise<number> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createLatestProcessedBlock(): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async getStateProgressedEvent(
+    appIdentityHash: string,
+  ): Promise<StateProgressedContractEvent | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createStateProgressedEvent(
+    multisigAddress: string,
+    appChallenge: StateProgressedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateStateProgressedEvent(
+    multisigAddress: string,
+    appChallenge: StateProgressedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async getChallengeUpdatedEvent(
+    appIdentityHash: string,
+  ): Promise<ChallengeUpdatedContractEvent | undefined> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async createChallengeUpdatedEvent(
+    multisigAddress: string,
+    event: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async updateChallengeUpdatedEvent(
+    multisigAddress: string,
+    appChallenge: ChallengeUpdatedContractEvent,
+  ): Promise<void> {
+    throw new Error("Disputes not implememented");
   }
 
   private getChannelOrThrow(multisigAddress: string) {
