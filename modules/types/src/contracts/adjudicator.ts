@@ -1,4 +1,4 @@
-import { Address, HexString, Bytes32, EthSignature } from "../basic";
+import { Address, HexString, Bytes32 } from "../basic";
 import { BigNumber } from "ethers/utils";
 
 ////////////////////////////////////////
@@ -12,7 +12,7 @@ export type AppIdentity<T = string> = {
   appDefinition: Address;
   defaultTimeout: T;
 };
-export type AppIdentityBigNumber = AppIdentity<BigNumber>
+export type AppIdentityBigNumber = AppIdentity<BigNumber>;
 
 // A structure representing the state of a CounterfactualApp instance from the POV of the blockchain
 // NOTE: AppChallenge is the overall state of a channelized app instance,
@@ -23,7 +23,7 @@ export type AppChallenge<T = string> = {
   finalizesAt: T;
   status: ChallengeStatus;
 };
-export type AppChallengeBigNumber = AppChallenge<BigNumber>
+export type AppChallengeBigNumber = AppChallenge<BigNumber>;
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/libs/LibDispute.sol
@@ -39,41 +39,41 @@ export const enum ChallengeStatus {
 
 export type SignedAppChallengeUpdate<T = string> = {
   appStateHash: Bytes32;
-  versionNumber: T;
-  timeout: T;
-  signatures: EthSignature[];
+  versionNumber: number | T; // number for backwards compatability, TODO: remove
+  timeout: number | T; // number for backwards compatability, TODO: remove
+  signatures: string[];
 };
-export type SignedAppChallengeUpdateBigNumber = SignedAppChallengeUpdate<BigNumber>
+export type SignedAppChallengeUpdateBigNumber = SignedAppChallengeUpdate<BigNumber>;
 
 export type SignedCancelChallengeRequest<T = string> = {
   versionNumber: T;
-  signatures: EthSignature[];
+  signatures: string[];
 };
-export type SignedCancelChallengeRequestBigNumber = SignedCancelChallengeRequest<BigNumber>
+export type SignedCancelChallengeRequestBigNumber = SignedCancelChallengeRequest<BigNumber>;
 
 // Emitted by MixinProgressState.sol when an action is played on
 // top of an onchain state so participants can derive new state
 // in challenge
 export const StateProgressed = "StateProgressed";
-export type StateProgressedEvent = {
+export type StateProgressedContractEvent = {
   identityHash: string;
   action: string; // encoded
   versionNumber: BigNumber;
   timeout: BigNumber;
   turnTaker: Address; // eth addr
-  signature: EthSignature; // of action taker
-}
+  signature: string; // of action taker
+};
 
 // Emitted by the adjudicator contracts when fields in stored
 // contract are changed by caller
 export const ChallengeUpdated = "ChallengeUpdated";
-export type ChallengeUpdatedEvent = {
+export type ChallengeUpdatedContractEvent = {
   identityHash: Bytes32;
   status: ChallengeStatus;
   appStateHash: Bytes32; // latest app state
   versionNumber: BigNumber;
   finalizesAt: BigNumber;
-}
+};
 
 // events emitted by contracts
 export const ChallengeEvents = {
@@ -107,7 +107,7 @@ export type MixinCancelChallengeParams = {
 // keep synced w contracts/adjudicator/mixins/MixinSetAndProgressState.sol
 export type MixinSetAndProgressStateParams = {
   appIdentity: AppIdentityBigNumber;
-  // A signed app challenge update that contains the hash of the 
+  // A signed app challenge update that contains the hash of the
   // latest state that has been signed by all parties
   // the timeout must be 0
   req1: SignedAppChallengeUpdateBigNumber;
@@ -123,4 +123,4 @@ export type MixinSetAndProgressStateParams = {
 export type MixinSetOutcomeParams = {
   appIdentity: AppIdentityBigNumber;
   finalState: string; // final state of the challenge
-}
+};
