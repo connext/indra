@@ -111,7 +111,7 @@ export const createClientWithMessagingLimits = async (
     expect(messaging.install.ceiling).to.be.undefined;
     expect(messaging.count.received).to.be.equal(0);
     expect(messaging.count.sent).to.be.equal(0);
-    return await createClient({ messaging, signer });
+    return createClient({ messaging, signer });
   }
   if (protocol === "any") {
     // assign the ceiling for the general message count
@@ -137,5 +137,5 @@ export const createClientWithMessagingLimits = async (
     ? expect(messaging.count).to.containSubset(expected)
     : expect(messaging[protocol]).to.containSubset(expected);
   expect(messaging.options).to.containSubset(messageOptions);
-  return await createClient({ messaging, signer: signer });
+  return createClient({ messaging, signer: signer });
 };

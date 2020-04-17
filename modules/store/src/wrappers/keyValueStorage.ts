@@ -19,7 +19,7 @@ import {
   SETUP_COMMITMENT_KEY,
   WITHDRAWAL_COMMITMENT_KEY,
   STORE_SCHEMA_VERSION_KEY,
-} from "../helpers";
+} from "../constants";
 
 function properlyConvertChannelNullVals(json: any): StateChannelJSON {
   return {
@@ -104,8 +104,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
     const channels = await this.getAllChannels();
     return channels.find(
-      channel => [...channel.userIdentifiers].sort().toString() 
-        === owners.sort().toString(),
+      channel => [...channel.userIdentifiers].sort().toString() === owners.sort().toString(),
     );
   }
 
@@ -399,7 +398,9 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     const withdrawals = await this.getUserWithdrawals();
     const existing = withdrawals.find(x => x === withdrawalObject);
     if (existing) {
-      throw new Error(`Found existing withdrawal commitment matching: ${stringify(withdrawalObject)}`);
+      throw new Error(
+        `Found existing withdrawal commitment matching: ${stringify(withdrawalObject)}`,
+      );
     }
     const withdrawalKey = this.getKey(WITHDRAWAL_COMMITMENT_KEY, `monitor`);
     return this.setItem(withdrawalKey, withdrawals.concat([withdrawalObject]));

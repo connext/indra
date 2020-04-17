@@ -96,16 +96,6 @@ describe("Three mininodes", () => {
 
     const [appInstance] = [...StateChannel.fromJson(postInstallChannel!).appInstances.values()];
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.update, {
-      initiatorIdentifier: tr.mininodeA.publicIdentifier,
-      responderIdentifier: tr.mininodeB.publicIdentifier,
-      multisigAddress: tr.multisigAB,
-      appIdentityHash: appInstance.identityHash,
-      newState: {
-        counter: 1,
-      },
-    });
-
     await tr.mininodeA.protocolRunner.initiateProtocol(ProtocolNames.takeAction, {
       initiatorIdentifier: tr.mininodeA.publicIdentifier,
       responderIdentifier: tr.mininodeB.publicIdentifier,

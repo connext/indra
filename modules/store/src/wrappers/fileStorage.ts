@@ -1,21 +1,23 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
-import { safeJsonParse, safeJsonStringify } from "@connext/utils"; 
+import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 import path from "path";
 
 import {
   createDirectory,
   createDirectorySync,
-  DEFAULT_FILE_STORAGE_DIR,
-  DEFAULT_FILE_STORAGE_EXT,
   fsUnlink,
   fsWrite,
   getDirectoryFiles,
   safeFsRead,
   sanitizeExt,
+} from "../helpers";
+import {
+  DEFAULT_FILE_STORAGE_DIR,
+  DEFAULT_FILE_STORAGE_EXT,
   DEFAULT_STORE_PREFIX,
   CHANNEL_KEY,
   COMMITMENT_KEY,
-} from "../helpers";
+} from "../constants";
 
 export class FileStorage implements WrappedStorage {
   constructor(

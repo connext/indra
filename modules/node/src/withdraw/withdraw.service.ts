@@ -177,7 +177,7 @@ export class WithdrawService {
     withdraw.counterpartySignature = counterpartySignature;
     withdraw.finalized = false;
     withdraw.channel = channel;
-    return await this.withdrawRepository.save(withdraw);
+    return this.withdrawRepository.save(withdraw);
   }
 
   async getLatestWithdrawal(userIdentifier: string): Promise<OnchainTransaction | undefined> {
@@ -186,7 +186,7 @@ export class WithdrawService {
       throw new Error(`No channel exists for userIdentifier ${userIdentifier}`);
     }
 
-    return await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
+    return this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(
       userIdentifier,
     );
   }

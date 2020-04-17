@@ -825,7 +825,7 @@ export async function confirmAppInstanceInstallation(
 }
 
 export async function makeInstallCall(node: Node, appIdentityHash: string) {
-  return await node.rpcRouter.dispatch(constructInstallRpc(appIdentityHash));
+  return node.rpcRouter.dispatch(constructInstallRpc(appIdentityHash));
 }
 
 export function makeProposeCall(

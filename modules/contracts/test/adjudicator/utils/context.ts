@@ -84,19 +84,19 @@ export const setupContext = async (
 
   const isProgressable = async () => {
     const challenge = await getChallenge();
-    return await appRegistry.functions.isProgressable(challenge, appInstance.defaultTimeout);
+    return appRegistry.functions.isProgressable(challenge, appInstance.defaultTimeout);
   };
 
   const isDisputable = async (challenge?: AppChallengeBigNumber) => {
     if (!challenge) {
       challenge = await getChallenge();
     }
-    return await appRegistry.functions.isDisputable(challenge);
+    return appRegistry.functions.isDisputable(challenge);
   };
 
   const isFinalized = async () => {
     const challenge = await getChallenge();
-    return await appRegistry.functions.isFinalized(challenge, appInstance.defaultTimeout);
+    return appRegistry.functions.isFinalized(challenge, appInstance.defaultTimeout);
   };
 
   const isCancellable = async (challenge?: AppChallengeBigNumber) => {

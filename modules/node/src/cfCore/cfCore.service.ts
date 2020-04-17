@@ -390,7 +390,7 @@ export class CFCoreService {
    */
   async getChannelRecord(multisig: string, prefix: string = ConnextNodeStorePrefix): Promise<any> {
     const path = `${prefix}/${this.cfCore.publicIdentifier}/channel/${multisig}`;
-    return await this.cfCoreRepository.get(path);
+    return this.cfCoreRepository.get(path);
   }
 
   private resolveInstallTransfer = (
