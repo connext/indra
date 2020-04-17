@@ -27,7 +27,7 @@ import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: PublicParams.Withdraw): Promise<PublicResults.Withdraw> {
-    this.log.info(`Withdraw called with params: ${stringify(params)}`);
+    this.log.info(`withdraw started: ${stringify(params)}`);
     // Set defaults
     if (!params.assetId) {
       params.assetId = AddressZero;
@@ -90,7 +90,9 @@ export class WithdrawalController extends AbstractController {
 
     // Note that we listen for the signed commitment and save it to store only in listener.ts
 
-    return { transaction };
+    const result: PublicResults.Withdraw = { transaction };
+    this.log.info(`withdraw for assetId ${assetId} completed: ${stringify(result)}`);
+    return result;
   }
 
   public async respondToNodeWithdraw(appInstance: AppInstanceJson) {

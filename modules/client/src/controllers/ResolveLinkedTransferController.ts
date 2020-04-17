@@ -52,6 +52,9 @@ export class ResolveLinkedTransferController extends AbstractController {
         sender: resolveRes.sender,
         recipient: this.connext.publicIdentifier,
         meta: resolveRes.meta,
+        transferMeta: {
+          preImage,
+        },
       } as EventPayloads.LinkedTransferUnlocked,
     );
 

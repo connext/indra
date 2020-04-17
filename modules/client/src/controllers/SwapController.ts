@@ -27,13 +27,13 @@ import { AbstractController } from "./AbstractController";
 
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
-    this.log.info(`Swap called with params: ${stringify(params)}`);
+    this.log.info(`swap started: ${stringify(params)}`);
     const amount = toBN(params.amount);
     const { swapRate } = params;
 
     const toTokenAddress = getAddressFromAssetId(params.toAssetId);
     const fromTokenAddress = getAddressFromAssetId(params.fromAssetId);
-  
+
     const preSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);
     const preSwapToBal = await this.connext.getFreeBalance(toTokenAddress);
     const userBal = preSwapFromBal[this.connext.signerAddress];
@@ -47,20 +47,17 @@ export class SwapController extends AbstractController {
       notPositive(parseEther(swapRate)),
     );
 
-    const error = notLessThanOrEqualTo(
-      amount,
-      toBN(preSwapFromBal[this.connext.signerAddress]),
-    );
+    const error = notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress]));
     if (error) {
       throw new Error(error);
     }
 
     // get app definition
     const network = await this.ethProvider.getNetwork();
-    const appInfo = await this.connext.getAppRegistry({
+    const appInfo = (await this.connext.getAppRegistry({
       name: SimpleTwoPartySwapAppName,
       chainId: network.chainId,
-    }) as DefaultApp;
+    })) as DefaultApp;
 
     // install the swap app
     this.log.debug(`Installing swap app`);
@@ -104,7 +101,9 @@ export class SwapController extends AbstractController {
     }
     const res = await this.connext.getChannel();
 
-    this.log.info(`Swap completed!`);
+    this.log.info(
+      `swap from ${fromTokenAddress} to ${toTokenAddress} completed: ${stringify(res)}`,
+    );
     // TODO: fix the state / types!!
     return res as PublicResults.Swap;
   }
@@ -122,7 +121,8 @@ export class SwapController extends AbstractController {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.log.debug(
-      `Swapping ${formatEther(amount)} ${ toTokenAddress === AddressZero ? "ETH" : "Tokens"
+      `Swapping ${formatEther(amount)} ${
+        toTokenAddress === AddressZero ? "ETH" : "Tokens"
       } for ${formatEther(swappedAmount)} ${fromTokenAddress === AddressZero ? "ETH" : "Tokens"}`,
     );
 
@@ -167,7 +167,7 @@ export class SwapController extends AbstractController {
       stateTimeout: SWAP_STATE_TIMEOUT,
     };
 
-    this.log.debug(`Installing app with params: ${stringify(params, 2)}`)
+    this.log.debug(`Installing app with params: ${stringify(params, 2)}`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(params);
     return appIdentityHash;
   };

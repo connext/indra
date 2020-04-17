@@ -29,7 +29,7 @@ export class LinkedTransferController extends AbstractController {
   public linkedTransfer = async (
     params: PublicParams.LinkedTransfer,
   ): Promise<PublicResults.LinkedTransfer> => {
-    this.log.info(`Creating linked transfer with params: ${stringify(params)}`);
+    this.log.info(`linkedTransfer started: ${stringify(params)}`);
     const amount = toBN(params.amount);
     const { paymentId, preImage, meta, recipient } = params;
     const assetId = params.assetId
@@ -83,10 +83,10 @@ export class LinkedTransferController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = await this.connext.getAppRegistry({
+    } = (await this.connext.getAppRegistry({
       name: SimpleLinkedTransferAppName,
       chainId: network.chainId,
-    }) as DefaultApp;
+    })) as DefaultApp;
     const proposeInstallParams: MethodParams.ProposeInstall = {
       abiEncodings: {
         actionEncoding,
@@ -140,7 +140,8 @@ export class LinkedTransferController extends AbstractController {
     }
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
-    this.log.info(`Successfully created linked transfer with id: ${paymentId}`);
-    return { appIdentityHash, paymentId, preImage };
+    const result: PublicResults.LinkedTransfer = { appIdentityHash, paymentId, preImage };
+    this.log.info(`linkedTransfer for paymentId ${paymentId} complete: ${stringify(result)}`);
+    return result;
   };
 }

@@ -19,7 +19,7 @@ export class ResolveSignedTransferController extends AbstractController {
   public resolveSignedTransfer = async (
     params: PublicParams.ResolveSignedTransfer,
   ): Promise<PublicResults.ResolveSignedTransfer> => {
-    this.log.info(`Resolving signed lock transfer called with params: ${stringify(params)}`);
+    this.log.info(`resolveSignedTransfer started: ${stringify(params)}`);
     const { paymentId, data, signature } = params;
 
     let resolveRes: PublicResults.ResolveSignedTransfer;
@@ -78,10 +78,11 @@ export class ResolveSignedTransferController extends AbstractController {
         sender,
         recipient: this.connext.publicIdentifier,
         meta,
+        transferMeta: {},
       } as EventPayloads.SignedTransferUnlocked,
     );
 
-    this.log.info(`Signed transfer successfully resolved`);
+    this.log.info(`resolveSignedTransfer for paymentId ${paymentId} complete: ${stringify(resolveRes)}`);
     return resolveRes;
   };
 }

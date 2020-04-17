@@ -19,7 +19,7 @@ export class SignedTransferController extends AbstractController {
   public signedTransfer = async (
     params: PublicParams.SignedTransfer,
   ): Promise<PublicResults.SignedTransfer> => {
-    this.log.debug(`Signed transfer called with ${stringify(params)}`);
+    this.log.info(`signedTransfer started: ${stringify(params)}`);
     // convert params + validate
     const amount = toBN(params.amount);
     const { meta, paymentId, signer, assetId, recipient } = params;
@@ -89,10 +89,11 @@ export class SignedTransferController extends AbstractController {
     } as EventPayloads.SignedTransferCreated;
     this.connext.emit(EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT, eventData);
 
-    this.log.info(`Signed transfer successfully created`);
-    return {
+    const result: PublicResults.SignedTransfer = {
       appIdentityHash,
       paymentId,
     };
+    this.log.info(`signedTransfer for paymentId ${paymentId} complete: ${stringify(result)}`);
+    return result;
   };
 }
