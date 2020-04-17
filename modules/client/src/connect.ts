@@ -123,7 +123,7 @@ export const connect = async (
     token,
   });
 
-  logger.debug(`Done creating connext client`);
+  logger.info(`Done creating connext client`);
 
   const isSigner = await client.channelProvider.isSigner();
 
@@ -152,7 +152,7 @@ export const connect = async (
     delayAndThrow(30_000, "Channel was not available after 30 seconds."),
   ]);
 
-  logger.debug(`Channel is available`);
+  logger.info(`Channel is available`);
 
   // Make sure our store schema is up-to-date
   const schemaVersion = await client.channelProvider.getSchemaVersion();
@@ -199,7 +199,7 @@ export const connect = async (
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
-  logger.debug("Reclaiming pending async transfers");
+  logger.info("Reclaiming pending async transfers");
   // NOTE: Removing the following await results in a subtle race condition during bot tests.
   //       Don't remove this await again unless you really know what you're doing & bot tests pass
   // no need to await this if it needs collateral
@@ -213,10 +213,10 @@ export const connect = async (
         e.message}... will attempt again on next connection`,
     );
   }
-  logger.debug("Reclaimed pending async transfers");
+  logger.info("Reclaimed pending async transfers");
 
   // check in with node to do remaining work
-  logger.debug("Checking in with node");
+  logger.info("Checking in with node");
   try {
     await client.clientCheckIn();
   } catch (e) {
@@ -225,22 +225,22 @@ export const connect = async (
         e.message}... will attempt again on next connection`,
     );
   }
-  logger.debug("Checked in with node");
+  logger.info("Checked in with node");
 
   // watch for/prune lingering withdrawals
-  logger.debug("Getting user withdrawals");
+  logger.info("Getting user withdrawals");
   const previouslyActive = await client.getUserWithdrawals();
   if (previouslyActive.length === 0) {
-    logger.debug("No user withdrawals found");
+    logger.info("No user withdrawals found");
     logTime(logger, start, `Client successfully connected`);
     return client;
   }
 
   try {
-    logger.debug(`Watching for user withdrawals`);
+    logger.info(`Watching for user withdrawals`);
     const transactions = await client.watchForUserWithdrawal();
     if (transactions.length > 0) {
-      logger.debug(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
+      logger.info(`Found node submitted user withdrawals: ${transactions.map(tx => tx.hash)}`);
     }
   } catch (e) {
     logger.error(
