@@ -1,6 +1,12 @@
 import { JsonRpcProvider } from "ethers/providers";
-import { EventEmitter } from "eventemitter3";
-import { ILoggerService, NetworkContext, ContractEvents } from "@connext/types";
+import {
+  ILoggerService,
+  NetworkContext,
+  ChallengeEvents,
+  IChainListener,
+  ChallengeEvent,
+  ChallengeEventData,
+} from "@connext/types";
 import { ChallengeRegistry } from "@connext/contracts";
 import { Contract, Event } from "ethers";
 import { parseChallengeUpdatedEvent, parseStateProgressedEvent } from "./utils";
@@ -8,13 +14,12 @@ import { parseChallengeUpdatedEvent, parseStateProgressedEvent } from "./utils";
 /**
  * This class listens to events emitted by the connext contracts,
  * parses them, and emits the properly typed version.
- * 
+ *
  * Consumers of the class should instantiate it, then call the
  * `enable` method to begin listening + parsing contract events. To
  * turn off the listener, call `disable`
  */
-export class ChainListener extends EventEmitter {
-
+export class ChainListener implements IChainListener {
   private log: ILoggerService;
   private enabled: boolean = false;
 
@@ -24,65 +29,75 @@ export class ChainListener extends EventEmitter {
 
     loggerService: ILoggerService,
   ) {
-    super();
-    this.log = loggerService.newContext("ChainListener");
+    throw new Error("Method not implemented");
   }
 
   // listens on every block for new contract events
-  public enable = (): void => {
-    this.enabled = true;
-    this.addChallengeRegistryListeners();
-  }
+  public enable = (): Promise<void> => {
+    throw new Error("Method not implemented");
+  };
 
   // turns of the listener and event emission
   public disable = async (): Promise<void> => {
-    this.enabled = false;
-    this.removeChallengeRegistryListeners();
+    throw new Error("Method not implemented");
+  };
+
+  //////// Listener methods
+  public emit<T extends ChallengeEvent>(event: T, data: ChallengeEventData[T]): void {
+    throw new Error("Method not implemented");
   }
 
-  // ensures the listener is "on"
-  private assertEnabled() {
-    if (this.enabled) {
-      return;
-    }
-    throw new Error(`Listener is not enabled`);
+  public on<T extends ChallengeEvent>(
+    event: T,
+    callback: (data: ChallengeEventData[T]) => Promise<void>,
+  ): void {
+    throw new Error("Method not implemented");
+  }
+
+  public once<T extends ChallengeEvent>(
+    event: T,
+    callback: (data: ChallengeEventData[T]) => Promise<void>,
+  ): void {
+    throw new Error("Method not implemented");
+  }
+
+  public removeListener<T extends ChallengeEvent>(event: T): void {
+    throw new Error("Method not implemented");
+  }
+
+  public removeAllListeners(): void {
+    throw new Error("Method not implemented");
   }
 
   // created listeners for the challenge registry
   private removeChallengeRegistryListeners = (): void => {
     const challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi,
+      ChallengeRegistry.abi as any,
       this.ethProvider,
     );
 
-    challengeRegistry.removeAllListeners(ContractEvents.StateProgressed);
-    challengeRegistry.removeAllListeners(ContractEvents.ChallengeUpdated);
+    challengeRegistry.removeAllListeners(ChallengeEvents.StateProgressed);
+    challengeRegistry.removeAllListeners(ChallengeEvents.ChallengeUpdated);
     this.log.debug("Removed challenge registry listeners");
-  }
+  };
 
   // created listeners for the challenge registry
   private addChallengeRegistryListeners = (): void => {
     const challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi,
+      ChallengeRegistry.abi as any,
       this.ethProvider,
     );
 
-    challengeRegistry.on(ContractEvents.StateProgressed, (event: Event) => {
-      this.emit(
-        ContractEvents.StateProgressed, 
-        parseStateProgressedEvent(event),
-      );
+    challengeRegistry.on(ChallengeEvents.StateProgressed, async (event: Event) => {
+      this.emit(ChallengeEvents.StateProgressed, await parseStateProgressedEvent(event));
     });
 
-    challengeRegistry.on(ContractEvents.ChallengeUpdated, (event: Event) => {
-      this.emit(
-        ContractEvents.StateProgressed, 
-        parseChallengeUpdatedEvent(event),
-      );
+    challengeRegistry.on(ChallengeEvents.ChallengeUpdated, async (event: Event) => {
+      this.emit(ChallengeEvents.ChallengeUpdated, await parseChallengeUpdatedEvent(event));
     });
-  
+
     this.log.debug("Registered challenge registry listeners");
-  }
+  };
 }
