@@ -1,9 +1,32 @@
-import fs from "fs";
-
 export const FILE_EXISTS = 1;
 export const FILE_DOESNT_EXIST = 0;
 
+let fs;
+let path;
+
+function requireFsModule() {
+  if (!fs) {
+    fs = require("fs");
+  }
+}
+
+function requirePathModule() {
+  if (!path) {
+    path = require("path");
+  }
+}
+
+export function getNodeJSModule(name: string) {
+  try {
+    const result = require(name);
+    return result;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 export function fsRead(path: string): Promise<any> {
+  requireFsModule();
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(path)) {
       resolve(undefined);
@@ -17,6 +40,7 @@ export function fsRead(path: string): Promise<any> {
   });
 }
 export function fsWrite(path: string, data: any): Promise<void> {
+  requireFsModule();
   return new Promise((resolve, reject) => {
     fs.writeFile(path, data, err => {
       if (err) {
@@ -28,6 +52,7 @@ export function fsWrite(path: string, data: any): Promise<void> {
 }
 
 export function fsUnlink(path: string): Promise<void> {
+  requireFsModule();
   return new Promise((resolve, reject) => {
     fs.unlink(path, err => {
       if (err) {
@@ -41,7 +66,8 @@ export function fsUnlink(path: string): Promise<void> {
   });
 }
 
-export function fsStat(path: string): Promise<fs.Stats> {
+export function fsStat(path: string): Promise<any> {
+  requireFsModule();
   return new Promise((resolve, reject) => {
     fs.stat(path, (err, stat) => {
       if (err) {
@@ -53,6 +79,7 @@ export function fsStat(path: string): Promise<fs.Stats> {
 }
 
 export function fsMkDir(path: string): Promise<void> {
+  requireFsModule();
   return new Promise((resolve, reject) => {
     fs.mkdir(path, err => {
       if (err) {
@@ -73,6 +100,7 @@ export function sanitizeExt(ext: string): string {
 }
 
 export function checkFile(path: string): Promise<number> {
+  requireFsModule();
   return new Promise((resolve, reject) => {
     const mode = fs.constants.F_OK | fs.constants.W_OK;
     fs.access(path, mode, err => {
@@ -109,6 +137,7 @@ export async function isDirectory(path: string): Promise<boolean> {
 }
 
 export async function createDirectory(path: string): Promise<void> {
+  requireFsModule();
   if (!fs.existsSync(path)) {
     return fsMkDir(path);
   }
@@ -116,6 +145,7 @@ export async function createDirectory(path: string): Promise<void> {
 }
 
 export function isDirectorySync(path: string): boolean {
+  requireFsModule();
   try {
     return fs.lstatSync(path).isDirectory();
   } catch (e) {
@@ -124,6 +154,7 @@ export function isDirectorySync(path: string): boolean {
 }
 
 export function createDirectorySync(path: string): void {
+  requireFsModule();
   if (!fs.existsSync(path)) {
     return fs.mkdirSync(path, { recursive: true });
   }
@@ -131,6 +162,7 @@ export function createDirectorySync(path: string): void {
 }
 
 export function getDirectoryFiles(path: string): Promise<string[]> {
+  requireFsModule();
   return new Promise((resolve: any, reject: any): void => {
     fs.readdir(path, (err: Error, files: string[]) => {
       if (err) {
@@ -139,4 +171,9 @@ export function getDirectoryFiles(path: string): Promise<string[]> {
       return resolve(files);
     });
   });
+}
+
+export function pathJoin(...args: string[]) {
+  requirePathModule();
+  return path.join(...args);
 }
