@@ -1,6 +1,5 @@
-import { Address, HexString } from "../basic";
+import { Address, HexString, Bytes32, EthSignature } from "../basic";
 import { BigNumber } from "ethers/utils";
-import { enumify } from "../utils";
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/libs/LibStateChannelApp.sol
@@ -38,34 +37,90 @@ export const enum ChallengeStatus {
   OUTCOME_SET = 4,
 }
 
+export type SignedAppChallengeUpdate<T = string> = {
+  appStateHash: Bytes32;
+  versionNumber: T;
+  timeout: T;
+  signatures: EthSignature[];
+};
+export type SignedAppChallengeUpdateBigNumber = SignedAppChallengeUpdate<BigNumber>
+
+export type SignedCancelChallengeRequest<T = string> = {
+  versionNumber: T;
+  signatures: EthSignature[];
+};
+export type SignedCancelChallengeRequestBigNumber = SignedCancelChallengeRequest<BigNumber>
+
 // Emitted by MixinProgressState.sol when an action is played on
 // top of an onchain state so participants can derive new state
 // in challenge
+export const StateProgressed = "StateProgressed";
 export type StateProgressedEvent = {
   identityHash: string;
   action: string; // encoded
   versionNumber: BigNumber;
   timeout: BigNumber;
-  turnTaker: string; // eth addr
-  signature: string; // of action taker
-  emittedAt: BigNumber; // block number event was emitted at
+  turnTaker: Address; // eth addr
+  signature: EthSignature; // of action taker
 }
 
 // Emitted by the adjudicator contracts when fields in stored
 // contract are changed by caller
+export const ChallengeUpdated = "ChallengeUpdated";
 export type ChallengeUpdatedEvent = {
-  identityHash: string;
+  identityHash: Bytes32;
   status: ChallengeStatus;
-  appStateHash: string; // latest app state
+  appStateHash: Bytes32; // latest app state
   versionNumber: BigNumber;
   finalizesAt: BigNumber;
-  emittedAt: BigNumber; // block number event was emitted at
 }
 
 // events emitted by contracts
-export const ContractEvents = enumify({
-  StateProgressed: "StateProgressed",
-  ChallengeUpdated: "ChallengeUpdated",
-});
-type ContractEvents = (typeof ContractEvents)[keyof typeof ContractEvents];
-export type ContractEvent = keyof typeof ContractEvents;
+export const ChallengeEvents = {
+  [ChallengeUpdated]: ChallengeUpdated,
+  [StateProgressed]: StateProgressed,
+} as const;
+export type ChallengeEvent = keyof typeof ChallengeEvents;
+
+////////////////////////////////////////
+// keep synced w contracts/adjudicator/mixins/MixinSetState.sol
+export type MixinSetStateParams = {
+  appIdentity: AppIdentityBigNumber;
+  req: SignedAppChallengeUpdateBigNumber;
+};
+
+////////////////////////////////////////
+// keep synced w contracts/adjudicator/mixins/MixinProgressState.sol
+export type MixinProgressStateParams = MixinSetStateParams & {
+  oldAppState: string; // encoded
+  action: string; // encoded
+};
+
+////////////////////////////////////////
+// keep synced w contracts/adjudicator/mixins/MixinCancelChallenge.sol
+export type MixinCancelChallengeParams = {
+  appIdentity: AppIdentityBigNumber;
+  req: SignedCancelChallengeRequestBigNumber;
+};
+
+////////////////////////////////////////
+// keep synced w contracts/adjudicator/mixins/MixinSetAndProgressState.sol
+export type MixinSetAndProgressStateParams = {
+  appIdentity: AppIdentityBigNumber;
+  // A signed app challenge update that contains the hash of the 
+  // latest state that has been signed by all parties
+  // the timeout must be 0
+  req1: SignedAppChallengeUpdateBigNumber;
+  // A signed app challenge update that contains the state that results
+  // from applying the action to appState
+  req2: SignedAppChallengeUpdateBigNumber;
+  appState: string; // encoded
+  action: string; // encoded
+};
+
+////////////////////////////////////////
+// keep synced w contracts/adjudicator/mixins/MixinSetOutcome.sol
+export type MixinSetOutcomeParams = {
+  appIdentity: AppIdentityBigNumber;
+  finalState: string; // final state of the challenge
+}
