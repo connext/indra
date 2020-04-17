@@ -264,6 +264,11 @@ test-runner: types utils channel-provider messaging store contracts cf-core apps
 	$(docker_run) "cd modules/test-runner && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+watcher: types utils apps contracts $(shell find modules/watcher $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/watcher && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
 ########################################
 # Build Docker Images
 
