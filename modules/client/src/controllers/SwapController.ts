@@ -1,5 +1,5 @@
 import { DEFAULT_APP_TIMEOUT, SWAP_STATE_TIMEOUT } from "@connext/apps";
-import { delayAndThrow, getSignerAddressFromPublicIdentifier } from "@connext/utils";
+import { delayAndThrow, getSignerAddressFromPublicIdentifier, stringify } from "@connext/utils";
 import {
   CF_METHOD_TIMEOUT,
   DefaultApp,
@@ -27,12 +27,13 @@ import { AbstractController } from "./AbstractController";
 
 export class SwapController extends AbstractController {
   public async swap(params: PublicParams.Swap): Promise<PublicResults.Swap> {
+    this.log.info(`swap started: ${stringify(params)}`);
     const amount = toBN(params.amount);
     const { swapRate } = params;
 
     const toTokenAddress = getAddressFromAssetId(params.toAssetId);
     const fromTokenAddress = getAddressFromAssetId(params.fromAssetId);
-  
+
     const preSwapFromBal = await this.connext.getFreeBalance(fromTokenAddress);
     const preSwapToBal = await this.connext.getFreeBalance(toTokenAddress);
     const userBal = preSwapFromBal[this.connext.signerAddress];
@@ -46,22 +47,20 @@ export class SwapController extends AbstractController {
       notPositive(parseEther(swapRate)),
     );
 
-    const error = notLessThanOrEqualTo(
-      amount,
-      toBN(preSwapFromBal[this.connext.signerAddress]),
-    );
+    const error = notLessThanOrEqualTo(amount, toBN(preSwapFromBal[this.connext.signerAddress]));
     if (error) {
       throw new Error(error);
     }
 
     // get app definition
     const network = await this.ethProvider.getNetwork();
-    const appInfo = await this.connext.getAppRegistry({
+    const appInfo = (await this.connext.getAppRegistry({
       name: SimpleTwoPartySwapAppName,
       chainId: network.chainId,
-    }) as DefaultApp;
+    })) as DefaultApp;
 
     // install the swap app
+    this.log.debug(`Installing swap app`);
     const appIdentityHash = await this.swapAppInstall(
       amount,
       toTokenAddress,
@@ -69,7 +68,7 @@ export class SwapController extends AbstractController {
       swapRate,
       appInfo,
     );
-    this.log.info(`Swap app installed! Uninstalling without updating state.`);
+    this.log.debug(`Swap app installed: ${appIdentityHash}, uninstalling`);
 
     // if app installed, that means swap was accepted now uninstall
     try {
@@ -102,6 +101,9 @@ export class SwapController extends AbstractController {
     }
     const res = await this.connext.getChannel();
 
+    this.log.info(
+      `swap from ${fromTokenAddress} to ${toTokenAddress} completed: ${stringify(res)}`,
+    );
     // TODO: fix the state / types!!
     return res as PublicResults.Swap;
   }
@@ -118,8 +120,9 @@ export class SwapController extends AbstractController {
   ): Promise<string> => {
     const swappedAmount = calculateExchange(amount, swapRate);
 
-    this.log.info(
-      `Swapping ${formatEther(amount)} ${ toTokenAddress === AddressZero ? "ETH" : "Tokens"
+    this.log.debug(
+      `Swapping ${formatEther(amount)} ${
+        toTokenAddress === AddressZero ? "ETH" : "Tokens"
       } for ${formatEther(swappedAmount)} ${fromTokenAddress === AddressZero ? "ETH" : "Tokens"}`,
     );
 
@@ -164,8 +167,8 @@ export class SwapController extends AbstractController {
       stateTimeout: SWAP_STATE_TIMEOUT,
     };
 
+    this.log.debug(`Installing app with params: ${stringify(params, 2)}`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(params);
-    this.log.info(`Successfully installed swap app with id ${appIdentityHash}`);
     return appIdentityHash;
   };
 }

@@ -117,6 +117,7 @@ export class ConnextListener extends ConnextEventEmitter {
         this.log.debug(`Received proposal from our own node, doing nothing ${time()}`);
         return;
       }
+      this.log.info(`Processing proposal for ${appIdentityHash}`);
       this.handleAppProposal(params, appIdentityHash, from);
       this.log.info(`Done processing propose install event ${time()}`);
       // validate and automatically install for the known and supported
@@ -168,9 +169,11 @@ export class ConnextListener extends ConnextEventEmitter {
   }
 
   public register = async (): Promise<void> => {
+    this.log.debug(`Registering default listeners`);
     await this.registerAvailabilitySubscription();
     this.registerDefaultListeners();
     await this.registerLinkedTransferSubscription();
+    this.log.debug(`Registered default listeners`);
     return;
   };
 
@@ -282,6 +285,11 @@ export class ConnextListener extends ConnextEventEmitter {
     const registryAppInfo = this.connext.appRegistry.find((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === params.appDefinition;
     });
+    this.log.info(
+      `handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} started: ${stringify(
+        params,
+      )}`,
+    );
     if (!registryAppInfo) {
       throw new Error(`Could not find registry info for app ${params.appDefinition}`);
     }
@@ -330,7 +338,9 @@ export class ConnextListener extends ConnextEventEmitter {
       }
       // NOTE: by trying to install here, if the installation fails,
       // the proposal is automatically removed from the store
+      this.log.info(`app ${appIdentityHash} validated, installing`);
       await this.connext.installApp(appIdentityHash);
+      this.log.info(`app ${appIdentityHash} installed`);
     } catch (e) {
       this.log.error(`Caught error: ${e.message}`);
       // TODO: first proposal after reset is responded to
@@ -344,6 +354,7 @@ export class ConnextListener extends ConnextEventEmitter {
     }
     // install and run post-install tasks
     await this.runPostInstallTasks(appIdentityHash, registryAppInfo, params);
+    this.log.info(`handleAppProposal for app ${registryAppInfo.name} ${appIdentityHash} completed`);
     const { appInstance } = await this.connext.getAppInstance(appIdentityHash);
     await this.connext.node.messaging.publish(
       `${this.connext.publicIdentifier}.channel.${this.connext.multisigAddress}.app-instance.${appIdentityHash}.install`,
@@ -356,6 +367,11 @@ export class ConnextListener extends ConnextEventEmitter {
     registryAppInfo: DefaultApp,
     params: MethodParams.ProposeInstall,
   ): Promise<void> => {
+    this.log.info(
+      `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} started: ${stringify(
+        params,
+      )}`,
+    );
     switch (registryAppInfo.name) {
       case WithdrawAppName: {
         const appInstance = (await this.connext.getAppInstance(appIdentityHash)).appInstance;
@@ -421,5 +437,8 @@ export class ConnextListener extends ConnextEventEmitter {
         break;
       }
     }
+    this.log.info(
+      `runPostInstallTasks for app ${registryAppInfo.name} ${appIdentityHash} complete`,
+    );
   };
 }

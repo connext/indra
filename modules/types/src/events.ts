@@ -8,6 +8,9 @@ import {
   CreatedHashLockTransferMeta,
   CreatedLinkedTransferMeta,
   CreatedSignedTransferMeta,
+  UnlockedLinkedTransferMeta,
+  UnlockedHashLockTransferMeta,
+  UnlockedSignedTransferMeta,
 } from "./transfers";
 import { enumify } from "./utils";
 import { ProtocolParams } from "./protocol";
@@ -37,7 +40,7 @@ type ConditionalTransferCreatedEventData<T extends ConditionalTransferTypes> = {
     ? CreatedHashLockTransferMeta
     : T extends SignedTransfer
     ? CreatedSignedTransferMeta
-    : undefined;
+    : {};
 };
 
 ////////////////////////////////////////
@@ -58,7 +61,7 @@ export type ConditionalTransferReceivedEventData<T extends ConditionalTransferTy
     ? CreatedHashLockTransferMeta
     : T extends SignedTransfer
     ? CreatedSignedTransferMeta
-    : undefined;
+    : {};
 };
 
 ////////////////////////////////////////
@@ -72,6 +75,13 @@ export type ConditionalTransferUnlockedEventData<T extends ConditionalTransferTy
   recipient?: PublicIdentifier;
   meta: any;
   type: T;
+  transferMeta: T extends LinkedTransfer
+    ? UnlockedLinkedTransferMeta
+    : T extends HashLockTransfer
+    ? UnlockedHashLockTransferMeta
+    : T extends SignedTransfer
+    ? UnlockedSignedTransferMeta
+    : {};
 };
 
 ////////////////////////////////////////
