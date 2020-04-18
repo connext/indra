@@ -160,6 +160,9 @@ test-contracts: contracts utils
 test-utils: utils
 	bash ops/test/utils.sh
 
+test-watcher: watcher
+	bash ops/test/watcher.sh
+
 test-daicard:
 	bash ops/test/ui.sh daicard
 
