@@ -12,5 +12,6 @@ export const parseStateProgressedEvent = async (
 export const parseChallengeUpdatedEvent = async (
   event: Event,
 ): Promise<ChallengeUpdatedContractEvent> => {
-  throw new Error("Method not implemented");
+  console.log(`**** parsing event`, event);
+  return event as any;
 };
