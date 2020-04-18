@@ -11,7 +11,8 @@
   ],
   "scripts": {
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
-    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
+    "test": "mocha -r ts-node/register 'test/**/*.spec.{ts,tsx}' --bail --slow 1000"
   },
   "dependencies": {
     "@connext/contracts": "2.0.2",
@@ -21,6 +22,13 @@
     "eventemitter3": "4.0.0"
   },
   "devDependencies": {
+    "@types/chai": "4.2.9",
+    "@types/chai-as-promised": "7.1.2",
+    "@types/chai-subset": "1.3.3",
+    "@types/mocha": "7.0.1",
+    "ethereum-waffle": "2.4.0",
+    "mocha": "7.0.1",
+    "ts-mocha": "6.0.0",
     "typescript": "3.7.5"
   }
 }
