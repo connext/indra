@@ -1,4 +1,5 @@
 export * from "./client";
+export * from "./contracts";
 export * from "./crypto";
 export * from "./currency";
 export * from "./identifiers";
