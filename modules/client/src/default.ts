@@ -1,6 +1,5 @@
 import { ConnextStore } from "@connext/store";
 import { ClientOptions, StoreTypes } from "@connext/types";
-import { removeUndefinedFields } from "@connext/utils";
 import { hexlify, randomBytes } from "ethers/utils";
 
 const CONNEXT_DEFAULT_SIGNER_KEY = "CONNEXT_DEFAULT_SIGNER";
