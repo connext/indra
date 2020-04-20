@@ -105,11 +105,11 @@ export const TEST_STORE_MINIMAL_TX: MinimalTransaction = {
 
 export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentity: {
-    channelNonce: TEST_STORE_APP_INSTANCE.appSeqNo.toString(),
+    channelNonce: toBN(TEST_STORE_APP_INSTANCE.appSeqNo),
     participants: [TEST_STORE_APP_INSTANCE.initiatorIdentifier, TEST_STORE_APP_INSTANCE.responderIdentifier],
     multisigAddress: TEST_STORE_APP_INSTANCE.multisigAddress,
     appDefinition: TEST_STORE_APP_INSTANCE.appInterface.addr,
-    defaultTimeout: "35",
+    defaultTimeout: toBN(35),
   },
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: "setStateAppStateHash",

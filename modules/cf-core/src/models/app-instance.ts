@@ -19,6 +19,7 @@ import {
   getSignerAddressFromPublicIdentifier,
   isBN,
   stringify,
+  toBN,
 } from "@connext/utils";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
@@ -191,8 +192,8 @@ export class AppInstance {
       participants: this.participants,
       multisigAddress: this.multisigAddress,
       appDefinition: this.appInterface.addr,
-      defaultTimeout: this.defaultTimeout.toString(),
-      channelNonce: this.appSeqNo.toString(),
+      defaultTimeout: toBN(this.defaultTimeout),
+      channelNonce: toBN(this.appSeqNo),
     };
   }
 

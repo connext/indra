@@ -5,14 +5,13 @@ import { BigNumber } from "ethers/utils";
 // keep synced w contracts/adjudicator/libs/LibStateChannelApp.sol
 
 // A minimal structure that uniquely identifies a single instance of an App
-export type AppIdentity<T = string> = {
-  channelNonce: T;
+export type AppIdentity = {
+  channelNonce: BigNumber;
   participants: Address[];
   multisigAddress: Address;
   appDefinition: Address;
-  defaultTimeout: T;
+  defaultTimeout: BigNumber;
 };
-export type AppIdentityBigNumber = AppIdentity<BigNumber>;
 
 // A structure representing the state of a CounterfactualApp instance from the POV of the blockchain
 // NOTE: AppChallenge is the overall state of a channelized app instance,
@@ -92,7 +91,7 @@ export type ChallengeEventData = {
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/mixins/MixinSetState.sol
 export type MixinSetStateParams = {
-  appIdentity: AppIdentityBigNumber;
+  appIdentity: AppIdentity;
   req: SignedAppChallengeUpdateBigNumber;
 };
 
@@ -106,14 +105,14 @@ export type MixinProgressStateParams = MixinSetStateParams & {
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/mixins/MixinCancelChallenge.sol
 export type MixinCancelChallengeParams = {
-  appIdentity: AppIdentityBigNumber;
+  appIdentity: AppIdentity;
   req: SignedCancelChallengeRequestBigNumber;
 };
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/mixins/MixinSetAndProgressState.sol
 export type MixinSetAndProgressStateParams = {
-  appIdentity: AppIdentityBigNumber;
+  appIdentity: AppIdentity;
   // A signed app challenge update that contains the hash of the
   // latest state that has been signed by all parties
   // the timeout must be 0
@@ -128,6 +127,6 @@ export type MixinSetAndProgressStateParams = {
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/mixins/MixinSetOutcome.sol
 export type MixinSetOutcomeParams = {
-  appIdentity: AppIdentityBigNumber;
+  appIdentity: AppIdentity;
   finalState: string; // final state of the challenge
 };
