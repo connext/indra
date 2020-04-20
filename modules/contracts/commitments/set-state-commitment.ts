@@ -7,27 +7,12 @@ import {
   SetStateCommitmentJSON,
   SignedAppChallengeUpdate,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { appIdentityToHash, toBN, verifyChannelMessage } from "@connext/utils";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
-import { verifyChannelMessage } from "@connext/utils";
 
-import { ChallengeRegistry } from "../contracts";
-import { AppInstance } from "../models";
-import { Context } from "../types";
-import { appIdentityToHash } from "../utils";
+import * as ChallengeRegistry from "../build/ChallengeRegistry.json";
 
-const iface = new Interface(ChallengeRegistry.abi);
-
-export const getSetStateCommitment = (
-  context: Context,
-  appInstance: AppInstance,
-) => new SetStateCommitment(
-  context.network.ChallengeRegistry,
-  appInstance.identity,
-  appInstance.hashOfLatestState,
-  appInstance.versionNumber,
-  appInstance.stateTimeout,
-);
+const iface = new Interface(ChallengeRegistry.abi as any);
 
 export class SetStateCommitment implements EthereumCommitment {
   constructor(
@@ -115,7 +100,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   private async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
-    this.assertSignatures();
+    await this.assertSignatures();
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
@@ -129,16 +114,17 @@ export class SetStateCommitment implements EthereumCommitment {
       throw new Error(`No signatures detected`);
     }
 
-    if (this.signatures.length < 2) {
-      throw new Error(
-        `Incorrect number of signatures supplied. Expected at least 2, got ${this.signatures.length}`,
-      );
-    }
-
     for (const idx in this.signatures) {
+      if (!this.signatures[idx]) {
+        // set state commitments may be singly signed if they are going
+        // to be used in the `progressState` path
+        continue;
+      }
       const signer = await verifyChannelMessage(this.hashToSign(), this.signatures[idx]);
       if (signer !== this.appIdentity.participants[idx]) {
-        throw new Error(`Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`);
+        throw new Error(
+          `Got ${signer} and expected ${this.appIdentity.participants[idx]} in set state commitment`,
+        );
       }
     }
   }

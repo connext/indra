@@ -38,3 +38,5 @@ export {
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
 };
+
+export * from "./commitments";
