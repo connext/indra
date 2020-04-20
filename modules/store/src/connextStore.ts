@@ -14,7 +14,7 @@ import {
   WrappedStorage,
   ChallengeUpdatedContractEvent,
   StateProgressedContractEvent,
-  AppChallengeBigNumber,
+  AppChallenge,
 } from "@connext/types";
 
 import {
@@ -284,15 +284,15 @@ export class ConnextStore implements IClientStore {
   }
 
   ////// Watcher methods
-  getAppChallenge(appIdentityHash: string): Promise<AppChallengeBigNumber | undefined> {
+  getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
     return this.internalStore.getAppChallenge(appIdentityHash);
   }
 
-  createAppChallenge(multisigAddress: string, appChallenge: AppChallengeBigNumber): Promise<void> {
+  createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     return this.internalStore.createAppChallenge(multisigAddress, appChallenge);
   }
 
-  updateAppChallenge(multisigAddress: string, appChallenge: AppChallengeBigNumber): Promise<void> {
+  updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     return this.internalStore.updateAppChallenge(multisigAddress, appChallenge);
   }
 

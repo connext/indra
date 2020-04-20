@@ -1,7 +1,7 @@
 /* global before */
 import { Contract, Wallet, ContractFactory } from "ethers";
 import { One } from "ethers/constants";
-import { ChallengeStatus, AppChallengeBigNumber } from "@connext/types";
+import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { keccak256 } from "ethers/utils";
 
@@ -30,7 +30,7 @@ describe("MChallengeRegistryCore", () => {
     turnTaker?: Wallet,
   ) => Promise<void>;
 
-  let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
+  let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;
   let isFinalized: () => Promise<boolean>;
 
   before(async () => {

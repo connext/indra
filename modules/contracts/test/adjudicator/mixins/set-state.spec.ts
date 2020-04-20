@@ -1,5 +1,5 @@
 /* global before */
-import { AppChallengeBigNumber, ChallengeStatus } from "@connext/types";
+import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { ChannelSigner, toBN } from "@connext/utils";
 import { One } from "ethers/constants";
 import { Contract, Wallet, ContractFactory } from "ethers";
@@ -33,7 +33,7 @@ describe("setState", () => {
   let appInstance: AppWithCounterClass;
 
   let setState: (versionNumber: number, appState?: string, timeout?: number) => Promise<void>;
-  let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
+  let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;
   let verifyEmptyChallenge: () => Promise<void>;
 
   before(async () => {

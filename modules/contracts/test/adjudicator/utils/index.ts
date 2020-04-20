@@ -1,4 +1,5 @@
 import { AppIdentity, ChallengeStatus, CommitmentTarget } from "@connext/types";
+import { toBN } from "@connext/utils";
 import {
   BigNumberish,
   defaultAbiCoder,
@@ -97,8 +98,8 @@ export class AppWithCounterClass {
       participants: this.participants,
       multisigAddress: this.multisigAddress,
       appDefinition: this.appDefinition,
-      defaultTimeout: this.defaultTimeout.toString(),
-      channelNonce: this.channelNonce.toString(),
+      defaultTimeout: toBN(this.defaultTimeout),
+      channelNonce: toBN(this.channelNonce),
     };
   }
 

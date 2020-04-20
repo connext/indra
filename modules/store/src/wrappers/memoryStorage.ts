@@ -9,7 +9,7 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
-  AppChallengeBigNumber,
+  AppChallenge,
   StateProgressedContractEvent,
   ChallengeUpdatedContractEvent,
 } from "@connext/types";
@@ -325,20 +325,20 @@ export class MemoryStorage implements IClientStore {
   }
 
   ////// Watcher methods
-  async getAppChallenge(appIdentityHash: string): Promise<AppChallengeBigNumber | undefined> {
+  async getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
     throw new Error("Disputes not implememented");
   }
 
   async createAppChallenge(
     multisigAddress: string,
-    appChallenge: AppChallengeBigNumber,
+    appChallenge: AppChallenge,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async updateAppChallenge(
     multisigAddress: string,
-    appChallenge: AppChallengeBigNumber,
+    appChallenge: AppChallenge,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
