@@ -93,8 +93,6 @@ export const setupContext = async () => {
       timeout2,
     );
 
-    console.log(`signing:`, resultingStateDigest);
-
     const signatures = [
       await new ChannelSigner(channelInitiator.privateKey, ethProvider).signMessage(stateDigest),
       await new ChannelSigner(channelResponder.privateKey, ethProvider).signMessage(stateDigest),
