@@ -15,7 +15,7 @@ import {
 } from "@connext/types";
 import {
   getAddressFromAssetId,
-  invalidAddress,
+  getAddressError,
   notGreaterThan,
   notLessThanOrEqualTo,
   toBN,
@@ -33,7 +33,7 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    this.throwIfAny(invalidAddress(assetId));
+    this.throwIfAny(getAddressError(assetId));
     // NOTE: when the `walletDeposit` is not used, these parameters do not have to be validated
     const tokenAddress = getAddressFromAssetId(assetId);
     this.log.info(`Depositing ${amount.toString()} of ${tokenAddress} into channel`);
@@ -92,7 +92,7 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    this.throwIfAny(invalidAddress(assetId));
+    this.throwIfAny(getAddressError(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     const depositApp = await this.getDepositApp({ assetId: tokenAddress });
 
@@ -134,7 +134,7 @@ export class DepositController extends AbstractController {
     const assetId = params.assetId
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
-    this.throwIfAny(invalidAddress(assetId));
+    this.throwIfAny(getAddressError(assetId));
     const tokenAddress = getAddressFromAssetId(assetId);
     // get the app instance
     const app = await this.getDepositApp({ assetId: tokenAddress });

@@ -13,7 +13,7 @@ import {
 import {
   calculateExchange,
   getAddressFromAssetId,
-  invalidAddress,
+  getAddressError,
   notGreaterThan,
   notLessThanOrEqualTo,
   notPositive,
@@ -39,8 +39,8 @@ export class SwapController extends AbstractController {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.throwIfAny(
-      invalidAddress(fromTokenAddress),
-      invalidAddress(toTokenAddress),
+      getAddressError(fromTokenAddress),
+      getAddressError(toTokenAddress),
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
       notPositive(parseEther(swapRate)),

@@ -1,11 +1,8 @@
-import { DecString, HexObject } from "@connext/types";
-import { BigNumber, BigNumberish, bigNumberify, parseEther, formatEther } from "ethers/utils";
+import { DecString } from "@connext/types";
+import { BigNumber, bigNumberify, parseEther, formatEther } from "ethers/utils";
 import { Zero, MaxUint256 } from "ethers/constants";
 
-export const isBN = BigNumber.isBigNumber;
-
-export const toBN = (n: BigNumberish | HexObject): BigNumber =>
-  bigNumberify((n && (n as HexObject)._hex) ? (n as HexObject)._hex : n.toString());
+import { toBN } from "./bigNumbers";
 
 export const toWad = (n: any) => parseEther(n.toString());
 

@@ -17,8 +17,7 @@ import {
   utf8ToBuffer,
 } from "eccrypto-js";
 
-import { getAddressError } from "./addresses";
-import { getHexStringError } from "./hexStrings";
+import { getAddressError, getHexStringError } from "./hexStrings";
 
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
@@ -37,9 +36,8 @@ export const getPublicKeyError = (value: any): string | undefined => {
     return e.message;
   }
 };
-export const invalidPublicKey = getPublicKeyError;
 export const isValidPublicKey = (value: any): boolean =>
-  !invalidPublicKey(value);
+  !getPublicKeyError(value);
 
 export const getPrivateKeyError = (value: any): string | undefined => {
   try {
@@ -53,16 +51,14 @@ export const getPrivateKeyError = (value: any): string | undefined => {
     return e.message;
   }
 };
-export const invalidPrivateKey = getPrivateKeyError;
 export const isValidPrivateKey = (value: any): boolean =>
-  !invalidPrivateKey(value);
+  !getPrivateKeyError(value);
 
 export const getEthSignatureError = (value: any): string | undefined => {
   const hexStringError = getHexStringError(value, 65);
   if (hexStringError) return hexStringError;
   return undefined;
 };
-export const invalidEthSignature = getEthSignatureError;
 export const isValidEthSignature = (value: any): boolean => !getEthSignatureError(value);
 
 ////////////////////////////////////////

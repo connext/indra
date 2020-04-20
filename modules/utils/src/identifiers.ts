@@ -9,7 +9,7 @@ import {
   isCompressed,
 } from "eccrypto-js";
 
-import { getAddressError } from "./addresses";
+import { getAddressError } from "./hexStrings";
 import { getAddressFromPublicKey } from "./crypto";
 
 export const INDRA_PUB_ID_PREFIX = "indra";
@@ -32,8 +32,7 @@ export const getSignerAddressFromPublicIdentifier = (publicIdentifier: PublicIde
   getAddressFromPublicKey(getPublicKeyFromPublicIdentifier(publicIdentifier));
 
 // makes sure all addresses are normalized
-export const getAddressFromAssetId = (assetId: AssetId): Address =>
-  getAddress(assetId);
+export const getAddressFromAssetId = (assetId: AssetId): Address => getAddress(assetId);
 
 ////////////////////////////////////////
 // Validators
@@ -53,6 +52,4 @@ export const getPublicIdentifierError = (value: any): string | undefined => {
     return e.message;
   }
 };
-export const invalidPublicIdentifier = getPublicIdentifierError;
-export const isValidPublicIdentifier = (value: any): boolean =>
-  !invalidPublicIdentifier(value);
+export const isValidPublicIdentifier = (value: any): boolean => !getPublicIdentifierError(value);

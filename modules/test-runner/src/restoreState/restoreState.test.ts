@@ -98,7 +98,7 @@ describe("Restore State", () => {
       clientA.on(
         EventNames.CONDITIONAL_TRANSFER_FAILED_EVENT, 
         (msg: EventPayloads.LinkedTransferFailed) => {
-          return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg, 2)}`);
+          return reject(`${clientA.publicIdentifier} failed to transfer: ${stringify(msg)}`);
       });
       clientA = await createClient({ 
         signer: signerA, 

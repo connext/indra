@@ -1,5 +1,5 @@
 import { bigNumberify } from "ethers/utils";
-import { isBN, toBN } from "./math";
+import { isBN, toBN } from "./bigNumbers";
 
 export const bigNumberifyJson = (json: any): object =>
   typeof json === "string"
@@ -14,9 +14,9 @@ export const deBigNumberifyJson = (json: object) =>
   );
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"
-export const stringify = (obj: object, abrv: boolean = false): string =>
+export const stringify = (value: any, abrv: boolean = false): string =>
   JSON.stringify(
-    obj,
+    value,
     (key: string, value: any): any =>
       value && value._hex
         ? bigNumberify(value).toString()

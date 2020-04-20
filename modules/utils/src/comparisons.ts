@@ -1,6 +1,6 @@
-import { BigNumber, BigNumberish, bigNumberify } from "ethers/utils";
+import { BigNumberish, bigNumberify } from "ethers/utils";
 
-import { stringify } from "./json";
+import { getBigNumberishError } from "./bigNumbers";
 
 // this contains all of the bn related validation
 // all functions in this library will return `undefined` if the conditions are
@@ -10,20 +10,7 @@ import { stringify } from "./json";
 //   throw new Error(notLessThanOrEqualTo)
 // }
 
-export const notBigNumber = (value: any): string | undefined => {
-  return BigNumber.isBigNumber(value)
-    ? undefined
-    : `Value "${stringify(value)}" is not a bignumber`;
-};
-
-export const notBigNumberish = (value: any): string | undefined => {
-  try {
-    bigNumberify(value);
-  } catch (e) {
-    return `Value ${stringify(value)} is not bignumberish: ${e.message}`;
-  }
-  return undefined;
-};
+export const notBigNumberish = getBigNumberishError;
 
 // return string when value is not greater than ceiling
 export const notGreaterThan = (value: any, ceil: BigNumberish): string | undefined => {

@@ -14,7 +14,7 @@ import {
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
-  invalidAddress,
+  getAddressError,
   stringify,
   toBN,
 } from "@connext/utils";
@@ -45,7 +45,7 @@ export class WithdrawalController extends AbstractController {
     const { assetId, recipient } = params;
     let transaction: TransactionResponse | undefined;
 
-    this.throwIfAny(invalidAddress(recipient), invalidAddress(assetId));
+    this.throwIfAny(getAddressError(recipient), getAddressError(assetId));
 
     let withdrawCommitment: WithdrawCommitment;
     let withdrawerSignatureOnWithdrawCommitment: string;

@@ -13,9 +13,9 @@ import {
 } from "@connext/types";
 import {
   getAddressFromAssetId,
-  invalidBytes32,
-  invalidAddress,
-  invalidPublicIdentifier,
+  getBytes32Error,
+  getAddressError,
+  getPublicIdentifierError,
   stringify,
   toBN,
 } from "@connext/utils";
@@ -36,15 +36,15 @@ export class LinkedTransferController extends AbstractController {
       : CONVENTION_FOR_ETH_ASSET_ID;
 
     this.throwIfAny(
-      invalidAddress(assetId),
-      invalidBytes32(paymentId),
-      invalidBytes32(preImage),
+      getAddressError(assetId),
+      getBytes32Error(paymentId),
+      getBytes32Error(preImage),
     );
 
     const submittedMeta = { ...(meta || {}) } as any;
 
     if (recipient) {
-      this.throwIfAny(invalidPublicIdentifier(recipient));
+      this.throwIfAny(getPublicIdentifierError(recipient));
       // set recipient and encrypted pre-image on linked transfer
       const encryptedPreImage = await this.channelProvider.encrypt(preImage, recipient);
 

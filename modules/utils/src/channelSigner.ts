@@ -10,19 +10,19 @@ import {
 } from "@connext/types";
 import { Wallet } from "ethers";
 import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
-import { hexlify, randomBytes } from "ethers/utils";
 
 import {
   decrypt,
   encrypt,
   getAddressFromPublicKey,
+  getRandomPrivateKey,
   getPublicKeyFromPrivateKey,
   signChannelMessage,
 } from "./crypto";
 import { getPublicIdentifierFromPublicKey } from "./identifiers";
 
 export const getRandomChannelSigner = (ethProviderUrl?: UrlString) =>
-  new ChannelSigner(hexlify(randomBytes(32)), ethProviderUrl);
+  new ChannelSigner(getRandomPrivateKey(), ethProviderUrl);
 
 export class ChannelSigner implements IChannelSigner {
   public address: Address;
@@ -50,11 +50,11 @@ export class ChannelSigner implements IChannelSigner {
 
   public encrypt = encrypt;
 
-  public async decrypt(message: HexString): Promise<HexString> {
+  public async decrypt(message: string): Promise<HexString> {
     return decrypt(message, this.privateKey);
   }
 
-  public async signMessage(message: HexString): Promise<SignatureString> {
+  public async signMessage(message: string): Promise<SignatureString> {
     return signChannelMessage(message, this.privateKey);
   }
 
