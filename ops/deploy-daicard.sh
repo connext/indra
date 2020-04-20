@@ -43,8 +43,6 @@ if [[ "$?" != "0" ]]
 then echo "Make sure you're logged into docker & have push permissions: docker login" && exit
 fi
 
-exit
-
 echo;echo "Copying start script to $daicard"
 scp -i $ssh_key ops/start-daicard.sh $user@$daicard:/home/$user/start-daicard.sh
 
