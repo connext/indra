@@ -1,4 +1,3 @@
-import { JsonRpcProvider } from "ethers/providers";
 import {
   ILoggerService,
   NetworkContext,
@@ -13,8 +12,9 @@ import {
 import { ChallengeRegistry } from "@connext/contracts";
 import { toBN } from "@connext/utils";
 import { Contract, Event } from "ethers";
-import EventEmitter from "eventemitter3";
+import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, Interface } from "ethers/utils";
+import EventEmitter from "eventemitter3";
 
 /**
  * This class listens to events emitted by the connext contracts,
@@ -36,6 +36,7 @@ export class ChainListener implements IChainListener {
     loggerService: ILoggerService,
   ) {
     this.log = loggerService.newContext("ChainListener");
+    this.log.debug(`Creating new ChainListener for ChallengeRegistry at ${this.context.ChallengeRegistry}`);
     this.emitter = new EventEmitter();
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
@@ -63,7 +64,7 @@ export class ChainListener implements IChainListener {
   };
 
   // parses + emits any event logs from given block to current block
-  public parseLogs = async (startingBlock: number): Promise<void> => {
+  public parseLogsFrom = async (startingBlock: number): Promise<void> => {
     const currentBlock = await this.provider.getBlockNumber();
     if (startingBlock > currentBlock) {
       throw new Error(

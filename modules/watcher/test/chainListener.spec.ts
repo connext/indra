@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import {
   JsonRpcProvider,
@@ -7,7 +6,7 @@ import {
   NetworkContext,
   StateProgressedContractEvent,
 } from "@connext/types";
-import { stateToHash, setupContext, AppWithCounterClass, ActionType } from "./utils";
+import { stateToHash, setupContext, AppWithCounterClass, ActionType, expect } from "./utils";
 import { nullLogger, toBN, ChannelSigner, computeAppChallengeHash } from "@connext/utils";
 import { ChainListener } from "../src";
 import { beforeEach } from "mocha";
@@ -198,7 +197,7 @@ describe("ChainListener", () => {
           return resolve(data);
         });
       }),
-      chainListener.parseLogs(startingBlock),
+      chainListener.parseLogsFrom(startingBlock),
     ]);
 
     // verify events
