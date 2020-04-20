@@ -28,78 +28,40 @@ export const stringify = (value: any, abrv: boolean = false): string =>
     2,
   );
 
-export const removeUndefinedFields = <T>(obj: T): T => {
-  Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
-  return obj;
-};
-
-export const insertDefault = (val: string, obj: any, keys: string[]): any => {
-  const adjusted = {} as any;
-  keys.concat(Object.keys(obj)).forEach((k: any): any => {
-    // check by index and undefined
-    adjusted[k] = (typeof obj[k] === "undefined" || obj[k] === null)
-      ? val // not supplied set as default val
-      : obj[k];
-  });
-  return adjusted;
-};
-
-export const objMap = <T, F extends keyof T, R>(
-  obj: T,
-  func: (val: T[F], field: F) => R,
-): { [key in keyof T]: R } => {
-  const res: any = {};
-  for (const key in obj) {
-    if ((obj as any).hasOwnProperty(key)) {
-      res[key] = func(key as any, obj[key] as any);
-    }
-  }
-  return res;
-};
-
-export const objMapPromise = async <T, F extends keyof T, R>(
-  obj: T,
-  func: (val: T[F], field: F) => Promise<R>,
-): Promise<{ [key in keyof T]: R }> => {
-  const res: any = {};
-  for (const key in obj) {
-    if ((obj as any).hasOwnProperty(key)) {
-      res[key] = await func(key as any, obj[key] as any);
-    }
-  }
-  return res;
-};
-
 export const safeJsonStringify = (value: any): string => {
   // make sure undefined are converted to null
-  return typeof value === "string"
-    ? value
-    : JSON.stringify(value, (key: string, value: any) =>
-        typeof value === "undefined" ? null : value,
+  try {
+    return typeof value === "string"
+      ? value
+      : JSON.stringify(
+        value,
+        (key: string, value: any) => typeof value === "undefined" ? null : value,
       );
+  } catch (e) {
+    return e.message;
+  }
 };
 
 export const safeJsonParse = (value: any): any => {
+  const convertObjectValuesRecursive = (obj: any, target: any, replacement: any): any => {
+    if (typeof obj === "object" && typeof obj.length === "number") {
+      return obj;
+    }
+    const ret = { ...obj };
+    Object.keys(ret).forEach(key => {
+      if (ret[key] === target) {
+        ret[key] = replacement;
+      } else if (typeof ret[key] === "object" && !Array.isArray(ret[key])) {
+        ret[key] = convertObjectValuesRecursive(ret[key], target, replacement);
+      }
+    });
+    return ret;
+  };
   try {
     // assert null --> undefined conversion
     return convertObjectValuesRecursive(JSON.parse(value), null, undefined);
   } catch {
     return value;
   }
-};
-
-const convertObjectValuesRecursive = (obj: any, target: any, replacement: any): any => {
-  if (typeof obj === "object" && typeof obj.length === "number") {
-    return obj;
-  }
-  const ret = { ...obj };
-  Object.keys(ret).forEach(key => {
-    if (ret[key] === target) {
-      ret[key] = replacement;
-    } else if (typeof ret[key] === "object" && !Array.isArray(ret[key])) {
-      ret[key] = convertObjectValuesRecursive(ret[key], target, replacement);
-    }
-  });
-  return ret;
 };
 

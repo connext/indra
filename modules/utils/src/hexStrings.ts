@@ -1,11 +1,17 @@
 import { hexDataLength, hexlify, isHexString, getAddress, randomBytes } from "ethers/utils";
 
+////////////////////////////////////////
+// Validators
+
 export const getHexStringError = (value: any, length?: number): string | undefined => {
   if (typeof value !== "string" || !isHexString(value)) {
-    return `Value "${value.toString()}" is not a valid hex string`;
+    return `Value ${value} is a ${typeof value}, expected a string`;
+  }
+  if (!value.startsWith("0x")) {
+    return `Value ${value} doesn't start with 0x`;
   }
   if (length && hexDataLength(value) !== length) {
-    return `Value "${value.toString()}" is not ${length} bytes long`;
+    return `Value ${value} is ${hexDataLength(value)} bytes long, expected ${length}`;
   }
   return undefined;
 };
@@ -30,13 +36,8 @@ export const getBytes32Error = (value: any): string | undefined => {
 };
 export const isValidBytes32 = (value: any): boolean => !getBytes32Error(value);
 
-export const isValidKeccak256Hash = isValidBytes32;
-
 ////////////////////////////////////////
 // Generators
 
 export const getRandomAddress = () => hexlify(randomBytes(20));
 export const getRandomBytes32 = () => hexlify(randomBytes(32));
-
-export const addHexPrefix = (hex: string): string => hex.startsWith("0x") ? hex : `0x${hex}`;
-export const removeHexPrefix = (hex: string): string => hex.replace(/^0x/, "");

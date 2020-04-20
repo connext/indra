@@ -2,7 +2,6 @@ import {
   isValidAddress,
   isValidBytes32,
   isValidEthSignature,
-  isValidKeccak256Hash,
   isValidHexString,
   isValidPublicIdentifier,
 } from "@connext/utils";
@@ -49,7 +48,7 @@ export function IsKeccak256Hash(validationOptions?: ValidationOptions): Function
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isValidKeccak256Hash(value);
+          return isValidBytes32(value);
         },
       },
     });

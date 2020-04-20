@@ -5,6 +5,11 @@ import { hexlify, randomBytes } from "ethers/utils";
 
 const CONNEXT_DEFAULT_SIGNER_KEY = "CONNEXT_DEFAULT_SIGNER";
 
+const removeUndefinedFields = <T>(obj: T): T => {
+  Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
+  return obj;
+};
+
 const getGeneratedSigner = (): string => {
   if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
     return hexlify(randomBytes(32));
