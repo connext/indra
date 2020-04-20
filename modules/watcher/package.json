@@ -12,12 +12,12 @@
   "scripts": {
     "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
-    "test": "mocha -r ts-node/register 'test/**/*.spec.{ts,tsx}' --exit --slow 1000 --timeout 5000"
+    "test": "mocha -r ts-node/register 'test/**/*.spec.{ts,tsx}' --exit --slow 1000 --timeout 5000 --bail"
   },
   "dependencies": {
     "@connext/contracts": "2.0.2",
-    "@connext/types": "6.0.5",
-    "@connext/utils": "6.0.5",
+    "@connext/types": "6.0.6",
+    "@connext/utils": "6.0.6",
     "ethers": "4.0.46",
     "eventemitter3": "4.0.0"
   },
