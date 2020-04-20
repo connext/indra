@@ -63,7 +63,6 @@ export class ChainListener implements IChainListener {
 
   //////// Listener methods
   public emit<T extends ChallengeEvent>(event: T, data: ChallengeEventData[T]): void {
-    console.log(`emitting ${event} with data:`, data);
     this.emitter.emit(event, data);
   }
 
