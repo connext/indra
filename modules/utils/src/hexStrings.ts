@@ -51,6 +51,6 @@ export const addHexPrefix = (hex: string): string => {
   return hex.startsWith("0x") ? hex : `0x${hex}`;
 };
 
-export const createRandomBytes32 = () => {
+export const getRandomBytes32 = () => {
   return hexlify(randomBytes(32));
 };

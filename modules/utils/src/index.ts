@@ -1,6 +1,7 @@
 export * from "./addresses";
 export * from "./comparisons";
 export * from "./crypto";
+export * from "./channelSigner";
 export * from "./currency";
 export * from "./delay";
 export * from "./env";

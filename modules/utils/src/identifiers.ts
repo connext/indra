@@ -10,7 +10,7 @@ import {
 } from "eccrypto-js";
 
 import { getAddressError } from "./addresses";
-import { getChecksumAddress } from "./crypto";
+import { getAddressFromPublicKey } from "./crypto";
 
 export const INDRA_PUB_ID_PREFIX = "indra";
 
@@ -26,7 +26,7 @@ export const getPublicKeyFromPublicIdentifier = (publicIdentifier: string) =>
   )))}`;
 
 export const getSignerAddressFromPublicIdentifier = (publicIdentifier: string): string =>
-  getChecksumAddress(getPublicKeyFromPublicIdentifier(publicIdentifier));
+  getAddressFromPublicKey(getPublicKeyFromPublicIdentifier(publicIdentifier));
 
 // make sure all addresses are normalized
 export const getAddressFromAssetId = (assetId: AssetId): string =>
