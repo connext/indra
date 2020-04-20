@@ -115,4 +115,34 @@ describe("ChainListener", () => {
       signature: await turnTaker.signMessage(digest),
     });
   });
+
+  it("should not parse any events if disabled", async () => {
+    await chainListener.disable();
+
+    const versionNumber = toBN(3);
+    const state = {
+      counter: Zero,
+    };
+    const action = {
+      actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
+      increment: toBN(1),
+    };
+
+    // track any emitted events
+    let emitted = 0;
+    chainListener.on("ChallengeUpdated", () => {
+      emitted += 1;
+      return Promise.resolve();
+    });
+    chainListener.on("StateProgressed", () => {
+      emitted += 1;
+      return Promise.resolve();
+    });
+
+    // submit transaction
+    const tx = await setAndProgressState(versionNumber, state, action);
+    await tx.wait();
+    expect(tx).to.be.ok;
+    expect(emitted).to.be.eq(0);
+  });
 });
