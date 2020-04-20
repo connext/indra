@@ -21,65 +21,20 @@ describe("ChainListener", () => {
   let appInstance: AppWithCounterClass;
   let channelResponder: Wallet;
 
-  beforeEach(async () => {
-    const context = await setupContext();
-    challengeRegistry = context["challengeRegistry"];
-    provider = context["provider"];
-    setAndProgressState = context["setAndProgressState"];
-    appInstance = context["appInstance"];
-    channelResponder = context["channelResponder"];
+  const versionNumber = toBN(3);
+  const state = {
+    counter: Zero,
+  };
+  const action = {
+    actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
+    increment: toBN(1),
+  };
+  const timeout = Zero;
 
-    chainListener = new ChainListener(
-      provider,
-      { ChallengeRegistry: challengeRegistry.address } as NetworkContext,
-      nullLogger,
-    );
-  });
-
-  it("should parse ChallengeUpdated + StateProgressed events properly when enabled", async () => {
-    await chainListener.enable();
-
-    const versionNumber = toBN(3);
-    const state = {
-      counter: Zero,
-    };
-    const action = {
-      actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-      increment: toBN(1),
-    };
-    const timeout = Zero;
-
-    let statesUpdated: ChallengeUpdatedContractEvent[] = [];
-    // trigger `ChallengeUpdated` event
-    const [states, progressed, tx] = await Promise.all([
-      new Promise(async resolve => {
-        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedContractEvent) => {
-          statesUpdated.push(data);
-          if (statesUpdated.length >= 2) {
-            return resolve(
-              statesUpdated.sort((a, b) => a.versionNumber.toNumber() - b.versionNumber.toNumber()),
-            );
-          }
-        });
-      }),
-      new Promise(async resolve => {
-        chainListener.once("StateProgressed", async (data: StateProgressedContractEvent) => {
-          return resolve(data);
-        });
-      }),
-      new Promise(async (resolve, reject) => {
-        try {
-          const tx = await setAndProgressState(versionNumber, state, action);
-          await tx.wait();
-          return resolve(tx);
-        } catch (e) {
-          return reject(e.stack || e.message);
-        }
-      }),
-    ]);
-    ////// verification
-    // tx
-    expect(tx).to.be.ok;
+  const verifySetAndProgressEvents = async (
+    states: ChallengeUpdatedContractEvent[],
+    progressed: StateProgressedContractEvent,
+  ) => {
     // first state from "setState"
     expect((states as ChallengeUpdatedContractEvent[])[0]).to.containSubset({
       identityHash: appInstance.identityHash,
@@ -114,6 +69,66 @@ describe("ChainListener", () => {
       turnTaker: turnTaker.address,
       signature: await turnTaker.signMessage(digest),
     });
+  };
+
+  beforeEach(async () => {
+    const context = await setupContext();
+    challengeRegistry = context["challengeRegistry"];
+    provider = context["provider"];
+    setAndProgressState = context["setAndProgressState"];
+    appInstance = context["appInstance"];
+    channelResponder = context["channelResponder"];
+
+    chainListener = new ChainListener(
+      provider,
+      { ChallengeRegistry: challengeRegistry.address } as NetworkContext,
+      nullLogger,
+    );
+  });
+
+  afterEach(() => {
+    chainListener.removeAllListeners();
+  });
+
+  it("should parse ChallengeUpdated + StateProgressed events properly when enabled", async () => {
+    await chainListener.enable();
+
+    let statesUpdated: ChallengeUpdatedContractEvent[] = [];
+    // trigger `ChallengeUpdated` event
+    const [states, progressed, tx] = await Promise.all([
+      new Promise(async resolve => {
+        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedContractEvent) => {
+          statesUpdated.push(data);
+          if (statesUpdated.length >= 2) {
+            return resolve(
+              statesUpdated.sort((a, b) => a.versionNumber.toNumber() - b.versionNumber.toNumber()),
+            );
+          }
+        });
+      }),
+      new Promise(async resolve => {
+        chainListener.once("StateProgressed", async (data: StateProgressedContractEvent) => {
+          return resolve(data);
+        });
+      }),
+      new Promise(async (resolve, reject) => {
+        try {
+          const tx = await setAndProgressState(versionNumber, state, action);
+          await tx.wait();
+          return resolve(tx);
+        } catch (e) {
+          return reject(e.stack || e.message);
+        }
+      }),
+    ]);
+    ////// verification
+    // tx
+    expect(tx).to.be.ok;
+    // first state from "setState"
+    verifySetAndProgressEvents(
+      states as ChallengeUpdatedContractEvent[],
+      progressed as StateProgressedContractEvent,
+    );
   });
 
   it("should not parse any events if disabled", async () => {
@@ -144,5 +159,53 @@ describe("ChainListener", () => {
     await tx.wait();
     expect(tx).to.be.ok;
     expect(emitted).to.be.eq(0);
+  });
+
+  it("should be able to parse past logs", async () => {
+    await chainListener.disable();
+
+    // submit transaction
+    const startingBlock = await provider.getBlockNumber();
+    const tx = await setAndProgressState(versionNumber, state, action);
+    await tx.wait();
+    expect(tx).to.be.ok;
+
+    // wait for block number to increase
+    await new Promise(resolve =>
+      provider.on("block", (block: number) => {
+        if (startingBlock < block) {
+          return resolve();
+        }
+      }),
+    );
+    expect(startingBlock).to.be.lessThan(await provider.getBlockNumber());
+
+    // parse logs
+    let statesUpdated: ChallengeUpdatedContractEvent[] = [];
+    const [states, progressed] = await Promise.all([
+      new Promise(async resolve => {
+        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedContractEvent) => {
+          statesUpdated.push(data);
+          if (statesUpdated.length >= 2) {
+            return resolve(
+              statesUpdated.sort((a, b) => a.versionNumber.toNumber() - b.versionNumber.toNumber()),
+            );
+          }
+        });
+      }),
+      new Promise(async resolve => {
+        chainListener.once("StateProgressed", async (data: StateProgressedContractEvent) => {
+          return resolve(data);
+        });
+      }),
+      chainListener.parseLogs(startingBlock),
+    ]);
+
+    // verify events
+    // first state from "setState"
+    verifySetAndProgressEvents(
+      states as ChallengeUpdatedContractEvent[],
+      progressed as StateProgressedContractEvent,
+    );
   });
 });
