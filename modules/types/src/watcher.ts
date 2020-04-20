@@ -5,6 +5,7 @@ import {
   ChallengeUpdatedContractEvent,
   ChallengeEvent,
   ChallengeEventData,
+  SignedCancelChallengeRequest,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
@@ -15,8 +16,8 @@ import {
   SetStateCommitmentJSON,
 } from "./commitments";
 import { IChannelSigner } from "./crypto";
-import { JsonRpcProvider, TransactionReceipt } from "ethers/providers";
-import { ILoggerService } from "./logger";
+import { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers/providers";
+import { ILoggerService, ILogger } from "./logger";
 
 ////////////////////////////////////////
 // Watcher exxternal parameters
@@ -25,7 +26,9 @@ export type WatcherInitOptions = {
   provider: JsonRpcProvider | string;
   context: NetworkContext;
   store: IWatcherStoreService;
-  log?: ILoggerService;
+  loggerService?: ILoggerService;
+  logLevel?: number;
+  logger?: ILogger;
 };
 
 ////////////////////////////////////////
@@ -88,6 +91,8 @@ export type WatcherEventData = {
   [P in keyof WatcherEventDataMap]: WatcherEventDataMap[P];
 };
 
+////////////////////////////////////////
+// Watcher interface
 export interface IWatcher {
   //////// Listener methods
   emit<T extends WatcherEvent>(event: T, data: WatcherEventData[T]): void;
@@ -105,9 +110,12 @@ export interface IWatcher {
   //////// Public methods
   enable(): Promise<void>;
   disable(): Promise<void>;
-  initiate(appIdentityHash: string): Promise<void>;
+  initiate(appIdentityHash: string): Promise<TransactionResponse>;
+  cancel(appIdentityHash: string, req: SignedCancelChallengeRequest): Promise<TransactionResponse>;
 }
 
+////////////////////////////////////////
+// Listener interface
 export interface IChainListener {
   //////// Listener methods
   emit<T extends ChallengeEvent>(event: T, data: ChallengeEventData[T]): void;
@@ -125,6 +133,7 @@ export interface IChainListener {
   //////// Public methods
   enable(): Promise<void>;
   disable(): Promise<void>;
+  parseLogsFrom(startingBlock: number): Promise<void>;
 }
 
 ////////////////////////////////////////
@@ -137,7 +146,6 @@ export interface IWatcherStoreService {
 
   ///// Events
   getLatestProcessedBlock(): Promise<number>;
-  createLatestProcessedBlock(): Promise<void>;
   updateLatestProcessedBlock(blockNumber: number): Promise<void>;
 
   getStateProgressedEvent(
