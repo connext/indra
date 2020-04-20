@@ -5,8 +5,8 @@ import {
 } from "@connext/types";
 import {
   ChannelSigner,
-  createRandomAddress,
-  createRandom32ByteHexString,
+  getRandomAddress,
+  getRandomBytes32,
   toBN,
 } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
@@ -45,7 +45,7 @@ export const setupContext = async (
   const CHANNEL_NONCE = parseInt((Math.random() * 100).toString().split(".")[0]);
 
   // multisig address helpers
-  const multisigAddress = createRandomAddress(); // doesn't matter exactly what this is
+  const multisigAddress = getRandomAddress(); // doesn't matter exactly what this is
 
   const appInstance = new AppWithCounterClass(
     [alice.address, bob.address],
@@ -110,7 +110,7 @@ export const setupContext = async (
   };
 
   const verifySignatures = async (
-    digest: string = createRandom32ByteHexString(),
+    digest: string = getRandomBytes32(),
     signatures?: string[],
     signers?: string[],
   ) => {

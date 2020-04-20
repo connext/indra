@@ -11,7 +11,7 @@ export const getAddressError = (value: string): string | undefined => {
 export const invalidAddress = getAddressError;
 export const isValidAddress = (value: string): boolean => !invalidAddress(value);
 
-export const createRandomAddress = () => {
+export const getRandomAddress = () => {
   return hexlify(randomBytes(20));
 };
 

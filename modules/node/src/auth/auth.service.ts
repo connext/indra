@@ -1,7 +1,7 @@
 import { MessagingAuthService } from "@connext/messaging";
 import { PublicIdentifier } from "@connext/types";
 import {
-  createRandom32ByteHexString,
+  getRandomBytes32,
   getAddressError,
   getSignerAddressFromPublicIdentifier,
   isValidPublicIdentifier,
@@ -34,7 +34,7 @@ export class AuthService {
   }
 
   async getNonce(userIdentifier: string): Promise<string> {
-    const nonce = createRandom32ByteHexString();
+    const nonce = getRandomBytes32();
     const expiry = Date.now() + nonceTTL;
     // FIXME-- store nonce in redis instead of here...
     this.nonces[userIdentifier] = { expiry, nonce };

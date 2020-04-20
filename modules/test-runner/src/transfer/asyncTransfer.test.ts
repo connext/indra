@@ -4,7 +4,7 @@ import {
   IConnextClient,
   StoreTypes,
 } from "@connext/types";
-import { ChannelSigner, createRandom32ByteHexString } from "@connext/utils";
+import { ChannelSigner, getRandomBytes32 } from "@connext/utils";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
@@ -245,7 +245,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
-        preImage: createRandom32ByteHexString(),
+        preImage: getRandomBytes32(),
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(`is not a valid hex string`);
@@ -260,7 +260,7 @@ describe("Async Transfers", () => {
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: ConditionalTransferTypes.LinkedTransfer,
-        paymentId: createRandom32ByteHexString(),
+        paymentId: getRandomBytes32(),
         preImage,
         recipient: clientB.publicIdentifier,
       }),
