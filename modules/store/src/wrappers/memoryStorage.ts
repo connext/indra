@@ -348,10 +348,6 @@ export class MemoryStorage implements IClientStore {
     throw new Error("Disputes not implememented");
   }
 
-  async createLatestProcessedBlock(): Promise<void> {
-    throw new Error("Disputes not implememented");
-  }
-
   async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
     throw new Error("Disputes not implememented");
   }

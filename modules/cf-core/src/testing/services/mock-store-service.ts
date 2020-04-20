@@ -149,10 +149,6 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve(4);
   }
 
-  async createLatestProcessedBlock(): Promise<void> {
-    return Promise.resolve();
-  }
-
   async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
     return Promise.resolve();
   }

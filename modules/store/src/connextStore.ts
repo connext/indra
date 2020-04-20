@@ -301,10 +301,6 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getLatestProcessedBlock();
   }
 
-  createLatestProcessedBlock(): Promise<void> {
-    return this.internalStore.createLatestProcessedBlock();
-  }
-
   updateLatestProcessedBlock(blockNumber: number): Promise<void> {
     return this.internalStore.updateLatestProcessedBlock(blockNumber);
   }

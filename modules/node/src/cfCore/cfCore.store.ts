@@ -588,10 +588,6 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Disputes not implememented");
   }
 
-  async createLatestProcessedBlock(): Promise<void> {
-    throw new Error("Disputes not implememented");
-  }
-
   async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
     throw new Error("Disputes not implememented");
   }
