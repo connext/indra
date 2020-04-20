@@ -1,5 +1,5 @@
 import {
-  AppChallengeBigNumber,
+  AppChallenge,
   StateProgressedContractEvent,
   NetworkContext,
   ChallengeUpdatedContractEvent,
@@ -33,7 +33,7 @@ export type WatcherInitOptions = {
 export const ChallengeInitiatedEvent = "ChallengeInitiatedEvent";
 export type ChallengeInitiatedEventData = {
   transaction: TransactionReceipt;
-  challenge: AppChallengeBigNumber;
+  challenge: AppChallenge;
   appInstanceId: Bytes32;
   multisigAddress: Address;
 };
@@ -53,7 +53,7 @@ export type ChallengeUpdatedEventData = ChallengeInitiatedEventData;
 ////////////////////////////////////////
 export const ChallengeUpdateFailedEvent = "ChallengeUpdateFailedEvent";
 export type ChallengeUpdateFailedEventData = ChallengeInitiationFailedEventData & {
-  challenge: AppChallengeBigNumber;
+  challenge: AppChallenge;
   params: any; // ProgressStateParams | SetStateParams | CancelChallengeParams
 };
 
@@ -131,9 +131,9 @@ export interface IChainListener {
 ///// Storage
 export interface IWatcherStoreService {
   ///// Disputes
-  getAppChallenge(appIdentityHash: string): Promise<AppChallengeBigNumber | undefined>;
-  createAppChallenge(multisigAddress: string, appChallenge: AppChallengeBigNumber): Promise<void>;
-  updateAppChallenge(multisigAddress: string, appChallenge: AppChallengeBigNumber): Promise<void>;
+  getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined>;
+  createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void>;
+  updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void>;
 
   ///// Events
   getLatestProcessedBlock(): Promise<number>;

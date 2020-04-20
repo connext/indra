@@ -17,13 +17,12 @@ export type AppIdentityBigNumber = AppIdentity<BigNumber>;
 // A structure representing the state of a CounterfactualApp instance from the POV of the blockchain
 // NOTE: AppChallenge is the overall state of a channelized app instance,
 // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
-export type AppChallenge<T = string> = {
+export type AppChallenge = {
   appStateHash: HexString;
-  versionNumber: T;
-  finalizesAt: T;
+  versionNumber: BigNumber;
+  finalizesAt: BigNumber;
   status: ChallengeStatus;
 };
-export type AppChallengeBigNumber = AppChallenge<BigNumber>;
 
 ////////////////////////////////////////
 // keep synced w contracts/adjudicator/libs/LibDispute.sol

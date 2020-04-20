@@ -7,7 +7,7 @@ import {
   SetStateCommitmentJSON,
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
-  AppChallengeBigNumber,
+  AppChallenge,
   StateProgressedContractEvent,
   ChallengeUpdatedContractEvent,
 } from "@connext/types";
@@ -126,20 +126,20 @@ export class MockStoreService implements IStoreService {
   }
 
   ////// Watcher methods
-  async getAppChallenge(appIdentityHash: string): Promise<AppChallengeBigNumber | undefined> {
+  async getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
     return Promise.resolve(undefined);
   }
 
   async createAppChallenge(
     multisigAddress: string,
-    appChallenge: AppChallengeBigNumber,
+    appChallenge: AppChallenge,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async updateAppChallenge(
     multisigAddress: string,
-    appChallenge: AppChallengeBigNumber,
+    appChallenge: AppChallenge,
   ): Promise<void> {
     return Promise.resolve();
   }
