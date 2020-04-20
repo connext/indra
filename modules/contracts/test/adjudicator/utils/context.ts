@@ -1,5 +1,5 @@
 import {
-  AppChallengeBigNumber,
+  AppChallenge,
   ChallengeStatus,
   ChallengeEvents,
 } from "@connext/types";
@@ -57,7 +57,7 @@ export const setupContext = async (
   );
 
   // Contract helpers
-  const getChallenge = async (): Promise<AppChallengeBigNumber> => {
+  const getChallenge = async (): Promise<AppChallenge> => {
     const [
       status,
       appStateHash,
@@ -77,7 +77,7 @@ export const setupContext = async (
     return outcome;
   };
 
-  const verifyChallenge = async (expected: Partial<AppChallengeBigNumber>) => {
+  const verifyChallenge = async (expected: Partial<AppChallenge>) => {
     const challenge = await getChallenge();
     expect(challenge).to.containSubset(expected);
   };
@@ -87,7 +87,7 @@ export const setupContext = async (
     return appRegistry.functions.isProgressable(challenge, appInstance.defaultTimeout);
   };
 
-  const isDisputable = async (challenge?: AppChallengeBigNumber) => {
+  const isDisputable = async (challenge?: AppChallenge) => {
     if (!challenge) {
       challenge = await getChallenge();
     }
@@ -99,7 +99,7 @@ export const setupContext = async (
     return appRegistry.functions.isFinalized(challenge, appInstance.defaultTimeout);
   };
 
-  const isCancellable = async (challenge?: AppChallengeBigNumber) => {
+  const isCancellable = async (challenge?: AppChallenge) => {
     if (!challenge) {
       challenge = await getChallenge();
     }
@@ -131,7 +131,7 @@ export const setupContext = async (
 
   const wrapInEventVerification = async (
     contractCall: any,
-    expected: Partial<AppChallengeBigNumber> = {},
+    expected: Partial<AppChallenge> = {},
   ) => {
     const { status, appStateHash, finalizesAt, versionNumber } = await getChallenge();
     await expect(contractCall)

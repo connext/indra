@@ -1,6 +1,5 @@
 import { IBackupServiceAPI, WrappedStorage } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
-import path from "path";
 
 import {
   createDirectory,
@@ -10,6 +9,7 @@ import {
   getDirectoryFiles,
   safeFsRead,
   sanitizeExt,
+  pathJoin,
 } from "../helpers";
 import {
   DEFAULT_FILE_STORAGE_DIR,
@@ -49,7 +49,7 @@ export class FileStorage implements WrappedStorage {
   async getFilePath(key: string): Promise<string> {
     await this.checkFileDir();
     const fileName = `${this.prefix}${this.separator}${key}${this.fileSuffix}`;
-    return path.join(this.fileDir, fileName);
+    return pathJoin(this.fileDir, fileName);
   }
 
   async getItem<T>(key: string): Promise<T | undefined> {

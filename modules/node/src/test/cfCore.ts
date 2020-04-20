@@ -106,11 +106,11 @@ export const createSetStateCommitmentJSON = (
 ): SetStateCommitmentJSON => {
   return {
     appIdentity: {
-      channelNonce: "0",
+      channelNonce: Zero,
       participants: [generateRandomAddress(), generateRandomAddress()],
       multisigAddress: generateRandomAddress(),
       appDefinition: AddressZero,
-      defaultTimeout: "0",
+      defaultTimeout: Zero,
     },
     appIdentityHash: generateRandomBytes32(),
     appStateHash: generateRandomBytes32(),

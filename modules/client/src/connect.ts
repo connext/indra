@@ -42,6 +42,7 @@ export const connect = async (
     ? loggerService.newContext("ConnextConnect")
     : new ConsoleLogger("ConnextConnect", logLevel, providedLogger);
 
+  logger.info(`Called connect with ${stringify({ nodeUrl, ethProviderUrl, messagingUrl })}, and ${providedChannelProvider!! ? `provided channel provider` : `signer ${typeof opts.signer === "string" ? `using pk: ${opts.signer}` : `with id: ${opts.signer!.publicIdentifier}`}`}`);
   // setup ethProvider + network information
   logger.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -122,7 +123,7 @@ export const connect = async (
     token,
   });
 
-  logger.debug(`Done creating connext client`);
+  logger.info(`Done creating connext client`);
 
   const isSigner = await client.channelProvider.isSigner();
 
@@ -151,7 +152,7 @@ export const connect = async (
     delayAndThrow(30_000, "Channel was not available after 30 seconds."),
   ]);
 
-  logger.debug(`Channel is available`);
+  logger.info(`Channel is available`);
 
   // Make sure our store schema is up-to-date
   const schemaVersion = await client.channelProvider.getSchemaVersion();
@@ -248,7 +249,6 @@ export const connect = async (
     );
   }
 
-  logger.info(`Client ${client.publicIdentifier} connected!`);
-  logTime(logger, start, `Client successfully connected`);
+  logTime(logger, start, `Client ${client.publicIdentifier} successfully connected`);
   return client;
 };

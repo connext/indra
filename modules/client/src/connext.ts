@@ -469,7 +469,7 @@ export class ConnextClient implements IConnextClient {
       if (!channel) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
-      this.log.debug(`Found state to restore from node`);
+      this.log.info(`Found state to restore from node`);
       this.log.debug(`Restored channel: ${stringify(channel)}`);
       await this.channelProvider.send(ChannelMethods.chan_setStateChannel, {
         state: channel,
@@ -682,7 +682,7 @@ export class ConnextClient implements IConnextClient {
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<PublicResults.ResolveLinkedTransfer> => {
-    this.log.info(`Reclaiming transfer ${paymentId}`);
+    this.log.debug(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
     const preImage = await this.channelProvider.send(ChannelMethods.chan_decrypt, {
       encryptedPreImage,
@@ -693,7 +693,7 @@ export class ConnextClient implements IConnextClient {
       paymentId,
       preImage,
     });
-    this.log.info(`Reclaimed transfer ${paymentId}`);
+    this.log.debug(`Reclaimed transfer ${paymentId}`);
     return response;
   };
 

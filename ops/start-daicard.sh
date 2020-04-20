@@ -32,10 +32,11 @@ services:
       DOMAINNAME: '$domainname'
       EMAIL: 'noreply@gmail.com'
       INDRA_URL: '$indra_url'
-      MODE: 'prod'
     ports:
       - '80:80'
       - '443:443'
+      - '4221:4221'
+      - '4222:4222'
     volumes:
       - 'certs:/etc/letsencrypt'
 EOF

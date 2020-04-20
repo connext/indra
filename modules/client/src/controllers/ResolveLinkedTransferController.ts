@@ -7,6 +7,7 @@ import {
 } from "@connext/types";
 
 import { AbstractController } from "./AbstractController";
+import { stringify } from "@connext/utils";
 
 export class ResolveLinkedTransferController extends AbstractController {
   // properly logs error and emits a receive transfer failed event
@@ -25,13 +26,16 @@ export class ResolveLinkedTransferController extends AbstractController {
     // the amount / assetId to the api params without breaking interfaces
     const { paymentId, preImage } = params;
 
-    this.log.info(`Resolving link transfer with id ${params.paymentId}`);
+    this.log.info(`Resolving link transfer with params: ${stringify(params)}`);
 
     let resolveRes: PublicResults.ResolveLinkedTransfer;
     try {
       // node installs app, validation happens in listener
+      this.log.debug(`Requesting node installs app`);
       resolveRes = await this.connext.node.resolveLinkedTransfer(paymentId);
+      this.log.debug(`Installed linked transfer app ${resolveRes.appIdentityHash}. Taking action with preImage: ${preImage}`);
       await this.connext.takeAction(resolveRes.appIdentityHash, { preImage });
+      this.log.debug(`Successfully took action, uninstalling`);
       await this.connext.uninstallApp(resolveRes.appIdentityHash);
     } catch (e) {
       this.handleResolveErr(paymentId, e);
@@ -48,9 +52,13 @@ export class ResolveLinkedTransferController extends AbstractController {
         sender: resolveRes.sender,
         recipient: this.connext.publicIdentifier,
         meta: resolveRes.meta,
+        transferMeta: {
+          preImage,
+        },
       } as EventPayloads.LinkedTransferUnlocked,
     );
 
+    this.log.info(`Successfully redeemed linked transfer with id: ${paymentId} using preimage: ${preImage}`);
     return resolveRes;
   };
 }
