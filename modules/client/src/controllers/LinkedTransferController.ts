@@ -18,7 +18,6 @@ import {
   invalidPublicIdentifier,
   stringify,
   toBN,
-  validate,
 } from "@connext/utils";
 import { HashZero, Zero } from "ethers/constants";
 import { solidityKeccak256 } from "ethers/utils";
@@ -36,7 +35,7 @@ export class LinkedTransferController extends AbstractController {
       ? getAddressFromAssetId(params.assetId)
       : CONVENTION_FOR_ETH_ASSET_ID;
 
-    validate(
+    this.throwIfAny(
       invalidAddress(assetId),
       invalidBytes32(paymentId),
       invalidBytes32(preImage),
@@ -45,7 +44,7 @@ export class LinkedTransferController extends AbstractController {
     const submittedMeta = { ...(meta || {}) } as any;
 
     if (recipient) {
-      validate(invalidPublicIdentifier(recipient));
+      this.throwIfAny(invalidPublicIdentifier(recipient));
       // set recipient and encrypted pre-image on linked transfer
       const encryptedPreImage = await this.channelProvider.encrypt(preImage, recipient);
 

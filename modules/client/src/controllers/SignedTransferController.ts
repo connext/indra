@@ -69,7 +69,7 @@ export class SignedTransferController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: SIGNED_TRANSFER_STATE_TIMEOUT,
     };
-    this.log.debug(`Installing signed transfer app with params ${stringify(params, 2)}`);
+    this.log.debug(`Installing signed transfer app with params ${stringify(params)}`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(proposeInstallParams);
 
     if (!appIdentityHash) {

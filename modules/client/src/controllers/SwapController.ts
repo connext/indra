@@ -18,7 +18,6 @@ import {
   notLessThanOrEqualTo,
   notPositive,
   toBN,
-  validate,
 } from "@connext/utils";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, formatEther, parseEther } from "ethers/utils";
@@ -39,7 +38,7 @@ export class SwapController extends AbstractController {
     const userBal = preSwapFromBal[this.connext.signerAddress];
     const swappedAmount = calculateExchange(amount, swapRate);
 
-    validate(
+    this.throwIfAny(
       invalidAddress(fromTokenAddress),
       invalidAddress(toTokenAddress),
       notLessThanOrEqualTo(amount, userBal),
@@ -167,7 +166,7 @@ export class SwapController extends AbstractController {
       stateTimeout: SWAP_STATE_TIMEOUT,
     };
 
-    this.log.debug(`Installing app with params: ${stringify(params, 2)}`);
+    this.log.debug(`Installing app with params: ${stringify(params)}`);
     const appIdentityHash = await this.proposeAndInstallLedgerApp(params);
     return appIdentityHash;
   };
