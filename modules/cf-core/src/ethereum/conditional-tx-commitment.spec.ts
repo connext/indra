@@ -1,5 +1,5 @@
-import { MemoryStorage as MemoryStoreService } from "@connext/store";
-import { MultisigTransaction } from "@connext/types";
+import { ConnextStore } from "@connext/store";
+import { MultisigTransaction, StoreTypes } from "@connext/types";
 import { createRandomAddress } from "@connext/utils";
 import { WeiPerEther, AddressZero } from "ethers/constants";
 import { getAddress, Interface, TransactionDescription } from "ethers/utils";
@@ -73,7 +73,7 @@ describe("ConditionalTransactionCommitment", () => {
 
   describe("storage", () => {
     it("should be stored correctly", async () => {
-      const store = new MemoryStoreService();
+      const store = new ConnextStore(StoreTypes.Memory);
       await store.createConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
       const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
       expect(retrieved).toMatchObject(commitment);

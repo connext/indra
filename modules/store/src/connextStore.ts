@@ -97,7 +97,9 @@ export class ConnextStore implements IClientStore {
       }
 
       case StoreTypes.Memory: {
-        this.internalStore = new MemoryStorage();
+        this.internalStore = new KeyValueStorage(
+          new MemoryStorage(this.prefix, this.separator),
+        );
         break;
       }
 
@@ -140,8 +142,16 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.getStateChannelByAppIdentityHash(appIdentityHash);
   }
 
-  createStateChannel(stateChannel: StateChannelJSON): Promise<void> {
-    return this.internalStore.createStateChannel(stateChannel);
+  createStateChannel(
+    stateChannel: StateChannelJSON,
+    signedSetupCommitment: MinimalTransaction,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  ): Promise<void> {
+    return this.internalStore.createStateChannel(
+      stateChannel,
+      signedSetupCommitment,
+      signedFreeBalanceUpdate,
+    );
   }
 
   getAppInstance(appIdentityHash: string): Promise<AppInstanceJson> {
