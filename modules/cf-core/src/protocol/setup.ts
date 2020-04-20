@@ -11,11 +11,7 @@ import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetupCommitment, getSetStateCommitment } from "../ethereum";
 import { StateChannel } from "../models";
-import {
-  Context,
-  PersistCommitmentType,
-  ProtocolExecutionFlow,
-} from "../types";
+import { Context, PersistCommitmentType, ProtocolExecutionFlow } from "../types";
 
 import { assertIsValidSignature } from "./utils";
 
@@ -75,10 +71,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     // 32 ms
     const freeBalanceUpdateData = getSetStateCommitment(context, stateChannel.freeBalance);
-    const mySignatureOnFreeBalanceState = yield [
-      OP_SIGN,
-      freeBalanceUpdateData.hashToSign(),
-    ];
+    const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData.hashToSign()];
 
     // 201 ms (waits for responder to respond)
     substart = Date.now();
@@ -121,23 +114,25 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     logTime(log, substart, `Verified responder's sigs`);
 
     // add sigs to commitments
-    await setupCommitment.addSignatures(
-      mySetupSignature as any,
-      responderSetupSignature,
-    );
+    await setupCommitment.addSignatures(mySetupSignature as any, responderSetupSignature);
 
     await freeBalanceUpdateData.addSignatures(
       mySignatureOnFreeBalanceState as any,
       responderSignatureOnFreeBalanceState,
     );
-    // 33 ms
+
+    yield [
+      PERSIST_STATE_CHANNEL,
+      [stateChannel, await setupCommitment.getSignedTransaction(), freeBalanceUpdateData],
+    ];
+
+    // DEPRECATED: removed from store implemetations, only here for backwards compatibility
     yield [
       PERSIST_COMMITMENT,
       CreateSetup,
       await setupCommitment.getSignedTransaction(),
       stateChannel.multisigAddress,
     ];
-    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     yield [
       PERSIST_COMMITMENT,
@@ -210,10 +205,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const mySetupSignature = yield [OP_SIGN, setupCommitment.hashToSign()];
     const mySignatureOnFreeBalanceState = yield [OP_SIGN, freeBalanceUpdateData.hashToSign()];
 
-    await setupCommitment.addSignatures(
-      initiatorSetupSignature,
-      mySetupSignature as any,
-    );
+    await setupCommitment.addSignatures(initiatorSetupSignature, mySetupSignature as any);
 
     await freeBalanceUpdateData.addSignatures(
       initiatorSignatureOnFreeBalanceState,
@@ -221,13 +213,17 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     yield [
+      PERSIST_STATE_CHANNEL,
+      [stateChannel, await setupCommitment.getSignedTransaction(), freeBalanceUpdateData],
+    ];
+
+    // DEPRECATED: removed from store implemetations, only here for backwards compatibility
+    yield [
       PERSIST_COMMITMENT,
       CreateSetup,
       await setupCommitment.getSignedTransaction(),
       stateChannel.multisigAddress,
     ];
-
-    yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     yield [
       PERSIST_COMMITMENT,

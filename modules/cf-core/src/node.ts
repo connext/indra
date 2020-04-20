@@ -211,10 +211,7 @@ export class Node {
       } as ProtocolMessage);
 
       // 90 seconds is the default lock acquiring time time
-      const msg = await Promise.race([
-        counterpartyResponse,
-        delay(IO_SEND_AND_WAIT_TIMEOUT),
-      ]);
+      const msg = await Promise.race([counterpartyResponse, delay(IO_SEND_AND_WAIT_TIMEOUT)]);
 
       if (!msg || !("data" in (msg as ProtocolMessage))) {
         throw new Error(
@@ -231,13 +228,17 @@ export class Node {
       return (msg as ProtocolMessage).data;
     });
 
-    protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
-      const [stateChannels] = args;
-
-      for (const stateChannel of stateChannels) {
-        await this.storeService.createStateChannel(stateChannel.toJson());
-      }
-    });
+    protocolRunner.register(
+      Opcode.PERSIST_STATE_CHANNEL,
+      async (args: [[StateChannel, MinimalTransaction, SetStateCommitment]]) => {
+        const [[stateChannel, signedSetupCommitment, signedFreeBalanceUpdate]] = args;
+        await this.storeService.createStateChannel(
+          stateChannel.toJson(),
+          signedSetupCommitment,
+          signedFreeBalanceUpdate.toJson(),
+        );
+      },
+    );
 
     protocolRunner.register(
       Opcode.PERSIST_COMMITMENT,

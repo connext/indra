@@ -81,7 +81,11 @@ export interface IStoreService extends IWatcherStoreService {
   updateSchemaVersion(version?: number): Promise<void>;
 
   ///// State channels
-  createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+  createStateChannel(
+    stateChannel: StateChannelJSON,
+    signedSetupCommitment: MinimalTransaction,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
+  ): Promise<void>;
 
   ///// App instances
   createAppInstance(
