@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { Contract } from "ethers";
 import { JsonRpcProvider, ChallengeUpdatedContractEvent, ChallengeStatus, NetworkContext } from "@connext/types";
 import { randomState, stateToHash, setupContext } from "./utils";
-import { nullLogger, toBN, createRandom32ByteHexString } from "@connext/utils";
+import { nullLogger, toBN } from "@connext/utils";
 import { ChainListener } from "../src";
 import { beforeEach } from "mocha";
 
@@ -12,12 +12,14 @@ describe("ChainListener", () => {
   let provider: JsonRpcProvider;
   let chainListener: ChainListener;
   let setState: any;
+  let appInstance: any;
 
   beforeEach(async () => {
     const context = await setupContext();
     challengeRegistry = context["challengeRegistry"];
     provider = context["provider"];
     setState = context["setState"];
+    appInstance = context["appInstance"];
 
     chainListener = new ChainListener(
       provider,
@@ -31,28 +33,24 @@ describe("ChainListener", () => {
 
     const versionNumber = toBN(3);
     const state = randomState();
-    const hash = createRandom32ByteHexString();
     const timeout = toBN(4);
 
     // trigger `ChallengeUpdated` event
     const [emitted, tx] = await Promise.all([
       new Promise(async resolve => {
         chainListener.once("ChallengeUpdated", async (data: ChallengeUpdatedContractEvent) => {
-          console.log(`caught challenge updated event with data`, data);
           return resolve(data);
         });
       }),
       new Promise(async resolve => {
-        console.log(`calling set state`);
-        const res = await setState(versionNumber, timeout, state);
-        console.log(`called:`, res);
-        return resolve(res);
+        const tx = await setState(versionNumber, timeout, state);
+        await tx.wait();
+        return resolve(tx);
       }),
     ]);
-    console.log(`awaited all promises`);
     expect(tx).to.be.ok;
     expect(emitted).to.containSubset({
-      identityHash: hash,
+      identityHash: appInstance.identityHash,
       status: ChallengeStatus.IN_DISPUTE,
       appStateHash: stateToHash(state),
       versionNumber,

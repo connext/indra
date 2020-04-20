@@ -1,9 +1,20 @@
 import { JsonRpcProvider, AppIdentity } from "@connext/types";
 import { ChallengeRegistry, AppWithAction } from "@connext/contracts";
-import { createRandomAddress, ChannelSigner, computeAppChallengeHash } from "@connext/utils";
+import { createRandomAddress, ChannelSigner, computeAppChallengeHash, stringify } from "@connext/utils";
 import { hexlify, randomBytes, keccak256, solidityPack, BigNumber } from "ethers/utils";
 import { Wallet, ContractFactory } from "ethers";
 import { One } from "ethers/constants";
+import { waffleChai } from "@ethereum-waffle/chai";
+import { use } from "chai";
+
+/////////////////////////////
+//// Assertions
+
+use(require("chai-as-promised"));
+use(require("chai-subset"));
+use(waffleChai);
+
+export { expect } from "chai";
 
 /////////////////////////////
 //// Helper functions
@@ -64,16 +75,17 @@ export const setupContext = async () => {
       versionNumber,
       timeout,
     );
+    const signatures = [
+      await new ChannelSigner(channelInitiator.privateKey, ethProvider).signMessage(digest),
+      await new ChannelSigner(channelResponder.privateKey, ethProvider).signMessage(digest),
+    ];
     const tx = await challengeRegistry.functions.setState(
       appInstance.appIdentity, 
       {
         versionNumber,
         appStateHash: stateHash,
         timeout,
-        signatures: [
-          await new ChannelSigner(channelInitiator.privateKey, ethProvider).signMessage(digest),
-          await new ChannelSigner(channelResponder.privateKey, ethProvider).signMessage(digest),
-        ],
+        signatures,
       },
     );
     return tx;
