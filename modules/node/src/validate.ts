@@ -1,10 +1,9 @@
 import {
-  isAddress,
-  isBytes32,
-  isEthAddress,
-  isEthSignature,
-  isKeccak256Hash,
-  isValidHex,
+  isValidAddress,
+  isValidBytes32,
+  isValidEthSignature,
+  isValidKeccak256Hash,
+  isValidHexString,
   isValidPublicIdentifier,
 } from "@connext/utils";
 import { registerDecorator, ValidationOptions } from "class-validator";
@@ -18,7 +17,7 @@ export function IsValidHex(validationOptions?: ValidationOptions): Function {
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isValidHex(value);
+          return isValidHexString(value);
         },
       },
     });
@@ -34,7 +33,7 @@ export function IsEthAddress(validationOptions?: ValidationOptions): Function {
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isEthAddress(value);
+          return isValidAddress(value);
         },
       },
     });
@@ -50,7 +49,7 @@ export function IsKeccak256Hash(validationOptions?: ValidationOptions): Function
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isKeccak256Hash(value);
+          return isValidKeccak256Hash(value);
         },
       },
     });
@@ -66,7 +65,7 @@ export function IsEthSignature(validationOptions?: ValidationOptions): Function 
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isEthSignature(value);
+          return isValidEthSignature(value);
         },
       },
     });
@@ -82,23 +81,7 @@ export function IsBytes32(validationOptions?: ValidationOptions): Function {
       target: object.constructor,
       validator: {
         validate(value: any): boolean {
-          return isBytes32(value);
-        },
-      },
-    });
-  };
-}
-
-export function IsAddress(validationOptions?: ValidationOptions): Function {
-  return function(object: Object, propertyName: string): void {
-    registerDecorator({
-      name: "isAddress",
-      options: validationOptions,
-      propertyName,
-      target: object.constructor,
-      validator: {
-        validate(value: any): boolean {
-          return isAddress(value);
+          return isValidBytes32(value);
         },
       },
     });

@@ -1,4 +1,4 @@
-import { falsy } from "./bn";
+export const falsy = (x: string | undefined): boolean => !!x;
 
 export function validator(errs: string[]): string[] {
   return errs.filter(falsy);

@@ -9,12 +9,10 @@ import {
   isCompressed,
 } from "eccrypto-js";
 
+import { getAddressError } from "./addresses";
 import { getChecksumAddress } from "./crypto";
 
 export const INDRA_PUB_ID_PREFIX = "indra";
-
-////////////////////////////////////////
-// AssetId
 
 export const getPublicIdentifierFromPublicKey = (publicKey: string): string => {
   const buf = hexToBuffer(publicKey);
@@ -34,3 +32,22 @@ export const getSignerAddressFromPublicIdentifier = (publicIdentifier: string): 
 export const getAddressFromAssetId = (assetId: AssetId): string =>
   getAddress(assetId);
 
+export const getPublicIdentifierError = (identifier: string): string | undefined => {
+  try {
+    if (typeof identifier !== "string") {
+      return `Public identifier must be a string. Got ${typeof identifier}`;
+    } else if (!identifier.startsWith(INDRA_PUB_ID_PREFIX)) {
+      return `Public identifier must start with ${INDRA_PUB_ID_PREFIX}`;
+    }
+    const addressError = getAddressError(getSignerAddressFromPublicIdentifier(identifier));
+    return addressError
+      ? `Got invalid address from public identifier ${identifier}: ${addressError}`
+      : undefined;
+  } catch (e) {
+    return e.message;
+  }
+};
+
+export const invalidPublicIdentifier = getPublicIdentifierError;
+export const isValidPublicIdentifier = (identifier: string): boolean =>
+  !getPublicIdentifierError(identifier);

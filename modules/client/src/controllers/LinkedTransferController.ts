@@ -13,7 +13,7 @@ import {
 } from "@connext/types";
 import {
   getAddressFromAssetId,
-  invalid32ByteHexString,
+  invalidBytes32,
   invalidAddress,
   invalidPublicIdentifier,
   stringify,
@@ -38,8 +38,8 @@ export class LinkedTransferController extends AbstractController {
 
     validate(
       invalidAddress(assetId),
-      invalid32ByteHexString(paymentId),
-      invalid32ByteHexString(preImage),
+      invalidBytes32(paymentId),
+      invalidBytes32(preImage),
     );
 
     const submittedMeta = { ...(meta || {}) } as any;

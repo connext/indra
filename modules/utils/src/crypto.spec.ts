@@ -142,20 +142,4 @@ describe("crypto", () => {
       expect(sig).toBeTruthy();
     });
   });
-
-  /* TODO: remove
-   * These are intermediate steps inside a unit. Unit tests only need to test complete units.
-  it("should sign ECDSA digests", async () => {
-    const sig1 = await signDigestWithEthers(wallet.privateKey, digestHex);
-    const sig2 = await signDigest(wallet.privateKey, digest);
-    expect(sig1).toEqual(sig2);
-  });
-  it("should recover ECDSA digests", async () => {
-    const sig = await signDigest(wallet.privateKey, digest);
-    const recovered1 = await recoverAddressWithEthers(digestHex, sig);
-    const recovered2 = await recoverAddress(digest, sig);
-    expect(recovered2).toEqual(recovered1);
-    expect(recovered2).toEqual(wallet.address);
-  });
-  */
 });

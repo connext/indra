@@ -1,6 +1,6 @@
-import { utils } from "ethers";
+import { BigNumber, BigNumberish, bigNumberify } from "ethers/utils";
 
-import { stringify } from "../misc";
+import { stringify } from "./json";
 
 // this contains all of the bn related validation
 // all functions in this library will return `undefined` if the conditions are
@@ -10,68 +10,66 @@ import { stringify } from "../misc";
 //   throw new Error(notLessThanOrEqualTo)
 // }
 
-export const falsy = (x: string | undefined): boolean => !!x;
-
-export function notBigNumber(value: any): string | undefined {
-  return utils.BigNumber.isBigNumber(value)
+export const notBigNumber = (value: any): string | undefined => {
+  return BigNumber.isBigNumber(value)
     ? undefined
     : `Value "${stringify(value)}" is not a bignumber`;
-}
+};
 
-export function notBigNumberish(value: any): string | undefined {
+export const notBigNumberish = (value: any): string | undefined => {
   try {
-    utils.bigNumberify(value);
+    bigNumberify(value);
   } catch (e) {
     return `Value ${stringify(value)} is not bignumberish: ${e.message}`;
   }
   return undefined;
-}
+};
 
 // return string when value is not greater than ceiling
-export function notGreaterThan(value: any, ceil: utils.BigNumberish): string | undefined {
+export const notGreaterThan = (value: any, ceil: BigNumberish): string | undefined => {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return utils.bigNumberify(value).gt(utils.bigNumberify(ceil))
+  return bigNumberify(value).gt(bigNumberify(ceil))
     ? undefined
     : `Value (${value.toString()}) is not greater than ${ceil.toString()}`;
-}
+};
 
-export function notGreaterThanOrEqualTo(value: any, ceil: utils.BigNumberish): string | undefined {
+export const notGreaterThanOrEqualTo = (value: any, ceil: BigNumberish): string | undefined => {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return utils.bigNumberify(value).gte(ceil)
+  return bigNumberify(value).gte(ceil)
     ? undefined
     : `Value (${value.toString()}) is not greater than or equal to ${ceil.toString()}`;
-}
+};
 
 // return string when value is not less than floor
-export function notLessThan(value: any, floor: utils.BigNumberish): string | undefined {
+export const notLessThan = (value: any, floor: BigNumberish): string | undefined => {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return utils.bigNumberify(value).lt(floor)
+  return bigNumberify(value).lt(floor)
     ? undefined
     : `Value (${value.toString()}) is not less than ${floor.toString()}`;
-}
+};
 
-export function notLessThanOrEqualTo(value: any, floor: utils.BigNumberish): string | undefined {
+export const notLessThanOrEqualTo = (value: any, floor: BigNumberish): string | undefined => {
   if (notBigNumberish(value)) {
     return notBigNumberish(value);
   }
-  return utils.bigNumberify(value).lte(floor)
+  return bigNumberify(value).lte(floor)
     ? undefined
     : `Value (${value.toString()}) is not less than or equal to ${floor.toString()}`;
-}
+};
 
-export function notPositive(value: any): string | undefined {
+export const notPositive = (value: any): string | undefined => {
   return notGreaterThanOrEqualTo(value, 0);
-}
+};
 
-export function notNegative(value: any): string | undefined {
+export const notNegative = (value: any): string | undefined => {
   if (notLessThan(0, value)) {
     return `Value ${value.toString()} is negative.`;
   }
   return undefined;
-}
+};
