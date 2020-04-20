@@ -1,5 +1,5 @@
 /* global before */
-import { ChallengeStatus, AppChallengeBigNumber } from "@connext/types";
+import { ChallengeStatus, AppChallenge } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
 import { keccak256 } from "ethers/utils";
@@ -52,7 +52,7 @@ describe("ChallengeRegistry", () => {
   ) => Promise<void>;
   let cancelDisputeAndVerify: (versionNumber: number, signatures?: string[]) => Promise<void>;
 
-  let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
+  let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
 
   before(async () => {

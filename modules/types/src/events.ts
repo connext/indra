@@ -256,6 +256,10 @@ export namespace EventPayloads {
   export type Uninstall = UninstallEventData;
   export type UpdateState = UpdateStateEventData;
   export type ProtocolMessage = ProtocolMessageData;
+
+  // TODO: chain listener events
+
+  // TODO: chain watcher events
 }
 
 export class ConnextEventEmitter extends EventEmitter<string | ChannelMethods | EventNames> {}

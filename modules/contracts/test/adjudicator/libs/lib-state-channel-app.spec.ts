@@ -1,5 +1,5 @@
 /* global before */
-import { AppChallengeBigNumber, ChallengeStatus } from "@connext/types";
+import { AppChallenge, ChallengeStatus } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Contract, Wallet, ContractFactory } from "ethers";
 
@@ -25,9 +25,9 @@ describe("LibStateChannelApp", () => {
 
   // helpers
   let hasPassed: (timeout: BigNumberish) => Promise<boolean>;
-  let isDisputable: (challenge?: AppChallengeBigNumber) => Promise<boolean>;
+  let isDisputable: (challenge?: AppChallenge) => Promise<boolean>;
   let setState: (versionNumber: number) => Promise<void>;
-  let verifyChallenge: (expected: Partial<AppChallengeBigNumber>) => Promise<void>;
+  let verifyChallenge: (expected: Partial<AppChallenge>) => Promise<void>;
   let setAndProgressState: (versionNumber: number, action?: AppWithCounterAction) => Promise<void>;
   let isProgressable: () => Promise<boolean>;
   let verifySignatures: (digest?: string, sigs?: string[], signers?: string[]) => Promise<boolean>;

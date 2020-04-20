@@ -9,6 +9,7 @@ import {
   SetStateCommitmentJSON,
 } from "./commitments";
 import { enumify } from "./utils";
+import { IWatcherStoreService } from "./watcher";
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
@@ -73,20 +74,16 @@ export interface IBackupServiceAPI {
 
 export const STORE_SCHEMA_VERSION = 1;
 
-export interface IStoreService {
+// IWatcherStoreService contains all event/challenge storage methods
+// in addition to all the getters for the setters defined below
+export interface IStoreService extends IWatcherStoreService {
   ///// Schema version
-  getSchemaVersion(): Promise<number>;
   updateSchemaVersion(version?: number): Promise<void>;
 
   ///// State channels
-  getAllChannels(): Promise<StateChannelJSON[]>;
-  getStateChannel(multisigAddress: Address): Promise<StateChannelJSON | undefined>;
-  getStateChannelByOwners(owners: Address[]): Promise<StateChannelJSON | undefined>;
-  getStateChannelByAppIdentityHash(appIdentityHash: Bytes32): Promise<StateChannelJSON | undefined>;
   createStateChannel(stateChannel: StateChannelJSON): Promise<void>;
 
   ///// App instances
-  getAppInstance(appIdentityHash: Bytes32): Promise<AppInstanceJson | undefined>;
   createAppInstance(
     multisigAddress: Address,
     appInstance: AppInstanceJson,
@@ -100,7 +97,6 @@ export interface IStoreService {
   ): Promise<void>;
 
   ///// App proposals
-  getAppProposal(appIdentityHash: Bytes32): Promise<AppInstanceProposal | undefined>;
   createAppProposal(
     multisigAddress: Address,
     appProposal: AppInstanceProposal,
@@ -110,19 +106,16 @@ export interface IStoreService {
   // proposals dont need to be updated
 
   ///// Free balance
-  getFreeBalance(multisigAddress: Address): Promise<AppInstanceJson | undefined>;
   updateFreeBalance(
     multisigAddress: Address,
     freeBalanceAppInstance: AppInstanceJson,
   ): Promise<void>;
 
   ///// Setup commitment
-  getSetupCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
   createSetupCommitment(multisigAddress: Address, commitment: MinimalTransaction): Promise<void>;
   // no update, only ever created once
 
   ///// SetState commitment
-  getSetStateCommitment(appIdentityHash: Bytes32): Promise<SetStateCommitmentJSON | undefined>;
   createSetStateCommitment(
     appIdentityHash: Bytes32,
     commitment: SetStateCommitmentJSON,
@@ -135,9 +128,6 @@ export interface IStoreService {
   // always updated when app is updated
 
   ///// Conditional tx commitment
-  getConditionalTransactionCommitment(
-    appIdentityHash: Bytes32,
-  ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
   createConditionalTransactionCommitment(
     appIdentityHash: Bytes32,
     commitment: ConditionalTransactionCommitmentJSON,
@@ -149,7 +139,6 @@ export interface IStoreService {
   // no removal for disputes
 
   ///// Withdrawal commitment
-  getWithdrawalCommitment(multisigAddress: Address): Promise<MinimalTransaction | undefined>;
   createWithdrawalCommitment(
     multisigAddress: Address,
     commitment: MinimalTransaction,

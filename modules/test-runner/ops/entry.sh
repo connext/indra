@@ -62,14 +62,9 @@ if [[ "$cmd" == "watch" ]]
 then
   webpack --watch --config ops/webpack.config.js &
   sleep 5 # give webpack a sec to finish the first watch-mode build
-  mocha --slow 1000 --timeout 120000 --bail --check-leaks --bail --watch $bundle
-elif [[ "$cmd" == "flamegraph" ]]
-then
-  node dist/flamegraphPrep.bundle.js
-  sleep 2
-  0x -o dist/flamegraph.bundle.js
+  mocha --slow 1000 --timeout 180000 --bail --check-leaks --bail --watch $bundle
 else
-  mocha --slow 1000 --timeout 120000 --bail --check-leaks --bail --exit $noOnly $bundle
+  mocha --slow 1000 --timeout 180000 --bail --check-leaks --bail --exit $noOnly $bundle
 fi
 
 rm -rf $STORE_DIR
