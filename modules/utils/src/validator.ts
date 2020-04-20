@@ -1,4 +1,4 @@
-export const falsy = (x: string | undefined): boolean => !!x;
+export const falsy = (x: any): boolean => !!x;
 
 export function validator(errs: string[]): string[] {
   return errs.filter(falsy);

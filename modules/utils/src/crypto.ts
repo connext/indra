@@ -1,40 +1,83 @@
-import { Address, PublicKey } from "@connext/types";
-import { getAddress, hexlify } from "ethers/utils";
+import { Address, Bytes32, HexString, PublicKey, PrivateKey, SignatureString } from "@connext/types";
+import { getAddress, hexlify, randomBytes } from "ethers/utils";
 import {
-  sign,
-  encrypt as libEncrypt,
-  decrypt as libDecrypt,
-  keccak256,
-  serialize,
-  deserialize,
-  hexToBuffer,
-  bufferToHex,
-  utf8ToBuffer,
-  bufferToUtf8,
-  concatBuffers,
-  recover,
-  isHexString,
   arrayToBuffer,
+  concatBuffers,
   decompress,
-  isDecompressed,
+  decrypt as libDecrypt,
+  deserialize,
+  encrypt as libEncrypt,
   getPublic,
+  hexToBuffer,
+  isDecompressed,
+  keccak256,
+  recover,
+  serialize,
+  sign,
+  utf8ToBuffer,
 } from "eccrypto-js";
+
+import { getAddressError } from "./addresses";
+import { getHexStringError } from "./hexStrings";
 
 export const INDRA_SIGN_PREFIX = "\x15Indra Signed Message:\n";
 
-const hashMessage = (message: Buffer | string, prefix: string): string =>
-  bufferToHex(
-    keccak256(concatBuffers( // TODO: concatBuffers should bufferify inputs for us
-      bufferify(prefix),
-      bufferify(`${bufferify(message).length}`),
-      bufferify(message),
-    )),
-    true,
-  );
+////////////////////////////////////////
+// Validators
 
-const bufferify = (input: any[] | Buffer | string | Uint8Array): Buffer =>
+export const getPublicKeyError = (value: any): string | undefined => {
+  try {
+    const hexStringError = getHexStringError(value, 65);
+    if (hexStringError) return hexStringError;
+    const addressError = getAddressError(getAddressFromPublicKey(value));
+    return addressError
+      ? `Got invalid address from public key ${value}: ${addressError}`
+      : undefined;
+  } catch (e) {
+    return e.message;
+  }
+};
+export const invalidPublicKey = getPublicKeyError;
+export const isValidPublicKey = (value: any): boolean =>
+  !invalidPublicKey(value);
+
+export const getPrivateKeyError = (value: any): string | undefined => {
+  try {
+    const hexStringError = getHexStringError(value, 32);
+    if (hexStringError) return hexStringError;
+    const addressError = getAddressError(getAddressFromPrivateKey(value));
+    return addressError
+      ? `Got invalid address from private key: ${addressError}`
+      : undefined;
+  } catch (e) {
+    return e.message;
+  }
+};
+export const invalidPrivateKey = getPrivateKeyError;
+export const isValidPrivateKey = (value: any): boolean =>
+  !invalidPrivateKey(value);
+
+export const getEthSignatureError = (value: any): string | undefined => {
+  const hexStringError = getHexStringError(value, 65);
+  if (hexStringError) return hexStringError;
+  return undefined;
+};
+export const invalidEthSignature = getEthSignatureError;
+export const isValidEthSignature = (value: any): boolean => !getEthSignatureError(value);
+
+////////////////////////////////////////
+// Internal Helpers
+
+const hashMessage = (message: string, prefix: string): Bytes32 =>
+  hexlify(keccak256(concatBuffers(
+    bufferify(prefix),
+    bufferify(`${bufferify(message).length}`),
+    bufferify(message),
+  )));
+
+const bufferify = (input: Uint8Array | Buffer | string): Buffer =>
   typeof input === "string"
-    ? isHexString(input)
+    ? !getHexStringError(input)
       ? hexToBuffer(input)
       : utf8ToBuffer(input)
     : !Buffer.isBuffer(input)
@@ -42,56 +85,57 @@ const bufferify = (input: any[] | Buffer | string | Uint8Array): Buffer =>
     : input;
 
 const signDigest = async (
-  privateKey: Buffer | string,
-  digest: Buffer | string,
-): Promise<string> =>
-  bufferToHex(
-    await sign(
-      bufferify(privateKey),
-      bufferify(digest),
-      true,
-    ),
+  privateKey: PrivateKey,
+  digest: Bytes32,
+): Promise<SignatureString> =>
+  hexlify(await sign(
+    bufferify(privateKey),
+    bufferify(digest),
     true,
-  );
+  ));
 
 ////////////////////////////////////////
-// exports
+// Conversions
 
-export const getPublicKeyFromPrivateKey = (privateKey: string): string =>
+export const getPublicKeyFromPrivateKey = (privateKey: PrivateKey): PublicKey =>
   hexlify(getPublic(bufferify(privateKey)));
 
 export const getAddressFromPublicKey = (publicKey: PublicKey): Address => {
-  const buf = hexToBuffer(hexlify(publicKey));
-  return getAddress(bufferToHex(
+  const buf = bufferify(publicKey);
+  return getAddress(hexlify(
     keccak256(
-      // TODO: decompress should return same result even if already decompressed
       (isDecompressed(buf) ? buf : decompress(buf)).slice(1),
     ).slice(12),
   ));
 };
 
-export const encrypt = async (message: string, publicKey: string): Promise<string> => {
-  const encrypted = await libEncrypt(hexToBuffer(publicKey), utf8ToBuffer(message));
-  return hexlify(serialize(encrypted));
-};
+export const getAddressFromPrivateKey = (privateKey: PrivateKey): Address =>
+  getAddressFromPublicKey(getPublicKeyFromPrivateKey(privateKey));
 
-export const decrypt = async (message: string, privateKey: string): Promise<string> => {
-  const encrypted = deserialize(hexToBuffer(message));
-  const decrypted = await libDecrypt(hexToBuffer(privateKey), encrypted);
-  return bufferToUtf8(decrypted);
-};
+////////////////////////////////////////
+// Creators
 
-export const signChannelMessage = (message: string, privateKey: string): Promise<string> =>
-  signDigest(privateKey, bufferify(hashMessage(message, INDRA_SIGN_PREFIX)));
+export const getRandomPrivateKey = (): PrivateKey => hexlify(randomBytes(32));
 
-export const verifyChannelMessage = async (
-  message: Buffer | string,
-  sig: Buffer | string,
-): Promise<string> =>
-  getAddressFromPublicKey(bufferToHex(
+////////////////////////////////////////
+// Crypto functions
+
+export const encrypt = async (message: string, publicKey: PublicKey): Promise<HexString> =>
+  hexlify(serialize(await libEncrypt(bufferify(publicKey), bufferify(message))));
+
+export const decrypt = async (message: string, privateKey: PrivateKey): Promise<HexString> =>
+  hexlify(await libDecrypt(bufferify(privateKey), deserialize(bufferify(message))));
+
+export const signChannelMessage = (message: string, privateKey: PrivateKey): Promise<HexString> =>
+  signDigest(privateKey, hashMessage(message, INDRA_SIGN_PREFIX));
+
+export const recoverAddressFromChannelMessage = async (
+  message: HexString,
+  sig: SignatureString,
+): Promise<Address> =>
+  getAddressFromPublicKey(hexlify(
     await recover(
       bufferify(hashMessage(message, INDRA_SIGN_PREFIX)),
       bufferify(sig),
     ),
-    true,
   ));

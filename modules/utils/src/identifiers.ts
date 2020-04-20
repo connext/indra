@@ -1,4 +1,4 @@
-import { AssetId } from "@connext/types";
+import { Address, AssetId, PublicKey, PublicIdentifier } from "@connext/types";
 import bs58check from "bs58check";
 import { getAddress } from "ethers/utils";
 import {
@@ -14,40 +14,45 @@ import { getAddressFromPublicKey } from "./crypto";
 
 export const INDRA_PUB_ID_PREFIX = "indra";
 
-export const getPublicIdentifierFromPublicKey = (publicKey: string): string => {
+////////////////////////////////////////
+// Conversions
+
+export const getPublicIdentifierFromPublicKey = (publicKey: PublicKey): PublicIdentifier => {
   const buf = hexToBuffer(publicKey);
   // TODO: compress util should return same result even if already compressed
   return INDRA_PUB_ID_PREFIX + bs58check.encode(isCompressed(buf) ? buf : compress(buf));
 };
 
-export const getPublicKeyFromPublicIdentifier = (publicIdentifier: string) =>
+export const getPublicKeyFromPublicIdentifier = (publicIdentifier: PublicIdentifier) =>
   `0x${bufferToHex(decompress(bs58check.decode(
     publicIdentifier.replace(INDRA_PUB_ID_PREFIX, ""),
   )))}`;
 
-export const getSignerAddressFromPublicIdentifier = (publicIdentifier: string): string =>
+export const getSignerAddressFromPublicIdentifier = (publicIdentifier: PublicIdentifier): Address =>
   getAddressFromPublicKey(getPublicKeyFromPublicIdentifier(publicIdentifier));
 
-// make sure all addresses are normalized
-export const getAddressFromAssetId = (assetId: AssetId): string =>
+// makes sure all addresses are normalized
+export const getAddressFromAssetId = (assetId: AssetId): Address =>
   getAddress(assetId);
 
-export const getPublicIdentifierError = (identifier: string): string | undefined => {
+////////////////////////////////////////
+// Validators
+
+export const getPublicIdentifierError = (value: any): string | undefined => {
   try {
-    if (typeof identifier !== "string") {
-      return `Public identifier must be a string. Got ${typeof identifier}`;
-    } else if (!identifier.startsWith(INDRA_PUB_ID_PREFIX)) {
+    if (typeof value !== "string") {
+      return `Public identifier must be a string. Got ${typeof value}`;
+    } else if (!value.startsWith(INDRA_PUB_ID_PREFIX)) {
       return `Public identifier must start with ${INDRA_PUB_ID_PREFIX}`;
     }
-    const addressError = getAddressError(getSignerAddressFromPublicIdentifier(identifier));
+    const addressError = getAddressError(getSignerAddressFromPublicIdentifier(value));
     return addressError
-      ? `Got invalid address from public identifier ${identifier}: ${addressError}`
+      ? `Got invalid address from public identifier ${value}: ${addressError}`
       : undefined;
   } catch (e) {
     return e.message;
   }
 };
-
 export const invalidPublicIdentifier = getPublicIdentifierError;
-export const isValidPublicIdentifier = (identifier: string): boolean =>
-  !getPublicIdentifierError(identifier);
+export const isValidPublicIdentifier = (value: any): boolean =>
+  !invalidPublicIdentifier(value);

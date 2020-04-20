@@ -13,11 +13,19 @@ export const deBigNumberifyJson = (json: object) =>
     val && isBN(val) ? val.toHexString() : val,
   );
 
-export const stringify = (obj: any, space: number = 2): string =>
+// Give abrv = true to abbreviate hex strings and addresss to look like "0x6FEC..kuQk"
+export const stringify = (obj: object, abrv: boolean = false): string =>
   JSON.stringify(
     obj,
-    (key: string, value: any): any => (value && value._hex ? toBN(value._hex).toString() : value),
-    space,
+    (key: string, value: any): any =>
+      value && value._hex
+        ? bigNumberify(value).toString()
+        : abrv && value && typeof value === "string" && value.startsWith("address")
+        ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
+        : abrv && value && typeof value === "string" && value.startsWith("0x")
+        ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
+        : value,
+    2,
   );
 
 export const removeUndefinedFields = <T>(obj: T): T => {
@@ -62,48 +70,25 @@ export const objMapPromise = async <T, F extends keyof T, R>(
   return res;
 };
 
-// Give abrv = true to abbreviate hex strings and addresss to look like "address6FEC..kuQk"
-export const stringifyReborn = (obj: object, abrv: boolean = false): string =>
-  JSON.stringify(
-    obj,
-    (key: string, value: any): any =>
-      value && value._hex
-        ? bigNumberify(value).toString()
-        : abrv && value && typeof value === "string" && value.startsWith("address")
-        ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
-        : abrv && value && typeof value === "string" && value.startsWith("0x")
-        ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
-        : value,
-    2,
-  );
-
-export function safeJsonStringify(value: any): string {
+export const safeJsonStringify = (value: any): string => {
   // make sure undefined are converted to null
   return typeof value === "string"
     ? value
     : JSON.stringify(value, (key: string, value: any) =>
         typeof value === "undefined" ? null : value,
       );
-}
-
-export const safeJsonParseReborn = (value: any): any => {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
 };
 
-export function safeJsonParse(value: any): any {
+export const safeJsonParse = (value: any): any => {
   try {
     // assert null --> undefined conversion
     return convertObjectValuesRecursive(JSON.parse(value), null, undefined);
   } catch {
     return value;
   }
-}
+};
 
-function convertObjectValuesRecursive(obj: any, target: any, replacement: any): any {
+const convertObjectValuesRecursive = (obj: any, target: any, replacement: any): any => {
   if (typeof obj === "object" && typeof obj.length === "number") {
     return obj;
   }
@@ -116,5 +101,5 @@ function convertObjectValuesRecursive(obj: any, target: any, replacement: any): 
     }
   });
   return ret;
-}
+};
 

@@ -3,7 +3,7 @@ import * as EthCrypto from "eth-crypto";
 import * as ethers from "ethers";
 
 import { ChannelSigner } from "./channelSigner";
-import { INDRA_PUB_ID_PREFIX, verifyChannelMessage } from "./crypto";
+import { INDRA_PUB_ID_PREFIX, recoverAddressFromChannelMessage } from "./crypto";
 import { getPublicIdentifierFromPublicKey } from "./identifiers";
 
 const privateKey = ethers.Wallet.createRandom().privateKey;
@@ -85,6 +85,6 @@ describe("ChannelSigner", () => {
 
   it("should sign Channel messages", async () => {
     const sig = await (new ChannelSigner(wallet.privateKey).signMessage(testMessage));
-    expect(verifyChannelMessage(testMessage, sig)).toBeTruthy();
+    expect(recoverAddressFromChannelMessage(testMessage, sig)).toBeTruthy();
   });
 });

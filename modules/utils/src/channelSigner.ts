@@ -1,10 +1,17 @@
+import {
+  Address,
+  HexString,
+  IChannelSigner,
+  PrivateKey,
+  PublicKey,
+  PublicIdentifier,
+  SignatureString,
+  UrlString,
+} from "@connext/types";
+import { Wallet } from "ethers";
+import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
 import { hexlify, randomBytes } from "ethers/utils";
 
-import { IChannelSigner } from "@connext/types";
-import { TransactionResponse, TransactionRequest, JsonRpcProvider } from "ethers/providers";
-import { Wallet } from "ethers";
-
-import { getPublicIdentifierFromPublicKey } from "./identifiers";
 import {
   decrypt,
   encrypt,
@@ -12,14 +19,15 @@ import {
   getPublicKeyFromPrivateKey,
   signChannelMessage,
 } from "./crypto";
+import { getPublicIdentifierFromPublicKey } from "./identifiers";
 
-export const getRandomChannelSigner = (ethProviderUrl?: string) =>
+export const getRandomChannelSigner = (ethProviderUrl?: UrlString) =>
   new ChannelSigner(hexlify(randomBytes(32)), ethProviderUrl);
 
 export class ChannelSigner implements IChannelSigner {
-  public address: string;
-  public publicIdentifier: string;
-  public publicKey: string;
+  public address: Address;
+  public publicIdentifier: PublicIdentifier;
+  public publicKey: PublicKey;
   public readonly provider?: JsonRpcProvider;
 
   // NOTE: without this property, the Signer.isSigner
@@ -28,7 +36,7 @@ export class ChannelSigner implements IChannelSigner {
   // https://github.com/ethers-io/ethers.js/issues/779
   private readonly _ethersType = "Signer";
 
-  constructor(private readonly privateKey: string, ethProviderUrl?: string) {
+  constructor(private readonly privateKey: PrivateKey, ethProviderUrl?: UrlString) {
     this.provider = !!ethProviderUrl ? new JsonRpcProvider(ethProviderUrl) : undefined;
     this.privateKey = privateKey;
     this.publicKey = getPublicKeyFromPrivateKey(privateKey);
@@ -36,14 +44,18 @@ export class ChannelSigner implements IChannelSigner {
     this.publicIdentifier = getPublicIdentifierFromPublicKey(this.publicKey);
   }
 
-  public async decrypt(message: string): Promise<string> {
-    return decrypt(message, this.privateKey);
+  public async getAddress(): Promise<Address> {
+    return this.address;
   }
 
   public encrypt = encrypt;
 
-  public async getAddress(): Promise<string> {
-    return this.address;
+  public async decrypt(message: HexString): Promise<HexString> {
+    return decrypt(message, this.privateKey);
+  }
+
+  public async signMessage(message: HexString): Promise<SignatureString> {
+    return signChannelMessage(message, this.privateKey);
   }
 
   public async sendTransaction(transaction: TransactionRequest): Promise<TransactionResponse> {
@@ -54,9 +66,5 @@ export class ChannelSigner implements IChannelSigner {
     }
     const wallet = new Wallet(this.privateKey, this.provider);
     return wallet.sendTransaction(transaction);
-  }
-
-  public async signMessage(message: string): Promise<string> {
-    return signChannelMessage(message, this.privateKey);
   }
 }

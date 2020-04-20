@@ -1,7 +1,11 @@
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
 
-export const getAddressError = (value: string): string | undefined => {
+import { getHexStringError } from "./hexStrings";
+
+export const getAddressError = (value: any): string | undefined => {
   try {
+    const hexError = getHexStringError(value, 20);
+    if (hexError) return hexError;
     getAddress(value);
     return undefined;
   } catch (e) {
@@ -9,17 +13,15 @@ export const getAddressError = (value: string): string | undefined => {
   }
 };
 export const invalidAddress = getAddressError;
-export const isValidAddress = (value: string): boolean => !invalidAddress(value);
+export const isValidAddress = (value: any): boolean => !invalidAddress(value);
 
-export const getRandomAddress = () => {
-  return hexlify(randomBytes(20));
-};
+export const getRandomAddress = () => hexlify(randomBytes(20));
 
 export const normalizeEthAddresses = (obj: any): any => {
   const res = {};
   Object.entries(obj).forEach(([key, value]: any): any => {
-    if (isValidAddress(value as string)) {
-      res[key] = getAddress(value as any);
+    if (isValidAddress(value)) {
+      res[key] = getAddress(value);
       return;
     }
     res[key] = value;

@@ -5,7 +5,7 @@ import {
   getAddressError,
   getSignerAddressFromPublicIdentifier,
   isValidPublicIdentifier,
-  verifyChannelMessage,
+  recoverAddressFromChannelMessage,
 } from "@connext/utils";
 import { Injectable, Inject } from "@nestjs/common";
 
@@ -63,7 +63,7 @@ export class AuthService {
     }
 
     const { nonce, expiry } = this.nonces[userIdentifier];
-    const recovered = await verifyChannelMessage(nonce, signedNonce);
+    const recovered = await recoverAddressFromChannelMessage(nonce, signedNonce);
     if (recovered !== address) {
       throw new Error(`Verification failed, expected ${address}, got ${recovered}`);
     }
