@@ -3,7 +3,6 @@ import { safeJsonParse, safeJsonStringify } from "@connext/utils";
 
 import {
   createDirectory,
-  createDirectorySync,
   fsUnlink,
   fsWrite,
   getDirectoryFiles,
@@ -34,8 +33,6 @@ export class FileStorage implements WrappedStorage {
     if (!this.fileExt.trim()) {
       throw new Error(`Provided fileExt (${this.fileExt}) is invalid`);
     }
-
-    createDirectorySync(this.fileDir);
   }
 
   get fileSuffix(): string {
@@ -77,6 +74,7 @@ export class FileStorage implements WrappedStorage {
   }
 
   async getKeys(): Promise<string[]> {
+    await this.checkFileDir();
     const relevantKeys = (await getDirectoryFiles(this.fileDir))
       .filter((file: string) => file.includes(this.fileSuffix) && file.includes(this.prefix))
       .map((file: string) => file.replace(this.fileSuffix, ""));
