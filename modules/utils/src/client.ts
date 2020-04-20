@@ -1,17 +1,4 @@
-import { ILogger } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
-
-export const logTime = (log: ILogger, start: number, msg: string) => {
-  const diff = Date.now() - start;
-  const message = `${msg} in ${diff} ms`;
-  if (diff < 10) {
-    log.info(message);
-  } else if (diff < 250) {
-    log.info(message);
-  } else {
-    log.info(message);
-  }
-};
 
 // Give abrv = true to abbreviate hex strings and addresss to look like "address6FEC..kuQk"
 export const stringifyReborn = (obj: object, abrv: boolean = false): string =>
@@ -80,8 +67,7 @@ export const isNode = () =>
   typeof process.versions !== "undefined" &&
   typeof process.versions.node !== "undefined";
 
-export function removeUndefinedFields<T>(obj: T): T {
+export const removeUndefinedFields = <T>(obj: T): T => {
   Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
   return obj;
-}
-
+};
