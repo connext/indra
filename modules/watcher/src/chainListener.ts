@@ -6,11 +6,14 @@ import {
   IChainListener,
   ChallengeEvent,
   ChallengeEventData,
+  ChallengeStatus,
+  Address,
 } from "@connext/types";
 import { ChallengeRegistry } from "@connext/contracts";
+import { toBN } from "@connext/utils";
 import { Contract, Event } from "ethers";
-import { parseChallengeUpdatedEvent, parseStateProgressedEvent } from "./utils";
 import EventEmitter from "eventemitter3";
+import { BigNumber } from "ethers/utils";
 
 /**
  * This class listens to events emitted by the connext contracts,
@@ -71,10 +74,7 @@ export class ChainListener implements IChainListener {
     this.emitter.on(event, callback);
   }
 
-  public once<T extends ChallengeEvent>(
-    event: T,
-    callback: (data: ChallengeEventData[T]) => Promise<void>,
-  ): void {
+  public once<T extends ChallengeEvent>(event: T, callback: (data: any) => Promise<void>): void {
     this.emitter.once(event, callback);
   }
 
@@ -101,19 +101,49 @@ export class ChainListener implements IChainListener {
 
   // created listeners for the challenge registry
   private addChallengeRegistryListeners = (): void => {
-    this.challengeRegistry.on(ChallengeEvents.StateProgressed, async (event: Event) => {
+    this.challengeRegistry.on(ChallengeEvents.StateProgressed, (
+      identityHash: string,
+      action: string,
+      versionNumber: BigNumber,
+      timeout: BigNumber,
+      turnTaker: Address,
+      signature: string,
+      event: Event,
+    ) => {
       this.emit(
         ChallengeEvents.StateProgressed, 
-        await parseStateProgressedEvent(event),
+        {
+          identityHash,
+          action,
+          versionNumber: toBN(versionNumber),
+          timeout: toBN(timeout),
+          turnTaker,
+          signature,
+        },
       );
     });
 
-    this.challengeRegistry.on(ChallengeEvents.ChallengeUpdated, async (event: Event) => {
-      this.emit(
-        ChallengeEvents.ChallengeUpdated, 
-        await parseChallengeUpdatedEvent(event),
-      );
-    });
+    this.challengeRegistry.on(
+      ChallengeEvents.ChallengeUpdated,
+      (
+        identityHash: string, 
+        status: ChallengeStatus, 
+        appStateHash: string, 
+        versionNumber: BigNumber, 
+        finalizesAt: BigNumber, 
+      ) => {
+        this.emit(
+          ChallengeEvents.ChallengeUpdated,
+          {
+            identityHash,
+            status,
+            appStateHash,
+            versionNumber: toBN(versionNumber),
+            finalizesAt: toBN(finalizesAt),
+          },
+        );
+      },
+    );
 
     this.log.debug("Registered challenge registry listeners");
   };
