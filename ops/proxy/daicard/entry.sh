@@ -1,10 +1,13 @@
 #!/bin/bash
 
+INDRA_HOST=${INDRA_URL#*://}
+export INDRA_HOST=${INDRA_HOST%:*}
+
 echo "Proxy container launched in env:"
 echo "DOMAINNAME=$DOMAINNAME"
 echo "EMAIL=$EMAIL"
 echo "INDRA_URL=$INDRA_URL"
-echo "MODE=$MODE"
+echo "INDRA_HOST=$INDRA_HOST"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -19,8 +22,8 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-echo "waiting for ${INDRA_URL#*://}..."
-wait-for -t 60 ${INDRA_URL#*://} 2> /dev/null
+echo "waiting for $INDRA_HOST..."
+wait-for -t 60 $INDRA_HOST 2> /dev/null
 while ! curl -s $INDRA_URL > /dev/null
 do sleep 2
 done
@@ -76,5 +79,7 @@ if [[ "$DOMAINNAME" != "localhost" ]]
 then renewcerts &
 fi
 
+cp /etc/ssl/cert.pem ca-certs.pem
+
 echo "Entrypoint finished, executing haproxy..."; echo
-exec haproxy -db -f $MODE.cfg
+exec haproxy -db -f haproxy.cfg
