@@ -19,7 +19,7 @@ import {
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 import { getNatsClient } from "../util/nats";
 
-describe("Full Flow: Transfer", () => {
+describe.only("Full Flow: Transfer", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let clientC: IConnextClient;

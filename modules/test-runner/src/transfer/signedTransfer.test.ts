@@ -75,7 +75,7 @@ describe("Signed Transfers", () => {
       new Promise(async res => {
         clientB.once(
           EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (data: EventPayloads.SignedTransferReceived) => {
+          (data: EventPayloads.SignedTransferCreated) => {
             res(data);
           },
         );
@@ -91,7 +91,7 @@ describe("Signed Transfers", () => {
       sender: clientA.publicIdentifier,
       transferMeta: { signer: signerAddress },
       meta: { foo: "bar", recipient: clientB.publicIdentifier, sender: clientA.publicIdentifier },
-    } as EventPayloads.SignedTransferReceived);
+    } as EventPayloads.SignedTransferCreated);
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,
@@ -147,7 +147,7 @@ describe("Signed Transfers", () => {
       new Promise(async res => {
         clientB.once(
           EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (data: EventPayloads.SignedTransferReceived) => {
+          (data: EventPayloads.SignedTransferCreated) => {
             res(data);
           },
         );
@@ -162,7 +162,7 @@ describe("Signed Transfers", () => {
       paymentId,
       transferMeta: { signer: signerAddress },
       meta: { foo: "bar", recipient: clientB.publicIdentifier, sender: clientA.publicIdentifier },
-    } as Partial<EventPayloads.SignedTransferReceived>);
+    } as Partial<EventPayloads.SignedTransferCreated>);
 
     const {
       [clientA.signerAddress]: clientAPostTransferBal,

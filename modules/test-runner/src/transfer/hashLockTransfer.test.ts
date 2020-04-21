@@ -76,14 +76,14 @@ describe("HashLock Transfers", () => {
       new Promise(res => {
         clientB.on(
           EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferReceived) => {
+          (eventPayload: EventPayloads.HashLockTransferCreated) => {
             expect(eventPayload).to.deep.contain({
               amount: transfer.amount,
               assetId: transfer.assetId,
               type: ConditionalTransferTypes.HashLockTransfer,
               paymentId: lockHash,
               recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferReceived);
+            } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
               lockHash,
               timelock: bigNumberify(timelock).sub(100),
@@ -143,14 +143,14 @@ describe("HashLock Transfers", () => {
       new Promise(res => {
         clientB.on(
           EventNames.CONDITIONAL_TRANSFER_CREATED_EVENT,
-          (eventPayload: EventPayloads.HashLockTransferReceived) => {
+          (eventPayload: EventPayloads.HashLockTransferCreated) => {
             expect(eventPayload).to.deep.contain({
               amount: transfer.amount,
               assetId: transfer.assetId,
               type: ConditionalTransferTypes.HashLockTransfer,
               paymentId: lockHash,
               recipient: clientB.publicIdentifier,
-            } as EventPayloads.HashLockTransferReceived);
+            } as EventPayloads.HashLockTransferCreated);
             expect(eventPayload.transferMeta).to.deep.eq({
               lockHash,
               timelock: bigNumberify(timelock).sub(100),
