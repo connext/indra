@@ -124,8 +124,16 @@ export interface IStoreService extends IWatcherStoreService {
     appIdentityHash: Bytes32,
     commitment: SetStateCommitmentJSON,
   ): Promise<void>;
-  // no removal for disputes, only 1 per app thats
-  // always updated when app is updated
+  removeSetStateCommitment(
+    appIdentityHash: Bytes32,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void>;
+  // apps may have multiple set state commitments
+  // to allow for participants to call `progressState` or 
+  // `setAndProgressState` on state n with set state commitment
+  // at state n -1. These commitments should be removed at the
+  // end of the take action protocol
+
 
   ///// Conditional tx commitment
   createConditionalTransactionCommitment(
