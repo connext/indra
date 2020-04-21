@@ -1,13 +1,18 @@
 import {
   AppIdentity,
-  EthereumCommitment,
+  BigNumber,
   CommitmentTarget,
-  HexString,
+  EthereumCommitment,
   MinimalTransaction,
   SetStateCommitmentJSON,
   SignedAppChallengeUpdate,
 } from "@connext/types";
-import { appIdentityToHash, recoverAddressFromChannelMessage, toBN } from "@connext/utils";
+import {
+  appIdentityToHash,
+  bigNumberifyJson,
+  deBigNumberifyJson,
+  recoverAddressFromChannelMessage,
+} from "@connext/utils";
 import { Interface, keccak256, solidityPack } from "ethers/utils";
 
 import * as ChallengeRegistry from "../build/ChallengeRegistry.json";
@@ -19,8 +24,8 @@ export class SetStateCommitment implements EthereumCommitment {
     public readonly challengeRegistryAddress: string,
     public readonly appIdentity: AppIdentity,
     public readonly appStateHash: string,
-    public readonly versionNumber: number, // app nonce
-    public readonly stateTimeout: HexString,
+    public readonly versionNumber: BigNumber,
+    public readonly stateTimeout: BigNumber,
     public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
     private initiatorSignature?: string,
     private responderSignature?: string,
@@ -50,7 +55,7 @@ export class SetStateCommitment implements EthereumCommitment {
         appIdentityToHash(this.appIdentity),
         this.appStateHash,
         this.versionNumber,
-        toBN(this.stateTimeout),
+        this.stateTimeout,
       ],
     );
   }
@@ -72,7 +77,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public toJson(): SetStateCommitmentJSON {
-    return {
+    return deBigNumberifyJson({
       appIdentityHash: this.appIdentityHash,
       appIdentity: this.appIdentity,
       appStateHash: this.appStateHash,
@@ -80,19 +85,20 @@ export class SetStateCommitment implements EthereumCommitment {
       signatures: this.signatures,
       stateTimeout: this.stateTimeout,
       versionNumber: this.versionNumber,
-    };
+    });
   }
 
   public static fromJson(json: SetStateCommitmentJSON) {
+    const bnJson = bigNumberifyJson(json);
     return new SetStateCommitment(
-      json.challengeRegistryAddress,
-      json.appIdentity,
-      json.appStateHash,
-      json.versionNumber,
-      json.stateTimeout,
-      json.appIdentityHash,
-      json.signatures[0],
-      json.signatures[1],
+      bnJson.challengeRegistryAddress,
+      bnJson.appIdentity,
+      bnJson.appStateHash,
+      bnJson.versionNumber,
+      bnJson.stateTimeout,
+      bnJson.appIdentityHash,
+      bnJson.signatures[0],
+      bnJson.signatures[1],
     );
   }
 
@@ -101,7 +107,7 @@ export class SetStateCommitment implements EthereumCommitment {
     return {
       appStateHash: this.appStateHash,
       versionNumber: this.versionNumber,
-      timeout: toBN(this.stateTimeout).toNumber(), // this is a *state-specific* timeout (defaults to defaultTimeout)
+      timeout: this.stateTimeout, // this is a *state-specific* timeout (defaults to defaultTimeout)
       signatures: this.signatures,
     };
   }

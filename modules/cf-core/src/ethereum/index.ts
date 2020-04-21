@@ -4,10 +4,12 @@ import {
   SetStateCommitment,
   SetupCommitment,
 } from "@connext/contracts";
+import { OutcomeType } from "@connext/types";
+import { toBN } from "@connext/utils";
+import { AddressZero } from "ethers/constants";
+
 import { Context } from "../types";
 import { StateChannel, AppInstance } from "../models";
-import { OutcomeType } from "@connext/types";
-import { AddressZero } from "ethers/constants";
 
 const getConditionalTransactionCommitment = (
   context: Context,
@@ -35,8 +37,8 @@ const getSetStateCommitment = (context: Context, appInstance: AppInstance) =>
     context.network.ChallengeRegistry,
     appInstance.identity,
     appInstance.hashOfLatestState,
-    appInstance.versionNumber,
-    appInstance.stateTimeout,
+    toBN(appInstance.versionNumber),
+    toBN(appInstance.stateTimeout),
   );
 
 const getSetupCommitment = (context: Context, stateChannel: StateChannel): SetupCommitment =>
@@ -55,4 +57,4 @@ export {
   SetStateCommitment,
   getSetupCommitment,
   SetupCommitment,
-}
+};

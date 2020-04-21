@@ -7,6 +7,7 @@ import {
   ConditionalTransactionCommitmentJSON,
   MinimalTransaction,
 } from "@connext/types";
+import { deBigNumberifyJson } from "@connext/utils";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { Wallet } from "ethers";
 import { hexlify, bigNumberify } from "ethers/utils";
@@ -104,7 +105,7 @@ export const createStateChannelJSON = (
 export const createSetStateCommitmentJSON = (
   overrides: Partial<SetStateCommitmentJSON> = {},
 ): SetStateCommitmentJSON => {
-  return {
+  return deBigNumberifyJson({
     appIdentity: {
       channelNonce: Zero,
       participants: [generateRandomAddress(), generateRandomAddress()],
@@ -116,10 +117,10 @@ export const createSetStateCommitmentJSON = (
     appStateHash: generateRandomBytes32(),
     challengeRegistryAddress: AddressZero,
     signatures: [generateRandomSignature(), generateRandomSignature()],
-    stateTimeout: Zero.toHexString(),
-    versionNumber: 0,
+    stateTimeout: Zero,
+    versionNumber: Zero,
     ...overrides,
-  };
+  });
 };
 
 export const createConditionalTransactionCommitmentJSON = (

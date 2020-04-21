@@ -6,7 +6,8 @@ import {
   ProtocolRoles,
   TakeActionMiddlewareContext,
 } from "@connext/types";
-import { getSignerAddressFromPublicIdentifier, logTime } from "@connext/utils";
+import { getSignerAddressFromPublicIdentifier, logTime, toBN } from "@connext/utils";
+import { One } from "ethers/constants";
 
 import { UNASSIGNED_SEQ_NO } from "../constants";
 import { getSetStateCommitment, SetStateCommitment } from "../ethereum";
@@ -143,7 +144,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     // remove previous commitment
     const jsonToRemove = (await store.getSetStateCommitments(appIdentityHash)).filter(
-      commitment => commitment.versionNumber === setStateCommitment.versionNumber - 1,
+      commitment => toBN(commitment.versionNumber).eq(
+        toBN(setStateCommitment.versionNumber).add(One),
+      ),
     )[0];
     if (jsonToRemove) {
       yield [

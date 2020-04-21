@@ -20,7 +20,7 @@ import {
   NetworkContext,
   ConditionalTransactionCommitmentJSON,
 } from "@connext/types";
-import { toBN } from "@connext/utils";
+import { toBN, toBNJson } from "@connext/utils";
 import { BigNumber, hexlify, randomBytes } from "ethers/utils";
 import MockAsyncStorage from "mock-async-storage";
 import { v4 as uuid } from "uuid";
@@ -117,8 +117,8 @@ export const TEST_STORE_SET_STATE_COMMITMENT: SetStateCommitmentJSON = {
   appIdentityHash: TEST_STORE_APP_INSTANCE.identityHash,
   appStateHash: "setStateAppStateHash",
   challengeRegistryAddress: TEST_STORE_ETH_ADDRESS,
-  stateTimeout: toBN(17).toHexString(),
-  versionNumber: 23,
+  stateTimeout: toBNJson(17),
+  versionNumber: toBNJson(23),
   signatures: ["sig1", "sig2"] as any[], // Signature type, lazy mock
 };
 

@@ -1,4 +1,4 @@
-import { Address, BigNumber, HexString, HexObject } from "../basic";
+import { Address, BigNumber, HexString, BigNumberJson } from "../basic";
 import { tidy } from "../utils";
 
 ////////////////////////////////////////
@@ -22,7 +22,7 @@ export type MultiAssetMultiPartyCoinTransferInterpreterParams = {
 export type MultiAssetMultiPartyCoinTransferInterpreterParamsJson = Partial<
   MultiAssetMultiPartyCoinTransferInterpreterParams
 > & {
-  limit: HexObject[];
+  limit: BigNumberJson[];
 };
 
 export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding = tidy(`tuple(
@@ -41,7 +41,7 @@ export type SingleAssetTwoPartyCoinTransferInterpreterParams = {
 export type SingleAssetTwoPartyCoinTransferInterpreterParamsJson = Partial<
   SingleAssetTwoPartyCoinTransferInterpreterParams
 > & {
-  limit: HexObject;
+  limit: BigNumberJson;
 };
 
 export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = tidy(`tuple(
@@ -61,7 +61,7 @@ export type TwoPartyFixedOutcomeInterpreterParams = {
 export type TwoPartyFixedOutcomeInterpreterParamsJson = Partial<
   TwoPartyFixedOutcomeInterpreterParams
 > & {
-  amount: HexObject;
+  amount: BigNumberJson;
 };
 
 // TODO: tokenAddress?!

@@ -1,4 +1,5 @@
 import { StoreTypes, STORE_SCHEMA_VERSION } from "@connext/types";
+import { toBNJson } from "@connext/utils";
 import {
   expect,
   MockBackupService,
@@ -276,7 +277,7 @@ describe("ConnextStore", () => {
       it(`${type} - should work`, async () => {
         const store = await createConnextStore(type as StoreTypes, { fileDir });
         const setState = TEST_STORE_SET_STATE_COMMITMENT;
-        const edited = { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: 9 };
+        const edited = { ...TEST_STORE_SET_STATE_COMMITMENT, versionNumber: toBNJson(9) };
         const appIdentityHash = TEST_STORE_APP_INSTANCE.identityHash;
         await store.createSetStateCommitment(appIdentityHash, setState);
         const retrieved = await store.getSetStateCommitments(appIdentityHash);

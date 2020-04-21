@@ -47,8 +47,10 @@ export type AppInstanceJson = {
   latestAction?: SolidityValueType;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParamsJson;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParamsJson;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParamsJson;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParamsJson;
 };
 
 export type AppInstanceProposal = {
@@ -69,8 +71,10 @@ export type AppInstanceProposal = {
   meta?: object;
   // Interpreter Params
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?:
+    MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?:
+    SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
 ////////////////////////////////////

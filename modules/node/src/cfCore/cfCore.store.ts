@@ -13,6 +13,7 @@ import {
   StateProgressedContractEvent,
   ChallengeUpdatedContractEvent,
 } from "@connext/types";
+import { toBN } from "@connext/utils";
 import { Zero, AddressZero } from "ethers/constants";
 import { getManager } from "typeorm";
 import { bigNumberify } from "ethers/utils";
@@ -43,7 +44,8 @@ export class CFCoreStore implements IStoreService {
   constructor(
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
-    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository:
+      ConditionalTransactionCommitmentRepository,
     private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
     private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
     private readonly configService: ConfigService,
@@ -416,8 +418,8 @@ export class CFCoreStore implements IStoreService {
     entity.appStateHash = commitment.appStateHash;
     entity.challengeRegistryAddress = commitment.challengeRegistryAddress;
     entity.signatures = commitment.signatures;
-    entity.stateTimeout = commitment.stateTimeout;
-    entity.versionNumber = commitment.versionNumber;
+    entity.stateTimeout = toBN(commitment.stateTimeout).toHexString();
+    entity.versionNumber = toBN(commitment.versionNumber).toNumber();
     await this.setStateCommitmentRepository.save(entity);
   }
 
@@ -445,8 +447,8 @@ export class CFCoreStore implements IStoreService {
         appStateHash,
         challengeRegistryAddress,
         signatures,
-        stateTimeout,
-        versionNumber,
+        stateTimeout: toBN(stateTimeout).toHexString(),
+        versionNumber: toBN(versionNumber).toNumber(),
       })
       .where('set_state_commitment."appId" = (' + subQuery.getQuery() + ")")
       .setParameters(subQuery.getParameters())
@@ -457,7 +459,7 @@ export class CFCoreStore implements IStoreService {
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    const { versionNumber } = commitment;
+    const versionNumber = toBN(commitment.versionNumber).toNumber();
 
     const subQuery = this.appInstanceRepository
       .createQueryBuilder("app")

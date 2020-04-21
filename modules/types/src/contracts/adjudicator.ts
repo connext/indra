@@ -35,19 +35,17 @@ export const enum ChallengeStatus {
   OUTCOME_SET = 4,
 }
 
-export type SignedAppChallengeUpdate<T = string> = {
+export type SignedAppChallengeUpdate = {
   appStateHash: Bytes32;
-  versionNumber: number | T; // number for backwards compatability, TODO: remove
-  timeout: number | T; // number for backwards compatability, TODO: remove
+  versionNumber: BigNumber;
+  timeout: BigNumber;
   signatures: string[];
 };
-export type SignedAppChallengeUpdateBigNumber = SignedAppChallengeUpdate<BigNumber>;
 
-export type SignedCancelChallengeRequest<T = string> = {
-  versionNumber: T;
+export type SignedCancelChallengeRequest = {
+  versionNumber: BigNumber;
   signatures: string[];
 };
-export type SignedCancelChallengeRequestBigNumber = SignedCancelChallengeRequest<BigNumber>;
 
 // Emitted by MixinProgressState.sol when an action is played on
 // top of an onchain state so participants can derive new state
@@ -92,7 +90,7 @@ export type ChallengeEventData = {
 // keep synced w contracts/adjudicator/mixins/MixinSetState.sol
 export type MixinSetStateParams = {
   appIdentity: AppIdentity;
-  req: SignedAppChallengeUpdateBigNumber;
+  req: SignedAppChallengeUpdate;
 };
 
 ////////////////////////////////////////
@@ -106,7 +104,7 @@ export type MixinProgressStateParams = MixinSetStateParams & {
 // keep synced w contracts/adjudicator/mixins/MixinCancelChallenge.sol
 export type MixinCancelChallengeParams = {
   appIdentity: AppIdentity;
-  req: SignedCancelChallengeRequestBigNumber;
+  req: SignedCancelChallengeRequest;
 };
 
 ////////////////////////////////////////
@@ -116,10 +114,10 @@ export type MixinSetAndProgressStateParams = {
   // A signed app challenge update that contains the hash of the
   // latest state that has been signed by all parties
   // the timeout must be 0
-  req1: SignedAppChallengeUpdateBigNumber;
+  req1: SignedAppChallengeUpdate;
   // A signed app challenge update that contains the state that results
   // from applying the action to appState
-  req2: SignedAppChallengeUpdateBigNumber;
+  req2: SignedAppChallengeUpdate;
   appState: string; // encoded
   action: string; // encoded
 };
