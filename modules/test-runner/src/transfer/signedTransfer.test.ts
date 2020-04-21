@@ -24,7 +24,7 @@ import {
   requestCollateral,
 } from "../util";
 
-describe("Signed Transfers", () => {
+describe.only("Signed Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;

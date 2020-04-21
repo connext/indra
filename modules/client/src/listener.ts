@@ -461,11 +461,12 @@ export class ConnextListener extends ConnextEventEmitter {
         const transferAction = action as SimpleLinkedTransferAppAction
         // Only emit on sender side. Receiver side needs to be emitted after uninstall
         // in resolve controller.
+        const sender = appInstance.meta["sender"] || undefined;
+        const recipient = appInstance.meta["recipient"] || undefined;
         if(
-          appInstance.meta["sender"] == this.connext.publicIdentifier ||
+          sender == this.connext.publicIdentifier ||
           !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
         ) {
-          const recipient = appInstance.meta["recipient"] || undefined;
           this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
               type: ConditionalTransferTypes.LinkedTransfer,
               amount: transferState.coinTransfers[0].amount,
@@ -485,11 +486,14 @@ export class ConnextListener extends ConnextEventEmitter {
       case HashLockTransferAppName: {
         const transferState = state as HashLockTransferAppState
         const transferAction = action as HashLockTransferAppAction
+        // Only emit on sender side. Receiver side needs to be emitted after uninstall
+        // in resolve controller.
+        const sender = appInstance.meta["sender"] || undefined;
+        const recipient = appInstance.meta["recipient"] || undefined;
         if(
-          appInstance.meta["sender"] == this.connext.publicIdentifier ||
+          sender == this.connext.publicIdentifier ||
           !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
         ) {
-          const recipient = appInstance.meta["recipient"] || undefined;
           this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
               type: ConditionalTransferTypes.HashLockTransfer,
               amount: transferState.coinTransfers[0].amount,
@@ -509,11 +513,14 @@ export class ConnextListener extends ConnextEventEmitter {
       case SimpleSignedTransferAppName: {
         const transferState = state as SimpleSignedTransferAppState
         const transferAction = action as SimpleSignedTransferAppAction
+        // Only emit on sender side. Receiver side needs to be emitted after uninstall
+        // in resolve controller.
+        const sender = appInstance.meta["sender"] || undefined;
+        const recipient = appInstance.meta["recipient"] || undefined;
         if(
-          appInstance.meta["sender"] == this.connext.publicIdentifier ||
+          sender == this.connext.publicIdentifier ||
           !appInstance.meta // See: https://github.com/ConnextProject/indra/issues/1054
         ) {
-          const recipient = appInstance.meta["recipient"] || undefined;
           this.connext.emit(EventNames.CONDITIONAL_TRANSFER_UNLOCKED_EVENT, {
               type: ConditionalTransferTypes.SignedTransfer,
               amount: transferState.coinTransfers[0].amount,
