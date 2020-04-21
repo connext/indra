@@ -86,10 +86,6 @@ export class CFCoreStore implements IStoreService {
     signedSetupCommitment: MinimalTransaction,
     signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
-    const setup = await this.setupCommitmentRepository.findByMultisigAddressOrThrow(
-      stateChannel.multisigAddress,
-    );
-
     const nodeIdentifier = this.configService.getPublicIdentifier();
     const userIdentifier = stateChannel.userIdentifiers.find(id => id !== nodeIdentifier);
 
@@ -106,7 +102,6 @@ export class CFCoreStore implements IStoreService {
     channel.multisigAddress = multisigAddress;
     channel.addresses = addresses;
     channel.monotonicNumProposedApps = monotonicNumProposedApps;
-    channel.setupCommitment = setup;
     const swaps = this.configService.getAllowedSwaps();
     let activeCollateralizations = {};
     swaps.forEach(swap => {
