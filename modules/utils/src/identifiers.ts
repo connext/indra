@@ -40,13 +40,13 @@ export const getAddressFromAssetId = (assetId: AssetId): Address => getAddress(a
 export const getPublicIdentifierError = (value: any): string | undefined => {
   try {
     if (typeof value !== "string") {
-      return `Public identifier must be a string. Got ${typeof value}`;
+      return `Invalid public identifier. Expected a string, got ${typeof value}`;
     } else if (!value.startsWith(INDRA_PUB_ID_PREFIX)) {
-      return `Public identifier must start with ${INDRA_PUB_ID_PREFIX}`;
+      return `Invalid public identifier. Expected ${value} to start with ${INDRA_PUB_ID_PREFIX}`;
     }
     const addressError = getAddressError(getSignerAddressFromPublicIdentifier(value));
     return addressError
-      ? `Got invalid address from public identifier ${value}: ${addressError}`
+      ? `Invalid public identifier. Got errors recovering address from ${value}: ${addressError}`
       : undefined;
   } catch (e) {
     return e.message;
