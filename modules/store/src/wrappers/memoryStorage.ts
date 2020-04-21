@@ -3,7 +3,7 @@ import {
   WrappedStorage,
 } from "@connext/types";
 import { safeJsonParse, safeJsonStringify } from "@connext/utils";
-import { CHANNEL_KEY, COMMITMENT_KEY, DEFAULT_STORE_PREFIX, DEFAULT_STORE_SEPARATOR } from "src/constants";
+import { CHANNEL_KEY, COMMITMENT_KEY, DEFAULT_STORE_PREFIX, DEFAULT_STORE_SEPARATOR } from "../constants";
 
 export class WrappedMemoryStorage implements WrappedStorage {
 
