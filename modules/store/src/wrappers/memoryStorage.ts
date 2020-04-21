@@ -25,6 +25,9 @@ export class MemoryStorage implements IClientStore {
   private freeBalances: Map<string, AppInstanceJson> = new Map();
   private setupCommitments: Map<string, MinimalTransaction> = new Map();
 
+  private appChallenges: Map<string, AppChallenge> = new Map();
+  private latestProcessedBlock: number = 0;
+
   private schemaVersion: number = 0;
 
   constructor(private readonly backupService: IBackupServiceAPI | undefined = undefined) {}
@@ -208,9 +211,7 @@ export class MemoryStorage implements IClientStore {
   getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
     const keys = [...this.setStateCommitments.keys()];
     const relevant = keys.filter(key => key.includes(appIdentityHash));
-    return Promise.resolve(
-      relevant.map(key => this.setStateCommitments.get(key))
-    );
+    return Promise.resolve(relevant.map(key => this.setStateCommitments.get(key)));
   }
 
   createSetStateCommitment(
@@ -233,13 +234,13 @@ export class MemoryStorage implements IClientStore {
     return this.createSetStateCommitment(appIdentityHash, commitment);
   }
 
-  async removeSetStateCommitment(
+  removeSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
     const path = appIdentityHash.concat(`/${commitment.versionNumber}`);
     if (!this.setStateCommitments.has(path)) {
-      return;
+      return Promise.resolve();
     }
     this.setStateCommitments.delete(path);
     return Promise.resolve();
@@ -328,6 +329,8 @@ export class MemoryStorage implements IClientStore {
     this.withdrawals = new Map();
     this.appInstances = new Map();
     this.userWithdrawals = undefined;
+    this.appChallenges = new Map();
+    this.latestProcessedBlock = 0;
     return Promise.resolve();
   }
 
@@ -340,34 +343,40 @@ export class MemoryStorage implements IClientStore {
   }
 
   ////// Watcher methods
-  async getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
-    throw new Error("Disputes not implememented");
+  getAppChallenge(appIdentityHash: string): Promise<AppChallenge | undefined> {
+    if (!this.appChallenges.has(appIdentityHash)) {
+      return Promise.resolve(undefined);
+    }
+    return Promise.resolve(this.appChallenges.get(appIdentityHash));
   }
 
-  async createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
-    throw new Error("Disputes not implememented");
+  createAppChallenge(identityHash: string, appChallenge: AppChallenge): Promise<void> {
+    this.appChallenges.set(identityHash, appChallenge);
+    return Promise.resolve();
   }
 
-  async updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
-    throw new Error("Disputes not implememented");
+  updateAppChallenge(identityHash: string, appChallenge: AppChallenge): Promise<void> {
+    this.appChallenges.set(identityHash, appChallenge);
+    return Promise.resolve();
   }
 
-  async getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
-    throw new Error("Disputes not implememented");
+  getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
+    return Promise.resolve([...this.appChallenges.values()]);
   }
 
   ///// Events
-  async getLatestProcessedBlock(): Promise<number> {
-    throw new Error("Disputes not implememented");
+  getLatestProcessedBlock(): Promise<number> {
+    return Promise.resolve(this.latestProcessedBlock);
   }
 
-  async updateLatestProcessedBlock(blockNumber: number): Promise<void> {
-    throw new Error("Disputes not implememented");
+  updateLatestProcessedBlock(blockNumber: number): Promise<void> {
+    this.latestProcessedBlock = blockNumber;
+    return Promise.resolve();
   }
 
-  async getStateProgressedEvent(
+  getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent | undefined> {
+  ): Promise<StateProgressedContractEvent[]> {
     throw new Error("Disputes not implememented");
   }
 
@@ -385,9 +394,9 @@ export class MemoryStorage implements IClientStore {
     throw new Error("Disputes not implememented");
   }
 
-  async getChallengeUpdatedEvent(
+  async getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent | undefined> {
+  ): Promise<ChallengeUpdatedContractEvent[]> {
     throw new Error("Disputes not implememented");
   }
 
