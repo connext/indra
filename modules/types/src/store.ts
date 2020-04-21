@@ -104,6 +104,7 @@ export interface IStoreService extends IWatcherStoreService {
     multisigAddress: Address,
     appIdentityHash: Bytes32,
     freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void>;
 
   ///// App proposals

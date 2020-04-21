@@ -365,6 +365,7 @@ export class Node {
               multisigAddress,
               identityHash,
               freeBalance.toJson(),
+              signedSetStateCommitment.toJson(),
             );
             break;
           }

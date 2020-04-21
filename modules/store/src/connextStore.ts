@@ -188,8 +188,14 @@ export class ConnextStore implements IClientStore {
     multisigAddress: string,
     appIdentityHash: string,
     freeBalance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
-    return this.internalStore.removeAppInstance(multisigAddress, appIdentityHash, freeBalance);
+    return this.internalStore.removeAppInstance(
+      multisigAddress,
+      appIdentityHash,
+      freeBalance,
+      signedFreeBalanceUpdate,
+    );
   }
 
   getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {

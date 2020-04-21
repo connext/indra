@@ -131,19 +131,21 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : mySignature as any,
     );
 
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      uninstallCommitment,
-      postProtocolStateChannel.freeBalance.identityHash,
-    ];
-
     // 24ms
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
+      uninstallCommitment,
+    ];
+
+    // deprecated
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      uninstallCommitment,
+      postProtocolStateChannel.freeBalance.identityHash,
     ];
 
     // 204ms
@@ -226,19 +228,20 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         : mySignature as any,
     );
 
-    yield [
-      PERSIST_COMMITMENT,
-      PersistCommitmentType.UpdateSetState,
-      uninstallCommitment,
-      postProtocolStateChannel.freeBalance.identityHash,
-    ];
-
     // 59ms
     yield [
       PERSIST_APP_INSTANCE,
       PersistAppType.RemoveInstance,
       postProtocolStateChannel,
       appToUninstall,
+      uninstallCommitment,
+    ];
+
+    yield [
+      PERSIST_COMMITMENT,
+      PersistCommitmentType.UpdateSetState,
+      uninstallCommitment,
+      postProtocolStateChannel.freeBalance.identityHash,
     ];
 
     // 0ms

@@ -233,6 +233,7 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     multisigAddress: string,
     appIdentityHash: string,
     freeBalanceAppInstance: AppInstanceJson,
+    signedFreeBalanceUpdate: SetStateCommitmentJSON,
   ): Promise<void> {
     const channel = await this.getStateChannel(multisigAddress);
     if (!channel) {
@@ -242,13 +243,32 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       // does not exist
       return;
     }
+    const oldChannel = channel;
     const idx = channel.appInstances.findIndex(([app]) => app === appIdentityHash);
     channel.appInstances.splice(idx, 1);
+    const oldFreeBalanceUpdate = await this.getSetStateCommitment(
+      channel.freeBalanceAppInstance.identityHash,
+    );
 
-    return this.saveStateChannel({
-      ...channel,
-      freeBalanceAppInstance,
-    });
+    try {
+      await Promise.all([
+        this.saveStateChannel({
+          ...channel,
+          freeBalanceAppInstance,
+        }),
+        this.updateSetStateCommitment(
+          channel.freeBalanceAppInstance.identityHash,
+          signedFreeBalanceUpdate,
+        ),
+      ]);
+    } catch (e) {
+      console.error(`Caught error during removeAppInstance, reverting store changes: ${e}`);
+      await this.saveStateChannel(oldChannel);
+      this.updateSetStateCommitment(
+        channel.freeBalanceAppInstance.identityHash,
+        oldFreeBalanceUpdate,
+      );
+    }
   }
 
   async getAppProposal(appIdentityHash: string): Promise<AppInstanceProposal | undefined> {

@@ -203,6 +203,7 @@ describe("ConnextStore", () => {
           multisigAddress,
           app.identityHash,
           channel.freeBalanceAppInstance!,
+          TEST_STORE_SET_STATE_COMMITMENT,
         );
         const retrieved = await store.getAppInstance(app.identityHash);
         expect(retrieved).to.be.undefined;

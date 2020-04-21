@@ -116,7 +116,12 @@ export class MiniNode {
           }
 
           case PersistAppType.RemoveInstance: {
-            await this.store.removeAppInstance(multisigAddress, identityHash, freeBalance.toJson());
+            await this.store.removeAppInstance(
+              multisigAddress,
+              identityHash,
+              freeBalance.toJson(),
+              signedSetStateCommitment.toJson(),
+            );
             break;
           }
 
