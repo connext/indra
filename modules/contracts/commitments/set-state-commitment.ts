@@ -27,15 +27,12 @@ export class SetStateCommitment implements EthereumCommitment {
   ) {}
 
   get signatures(): string[] {
-    if (!this.initiatorSignature && !this.responderSignature) {
-      return [];
-    }
     return [this.initiatorSignature!, this.responderSignature!];
   }
 
   public async addSignatures(
-    initiatorSignature: string,
-    responderSignature: string,
+    initiatorSignature: string | undefined,
+    responderSignature: string | undefined,
   ): Promise<void> {
     this.initiatorSignature = initiatorSignature;
     this.responderSignature = responderSignature;
@@ -63,7 +60,7 @@ export class SetStateCommitment implements EthereumCommitment {
   }
 
   public async getSignedTransaction(): Promise<MinimalTransaction> {
-    this.assertSignatures();
+    await this.assertSignatures();
     return {
       to: this.challengeRegistryAddress,
       value: 0,
