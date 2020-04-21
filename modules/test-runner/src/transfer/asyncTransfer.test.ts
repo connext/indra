@@ -4,7 +4,7 @@ import {
   IConnextClient,
   StoreTypes,
 } from "@connext/types";
-import { ChannelSigner, createRandom32ByteHexString } from "@connext/utils";
+import { ChannelSigner, getRandomBytes32 } from "@connext/utils";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
@@ -221,7 +221,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient,
       }),
-    ).to.be.rejectedWith(`Invalid public key identifier`);
+    ).to.be.rejectedWith(`Invalid public identifier`);
   });
 
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
@@ -245,10 +245,10 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         conditionType: ConditionalTransferTypes.LinkedTransfer,
         paymentId,
-        preImage: createRandom32ByteHexString(),
+        preImage: getRandomBytes32(),
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`is not a valid hex string`);
+    ).to.be.rejectedWith(`Invalid hex string`);
   });
 
   it("Bot A tries to transfer with a preImage that is not 32 bytes", async () => {
@@ -260,11 +260,11 @@ describe("Async Transfers", () => {
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: ConditionalTransferTypes.LinkedTransfer,
-        paymentId: createRandom32ByteHexString(),
+        paymentId: getRandomBytes32(),
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`is not a valid hex string`);
+    ).to.be.rejectedWith(`Invalid hex string`);
   });
 
   it("Experimental: Average latency of 10 async transfers with Eth", async () => {

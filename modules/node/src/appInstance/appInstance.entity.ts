@@ -10,7 +10,7 @@ import {
 } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
-import { IsEthAddress, IsKeccak256Hash, IsAddress, IsValidPublicIdentifier } from "../validate";
+import { IsEthAddress, IsKeccak256Hash, IsValidPublicIdentifier } from "../validate";
 
 export enum AppType {
   PROPOSAL = "PROPOSAL",
@@ -70,11 +70,11 @@ export class AppInstance<T extends AppState = any> {
   outcomeType!: OutcomeType;
 
   @Column("text")
-  @IsAddress()
+  @IsValidPublicIdentifier()
   initiatorIdentifier!: string;
 
   @Column("text")
-  @IsAddress()
+  @IsValidPublicIdentifier()
   responderIdentifier!: string;
 
   @Column("text", {

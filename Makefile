@@ -222,12 +222,12 @@ channel-provider: types $(shell find modules/channel-provider $(find_options))
 	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-messaging: types $(shell find modules/messaging $(find_options))
+messaging: types utils $(shell find modules/messaging $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-store: types $(shell find modules/store $(find_options))
+store: types utils $(shell find modules/store $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/store && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@

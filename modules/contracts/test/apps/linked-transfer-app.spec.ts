@@ -1,6 +1,6 @@
 /* global before */
 import { Address, SolidityValueType } from "@connext/types";
-import { createRandom32ByteHexString } from "@connext/utils";
+import { getRandomBytes32 } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
@@ -147,8 +147,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const amount = new BigNumber(10);
 
-    const paymentId = createRandom32ByteHexString();
-    const preImage = createRandom32ByteHexString();
+    const paymentId = getRandomBytes32();
+    const preImage = getRandomBytes32();
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
@@ -207,8 +207,8 @@ describe("LinkedUnidirectionalTransferApp", () => {
 
     const amount = new BigNumber(10);
 
-    const paymentId = createRandom32ByteHexString();
-    const preImage = createRandom32ByteHexString();
+    const paymentId = getRandomBytes32();
+    const preImage = getRandomBytes32();
 
     const action: UnidirectionalLinkedTransferAppAction = {
       amount,
@@ -220,7 +220,7 @@ describe("LinkedUnidirectionalTransferApp", () => {
     const linkedHash = createLinkedHash(action);
     const suppliedAction: UnidirectionalLinkedTransferAppAction = {
       ...action,
-      preImage: createRandom32ByteHexString(),
+      preImage: getRandomBytes32(),
     };
 
     /**
