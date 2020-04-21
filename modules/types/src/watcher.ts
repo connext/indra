@@ -1,18 +1,18 @@
 import {
   AppChallenge,
-  StateProgressedContractEvent,
-  NetworkContext,
-  ChallengeUpdatedContractEvent,
   ChallengeEvent,
   ChallengeEventData,
+  ChallengeUpdatedEventPayload,
+  NetworkContext,
   SignedCancelChallengeRequest,
+  StateProgressedEventPayload,
 } from "./contracts";
 import { StateChannelJSON } from "./state";
 import { Address, Bytes32 } from "./basic";
 import { AppInstanceJson, AppInstanceProposal } from "./app";
 import {
-  MinimalTransaction,
   ConditionalTransactionCommitmentJSON,
+  MinimalTransaction,
   SetStateCommitmentJSON,
 } from "./commitments";
 import { IChannelSigner } from "./crypto";
@@ -156,30 +156,30 @@ export interface IWatcherStoreService {
 
   getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent[]>;
+  ): Promise<StateProgressedEventPayload[]>;
 
   createStateProgressedEvent(
     appIdentityHash: string,
-    event: StateProgressedContractEvent,
+    event: StateProgressedEventPayload,
   ): Promise<void>;
 
   updateStateProgressedEvent(
     appIdentityHash: string,
-    event: StateProgressedContractEvent,
+    event: StateProgressedEventPayload,
   ): Promise<void>;
 
   getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent[]>;
+  ): Promise<ChallengeUpdatedEventPayload[]>;
 
   createChallengeUpdatedEvent(
     appIdentityHash: string,
-    event: ChallengeUpdatedContractEvent,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void>;
 
   updateChallengeUpdatedEvent(
     appIdentityHash: string,
-    event: ChallengeUpdatedContractEvent,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void>;
 
   ////////////////////////////////////////

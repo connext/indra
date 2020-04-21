@@ -1,17 +1,17 @@
 import {
+  AppChallenge,
   AppInstanceJson,
   AppInstanceProposal,
+  ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
   IBackupServiceAPI,
   IClientStore,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
+  StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
-  AppChallenge,
-  StateProgressedContractEvent,
-  ChallengeUpdatedContractEvent,
 } from "@connext/types";
 
 export class MemoryStorage implements IClientStore {
@@ -376,40 +376,40 @@ export class MemoryStorage implements IClientStore {
 
   getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent[]> {
+  ): Promise<StateProgressedEventPayload[]> {
     throw new Error("Disputes not implememented");
   }
 
   async createStateProgressedEvent(
     multisigAddress: string,
-    appChallenge: StateProgressedContractEvent,
+    appChallenge: StateProgressedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async updateStateProgressedEvent(
     multisigAddress: string,
-    appChallenge: StateProgressedContractEvent,
+    appChallenge: StateProgressedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent[]> {
+  ): Promise<ChallengeUpdatedEventPayload[]> {
     throw new Error("Disputes not implememented");
   }
 
   async createChallengeUpdatedEvent(
     multisigAddress: string,
-    event: ChallengeUpdatedContractEvent,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async updateChallengeUpdatedEvent(
     multisigAddress: string,
-    appChallenge: ChallengeUpdatedContractEvent,
+    appChallenge: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }

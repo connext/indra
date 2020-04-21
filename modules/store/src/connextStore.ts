@@ -1,26 +1,26 @@
 import {
+  AppChallenge,
   AppInstanceJson,
   AppInstanceProposal,
+  ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
   IBackupServiceAPI,
   IClientStore,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
+  StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
   StoreFactoryOptions,
   StoreTypes,
   WithdrawalMonitorObject,
   WrappedStorage,
-  ChallengeUpdatedContractEvent,
-  StateProgressedContractEvent,
-  AppChallenge,
 } from "@connext/types";
 
 import {
+  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
-  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "./constants";
 import {
   FileStorage,
@@ -318,40 +318,40 @@ export class ConnextStore implements IClientStore {
 
   getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent[]> {
+  ): Promise<StateProgressedEventPayload[]> {
     return this.internalStore.getStateProgressedEvents(appIdentityHash);
   }
 
   createStateProgressedEvent(
     appIdentityHash: string,
-    event: StateProgressedContractEvent,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
     return this.internalStore.createStateProgressedEvent(appIdentityHash, event);
   }
 
   updateStateProgressedEvent(
     appIdentityHash: string,
-    event: StateProgressedContractEvent,
+    event: StateProgressedEventPayload,
   ): Promise<void> {
     return this.internalStore.updateStateProgressedEvent(appIdentityHash, event);
   }
 
   getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent[]> {
+  ): Promise<ChallengeUpdatedEventPayload[]> {
     return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
   }
 
   createChallengeUpdatedEvent(
     appIdentityHash: string,
-    event: ChallengeUpdatedContractEvent,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     return this.internalStore.createChallengeUpdatedEvent(appIdentityHash, event);
   }
 
   updateChallengeUpdatedEvent(
     appIdentityHash: string,
-    event: ChallengeUpdatedContractEvent,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     return this.internalStore.updateChallengeUpdatedEvent(appIdentityHash, event);
   }

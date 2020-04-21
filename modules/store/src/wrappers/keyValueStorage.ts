@@ -1,17 +1,17 @@
 import {
+  AppChallenge,
   AppInstanceJson,
   AppInstanceProposal,
+  ChallengeUpdatedEventPayload,
   ConditionalTransactionCommitmentJSON,
   IClientStore,
   MinimalTransaction,
   SetStateCommitmentJSON,
   StateChannelJSON,
+  StateProgressedEventPayload,
   STORE_SCHEMA_VERSION,
   WithdrawalMonitorObject,
   WrappedStorage,
-  ChallengeUpdatedContractEvent,
-  StateProgressedContractEvent,
-  AppChallenge,
 } from "@connext/types";
 import { stringify } from "@connext/utils";
 
@@ -475,40 +475,40 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
 
   async getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent[]> {
+  ): Promise<StateProgressedEventPayload[]> {
     throw new Error("Disputes not implememented");
   }
 
   async createStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedContractEvent,
+    appChallenge: StateProgressedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async updateStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedContractEvent,
+    appChallenge: StateProgressedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent[]> {
+  ): Promise<ChallengeUpdatedEventPayload[]> {
     throw new Error("Disputes not implememented");
   }
 
   async createChallengeUpdatedEvent(
     appIdentityHash: string,
-    event: ChallengeUpdatedContractEvent,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
   async updateChallengeUpdatedEvent(
     appIdentityHash: string,
-    appChallenge: ChallengeUpdatedContractEvent,
+    appChallenge: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     throw new Error("Disputes not implememented");
   }

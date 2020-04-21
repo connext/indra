@@ -8,7 +8,6 @@ import {
   AppIdentity,
   AppInstanceJson,
   ChallengeEvents,
-  ChallengeUpdated,
   IChannelSigner,
   ILoggerService,
   IWatcher,
@@ -17,7 +16,6 @@ import {
   NetworkContext,
   SignedCancelChallengeRequest,
   StateChannelJSON,
-  StateProgressed,
   WatcherEvent,
   WatcherEventData,
   WatcherInitOptions,
@@ -218,10 +216,10 @@ export class Watcher implements IWatcher {
   // should check every block for challenges that should be advanced,
   // and respond to any listener emitted chain events
   private registerListeners = async (): Promise<void> => {
-    this.listener.on(ChallengeEvents[ChallengeUpdated], async () => {
+    this.listener.on(ChallengeEvents.ChallengeUpdated, async () => {
       throw new Error("Watcher callback not implemented");
     });
-    this.listener.on(ChallengeEvents[StateProgressed], async () => {
+    this.listener.on(ChallengeEvents.StateProgressed, async () => {
       throw new Error("Watcher callback not implemented");
     });
     this.provider.on("block", async (blockNumber: number) => {

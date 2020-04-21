@@ -1,10 +1,10 @@
 import { Contract, Wallet } from "ethers";
 import {
   JsonRpcProvider,
-  ChallengeUpdatedContractEvent,
+  ChallengeUpdatedEventPayload,
   ChallengeStatus,
   NetworkContext,
-  StateProgressedContractEvent,
+  StateProgressedEventPayload,
 } from "@connext/types";
 import { nullLogger, toBN, ChannelSigner, computeAppChallengeHash } from "@connext/utils";
 import { Zero, One } from "ethers/constants";
@@ -33,11 +33,11 @@ describe("ChainListener", () => {
   const timeout = Zero;
 
   const verifySetAndProgressEvents = async (
-    states: ChallengeUpdatedContractEvent[],
-    progressed: StateProgressedContractEvent,
+    states: ChallengeUpdatedEventPayload[],
+    progressed: StateProgressedEventPayload,
   ) => {
     // first state from "setState"
-    expect((states as ChallengeUpdatedContractEvent[])[0]).to.containSubset({
+    expect((states as ChallengeUpdatedEventPayload[])[0]).to.containSubset({
       identityHash: appInstance.identityHash,
       status: ChallengeStatus.IN_DISPUTE,
       appStateHash: stateToHash(AppWithCounterClass.encodeState(state)),
@@ -48,7 +48,7 @@ describe("ChainListener", () => {
     const finalState = AppWithCounterClass.encodeState({
       counter: state.counter.add(action.increment),
     });
-    expect((states as ChallengeUpdatedContractEvent[])[1]).to.containSubset({
+    expect((states as ChallengeUpdatedEventPayload[])[1]).to.containSubset({
       identityHash: appInstance.identityHash,
       status: ChallengeStatus.IN_ONCHAIN_PROGRESSION,
       appStateHash: stateToHash(finalState),
@@ -94,11 +94,11 @@ describe("ChainListener", () => {
   it("should parse ChallengeUpdated + StateProgressed events properly when enabled", async () => {
     await chainListener.enable();
 
-    let statesUpdated: ChallengeUpdatedContractEvent[] = [];
+    let statesUpdated: ChallengeUpdatedEventPayload[] = [];
     // trigger `ChallengeUpdated` event
     const [states, progressed, tx] = await Promise.all([
       new Promise(async resolve => {
-        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedContractEvent) => {
+        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedEventPayload) => {
           statesUpdated.push(data);
           if (statesUpdated.length >= 2) {
             return resolve(
@@ -108,7 +108,7 @@ describe("ChainListener", () => {
         });
       }),
       new Promise(async resolve => {
-        chainListener.once("StateProgressed", async (data: StateProgressedContractEvent) => {
+        chainListener.once("StateProgressed", async (data: StateProgressedEventPayload) => {
           return resolve(data);
         });
       }),
@@ -127,8 +127,8 @@ describe("ChainListener", () => {
     expect(tx).to.be.ok;
     // first state from "setState"
     verifySetAndProgressEvents(
-      states as ChallengeUpdatedContractEvent[],
-      progressed as StateProgressedContractEvent,
+      states as ChallengeUpdatedEventPayload[],
+      progressed as StateProgressedEventPayload,
     );
   });
 
@@ -182,10 +182,10 @@ describe("ChainListener", () => {
     expect(startingBlock).to.be.lessThan(await provider.getBlockNumber());
 
     // parse logs
-    let statesUpdated: ChallengeUpdatedContractEvent[] = [];
+    let statesUpdated: ChallengeUpdatedEventPayload[] = [];
     const [states, progressed] = await Promise.all([
       new Promise(async resolve => {
-        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedContractEvent) => {
+        chainListener.on("ChallengeUpdated", async (data: ChallengeUpdatedEventPayload) => {
           statesUpdated.push(data);
           if (statesUpdated.length >= 2) {
             return resolve(
@@ -195,7 +195,7 @@ describe("ChainListener", () => {
         });
       }),
       new Promise(async resolve => {
-        chainListener.once("StateProgressed", async (data: StateProgressedContractEvent) => {
+        chainListener.once("StateProgressed", async (data: StateProgressedEventPayload) => {
           return resolve(data);
         });
       }),
@@ -205,8 +205,8 @@ describe("ChainListener", () => {
     // verify events
     // first state from "setState"
     verifySetAndProgressEvents(
-      states as ChallengeUpdatedContractEvent[],
-      progressed as StateProgressedContractEvent,
+      states as ChallengeUpdatedEventPayload[],
+      progressed as StateProgressedEventPayload,
     );
   });
 });

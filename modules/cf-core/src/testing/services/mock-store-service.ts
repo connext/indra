@@ -8,8 +8,8 @@ import {
   StateChannelJSON,
   STORE_SCHEMA_VERSION,
   AppChallenge,
-  StateProgressedContractEvent,
-  ChallengeUpdatedContractEvent,
+  StateProgressedEventPayload,
+  ChallengeUpdatedEventPayload,
 } from "@connext/types";
 
 export class MockStoreService implements IStoreService {
@@ -165,40 +165,40 @@ export class MockStoreService implements IStoreService {
 
   async getStateProgressedEvents(
     appIdentityHash: string,
-  ): Promise<StateProgressedContractEvent[]> {
+  ): Promise<StateProgressedEventPayload[]> {
     return Promise.resolve([]);
   }
 
   async createStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedContractEvent,
+    appChallenge: StateProgressedEventPayload,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async updateStateProgressedEvent(
     appIdentityHash: string,
-    appChallenge: StateProgressedContractEvent,
+    appChallenge: StateProgressedEventPayload,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
-  ): Promise<ChallengeUpdatedContractEvent[]> {
+  ): Promise<ChallengeUpdatedEventPayload[]> {
     return Promise.resolve([]);
   }
 
   async createChallengeUpdatedEvent(
     appIdentityHash: string,
-    event: ChallengeUpdatedContractEvent,
+    event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     return Promise.resolve();
   }
 
   async updateChallengeUpdatedEvent(
     appIdentityHash: string,
-    appChallenge: ChallengeUpdatedContractEvent,
+    appChallenge: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     return Promise.resolve();
   }

@@ -50,8 +50,8 @@ export type SignedCancelChallengeRequest = {
 // Emitted by MixinProgressState.sol when an action is played on
 // top of an onchain state so participants can derive new state
 // in challenge
-export const StateProgressed = "StateProgressed";
-export type StateProgressedContractEvent = {
+const StateProgressedEventName = "StateProgressed";
+export type StateProgressedEventPayload = {
   identityHash: string;
   action: string; // encoded
   versionNumber: BigNumber;
@@ -62,8 +62,8 @@ export type StateProgressedContractEvent = {
 
 // Emitted by the adjudicator contracts when fields in stored
 // contract are changed by caller
-export const ChallengeUpdated = "ChallengeUpdated";
-export type ChallengeUpdatedContractEvent = {
+const ChallengeUpdatedEventName = "ChallengeUpdated";
+export type ChallengeUpdatedEventPayload = {
   identityHash: Bytes32;
   status: ChallengeStatus;
   appStateHash: Bytes32; // latest app state
@@ -73,14 +73,15 @@ export type ChallengeUpdatedContractEvent = {
 
 // events emitted by contracts
 export const ChallengeEvents = {
-  [ChallengeUpdated]: ChallengeUpdated,
-  [StateProgressed]: StateProgressed,
+  [ChallengeUpdatedEventName]: ChallengeUpdatedEventName,
+  [StateProgressedEventName]: StateProgressedEventName,
 } as const;
 export type ChallengeEvent = keyof typeof ChallengeEvents;
+
 // event payloads
 interface ChallengeEventsMap {
-  [ChallengeUpdated]: ChallengeUpdatedContractEvent;
-  [StateProgressed]: StateProgressedContractEvent;
+  [ChallengeUpdatedEventName]: ChallengeUpdatedEventPayload;
+  [StateProgressedEventName]: StateProgressedEventPayload;
 }
 export type ChallengeEventData = {
   [P in keyof ChallengeEventsMap]: ChallengeEventsMap[P];

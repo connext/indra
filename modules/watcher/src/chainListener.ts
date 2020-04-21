@@ -8,7 +8,6 @@ import {
   ChallengeEventData,
   ChallengeStatus,
   Address,
-  ChallengeUpdated,
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Contract, Event } from "ethers";
@@ -73,7 +72,7 @@ export class ChainListener implements IChainListener {
     }
 
     // TODO: batching if curr - starting >>> 30
-    const updatedFilter = this.challengeRegistry.filters[ChallengeEvents[ChallengeUpdated]]();
+    const updatedFilter = this.challengeRegistry.filters[ChallengeEvents.ChallengeUpdated]();
     const progressedFilter = this.challengeRegistry.filters[ChallengeEvents.StateProgressed]();
     const updatedLogs = await this.provider.getLogs({
       ...updatedFilter,
