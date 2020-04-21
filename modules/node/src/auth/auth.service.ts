@@ -1,11 +1,11 @@
 import { MessagingAuthService } from "@connext/messaging";
 import { PublicIdentifier } from "@connext/types";
 import {
-  createRandomBytesHexString,
+  getRandomBytes32,
+  getAddressError,
   getSignerAddressFromPublicIdentifier,
-  isAddress,
   isValidPublicIdentifier,
-  verifyChannelMessage,
+  recoverAddressFromChannelMessage,
 } from "@connext/utils";
 import { Injectable, Inject } from "@nestjs/common";
 
@@ -15,7 +15,6 @@ import { ConfigService } from "../config/config.service";
 
 import { MessagingAuthProviderId } from "../constants";
 
-const nonceLen = 32;
 const nonceTTL = 24 * 60 * 60 * 1000; // 1 day
 
 export function getAuthAddressFromIdentifier(id: PublicIdentifier): string {
@@ -35,7 +34,7 @@ export class AuthService {
   }
 
   async getNonce(userIdentifier: string): Promise<string> {
-    const nonce = createRandomBytesHexString(nonceLen);
+    const nonce = getRandomBytes32();
     const expiry = Date.now() + nonceTTL;
     // FIXME-- store nonce in redis instead of here...
     this.nonces[userIdentifier] = { expiry, nonce };
@@ -64,7 +63,7 @@ export class AuthService {
     }
 
     const { nonce, expiry } = this.nonces[userIdentifier];
-    const recovered = await verifyChannelMessage(nonce, signedNonce);
+    const recovered = await recoverAddressFromChannelMessage(nonce, signedNonce);
     if (recovered !== address) {
       throw new Error(`Verification failed, expected ${address}, got ${recovered}`);
     }
@@ -107,8 +106,9 @@ export class AuthService {
     return async (subject: string, data: any): Promise<string> => {
       // Get & validate address from subject
       const address = subject.split(".")[0]; // first item of subscription is address
-      if (!address || !isAddress(address)) {
-        throw new Error(`Subject's first item isn't a valid address: ${subject}`);
+      const addressError = getAddressError(address);
+      if (addressError) {
+        throw new Error(`Subject's first item isn't a valid address: ${addressError}`);
       }
       return callback(address, data);
     };

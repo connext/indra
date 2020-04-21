@@ -1,4 +1,4 @@
-import { toBN, verifyChannelMessage } from "@connext/utils";
+import { toBN, recoverAddressFromChannelMessage } from "@connext/utils";
 import { waffle as buidler } from "@nomiclabs/buidler";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
@@ -101,7 +101,7 @@ export async function sortSignaturesBySignerAddress(
 ): Promise<string[]> {
   return (
     await Promise.all(
-      signatures.map(async sig => ({ sig, addr: await verifyChannelMessage(digest, sig) })),
+      signatures.map(async sig => ({ sig, addr: await recoverAddressFromChannelMessage(digest, sig) })),
     )
   )
     .sort((a, b) => sortByAddress(a.addr, b.addr))

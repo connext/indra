@@ -1,11 +1,11 @@
 import { IChannelSigner } from "@connext/types";
-import { createRandom32ByteHexString, getRandomChannelSigner } from "@connext/utils";
+import { getRandomBytes32, getRandomChannelSigner } from "@connext/utils";
 import { SigningKey } from "ethers/utils";
 
 export function getRandomSigningKeys(length: number) {
   return Array(length)
     .fill(0)
-    .map(_ => new SigningKey(createRandom32ByteHexString()));
+    .map(_ => new SigningKey(getRandomBytes32()));
 }
 
 export function getRandomChannelSigners(length: number, ethProviderUrl?: string): IChannelSigner[] {

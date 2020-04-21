@@ -8,7 +8,7 @@ import {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "@connext/types";
-import { logTime, verifyChannelMessage } from "@connext/utils";
+import { logTime, recoverAddressFromChannelMessage } from "@connext/utils";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, getAddress } from "ethers/utils";
 
@@ -32,8 +32,8 @@ export async function assertIsValidSignature(
   if (typeof signature === "undefined") {
     throw new Error("assertIsValidSignature received an undefined signature");
   }
-  // verifyChannelMessage: 83 ms, hashToSign: 7 ms
-  const signer = await verifyChannelMessage(commitmentHash, signature);
+  // recoverAddressFromChannelMessage: 83 ms, hashToSign: 7 ms
+  const signer = await recoverAddressFromChannelMessage(commitmentHash, signature);
   if (getAddress(expectedSigner).toLowerCase() !== signer.toLowerCase()) {
     throw new Error(
       `Validating a signature with expected signer ${expectedSigner} but recovered ${signer} for commitment hash ${commitmentHash}.`,

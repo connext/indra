@@ -36,7 +36,7 @@ import {
   WithdrawalMonitorObject,
 } from "@connext/types";
 import {
-  createRandom32ByteHexString,
+  getRandomBytes32,
   getAddressFromAssetId,
   getSignerAddressFromPublicIdentifier,
   stringify,
@@ -318,8 +318,8 @@ export class ConnextClient implements IConnextClient {
       assetId: params.assetId || CONVENTION_FOR_ETH_ASSET_ID,
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       meta: params.meta,
-      paymentId: params.paymentId || createRandom32ByteHexString(),
-      preImage: createRandom32ByteHexString(),
+      paymentId: params.paymentId || getRandomBytes32(),
+      preImage: getRandomBytes32(),
       recipient: params.recipient,
     }) as Promise<PublicResults.LinkedTransfer>;
   };

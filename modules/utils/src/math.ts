@@ -1,11 +1,8 @@
-import { DecString, HexObject, HexString } from "@connext/types";
-import { BigNumber, BigNumberish, bigNumberify, parseEther, formatEther } from "ethers/utils";
+import { DecString } from "@connext/types";
+import { BigNumber, bigNumberify, parseEther, formatEther } from "ethers/utils";
 import { Zero, MaxUint256 } from "ethers/constants";
 
-export const isBN = BigNumber.isBigNumber;
-
-export const toBN = (n: BigNumberish | HexObject): BigNumber =>
-  bigNumberify((n && (n as HexObject)._hex) ? (n as HexObject)._hex : n.toString());
+import { toBN } from "./bigNumbers";
 
 export const toWad = (n: any) => parseEther(n.toString());
 
@@ -28,35 +25,4 @@ export const calculateExchange = (amount: BigNumber, swapRate: DecString): BigNu
   const [integer, fractional] = swapRate.split(".");
   const safeSwapRate = [integer, (fractional || "0").substring(0, 18)].join(".");
   return bigNumberify(formatEther(amount.mul(parseEther(safeSwapRate))).replace(/\.[0-9]*$/, ""));
-};
-
-const toHex = (a: DecString | BigNumberish): HexString => toBN(a).toHexString();
-const toDec = (a: DecString | BigNumberish): DecString => toBN(a).toString();
-
-export const decMath = {
-  add: (a: DecString, b: DecString): DecString => toBN(a).add(toBN(b)).toString(),
-  sub: (a: DecString, b: DecString): DecString => toBN(a).sub(toBN(b)).toString(),
-  mul: (a: DecString, b: DecString): DecString => toBN(a).mul(toBN(b)).toString(),
-  div: (a: DecString, b: DecString): DecString => toBN(a).div(toBN(b)).toString(),
-  eq: (a: DecString, b: DecString): boolean => toBN(a).eq(toBN(b)),
-  lt: (a: DecString, b: DecString): boolean => toBN(a).lt(toBN(b)),
-  gt: (a: DecString, b: DecString): boolean => toBN(a).gt(toBN(b)),
-  lte: (a: DecString, b: DecString): boolean => toBN(a).lte(toBN(b)),
-  gte: (a: DecString, b: DecString): boolean => toBN(a).gte(toBN(b)),
-  toDec,
-  toHex,
-};
-
-export const hexMath = {
-  add: (a: HexString, b: HexString): HexString => toBN(a).add(toBN(b)).toHexString(),
-  sub: (a: HexString, b: HexString): HexString => toBN(a).sub(toBN(b)).toHexString(),
-  mul: (a: HexString, b: HexString): HexString => toBN(a).mul(toBN(b)).toHexString(),
-  div: (a: HexString, b: HexString): HexString => toBN(a).div(toBN(b)).toHexString(),
-  eq: (a: HexString, b: HexString): boolean => toBN(a).eq(toBN(b)),
-  lt: (a: HexString, b: HexString): boolean => toBN(a).lt(toBN(b)),
-  gt: (a: HexString, b: HexString): boolean => toBN(a).gt(toBN(b)),
-  lte: (a: HexString, b: HexString): boolean => toBN(a).lte(toBN(b)),
-  gte: (a: HexString, b: HexString): boolean => toBN(a).gte(toBN(b)),
-  toDec,
-  toHex,
 };
