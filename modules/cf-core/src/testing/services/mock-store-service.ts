@@ -71,8 +71,8 @@ export class MockStoreService implements IStoreService {
   createSetupCommitment(multisigAddress: string, commitment: MinimalTransaction): Promise<void> {
     return Promise.resolve();
   }
-  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {
-    return Promise.resolve(undefined);
+  getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
+    return Promise.resolve([]);
   }
   createSetStateCommitment(
     appIdentityHash: string,
@@ -81,6 +81,12 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve();
   }
   updateSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+  removeSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
@@ -142,6 +148,10 @@ export class MockStoreService implements IStoreService {
     appChallenge: AppChallenge,
   ): Promise<void> {
     return Promise.resolve();
+  }
+
+  async getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
+    return Promise.resolve([]);
   }
 
   ///// Events

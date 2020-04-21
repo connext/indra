@@ -203,8 +203,8 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.createSetupCommitment(multisigAddress, commitment);
   }
 
-  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON> {
-    return this.internalStore.getSetStateCommitment(appIdentityHash);
+  getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
+    return this.internalStore.getSetStateCommitments(appIdentityHash);
   }
 
   createSetStateCommitment(
@@ -219,6 +219,13 @@ export class ConnextStore implements IClientStore {
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
     return this.internalStore.updateSetStateCommitment(appIdentityHash, commitment);
+  }
+
+  removeSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    return this.internalStore.removeSetStateCommitment(appIdentityHash, commitment);
   }
 
   getConditionalTransactionCommitment(
@@ -294,6 +301,10 @@ export class ConnextStore implements IClientStore {
 
   updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     return this.internalStore.updateAppChallenge(multisigAddress, appChallenge);
+  }
+
+  getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
+    return this.internalStore.getActiveChallenges(multisigAddress);
   }
 
   ///// Events

@@ -291,14 +291,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(setupCommitmentKey, commitment);
   }
 
-  async getSetStateCommitment(
+  async getSetStateCommitments(
     appIdentityHash: string,
-  ): Promise<SetStateCommitmentJSON | undefined> {
+  ): Promise<SetStateCommitmentJSON[]> {
     const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
-    const item = await this.getItem<SetStateCommitmentJSON>(setStateKey);
-    if (!item) {
-      return undefined;
-    }
+    const item = await this.getItem<SetStateCommitmentJSON[]>(setStateKey);
     return item;
   }
 
@@ -306,7 +303,11 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    const setStateKey = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      appIdentityHash,
+      commitment.versionNumber.toString(),
+    );
     if (await this.getItem(setStateKey)) {
       throw new Error(`Found existing set state commitment for ${appIdentityHash}`);
     }
@@ -317,11 +318,30 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    const setStateKey = this.getKey(SET_STATE_COMMITMENT_KEY, appIdentityHash);
+    const setStateKey = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      appIdentityHash,
+      commitment.versionNumber.toString(),
+    );
     if (!(await this.getItem(setStateKey))) {
       throw new Error(`Cannot find set state commitment to update for ${appIdentityHash}`);
     }
     return this.setItem(setStateKey, commitment);
+  }
+
+  async removeSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const setStateKey = this.getKey(
+      SET_STATE_COMMITMENT_KEY,
+      appIdentityHash,
+      commitment.versionNumber.toString(),
+    );
+    if (!(await this.getItem(setStateKey))) {
+      return;
+    }
+    return this.removeItem(setStateKey);
   }
 
   async getConditionalTransactionCommitment(
@@ -432,17 +452,15 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     throw new Error("Disputes not implememented");
   }
 
-  async createAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async updateAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
     throw new Error("Disputes not implememented");
   }
 

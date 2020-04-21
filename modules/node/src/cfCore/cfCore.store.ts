@@ -18,7 +18,10 @@ import { getManager } from "typeorm";
 import { bigNumberify } from "ethers/utils";
 
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { SetStateCommitmentRepository } from "../setStateCommitment/setStateCommitment.repository";
+import {
+  SetStateCommitmentRepository,
+  setStateToJson,
+} from "../setStateCommitment/setStateCommitment.repository";
 import { WithdrawCommitmentRepository } from "../withdrawCommitment/withdrawCommitment.repository";
 import { ConfigService } from "../config/config.service";
 // eslint-disable-next-line max-len
@@ -396,8 +399,10 @@ export class CFCoreStore implements IStoreService {
     await this.setupCommitmentRepository.createCommitment(multisigAddress, commitment);
   }
 
-  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {
-    return this.setStateCommitmentRepository.getLatestSetStateCommitment(appIdentityHash);
+  async getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
+    return (await this.setStateCommitmentRepository.findByAppIdentityHash(appIdentityHash)).map(s =>
+      setStateToJson(s),
+    );
   }
 
   async createSetStateCommitment(
@@ -444,6 +449,29 @@ export class CFCoreStore implements IStoreService {
         versionNumber,
       })
       .where('set_state_commitment."appId" = (' + subQuery.getQuery() + ")")
+      .setParameters(subQuery.getParameters())
+      .execute();
+  }
+
+  async removeSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const { versionNumber } = commitment;
+
+    const subQuery = this.appInstanceRepository
+      .createQueryBuilder("app")
+      .select("app.id")
+      .where("app.identityHash = :appIdentityHash", { appIdentityHash });
+
+    await this.setStateCommitmentRepository
+      .createQueryBuilder("set_state_commitment")
+      .delete()
+      .from(SetStateCommitment)
+      .where("set_state_commitment.versionNumber = :versionNumber", {
+        versionNumber,
+      })
+      .andWhere('set_state_commitment."appId" = (' + subQuery.getQuery() + ")")
       .setParameters(subQuery.getParameters())
       .execute();
   }
@@ -569,17 +597,15 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Disputes not implememented");
   }
 
-  async createAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async updateAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
     throw new Error("Disputes not implememented");
   }
 

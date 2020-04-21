@@ -205,18 +205,20 @@ export class MemoryStorage implements IClientStore {
     return Promise.resolve();
   }
 
-  getSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined> {
-    if (!this.setStateCommitments.has(appIdentityHash)) {
-      return Promise.resolve(undefined);
-    }
-    return Promise.resolve(this.setStateCommitments.get(appIdentityHash));
+  getSetStateCommitments(appIdentityHash: string): Promise<SetStateCommitmentJSON[]> {
+    const keys = [...this.setStateCommitments.keys()];
+    const relevant = keys.filter(key => key.includes(appIdentityHash));
+    return Promise.resolve(
+      relevant.map(key => this.setStateCommitments.get(key))
+    );
   }
 
   createSetStateCommitment(
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    this.setStateCommitments.set(appIdentityHash, commitment);
+    const path = appIdentityHash.concat(`/${commitment.versionNumber}`);
+    this.setStateCommitments.set(path, commitment);
     return Promise.resolve();
   }
 
@@ -224,10 +226,23 @@ export class MemoryStorage implements IClientStore {
     appIdentityHash: string,
     commitment: SetStateCommitmentJSON,
   ): Promise<void> {
-    if (!this.setStateCommitments.has(appIdentityHash)) {
+    const path = appIdentityHash.concat(`/${commitment.versionNumber}`);
+    if (!this.setStateCommitments.has(path)) {
       throw new Error(`Could not find set state commitment for app: ${appIdentityHash}`);
     }
     return this.createSetStateCommitment(appIdentityHash, commitment);
+  }
+
+  async removeSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    const path = appIdentityHash.concat(`/${commitment.versionNumber}`);
+    if (!this.setStateCommitments.has(path)) {
+      return;
+    }
+    this.setStateCommitments.delete(path);
+    return Promise.resolve();
   }
 
   getConditionalTransactionCommitment(
@@ -329,17 +344,15 @@ export class MemoryStorage implements IClientStore {
     throw new Error("Disputes not implememented");
   }
 
-  async createAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async createAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
     throw new Error("Disputes not implememented");
   }
 
-  async updateAppChallenge(
-    multisigAddress: string,
-    appChallenge: AppChallenge,
-  ): Promise<void> {
+  async updateAppChallenge(multisigAddress: string, appChallenge: AppChallenge): Promise<void> {
+    throw new Error("Disputes not implememented");
+  }
+
+  async getActiveChallenges(multisigAddress: string): Promise<AppChallenge[]> {
     throw new Error("Disputes not implememented");
   }
 
