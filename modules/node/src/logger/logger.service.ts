@@ -1,5 +1,7 @@
-import { ILoggerService } from "@connext/types";
+import { ILogger } from "@connext/types";
 import { Injectable, Scope, Logger as NestLogger } from "@nestjs/common";
+
+// TODO: can we import & use ColorfulLogger from @connext/utils here?
 
 const colors = {
   Reset: "\x1b[0m",
@@ -28,7 +30,7 @@ const colors = {
 };
 
 @Injectable({ scope: Scope.TRANSIENT })
-export class LoggerService extends NestLogger implements ILoggerService {
+export class LoggerService extends NestLogger implements ILogger {
   private levels: { [key: string]: number } = {
     debug: 4,
     error: 1,

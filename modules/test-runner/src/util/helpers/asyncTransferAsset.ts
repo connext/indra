@@ -1,13 +1,13 @@
 import { EventNames, IConnextClient, LinkedTransferStatus, Address } from "@connext/types";
+import { ColorfulLogger } from "@connext/utils";
 import { BigNumber } from "ethers/utils";
 import { Client } from "ts-nats";
 
 import { env } from "../env";
-import { Logger } from "../logger";
 import { expect } from "../";
 import { ExistingBalancesAsyncTransfer } from "../types";
 
-const log = new Logger("AsyncTransfer", env.logLevel);
+const log = new ColorfulLogger("AsyncTransfer", env.logLevel);
 
 export async function asyncTransferAsset(
   clientA: IConnextClient,

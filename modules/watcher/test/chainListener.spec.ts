@@ -6,7 +6,7 @@ import {
   NetworkContext,
   StateProgressedEventPayload,
 } from "@connext/types";
-import { nullLogger, toBN, ChannelSigner, computeAppChallengeHash } from "@connext/utils";
+import { toBN, ChannelSigner, ColorfulLogger, computeAppChallengeHash } from "@connext/utils";
 import { Zero, One } from "ethers/constants";
 import { beforeEach } from "mocha";
 
@@ -83,7 +83,7 @@ describe("ChainListener", () => {
     chainListener = new ChainListener(
       provider,
       { ChallengeRegistry: challengeRegistry.address } as NetworkContext,
-      nullLogger,
+      new ColorfulLogger("NewChainListener", parseInt(process.env.LOG_LEVEL || "0"), true),
     );
   });
 

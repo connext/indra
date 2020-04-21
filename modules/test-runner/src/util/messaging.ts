@@ -7,15 +7,14 @@ import {
   VerifyNonceDtoType,
   IChannelSigner,
 } from "@connext/types";
-import { ChannelSigner, delay } from "@connext/utils";
+import { ChannelSigner, ColorfulLogger, delay } from "@connext/utils";
 import axios, { AxiosResponse } from "axios";
 import { Wallet } from "ethers";
 
 import { env } from "./env";
 import { combineObjects } from "./misc";
-import { Logger } from "./logger";
 
-const log = new Logger("Messaging", env.logLevel);
+const log = new ColorfulLogger("Messaging", env.logLevel);
 
 // TYPES
 export type MessageCounter = {
