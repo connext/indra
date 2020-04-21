@@ -11,9 +11,12 @@ import {
 } from "@connext/types";
 import { toBN } from "@connext/utils";
 import { Contract, Event } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
+import { JsonRpcProvider, Log } from "ethers/providers";
 import { BigNumber, Interface } from "ethers/utils";
 import EventEmitter from "eventemitter3";
+
+// While fetching historical data, we query this many blocks at a time
+const chunkSize = 30;
 
 /**
  * This class listens to events emitted by the connext contracts,
@@ -71,21 +74,37 @@ export class ChainListener implements IChainListener {
       );
     }
 
-    // TODO: batching if curr - starting >>> 30
-    const updatedFilter = this.challengeRegistry.filters[ChallengeEvents.ChallengeUpdated]();
-    const progressedFilter = this.challengeRegistry.filters[ChallengeEvents.StateProgressed]();
-    const updatedLogs = await this.provider.getLogs({
-      ...updatedFilter,
-      fromBlock: startingBlock,
-      toBlock: currentBlock,
-    });
-    const progressedLogs = await this.provider.getLogs({
-      ...progressedFilter,
-      fromBlock: startingBlock,
-      toBlock: currentBlock,
-    });
+    const nChunks = Math.ceil((currentBlock - startingBlock) / chunkSize);
+    this.log.info(`Fetching logs from block ${startingBlock} to ${currentBlock}`);
 
-    this.log.debug(`Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`);
+    const updatedLogs = [] as Log[];
+    const progressedLogs = [] as Log[];
+    for (let index = 0; index <= nChunks; index++) {
+      const fromBlock = startingBlock + (index * chunkSize);
+      const nextChunk = startingBlock + ((index + 1) * chunkSize) - 1;
+      const toBlock = nextChunk >= currentBlock ? currentBlock : nextChunk;
+
+      const newUpdatedLogs = await this.provider.getLogs({
+        ...this.challengeRegistry.filters[ChallengeEvents.ChallengeUpdated](),
+        fromBlock,
+        toBlock,
+      });
+      const newProgressedLogs = await this.provider.getLogs({
+        ...this.challengeRegistry.filters[ChallengeEvents.StateProgressed](),
+        fromBlock,
+        toBlock,
+      });
+
+      updatedLogs.push(...newUpdatedLogs);
+      progressedLogs.push(...newProgressedLogs);
+      this.log.info(
+        `Fetched ${progressedLogs.length} StateProgressed & ${newUpdatedLogs.length} ` +
+        `ChallengeUpdated logs from block ${fromBlock} to ${toBlock} (${index}/${nChunks})`,
+      );
+      if (toBlock === currentBlock) break;
+    }
+
+    this.log.info(`Parsing ${progressedLogs.length} StateProgessed and ${updatedLogs.length} ChallengeUpdated event logs`);
 
     progressedLogs.concat(updatedLogs).forEach(log => {
       const parsed = new Interface(ChallengeRegistry.abi).parseLog(log);

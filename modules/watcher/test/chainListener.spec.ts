@@ -6,7 +6,12 @@ import {
   NetworkContext,
   StateProgressedEventPayload,
 } from "@connext/types";
-import { toBN, ChannelSigner, ColorfulLogger, computeAppChallengeHash } from "@connext/utils";
+import {
+  ChannelSigner,
+  ColorfulLogger,
+  computeAppChallengeHash,
+  toBN,
+} from "@connext/utils";
 import { Zero, One } from "ethers/constants";
 import { beforeEach } from "mocha";
 
@@ -22,6 +27,8 @@ describe("ChainListener", () => {
   let appInstance: AppWithCounterClass;
   let channelResponder: Wallet;
 
+  const logLevel = parseInt(process.env.LOG_LEVEL || "0");
+  const log = new ColorfulLogger("TestChainListener", logLevel, true, "T");
   const versionNumber = toBN(3);
   const state = {
     counter: Zero,
@@ -83,7 +90,7 @@ describe("ChainListener", () => {
     chainListener = new ChainListener(
       provider,
       { ChallengeRegistry: challengeRegistry.address } as NetworkContext,
-      new ColorfulLogger("NewChainListener", parseInt(process.env.LOG_LEVEL || "0"), true),
+      new ColorfulLogger("NewChainListener", logLevel, true, " "),
     );
   });
 
@@ -167,9 +174,10 @@ describe("ChainListener", () => {
 
     // submit transaction
     const startingBlock = await provider.getBlockNumber();
+    log.debug(`parsing past logs staring from block: ${startingBlock}`);
     const tx = await setAndProgressState(versionNumber, state, action);
-    await tx.wait();
     expect(tx).to.be.ok;
+    await tx.wait();
 
     // wait for block number to increase
     await new Promise(resolve =>
