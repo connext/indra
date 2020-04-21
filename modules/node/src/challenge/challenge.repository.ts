@@ -1,4 +1,4 @@
-import { Challenge } from "./challenge.entity";
+import { Challenge, ProcessedBlock } from "./challenge.entity";
 import { Repository, EntityRepository } from "typeorm";
 import { StoredAppChallenge } from "@connext/types";
 
@@ -17,6 +17,15 @@ export const entityToStoredChallenge = (
     status,
   };
 };
+
+@EntityRepository(ProcessedBlock)
+export class ProcessedBlockRepository extends Repository<ProcessedBlock> {
+  async findLatestProcessedBlock(): Promise<ProcessedBlock> {
+    return this.createQueryBuilder("processedBlock")
+      .select("MAX(processedBlock.blockNumber)")
+      .getRawOne();
+  }
+}
 
 @EntityRepository(Challenge)
 export class ChallengeRepository extends Repository<Challenge> {

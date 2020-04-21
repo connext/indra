@@ -20,6 +20,12 @@ import { ChallengeUpdatedEvent } from "../challengeUpdatedEvent/challengeUpdated
 import { toBN } from "@connext/utils";
 
 @Entity()
+export class ProcessedBlock {
+  @Column("integer", { unique: true })
+  blockNumber: number;
+}
+
+@Entity()
 export class Challenge<T extends AppName = any> {
   @PrimaryGeneratedColumn()
   id!: number;
