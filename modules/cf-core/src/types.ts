@@ -24,6 +24,7 @@ export const PersistCommitmentType = enumify({
   CreateSetup: "CreateSetup",
   CreateSetState: "CreateSetState",
   UpdateSetState: "UpdateSetState",
+  RemoveSetState: "RemoveSetState",
   CreateConditional: "CreateConditional",
   UpdateConditional: "UpdateConditional",
   CreateWithdrawal: "CreateWithdrawal",
