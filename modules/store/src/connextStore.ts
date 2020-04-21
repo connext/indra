@@ -329,13 +329,6 @@ export class ConnextStore implements IClientStore {
     return this.internalStore.createStateProgressedEvent(appIdentityHash, event);
   }
 
-  updateStateProgressedEvent(
-    appIdentityHash: string,
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
-    return this.internalStore.updateStateProgressedEvent(appIdentityHash, event);
-  }
-
   getChallengeUpdatedEvents(appIdentityHash: string): Promise<ChallengeUpdatedEventPayload[]> {
     return this.internalStore.getChallengeUpdatedEvents(appIdentityHash);
   }
@@ -345,12 +338,5 @@ export class ConnextStore implements IClientStore {
     event: ChallengeUpdatedEventPayload,
   ): Promise<void> {
     return this.internalStore.createChallengeUpdatedEvent(appIdentityHash, event);
-  }
-
-  updateChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
-    return this.internalStore.updateChallengeUpdatedEvent(appIdentityHash, event);
   }
 }

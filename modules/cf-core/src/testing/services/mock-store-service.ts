@@ -174,13 +174,6 @@ export class MockStoreService implements IStoreService {
     return Promise.resolve();
   }
 
-  async updateStateProgressedEvent(
-    appIdentityHash: string,
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
-    return Promise.resolve();
-  }
-
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
@@ -188,13 +181,6 @@ export class MockStoreService implements IStoreService {
   }
 
   async createChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
-    return Promise.resolve();
-  }
-
-  async updateChallengeUpdatedEvent(
     appIdentityHash: string,
     event: ChallengeUpdatedEventPayload,
   ): Promise<void> {

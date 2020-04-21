@@ -169,21 +169,11 @@ export interface IWatcherStoreService {
     event: StateProgressedEventPayload,
   ): Promise<void>;
 
-  updateStateProgressedEvent(
-    appIdentityHash: string,
-    event: StateProgressedEventPayload,
-  ): Promise<void>;
-
   getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]>;
 
   createChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void>;
-
-  updateChallengeUpdatedEvent(
     appIdentityHash: string,
     event: ChallengeUpdatedEventPayload,
   ): Promise<void>;

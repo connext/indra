@@ -540,23 +540,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     return this.setItem(key, event);
   }
 
-  async updateStateProgressedEvent(
-    appIdentityHash: string,
-    event: StateProgressedEventPayload,
-  ): Promise<void> {
-    const key = this.getKey(
-      STATE_PROGRESSED_EVENT_KEY,
-      appIdentityHash,
-      event.versionNumber.toString(),
-    );
-    if (!(await this.getItem(key))) {
-      throw new Error(
-        `Did not find existing state progressed event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
-      );
-    }
-    return this.setItem(key, event);
-  }
-
   async getChallengeUpdatedEvents(
     appIdentityHash: string,
   ): Promise<ChallengeUpdatedEventPayload[]> {
@@ -580,23 +563,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (await this.getItem(key)) {
       throw new Error(
         `Found existing challenge updated event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
-      );
-    }
-    return this.setItem(key, event);
-  }
-
-  async updateChallengeUpdatedEvent(
-    appIdentityHash: string,
-    event: ChallengeUpdatedEventPayload,
-  ): Promise<void> {
-    const key = this.getKey(
-      CHALLENGE_UPDATED_EVENT_KEY,
-      appIdentityHash,
-      event.versionNumber.toString(),
-    );
-    if (!(await this.getItem(key))) {
-      throw new Error(
-        `Did not find existing challenge updated event for app ${appIdentityHash} at nonce ${event.versionNumber.toString()}`,
       );
     }
     return this.setItem(key, event);
