@@ -19,6 +19,7 @@ import { cfCoreProviderFactory } from "./cfCore.provider";
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { CFCoreService } from "./cfCore.service";
 import { CFCoreStore } from "./cfCore.store";
+import { ChallengeRepository } from "../challenge/challenge.repository";
 
 @Module({
   exports: [cfCoreProviderFactory, CFCoreService, CFCoreStore],
@@ -37,6 +38,7 @@ import { CFCoreStore } from "./cfCore.store";
       SetStateCommitmentRepository,
       WithdrawCommitmentRepository,
       SetupCommitmentRepository,
+      ChallengeRepository,
     ]),
   ],
   providers: [cfCoreProviderFactory, CFCoreService, CFCoreStore],
