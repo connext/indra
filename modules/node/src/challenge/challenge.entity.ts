@@ -55,7 +55,7 @@ export class Challenge<T extends AppName = any> {
   stateProgressedEvents!: StateProgressedEvent<T>[];
 
   @OneToMany(type => ChallengeUpdatedEvent, event => event.challenge)
-  challengeUpdatedEvents!: ChallengeUpdatedEvent<T>;
+  challengeUpdatedEvents!: ChallengeUpdatedEvent<T>[];
 
   @ManyToOne((type: any) => Channel)
   channel!: Channel;
