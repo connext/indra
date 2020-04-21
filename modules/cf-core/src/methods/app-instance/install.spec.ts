@@ -1,4 +1,3 @@
-import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext,
@@ -27,6 +26,7 @@ import { createAppInstanceProposalForTest } from "../../testing/utils";
 
 import { install } from "./install";
 import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
+import { MemoryStoreServiceFactory } from "../../testing/services";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
@@ -42,7 +42,7 @@ describe("Can handle correct & incorrect installs", () => {
   let initiatorIdentifier: string;
 
   beforeAll(() => {
-    store = new MemoryStoreService();
+    store = new MemoryStoreServiceFactory().createStoreService();
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as JsonRpcProvider,
@@ -73,7 +73,8 @@ describe("Can handle correct & incorrect installs", () => {
   it("fails to install without the appIdentityHash being in a channel", async () => {
     expect.hasAssertions();
 
-    const mockedStore: IStoreService = mock(MemoryStoreService);
+    const store = new MemoryStoreServiceFactory().createStoreService();
+    const mockedStore: IStoreService = mock(store);
 
     const appIdentityHash = getRandomBytes32();
     const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
@@ -93,7 +94,8 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedProtocolRunner = mock(ProtocolRunner);
     const protocolRunner = instance(mockedProtocolRunner);
 
-    const mockedStore: IStoreService = mock(MemoryStoreService);
+    const memoryStore = new MemoryStoreServiceFactory().createStoreService();
+    const mockedStore: IStoreService = mock(memoryStore);
     const store = instance(mockedStore);
 
     const appIdentityHash = getRandomBytes32();

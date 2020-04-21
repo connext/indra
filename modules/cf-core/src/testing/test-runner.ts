@@ -1,4 +1,3 @@
-import { MemoryStorage as MemoryStoreService } from "@connext/store";
 import { OutcomeType, ProtocolNames, ProtocolParams } from "@connext/types";
 import { getSignerAddressFromPublicIdentifier } from "@connext/utils";
 import { Contract, ContractFactory } from "ethers";
@@ -14,6 +13,7 @@ import { MessageRouter } from "./message-router";
 import { MiniNode } from "./mininode";
 import { newWallet } from "./utils";
 import { StateChannel } from "../models";
+import { MemoryStoreServiceFactory } from "./services";
 
 expect.extend({ toBeEq });
 
@@ -50,9 +50,11 @@ export class TestRunner {
 
     this.defaultTimeout = bigNumberify(100);
 
-    this.mininodeA = new MiniNode(network, this.provider, new MemoryStoreService());
-    this.mininodeB = new MiniNode(network, this.provider, new MemoryStoreService());
-    this.mininodeC = new MiniNode(network, this.provider, new MemoryStoreService());
+    const storeFactory = new MemoryStoreServiceFactory();
+
+    this.mininodeA = new MiniNode(network, this.provider, storeFactory.createStoreService());
+    this.mininodeB = new MiniNode(network, this.provider, storeFactory.createStoreService());
+    this.mininodeC = new MiniNode(network, this.provider, storeFactory.createStoreService());
 
     this.multisigAB = await getCreate2MultisigAddress(
       this.mininodeA.publicIdentifier,
