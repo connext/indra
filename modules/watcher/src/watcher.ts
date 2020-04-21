@@ -1,4 +1,8 @@
-import { ChallengeRegistry } from "@connext/contracts";
+import {
+  ChallengeRegistry,
+  ConditionalTransactionCommitment,
+  SetStateCommitment,
+} from "@connext/contracts";
 import {
   NetworkContext,
   ILoggerService,
@@ -8,11 +12,10 @@ import {
   WatcherEvent,
   WatcherEventData,
   IChannelSigner,
-  CancelChallengeRequest,
+  SignedCancelChallengeRequest,
   AppInstanceJson,
   AppIdentity,
   MinimalTransaction,
-  SignedCancelChallengeRequest,
   StateChannelJSON,
   AppChallenge,
 } from "@connext/types";
@@ -21,8 +24,6 @@ import {
   ChannelSigner,
   getSignerAddressFromPublicIdentifier,
   toBN,
-  SetStateCommitment,
-  ConditionalTransactionCommitment,
 } from "@connext/utils";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -57,13 +58,14 @@ export class Watcher implements IWatcher {
     this.log = log.newContext("Watcher");
     this.challengeRegistry = new Contract(
       this.context.ChallengeRegistry,
-      ChallengeRegistry.abi,
+      ChallengeRegistry.abi as any,
       this.provider,
     );
   }
 
   /////////////////////////////////////
-  //////// Static methods
+  //// Static methods
+
   // used to create a new watcher instance from the passed
   // in options (which are cast to the proper values)
   public static init = async (opts: WatcherInitOptions): Promise<Watcher> => {
@@ -72,7 +74,7 @@ export class Watcher implements IWatcher {
       logLevel,
       logger: providedLogger,
       signer: providedSigner,
-      ethProvider,
+      provider: ethProvider,
       context,
       store,
     } = opts;
@@ -87,7 +89,7 @@ export class Watcher implements IWatcher {
 
     const signer =
       typeof providedSigner === "string"
-        ? new ChannelSigner(providedSigner, provider)
+        ? new ChannelSigner(providedSigner, provider.connection.url)
         : providedSigner;
 
     if (!signer.provider) {
@@ -101,7 +103,8 @@ export class Watcher implements IWatcher {
   };
 
   /////////////////////////////////////
-  //////// Public methods
+  //// Public methods
+
   // will begin an onchain dispute. emits a `DisputeInitiated` event if
   // the initiation was successful, otherwise emits a `DisputeFailed`
   // event
@@ -231,7 +234,7 @@ export class Watcher implements IWatcher {
   ): Promise<TransactionResponse> => {
     const jsons = await this.store.getSetStateCommitments(appIdentityHash);
     const commitment = SetStateCommitment.fromJson(
-      jsons.filter(x => x.versionNumber.eq(versionNumber))[0],
+      jsons.filter(x => toBN(x.versionNumber).eq(toBN(versionNumber)))[0],
     );
     return this.sendContractTransaction(await commitment.getSignedTransaction());
   };
@@ -239,9 +242,11 @@ export class Watcher implements IWatcher {
   private sendConditionalTransaction = async (
     appIdentityHash: string,
   ): Promise<TransactionResponse> => {
-    const commitment = ConditionalTransactionCommitment.fromJson(
-      await this.store.getConditionalTransactionCommitment(appIdentityHash),
-    );
+    const commitmentJson = await this.store.getConditionalTransactionCommitment(appIdentityHash);
+    if (!commitmentJson) {
+      throw new Error(`No conditional tx commitment exists for app ${appIdentityHash}`);
+    }
+    const commitment = ConditionalTransactionCommitment.fromJson(commitmentJson);
     return this.sendContractTransaction(commitment.getTransactionDetails());
   };
 
@@ -251,17 +256,18 @@ export class Watcher implements IWatcher {
   ): Promise<TransactionResponse> => {
     const jsons = await this.store.getSetStateCommitments(appIdentityHash);
     const commitments = jsons
-      .sort((a, b) => a.versionNumber.sub(b.versionNumber))
+      .sort((a, b) => toBN(a.versionNumber).sub(toBN(b.versionNumber)).toNumber())
       .map(SetStateCommitment.fromJson);
 
-    const app = await this.store.getAppInstance(appIdentityHash);
+    const app = await this.store.getAppInstance(appIdentityHash) as AppInstanceJson;
+    if (!app) throw new Error(`Can't find app with identity hash: ${appIdentityHash}`);
     const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
     const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
 
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.progressState.encode([
+      data: new Interface(ChallengeRegistry.abi as any).functions.progressState.encode([
         this.getAppIdentity(app, multisigAddress),
         await commitments[0].getSignedAppChallengeUpdate(),
         await commitments[1].getSignedAppChallengeUpdate(),
@@ -278,16 +284,17 @@ export class Watcher implements IWatcher {
   ): Promise<TransactionResponse> => {
     const jsons = await this.store.getSetStateCommitments(appIdentityHash);
     const commitments = jsons
-      .sort((a, b) => a.versionNumber.sub(b.versionNumber))
+      .sort((a, b) => toBN(a.versionNumber).sub(toBN(b.versionNumber)).toNumber())
       .map(SetStateCommitment.fromJson);
 
-    const app = await this.store.getAppInstance(appIdentityHash);
+    const app = await this.store.getAppInstance(appIdentityHash) as AppInstanceJson;
+    if (!app) throw new Error(`Can't find app with identity hash: ${appIdentityHash}`);
     const action = defaultAbiCoder.encode([app.appInterface.actionEncoding!], [app.latestAction]);
     const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.setAndProgressState.encode([
+      data: new Interface(ChallengeRegistry.abi as any).functions.setAndProgressState.encode([
         this.getAppIdentity(app, multisigAddress),
         await commitments[0].getSignedAppChallengeUpdate(),
         await commitments[1].getSignedAppChallengeUpdate(),
@@ -306,19 +313,20 @@ export class Watcher implements IWatcher {
     if (!challenge) {
       throw new Error(`No record of challenge found, cannot set outcome`);
     }
-    const app = await this.store.getAppInstance(appIdentityHash);
+    const app = await this.store.getAppInstance(appIdentityHash) as AppInstanceJson;
+    if (!app) throw new Error(`Can't find app with identity hash: ${appIdentityHash}`);
     // FIXME: assumes that the `app` in the store will be updated
     // from state transitions that result from the game being played out
     // onchain. currently the watcher service CANNOT do this because the
     // service does not have access to "update" store methods
-    if (!challenge.versionNumber.eq(app.versionNumber)) {
+    if (!toBN(challenge.versionNumber).eq(toBN((app as any).versionNumber))) {
       throw new Error(`App is not up to date with onchain challenges, cannot setOutcome`);
     }
     const state = defaultAbiCoder.encode([app.appInterface.stateEncoding], [app.latestState]);
     const tx = {
       to: this.challengeRegistry.address,
       value: 0,
-      data: new Interface(ChallengeRegistry.abi).functions.setOutcome.encode([
+      data: new Interface(ChallengeRegistry.abi as any).functions.setOutcome.encode([
         this.getAppIdentity(app, multisigAddress),
         state,
       ]),
@@ -329,7 +337,7 @@ export class Watcher implements IWatcher {
   private cancelChallenge = async (
     channel: StateChannelJSON,
     app: AppInstanceJson,
-    req: CancelChallengeRequest,
+    req: SignedCancelChallengeRequest,
   ): Promise<TransactionResponse> => {
     const tx = {
       to: this.challengeRegistry.address,

@@ -20,7 +20,7 @@ import { JsonRpcProvider, TransactionReceipt, TransactionResponse } from "ethers
 import { ILoggerService, ILogger } from "./logger";
 
 ////////////////////////////////////////
-// Watcher exxternal parameters
+// Watcher external parameters
 export type WatcherInitOptions = {
   signer: IChannelSigner | string; // wallet or pk
   provider: JsonRpcProvider | string;
@@ -110,7 +110,7 @@ export interface IWatcher {
   //////// Public methods
   enable(): Promise<void>;
   disable(): Promise<void>;
-  initiate(appIdentityHash: string): Promise<TransactionResponse>;
+  initiate(appIdentityHash: string): Promise<void>;
   cancel(appIdentityHash: string, req: SignedCancelChallengeRequest): Promise<TransactionResponse>;
 }
 

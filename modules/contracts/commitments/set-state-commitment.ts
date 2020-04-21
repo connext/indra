@@ -96,7 +96,7 @@ export class SetStateCommitment implements EthereumCommitment {
     );
   }
 
-  private async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
+  public async getSignedAppChallengeUpdate(): Promise<SignedAppChallengeUpdate> {
     await this.assertSignatures();
     return {
       appStateHash: this.appStateHash,

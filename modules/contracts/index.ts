@@ -19,6 +19,7 @@ import * as SingleAssetTwoPartyCoinTransferInterpreter from "./build/SingleAsset
 import * as TimeLockedPassThrough from "./build/TimeLockedPassThrough.json";
 import * as TwoPartyFixedOutcomeInterpreter from "./build/TwoPartyFixedOutcomeInterpreter.json";
 
+export * from "./commitments";
 export {
   addressBook,
   addressHistory,
@@ -38,5 +39,3 @@ export {
   TimeLockedPassThrough,
   TwoPartyFixedOutcomeInterpreter,
 };
-
-export * from "./commitments";
