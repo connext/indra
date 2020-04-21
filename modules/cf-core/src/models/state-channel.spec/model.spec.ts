@@ -1,5 +1,5 @@
 import { StateChannelJSON } from "@connext/types";
-import { bigNumberifyJson, createRandomAddress } from "@connext/utils";
+import { bigNumberifyJson, getRandomAddress } from "@connext/utils";
 import { getAddress } from "ethers/utils";
 
 import { generateRandomNetworkContext } from "../../testing/mocks";
@@ -9,7 +9,7 @@ import { getRandomPublicIdentifiers } from "../../testing/random-signing-keys";
 
 describe("StateChannel", () => {
   it("should be able to instantiate", () => {
-    const multisigAddress = getAddress(createRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
@@ -30,7 +30,7 @@ describe("StateChannel", () => {
   });
 
   describe("should be able to write a channel to a json", () => {
-    const multisigAddress = getAddress(createRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     let sc: StateChannel;
@@ -80,7 +80,7 @@ describe("StateChannel", () => {
   });
 
   describe("should be able to rehydrate from json", () => {
-    const multisigAddress = getAddress(createRandomAddress());
+    const multisigAddress = getAddress(getRandomAddress());
     const [initiator, responder] = getRandomPublicIdentifiers(2);
 
     const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();

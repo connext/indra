@@ -86,6 +86,6 @@ export class OnchainTransactionService {
         this.log.warn(`Sending transaction attempt ${attempt}/${MAX_RETRIES} failed: ${e.message}. Retrying.`);
       }
     }
-    throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors, 2)}`);
+    throw new Error(`Failed to send transaction (errors indexed by attempt): ${stringify(errors)}`);
   }
 }

@@ -1,16 +1,21 @@
 import { ConnextStore } from "@connext/store";
-import { ClientOptions, StoreTypes, IClientStore } from "@connext/types";
-import { getRandomPrivateKey, removeUndefinedFields } from "@connext/utils";
+import { ClientOptions, StoreTypes } from "@connext/types";
+import { hexlify, randomBytes } from "ethers/utils";
 
 const CONNEXT_DEFAULT_SIGNER_KEY = "CONNEXT_DEFAULT_SIGNER";
 
+const removeUndefinedFields = <T>(obj: T): T => {
+  Object.keys(obj).forEach(key => typeof obj[key] === "undefined" && delete obj[key]);
+  return obj;
+};
+
 const getGeneratedSigner = (): string => {
   if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
-    return getRandomPrivateKey();
+    return hexlify(randomBytes(32));
   }
   let signer: string = window.localStorage.getItem(CONNEXT_DEFAULT_SIGNER_KEY);
   if (!signer) {
-    signer = getRandomPrivateKey();
+    signer = hexlify(randomBytes(32));
     window.localStorage.setItem(CONNEXT_DEFAULT_SIGNER_KEY, signer);
   }
   return signer;

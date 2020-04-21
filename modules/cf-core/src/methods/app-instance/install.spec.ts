@@ -6,7 +6,7 @@ import {
   IStoreService,
 } from "@connext/types";
 import {
-  createRandom32ByteHexString,
+  getRandomBytes32,
   getSignerAddressFromPublicIdentifier,
   nullLogger,
 } from "@connext/utils";
@@ -75,7 +75,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     const mockedStore: IStoreService = mock(MemoryStoreService);
 
-    const appIdentityHash = createRandom32ByteHexString();
+    const appIdentityHash = getRandomBytes32();
     const appInstanceProposal = createAppInstanceProposalForTest(appIdentityHash);
 
     when(mockedStore.getAppProposal(appIdentityHash)).thenResolve(appInstanceProposal);
@@ -96,7 +96,7 @@ describe("Can handle correct & incorrect installs", () => {
     const mockedStore: IStoreService = mock(MemoryStoreService);
     const store = instance(mockedStore);
 
-    const appIdentityHash = createRandom32ByteHexString();
+    const appIdentityHash = getRandomBytes32();
     const multisigAddress = Wallet.createRandom().address;
     const publicIdentifiers = getRandomPublicIdentifiers(2);
     const participants = [

@@ -14,10 +14,9 @@ import {
 } from "@connext/types";
 import {
   getSignerAddressFromPublicIdentifier,
-  invalidAddress,
+  getAddressError,
   stringify,
   toBN,
-  validate,
 } from "@connext/utils";
 import { AddressZero, Zero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -46,7 +45,7 @@ export class WithdrawalController extends AbstractController {
     const { assetId, recipient } = params;
     let transaction: TransactionResponse | undefined;
 
-    validate(invalidAddress(recipient), invalidAddress(assetId));
+    this.throwIfAny(getAddressError(recipient), getAddressError(assetId));
 
     let withdrawCommitment: WithdrawCommitment;
     let withdrawerSignatureOnWithdrawCommitment: string;
@@ -109,9 +108,8 @@ export class WithdrawalController extends AbstractController {
     this.log.debug(`Signing withdrawal commitment: ${hash}`);
 
     // Dont need to validate anything because we already did it during the propose flow
-    const counterpartySignatureOnWithdrawCommitment = await this.connext.channelProvider.signMessage(
-      hash,
-    );
+    const counterpartySignatureOnWithdrawCommitment =
+      await this.connext.channelProvider.signMessage(hash);
     this.log.debug(`Taking action on ${appInstance.identityHash}`);
     await this.connext.takeAction(appInstance.identityHash, {
       signature: counterpartySignatureOnWithdrawCommitment,
@@ -185,7 +183,7 @@ export class WithdrawalController extends AbstractController {
       defaultTimeout: DEFAULT_APP_TIMEOUT,
       stateTimeout: WITHDRAW_STATE_TIMEOUT,
     };
-    this.log.debug(`Installing withdrawal app with params: ${stringify(params, 2)}`);
+    this.log.debug(`Installing withdrawal app with params: ${stringify(params)}`);
     return this.proposeAndInstallLedgerApp(installParams);
   }
 

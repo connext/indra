@@ -5,9 +5,8 @@ import {
 } from "@connext/types";
 import {
   ChannelSigner,
-  createRandomAddress,
-  createRandom32ByteHexString,
-  signChannelMessage,
+  getRandomAddress,
+  getRandomBytes32,
   toBN,
 } from "@connext/utils";
 import { Wallet, Contract } from "ethers";
@@ -46,7 +45,7 @@ export const setupContext = async (
   const CHANNEL_NONCE = parseInt((Math.random() * 100).toString().split(".")[0]);
 
   // multisig address helpers
-  const multisigAddress = createRandomAddress(); // doesn't matter exactly what this is
+  const multisigAddress = getRandomAddress(); // doesn't matter exactly what this is
 
   const appInstance = new AppWithCounterClass(
     [alice.address, bob.address],
@@ -111,7 +110,7 @@ export const setupContext = async (
   };
 
   const verifySignatures = async (
-    digest: string = createRandom32ByteHexString(),
+    digest: string = getRandomBytes32(),
     signatures?: string[],
     signers?: string[],
   ) => {
@@ -232,7 +231,7 @@ export const setupContext = async (
       appStateHash: resultingStateHash,
       versionNumber: resultingStateVersionNumber,
       timeout: resultingStateTimeout,
-      signatures: [ await signChannelMessage(signer.privateKey, digest) ],
+      signatures: [ await (new ChannelSigner(signer.privateKey).signMessage(digest)) ],
     };
     await wrapInEventVerification(
       appRegistry.functions.progressState(
@@ -344,8 +343,8 @@ export const setupContext = async (
       signatures: await sortSignaturesBySignerAddress(
         stateDigest,
         [
-          await signChannelMessage(alice.privateKey, stateDigest),
-          await signChannelMessage(bob.privateKey, stateDigest),
+          await (new ChannelSigner(alice.privateKey).signMessage(stateDigest)),
+          await (new ChannelSigner(bob.privateKey).signMessage(stateDigest)),
         ],
       ),
     };
@@ -353,7 +352,9 @@ export const setupContext = async (
       versionNumber: One.add(versionNumber),
       appStateHash: resultingStateHash,
       timeout: timeout2,
-      signatures: [ await signChannelMessage(turnTaker.privateKey, resultingStateDigest) ],
+      signatures: [
+        await (new ChannelSigner(turnTaker.privateKey).signMessage(resultingStateDigest)),
+      ],
     };
     await appRegistry.functions.setAndProgressState(
       appInstance.appIdentity,
