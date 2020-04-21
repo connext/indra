@@ -172,11 +172,19 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
     if (this.hasAppIdentityHash(appInstance.identityHash, channel.appInstances)) {
       throw new Error(`App instance with hash ${appInstance.identityHash} already exists`);
     }
+
+    // old data for revert
     const oldChannel = channel;
     const oldFreeBalanceUpdate = await this.getSetStateCommitment(
       freeBalanceAppInstance.identityHash,
     );
+
+    // add app instance
     channel.appInstances.push([appInstance.identityHash, appInstance]);
+
+    // remove proposal
+    const idx = channel.proposedAppInstances.findIndex(([app]) => app === appInstance.identityHash);
+    channel.proposedAppInstances.splice(idx, 1);
     try {
       await Promise.all([
         this.saveStateChannel({
@@ -308,25 +316,6 @@ export class KeyValueStorage implements WrappedStorage, IClientStore {
       await this.saveStateChannel(oldChannel);
       await this.removeSetStateCommitment(appInstance.identityHash);
     }
-  }
-
-  async updateAppProposal(
-    multisigAddress: string,
-    appInstance: AppInstanceProposal,
-  ): Promise<void> {
-    const channel = await this.getStateChannel(multisigAddress);
-    if (!channel) {
-      throw new Error(`Can't save app proposal without channel`);
-    }
-    if (!this.hasAppIdentityHash(appInstance.identityHash, channel.proposedAppInstances)) {
-      throw new Error(
-        `Could not find app proposal with hash ${appInstance.identityHash} already exists`,
-      );
-    }
-    const idx = channel.proposedAppInstances.findIndex(([app]) => app === appInstance.identityHash);
-    channel.proposedAppInstances[idx] = [appInstance.identityHash, appInstance];
-
-    return this.saveStateChannel(channel);
   }
 
   async removeAppProposal(multisigAddress: string, appIdentityHash: string): Promise<void> {
