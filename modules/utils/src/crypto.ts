@@ -1,6 +1,7 @@
 import { Address, Bytes32, HexString, PublicKey, PrivateKey, SignatureString } from "@connext/types";
-import { arrayify, getAddress, hexlify, randomBytes, toUtf8String } from "ethers/utils";
+import { arrayify, getAddress, hexlify, randomBytes } from "ethers/utils";
 import {
+  bufferToUtf8,
   arrayToBuffer,
   concatBuffers,
   decompress,
@@ -110,7 +111,7 @@ export const encrypt = async (message: string, publicKey: PublicKey): Promise<He
   )));
 
 export const decrypt = async (encrypted: HexString, privateKey: PrivateKey): Promise<HexString> =>
-  toUtf8String(await libDecrypt(
+  bufferToUtf8(await libDecrypt(
     bufferify(privateKey),
     deserialize(bufferify(`0x${encrypted.replace(/^0x/, "")}`)),
   ));
